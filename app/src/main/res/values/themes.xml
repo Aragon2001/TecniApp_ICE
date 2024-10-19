@@ -1,0 +1,45 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Tema claro de la aplicación -->
+    <style name="Theme.TecniApp_ICE" parent="Theme.MaterialComponents.Light.NoActionBar">
+        <!-- Color primario (Azul ICE) -->
+        <item name="colorPrimary">@color/ice_blue</item>
+        <item name="colorPrimaryVariant">@color/ice_blue_dark</item>
+        <item name="colorOnPrimary">@color/white</item>
+
+        <!-- Color secundario (Amarillo ICE) -->
+        <item name="colorSecondary">@color/ice_yellow</item>
+        <item name="colorSecondaryVariant">@color/ice_yellow_dark</item>
+        <item name="colorOnSecondary">@color/black</item>
+
+        <!-- Color de la barra de estado -->
+        <item name="android:statusBarColor">?attr/colorPrimaryVariant</item>
+        <item name="android:navigationBarColor">@color/ice_blue_dark</item>
+
+        <!-- Fondo blanco claro para mejor apariencia -->
+        <item name="android:colorBackground">@color/white</item>
+        <item name="colorOnBackground">@color/black</item>
+
+        <!-- Superficies en blanco para un tema limpio y claro -->
+        <item name="colorSurface">@color/white</item>
+        <item name="colorOnSurface">@color/black</item>
+
+        <!-- Fondo de ventana blanco para consistencia -->
+        <item name="android:windowBackground">@color/white</item>
+        <item name="android:windowNoTitle">true</item>
+
+        <!-- Personalización de componentes -->
+        <item name="colorAccent">@color/ice_yellow</item>
+
+        <!-- Define el color de texto del Spinner -->
+
+    </style>
+
+    <!-- Overlay del AppBar en claro -->
+    <style name="Theme.TecniApp_ICE.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
+
+    <!-- Sin ActionBar -->
+    <style name="Theme.TecniApp_ICE.NoActionBar" parent="Theme.TecniApp_ICE">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+    </style>
+</resources>

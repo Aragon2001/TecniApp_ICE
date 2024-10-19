@@ -1,0 +1,274 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp"
+    tools:context=".registro.Paso1Fragment">
+
+    <!-- Icono de regreso y bandera de país -->
+    <LinearLayout
+        android:id="@+id/countryLayout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="16dp">
+
+        <!-- Flecha de regreso -->
+        <ImageView
+            android:id="@+id/backArrow"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/ic_arrow_back"
+            android:contentDescription="Volver" />
+    </LinearLayout>
+
+    <!-- Título de la pantalla -->
+    <TextView
+        android:id="@+id/tvTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Crea una cuenta"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        app:layout_constraintTop_toBottomOf="@id/countryLayout"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="16dp" />
+
+    <!-- Barra de progreso para mostrar el paso actual -->
+    <ProgressBar
+        android:id="@+id/progressBar"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:progress="25"
+        android:max="100"
+        android:progressDrawable="@drawable/progress_bar"
+        app:layout_constraintTop_toBottomOf="@id/tvTitle"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="8dp" />
+
+    <!-- Texto indicando el paso actual -->
+    <TextView
+        android:id="@+id/tvStep"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Paso 1 de 4"
+        android:textStyle="bold"
+        android:textSize="14sp"
+        app:layout_constraintTop_toBottomOf="@id/progressBar"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="8dp" />
+
+    <!-- Instrucciones para el usuario -->
+    <TextView
+        android:id="@+id/tvInstructions"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Ingresa la siguiente información para crear una cuenta."
+        android:textSize="14sp"
+        app:layout_constraintTop_toBottomOf="@id/tvStep"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="8dp" />
+
+    <!-- Enlace para iniciar sesión si ya tiene una cuenta -->
+    <TextView
+        android:id="@+id/tvLoginLink"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="¿Ya tienes una cuenta? Inicia sesión."
+        android:textSize="14sp"
+        android:textColor="@color/ice_blue"
+        android:textStyle="bold"
+        app:layout_constraintTop_toBottomOf="@id/tvInstructions"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="9dp" />
+
+    <!-- Layout para el Paso 1: Datos de contacto (teléfono y correo) -->
+    <LinearLayout
+        android:id="@+id/step1Layout"
+        android:layout_height="wrap_content"
+        android:layout_width="match_parent"
+        android:orientation="vertical"
+        android:layout_marginTop="20dp"
+        app:layout_constraintTop_toBottomOf="@id/tvLoginLink">
+
+        <!-- Número celular -->
+        <TextView
+            android:id="@+id/tvtelefono"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Número celular"
+            android:textSize="18sp"
+            android:textColor="@color/ice_blue_dark"
+            android:textStyle="bold"
+            android:layout_marginTop="16dp" />
+
+        <LinearLayout
+            android:id="@+id/phoneLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="4dp">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:background="@drawable/rounded_bg_f0f2f4"
+                android:padding="8dp">
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:contentDescription="Bandera CR"
+                    android:src="@drawable/crflag" />
+
+                <TextView
+                    android:id="@+id/tvCountryCode"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="4dp"
+                    android:textColor="@color/dark_gray"
+                    android:text="+506"
+                    android:textSize="18sp" />
+            </LinearLayout>
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etPhoneNumber"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:background="@drawable/rounded_bg_f0f2f4"
+                android:hint="0000-0000"
+                android:maxLength="9"
+                android:textColorHint="@color/light_gray"
+                android:textColor="@color/dark_gray"
+                android:inputType="phone"
+                android:padding="12dp"
+                android:layout_weight="1" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tvPhoneError"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/red"
+            android:textSize="12sp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/tvEmailLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Correo electrónico"
+            android:textSize="18sp"
+            android:textColor="@color/ice_blue_dark"
+            android:textStyle="bold"
+            android:layout_marginTop="16dp" />
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etEmail"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Tuemail@ice.go.cr"
+            android:inputType="textEmailAddress"
+            android:background="@drawable/rounded_bg_f0f2f4"
+            android:padding="12dp"
+            android:textColorHint="@color/light_gray"
+            android:textColor="@color/dark_gray"
+            android:layout_marginTop="4dp" />
+
+        <TextView
+            android:id="@+id/tvEmailError"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/red"
+            android:textSize="12sp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/tvPasswordLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Contraseña"
+            android:textSize="18sp"
+            android:textColor="@color/ice_blue_dark"
+            android:textStyle="bold"
+            android:layout_marginTop="16dp" />
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etPassword"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Ingresa tu contraseña"
+            android:inputType="textPassword"
+            android:background="@drawable/rounded_bg_f0f2f4"
+            android:padding="12dp"
+            android:textColorHint="@color/light_gray"
+            android:textColor="@color/dark_gray"
+            android:layout_marginTop="4dp" />
+
+        <TextView
+            android:id="@+id/tvPasswordError"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/red"
+            android:textSize="12sp"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/tvConfirmPasswordLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Confirmar contraseña"
+            android:textSize="18sp"
+            android:textColor="@color/ice_blue_dark"
+            android:textStyle="bold"
+            android:layout_marginTop="16dp" />
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etConfirmPassword"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Confirma tu contraseña"
+            android:inputType="textPassword"
+            android:background="@drawable/rounded_bg_f0f2f4"
+            android:padding="12dp"
+            android:textColorHint="@color/light_gray"
+            android:textColor="@color/dark_gray"
+            android:layout_marginTop="4dp" />
+
+        <TextView
+            android:id="@+id/tvConfirmPasswordError"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/red"
+            android:textSize="12sp"
+            android:visibility="gone" />
+
+        <!-- CheckBox para mostrar/ocultar contraseña -->
+        <CheckBox
+            android:id="@+id/ic_hide_password"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Mostrar contraseña"
+            android:textSize="14sp"
+            android:layout_marginTop="8dp" />
+
+
+    </LinearLayout>
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnContinueToStep2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:backgroundTint="@color/ice_blue_dark"
+        android:text="CONTINUAR"
+        android:textColor="@color/white"
+        app:cornerRadius="32dp"
+        app:layout_constraintBottom_toBottomOf="parent" />
+</androidx.constraintlayout.widget.ConstraintLayout>

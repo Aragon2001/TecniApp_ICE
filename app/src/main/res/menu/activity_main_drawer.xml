@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:showIn="navigation_view">
+
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_home"
+            android:icon="@drawable/ic_menu_home"
+            android:title="@string/menu_home" />
+        <item
+            android:id="@+id/nav_medidor"
+            android:icon="@drawable/ic_menu_medidor"
+            android:title="@string/menu_medidor" />
+        <item
+            android:id="@+id/nav_localizacion"
+            android:icon="@drawable/ic_menu_localizacion"
+            android:title="@string/menu_localizacion" />
+        <item
+            android:id="@+id/nav_averias"
+            android:icon="@drawable/ic_menu_averias"
+            android:title="@string/menu_averias" />
+        <item
+            android:id="@+id/nav_luminarias"
+            android:icon="@drawable/ic_menu_luminarias"
+            android:title="@string/menu_luminarias" />
+        <item
+            android:id="@+id/nav_inventario"
+            android:icon="@drawable/ic_menu_inventario"
+            android:title="@string/menu_inventario" />
+        <item
+            android:id="@+id/nav_reportes"
+            android:icon="@drawable/ic_menu_reportes"
+            android:title="@string/menu_reportes" />
+        <item
+            android:id="@+id/nav_programacion"
+            android:icon="@drawable/ic_menu_programacion"
+            android:title="@string/menu_programacion" />
+    </group>
+</menu>

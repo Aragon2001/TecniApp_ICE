@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/mobile_navigation"
+    app:startDestination="@+id/nav_home">
+
+    <!-- Fragmento de inicio (Home) -->
+    <fragment
+        android:id="@+id/nav_home"
+        android:name="com.Arasoftsolutions.tecniapp_ice.ui.home.HomeFragment"
+        android:label="@string/menu_home"
+        tools:layout="@layout/fragment_home" />
+
+    <!-- Fragmento de medidor -->
+    <fragment
+        android:id="@+id/nav_medidor"
+        android:name="com.Arasoftsolutions.tecniapp_ice.ui.medidor.MedidorFragment"
+        android:label="@string/menu_medidor"
+        tools:layout="@layout/fragment_medidor" />
+
+    <!-- Fragmento de localización -->
+    <fragment
+        android:id="@+id/nav_localizacion"
+        android:name="com.Arasoftsolutions.tecniapp_ice.ui.localizacion.LocalizacionFragment"
+        android:label="@string/menu_localizacion"
+        tools:layout="@layout/fragment_localizacion" />
+
+    <!-- Fragmento de averías -->
+    <fragment
+        android:id="@+id/nav_averias"
+        android:name="com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasFragment"
+        android:label="@string/menu_averias"
+        tools:layout="@layout/fragment_averias" />
+
+    <!-- Fragmento de luminarias -->
+    <fragment
+        android:id="@+id/nav_luminarias"
+        android:name="com.Arasoftsolutions.tecniapp_ice.ui.luminarias.LuminariasFragment"
+        android:label="@string/menu_luminarias"
+        tools:layout="@layout/fragment_luminarias" />
+
+    <!-- Fragmento de inventario -->
+    <fragment
+        android:id="@+id/nav_inventario"
+        android:name="com.Arasoftsolutions.tecniapp_ice.ui.inventario.InventarioFragment"
+        android:label="@string/menu_inventario"
+        tools:layout="@layout/fragment_inventario" />
+
+    <!-- Fragmento de reportes -->
+    <fragment
+        android:id="@+id/nav_reportes"
+        android:name="com.Arasoftsolutions.tecniapp_ice.ui.reportes.ReportesFragment"
+        android:label="@string/menu_reportes"
+        tools:layout="@layout/fragment_reportes" />
+
+    <!-- Fragmento de programación -->
+    <fragment
+        android:id="@+id/nav_programacion"
+        android:name="com.Arasoftsolutions.tecniapp_ice.ui.programacion.ProgramacionFragment"
+        android:label="@string/menu_programacion"
+        tools:layout="@layout/fragment_programacion" />
+
+     <!-- Fragmento de Account -->
+    <fragment
+        android:id="@+id/nav_account"
+        android:name="com.Arasoftsolutions.tecniapp_ice.User.UserFragment"
+        android:label="@string/action_accounts"
+        tools:layout="@layout/fragment_user" />
+
+</navigation>

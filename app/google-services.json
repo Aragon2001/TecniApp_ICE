@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "1097214229632",
+    "firebase_url": "https://tecniapp-ice-default-rtdb.firebaseio.com",
+    "project_id": "tecniapp-ice",
+    "storage_bucket": "tecniapp-ice.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1097214229632:android:63a9ed905c863f5897fa65",
+        "android_client_info": {
+          "package_name": "com.Arasoftsolutions.tecniapp_ice"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1097214229632-uim4opfvvoa47apt65175kjs5u0fbs7v.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.Arasoftsolutions.tecniapp_ice",
+            "certificate_hash": "27e57f3f1b2b9ab9959d4ba6a9a2c6bc85df62da"
+          }
+        },
+        {
+          "client_id": "1097214229632-3cn6j1e92c3k22fm14gm9mudks8e0o28.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBQt2RjGc8kG8PYN3m1bLa8QJUuVw9MYNc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1097214229632-3cn6j1e92c3k22fm14gm9mudks8e0o28.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,0 +1,24 @@
+<resources>
+    <string name="app_name">TecniApp ICE</string>
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+    <string name="nav_header_title">TecniApp ICE</string>
+    <string name="nav_header_subtitle">Soluciones Integrales ICE</string>
+    <string name="nav_header_desc">Navigation header</string>
+    <string name="action_logout">Cerrar Sesión</string>
+    <string name="welcome_message">Bienvenido a TecniApp</string>
+    <string name="menu_home">Home</string>
+    <string name="menu_medidor">Consultar Medidor</string>
+    <string name="menu_localizacion">Localización</string>
+    <string name="logo_desc">Logo de TecniApp</string>
+    <string name="del_poste">Del Poste:</string>
+    <string name="default_web_client_id">1097214229632-3cn6j1e92c3k22fm14gm9mudks8e0o28.apps.googleusercontent.com</string>
+      <string name="menu_averias">Averías</string>
+    <string name="menu_luminarias">Luminarias</string>
+    <string name="menu_inventario">Inventario</string>
+    <string name="menu_reportes">Reportes</string>
+    <string name="menu_programacion">Programación</string>
+    <string name="action_accounts">Perfil</string>
+
+
+</resources>

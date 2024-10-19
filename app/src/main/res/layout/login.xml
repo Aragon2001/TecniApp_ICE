@@ -1,0 +1,191 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".LoginActivity">
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <!-- Imagen de fondo -->
+        <ImageView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:adjustViewBounds="true"
+            android:scaleType="fitStart"
+            android:src="@drawable/bg" />
+
+        <!-- Capa de superposición oscura -->
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:alpha="0.7"
+            android:background="@color/dark_gray" />
+    </FrameLayout>
+
+    <!-- Contenedor superior para el logo y el título -->
+    <LinearLayout
+        android:id="@+id/linearLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="30dp"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:padding="28dp">
+
+        <ImageView
+            android:layout_width="150dp"
+            android:layout_height="95dp"
+            android:src="@drawable/location_icon" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="sans-serif-medium"
+            android:text="TecniApp ICE"
+            android:textColor="@color/white"
+            android:textSize="32sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <!-- CardView ajustado -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/card_view"
+        android:layout_width="match_parent"
+        android:layout_height="690dp"
+        android:layout_below="@id/linearLayout"
+        android:layout_marginBottom="-20dp"
+        app:cardCornerRadius="28dp">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/linearLayout3"
+            android:layout_width="match_parent"
+            android:layout_height="705dp"
+            android:background="@drawable/side_nav_bar"
+            android:padding="20dp">
+
+            <TextView
+                android:id="@+id/textView6"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Bienvenido"
+                android:textColor="@color/white"
+                android:textSize="28sp"
+                android:textStyle="bold"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <TextView
+                android:id="@+id/textView7"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="40dp"
+                android:alpha="0.7"
+                android:text="Por favor, inicia sesión con tu información"
+                android:textColor="@color/white"
+                app:layout_constraintEnd_toEndOf="@id/textView6"
+                app:layout_constraintStart_toStartOf="@id/textView6"
+                app:layout_constraintTop_toBottomOf="@id/textView6" />
+
+            <EditText
+                android:id="@+id/email_edit_text"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="80dp"
+                android:layout_marginBottom="20dp"
+                android:background="@drawable/rounded_bg_f0f2f4"
+                android:backgroundTint="@color/white_translucent"
+                android:hint="Ingresa tu correo electrónico"
+                android:textColorHint="@color/white"
+                android:inputType="textEmailAddress"
+                android:padding="10dp"
+                android:textColor="@color/white"
+                android:textSize="16sp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/textView7" />
+
+<RelativeLayout
+    android:id="@+id/contenedor"
+    android:layout_width="0dp"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="50dp"
+    android:layout_marginBottom="0dp"
+    app:layout_constraintEnd_toEndOf="parent"
+    app:layout_constraintStart_toStartOf="parent"
+    app:layout_constraintTop_toBottomOf="@id/email_edit_text">
+
+    <EditText
+        android:id="@+id/password_edit_text"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/rounded_bg_f0f2f4"
+        android:backgroundTint="@color/white_translucent"
+        android:hint="Ingresa tu contraseña"
+        android:textColorHint="@color/white"
+        android:inputType="textPassword"
+        android:padding="10dp"
+        android:textColor="@color/white"
+        android:textSize="16sp" />
+
+    <!-- Icono para mostrar/ocultar contraseña -->
+    <ImageView
+        android:id="@+id/password_icon"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="true"
+        android:layout_centerVertical="true"
+        android:src="@drawable/password_icon"
+        android:contentDescription="Mostrar/ocultar contraseña"
+        android:clickable="true"
+        android:focusable="true"
+        android:padding="8dp" />
+</RelativeLayout>
+
+
+            <TextView
+                android:id="@+id/forgot_password_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:text="Olvidé mi contraseña"
+                android:textColor="@color/white"
+                android:textStyle="bold"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/contenedor" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/sign_in_button"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="90dp"
+                android:backgroundTint="@color/white"
+                android:text="Iniciar sesión"
+                android:textColor="@color/ice_blue_dark"
+                app:cornerRadius="32dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/forgot_password_button" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/register_button"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:layout_marginBottom="18dp"
+                android:backgroundTint="@color/white_translucent"
+                android:text="Registrarme"
+                android:textColor="@color/white"
+                app:cornerRadius="32dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="@id/sign_in_button"
+                app:layout_constraintTop_toBottomOf="@id/sign_in_button"
+                app:strokeColor="@color/white"
+                app:strokeWidth="3dp" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+    </com.google.android.material.card.MaterialCardView>
+</RelativeLayout>

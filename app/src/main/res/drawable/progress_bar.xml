@@ -1,0 +1,31 @@
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Fondo de la barra de progreso (gris claro) -->
+    <item android:id="@android:id/background">
+        <shape>
+            <corners android:radius="8dp" />
+            <solid android:color="#D3D3D3"/> <!-- Color de fondo de la barra -->
+        </shape>
+    </item>
+
+    <!-- Progreso (color personalizado) -->
+    <item android:id="@android:id/progress">
+        <clip>
+            <shape>
+                <corners android:radius="8dp" />
+                <solid android:color="@color/ice_blue"/> <!-- Color del progreso -->
+            </shape>
+        </clip>
+    </item>
+
+    <!-- Barra secundaria de progreso (opcional) -->
+    <item android:id="@android:id/secondaryProgress">
+        <clip>
+            <shape>
+                <corners android:radius="8dp" />
+                <solid android:color="#FFC107"/> <!-- Color de la barra secundaria -->
+            </shape>
+        </clip>
+    </item>
+
+</layer-list>

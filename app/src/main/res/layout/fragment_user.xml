@@ -1,0 +1,267 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp"
+    tools:context=".User.UserFragment">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true"
+    android:scrollbars="none">
+
+        <!-- Contenedor para la información del usuario -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- Imagen de perfil -->
+            <ImageView
+                android:id="@+id/imageViewProfile"
+                android:layout_width="100dp"
+                android:layout_height="100dp"
+                android:layout_gravity="center"
+                android:src="@drawable/default_profile_picture"
+                android:contentDescription="Foto de perfil"
+                android:scaleType="centerCrop"
+                />
+
+            <!-- Nombre del usuario -->
+            <TextView
+                android:id="@+id/tvNombre"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Nombre del Usuario"
+                android:textSize="22sp"
+                android:textColor="@color/ice_blue_dark"
+                android:textStyle="bold"
+                android:layout_marginTop="16dp"
+                android:layout_gravity="center" />
+
+            <!-- Identificación del usuario -->
+            <TextView
+                android:id="@+id/tvId"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Identificación: 0-0000-0000"
+                android:textSize="16sp"
+                android:textColor="@color/dark_gray"
+                android:layout_marginTop="4dp"
+                android:layout_gravity="center" />
+
+            <!-- Correo electrónico del usuario -->
+            <TextView
+                android:id="@+id/tvEmail"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="email@ejemplo.com"
+                android:textSize="16sp"
+                android:textColor="@color/dark_gray"
+                android:layout_marginTop="4dp"
+                android:layout_gravity="center" />
+
+            <!-- Layout para el Paso 4: Información adicional -->
+            <LinearLayout
+                android:id="@+id/datos"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:visibility="visible"
+                android:layout_marginTop="4dp">
+
+                <!-- Spinner para seleccionar la subregión -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Subregión"
+                    android:textSize="18sp"
+                    android:textColor="@color/ice_blue_dark"
+                    android:textStyle="bold"
+                    android:layout_marginTop="16dp"
+                    android:layout_marginBottom="4dp" />
+
+                <Spinner
+                    android:id="@+id/spinnerSubregion"
+                    android:layout_width="match_parent"
+                    android:layout_height="50dp"
+                    android:background="@drawable/rounded_bg_f0f2f4"
+                    android:drawableEnd="@drawable/ic_arrow_down" />
+
+                <!-- Spinner para seleccionar la agencia -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Agencia"
+                    android:textSize="18sp"
+                    android:textColor="@color/ice_blue_dark"
+                    android:textStyle="bold"
+                    android:layout_marginTop="16dp"
+                    android:layout_marginBottom="4dp" />
+
+                <Spinner
+                    android:id="@+id/spinnerAgencia"
+                    android:layout_width="match_parent"
+                    android:layout_height="50dp"
+                    android:background="@drawable/rounded_bg_f0f2f4"
+                    android:drawableEnd="@drawable/ic_arrow_down" />
+
+                <!-- Spinner para seleccionar el vehículo -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Vehículo"
+                    android:textSize="18sp"
+                    android:textColor="@color/ice_blue_dark"
+                    android:textStyle="bold"
+                    android:layout_marginTop="16dp"
+                    android:layout_marginBottom="4dp" />
+
+                <Spinner
+                    android:id="@+id/spinnerVehiculo"
+                    android:layout_width="match_parent"
+                    android:layout_height="50dp"
+                    android:background="@drawable/rounded_bg_f0f2f4"
+                    android:drawableEnd="@drawable/ic_arrow_down" />
+
+                <!-- Número celular -->
+                <TextView
+                    android:id="@+id/tvTelefono"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Número celular"
+                    android:textSize="18sp"
+                    android:textColor="@color/ice_blue_dark"
+                    android:textStyle="bold"
+                    android:layout_marginTop="16dp" />
+
+                <LinearLayout
+                    android:id="@+id/phoneLayout"
+                    android:layout_width="match_parent"
+                    android:layout_height="50dp"
+                    android:layout_marginTop="4dp"
+                    android:orientation="horizontal">
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
+                        android:background="@drawable/rounded_bg_f0f2f4"
+                        android:padding="8dp">
+
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:contentDescription="Bandera CR"
+                            android:src="@drawable/crflag" />
+
+                        <TextView
+                            android:id="@+id/tvCountryCode"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="4dp"
+                            android:text="+506"
+                            android:textColor="@color/dark_gray"
+                            android:textSize="18sp" />
+                    </LinearLayout>
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etPhoneNumber"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:background="@drawable/rounded_bg_f0f2f4"
+                        android:maxLength="9"
+                        android:textColorHint="@color/light_gray"
+                        android:textColor="@color/dark_gray"
+                        android:inputType="phone"
+                        android:padding="12dp"
+                        android:layout_weight="1" />
+                </LinearLayout>
+
+                <!-- Contraseña -->
+                <TextView
+                    android:id="@+id/tvPasswordLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Contraseña"
+                    android:textSize="18sp"
+                    android:textColor="@color/ice_blue_dark"
+                    android:textStyle="bold"
+                    android:layout_marginTop="16dp" />
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etPassword"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Ingresa tu contraseña"
+                    android:inputType="textPassword"
+                    android:background="@drawable/rounded_bg_f0f2f4"
+                    android:padding="12dp"
+                    android:textColorHint="@color/light_gray"
+                    android:textColor="@color/dark_gray"
+                    android:layout_marginTop="4dp" />
+
+                <TextView
+                    android:id="@+id/tvPasswordError"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/red"
+                    android:textSize="12sp"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/tvConfirmPasswordLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Confirmar contraseña"
+                    android:textSize="18sp"
+                    android:textColor="@color/ice_blue_dark"
+                    android:textStyle="bold"
+                    android:layout_marginTop="16dp" />
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etConfirmPassword"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="Confirma tu contraseña"
+                    android:inputType="textPassword"
+                    android:background="@drawable/rounded_bg_f0f2f4"
+                    android:padding="12dp"
+                    android:textColorHint="@color/light_gray"
+                    android:textColor="@color/dark_gray"
+                    android:layout_marginTop="4dp" />
+
+                <TextView
+                    android:id="@+id/tvConfirmPasswordError"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/red"
+                    android:textSize="12sp"
+                    android:visibility="gone" />
+
+                <CheckBox
+                    android:id="@+id/checkboxShowPassword"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Mostrar contraseña"
+                    android:layout_marginTop="8dp"
+                    android:textColor="@color/dark_gray" />
+
+            </LinearLayout>
+
+            <!-- Botón para guardar cambios -->
+            <Button
+                android:id="@+id/btnSaveChanges"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:backgroundTint="@color/ice_blue_dark"
+                android:text="Guardar cambios"
+                android:textColor="@android:color/white" />
+
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>
