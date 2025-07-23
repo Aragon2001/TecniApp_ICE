@@ -278,25 +278,26 @@ private fun sincronizarVehiculos() {
 // ---------------------- ENTIDAD: USUARIOS ----------------------
 
     private fun sincronizarUsuarioAutenticado() {
-        val currentUserUid = FirebaseAuth.getInstance().currentUser?.uid
+        // Usamos el correo del usuario autenticado para localizar su registro
+        val currentUserEmail = FirebaseAuth.getInstance().currentUser?.email
 
-        if (currentUserUid != null) {
-            // Consulta Firebase para obtener el usuario autenticado
-            val usuarioRef = usuariosRef.child(currentUserUid)
-
-            usuarioRef.addListenerForSingleValueEvent(object : ValueEventListener {
+        if (currentUserEmail != null) {
+            // Consulta Firebase buscando por el correo electrónico
+            val query = usuariosRef.orderByChild("email").equalTo(currentUserEmail)
+            query.addListenerForSingleValueEvent(object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
                     // Si el usuario existe en Firebase
                     if (snapshot.exists()) {
-                        val id = snapshot.key?.toIntOrNull() ?: return
-                        val agencia = snapshot.child("agencia").getValue(String::class.java) ?: ""
-                        val apellidos = snapshot.child("apellidos").getValue(String::class.java) ?: ""
-                        val cedula = snapshot.child("cedula").getValue(String::class.java) ?: ""
-                        val email = snapshot.child("email").getValue(String::class.java) ?: ""
-                        val nombre = snapshot.child("nombre").getValue(String::class.java) ?: ""
-                        val placaVehiculo = snapshot.child("placaVehiculo").getValue(String::class.java) ?: ""
-                        val subregion = snapshot.child("subregion").getValue(String::class.java) ?: ""
-                        val telefono = snapshot.child("telefono").getValue(String::class.java) ?: ""
+                        val userSnap = snapshot.children.first()
+                        val id = userSnap.key?.toIntOrNull() ?: return
+                        val agencia = userSnap.child("agencia").getValue(String::class.java) ?: ""
+                        val apellidos = userSnap.child("apellidos").getValue(String::class.java) ?: ""
+                        val cedula = userSnap.child("cedula").getValue(String::class.java) ?: ""
+                        val email = userSnap.child("email").getValue(String::class.java) ?: ""
+                        val nombre = userSnap.child("nombre").getValue(String::class.java) ?: ""
+                        val placaVehiculo = userSnap.child("placaVehiculo").getValue(String::class.java) ?: ""
+                        val subregion = userSnap.child("subregion").getValue(String::class.java) ?: ""
+                        val telefono = userSnap.child("telefono").getValue(String::class.java) ?: ""
 
                         // Crear objeto usuario con los datos obtenidos
                         val usuario = User(id, agencia, apellidos, cedula, email, nombre, placaVehiculo, subregion, telefono)
@@ -330,7 +331,7 @@ private fun sincronizarVehiculos() {
                     "telefono" to it.telefono
                 )
 
-                usuariosRef.child(currentUserUid).setValue(usuarioMap)
+                usuariosRef.child(it.cedula).setValue(usuarioMap)
                     .addOnCompleteListener { task ->
                         if (task.isSuccessful) {
                             println("Usuario sincronizado con éxito en Firebase.")
