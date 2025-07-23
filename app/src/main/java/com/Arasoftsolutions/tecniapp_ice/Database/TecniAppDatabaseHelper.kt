@@ -239,9 +239,9 @@ fun getSubregiones(): List<Subregiones> = getAllFromTable("Subregiones") { curso
 
     // Obtener el registro del usuario autenticado
     fun getUser(): User? {
-        val currentUserUid = FirebaseAuth.getInstance().currentUser?.uid ?: return null
+        val currentUserEmail = FirebaseAuth.getInstance().currentUser?.email ?: return null
         val db = readableDatabase
-        val cursor = db.rawQuery("SELECT * FROM Usuarios WHERE id = ?", arrayOf(currentUserUid))
+        val cursor = db.rawQuery("SELECT * FROM Usuarios WHERE email = ?", arrayOf(currentUserEmail))
         cursor.use {
             return if (it.moveToFirst()) {
                 User(
