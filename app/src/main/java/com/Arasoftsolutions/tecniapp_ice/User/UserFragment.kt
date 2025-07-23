@@ -8,8 +8,9 @@ import android.widget.*
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import com.Arasoftsolutions.tecniapp_ice.R
+import com.google.firebase.auth.FirebaseAuth
 
-class UserFragment : Fragment() {
+class FragmentUser : Fragment() {
 
     private lateinit var userViewModel: UserViewModel
 
@@ -23,6 +24,7 @@ class UserFragment : Fragment() {
     private lateinit var subregionSpinner: Spinner
     private lateinit var placaVehiculoSpinner: Spinner
     private lateinit var passwordEditText: EditText
+    private lateinit var confirmPasswordEditText: EditText
     private lateinit var updateButton: Button
 
     override fun onCreateView(
@@ -31,6 +33,10 @@ class UserFragment : Fragment() {
     ): View? {
         val view = inflater.inflate(R.layout.fragment_user, container, false)
 
+        // Inicialización del ViewModel
+        userViewModel = ViewModelProvider(this).get(UserViewModel::class.java)
+
+        // Inicialización de vistas
         cedulaTextView = view.findViewById(R.id.tvId)
         nombreTextView = view.findViewById(R.id.tvNombre)
         emailTextView = view.findViewById(R.id.tvEmail)
@@ -39,100 +45,109 @@ class UserFragment : Fragment() {
         subregionSpinner = view.findViewById(R.id.spinnerSubregion)
         placaVehiculoSpinner = view.findViewById(R.id.spinnerVehiculo)
         passwordEditText = view.findViewById(R.id.etPassword)
+        confirmPasswordEditText = view.findViewById(R.id.etConfirmPassword)
         updateButton = view.findViewById(R.id.btnSaveChanges)
 
-        userViewModel = ViewModelProvider(this).get(UserViewModel::class.java)
-
-        // Cargar datos del usuario
-        userViewModel.userData.observe(viewLifecycleOwner) { user ->
-            user?.let {
-                displayUserData(it)
-            } ?: run {
-                Toast.makeText(requireContext(), "No se encontró el usuario.", Toast.LENGTH_SHORT).show()
-            }
+        // Cargar los datos del usuario actual
+        val userEmail = FirebaseAuth.getInstance().currentUser?.email
+        userEmail?.let {
+            userViewModel.loadCurrentUser(it)
         }
 
-        // Cargar Spinners
-        userViewModel.loadSubregions()
-
-        userViewModel.subregions.observe(viewLifecycleOwner) { subregions ->
-            val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, subregions)
-            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-            subregionSpinner.adapter = adapter
-
-            // Cuando se carguen las subregiones, carga las agencias
-            val selectedSubregion = subregionSpinner.selectedItem.toString()
-            userViewModel.loadAgencies(selectedSubregion)
-        }
-
-        userViewModel.agencies.observe(viewLifecycleOwner) { agencies ->
-            val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, agencies)
-            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-            agenciaSpinner.adapter = adapter
-
-            // Cuando se carguen las agencias, carga los vehículos
-            val selectedAgency = agenciaSpinner.selectedItem.toString()
-            userViewModel.loadVehicles(selectedAgency)
-        }
-
-        userViewModel.vehicles.observe(viewLifecycleOwner) { vehicles ->
-            val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, vehicles)
-            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-            placaVehiculoSpinner.adapter = adapter
-        }
-
-        updateButton.setOnClickListener {
-            updateUser()
-        }
+        // Configuración del ViewModel y observación de datos
+        observeUserData()
+        setupSaveButton()
 
         return view
     }
 
-    private fun displayUserData(user: User) {
-        cedulaTextView.text = user.cedula
-        nombreTextView.text = user.nombre
-        apellidosTextView.text = user.apellidos
-        emailTextView.text = user.email
-        telefonoEditText.setText(user.telefono)
-        setSpinnerSelection(agenciaSpinner, user.agencia)
-        setSpinnerSelection(subregionSpinner, user.subregion)
-        setSpinnerSelection(placaVehiculoSpinner, user.placaVehiculo)
-    }
+    private fun observeUserData() {
+        userViewModel.userData.observe(viewLifecycleOwner) { user ->
+            user?.let {
+                cedulaTextView.text = it.cedula
+                nombreTextView.text = it.nombre
+                emailTextView.text = it.email
+                telefonoEditText.setText(it.telefono)
 
-    private fun setSpinnerSelection(spinner: Spinner, value: String) {
-        val adapter = spinner.adapter
-        for (i in 0 until adapter.count) {
-            if (adapter.getItem(i).toString() == value) {
-                spinner.setSelection(i)
-                break
+                // Cargar subregiones, agencias y vehículos
+                userViewModel.loadSubregions()
+                userViewModel.subregions.observe(viewLifecycleOwner) { subregions ->
+                    setupSpinner(subregionSpinner, subregions) { selectedSubregion ->
+                        if (selectedSubregion != "Seleccione una Subregion") {
+                            userViewModel.loadAgencies(selectedSubregion)
+                        }
+                    }
+                    subregionSpinner.setSelection(subregions.indexOf(user.subregion))
+                }
+
+                userViewModel.agencies.observe(viewLifecycleOwner) { agencies ->
+                    setupSpinner(agenciaSpinner, agencies) { selectedAgency ->
+                        if (selectedAgency != "Seleccione una Agencia") {
+                            userViewModel.loadVehicles(selectedAgency)
+                        }
+                    }
+                    agenciaSpinner.setSelection(agencies.indexOf(it.agencia))
+                }
+
+                userViewModel.vehicles.observe(viewLifecycleOwner) { vehicles ->
+                    setupSpinner(placaVehiculoSpinner, vehicles, null)
+                    placaVehiculoSpinner.setSelection(vehicles.indexOf(it.placaVehiculo))
+                }
             }
         }
     }
 
-    private fun updateUser() {
-        if (telefonoEditText.text.isEmpty()) {
-            Toast.makeText(requireContext(), "Por favor, complete todos los campos.", Toast.LENGTH_SHORT).show()
-            return
+    private fun setupSaveButton() {
+        updateButton.setOnClickListener {
+            val currentUser = userViewModel.userData.value ?: return@setOnClickListener
+
+            // Validación de contraseñas
+            val newPassword = passwordEditText.text.toString()
+            val confirmPassword = confirmPasswordEditText.text.toString()
+
+            if (newPassword.isNotEmpty() || confirmPassword.isNotEmpty()) {
+                if (newPassword.length < 8) {
+                    Toast.makeText(requireContext(), "La contraseña debe tener al menos 8 caracteres.", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
+                if (newPassword != confirmPassword) {
+                    Toast.makeText(requireContext(), "Las contraseñas no coinciden.", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
+            }
+
+            // Actualización de campos
+            val updatedUser = currentUser.copy(
+                subregion = if (subregionSpinner.selectedItem.toString() != "Seleccione una Subregion")
+                    subregionSpinner.selectedItem.toString() else currentUser.subregion,
+                agencia = if (agenciaSpinner.selectedItem.toString() != "Seleccione una Agencia")
+                    agenciaSpinner.selectedItem.toString() else currentUser.agencia,
+                placaVehiculo = if (placaVehiculoSpinner.selectedItem.toString() != "Seleccione un Vehículo")
+                    placaVehiculoSpinner.selectedItem.toString() else currentUser.placaVehiculo,
+                password = if (newPassword.isNotEmpty()) newPassword else currentUser.password
+            )
+
+            userViewModel.updateUserData(updatedUser)
+            Toast.makeText(requireContext(), "Datos actualizados correctamente.", Toast.LENGTH_SHORT).show()
         }
+    }
 
-        val user = User(
-            cedula = cedulaTextView.text.toString(),
-            nombre = nombreTextView.text.toString(),
-            apellidos = apellidosTextView.text.toString(),
-            email = emailTextView.text.toString(),
-            telefono = telefonoEditText.text.toString(),
-            agencia = agenciaSpinner.selectedItem.toString(),
-            subregion = subregionSpinner.selectedItem.toString(),
-            placaVehiculo = placaVehiculoSpinner.selectedItem.toString()
-        )
+    private fun setupSpinner(
+        spinner: Spinner,
+        items: List<String>,
+        onItemSelected: ((String) -> Unit)?
+    ) {
+        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, items)
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        spinner.adapter = adapter
 
-        userViewModel.updateUserData(user)
+        spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                val selectedItem = items[position]
+                onItemSelected?.invoke(selectedItem)
+            }
 
-        val newPassword = passwordEditText.text.toString()
-        if (newPassword.isNotEmpty()) {
-            userViewModel.updatePassword(newPassword)
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
-
-        Toast.makeText(requireContext(), "Datos actualizados correctamente", Toast.LENGTH_SHORT).show()
     }
 }

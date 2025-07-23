@@ -252,7 +252,7 @@ private fun finalizeRegistration() {
                     // Usar la cédula como ID del usuario en la base de datos
                     val userId = cedula // Aquí usamos la cédula como ID
 
-                    // Crear el objeto con los datos del usuario
+                    // Crear el objeto con los datos del usuario (sin el password)
                     val userData = hashMapOf(
                         "nombre" to nombre,
                         "apellidos" to apellidos,
@@ -260,7 +260,7 @@ private fun finalizeRegistration() {
                         "telefono" to telefono,
                         "subregion" to selectedSubregion,
                         "agencia" to selectedAgency,
-                        "placa_vehiculo" to selectedVehicle,
+                        "placa_vehiculo" to selectedVehicle, // Asegúrate de que este campo esté correctamente asignado
                         "cedula" to cedula
                     )
 
@@ -291,6 +291,7 @@ private fun finalizeRegistration() {
         showToast("Por favor, verifica que todos los campos están completos.")
     }
 }
+
 
 
 

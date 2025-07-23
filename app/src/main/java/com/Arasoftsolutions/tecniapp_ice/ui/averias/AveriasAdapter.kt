@@ -3,6 +3,7 @@ package com.Arasoftsolutions.tecniapp_ice.ui.averias
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.Arasoftsolutions.tecniapp_ice.R
@@ -14,19 +15,37 @@ data class Averia(
     val prioridad: String,
     val estado: String,
     val supervisor: String,
-    val ubicacion: String
+    val direccion: String,
+    val localizacion: String
 )
 
-class AveriasAdapter(private var averiasList: MutableList<Averia>) : RecyclerView.Adapter<AveriasAdapter.AveriaViewHolder>() {
+class AveriasAdapter(
+    private var averiasList: MutableList<Averia>,
+    private val onAveriaSelected: (Averia) -> Unit,
+    private val onAveriaAccepted: (Averia) -> Unit // Callback para aceptar la avería
+) : RecyclerView.Adapter<AveriasAdapter.AveriaViewHolder>() {
 
-    class AveriaViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+    inner class AveriaViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val descripcionAveria: TextView = itemView.findViewById(R.id.tvDescripcionAveria)
         val enviadoPor: TextView = itemView.findViewById(R.id.tvEnviadoPor)
         val fechaEnvio: TextView = itemView.findViewById(R.id.tvFechaEnvio)
         val prioridad: TextView = itemView.findViewById(R.id.tvPrioridad)
         val estado: TextView = itemView.findViewById(R.id.tvEstado)
         val supervisor: TextView = itemView.findViewById(R.id.tvSupervisor)
-        val ubicacion: TextView = itemView.findViewById(R.id.tvUbicacion)
+        val direccion: TextView = itemView.findViewById(R.id.tvUbicacion)
+        val localizacion: TextView = itemView.findViewById(R.id.tvLocalizacion)
+        val aceptarButton: Button = itemView.findViewById(R.id.btnAceptar)
+
+        init {
+            // Listener para seleccionar la avería
+            itemView.setOnClickListener {
+                onAveriaSelected(averiasList[adapterPosition])
+            }
+            // Listener para aceptar la avería
+            aceptarButton.setOnClickListener {
+                onAveriaAccepted(averiasList[adapterPosition])
+            }
+        }
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): AveriaViewHolder {
@@ -42,7 +61,8 @@ class AveriasAdapter(private var averiasList: MutableList<Averia>) : RecyclerVie
         holder.prioridad.text = "Prioridad: ${averia.prioridad}"
         holder.estado.text = "Estado: ${averia.estado}"
         holder.supervisor.text = "Supervisor: ${averia.supervisor}"
-        holder.ubicacion.text = "Ubicación: ${averia.ubicacion}"
+        holder.direccion.text = "Dirección: ${averia.direccion}"
+        holder.localizacion.text = "Localización: ${averia.localizacion}"
     }
 
     override fun getItemCount(): Int {

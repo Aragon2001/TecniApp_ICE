@@ -2,13 +2,19 @@ package com.Arasoftsolutions.tecniapp_ice.ui.localizacion
 
 import LocalizacionViewModel
 import android.Manifest
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
 import android.location.Location
 import android.net.Uri
 import android.os.Bundle
+import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import android.view.LayoutInflater
@@ -36,11 +42,12 @@ import com.google.android.gms.maps.MapView
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
+import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
 
-class LocalizacionFragment : Fragment(), OnMapReadyCallback {
+class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener {
 
     private lateinit var binding: FragmentLocalizacionBinding
     private lateinit var viewModel: LocalizacionViewModel
@@ -50,6 +57,13 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback {
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private val CLAVE_MAPA_VISTA_BUNDLE = "ClaveMapaVistaBundle"
     private val PERMISO_LOCALIZACION = 1000
+    private lateinit var sensorManager: SensorManager
+    private var rotationVectorSensor: Sensor? = null
+    private var isManualRotation = false // Indica si el usuario ha girado manualmente el mapa
+private var isCompassTouched = false // Indica si el usuario ha tocado la brújula
+private var isAutoRotateEnabled = true // Controla si la autorrotación está activa
+    private var userIsInteracting = false
+    private val handler = Handler(Looper.getMainLooper())
 
 
     override fun onCreateView(
@@ -255,43 +269,98 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback {
             compartirUbicacion()
         }
 
-        // Listener para el botón de compartir mostrar todas las calles
+        // Listener para el botón de mostrar todas las calles
         binding.buttonAll.setOnClickListener {
-           // cargarCallesDelPueblo()
+            //cargarCallesDelPueblo()
         }
+
+
     }
 
-    // Método para inicializar el mapa y gestionar el ciclo de vida del MapView
+       // Método para inicializar el mapa y gestionar el ciclo de vida del MapView
     private fun inicializarMapaVista(savedInstanceState: Bundle?) {
         val mapaVistaBundle: Bundle? = savedInstanceState?.getBundle(CLAVE_MAPA_VISTA_BUNDLE)
 
-        mapaVista = binding.mapView
+        mapaVista = binding.mapView // Asumiendo que estás utilizando View Binding
         mapaVista.onCreate(mapaVistaBundle)
-        mapaVista.getMapAsync(this)
+        mapaVista.getMapAsync(this) // Asignar el callback del mapa
     }
 
     // Este método se ejecuta cuando el mapa está listo
-    override fun onMapReady(mapa: GoogleMap) {
-        // Inicializa el mapa una vez que esté listo
-        mapaGoogle = mapa
+override fun onMapReady(mapa: GoogleMap) {
+    // Inicializa el mapa una vez que esté listo
+    mapaGoogle = mapa
 
-        // Configurar ventana de información personalizada (si es necesario)
-        configurarInfoWindowPersonalizado()
+    // Inicializar el SensorManager dentro de un Fragment
+    sensorManager = requireContext().getSystemService(Context.SENSOR_SERVICE) as SensorManager
 
-        // Configuración de los controles del mapa
-        with(mapaGoogle.uiSettings) {
-            isZoomControlsEnabled = true
-            isMyLocationButtonEnabled = true
-            isMapToolbarEnabled = true
-            isZoomGesturesEnabled = true
-            isTiltGesturesEnabled = true
-            isScrollGesturesEnabled = true
+    // Configurar el listener para detectar cambios manuales en la cámara
+    setupCameraChangeListener()
+
+    // Obtener el sensor de rotación
+    rotationVectorSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
+    if (rotationVectorSensor == null) {
+        Log.e("SensorError", "El sensor de rotación no está disponible")
+    } else {
+        Log.d("SensorInfo", "El sensor de rotación está disponible")
+    }
+
+    // Configurar ventana de información personalizada (si es necesario)
+    configurarInfoWindowPersonalizado()
+
+    // Configuración de los controles del mapa
+    with(mapaGoogle.uiSettings) {
+        isZoomControlsEnabled = true
+        isMyLocationButtonEnabled = true
+        isMapToolbarEnabled = true
+        isZoomGesturesEnabled = true
+        isTiltGesturesEnabled = true
+        isCompassEnabled = true
+        isRotateGesturesEnabled = true
+        isScrollGesturesEnabledDuringRotateOrZoom = true
+        isScrollGesturesEnabled = true
+    }
+
+    // Activar el tráfico en el mapa
+    mapaGoogle.isTrafficEnabled = true
+
+    // Configurar el tipo de mapa y el clic en el mapa
+    configurarTipoDeMapa()
+
+    // Verificar los permisos de ubicación y habilitar la ubicación en el mapa
+    verificarPermisosUbicacion()
+
+    // Inicializar el mapa en Costa Rica con un nivel de zoom adecuado
+    centrarMapaEnCostaRica()
+
+
+   // Configurar el listener para detectar cambios manuales en la cámara
+    configurarCameraMoveListener()
+
+    // Configurar comportamiento de la brújula
+    configurarBrújula()
+
+    // Configurar la rotación automática y brújula
+    configurarBrújulaYRotación()
+}
+
+
+    // Configurar el tipo de mapa y el clic en el mapa
+    private fun configurarTipoDeMapa() {
+        var isHybridMode = false
+        mapaGoogle.setOnMapClickListener {
+            // Cambiar entre modo normal y satélite al hacer clic en el mapa
+            mapaGoogle.mapType = if (isHybridMode) {
+                GoogleMap.MAP_TYPE_NORMAL
+            } else {
+                GoogleMap.MAP_TYPE_HYBRID
+            }
+            isHybridMode = !isHybridMode // Alternar el estado
         }
+    }
 
-        // Activar el tráfico en el mapa
-        mapaGoogle.isTrafficEnabled = true
-
-        // Verificar los permisos de ubicación
+    // Verificar permisos de ubicación
+    private fun verificarPermisosUbicacion() {
         if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
             ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
 
@@ -302,57 +371,71 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback {
             mapaGoogle.isMyLocationEnabled = true
             obtenerUbicacionActual()
         }
+    }
 
-        // Inicializar el mapa en Costa Rica con un nivel de zoom adecuado
+    // Centrar el mapa en Costa Rica
+    private fun centrarMapaEnCostaRica() {
         val costaRicaLatLng = LatLng(9.7489, -83.7534)  // Coordenadas de Costa Rica
         val zoomNivel = 7f  // Nivel de zoom
-
-        // Centrar el mapa en Costa Rica
         mapaGoogle.moveCamera(CameraUpdateFactory.newLatLngZoom(costaRicaLatLng, zoomNivel))
     }
 
 
-    private fun obtenerUbicacionActual() {
-        // Configuración para solicitar actualizaciones de ubicación
-        val locationRequest = com.google.android.gms.location.LocationRequest.Builder(
-            Priority.PRIORITY_HIGH_ACCURACY,  // Precisión alta
-            5000  // Intervalo de 5 segundos (ajústalo según tus necesidades)
-        ).apply {
-            setMinUpdateIntervalMillis(1000) // Mínimo 1 segundo entre actualizaciones
-            setMaxUpdateDelayMillis(10000) // Máximo 10 segundos de retraso
-        }.build()
+private val locationRequest = com.google.android.gms.location.LocationRequest.Builder(
+    Priority.PRIORITY_HIGH_ACCURACY,
+    1000  // Intervalo de 1 segundo entre actualizaciones
+).apply {
+    setMinUpdateIntervalMillis(1000) // Mínimo 1 segundo entre actualizaciones
+    setMaxUpdateDelayMillis(10000)   // Máximo 10 segundos de retraso
+}.build()
 
-        if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
-            ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            // Solicitar permisos de ubicación si no están concedidos
-            ActivityCompat.requestPermissions(requireActivity(), arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), PERMISO_LOCALIZACION)
-            return
+private val locationCallback = object : LocationCallback() {
+    override fun onLocationResult(locationResult: LocationResult) {
+        val location: Location? = locationResult.lastLocation
+        if (location != null) {
+            val ubicacionActual = LatLng(location.latitude, location.longitude)
+            // Mover la cámara a `ubicacionActual`
+        } else {
+            Toast.makeText(requireContext(), "No se pudo obtener la ubicación actual", Toast.LENGTH_SHORT).show()
         }
-
-        // Solicitar actualizaciones de ubicación en tiempo real
-        fusedLocationClient.requestLocationUpdates(locationRequest, object : LocationCallback() {
-            override fun onLocationResult(locationResult: LocationResult) {
-                super.onLocationResult(locationResult)
-                val location: Location? = locationResult.lastLocation
-                if (location != null) {
-                    // Mover la cámara a la ubicación actual
-                    val ubicacionActual = LatLng(location.latitude, location.longitude)
-
-                } else {
-                    // Mostrar mensaje si no se puede obtener la ubicación
-                    Toast.makeText(requireContext(), "No se pudo obtener la ubicación actual", Toast.LENGTH_SHORT).show()
-                }
-            }
-
-            override fun onLocationAvailability(locationAvailability: LocationAvailability) {
-                super.onLocationAvailability(locationAvailability)
-                if (!locationAvailability.isLocationAvailable) {
-                    // Mostrar mensaje si la ubicación no está disponible
-                    Toast.makeText(requireContext(), "La ubicación no está disponible", Toast.LENGTH_SHORT).show()
-                }
-            }
-        }, Looper.getMainLooper())
     }
+
+    override fun onLocationAvailability(locationAvailability: LocationAvailability) {
+        if (!locationAvailability.isLocationAvailable) {
+            Toast.makeText(requireContext(), "La ubicación no está disponible", Toast.LENGTH_SHORT).show()
+        }
+    }
+}
+
+    private fun obtenerUbicacionActual() {
+    if (ActivityCompat.checkSelfPermission(
+            requireContext(),
+            Manifest.permission.ACCESS_FINE_LOCATION
+        ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
+            requireContext(),
+            Manifest.permission.ACCESS_COARSE_LOCATION
+        ) != PackageManager.PERMISSION_GRANTED
+    ) {
+        ActivityCompat.requestPermissions(
+            requireActivity(),
+            arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
+            PERMISO_LOCALIZACION
+        )
+        return
+    }
+
+    fusedLocationClient.requestLocationUpdates(
+        locationRequest,
+        locationCallback,
+        Looper.getMainLooper()
+    )
+}
+
+private fun detenerUbicacion() {
+    fusedLocationClient.removeLocationUpdates(locationCallback)
+}
+
+
 
     // Método para redimensionar el ícono del marcador
     private fun redimensionarIcono(drawableRes: Int, ancho: Int, alto: Int): BitmapDescriptor {
@@ -548,6 +631,129 @@ val numeroPoste=viewModel.localizacion.value?.delPoste
     }
 }
 
+    private fun configurarBrújula() {
+        mapaGoogle.setOnCameraIdleListener {
+            // Si el mapa está orientado al norte (bearing == 0) y la brújula fue tocada, desactiva la autorrotación
+            if (mapaGoogle.cameraPosition.bearing == 0f) {
+                isCompassTouched = true
+                isAutoRotateEnabled = false // Desactiva la autorrotación solo al tocar la brújula
+                Log.d("Compass", "La brújula fue tocada. Autorrotación desactivada.")
+            }
+        }
+    }
+
+
+
+
+
+private fun configurarBrújulaYRotación() {
+    // Listener para detectar movimientos de la cámara
+    mapaGoogle.setOnCameraMoveListener {
+        val currentBearing = mapaGoogle.cameraPosition.bearing
+
+        // Si el usuario ha girado manualmente el mapa (bearing > 1), activar la autorrotación
+        if (Math.abs(currentBearing) > 1 && !userIsInteracting) {
+            isAutoRotateEnabled = true // Activa la autorrotación al girar el mapa
+            Log.d("AutoRotate", "Autorrotación activada al girar manualmente el mapa.")
+        }
+    }
+
+    // Listener para cuando la cámara está inactiva (brújula o fin del gesto)
+    mapaGoogle.setOnCameraIdleListener {
+        val currentBearing = mapaGoogle.cameraPosition.bearing
+
+        // Si el mapa está orientado al norte (cerca de 0°), desactiva la autorrotación
+        if (Math.abs(currentBearing) < 1 && isCompassTouched) {
+            isAutoRotateEnabled = false
+            isCompassTouched = false // Reinicia el estado de la brújula
+            Log.d("AutoRotate", "Autorrotación desactivada al presionar la brújula.")
+        }
+    }
+}
+
+
+
+
+  private fun configurarCameraMoveListener() {
+    mapaGoogle.setOnCameraMoveStartedListener { reason ->
+        if (reason == GoogleMap.OnCameraMoveStartedListener.REASON_GESTURE) {
+            userIsInteracting = true
+            isAutoRotateEnabled = false // Desactiva la autorrotación durante la interacción manual
+            Log.d("MapInteraction", "Interacción manual detectada. Autorrotación desactivada.")
+        }
+    }
+
+    mapaGoogle.setOnCameraIdleListener {
+        if (userIsInteracting) {
+            userIsInteracting = false
+            // Después de la interacción manual, activa la autorrotación si no se tocó la brújula
+            handler.postDelayed({
+                if (!isCompassTouched) {
+                    isAutoRotateEnabled = true
+                    Log.d("MapInteraction", "Autorrotación reactivada después de la interacción manual.")
+                }
+            }, 3000) // 3 segundos de espera
+        }
+    }
+}
+
+
+
+
+    override fun onSensorChanged(event: SensorEvent?) {
+        if (event != null && event.sensor.type == Sensor.TYPE_ROTATION_VECTOR && isAutoRotateEnabled && !isCompassTouched) {
+            val rotationMatrix = FloatArray(9)
+            SensorManager.getRotationMatrixFromVector(rotationMatrix, event.values)
+
+            val orientationAngles = FloatArray(3)
+            SensorManager.getOrientation(rotationMatrix, orientationAngles)
+
+            val bearing = Math.toDegrees(orientationAngles[0].toDouble()).toFloat()
+
+            val currentBearing = mapaGoogle.cameraPosition.bearing
+            // Solo actualiza si el cambio es significativo y no hay interacción manual
+            if (Math.abs(currentBearing - bearing) > 1 && !userIsInteracting) {
+                val cameraPosition = CameraPosition.Builder()
+                    .target(mapaGoogle.cameraPosition.target)
+                    .zoom(mapaGoogle.cameraPosition.zoom)
+                    .bearing(bearing)
+                    .build()
+
+                mapaGoogle.moveCamera(CameraUpdateFactory.newCameraPosition(cameraPosition))
+            }
+        }
+    }
+
+
+
+    // Método para alternar la autorrotación manualmente (puedes llamarlo desde algún botón si lo deseas)
+private fun toggleAutoRotate() {
+    isAutoRotateEnabled = !isAutoRotateEnabled
+    if (isAutoRotateEnabled) {
+        // Restablecer la cámara al último bearing
+        val cameraPosition = CameraPosition.Builder()
+            .target(mapaGoogle.cameraPosition.target)
+            .zoom(mapaGoogle.cameraPosition.zoom)
+            .bearing(mapaGoogle.cameraPosition.bearing) // Mantener la orientación actual
+            .build()
+        mapaGoogle.moveCamera(CameraUpdateFactory.newCameraPosition(cameraPosition))
+    }
+}
+
+// Método para configurar el listener de cambios en la cámara (para detectar la brújula)
+private fun setupCameraChangeListener() {
+    mapaGoogle.setOnCameraMoveListener {
+        // Detectar si el bearing es cercano a 0 (norte), lo que indica que se presionó la brújula
+        val currentBearing = mapaGoogle.cameraPosition.bearing
+        if (Math.abs(currentBearing) < 1) {
+            // Si el mapa está orientado al norte, desactivar la autorrotación
+            isAutoRotateEnabled = false
+        }
+    }
+}
+
+
+
 
   override fun onStart() {
     super.onStart()
@@ -557,11 +763,18 @@ val numeroPoste=viewModel.localizacion.value?.delPoste
 override fun onResume() {
     super.onResume()
     mapaVista.onResume()
-}
+    obtenerUbicacionActual()
+       rotationVectorSensor?.let {
+            sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_UI)
+
+}}
 
 override fun onPause() {
     super.onPause()
     mapaVista.onPause()
+    detenerUbicacion()
+    fusedLocationClient.removeLocationUpdates(locationCallback)
+        sensorManager.unregisterListener(this)
 }
 
 override fun onStop() {
@@ -578,6 +791,30 @@ override fun onLowMemory() {
     super.onLowMemory()
     mapaVista.onLowMemory()
 }
+     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
+    // Puedes manejar cambios en la precisión del sensor aquí
+    when (accuracy) {
+        SensorManager.SENSOR_STATUS_NO_CONTACT -> {
+            Log.w("SensorAccuracy", "Sin contacto con el sensor")
+        }
+        SensorManager.SENSOR_STATUS_UNRELIABLE -> {
+            Log.w("SensorAccuracy", "Precisión no confiable del sensor")
+        }
+
+        SensorManager.SENSOR_STATUS_ACCURACY_LOW -> {
+            Log.i("SensorAccuracy", "Precisión baja del sensor")
+        }
+        SensorManager.SENSOR_STATUS_ACCURACY_MEDIUM -> {
+            Log.i("SensorAccuracy", "Precisión media del sensor")
+        }
+        SensorManager.SENSOR_STATUS_ACCURACY_HIGH -> {
+            Log.i("SensorAccuracy", "Precisión alta del sensor")
+        }
+        else -> {
+            Log.d("SensorAccuracy", "Precisión desconocida")
+        }
+    }
+}
 
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -585,5 +822,6 @@ override fun onLowMemory() {
         val mapaVistaBundle = outState.getBundle(CLAVE_MAPA_VISTA_BUNDLE) ?: Bundle()
         mapaVista.onSaveInstanceState(mapaVistaBundle)
         outState.putBundle(CLAVE_MAPA_VISTA_BUNDLE, mapaVistaBundle)
+
     }
 }

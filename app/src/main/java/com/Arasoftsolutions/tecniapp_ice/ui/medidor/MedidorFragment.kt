@@ -55,27 +55,28 @@ class MedidorFragment : Fragment() {
 
     private fun consultarMedidor(medidorNumber: String) {
         val database = FirebaseDatabase.getInstance("https://tecniapp-ice-default-rtdb.firebaseio.com/")
-        val ref = database.getReference("Medidores")
+        val ref = database.getReference("Medidores/Medidores/SubRegion Guapiles")
 
-        ref.orderByChild("Medidor").equalTo(medidorNumber.toDouble()).addListenerForSingleValueEvent(object : ValueEventListener {
+        // Acceder a la ruta correcta, usando el medidorNumber como clave
+        ref.child(medidorNumber).addListenerForSingleValueEvent(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 binding.progressBar.visibility = View.GONE // Oculta el ProgressBar
                 if (snapshot.exists()) {
-                    for (medidorSnapshot in snapshot.children) {
-                        val cliente = medidorSnapshot.child("Cliente").getValue(String::class.java)
-                        val localizacion = medidorSnapshot.child("Localización").getValue(String::class.java)
-                        val pueblo = medidorSnapshot.child("Pueblo").getValue(String::class.java)
-                        val calle = medidorSnapshot.child("Calle").getValue(String::class.java)
-                        val poste = medidorSnapshot.child("Poste").getValue(String::class.java)
-                        val metros = medidorSnapshot.child("Metros").getValue(String::class.java)
+                    // Obtener los valores directamente desde la clave del medidor
+                    val cliente = snapshot.child("Cliente").getValue(String::class.java)
+                    val localizacion = snapshot.child("Localización").getValue(Long::class.java)?.toString()
+                    val pueblo = snapshot.child("Pueblo").getValue(String::class.java)
+                    val calle = snapshot.child("Calle").getValue(String::class.java)
+                    val poste = snapshot.child("Poste").getValue(String::class.java)
+                    val metros = snapshot.child("Metros").getValue(String::class.java)
 
-                        binding.txtCliente.text = "$cliente"
-                        binding.txtLocation.text = "$localizacion"
-                        binding.txtPueblo.text = "$pueblo"
-                        binding.txtCalle.text = "$calle"
-                        binding.txtPoste.text = "$poste"
-                        binding.txtMetros.text = "$metros"
-                    }
+                    // Actualizar la UI con los datos obtenidos
+                    binding.txtCliente.text = cliente ?: "No disponible"
+                    binding.txtLocation.text = localizacion ?: "No disponible"
+                    binding.txtPueblo.text = pueblo ?: "No disponible"
+                    binding.txtCalle.text = calle ?: "No disponible"
+                    binding.txtPoste.text = poste ?: "No disponible"
+                    binding.txtMetros.text = metros ?: "No disponible"
                 } else {
                     binding.editTextNumber.error = "Medidor no encontrado"
                 }
@@ -87,6 +88,7 @@ class MedidorFragment : Fragment() {
             }
         })
     }
+
 
     private fun copyInfoToClipboard() {
         val clipboard = ContextCompat.getSystemService(requireContext(), ClipboardManager::class.java)

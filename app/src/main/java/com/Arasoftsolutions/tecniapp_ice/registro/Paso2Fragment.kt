@@ -1,7 +1,9 @@
 package com.Arasoftsolutions.tecniapp_ice.registro
 
+import MailSender
 import android.os.Bundle
 import android.text.TextUtils
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -15,7 +17,6 @@ import com.Arasoftsolutions.tecniapp_ice.RegistroActivity
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
 import android.widget.TextView
-import com.Arasoftsolutions.tecniapp_ice.MailSender
 import com.google.firebase.database.FirebaseDatabase
 
 class Paso2Fragment : Fragment() {
@@ -138,15 +139,16 @@ class Paso2Fragment : Fragment() {
         // Guardar el nuevo código en la base de datos
         saveVerificationCode(email, newVerificationCode)
 
-        // Enviar el nuevo código por correo
+        // Crear el mensaje HTML con el código de verificación
         val message = """
-            <html>
-                <body style="font-family: Arial, sans-serif; padding: 20px;">
-                    <h2 style="color: #004C8C;">TecniApp - Verificación de Cuenta</h2>
+        <html>
+            <body style="font-family: Arial, sans-serif; padding: 20px; background-color: #f4f7fc;">
+                <div style="background-color: #ffffff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">
+                    <h2 style="color: #004C8C; text-align: center;">TecniApp - Verificación de Cuenta</h2>
                     <p>Hola,</p>
                     <p>Tu código de verificación ha sido reenviado. Usa el siguiente código para completar tu registro:</p>
-                    <div style="text-align: center; margin: 20px 0;">
-                        <span style="font-size: 24px; color: #FF6200EE; font-weight: bold;">$newVerificationCode</span>
+                    <div style="text-align: center; background-color: #FF6200EE; color: #ffffff; font-size: 28px; font-weight: bold; padding: 15px; border-radius: 8px; margin: 20px 0; letter-spacing: 2px;">
+                        $newVerificationCode
                     </div>
                     <p>Si no solicitaste este código, por favor ignora este correo.</p>
                     <p>Gracias,</p>
@@ -156,14 +158,24 @@ class Paso2Fragment : Fragment() {
                         <p>TecniApp Soluciones Integrales</p>
                         <p>© 2024 Arasoft Solutions</p>
                     </footer>
-                </body>
-            </html>
-        """.trimIndent()
+                </div>
+            </body>
+        </html>
+    """.trimIndent()
 
-        val mailSender = MailSender("arasoftsolutions@outlook.com", "Jeab2024*") // Reemplaza con tus credenciales
-        mailSender.sendMail("Código de Verificación - TecniApp", message, email)
-
-        showToast("Código de verificación reenviado al correo.")
+        // Crear el objeto MailSender y enviar el correo
+        val mailSender = MailSender()
+        mailSender.sendFormattedMail(
+            subject = "Verificación de cuenta TecniApp",
+            body = message,
+            to = email
+        ) { success, errorMessage ->
+            if (success) {
+                Log.d("Registro", "Correo Reenviado exitosamente.")
+            } else {
+                Log.e("Registro", "Error al Reenviar el correo: $errorMessage")
+            }
+        }
     }
 
     private fun saveVerificationCode(email: String, verificationCode: String) {

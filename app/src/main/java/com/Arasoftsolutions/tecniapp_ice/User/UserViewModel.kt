@@ -21,7 +21,6 @@ data class User(
 
 class UserViewModel : ViewModel() {
 
-    // LiveData para las listas de datos
     private val _subregions = MutableLiveData<List<String>>()
     val subregions: LiveData<List<String>> get() = _subregions
 
@@ -34,23 +33,25 @@ class UserViewModel : ViewModel() {
     private val _userData = MutableLiveData<User>()
     val userData: LiveData<User> get() = _userData
 
+    private val _error = MutableLiveData<String>()
+    val error: LiveData<String> get() = _error
+
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
 
-    // Referencias a la base de datos
     private val subregionsDatabase: DatabaseReference = FirebaseDatabase.getInstance("https://tecniapp-ice-datosgenerales.firebaseio.com").getReference("subregiones")
     private val agenciesDatabase: DatabaseReference = FirebaseDatabase.getInstance("https://tecniapp-ice-datosgenerales.firebaseio.com").getReference("agencias")
     private val vehiclesDatabase: DatabaseReference = FirebaseDatabase.getInstance("https://tecniapp-ice-datosgenerales.firebaseio.com").getReference("vehiculos")
     private val usersDatabase: DatabaseReference = FirebaseDatabase.getInstance("https://tecniapp-ice-user.firebaseio.com").getReference("usuarios")
 
-    // Método para cargar subregiones
+    // Cargar subregiones
     fun loadSubregions() {
         subregionsDatabase.addListenerForSingleValueEvent(object : ValueEventListener {
             override fun onDataChange(dataSnapshot: DataSnapshot) {
                 val subregionList = mutableListOf("Seleccione una Subregion")
                 for (subregionSnapshot in dataSnapshot.children) {
                     val subregionName = subregionSnapshot.child("nombre").getValue(String::class.java)
-                    if (subregionName != null) {
-                        subregionList.add(subregionName)
+                    subregionName?.let {
+                        subregionList.add(it)
                     }
                 }
                 _subregions.value = subregionList
@@ -58,20 +59,21 @@ class UserViewModel : ViewModel() {
             }
 
             override fun onCancelled(databaseError: DatabaseError) {
+                _error.postValue("Error al cargar subregiones: ${databaseError.message}")
                 Log.e("UserViewModel", "Error al cargar subregiones: ${databaseError.message}")
             }
         })
     }
 
-    // Método para cargar agencias
+    // Cargar agencias
     fun loadAgencies(selectedSubregion: String) {
         agenciesDatabase.orderByChild("subregion").equalTo(selectedSubregion).addListenerForSingleValueEvent(object : ValueEventListener {
             override fun onDataChange(dataSnapshot: DataSnapshot) {
                 val agencyList = mutableListOf("Seleccione una Agencia")
                 for (agencySnapshot in dataSnapshot.children) {
                     val agencyName = agencySnapshot.child("nombre").getValue(String::class.java)
-                    if (agencyName != null) {
-                        agencyList.add(agencyName)
+                    agencyName?.let {
+                        agencyList.add(it)
                     }
                 }
                 _agencies.value = agencyList
@@ -79,20 +81,21 @@ class UserViewModel : ViewModel() {
             }
 
             override fun onCancelled(databaseError: DatabaseError) {
+                _error.postValue("Error al cargar agencias: ${databaseError.message}")
                 Log.e("UserViewModel", "Error al cargar agencias: ${databaseError.message}")
             }
         })
     }
 
-    // Método para cargar vehículos
+    // Cargar vehículos
     fun loadVehicles(selectedAgency: String) {
         vehiclesDatabase.orderByChild("agencia").equalTo(selectedAgency).addListenerForSingleValueEvent(object : ValueEventListener {
             override fun onDataChange(dataSnapshot: DataSnapshot) {
                 val vehicleList = mutableListOf("Seleccione un Vehículo")
                 for (vehicleSnapshot in dataSnapshot.children) {
                     val vehiclePlate = vehicleSnapshot.child("placa").getValue(String::class.java)
-                    if (vehiclePlate != null) {
-                        vehicleList.add(vehiclePlate)
+                    vehiclePlate?.let {
+                        vehicleList.add(it)
                     }
                 }
                 _vehicles.value = vehicleList
@@ -100,32 +103,55 @@ class UserViewModel : ViewModel() {
             }
 
             override fun onCancelled(databaseError: DatabaseError) {
+                _error.postValue("Error al cargar vehículos: ${databaseError.message}")
                 Log.e("UserViewModel", "Error al cargar vehículos: ${databaseError.message}")
             }
         })
     }
 
-
-
-    // Método para actualizar datos del usuario
+    // Actualizar datos del usuario
     fun updateUserData(user: User) {
         usersDatabase.child(user.cedula).setValue(user)
             .addOnSuccessListener {
-                _userData.value = user // Actualiza los datos del usuario en el LiveData
+                _userData.value = user
                 Log.d("UserViewModel", "Datos del usuario actualizados: $user")
             }
             .addOnFailureListener {
+                _error.postValue("Error al actualizar datos del usuario: ${it.message}")
                 Log.e("UserViewModel", "Error al actualizar datos del usuario: ${it.message}")
             }
     }
 
-    // Método para actualizar contraseña
+    fun loadCurrentUser(email: String) {
+        usersDatabase.orderByChild("email").equalTo(email).addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                if (snapshot.exists()) {
+                    val user = snapshot.children.firstOrNull()?.getValue(User::class.java)
+                    user?.let {
+                        _userData.postValue(it)
+                        Log.d("UserViewModel", "Datos del usuario cargados: $it")
+                    }
+                } else {
+                    _error.postValue("Usuario no encontrado con email: $email")
+                    Log.w("UserViewModel", "Usuario no encontrado con email: $email")
+                }
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                _error.postValue("Error al cargar datos del usuario: ${error.message}")
+                Log.e("UserViewModel", "Error al cargar datos del usuario: ${error.message}")
+            }
+        })
+    }
+
+    // Actualizar contraseña
     fun updatePassword(newPassword: String) {
         val user = auth.currentUser
         user?.updatePassword(newPassword)?.addOnCompleteListener { task ->
             if (task.isSuccessful) {
                 Log.d("UserViewModel", "Contraseña actualizada correctamente")
             } else {
+                _error.postValue("Error al actualizar contraseña: ${task.exception?.message}")
                 Log.e("UserViewModel", "Error al actualizar contraseña: ${task.exception?.message}")
             }
         }

@@ -1,5 +1,6 @@
 package com.Arasoftsolutions.tecniapp_ice
 
+
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
@@ -11,25 +12,27 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.drawerlayout.widget.DrawerLayout
-import androidx.lifecycle.ViewModelProvider
-import com.google.android.material.navigation.NavigationView
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.navigateUp
 import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
-import com.Arasoftsolutions.tecniapp_ice.User.UserViewModel
-import com.Arasoftsolutions.tecniapp_ice.User.User
+import com.Arasoftsolutions.tecniapp_ice.Database.Synchronizer
+import com.Arasoftsolutions.tecniapp_ice.Database.TecniAppDatabaseHelper
 import com.Arasoftsolutions.tecniapp_ice.databinding.ActivityMainBinding
+import com.google.android.material.navigation.NavigationView
 import com.google.firebase.auth.FirebaseAuth
-import com.squareup.picasso.Picasso
+import kotlinx.coroutines.launch
+
 
 class ActivityMain : AppCompatActivity() {
 
     private lateinit var appBarConfiguration: AppBarConfiguration
     private lateinit var binding: ActivityMainBinding
     private lateinit var auth: FirebaseAuth
-    private lateinit var userViewModel: UserViewModel
+    private lateinit var dbHelper: TecniAppDatabaseHelper
+    private lateinit var synchronizer: Synchronizer
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -44,8 +47,18 @@ class ActivityMain : AppCompatActivity() {
         // Inicializar FirebaseAuth
         auth = FirebaseAuth.getInstance()
 
-        // Inicializar UserViewModel
-        userViewModel = ViewModelProvider(this).get(UserViewModel::class.java)
+       // updateNavHeader()
+
+        // Inicializar el helper de base de datos
+        dbHelper = TecniAppDatabaseHelper(this)
+
+        // Inicializar el Synchronizer
+        synchronizer = Synchronizer(applicationContext)
+
+        // Iniciar la sincronización de datos
+        lifecycleScope.launch {
+            synchronizer.initialize() // Esto llamará a la sincronización de datos
+        }
 
         // Configurar DrawerLayout y NavigationView
         val drawerLayout: DrawerLayout = binding.drawerLayout
@@ -63,36 +76,36 @@ class ActivityMain : AppCompatActivity() {
         setupActionBarWithNavController(navController, appBarConfiguration)
         navView.setupWithNavController(navController)
 
-        // Cargar datos del usuario al iniciar la actividad
-        val currentUser = auth.currentUser
-        currentUser?.let {
-            // Llamar al ViewModel para obtener los datos del usuario
-            userViewModel.userData.observe(this) { usuario ->
-                // Actualizar el encabezado de la navegación con los datos del usuario
-                updateNavHeader(usuario)
-            }
+        // Cargar los datos del usuario desde la base de datos local
+        loadUserDataFromDatabase()
+    }
+
+    private fun loadUserDataFromDatabase() {
+        // Obtener los datos del usuario desde la base de datos local
+        val usuario = dbHelper.getUser() // Asegúrate de que esta función esté implementada en tu helper de base de datos
+
+        // Si el usuario existe, actualizar el nav header con sus datos
+        usuario?.let {
+            Log.d("ActivityMain", "Datos del usuario: ${it.nombre}, ${it.apellidos}, ${it.email}")
+            updateNavHeader(it)
+        } ?: run {
+            Log.e("ActivityMain", "Usuario no encontrado en la base de datos local.")
         }
     }
 
-    private fun updateNavHeader(usuario: User) {
-        // Obtener la vista del encabezado de la navegación
-        val headerView: View = binding.navView.getHeaderView(0)
-        val profileImageView = headerView.findViewById<ImageView>(R.id.imageViewProfile)
-        val fullNameTextView = headerView.findViewById<TextView>(R.id.textViewFullName)
-        val emailTextView = headerView.findViewById<TextView>(R.id.textViewEmail)
-        val vehiculoTextView = headerView.findViewById<TextView>(R.id.textViewVehiculo)
+    private fun updateNavHeader(usuario: com.Arasoftsolutions.tecniapp_ice.Database.Tablas.User) {
+        runOnUiThread {
+            val headerView: View = binding.navView.getHeaderView(0)
+            val profileImageView = headerView.findViewById<ImageView>(R.id.imageViewProfile)
+            val fullNameTextView = headerView.findViewById<TextView>(R.id.textViewFullName)
+            val emailTextView = headerView.findViewById<TextView>(R.id.textViewEmail)
+            val vehiculoTextView = headerView.findViewById<TextView>(R.id.textViewVehiculo)
 
-        // Cargar la imagen de perfil
-        if (auth.currentUser?.photoUrl != null) {
-            Picasso.get().load(auth.currentUser?.photoUrl).into(profileImageView)
-        } else {
-            profileImageView.setImageResource(R.drawable.default_profile_picture)
+            // Actualizar los TextViews con los datos del usuario
+            fullNameTextView.text = "${usuario.nombre} ${usuario.apellidos}"
+            emailTextView.text = usuario.email
+            vehiculoTextView.text = "Vehículo: ${usuario.placaVehiculo ?: "No disponible"}"
         }
-
-        // Actualizar los TextViews con los datos del usuario del ViewModel
-        fullNameTextView.text = "${usuario.nombre} ${usuario.apellidos}"
-        emailTextView.text = usuario.email
-        vehiculoTextView.text = "Vehículo: ${usuario.placaVehiculo ?: "No disponible"}"
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -125,7 +138,13 @@ class ActivityMain : AppCompatActivity() {
         // Cerrar sesión de Firebase
         auth.signOut()
 
-        // Verificar si el usuario ha cerrado sesión
+        // Limpiar datos de SharedPreferences
+        getSharedPreferences("TecniAppPrefs", MODE_PRIVATE).edit().apply {
+            clear()
+            apply()
+        }
+
+        // Verificar si el usuario ha cerrado sesión correctamente
         if (auth.currentUser == null) {
             Toast.makeText(this, "Sesión cerrada correctamente", Toast.LENGTH_SHORT).show()
         } else {
@@ -133,12 +152,12 @@ class ActivityMain : AppCompatActivity() {
             return
         }
 
-        // Redirigir a LoginActivity
-        val intent = Intent(this, LoginActivity::class.java)
-        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        // Redirigir a LoginActivity y limpiar la pila de actividades
+        val intent = Intent(this, LoginActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
         startActivity(intent)
 
-        // Cerrar la actividad actual
         Log.d("ActivityMain", "Cerrando sesión y redirigiendo a LoginActivity")
         finish()
     }

@@ -35,12 +35,12 @@
                 android:id="@+id/tvNombre"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Nombre del Usuario"
-                android:textSize="22sp"
-                android:textColor="@color/ice_blue_dark"
-                android:textStyle="bold"
+                android:layout_gravity="center"
                 android:layout_marginTop="16dp"
-                android:layout_gravity="center" />
+                android:text="Nombre del Usuario"
+                android:textColor="@color/ice_blue_dark"
+                android:textSize="22sp"
+                android:textStyle="bold" />
 
             <!-- Identificación del usuario -->
             <TextView

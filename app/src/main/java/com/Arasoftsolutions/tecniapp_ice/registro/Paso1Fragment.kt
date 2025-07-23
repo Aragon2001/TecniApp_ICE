@@ -1,5 +1,6 @@
 package com.Arasoftsolutions.tecniapp_ice.registro
 
+import MailSender
 import android.os.Bundle
 import android.text.TextUtils
 import android.util.Log
@@ -11,7 +12,7 @@ import android.widget.TextView
 import androidx.activity.addCallback
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
-import com.Arasoftsolutions.tecniapp_ice.MailSender
+import androidx.lifecycle.lifecycleScope
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textview.MaterialTextView
@@ -20,6 +21,7 @@ import com.Arasoftsolutions.tecniapp_ice.RegistroActivity
 import com.google.android.material.checkbox.MaterialCheckBox
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
+import kotlinx.coroutines.launch
 
 class Paso1Fragment : Fragment() {
 
@@ -49,7 +51,11 @@ class Paso1Fragment : Fragment() {
         setNavigationListeners(view)
 
         // Configurar el CheckBox para mostrar/ocultar contraseñas
-        checkBoxShowPassword.setOnCheckedChangeListener { _, isChecked -> togglePasswordVisibility(isChecked) }
+        checkBoxShowPassword.setOnCheckedChangeListener { _, isChecked ->
+            togglePasswordVisibility(
+                isChecked
+            )
+        }
 
         // Botón continuar
         view.findViewById<MaterialButton>(R.id.btnContinueToStep2).setOnClickListener {
@@ -87,7 +93,8 @@ class Paso1Fragment : Fragment() {
     }
 
     private fun togglePasswordVisibility(isChecked: Boolean) {
-        val transformationMethod = if (isChecked) null else android.text.method.PasswordTransformationMethod.getInstance()
+        val transformationMethod =
+            if (isChecked) null else android.text.method.PasswordTransformationMethod.getInstance()
         etPassword.transformationMethod = transformationMethod
         etConfirmPassword.transformationMethod = transformationMethod
         etPassword.setSelection(etPassword.text?.length ?: 0)
@@ -148,42 +155,56 @@ class Paso1Fragment : Fragment() {
     private fun isPhoneNumberValid(phoneNumber: String) = phoneNumber.length >= 8
 
     private fun isEmailValid(email: String): Boolean {
-        return !TextUtils.isEmpty(email) && android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches() && email.endsWith("@ice.go.cr")
+        return !TextUtils.isEmpty(email) && android.util.Patterns.EMAIL_ADDRESS.matcher(email)
+            .matches() && email.endsWith("@ice.go.cr")
     }
 
     private fun isPasswordValid(password: String) = password.length >= 8
 
     private fun checkIfUserExists(email: String, phoneNumber: String) {
-        val databaseRef = FirebaseDatabase.getInstance("https://tecniapp-ice-user.firebaseio.com/")
-            .reference.child("usuarios")
+        val databaseRef =
+            FirebaseDatabase.getInstance("https://tecniapp-ice-user.firebaseio.com/").reference.child(
+                "usuarios"
+            )
 
         databaseRef.orderByChild("email").equalTo(email).get().addOnCompleteListener { emailTask ->
-            if (emailTask.isSuccessful) {
-                if (emailTask.result.exists()) {
-                    tvEmailError.text = "El correo ya está registrado."
-                    tvEmailError.visibility = View.VISIBLE
+            if (view != null && isAdded) { // Asegurarse de que el fragmento está activo
+                if (emailTask.isSuccessful) {
+                    if (emailTask.result.exists()) {
+                        tvEmailError.text = "El correo ya está registrado."
+                        tvEmailError.visibility = View.VISIBLE
+                    } else {
+                        checkPhoneNumber(databaseRef, phoneNumber)
+                    }
                 } else {
-                    checkPhoneNumber(databaseRef, phoneNumber)
+                    Log.e(
+                        "Firebase",
+                        "Error al verificar el correo: ${emailTask.exception?.message}"
+                    )
                 }
-            } else {
-                Log.e("Firebase", "Error al verificar el correo: ${emailTask.exception?.message}")
             }
         }
     }
 
     private fun checkPhoneNumber(databaseRef: DatabaseReference, phoneNumber: String) {
-        databaseRef.orderByChild("telefono").equalTo(phoneNumber).get().addOnCompleteListener { phoneTask ->
-            if (phoneTask.isSuccessful) {
-                if (phoneTask.result.exists()) {
-                    tvPhoneError.text = "El número de teléfono ya está registrado."
-                    tvPhoneError.visibility = View.VISIBLE
-                } else {
-                    continueToNextStep(etEmail.text.toString().trim(), phoneNumber)
+        databaseRef.orderByChild("telefono").equalTo(phoneNumber).get()
+            .addOnCompleteListener { phoneTask ->
+                if (view != null && isAdded) { // Asegurarse de que el fragmento está activo
+                    if (phoneTask.isSuccessful) {
+                        if (phoneTask.result.exists()) {
+                            tvPhoneError.text = "El número de teléfono ya está registrado."
+                            tvPhoneError.visibility = View.VISIBLE
+                        } else {
+                            continueToNextStep(etEmail.text.toString().trim(), phoneNumber)
+                        }
+                    } else {
+                        Log.e(
+                            "Firebase",
+                            "Error al verificar el teléfono: ${phoneTask.exception?.message}"
+                        )
+                    }
                 }
-            } else {
-                Log.e("Firebase", "Error al verificar el teléfono: ${phoneTask.exception?.message}")
             }
-        }
     }
 
     private fun continueToNextStep(email: String, phoneNumber: String) {
@@ -203,38 +224,68 @@ class Paso1Fragment : Fragment() {
         val verificationCode = (100000..999999).random().toString()
         saveVerificationCode(email, verificationCode)
 
-        sendEmail(email, verificationCode)
+        // Ejecutar la tarea de envío de correo en el lifecycleScope para asegurar que no se ejecute fuera del ciclo de vida del fragmento
+        lifecycleScope.launch {
+            sendVerificationEmail(email, verificationCode)
+        }
     }
 
     private fun saveVerificationCode(email: String, verificationCode: String) {
-        val databaseRef = FirebaseDatabase.getInstance("https://tecniapp-ice-user.firebaseio.com/")
-            .reference.child("verificationCodes").child(email.replace(".", ","))
+        val databaseRef =
+            FirebaseDatabase.getInstance("https://tecniapp-ice-user.firebaseio.com/").reference.child(
+                "verificationCodes"
+            ).child(email.replace(".", ","))
         databaseRef.setValue(verificationCode)
     }
 
-    private fun sendEmail(email: String, verificationCode: String) {
-        val message = """
-            <html>
-                <body style="font-family: Arial, sans-serif; padding: 20px;">
-                    <h2 style="color: #004C8C;">TecniApp - Verificación de Cuenta</h2>
-                    <p>Hola,</p>
-                    <p>Gracias por registrarte en <b>TecniApp Soluciones Integrales</b>. Para completar tu registro, por favor usa el siguiente código de verificación:</p>
-                    <div style="text-align: center; margin: 20px 0;">
-                        <span style="font-size: 24px; color: #FF6200EE; font-weight: bold;">$verificationCode</span>
-                    </div>
-                    <p>Si no solicitaste este código, por favor ignora este correo.</p>
-                    <p>Gracias,</p>
-                    <p>El equipo de TecniApp</p>
-                    <hr />
-                    <footer style="text-align: center; font-size: 12px; color: #777;">
-                        <p>TecniApp Soluciones Integrales</p>
-                        <p>© 2024 Arasoft Solutions</p>
-                    </footer>
-                </body>
-            </html>
-        """.trimIndent()
+    private fun sendVerificationEmail(email: String, verificationCode: String) {
+        // Validar correo antes de enviar
+        if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            Log.e("Registro", "Correo no válido: $email")
+            return
+        }
 
-        val mailSender = MailSender("arasoftsolutions@outlook.com", "Jeab2024*")
-        mailSender.sendMail("Código de Verificación - TecniApp", message, email)
+        // Crear el mensaje en formato HTML con un diseño más atractivo
+        val message = """
+    <html>
+        <body style="font-family: Arial, sans-serif; padding: 20px; background-color: #f4f7fc;">
+            <div style="background-color: #ffffff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">
+                <h2 style="color: #004C8C; text-align: center;">TecniApp - Verificación de Cuenta</h2>
+                <p>Gracias por registrarte en <strong>TecniApp</strong>. Tu código de verificación es:</p>
+                <div style="text-align: center; background-color: #FF6200EE; color: #ffffff; font-size: 28px; font-weight: bold; padding: 15px; border-radius: 8px; margin: 20px 0; letter-spacing: 2px;">
+                    $verificationCode
+                </div>
+                <p>Introduce este código en la aplicación para continuar con tu registro.</p>
+                <p>Si no realizaste esta solicitud, por favor ignora este correo.</p>
+                <p>Gracias,</p>
+                <p>El equipo de TecniApp</p>
+                <hr />
+                <footer style="text-align: center; font-size: 12px; color: #777;">
+                    <p>TecniApp Soluciones Integrales</p>
+                    <p>© 2024 Arasoft Solutions</p>
+                </footer>
+            </div>
+        </body>
+    </html>
+    """.trimIndent()
+
+        // Crear el objeto MailSender y enviar el correo
+        val mailSender = MailSender()
+        mailSender.sendFormattedMail(
+            subject = "Verificación de cuenta TecniApp",
+            body = message,
+            to = email
+        ) { success, errorMessage ->
+            if (success) {
+                Log.d("Registro", "Correo enviado exitosamente.")
+            } else {
+                Log.e("Registro", "Error al enviar el correo: $errorMessage")
+            }
+        }
     }
+
+
 }
+
+
+

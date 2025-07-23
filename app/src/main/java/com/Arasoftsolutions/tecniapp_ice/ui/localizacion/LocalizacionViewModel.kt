@@ -9,6 +9,7 @@ import android.util.Log
 
 class LocalizacionViewModel : ViewModel() {
 
+
     // LiveData para los pueblos
     private val _pueblos = MutableLiveData<List<String>>()
     val pueblos: LiveData<List<String>> get() = _pueblos

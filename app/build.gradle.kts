@@ -3,6 +3,8 @@ plugins {
     alias(libs.plugins.android.application) // Plugin para aplicaciones Android
     alias(libs.plugins.jetbrains.kotlin.android) // Plugin para soporte Kotlin en Android
     id("com.google.gms.google-services") // Plugin para servicios de Google (Firebase, etc.)
+    id ("kotlin-kapt")
+
 }
 
 android {
@@ -50,8 +52,13 @@ dependencies {
     implementation(libs.androidx.appcompat) // Compatibilidad con versiones antiguas de Android
     implementation(libs.material) // Biblioteca de componentes Material Design
     implementation(libs.androidx.constraintlayout) // Para layouts con ConstraintLayout
-    implementation(libs.androidx.lifecycle.livedata.ktx) // LiveData para Kotlin
-    implementation(libs.androidx.lifecycle.viewmodel.ktx) // ViewModel para Kotlin
+    implementation ("androidx.lifecycle:lifecycle-livedata-ktx:2.6.2")
+            implementation ("androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.2")
+        // Room components
+    implementation ("androidx.room:room-runtime:2.6.1")
+    kapt ("androidx.room:room-compiler:2.6.1")
+    implementation ("androidx.room:room-ktx:2.6.1") // Para soporte de corrutinas
+
     implementation(libs.androidx.navigation.fragment.ktx) // Navegación entre fragmentos con Kotlin
     implementation(libs.androidx.navigation.ui.ktx) // Soporte UI para la navegación
 
@@ -66,6 +73,7 @@ dependencies {
 
     // Firebase Firestore (con soporte KTX para consultas más simples)
     implementation("com.google.firebase:firebase-firestore-ktx")
+    implementation("com.google.firebase:firebase-config-ktx")
 
     // Firebase Realtime Database (con soporte KTX)
     implementation("com.google.firebase:firebase-database-ktx")
@@ -73,11 +81,13 @@ dependencies {
     // Google Maps API para integrar mapas en la aplicación
     implementation(libs.play.services.maps)
     implementation ("com.google.android.gms:play-services-auth:21.2.0")
-implementation ("com.google.firebase:firebase-auth:23.0.0")
+    implementation ("com.google.firebase:firebase-auth:23.0.0")
 
 
     // Google Sign-In: Inicio de sesión con Google
     implementation("com.google.android.gms:play-services-auth:20.7.0")
+
+     implementation("androidx.work:work-runtime-ktx:2.10.0")
 
     // Manejo de correo electrónico en Android (usando la biblioteca Sun Mail)
     implementation("com.sun.mail:android-mail:1.6.2") // Mail API

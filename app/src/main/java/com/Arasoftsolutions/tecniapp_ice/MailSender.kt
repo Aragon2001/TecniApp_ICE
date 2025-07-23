@@ -1,53 +1,95 @@
-package com.Arasoftsolutions.tecniapp_ice
-
-import android.os.AsyncTask
-import java.util.Properties
-import javax.mail.Authenticator
-import javax.mail.Message
-import javax.mail.PasswordAuthentication
-import javax.mail.Session
-import javax.mail.Transport
+import android.util.Log
+import javax.mail.*
 import javax.mail.internet.InternetAddress
 import javax.mail.internet.MimeMessage
+import java.util.*
 
-class MailSender(private val email: String, private val password: String) {
+class MailSender {
 
-    fun sendMail(subject: String, message: String, recipient: String) {
-        SendMailTask().execute(subject, message, recipient)
-    }
+    private var email: String = ""
+    private var password: String = ""
 
-    private inner class SendMailTask : AsyncTask<String, Void, Void>() {
-        override fun doInBackground(vararg params: String?): Void? {
-            val subject = params[0]
-            val message = params[1]
-            val recipient = params[2]
+    // Método para enviar correo con credenciales remotas
+  fun sendFormattedMail(
+    subject: String,
+    body: String,
+    to: String,
+    callback: (Boolean, String?) -> Unit
+) {
+    val mailConfig = MailConfig()
 
-            try {
-                val props = Properties()
-                props["mail.smtp.host"] = "smtp.office365.com" // Cambiado para Outlook
-                props["mail.smtp.port"] = "587"
-                props["mail.smtp.auth"] = "true"
-                props["mail.smtp.starttls.enable"] = "true"
+    // Obtener las credenciales remotas
+    mailConfig.fetchMailCredentials({ remoteEmail, remotePassword ->
+        email = remoteEmail
+        password = remotePassword
 
-                val session = Session.getInstance(props, object : Authenticator() {
-                    override fun getPasswordAuthentication(): PasswordAuthentication {
-                        return PasswordAuthentication(email, password)
-                    }
-                })
+        Log.d("MailSender", "Credenciales obtenidas: Email - $email y Password: $password")
 
-                val mimeMessage = MimeMessage(session)
-                mimeMessage.setFrom(InternetAddress(email))
-                mimeMessage.setRecipient(Message.RecipientType.TO, InternetAddress(recipient))
-                mimeMessage.subject = subject
+        // Validar el formato del correo destino
+        if (!isValidEmail(to)) {
+            val errorMessage = "El formato del correo destinatario es inválido: $to"
+            Log.e("MailSender", errorMessage)
+            callback(false, errorMessage)
+            return@fetchMailCredentials
+        }
 
-                // Aquí indicamos que el contenido es HTML
-                mimeMessage.setContent(message, "text/html; charset=utf-8")
+        // Ejecutar el envío de correo en un hilo secundario
+        Thread {
+            val (isSuccess, error) = sendHtmlMail(subject, body, to)
+            // Volver al hilo principal para ejecutar el callback
+            callback(isSuccess, error)
+        }.start()
 
-                Transport.send(mimeMessage)
-            } catch (e: Exception) {
-                e.printStackTrace()
+    }, { errorMessage ->
+        Log.e("MailSender", "Error al obtener las credenciales: $errorMessage")
+        callback(false, "Error al obtener las credenciales: $errorMessage")
+    })
+}
+
+
+    // Método para enviar correos en formato HTML
+    private fun sendHtmlMail(subject: String, body: String, to: String): Pair<Boolean, String?> {
+        return try {
+            val properties = Properties().apply {
+                put("mail.smtp.host", "smtp.gmail.com") // Servidor SMTP de Gmail
+                put("mail.smtp.port", "587") // Puerto TLS
+                put("mail.smtp.auth", "true") // Habilitar autenticación
+                put("mail.smtp.starttls.enable", "true") // Habilitar STARTTLS
             }
-            return null
+
+            val session = Session.getInstance(properties, object : Authenticator() {
+                override fun getPasswordAuthentication(): PasswordAuthentication {
+                    return PasswordAuthentication(email, password)
+                }
+            })
+
+            val message = MimeMessage(session).apply {
+                setFrom(InternetAddress(email)) // Remitente
+                setRecipients(Message.RecipientType.TO, InternetAddress.parse(to)) // Destinatario
+                this.subject = subject
+                setContent(body, "text/html; charset=utf-8") // Configura contenido HTML
+            }
+
+            Transport.send(message)
+            Log.d("MailSender", "Correo enviado con éxito.")
+            true to null // Éxito
+
+        } catch (e: MessagingException) {
+            val error = "Error al enviar el correo: ${e.message}. StackTrace: ${e.stackTraceToString()}"
+            Log.e("MailSender", error)
+            false to error
+
+        } catch (e: Exception) {
+            val error = "Error inesperado: ${e.message}. StackTrace: ${e.stackTraceToString()}"
+            Log.e("MailSender", error)
+            false to error
         }
     }
+
+    // Validar el formato del correo electrónico
+    private fun isValidEmail(email: String): Boolean {
+        return android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
+    }
 }
+
+

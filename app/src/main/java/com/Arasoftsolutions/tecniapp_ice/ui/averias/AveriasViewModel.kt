@@ -1,37 +1,19 @@
-package com.Arasoftsolutions.tecniapp_ice.ui.averias
-
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.content.Context
+import android.os.Build
+import androidx.core.app.NotificationCompat
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import com.Arasoftsolutions.tecniapp_ice.R
+import com.Arasoftsolutions.tecniapp_ice.ui.averias.Averia
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
 
 class AveriasViewModel : ViewModel() {
 
-    // Lista de averías
-    private val _averias = MutableLiveData<List<Averia>>()
 
-    // LiveData que observará el fragmento
-    val averias: LiveData<List<Averia>> get() = _averias
-
-    init {
-        // Simular la carga inicial de datos
-        loadAverias()
-    }
-
-    // Método para cargar las averías
-    private fun loadAverias() {
-        // Aquí puedes cargar los datos reales desde Firebase. Por ahora se usa un ejemplo de datos simulados.
-        val averiasSimuladas = listOf(
-            Averia("Cortocircuito en línea 2", "Carlos", "Marzo 13, 2023", "Alta", "Pendiente", "Carlos", "Lima, Perú"),
-            Averia("Falla en poste", "Luis", "Marzo 14, 2023", "Media", "En progreso", "Roberto", "Bogotá, Colombia"),
-            Averia("Corte de energía", "María", "Marzo 15, 2023", "Baja", "Resuelto", "Javier", "Quito, Ecuador")
-        )
-
-        // Actualiza la lista de averías
-        _averias.value = averiasSimuladas
-    }
-
-    // Método para actualizar la lista de averías (puedes llamarlo cuando recibas nuevos datos de Firebase)
-    fun updateAverias(nuevasAverias: List<Averia>) {
-        _averias.value = nuevasAverias
-    }
 }

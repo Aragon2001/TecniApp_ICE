@@ -11,6 +11,8 @@ import android.widget.ImageView
 import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
+import com.Arasoftsolutions.tecniapp_ice.Database.Synchronizer
 import com.google.android.material.button.MaterialButton
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
@@ -22,6 +24,7 @@ import com.google.firebase.database.FirebaseDatabase
 import com.Arasoftsolutions.tecniapp_ice.User.UserViewModel
 import com.Arasoftsolutions.tecniapp_ice.User.User
 import com.google.firebase.database.ValueEventListener
+import kotlinx.coroutines.launch
 
 class LoginActivity : AppCompatActivity() {
 
@@ -32,6 +35,7 @@ class LoginActivity : AppCompatActivity() {
     private lateinit var database: DatabaseReference // Realtime Database
     private lateinit var showPasswordIcon: ImageView
     private val userViewModel: UserViewModel by viewModels()
+    private lateinit var synchronizer: Synchronizer // Instancia de Synchronizer
 
     private companion object {
         const val DATABASE_URL = "https://tecniapp-ice-user.firebaseio.com"
@@ -45,6 +49,9 @@ class LoginActivity : AppCompatActivity() {
         // Inicializar FirebaseAuth y Realtime Database
         auth = FirebaseAuth.getInstance()
         database = FirebaseDatabase.getInstance(DATABASE_URL).reference // URL específica de la base de datos
+
+        // Inicializar la instancia de Synchronizer
+        synchronizer = Synchronizer(this)
 
         // Verifica si el usuario ya está logueado
         sharedPreferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
@@ -93,6 +100,7 @@ class LoginActivity : AppCompatActivity() {
         }
     }
 
+
     private fun signIn() {
         val email = emailEditText.text.toString().trim()
         val password = passwordEditText.text.toString().trim()
@@ -139,21 +147,30 @@ class LoginActivity : AppCompatActivity() {
             ValueEventListener {
             override fun onDataChange(dataSnapshot: DataSnapshot) {
                 if (dataSnapshot.exists()) {
-                    for (userSnapshot in dataSnapshot.children) {
-                        val user = userSnapshot.getValue(User::class.java)
+                    val user = dataSnapshot.children.firstOrNull()?.getValue(User::class.java)
+                    user?.let { userObj ->
+                        // Almacenar el usuario en el UserViewModel
+                        userViewModel.updateUserData(userObj)
 
-                        user?.let { userObj ->
-                            // Almacenar el usuario en el UserViewModel
-                            userViewModel.updateUserData(userObj)
+                        // Guardar estado de sesión
+                        sharedPreferences.edit().apply {
+                            putBoolean(KEY_IS_LOGGED_IN, true)
+                            apply()
+                        }
 
-                            // Almacenar en SharedPreferences
-                            val editor = sharedPreferences.edit()
-                            editor.putBoolean(KEY_IS_LOGGED_IN, true)
-                            editor.apply()
+                        // Iniciar la sincronización dentro de una coroutine
+                        lifecycleScope.launch {
+                            try {
+                                synchronizer.initialize() // Llamada suspend
+                                synchronizer.scheduleSync() // Configurar sincronización periódica
+                            } catch (e: Exception) {
+                                Toast.makeText(this@LoginActivity, "Error iniciando sincronización: ${e.message}", Toast.LENGTH_SHORT).show()
+                                Log.e("LoginActivity", "Error iniciando sincronización: ${e.message}")
+                            }
 
                             // Navegar a la actividad principal
                             startActivity(Intent(this@LoginActivity, ActivityMain::class.java))
-                            finish() // Cerrar la actividad de inicio de sesión
+                            finish()
                         }
                     }
                 } else {
@@ -167,6 +184,7 @@ class LoginActivity : AppCompatActivity() {
             }
         })
     }
+
 
     private fun handleAuthError(exception: Exception?) {
         when (exception) {

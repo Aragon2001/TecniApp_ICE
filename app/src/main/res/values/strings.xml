@@ -19,6 +19,7 @@
     <string name="menu_reportes">Reportes</string>
     <string name="menu_programacion">Programación</string>
     <string name="action_accounts">Perfil</string>
+     <string name="google_maps_key">AIzaSyBxgf6oA-rRK1-OlNft4oDgzF3gokLl1FU</string>
 
 
 </resources>

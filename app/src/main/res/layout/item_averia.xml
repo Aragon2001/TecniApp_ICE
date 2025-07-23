@@ -6,9 +6,9 @@
     android:background="@drawable/rounded_bg_f0f2f4"
     android:padding="16dp"
     android:elevation="4dp"
+    android:layout_margin="8dp"
     android:layout_marginBottom="12dp"
-    android:backgroundTint="#FFFFFF"
-    android:layout_margin="8dp">
+    android:backgroundTint="#FFFFFF">
 
     <!-- Título de la avería -->
     <TextView
@@ -80,6 +80,15 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Ubicación: "
+        android:textColor="#757575"
+        android:textSize="14sp"
+        android:layout_marginBottom="6dp" />
+
+    <TextView
+        android:id="@+id/tvLocalizacion"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Localización: "
         android:textColor="#757575"
         android:textSize="14sp"
         android:layout_marginBottom="6dp" />

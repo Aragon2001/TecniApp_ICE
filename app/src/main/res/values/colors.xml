@@ -10,6 +10,8 @@
     <color name="dark_gray">#2C2C2C</color>  <!-- Gris más oscuro pero no negro puro -->
     <color name="light_gray">#B3B3B3</color>  <!-- Gris claro para textos -->
     <color name="red">#FF0000</color>  <!-- Gris claro para textos -->
+    <color name="green">#4CAF50</color>
+
 
     <!-- Colores ajustados para el login -->
     <color name="login_background">#0071CE</color> <!-- Fondo azul ICE -->
