@@ -87,7 +87,7 @@ dependencies {
     // Google Sign-In: Inicio de sesión con Google
     implementation("com.google.android.gms:play-services-auth:20.7.0")
 
-     implementation("androidx.work:work-runtime-ktx:2.10.0")
+     implementation("androidx.work:work-runtime-ktx:2.9.0")
 
     // Manejo de correo electrónico en Android (usando la biblioteca Sun Mail)
     implementation("com.sun.mail:android-mail:1.6.2") // Mail API

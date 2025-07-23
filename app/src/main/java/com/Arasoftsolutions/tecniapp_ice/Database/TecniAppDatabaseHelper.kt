@@ -6,6 +6,12 @@ import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import com.Arasoftsolutions.tecniapp_ice.Database.Tablas.*
 import com.google.firebase.auth.FirebaseAuth
+// En lugar de "Medidores"
+import com.Arasoftsolutions.tecniapp_ice.Database.Tablas.MedidorEntity
+
+// En lugar de "Agencias"
+import com.Arasoftsolutions.tecniapp_ice.Database.Tablas.AgenciaEntity
+
 
 class TecniAppDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
 
@@ -65,7 +71,7 @@ class TecniAppDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATAB
     fun insertOrUpdateMedidores(medidores: List<Medidores>) {
         insertOrUpdate("Medidores", medidores) { medidor ->
             ContentValues().apply {
-                put("id", medidor.id)
+                put("id", medidor.medidorNumber)
                 put("calle", medidor.calle)
                 put("cliente", medidor.cliente)
                 put("localizacion", medidor.localizacion)
@@ -172,17 +178,17 @@ class TecniAppDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATAB
 // Obtener todos los registros de "Medidores"
 // ===========================
 fun getMedidores(): List<Medidores> = getAllFromTable("Medidores") { cursor ->
-    // Mapear cada fila de la tabla "Medidores" a un objeto de la clase "Medidores"
     Medidores(
-        id = cursor.getInt(cursor.getColumnIndexOrThrow("id")), // ID del medidor
-        cliente = cursor.getString(cursor.getColumnIndexOrThrow("cliente")), // Nombre del cliente
-        localizacion = cursor.getString(cursor.getColumnIndexOrThrow("localizacion")), // Ubicación del medidor
-        metros = cursor.getString(cursor.getColumnIndexOrThrow("metros")), // Metros asociados al medidor
-        poste = cursor.getString(cursor.getColumnIndexOrThrow("poste")), // Poste relacionado
-        pueblo = cursor.getString(cursor.getColumnIndexOrThrow("pueblo")), // Pueblo relacionado
-         calle = cursor.getString(cursor.getColumnIndexOrThrow("calle")) // Pueblo relacionado
+        medidorNumber = cursor.getString(cursor.getColumnIndexOrThrow("id")),  // ← Clave primaria
+        calle = cursor.getString(cursor.getColumnIndexOrThrow("calle")),
+        cliente = cursor.getString(cursor.getColumnIndexOrThrow("cliente")),
+        localizacion = cursor.getString(cursor.getColumnIndexOrThrow("localizacion")),
+        metros = cursor.getString(cursor.getColumnIndexOrThrow("metros")),
+        poste = cursor.getString(cursor.getColumnIndexOrThrow("poste")),
+        pueblo = cursor.getString(cursor.getColumnIndexOrThrow("pueblo"))
     )
 }
+
 // ===========================
 // Obtener todos los registros de "Agencias"
 // ===========================

@@ -7,25 +7,21 @@ import com.google.firebase.database.*
 
 /**
  * Clase que gestiona la sincronización entre Firebase y la base de datos local.
- * Proporciona métodos para sincronizar diferentes entidades.
  */
 class FirebaseSyncManager(private val TecniAppDatabase: TecniAppDatabaseHelper) {
 
     private val database: FirebaseDatabase = FirebaseDatabase.getInstance()
 
-    // Referencias a las rutas de Firebase para cada entidad
+    // Referencias a las rutas de Firebase
     private val medidoresRef = database.getReference("Medidores/SubRegion Guapiles")
     private val localizacionesRef = database.getReference("Localizaciones")
     private val pueblosRef = database.getReference("Pueblos")
     private val subregionesRef = database.getReference("Subregiones")
     private val agenciasRef = database.getReference("Agencias")
     private val vehiculosRef = database.getReference("Vehiculos")
-    private val usuariosRef = FirebaseDatabase.getInstance("https://tecniapp-ice-user.firebaseio.com").getReference("usuarios")
+    private val usuariosRef = database.getReference("Usuarios")
 
-    /**
-     * Método general para sincronizar todas las entidades.
-     * Este método puede ser llamado al inicio de la aplicación o bajo eventos específicos.
-     */
+    // Ejecuta la sincronización de todas las entidades
     fun sincronizarFirebaseConLocal() {
         sincronizarAgencias()
         sincronizarLocalizaciones()
@@ -34,17 +30,10 @@ class FirebaseSyncManager(private val TecniAppDatabase: TecniAppDatabaseHelper) 
         sincronizarSubregiones()
         sincronizarVehiculos()
         sincronizarUsuarioAutenticado()
-
-
     }
 
-    // ---------------------- ENTIDAD: AGENCIAS ----------------------
-
-    /**
-     * Sincroniza la entidad "Agencias" entre Firebase y la base de datos local.
-     */
+    // Sincroniza datos de agencias
     private fun sincronizarAgencias() {
-        // Sincronización desde Firebase hacia la base de datos local
         agenciasRef.addListenerForSingleValueEvent(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 val agenciasList = mutableListOf<Agencias>()
@@ -52,18 +41,18 @@ class FirebaseSyncManager(private val TecniAppDatabase: TecniAppDatabaseHelper) 
                     val id = agenciaSnapshot.child("id").getValue(Int::class.java) ?: continue
                     val nombre = agenciaSnapshot.child("nombre").getValue(String::class.java) ?: ""
                     val subregion = agenciaSnapshot.child("subregion").getValue(String::class.java) ?: ""
-
+                    // Agrega agencia a la lista local
                     agenciasList.add(Agencias(id, nombre, subregion))
                 }
+                // Inserta o actualiza agencias en la base local
                 TecniAppDatabase.insertOrUpdateAgencias(agenciasList)
             }
-
             override fun onCancelled(error: DatabaseError) {
                 println("Error al sincronizar agencias: ${error.message}")
             }
         })
 
-        // Sincronización desde la base de datos local hacia Firebase
+        // Sube las agencias locales a Firebase
         val agenciasLocales = TecniAppDatabase.getAgencias()
         agenciasLocales.forEach { agencia ->
             val agenciaMap = mapOf(
@@ -72,21 +61,10 @@ class FirebaseSyncManager(private val TecniAppDatabase: TecniAppDatabaseHelper) 
                 "subregion" to agencia.subregion
             )
             agenciasRef.child(agencia.id.toString()).setValue(agenciaMap)
-                .addOnCompleteListener { task ->
-                    if (task.isSuccessful) {
-                        println("Agencia sincronizada con éxito en Firebase.")
-                    } else {
-                        println("Error al sincronizar agencia en Firebase: ${task.exception?.message}")
-                    }
-                }
         }
     }
 
-    // ---------------------- ENTIDAD: LOCALIZACIONES ----------------------
-
-    /**
-     * Sincroniza la entidad "Localizaciones" entre Firebase y la base de datos local.
-     */
+    // Sincroniza datos de localizaciones
     private fun sincronizarLocalizaciones() {
         localizacionesRef.addListenerForSingleValueEvent(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
@@ -101,18 +79,20 @@ class FirebaseSyncManager(private val TecniAppDatabase: TecniAppDatabaseHelper) 
                     val alPoste = localizacionSnapshot.child("al_poste").getValue(Int::class.java) ?: 0
                     val delPoste = localizacionSnapshot.child("del_poste").getValue(Int::class.java) ?: 0
 
+                    // Agrega localizacion a la lista local
                     localizacionesList.add(
                         Localizaciones(id, calle, direccion, latitud, longitud, pueblo, alPoste, delPoste)
                     )
                 }
+                // Inserta o actualiza localizaciones en base local
                 TecniAppDatabase.insertOrUpdateLocalizaciones(localizacionesList)
             }
-
             override fun onCancelled(error: DatabaseError) {
                 println("Error al sincronizar localizaciones: ${error.message}")
             }
         })
 
+        // Sube las localizaciones locales a Firebase
         val localizacionesLocales = TecniAppDatabase.getLocalizaciones()
         localizacionesLocales.forEach { localizacion ->
             val localizacionMap = mapOf(
@@ -125,27 +105,16 @@ class FirebaseSyncManager(private val TecniAppDatabase: TecniAppDatabaseHelper) 
                 "del_poste" to localizacion.delPoste
             )
             localizacionesRef.child(localizacion.id.toString()).setValue(localizacionMap)
-                .addOnCompleteListener { task ->
-                    if (task.isSuccessful) {
-                        println("Localización sincronizada con éxito en Firebase.")
-                    } else {
-                        println("Error al sincronizar localización en Firebase: ${task.exception?.message}")
-                    }
-                }
         }
     }
 
-    // ---------------------- ENTIDAD: MEDIDORES ----------------------
-
-    /**
-     * Sincroniza la entidad "Medidores" entre Firebase y la base de datos local.
-     */
+    // Sincroniza datos de medidores
     private fun sincronizarMedidores() {
         medidoresRef.addListenerForSingleValueEvent(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 val medidoresList = mutableListOf<Medidores>()
                 for (medidorSnapshot in snapshot.children) {
-                    val id = medidorSnapshot.key?.toIntOrNull() ?: continue
+                    val medidorNumber = medidorSnapshot.key ?: continue // Usa la clave como medidorNumber
                     val cliente = medidorSnapshot.child("cliente").getValue(String::class.java) ?: ""
                     val localizacion = medidorSnapshot.child("localizacion").getValue(String::class.java) ?: ""
                     val metros = medidorSnapshot.child("metros").getValue(String::class.java) ?: ""
@@ -153,16 +122,18 @@ class FirebaseSyncManager(private val TecniAppDatabase: TecniAppDatabaseHelper) 
                     val pueblo = medidorSnapshot.child("pueblo").getValue(String::class.java) ?: ""
                     val calle = medidorSnapshot.child("calle").getValue(String::class.java) ?: ""
 
-                    medidoresList.add(Medidores(id, cliente, localizacion, metros, poste, pueblo, calle))
+                    // Agrega medidor a la lista local
+                    medidoresList.add(Medidores(medidorNumber, calle, cliente, localizacion, metros, poste, pueblo))
                 }
+                // Inserta o actualiza medidores en base local
                 TecniAppDatabase.insertOrUpdateMedidores(medidoresList)
             }
-
             override fun onCancelled(error: DatabaseError) {
                 println("Error al sincronizar medidores: ${error.message}")
             }
         })
 
+        // Sube los medidores locales a Firebase
         val medidoresLocales = TecniAppDatabase.getMedidores()
         medidoresLocales.forEach { medidor ->
             val medidorMap = mapOf(
@@ -173,14 +144,7 @@ class FirebaseSyncManager(private val TecniAppDatabase: TecniAppDatabaseHelper) 
                 "pueblo" to medidor.pueblo,
                 "calle" to medidor.calle
             )
-            medidoresRef.child(medidor.id.toString()).setValue(medidorMap)
-                .addOnCompleteListener { task ->
-                    if (task.isSuccessful) {
-                        println("Medidor sincronizado con éxito en Firebase.")
-                    } else {
-                        println("Error al sincronizar medidor en Firebase: ${task.exception?.message}")
-                    }
-                }
+            medidoresRef.child(medidor.medidorNumber).setValue(medidorMap)
         }
     }
 
@@ -314,43 +278,46 @@ private fun sincronizarVehiculos() {
 // ---------------------- ENTIDAD: USUARIOS ----------------------
 
     private fun sincronizarUsuarioAutenticado() {
-        val currentUser = FirebaseAuth.getInstance().currentUser
-        val currentEmail = currentUser?.email
+        val currentUserUid = FirebaseAuth.getInstance().currentUser?.uid
 
-        if (currentEmail != null) {
-            // Consulta Firebase para obtener el usuario usando su email
-            usuariosRef.orderByChild("email").equalTo(currentEmail)
-                .addListenerForSingleValueEvent(object : ValueEventListener {
-                    override fun onDataChange(snapshot: DataSnapshot) {
-                        val userSnapshot = snapshot.children.firstOrNull()
-                        if (userSnapshot != null) {
-                            val id = userSnapshot.child("cedula").getValue(String::class.java)?.toIntOrNull()
-                                ?: userSnapshot.key?.toIntOrNull() ?: return
-                            val agencia = userSnapshot.child("agencia").getValue(String::class.java) ?: ""
-                            val apellidos = userSnapshot.child("apellidos").getValue(String::class.java) ?: ""
-                            val cedula = userSnapshot.child("cedula").getValue(String::class.java) ?: ""
-                            val email = userSnapshot.child("email").getValue(String::class.java) ?: ""
-                            val nombre = userSnapshot.child("nombre").getValue(String::class.java) ?: ""
-                            val placaVehiculo = userSnapshot.child("placaVehiculo").getValue(String::class.java) ?: ""
-                            val subregion = userSnapshot.child("subregion").getValue(String::class.java) ?: ""
-                            val telefono = userSnapshot.child("telefono").getValue(String::class.java) ?: ""
+        if (currentUserUid != null) {
+            // Consulta Firebase para obtener el usuario autenticado
+            val usuarioRef = usuariosRef.child(currentUserUid)
 
-                            val usuario = User(id, agencia, apellidos, cedula, email, nombre, placaVehiculo, subregion, telefono)
+            usuarioRef.addListenerForSingleValueEvent(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    // Si el usuario existe en Firebase
+                    if (snapshot.exists()) {
+                        val id = snapshot.key?.toIntOrNull() ?: return
+                        val agencia = snapshot.child("agencia").getValue(String::class.java) ?: ""
+                        val apellidos = snapshot.child("apellidos").getValue(String::class.java) ?: ""
+                        val cedula = snapshot.child("cedula").getValue(String::class.java) ?: ""
+                        val email = snapshot.child("email").getValue(String::class.java) ?: ""
+                        val nombre = snapshot.child("nombre").getValue(String::class.java) ?: ""
+                        val placaVehiculo = snapshot.child("placaVehiculo").getValue(String::class.java) ?: ""
+                        val subregion = snapshot.child("subregion").getValue(String::class.java) ?: ""
+                        val telefono = snapshot.child("telefono").getValue(String::class.java) ?: ""
 
-                            TecniAppDatabase.insertOrUpdateUser(usuario)
-                            println("Usuario sincronizado desde Firebase a base de datos local.")
-                        } else {
-                            println("No se encontró el usuario en Firebase.")
-                        }
+                        // Crear objeto usuario con los datos obtenidos
+                        val usuario = User(id, agencia, apellidos, cedula, email, nombre, placaVehiculo, subregion, telefono)
+
+                        // Insertar o actualizar el usuario en la base de datos local
+                        TecniAppDatabase.insertOrUpdateUser(usuario)
+                        println("Usuario sincronizado desde Firebase a base de datos local.")
+                    } else {
+                        println("No se encontró el usuario en Firebase.")
                     }
+                }
 
-                    override fun onCancelled(error: DatabaseError) {
-                        println("Error al sincronizar usuario desde Firebase: ${error.message}")
-                    }
-                })
+                override fun onCancelled(error: DatabaseError) {
+                    println("Error al sincronizar usuario desde Firebase: ${error.message}")
+                }
+            })
 
-            val usuarioLocal = TecniAppDatabase.getUser()
+            // Obtener los datos del usuario de la base de datos local
+            val usuarioLocal = TecniAppDatabase.getUser()  // Asume que getUser() ya retorna un solo objeto
 
+            // Si se encuentra el usuario en la base de datos local, sincronizarlo con Firebase
             usuarioLocal?.let {
                 val usuarioMap = mapOf(
                     "agencia" to it.agencia,
@@ -363,7 +330,7 @@ private fun sincronizarVehiculos() {
                     "telefono" to it.telefono
                 )
 
-                usuariosRef.child(it.cedula).setValue(usuarioMap)
+                usuariosRef.child(currentUserUid).setValue(usuarioMap)
                     .addOnCompleteListener { task ->
                         if (task.isSuccessful) {
                             println("Usuario sincronizado con éxito en Firebase.")
