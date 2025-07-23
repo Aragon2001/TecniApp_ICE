@@ -280,7 +280,7 @@ private fun sincronizarVehiculos() {
             for (vehiculoSnapshot in snapshot.children) {
                 val id = vehiculoSnapshot.key?.toIntOrNull() ?: continue
                 val tipo = vehiculoSnapshot.child("tipo").getValue(String::class.java) ?: ""
-                val placa = vehiculoSnapshot.child("placaVihiculo").getValue(String::class.java) ?: 0
+                val placa = vehiculoSnapshot.child("placaVehiculo").getValue(String::class.java) ?: ""
                 val agencia = vehiculoSnapshot.child("agencia").getValue(String::class.java) ?: ""
 
                 vehiculosList.add(Vehiculos(id, tipo, placa.toString(), agencia))

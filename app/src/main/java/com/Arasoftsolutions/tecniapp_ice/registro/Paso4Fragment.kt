@@ -260,7 +260,7 @@ private fun finalizeRegistration() {
                         "telefono" to telefono,
                         "subregion" to selectedSubregion,
                         "agencia" to selectedAgency,
-                        "placa_vehiculo" to selectedVehicle, // Asegúrate de que este campo esté correctamente asignado
+                        "placaVehiculo" to selectedVehicle, // Asegúrate de que este campo esté correctamente asignado
                         "cedula" to cedula
                     )
 
