@@ -20,7 +20,7 @@ class FirebaseSyncManager(private val TecniAppDatabase: TecniAppDatabaseHelper) 
     private val subregionesRef = database.getReference("Subregiones")
     private val agenciasRef = database.getReference("Agencias")
     private val vehiculosRef = database.getReference("Vehiculos")
-    private val usuariosRef = database.getReference("Usuarios")
+    private val usuariosRef = FirebaseDatabase.getInstance("https://tecniapp-ice-user.firebaseio.com").getReference("usuarios")
 
     /**
      * Método general para sincronizar todas las entidades.
@@ -314,46 +314,43 @@ private fun sincronizarVehiculos() {
 // ---------------------- ENTIDAD: USUARIOS ----------------------
 
     private fun sincronizarUsuarioAutenticado() {
-        val currentUserUid = FirebaseAuth.getInstance().currentUser?.uid
+        val currentUser = FirebaseAuth.getInstance().currentUser
+        val currentEmail = currentUser?.email
 
-        if (currentUserUid != null) {
-            // Consulta Firebase para obtener el usuario autenticado
-            val usuarioRef = usuariosRef.child(currentUserUid)
+        if (currentEmail != null) {
+            // Consulta Firebase para obtener el usuario usando su email
+            usuariosRef.orderByChild("email").equalTo(currentEmail)
+                .addListenerForSingleValueEvent(object : ValueEventListener {
+                    override fun onDataChange(snapshot: DataSnapshot) {
+                        val userSnapshot = snapshot.children.firstOrNull()
+                        if (userSnapshot != null) {
+                            val id = userSnapshot.child("cedula").getValue(String::class.java)?.toIntOrNull()
+                                ?: userSnapshot.key?.toIntOrNull() ?: return
+                            val agencia = userSnapshot.child("agencia").getValue(String::class.java) ?: ""
+                            val apellidos = userSnapshot.child("apellidos").getValue(String::class.java) ?: ""
+                            val cedula = userSnapshot.child("cedula").getValue(String::class.java) ?: ""
+                            val email = userSnapshot.child("email").getValue(String::class.java) ?: ""
+                            val nombre = userSnapshot.child("nombre").getValue(String::class.java) ?: ""
+                            val placaVehiculo = userSnapshot.child("placaVehiculo").getValue(String::class.java) ?: ""
+                            val subregion = userSnapshot.child("subregion").getValue(String::class.java) ?: ""
+                            val telefono = userSnapshot.child("telefono").getValue(String::class.java) ?: ""
 
-            usuarioRef.addListenerForSingleValueEvent(object : ValueEventListener {
-                override fun onDataChange(snapshot: DataSnapshot) {
-                    // Si el usuario existe en Firebase
-                    if (snapshot.exists()) {
-                        val id = snapshot.key?.toIntOrNull() ?: return
-                        val agencia = snapshot.child("agencia").getValue(String::class.java) ?: ""
-                        val apellidos = snapshot.child("apellidos").getValue(String::class.java) ?: ""
-                        val cedula = snapshot.child("cedula").getValue(String::class.java) ?: ""
-                        val email = snapshot.child("email").getValue(String::class.java) ?: ""
-                        val nombre = snapshot.child("nombre").getValue(String::class.java) ?: ""
-                        val placaVehiculo = snapshot.child("placaVehiculo").getValue(String::class.java) ?: ""
-                        val subregion = snapshot.child("subregion").getValue(String::class.java) ?: ""
-                        val telefono = snapshot.child("telefono").getValue(String::class.java) ?: ""
+                            val usuario = User(id, agencia, apellidos, cedula, email, nombre, placaVehiculo, subregion, telefono)
 
-                        // Crear objeto usuario con los datos obtenidos
-                        val usuario = User(id, agencia, apellidos, cedula, email, nombre, placaVehiculo, subregion, telefono)
-
-                        // Insertar o actualizar el usuario en la base de datos local
-                        TecniAppDatabase.insertOrUpdateUser(usuario)
-                        println("Usuario sincronizado desde Firebase a base de datos local.")
-                    } else {
-                        println("No se encontró el usuario en Firebase.")
+                            TecniAppDatabase.insertOrUpdateUser(usuario)
+                            println("Usuario sincronizado desde Firebase a base de datos local.")
+                        } else {
+                            println("No se encontró el usuario en Firebase.")
+                        }
                     }
-                }
 
-                override fun onCancelled(error: DatabaseError) {
-                    println("Error al sincronizar usuario desde Firebase: ${error.message}")
-                }
-            })
+                    override fun onCancelled(error: DatabaseError) {
+                        println("Error al sincronizar usuario desde Firebase: ${error.message}")
+                    }
+                })
 
-            // Obtener los datos del usuario de la base de datos local
-            val usuarioLocal = TecniAppDatabase.getUser()  // Asume que getUser() ya retorna un solo objeto
+            val usuarioLocal = TecniAppDatabase.getUser()
 
-            // Si se encuentra el usuario en la base de datos local, sincronizarlo con Firebase
             usuarioLocal?.let {
                 val usuarioMap = mapOf(
                     "agencia" to it.agencia,
@@ -366,7 +363,7 @@ private fun sincronizarVehiculos() {
                     "telefono" to it.telefono
                 )
 
-                usuariosRef.child(currentUserUid).setValue(usuarioMap)
+                usuariosRef.child(it.cedula).setValue(usuarioMap)
                     .addOnCompleteListener { task ->
                         if (task.isSuccessful) {
                             println("Usuario sincronizado con éxito en Firebase.")
