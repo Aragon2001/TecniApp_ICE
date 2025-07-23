@@ -23,8 +23,11 @@ class Synchronizer(private val context: Context) {
      */
     suspend fun initialize() {
         // Obtiene las preferencias compartidas
-        val sharedPreferences: SharedPreferences = context.getSharedPreferences("app_preferences", Context.MODE_PRIVATE)
-        isUserLoggedIn = sharedPreferences.getBoolean("is_logged_in", false) // Verifica si el usuario está logueado
+        // Utiliza las mismas preferencias compartidas que en LoginActivity
+        val sharedPreferences: SharedPreferences =
+            context.getSharedPreferences("TecniAppPrefs", Context.MODE_PRIVATE)
+        // Verifica si el usuario está logueado
+        isUserLoggedIn = sharedPreferences.getBoolean("isLoggedIn", false)
 
         if (isUserLoggedIn) {
             // Verifica conexión a Internet antes de sincronizar
