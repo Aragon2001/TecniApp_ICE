@@ -243,7 +243,7 @@ fun getSubregiones(): List<Subregiones> = getAllFromTable("Subregiones") { curso
         val db = readableDatabase
         val cursor = db.rawQuery("SELECT * FROM Usuarios WHERE email = ?", arrayOf(currentUserEmail))
         cursor.use {
-            return if (it.moveToFirst()) {
+            val usuario = if (it.moveToFirst()) {
                 User(
                     id = it.getInt(it.getColumnIndexOrThrow("id")),
                     agencia = it.getString(it.getColumnIndexOrThrow("agencia")),
@@ -256,6 +256,8 @@ fun getSubregiones(): List<Subregiones> = getAllFromTable("Subregiones") { curso
                     telefono = it.getString(it.getColumnIndexOrThrow("telefono"))
                 )
             } else null
+            db.close()
+            return usuario
         }
     }
 
