@@ -23,7 +23,9 @@ import com.Arasoftsolutions.tecniapp_ice.Database.TecniAppDatabaseHelper
 import com.Arasoftsolutions.tecniapp_ice.databinding.ActivityMainBinding
 import com.google.android.material.navigation.NavigationView
 import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 
 class ActivityMain : AppCompatActivity() {
@@ -55,9 +57,10 @@ class ActivityMain : AppCompatActivity() {
         // Inicializar el Synchronizer
         synchronizer = Synchronizer(applicationContext)
 
-        // Iniciar la sincronización de datos
+        // Iniciar la sincronización de datos y cargar la información del usuario
         lifecycleScope.launch {
             synchronizer.initialize() // Esto llamará a la sincronización de datos
+            loadUserDataFromDatabase() // Cargar datos una vez finalice la sincronización
         }
 
         // Configurar DrawerLayout y NavigationView
@@ -75,14 +78,11 @@ class ActivityMain : AppCompatActivity() {
         )
         setupActionBarWithNavController(navController, appBarConfiguration)
         navView.setupWithNavController(navController)
-
-        // Cargar los datos del usuario desde la base de datos local
-        loadUserDataFromDatabase()
     }
 
-    private fun loadUserDataFromDatabase() {
-        // Obtener los datos del usuario desde la base de datos local
-        val usuario = dbHelper.getUser() // Asegúrate de que esta función esté implementada en tu helper de base de datos
+    private suspend fun loadUserDataFromDatabase() {
+        // Obtener los datos del usuario desde la base de datos local en un hilo de IO
+        val usuario = withContext(Dispatchers.IO) { dbHelper.getUser() }
 
         // Si el usuario existe, actualizar el nav header con sus datos
         usuario?.let {
