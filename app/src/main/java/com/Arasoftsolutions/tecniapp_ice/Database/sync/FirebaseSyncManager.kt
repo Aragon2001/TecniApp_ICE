@@ -2,6 +2,7 @@ package com.Arasoftsolutions.tecniapp_ice.Database.sync
 
 import com.Arasoftsolutions.tecniapp_ice.Database.Tablas.*
 import com.Arasoftsolutions.tecniapp_ice.Database.TecniAppDatabaseHelper
+import com.Arasoftsolutions.tecniapp_ice.model.User
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.*
 
@@ -300,7 +301,7 @@ private fun sincronizarVehiculos() {
                         val telefono = userSnap.child("telefono").getValue(String::class.java) ?: ""
 
                         // Crear objeto usuario con los datos obtenidos
-                        val usuario = DbUser(id, agencia, apellidos, cedula, email, nombre, placaVehiculo, subregion, telefono)
+                        val usuario = User(id, agencia, apellidos, cedula, email, nombre, placaVehiculo, subregion, telefono)
 
                         // Insertar o actualizar el usuario en la base de datos local
                         TecniAppDatabase.insertOrUpdateUser(usuario)

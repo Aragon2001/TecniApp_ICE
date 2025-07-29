@@ -20,6 +20,7 @@ import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
 import com.Arasoftsolutions.tecniapp_ice.Database.Synchronizer
 import com.Arasoftsolutions.tecniapp_ice.Database.TecniAppDatabaseHelper
+import com.Arasoftsolutions.tecniapp_ice.model.User
 import com.Arasoftsolutions.tecniapp_ice.databinding.ActivityMainBinding
 import com.google.android.material.navigation.NavigationView
 import com.google.firebase.auth.FirebaseAuth
@@ -93,7 +94,7 @@ class ActivityMain : AppCompatActivity() {
         }
     }
 
-    private fun updateNavHeader(usuario: com.Arasoftsolutions.tecniapp_ice.Database.Tablas.DbUser) {
+    private fun updateNavHeader(usuario: User) {
         runOnUiThread {
             val headerView: View = binding.navView.getHeaderView(0)
             val profileImageView = headerView.findViewById<ImageView>(R.id.imageViewProfile)
