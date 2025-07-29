@@ -5,12 +5,10 @@ import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import com.Arasoftsolutions.tecniapp_ice.Database.Tablas.*
-import com.google.firebase.auth.FirebaseAuth
-// En lugar de "Medidores"
 import com.Arasoftsolutions.tecniapp_ice.Database.Tablas.MedidorEntity
-
-// En lugar de "Agencias"
 import com.Arasoftsolutions.tecniapp_ice.Database.Tablas.AgenciaEntity
+import com.Arasoftsolutions.tecniapp_ice.model.User
+import com.google.firebase.auth.FirebaseAuth
 
 
 class TecniAppDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
@@ -147,6 +145,7 @@ class TecniAppDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATAB
                 put("cedula", user.cedula)
                 put("email", user.email)
                 put("nombre", user.nombre)
+                put("password", user.password)
                 put("placaVehiculo", user.placaVehiculo)
                 put("subregion", user.subregion)
                 put("telefono", user.telefono)
@@ -257,6 +256,7 @@ fun getSubregiones(): List<Subregiones> = getAllFromTable("Subregiones") { curso
                     cedula = it.getString(it.getColumnIndexOrThrow("cedula")),
                     email = it.getString(it.getColumnIndexOrThrow("email")),
                     nombre = it.getString(it.getColumnIndexOrThrow("nombre")),
+                    password = it.getString(it.getColumnIndexOrThrow("password")),
                     placaVehiculo = it.getString(it.getColumnIndexOrThrow("placaVehiculo")),
                     subregion = it.getString(it.getColumnIndexOrThrow("subregion")),
                     telefono = it.getString(it.getColumnIndexOrThrow("telefono"))
