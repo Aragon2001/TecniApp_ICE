@@ -13,6 +13,7 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.Arasoftsolutions.tecniapp_ice.Database.Synchronizer
+import com.Arasoftsolutions.tecniapp_ice.Database.TecniAppDatabaseHelper
 import com.google.android.material.button.MaterialButton
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
@@ -143,46 +144,53 @@ class LoginActivity : AppCompatActivity() {
     }
 
     private fun loadUserData(email: String) {
-        database.child("usuarios").orderByChild("email").equalTo(email).addListenerForSingleValueEvent(object :
-            ValueEventListener {
-            override fun onDataChange(dataSnapshot: DataSnapshot) {
-                if (dataSnapshot.exists()) {
-                    val user = dataSnapshot.children.firstOrNull()?.getValue(User::class.java)
-                    user?.let { userObj ->
-                        // Almacenar el usuario en el UserViewModel
-                        userViewModel.updateUserData(userObj)
+        database.child("Usuarios").orderByChild("email").equalTo(email) // <- ojo con la mayúscula si aplica
+            .addListenerForSingleValueEvent(object : ValueEventListener {
+                override fun onDataChange(dataSnapshot: DataSnapshot) {
+                    if (dataSnapshot.exists()) {
+                        val user = dataSnapshot.children.firstOrNull()?.getValue(User::class.java)
+                        user?.let { userObj ->
+                            // 1. Guardar en el ViewModel
+                            userViewModel.updateUserData(userObj)
 
-                        // Guardar estado de sesión
-                        sharedPreferences.edit().apply {
-                            putBoolean(KEY_IS_LOGGED_IN, true)
-                            apply()
-                        }
+                            // 2. Guardar en la base local
+                            val dbHelper = TecniAppDatabaseHelper(this@LoginActivity)
+                            dbHelper.insertOrUpdateUser(userObj)
 
-                        // Iniciar la sincronización dentro de una coroutine
-                        lifecycleScope.launch {
-                            try {
-                                synchronizer.initialize() // Llamada suspend
-                                synchronizer.scheduleSync() // Configurar sincronización periódica
-                            } catch (e: Exception) {
-                                Toast.makeText(this@LoginActivity, "Error iniciando sincronización: ${e.message}", Toast.LENGTH_SHORT).show()
-                                Log.e("LoginActivity", "Error iniciando sincronización: ${e.message}")
+                            // 3. Guardar estado de sesión
+                            sharedPreferences.edit().apply {
+                                putBoolean(KEY_IS_LOGGED_IN, true)
+                                apply()
                             }
 
-                            // Navegar a la actividad principal
-                            startActivity(Intent(this@LoginActivity, ActivityMain::class.java))
-                            finish()
-                        }
-                    }
-                } else {
-                    Toast.makeText(this@LoginActivity, "No se encontraron datos del usuario", Toast.LENGTH_SHORT).show()
-                }
-            }
+                            // 4. Iniciar sincronización y navegar al Main
+                            lifecycleScope.launch {
+                                try {
+                                    synchronizer.initialize()
+                                    synchronizer.scheduleSync()
+                                } catch (e: Exception) {
+                                    Toast.makeText(
+                                        this@LoginActivity,
+                                        "Error iniciando sincronización: ${e.message}",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                    Log.e("LoginActivity", "Error iniciando sincronización: ${e.message}")
+                                }
 
-            override fun onCancelled(databaseError: DatabaseError) {
-                Toast.makeText(this@LoginActivity, "Error al obtener datos del usuario: ${databaseError.message}", Toast.LENGTH_SHORT).show()
-                Log.e("LoginActivity", "Error al obtener datos del usuario: ${databaseError.message}")
-            }
-        })
+                                startActivity(Intent(this@LoginActivity, ActivityMain::class.java))
+                                finish()
+                            }
+                        }
+                    } else {
+                        Toast.makeText(this@LoginActivity, "No se encontraron datos del usuario", Toast.LENGTH_SHORT).show()
+                    }
+                }
+
+                override fun onCancelled(databaseError: DatabaseError) {
+                    Toast.makeText(this@LoginActivity, "Error al obtener datos del usuario: ${databaseError.message}", Toast.LENGTH_SHORT).show()
+                    Log.e("LoginActivity", "Error al obtener datos del usuario: ${databaseError.message}")
+                }
+            })
     }
 
 

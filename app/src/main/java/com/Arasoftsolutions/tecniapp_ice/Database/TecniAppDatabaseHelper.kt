@@ -5,12 +5,11 @@ import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import com.Arasoftsolutions.tecniapp_ice.Database.Tablas.*
+import com.Arasoftsolutions.tecniapp_ice.User.User
 import com.google.firebase.auth.FirebaseAuth
 // En lugar de "Medidores"
-import com.Arasoftsolutions.tecniapp_ice.Database.Tablas.MedidorEntity
 
 // En lugar de "Agencias"
-import com.Arasoftsolutions.tecniapp_ice.Database.Tablas.AgenciaEntity
 
 
 class TecniAppDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
@@ -138,8 +137,8 @@ class TecniAppDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATAB
     }
 
     // Inserta o actualiza un único usuario
-    fun insertOrUpdateUser(usuario: DbUser) {
-        insertOrUpdate("Usuarios", listOf(usuario)) { user ->
+    fun insertOrUpdateUser(usuarios: User) {
+        insertOrUpdate("Usuarios", listOf(usuarios)) { user ->
             ContentValues().apply {
                 put("id", user.id)
                 put("agencia", user.agencia)
