@@ -138,7 +138,7 @@ class TecniAppDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATAB
     }
 
     // Inserta o actualiza un único usuario
-    fun insertOrUpdateUser(usuario: User) {
+    fun insertOrUpdateUser(usuario: DbUser) {
         insertOrUpdate("Usuarios", listOf(usuario)) { user ->
             ContentValues().apply {
                 put("id", user.id)
@@ -244,13 +244,13 @@ fun getSubregiones(): List<Subregiones> = getAllFromTable("Subregiones") { curso
 }
 
     // Obtener el registro del usuario autenticado
-    fun getUser(): User? {
+    fun getUser(): DbUser? {
         val currentUserEmail = FirebaseAuth.getInstance().currentUser?.email ?: return null
         val db = readableDatabase
         val cursor = db.rawQuery("SELECT * FROM Usuarios WHERE email = ?", arrayOf(currentUserEmail))
         cursor.use {
             val usuario = if (it.moveToFirst()) {
-                User(
+                DbUser(
                     id = it.getInt(it.getColumnIndexOrThrow("id")),
                     agencia = it.getString(it.getColumnIndexOrThrow("agencia")),
                     apellidos = it.getString(it.getColumnIndexOrThrow("apellidos")),
