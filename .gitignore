@@ -13,3 +13,8 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# ignore generated command outputs
+Commit
+Push
+Manage
