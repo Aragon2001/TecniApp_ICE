@@ -300,7 +300,7 @@ private fun sincronizarVehiculos() {
                         val telefono = userSnap.child("telefono").getValue(String::class.java) ?: ""
 
                         // Crear objeto usuario con los datos obtenidos
-                        val usuario = User(id, agencia, apellidos, cedula, email, nombre, placaVehiculo, subregion, telefono)
+                        val usuario = DbUser(id, agencia, apellidos, cedula, email, nombre, placaVehiculo, subregion, telefono)
 
                         // Insertar o actualizar el usuario en la base de datos local
                         TecniAppDatabase.insertOrUpdateUser(usuario)
