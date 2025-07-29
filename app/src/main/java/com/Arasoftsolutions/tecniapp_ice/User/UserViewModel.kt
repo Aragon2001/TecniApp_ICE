@@ -9,6 +9,7 @@ import com.google.firebase.database.*
 
 data class User(
     val cedula: String = "",
+    val id: String= "",
     val nombre: String = "",
     val apellidos: String = "",
     val email: String = "",
@@ -17,7 +18,9 @@ data class User(
     val subregion: String = "",
     val placaVehiculo: String = "",
     val password: String = "" // Campo para la contraseña
-)
+) {
+
+}
 
 class UserViewModel : ViewModel() {
 
