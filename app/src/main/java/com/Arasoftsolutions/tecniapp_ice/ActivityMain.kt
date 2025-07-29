@@ -93,7 +93,7 @@ class ActivityMain : AppCompatActivity() {
         }
     }
 
-    private fun updateNavHeader(usuario: com.Arasoftsolutions.tecniapp_ice.Database.Tablas.User) {
+    private fun updateNavHeader(usuario: com.Arasoftsolutions.tecniapp_ice.Database.Tablas.DbUser) {
         runOnUiThread {
             val headerView: View = binding.navView.getHeaderView(0)
             val profileImageView = headerView.findViewById<ImageView>(R.id.imageViewProfile)

@@ -1,6 +1,6 @@
 package com.Arasoftsolutions.tecniapp_ice.Database.Tablas
 
-data class User(
+data class DbUser(
     val id: Int,
     val agencia: String,
     val apellidos: String,
