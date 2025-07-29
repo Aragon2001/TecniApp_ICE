@@ -5,6 +5,7 @@ import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import com.Arasoftsolutions.tecniapp_ice.Database.Tablas.*
+import com.Arasoftsolutions.tecniapp_ice.model.User
 import com.google.firebase.auth.FirebaseAuth
 // En lugar de "Medidores"
 import com.Arasoftsolutions.tecniapp_ice.Database.Tablas.MedidorEntity
@@ -138,7 +139,7 @@ class TecniAppDatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATAB
     }
 
     // Inserta o actualiza un único usuario
-    fun insertOrUpdateUser(usuario: DbUser) {
+    fun insertOrUpdateUser(usuario: User) {
         insertOrUpdate("Usuarios", listOf(usuario)) { user ->
             ContentValues().apply {
                 put("id", user.id)
@@ -244,13 +245,13 @@ fun getSubregiones(): List<Subregiones> = getAllFromTable("Subregiones") { curso
 }
 
     // Obtener el registro del usuario autenticado
-    fun getUser(): DbUser? {
+    fun getUser(): User? {
         val currentUserEmail = FirebaseAuth.getInstance().currentUser?.email ?: return null
         val db = readableDatabase
         val cursor = db.rawQuery("SELECT * FROM Usuarios WHERE email = ?", arrayOf(currentUserEmail))
         cursor.use {
             val usuario = if (it.moveToFirst()) {
-                DbUser(
+                User(
                     id = it.getInt(it.getColumnIndexOrThrow("id")),
                     agencia = it.getString(it.getColumnIndexOrThrow("agencia")),
                     apellidos = it.getString(it.getColumnIndexOrThrow("apellidos")),
