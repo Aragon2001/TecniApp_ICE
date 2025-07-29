@@ -6,18 +6,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.*
-
-data class User(
-    val cedula: String = "",
-    val nombre: String = "",
-    val apellidos: String = "",
-    val email: String = "",
-    val telefono: String = "",
-    val agencia: String = "",
-    val subregion: String = "",
-    val placaVehiculo: String = "",
-    val password: String = "" // Campo para la contraseña
-)
+import com.Arasoftsolutions.tecniapp_ice.model.User
 
 class UserViewModel : ViewModel() {
 
