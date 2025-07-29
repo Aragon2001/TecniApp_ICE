@@ -5,10 +5,10 @@
 -->
 <data-extraction-rules>
     <cloud-backup>
-        <!-- TODO: Use <include> and <exclude> to control what is backed up.
-        <include .../>
-        <exclude .../>
-        -->
+        <!-- Incluir la base de datos local para conservar la información
+             sincronizada de Firebase y excluir las preferencias de sesión. -->
+        <include domain="database" path="TecniAppDB.db" />
+        <exclude domain="sharedpref" path="TecniAppPrefs.xml" />
     </cloud-backup>
     <!--
     <device-transfer>
