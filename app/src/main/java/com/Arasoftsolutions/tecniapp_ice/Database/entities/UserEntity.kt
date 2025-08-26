@@ -5,7 +5,11 @@ import androidx.room.PrimaryKey
 
 @Entity(tableName = "usuarios")
 data class UserEntity(
-    @PrimaryKey val id: Int = 0,
+    /**
+     * Identificador único del usuario en Firebase Auth.
+     * Se usa como clave primaria local para poder consultar por UID.
+     */
+    @PrimaryKey val uid: String,
     val agencia: String = "",
     val apellidos: String = "",
     val cedula: String = "",
