@@ -13,9 +13,8 @@ import com.Arasoftsolutions.tecniapp_ice.R
 
 // ✅ Mantén tu sincronizador (asegúrate que internamente ya use Room y no SQLite)
 import com.Arasoftsolutions.tecniapp_ice.Database.sync.Synchronizer
-
-// ✅ IMPORTS ROOM (ajusta el paquete según tus archivos)
 import com.Arasoftsolutions.tecniapp_ice.Database.room.AppDatabase
+import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
 // import com.Arasoftsolutions.tecniapp_ice.data.UserEntity  // <- si lo necesitas explícito
 
 import com.google.firebase.auth.FirebaseAuth
@@ -165,9 +164,15 @@ class FragmentUser : Fragment() {
                     userViewModel.updateUserData(updatedUser)
 
                     // 4) ✅ DISPARA SINCRONIZACIÓN GLOBAL (Firebase → Room para catálogos/medidores, etc.)
-                    val sync = Synchronizer(requireContext())
+                    val sync = Synchronizer(RoomRepository(requireContext()))
                     viewLifecycleOwner.lifecycleScope.launch {
-                        sync.initialize()
+                        sync.syncSubregion(
+                            updatedUser.subregion,
+                            onSyncStart = { },
+                            onSyncProgress = { _, _, _ -> },
+                            onSyncSuccess = {},
+                            onSyncError = { e -> Log.e("UserFragment", "Sync error", e) }
+                        )
                     }
                 }
                 .addOnFailureListener {
