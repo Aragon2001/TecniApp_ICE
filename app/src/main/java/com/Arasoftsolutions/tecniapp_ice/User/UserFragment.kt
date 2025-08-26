@@ -1,14 +1,26 @@
 package com.Arasoftsolutions.tecniapp_ice.User
 
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.*
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
 import com.Arasoftsolutions.tecniapp_ice.R
+
+// ✅ Mantén tu sincronizador (asegúrate que internamente ya use Room y no SQLite)
+import com.Arasoftsolutions.tecniapp_ice.Database.sync.Synchronizer
+
+// ✅ IMPORTS ROOM (ajusta el paquete según tus archivos)
+import com.Arasoftsolutions.tecniapp_ice.Database.room.AppDatabase
+// import com.Arasoftsolutions.tecniapp_ice.data.UserEntity  // <- si lo necesitas explícito
+
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.FirebaseDatabase
+import kotlinx.coroutines.launch
 
 class FragmentUser : Fragment() {
 
@@ -30,13 +42,13 @@ class FragmentUser : Fragment() {
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         val view = inflater.inflate(R.layout.fragment_user, container, false)
 
-        // Inicialización del ViewModel
+        // ViewModel (mantengo tu manera actual; si luego quieres inyectar repo de Room, usamos Factory)
         userViewModel = ViewModelProvider(this).get(UserViewModel::class.java)
 
-        // Inicialización de vistas
+        // Vistas
         cedulaTextView = view.findViewById(R.id.tvId)
         nombreTextView = view.findViewById(R.id.tvNombre)
         emailTextView = view.findViewById(R.id.tvEmail)
@@ -48,13 +60,10 @@ class FragmentUser : Fragment() {
         confirmPasswordEditText = view.findViewById(R.id.etConfirmPassword)
         updateButton = view.findViewById(R.id.btnSaveChanges)
 
-        // Cargar los datos del usuario actual
+        // Cargar datos de usuario por email desde Firebase (online-first, como quieres)
         val userEmail = FirebaseAuth.getInstance().currentUser?.email
-        userEmail?.let {
-            userViewModel.loadCurrentUser(it)
-        }
+        userEmail?.let { userViewModel.loadCurrentUser(it) }
 
-        // Configuración del ViewModel y observación de datos
         observeUserData()
         setupSaveButton()
 
@@ -62,22 +71,25 @@ class FragmentUser : Fragment() {
     }
 
     private fun observeUserData() {
-        userViewModel.userData.observe(viewLifecycleOwner) { user ->
+        userViewModel.userEntityData.observe(viewLifecycleOwner) { user ->
             user?.let {
                 cedulaTextView.text = it.cedula
                 nombreTextView.text = it.nombre
                 emailTextView.text = it.email
                 telefonoEditText.setText(it.telefono)
 
-                // Cargar subregiones, agencias y vehículos
+                // Cargar catálogos desde Firebase (tu lógica actual)
                 userViewModel.loadSubregions()
+
                 userViewModel.subregions.observe(viewLifecycleOwner) { subregions ->
                     setupSpinner(subregionSpinner, subregions) { selectedSubregion ->
                         if (selectedSubregion != "Seleccione una Subregion") {
                             userViewModel.loadAgencies(selectedSubregion)
                         }
                     }
-                    subregionSpinner.setSelection(subregions.indexOf(user.subregion))
+                    // Intentar colocar en el ítem correcto si ya viene de Firebase/Room
+                    val idx = subregions.indexOf(user.subregion)
+                    if (idx >= 0) subregionSpinner.setSelection(idx)
                 }
 
                 userViewModel.agencies.observe(viewLifecycleOwner) { agencies ->
@@ -86,12 +98,14 @@ class FragmentUser : Fragment() {
                             userViewModel.loadVehicles(selectedAgency)
                         }
                     }
-                    agenciaSpinner.setSelection(agencies.indexOf(it.agencia))
+                    val idx = agencies.indexOf(it.agencia)
+                    if (idx >= 0) agenciaSpinner.setSelection(idx)
                 }
 
                 userViewModel.vehicles.observe(viewLifecycleOwner) { vehicles ->
                     setupSpinner(placaVehiculoSpinner, vehicles, null)
-                    placaVehiculoSpinner.setSelection(vehicles.indexOf(it.placaVehiculo))
+                    val idx = vehicles.indexOf(it.placaVehiculo)
+                    if (idx >= 0) placaVehiculoSpinner.setSelection(idx)
                 }
             }
         }
@@ -99,12 +113,12 @@ class FragmentUser : Fragment() {
 
     private fun setupSaveButton() {
         updateButton.setOnClickListener {
-            val currentUser = userViewModel.userData.value ?: return@setOnClickListener
+            val currentUser = userViewModel.userEntityData.value ?: return@setOnClickListener
 
-            // Validación de contraseñas
             val newPassword = passwordEditText.text.toString()
             val confirmPassword = confirmPasswordEditText.text.toString()
 
+            // ✅ Validaciones de contraseña (opcional)
             if (newPassword.isNotEmpty() || confirmPassword.isNotEmpty()) {
                 if (newPassword.length < 8) {
                     Toast.makeText(requireContext(), "La contraseña debe tener al menos 8 caracteres.", Toast.LENGTH_SHORT).show()
@@ -116,8 +130,9 @@ class FragmentUser : Fragment() {
                 }
             }
 
-            // Actualización de campos
+            // ✅ Construimos el User actualizado (mantenemos tu lógica)
             val updatedUser = currentUser.copy(
+                telefono = telefonoEditText.text.toString(),
                 subregion = if (subregionSpinner.selectedItem.toString() != "Seleccione una Subregion")
                     subregionSpinner.selectedItem.toString() else currentUser.subregion,
                 agencia = if (agenciaSpinner.selectedItem.toString() != "Seleccione una Agencia")
@@ -127,8 +142,38 @@ class FragmentUser : Fragment() {
                 password = if (newPassword.isNotEmpty()) newPassword else currentUser.password
             )
 
-            userViewModel.updateUserData(updatedUser)
-            Toast.makeText(requireContext(), "Datos actualizados correctamente.", Toast.LENGTH_SHORT).show()
+            // 1) ✅ ACTUALIZA EN FIREBASE (fuente de verdad para verificación)
+            val databaseRef = FirebaseDatabase
+                .getInstance("https://tecniapp-ice-user.firebaseio.com")
+                .getReference("usuarios")
+                .child(currentUser.cedula)  // ojo: tu key actual es la cédula
+
+            databaseRef.setValue(updatedUser)
+                .addOnSuccessListener {
+                    Toast.makeText(requireContext(), "Actualizado en Firebase", Toast.LENGTH_SHORT).show()
+
+                    // 2) ✅ GUARDA EN ROOM (cache/offline) — SIN SQLite
+                    //    Asegúrate que AppDatabase y UsuarioDao estén en el paquete 'com.Arasoftsolutions.tecniapp_ice.data'
+                    //    y que tu UsuarioDao tenga un método upsert(user) con OnConflict=REPLACE.
+                    viewLifecycleOwner.lifecycleScope.launch {
+                        val db = AppDatabase.getInstance(requireContext())
+                        val dao = db.usuarioDao()
+                        dao.upsert(updatedUser)
+                    }
+
+                    // 3) ✅ REFRESCA UI (tu VM)
+                    userViewModel.updateUserData(updatedUser)
+
+                    // 4) ✅ DISPARA SINCRONIZACIÓN GLOBAL (Firebase → Room para catálogos/medidores, etc.)
+                    val sync = Synchronizer(requireContext())
+                    viewLifecycleOwner.lifecycleScope.launch {
+                        sync.initialize()
+                    }
+                }
+                .addOnFailureListener {
+                    Toast.makeText(requireContext(), "Error al actualizar en Firebase", Toast.LENGTH_LONG).show()
+                    Log.e("UserFragment", "Firebase update failed: ${it.message}")
+                }
         }
     }
 
@@ -146,7 +191,6 @@ class FragmentUser : Fragment() {
                 val selectedItem = items[position]
                 onItemSelected?.invoke(selectedItem)
             }
-
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
     }

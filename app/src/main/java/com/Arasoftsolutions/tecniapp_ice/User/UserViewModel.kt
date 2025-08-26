@@ -6,18 +6,10 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.*
+import com.Arasoftsolutions.tecniapp_ice.Database.entities.UserEntity
 
-data class User(
-    val cedula: String = "",
-    val nombre: String = "",
-    val apellidos: String = "",
-    val email: String = "",
-    val telefono: String = "",
-    val agencia: String = "",
-    val subregion: String = "",
-    val placaVehiculo: String = "",
-    val password: String = "" // Campo para la contraseña
-)
+
+
 
 class UserViewModel : ViewModel() {
 
@@ -30,8 +22,8 @@ class UserViewModel : ViewModel() {
     private val _vehicles = MutableLiveData<List<String>>()
     val vehicles: LiveData<List<String>> get() = _vehicles
 
-    private val _userData = MutableLiveData<User>()
-    val userData: LiveData<User> get() = _userData
+    private val _userEntityData = MutableLiveData<UserEntity>()
+    val userEntityData: LiveData<UserEntity> get() = _userEntityData
 
     private val _error = MutableLiveData<String>()
     val error: LiveData<String> get() = _error
@@ -55,7 +47,7 @@ class UserViewModel : ViewModel() {
                     }
                 }
                 _subregions.value = subregionList
-                Log.d("UserViewModel", "Subregiones cargadas: $subregionList")
+                Log.d("UserViewModel", "SubregionesEntity cargadas: $subregionList")
             }
 
             override fun onCancelled(databaseError: DatabaseError) {
@@ -110,11 +102,11 @@ class UserViewModel : ViewModel() {
     }
 
     // Actualizar datos del usuario
-    fun updateUserData(user: User) {
-        usersDatabase.child(user.cedula).setValue(user)
+    fun updateUserData(userEntity: UserEntity) {
+        usersDatabase.child(userEntity.cedula).setValue(userEntity)
             .addOnSuccessListener {
-                _userData.value = user
-                Log.d("UserViewModel", "Datos del usuario actualizados: $user")
+                _userEntityData.value = userEntity
+                Log.d("UserViewModel", "Datos del usuario actualizados: $userEntity")
             }
             .addOnFailureListener {
                 _error.postValue("Error al actualizar datos del usuario: ${it.message}")
@@ -126,9 +118,9 @@ class UserViewModel : ViewModel() {
         usersDatabase.orderByChild("email").equalTo(email).addListenerForSingleValueEvent(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 if (snapshot.exists()) {
-                    val user = snapshot.children.firstOrNull()?.getValue(User::class.java)
-                    user?.let {
-                        _userData.postValue(it)
+                    val userEntity = snapshot.children.firstOrNull()?.getValue(UserEntity::class.java)
+                    userEntity?.let {
+                        _userEntityData.postValue(it)
                         Log.d("UserViewModel", "Datos del usuario cargados: $it")
                     }
                 } else {

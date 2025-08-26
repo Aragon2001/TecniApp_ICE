@@ -73,7 +73,7 @@ class Paso2Fragment : Fragment() {
     private fun setNavigationListeners(view: View) {
         view.findViewById<ImageView>(R.id.backArrow).setOnClickListener {
             // Esto simula el botón de "atrás" del sistema para volver al fragmento anterior
-            requireActivity().onBackPressed()
+            requireActivity().onBackPressedDispatcher.onBackPressed()
         }
     }
 
@@ -164,18 +164,22 @@ class Paso2Fragment : Fragment() {
     """.trimIndent()
 
         // Crear el objeto MailSender y enviar el correo
-        val mailSender = MailSender()
-        mailSender.sendFormattedMail(
-            subject = "Verificación de cuenta TecniApp",
-            body = message,
-            to = email
-        ) { success, errorMessage ->
-            if (success) {
-                Log.d("Registro", "Correo Reenviado exitosamente.")
-            } else {
-                Log.e("Registro", "Error al Reenviar el correo: $errorMessage")
-            }
-        }
+      val mailSender = MailSender()
+mailSender.sendFormattedMail(
+    subject = "Verificación de cuenta TecniApp",
+    body = message,
+    to = email
+) { success, errorMessage ->
+    if (success) {
+        Log.d("Registro", "Correo Reenviado exitosamente.")
+        if (isAdded) Toast.makeText(requireContext(), "Reenviamos el código a $email", Toast.LENGTH_SHORT).show()
+    } else {
+        Log.e("Registro", "Error al Reenviar el correo: $errorMessage")
+        if (isAdded) Toast.makeText(requireContext(),
+            "No se pudo reenviar el correo. Intenta de nuevo.", Toast.LENGTH_LONG).show()
+    }
+}
+
     }
 
     private fun saveVerificationCode(email: String, verificationCode: String) {

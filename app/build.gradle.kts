@@ -1,104 +1,129 @@
-// Plugins necesarios para el proyecto. Incluyen el soporte para Kotlin y los servicios de Google.
 plugins {
-    alias(libs.plugins.android.application) // Plugin para aplicaciones Android
-    alias(libs.plugins.jetbrains.kotlin.android) // Plugin para soporte Kotlin en Android
-    id("com.google.gms.google-services") // Plugin para servicios de Google (Firebase, etc.)
-    id ("kotlin-kapt")
+    // Plugin Android para aplicaciones
+    alias(libs.plugins.android.application)
 
+    // Plugin Kotlin para Android
+    alias(libs.plugins.jetbrains.kotlin.android)
+
+    // Plugin de KSP (reemplazo moderno de kapt)
+    alias(libs.plugins.ksp)
+
+    // Plugin de Google Services para Firebase
+    id("com.google.gms.google-services")
 }
 
 android {
-    namespace = "com.Arasoftsolutions.tecniapp_ice" // Nombre del paquete
-    compileSdk = 34 // Versión del SDK de compilación
+    // Namespace del proyecto (coincide con el paquete original en tu código)
+    namespace = "com.Arasoftsolutions.tecniapp_ice"
+
+    // Versión de compilación del SDK
+    compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.Arasoftsolutions.tecniapp_ice" // ID del paquete
-        minSdk = 31 // Versión mínima de SDK requerida para que la app funcione
-        targetSdk = 34 // Versión de SDK objetivo (donde se espera que la app se ejecute correctamente)
-        versionCode = 1 // Código de versión de la app (para Play Store)
-        versionName = "1.0" // Nombre de la versión (para mostrar al usuario)
+        // ID de aplicación (igual al namespace para evitar conflictos)
+        applicationId = "com.Arasoftsolutions.tecniapp_ice"
 
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner" // Runner de pruebas
+        // Mínima versión de Android soportada
+        minSdk = 24
+
+        // Versión objetivo
+        targetSdk = 34
+
+        // Versión de la app
+        versionCode = 1
+        versionName = "1.0"
+
+        // Runner para pruebas
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
-    buildTypes {
-        // Configuración del tipo de build "release"
-        release {
-            isMinifyEnabled = false // Deshabilita la minificación de código (optimización)
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"), // Archivo ProGuard por defecto
-                "proguard-rules.pro" // Archivo personalizado de reglas ProGuard
-            )
-        }
-    }
-
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8 // Compatibilidad con Java 1.8
-        targetCompatibility = JavaVersion.VERSION_1_8 // Compatibilidad de destino con Java 1.8
-    }
-
-    kotlinOptions {
-        jvmTarget = "1.8" // Target JVM para Kotlin, también es 1.8
-    }
-
+    // Activar ViewBinding y DataBinding si ya lo usas en layouts
     buildFeatures {
-        viewBinding = true // Habilita ViewBinding para evitar el uso de findViewById
+        viewBinding = true
+        dataBinding = true
+    }
+
+    // Configuración para usar Java 17 (requerido por Kotlin 2.x y Room 2.7+)
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+    kotlinOptions {
+        jvmTarget = "17"
+    }
+    kotlin {
+        jvmToolchain(17)
+    }
+
+    // Evita empaquetar licencias duplicadas que a veces rompen el build
+      packaging {
+        resources {
+            // Opción recomendada: excluir duplicados de JavaMail
+            excludes += setOf(
+                "META-INF/NOTICE.md",
+                "META-INF/LICENSE.md",
+                "META-INF/NOTICE*",
+                "META-INF/LICENSE*",
+                "META-INF/DEPENDENCIES",
+                "META-INF/AL2.0",
+                "META-INF/LGPL2.1"
+            )
+            // Alternativa (si prefieres conservar uno):
+            // pickFirsts += setOf("META-INF/NOTICE.md", "META-INF/LICENSE.md")
+        }
     }
 }
 
 dependencies {
-    // Dependencias esenciales de Android
-    implementation(libs.androidx.core.ktx) // Extensiones para Kotlin
-    implementation(libs.androidx.appcompat) // Compatibilidad con versiones antiguas de Android
-    implementation(libs.material) // Biblioteca de componentes Material Design
-    implementation(libs.androidx.constraintlayout) // Para layouts con ConstraintLayout
-    implementation ("androidx.lifecycle:lifecycle-livedata-ktx:2.6.2")
-            implementation ("androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.2")
-        // Room components
-    implementation ("androidx.room:room-runtime:2.6.1")
-    kapt ("androidx.room:room-compiler:2.6.1")
-    implementation ("androidx.room:room-ktx:2.6.1") // Para soporte de corrutinas
+    // --- AndroidX básico ---
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.appcompat)
+    implementation(libs.material)
+    implementation(libs.androidx.constraintlayout)
 
-    implementation(libs.androidx.navigation.fragment.ktx) // Navegación entre fragmentos con Kotlin
-    implementation(libs.androidx.navigation.ui.ktx) // Soporte UI para la navegación
+    // Ciclo de vida (ViewModel y LiveData)
+    implementation(libs.androidx.lifecycle.viewmodel.ktx)
+    implementation(libs.androidx.lifecycle.livedata.ktx)
 
-    // Biblioteca Picasso para cargar imágenes
-    implementation("com.squareup.picasso:picasso:2.71828")
+    // Navegación Jetpack
+    implementation(libs.androidx.navigation.fragment.ktx)
+    implementation(libs.androidx.navigation.ui.ktx)
 
-    // Firebase BOM: Gestor de versiones de Firebase
-    implementation(platform("com.google.firebase:firebase-bom:33.1.2"))
-
-    // Autenticación Firebase (con KTX para mejor soporte en Kotlin)
-    implementation("com.google.firebase:firebase-auth-ktx")
-
-    // Firebase Firestore (con soporte KTX para consultas más simples)
-    implementation("com.google.firebase:firebase-firestore-ktx")
-    implementation("com.google.firebase:firebase-config-ktx")
-
-    // Firebase Realtime Database (con soporte KTX)
-    implementation("com.google.firebase:firebase-database-ktx")
-
-    // Google Maps API para integrar mapas en la aplicación
+    // --- Google Play Services ---
     implementation(libs.play.services.maps)
-    implementation ("com.google.android.gms:play-services-auth:21.2.0")
-    implementation ("com.google.firebase:firebase-auth:23.0.0")
-
-
-    // Google Sign-In: Inicio de sesión con Google
-    implementation("com.google.android.gms:play-services-auth:20.7.0")
-
-     implementation("androidx.work:work-runtime-ktx:2.9.0")
-
-    // Manejo de correo electrónico en Android (usando la biblioteca Sun Mail)
-    implementation("com.sun.mail:android-mail:1.6.2") // Mail API
-    implementation("com.sun.mail:android-activation:1.6.2") // Soporte para activación de contenido
-
-    // Firebase Analytics para el análisis de datos en la aplicación
-    implementation("com.google.firebase:firebase-analytics-ktx")
     implementation(libs.play.services.location)
 
-    // Dependencias para realizar pruebas
-    testImplementation(libs.junit) // JUnit para pruebas unitarias
-    androidTestImplementation(libs.androidx.junit) // JUnit para pruebas en Android
-    androidTestImplementation(libs.androidx.espresso.core) // Espresso para pruebas de UI
+    // --- Firebase (usamos BoM para unificar versiones) ---
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.auth.ktx)
+    implementation(libs.firebase.database.ktx)
+    implementation(libs.firebase.firestore.ktx)
+
+    // --- ROOM con KSP ---
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    implementation(libs.androidx.datastore.core.okio.jvm)
+    implementation(libs.androidx.runtime)
+    // Aquí usamos KSP (NO kapt) para generar el código de Room
+    ksp(libs.androidx.room.compiler)
+
+    // --- Testing ---
+    testImplementation(libs.junit)
+    androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.espresso.core)
+
+    // --- envio de emails----
+    implementation("com.sun.mail:android-mail:1.6.7")
+implementation("com.sun.mail:android-activation:1.6.7")
+implementation("com.google.firebase:firebase-config-ktx:21.6.0")
+
+    implementation("androidx.work:work-runtime-ktx:2.9.0")
+
+}
+
+// Configuración extra para KSP + Room
+ksp {
+    // Generar esquema de base de datos (útil para migraciones)
+    arg("room.schemaLocation", "$projectDir/schemas")
+    arg("room.incremental", "true")
 }

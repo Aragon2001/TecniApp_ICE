@@ -1,3 +1,5 @@
+package com.Arasoftsolutions.tecniapp_ice.ui.localizacion
+
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -27,7 +29,7 @@ class LocalizacionViewModel : ViewModel() {
     val localizacion: LiveData<Localizacion> get() = _localizacion
 
     private val referenciaDB = FirebaseDatabase.getInstance("https://tecniapp-ice.firebaseio.com/")
-        .getReference("Localizaciones")
+        .getReference("LocalizacionesEntity")
      private val PueblosDB = FirebaseDatabase.getInstance("https://tecniapp-ice.firebaseio.com/")
         .getReference("pueblos")
 

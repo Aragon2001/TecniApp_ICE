@@ -1,6 +1,7 @@
 package com.Arasoftsolutions.tecniapp_ice.ui.localizacion
 
-import LocalizacionViewModel
+// ViewModel en su package correcto
+
 import android.Manifest
 import android.content.Context
 import android.content.Intent
@@ -24,10 +25,11 @@ import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.ActivityCompat
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.Observer
-import androidx.lifecycle.ViewModelProvider
 import com.Arasoftsolutions.tecniapp_ice.R
 import com.Arasoftsolutions.tecniapp_ice.databinding.FragmentLocalizacionBinding
 import com.google.android.gms.location.FusedLocationProviderClient
@@ -46,782 +48,549 @@ import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
+import java.lang.Math.toDegrees
+import kotlin.math.abs
 
+/**
+ * LocalizacionFragment
+ *
+ * Diseño:
+ * - GoogleMap dentro de MapView (ciclo de vida completo)
+ * - FusedLocationProviderClient para updates
+ * - Activity Result API para permisos (sin APIs deprecadas)
+ * - Un ÚNICO listener de "idle" que coordina brújula + autorrotación (Maps permite 1 a la vez)
+ * - Rotación con sensor y umbral de cambio (anti-jitter)
+ * - UI reactiva via ViewModel (pueblos, calles, localización)
+ *
+ * Nota: No “escondemos” errores; se loguean con contexto y se muestran toasts útiles para operación en campo.
+ */
 class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener {
 
-    private lateinit var binding: FragmentLocalizacionBinding
-    private lateinit var viewModel: LocalizacionViewModel
+    // --- ViewBinding ---
+    private var _binding: FragmentLocalizacionBinding? = null
+    private val binding get() = _binding!!
+
+    // --- ViewModel (scope del fragment) ---
+    private val viewModel: LocalizacionViewModel by viewModels()
+
+    // --- Mapa/Ubicación ---
     private lateinit var mapaVista: MapView
+    private var mapaGoogle: GoogleMap? = null        // nullable para evitar isInitialized siempre-true
     private var marcador: Marker? = null
-    private lateinit var mapaGoogle: GoogleMap
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private val CLAVE_MAPA_VISTA_BUNDLE = "ClaveMapaVistaBundle"
-    private val PERMISO_LOCALIZACION = 1000
+
+    // --- Permisos (Activity Result API) ---
+    private val locationPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            if (granted) {
+                enableMyLocationAndStartUpdates()
+            } else {
+                Toast.makeText(requireContext(), "Permiso de ubicación denegado", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+    // --- Sensores y rotación ---
     private lateinit var sensorManager: SensorManager
     private var rotationVectorSensor: Sensor? = null
-    private var isManualRotation = false // Indica si el usuario ha girado manualmente el mapa
-private var isCompassTouched = false // Indica si el usuario ha tocado la brújula
-private var isAutoRotateEnabled = true // Controla si la autorrotación está activa
-    private var userIsInteracting = false
+    private var isAutoRotateEnabled = true  // autorrotación controlada por brújula/sensor
+    private var isCompassTouched = false    // true cuando la orientación vuelve ~Norte (bearing≈0)
+    private var userIsInteracting = false   // true mientras el usuario mueve la cámara
+
+    // Umbral en grados para mover cámara (evita jitter excesivo)
+    private val BEARING_THRESHOLD_DEG = 1.5f
+
+    // --- Handler para pequeñas demoras (re-activar autorrotación tras gestos, etc.) ---
     private val handler = Handler(Looper.getMainLooper())
 
+    // --- Requests de ubicación ---
+    private val locationRequest = com.google.android.gms.location.LocationRequest.Builder(
+        Priority.PRIORITY_HIGH_ACCURACY,
+        1000 // 1s entre updates
+    ).apply {
+        setMinUpdateIntervalMillis(1000)
+        setMaxUpdateDelayMillis(10_000)
+    }.build()
 
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
-        // Inflar el layout para el fragmento
-        binding = FragmentLocalizacionBinding.inflate(inflater, container, false)
-        viewModel = ViewModelProvider(this).get(LocalizacionViewModel::class.java)
+    private val locationCallback = object : LocationCallback() {
+        override fun onLocationResult(locationResult: LocationResult) {
+            val location: Location? = locationResult.lastLocation
+            if (location == null) {
+                Toast.makeText(requireContext(), "No se pudo obtener la ubicación actual", Toast.LENGTH_SHORT).show()
+                return
+            }
+            // Si quisieras seguir al usuario, podrías mover la cámara aquí;
+            // se deja sin mover para no interferir con el poste seleccionado.
+            // val yo = LatLng(location.latitude, location.longitude)
+        }
 
-        // Inicializar FusedLocationProviderClient
+        override fun onLocationAvailability(locationAvailability: LocationAvailability) {
+            if (!locationAvailability.isLocationAvailable) {
+                Toast.makeText(requireContext(), "La ubicación no está disponible", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // Ciclo de vida / Set up
+    // ---------------------------------------------------------------------------------------------
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
+        _binding = FragmentLocalizacionBinding.inflate(inflater, container, false)
+
+        // Ubicación
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity())
 
+        // Sensores
+        sensorManager = requireContext().getSystemService(Context.SENSOR_SERVICE) as SensorManager
+        rotationVectorSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR).also {
+            if (it == null) Log.e("Localizacion", "Sensor de rotación no disponible")
+        }
+
         configurarObservers()
-        configurarListeners()
+        configurarBotones()
         inicializarMapaVista(savedInstanceState)
 
-        // Cargar los pueblos desde el ViewModel
+        // Datos iniciales
         viewModel.cargarPueblos()
 
         return binding.root
     }
 
     private fun configurarObservers() {
-        // Obtener el ProgressBar desde el layout
-        val progressBar = binding.progressBar
-
-        // Observar los cambios en la lista de pueblos
-        viewModel.pueblos.observe(viewLifecycleOwner, Observer { pueblos ->
-
-            val adapter = ArrayAdapter(
+        // Pueblos
+        viewModel.pueblos.observe(viewLifecycleOwner) { pueblos ->
+            binding.spinnerPueblos.adapter = ArrayAdapter(
                 requireContext(),
                 android.R.layout.simple_spinner_dropdown_item,
                 pueblos
             )
-            binding.spinnerPueblos.adapter = adapter
+        }
 
-        })
-
-        // Observar los cambios en la lista de calles
-        viewModel.calles.observe(viewLifecycleOwner, Observer { calles ->
+        // Calles dependientes del pueblo
+        viewModel.calles.observe(viewLifecycleOwner) { calles ->
             limpiarCamposDeTexto()
-
-            val adapter = ArrayAdapter(
+            binding.spinnerCalles.adapter = ArrayAdapter(
                 requireContext(),
                 android.R.layout.simple_spinner_dropdown_item,
                 calles
             )
-            binding.spinnerCalles.adapter = adapter
-
-
-            // Listener para el spinner de calles
             binding.spinnerCalles.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
                 override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                    val calleSeleccionada = parent?.getItemAtPosition(position).toString()
+                    val calleSeleccionada = parent?.getItemAtPosition(position)?.toString().orEmpty()
+                    if (calleSeleccionada == "Seleccione una calle") return
 
-                    // Verificar si la calle seleccionada no es "Seleccione una calle"
-                    if (calleSeleccionada != "Seleccione una calle") {
-                        try {
-                            val partesCalle = calleSeleccionada.split(" - ")
-                            val codigoCalle = partesCalle[0].toInt()
-                            val direccionCalle = partesCalle[1]
-                            val puebloSeleccionado = binding.spinnerPueblos.selectedItem.toString()
+                    try {
+                        val partes = calleSeleccionada.split(" - ")
+                        val codigoCalle = partes[0].toInt()
+                        val direccionCalle = partes[1]
+                        val puebloSel = binding.spinnerPueblos.selectedItem.toString()
+                        if (puebloSel == "Seleccione un pueblo") return
+                        val codigoPueblo = puebloSel.split(" - ")[0].toInt()
 
-                            // Asegurarse de que se seleccionó un pueblo válido
-                            if (puebloSeleccionado != "Seleccione un pueblo") {
-                                val codigoPueblo = puebloSeleccionado.split(" - ")[0].toInt()
-
-                                // Cargar localización para la calle seleccionada
-                                viewModel.cargarLocalizacionParaCalle(codigoCalle, codigoPueblo, direccionCalle)
-
-                                // Actualizar el mapa solo si la localización está disponible
-                                viewModel.localizacion.observe(viewLifecycleOwner, Observer { localizacion ->
-                                    if (localizacion.latitud != null && localizacion.longitud != null) {
-                                        val numeroPoste = localizacion.delPoste
-                                        actualizarUbicacionMapa(localizacion.latitud, localizacion.longitud, codigoPueblo.toString(), partesCalle[0], numeroPoste.toString())
-
-                                        binding.direccionTextView.text = "Dirección: ${localizacion.direccion ?: "N/A"}"
-                                        binding.delposteTextView.text = "Del Poste: ${localizacion.delPoste ?: 0}"
-                                        binding.alposteTextView.text = "Al Poste: ${localizacion.alPoste ?: 0}"
-                                    }
-                                })
-                            }
-                        } catch (e: NumberFormatException) {
-                            Log.e("LocalizacionFragment", "Error al convertir el código de la calle: ${e.message}")
-                        }
-                    } else {
-                        Log.d("LocalizacionFragment", "Calle seleccionada es inválida: $calleSeleccionada")
+                        viewModel.cargarLocalizacionParaCalle(codigoCalle, codigoPueblo, direccionCalle)
+                    } catch (e: Exception) {
+                        Log.e("Localizacion", "Error parseando calle seleccionada: ${e.message}", e)
                     }
                 }
-
-                override fun onNothingSelected(parent: AdapterView<*>?) {
-                    // No hacer nada si no se selecciona ninguna calle
-                }
+                override fun onNothingSelected(parent: AdapterView<*>?) {}
             }
+        }
+
+        // Localización ↦ actualizar mapa + textos
+        viewModel.localizacion.observe(viewLifecycleOwner, Observer { loc ->
+            val lat = loc.latitud ?: return@Observer
+            val lng = loc.longitud ?: return@Observer
+
+            val puebloSel = binding.spinnerPueblos.selectedItem?.toString().orEmpty()
+            val codigoPueblo = puebloSel.takeIf { it.contains(" - ") }?.split(" - ")?.get(0)
+            val codigoCalle = loc.calleValor?.toString()
+            val numeroPoste = loc.delPoste?.toString()
+
+            actualizarUbicacionMapa(lat, lng, codigoPueblo, codigoCalle, numeroPoste)
+
+            binding.direccionTextView.text = "Dirección: ${loc.direccion ?: "N/A"}"
+            binding.delposteTextView.text = "Del Poste: ${loc.delPoste ?: 0}"
+            binding.alposteTextView.text = "Al Poste: ${loc.alPoste ?: 0}"
         })
 
-        // Observar los errores y mostrar mensajes
-        viewModel.estado.observe(viewLifecycleOwner, Observer { estado ->
+        // Estado (progress + errores)
+        viewModel.estado.observe(viewLifecycleOwner) { estado ->
             when (estado) {
-                is LocalizacionViewModel.Estado.Error -> {
-                    // Ocultar el ProgressBar y mostrar el mensaje de error
-                    progressBar.visibility = View.GONE
+                is LocalizacionViewModel.Estado.Cargando -> binding.progressBar.visibility = View.VISIBLE
+                is LocalizacionViewModel.Estado.Exito   -> binding.progressBar.visibility = View.GONE
+                is LocalizacionViewModel.Estado.Error   -> {
+                    binding.progressBar.visibility = View.GONE
                     Toast.makeText(requireContext(), estado.mensaje, Toast.LENGTH_SHORT).show()
                 }
-                is LocalizacionViewModel.Estado.Cargando -> {
-                    // Mostrar el ProgressBar cuando el estado sea "Cargando"
-                    progressBar.visibility = View.VISIBLE
-                }
-                is LocalizacionViewModel.Estado.Exito -> {
-                    // Ocultar el ProgressBar cuando el estado sea "Exito"
-                    progressBar.visibility = View.GONE
-                }
-                else -> {
-                    // Ocultar el ProgressBar por defecto
-                    progressBar.visibility = View.GONE
-                }
+                else -> binding.progressBar.visibility = View.GONE
             }
-        })
+        }
 
-        // Listener para el spinner de pueblos
+        // Cambio de pueblo ↦ solicitar calles
         binding.spinnerPueblos.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                val puebloSeleccionado = parent?.getItemAtPosition(position).toString()
-
-                // Asegurarse de que se seleccionó un pueblo válido
-                if (puebloSeleccionado != "Seleccione un pueblo") {
+                val puebloSeleccionado = parent?.getItemAtPosition(position)?.toString().orEmpty()
+                if (puebloSeleccionado == "Seleccione un pueblo") return
+                try {
                     val codigoPueblo = puebloSeleccionado.split(" - ")[0].toInt()
-
-                    // Limpiar los campos de texto cuando se seleccione un pueblo nuevo
                     limpiarCamposDeTexto()
-
-                    // Cargar las calles para el pueblo seleccionado
                     viewModel.cargarCallesParaPueblo(codigoPueblo)
+                } catch (e: Exception) {
+                    Log.e("Localizacion", "Error parseando pueblo seleccionado: ${e.message}", e)
                 }
             }
-
-            override fun onNothingSelected(parent: AdapterView<*>?) {
-                // No hacer nada si no se selecciona ningún pueblo
-            }
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
     }
 
-    // Función para limpiar los campos de texto
+    private fun configurarBotones() {
+        binding.buttonNavegar.setOnClickListener { mostrarOpcionesDeNavegacion() }
+        binding.buttonShare.setOnClickListener { compartirUbicacion() }
+        binding.buttonAll.setOnClickListener {
+            // Si quieres listar todas las calles del pueblo actual, llama un método en el VM aquí.
+        }
+    }
+
+    // Reset de textos y cámara a vista país
     private fun limpiarCamposDeTexto() {
-        if (::mapaGoogle.isInitialized) {
         binding.direccionTextView.text = "Dirección: N/A"
         binding.delposteTextView.text = "Del Poste: 0"
         binding.alposteTextView.text = "Al Poste: 0"
-          // Inicializar el mapa en Costa Rica
-        val costaRicaLatLng = LatLng(9.7489, -83.7534)  // Coordenadas de Costa Rica
-        val zoomNivel = 7f  // Ajusta el nivel de zoom (por ejemplo, 7 para vista nacional)
-         // Centrar el mapa en Costa Rica y hacer zoom
-        mapaGoogle.moveCamera(CameraUpdateFactory.newLatLngZoom(costaRicaLatLng, zoomNivel))
-                } else {
-        Log.e("LocalizacionFragment", "mapaGoogle no está inicializado. No se pueden limpiar los campos de texto.")
+        centrarMapaEnCostaRica()
     }
 
-    }
-
-
-
-
-    private fun configurarListeners() {
-        // Listener para el spinner de pueblos
-        binding.spinnerPueblos.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                val puebloSeleccionado = parent?.getItemAtPosition(position).toString()
-
-                // Verificar si el pueblo seleccionado es válido
-                if (puebloSeleccionado != "Seleccione un pueblo") {
-                    try {
-                        // Extraer el código del pueblo (la primera parte antes del " - ")
-                        val codigoPueblo = puebloSeleccionado.split(" - ")[0].toInt()
-
-                        // Llamar al método para cargar las calles para el pueblo seleccionado
-                        viewModel.cargarCallesParaPueblo(codigoPueblo)
-                    } catch (e: NumberFormatException) {
-                        // Manejar el caso de que el código del pueblo no sea un número válido
-                        Log.e("LocalizacionFragment", "Error al convertir el código del pueblo: ${e.message}")
-                    }
-                } else {
-                    // Si el pueblo seleccionado es "Seleccione un pueblo", no hacer nada
-                    Log.d("LocalizacionFragment", "Pueblo seleccionado es inválido: $puebloSeleccionado")
-                }
-            }
-
-            override fun onNothingSelected(parent: AdapterView<*>?) {
-                // No hacer nada si no se selecciona ningún pueblo
-            }
-        }
-
-
-
-
-        // Listener para el botón de navegación
-        binding.buttonNavegar.setOnClickListener {
-            mostrarOpcionesDeNavegacion()
-        }
-
-        // Listener para el botón de compartir ubicación
-        binding.buttonShare.setOnClickListener {
-            compartirUbicacion()
-        }
-
-        // Listener para el botón de mostrar todas las calles
-        binding.buttonAll.setOnClickListener {
-            //cargarCallesDelPueblo()
-        }
-
-
-    }
-
-       // Método para inicializar el mapa y gestionar el ciclo de vida del MapView
+    // ---------------------------------------------------------------------------------------------
+    // MapView / GoogleMap
+    // ---------------------------------------------------------------------------------------------
     private fun inicializarMapaVista(savedInstanceState: Bundle?) {
-        val mapaVistaBundle: Bundle? = savedInstanceState?.getBundle(CLAVE_MAPA_VISTA_BUNDLE)
-
-        mapaVista = binding.mapView // Asumiendo que estás utilizando View Binding
-        mapaVista.onCreate(mapaVistaBundle)
-        mapaVista.getMapAsync(this) // Asignar el callback del mapa
+        val mapaBundle: Bundle? = savedInstanceState?.getBundle(CLAVE_MAPA_VISTA_BUNDLE)
+        mapaVista = binding.mapView
+        mapaVista.onCreate(mapaBundle)
+        mapaVista.getMapAsync(this)
     }
 
-    // Este método se ejecuta cuando el mapa está listo
-override fun onMapReady(mapa: GoogleMap) {
-    // Inicializa el mapa una vez que esté listo
-    mapaGoogle = mapa
+    override fun onMapReady(map: GoogleMap) {
+        mapaGoogle = map
 
-    // Inicializar el SensorManager dentro de un Fragment
-    sensorManager = requireContext().getSystemService(Context.SENSOR_SERVICE) as SensorManager
+        // Controles de UI
+        mapaGoogle?.uiSettings?.apply {
+            isZoomControlsEnabled = true
+            isMyLocationButtonEnabled = true
+            isMapToolbarEnabled = true
+            isZoomGesturesEnabled = true
+            isTiltGesturesEnabled = true
+            isCompassEnabled = true
+            isRotateGesturesEnabled = true
+            isScrollGesturesEnabledDuringRotateOrZoom = true
+            isScrollGesturesEnabled = true
+        }
+        mapaGoogle?.isTrafficEnabled = true
 
-    // Configurar el listener para detectar cambios manuales en la cámara
-    setupCameraChangeListener()
-
-    // Obtener el sensor de rotación
-    rotationVectorSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
-    if (rotationVectorSensor == null) {
-        Log.e("SensorError", "El sensor de rotación no está disponible")
-    } else {
-        Log.d("SensorInfo", "El sensor de rotación está disponible")
+        configurarTipoDeMapa()
+        setupCameraListeners()        // mueve/idle centralizado
+        verificarPermisosUbicacion()  // si ya hay permiso, activa myLocation + updates
+        centrarMapaEnCostaRica()
     }
 
-    // Configurar ventana de información personalizada (si es necesario)
-    configurarInfoWindowPersonalizado()
-
-    // Configuración de los controles del mapa
-    with(mapaGoogle.uiSettings) {
-        isZoomControlsEnabled = true
-        isMyLocationButtonEnabled = true
-        isMapToolbarEnabled = true
-        isZoomGesturesEnabled = true
-        isTiltGesturesEnabled = true
-        isCompassEnabled = true
-        isRotateGesturesEnabled = true
-        isScrollGesturesEnabledDuringRotateOrZoom = true
-        isScrollGesturesEnabled = true
-    }
-
-    // Activar el tráfico en el mapa
-    mapaGoogle.isTrafficEnabled = true
-
-    // Configurar el tipo de mapa y el clic en el mapa
-    configurarTipoDeMapa()
-
-    // Verificar los permisos de ubicación y habilitar la ubicación en el mapa
-    verificarPermisosUbicacion()
-
-    // Inicializar el mapa en Costa Rica con un nivel de zoom adecuado
-    centrarMapaEnCostaRica()
-
-
-   // Configurar el listener para detectar cambios manuales en la cámara
-    configurarCameraMoveListener()
-
-    // Configurar comportamiento de la brújula
-    configurarBrújula()
-
-    // Configurar la rotación automática y brújula
-    configurarBrújulaYRotación()
-}
-
-
-    // Configurar el tipo de mapa y el clic en el mapa
     private fun configurarTipoDeMapa() {
-        var isHybridMode = false
-        mapaGoogle.setOnMapClickListener {
-            // Cambiar entre modo normal y satélite al hacer clic en el mapa
-            mapaGoogle.mapType = if (isHybridMode) {
-                GoogleMap.MAP_TYPE_NORMAL
-            } else {
-                GoogleMap.MAP_TYPE_HYBRID
+        var hybrid = false
+        mapaGoogle?.setOnMapClickListener {
+            mapaGoogle?.mapType = if (hybrid) GoogleMap.MAP_TYPE_NORMAL else GoogleMap.MAP_TYPE_HYBRID
+            hybrid = !hybrid
+        }
+    }
+
+    // Listener único para coordinar gestos (move started), movimiento (move) y fin (idle)
+    private fun setupCameraListeners() {
+        val map = mapaGoogle ?: return
+
+        // 1) Inicio de movimiento (gesto del usuario)
+        map.setOnCameraMoveStartedListener { reason ->
+            if (reason == GoogleMap.OnCameraMoveStartedListener.REASON_GESTURE) {
+                userIsInteracting = true
+                isAutoRotateEnabled = false
+                Log.d("Localizacion", "Gesto detectado → autorrotación OFF")
             }
-            isHybridMode = !isHybridMode // Alternar el estado
+        }
+
+        // 2) Movimiento continuo (señal para activar autorrotación si giran el mapa explícitamente)
+        map.setOnCameraMoveListener {
+            val bearing = mapaGoogle?.cameraPosition?.bearing ?: return@setOnCameraMoveListener
+            // Si el usuario realmente giró el mapa (bearing cambia), permitimos autorrotación posterior
+            if (abs(bearing) > 1 && !userIsInteracting) {
+                isAutoRotateEnabled = true
+            }
+            // Si la orientación es ~Norte durante el movimiento, inferimos toque de brújula
+            if (abs(bearing) < 1) {
+                isAutoRotateEnabled = false
+                isCompassTouched = true
+            }
+        }
+
+        // 3) Fin de movimiento (IDLE ÚNICO)
+        map.setOnCameraIdleListener {
+            val bearing = mapaGoogle?.cameraPosition?.bearing ?: 0f
+
+            // Si quedó en ~Norte y veníamos “tocando brújula”, mantener autorrotación OFF
+            if (abs(bearing) < 1 && isCompassTouched) {
+                isAutoRotateEnabled = false
+                isCompassTouched = false
+                Log.d("Localizacion", "Idle ~Norte → autorrotación OFF por brújula")
+            }
+
+            // Tras un gesto, reactivar autorrotación después de un breve tiempo (si no se tocó brújula)
+            if (userIsInteracting) {
+                userIsInteracting = false
+                handler.postDelayed({
+                    if (!isCompassTouched) {
+                        isAutoRotateEnabled = true
+                        Log.d("Localizacion", "Autorrotación ON tras gesto (delay)")
+                    }
+                }, 3000)
+            }
         }
     }
 
-    // Verificar permisos de ubicación
+    // ---------------------------------------------------------------------------------------------
+    // Permisos / Ubicación
+    // ---------------------------------------------------------------------------------------------
     private fun verificarPermisosUbicacion() {
-        if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
-            ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-
-            // Solicitar permisos si no están concedidos
-            ActivityCompat.requestPermissions(requireActivity(), arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), PERMISO_LOCALIZACION)
+        val fine = ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION)
+        val coarse = ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_COARSE_LOCATION)
+        if (fine == PackageManager.PERMISSION_GRANTED || coarse == PackageManager.PERMISSION_GRANTED) {
+            enableMyLocationAndStartUpdates()
         } else {
-            // Si los permisos ya están concedidos, habilitar la ubicación
-            mapaGoogle.isMyLocationEnabled = true
-            obtenerUbicacionActual()
+            locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
         }
     }
 
-    // Centrar el mapa en Costa Rica
+    private fun enableMyLocationAndStartUpdates() {
+        val fine = ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION)
+        val coarse = ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_COARSE_LOCATION)
+        if (fine != PackageManager.PERMISSION_GRANTED && coarse != PackageManager.PERMISSION_GRANTED) return
+
+        mapaGoogle?.isMyLocationEnabled = true
+        fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper())
+    }
+
+    private fun stopLocationUpdates() {
+        fusedLocationClient.removeLocationUpdates(locationCallback)
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // Cámara / Marcadores
+    // ---------------------------------------------------------------------------------------------
     private fun centrarMapaEnCostaRica() {
-        val costaRicaLatLng = LatLng(9.7489, -83.7534)  // Coordenadas de Costa Rica
-        val zoomNivel = 7f  // Nivel de zoom
-        mapaGoogle.moveCamera(CameraUpdateFactory.newLatLngZoom(costaRicaLatLng, zoomNivel))
+        val cr = LatLng(9.7489, -83.7534)
+        mapaGoogle?.moveCamera(CameraUpdateFactory.newLatLngZoom(cr, 7f))
     }
 
-
-private val locationRequest = com.google.android.gms.location.LocationRequest.Builder(
-    Priority.PRIORITY_HIGH_ACCURACY,
-    1000  // Intervalo de 1 segundo entre actualizaciones
-).apply {
-    setMinUpdateIntervalMillis(1000) // Mínimo 1 segundo entre actualizaciones
-    setMaxUpdateDelayMillis(10000)   // Máximo 10 segundos de retraso
-}.build()
-
-private val locationCallback = object : LocationCallback() {
-    override fun onLocationResult(locationResult: LocationResult) {
-        val location: Location? = locationResult.lastLocation
-        if (location != null) {
-            val ubicacionActual = LatLng(location.latitude, location.longitude)
-            // Mover la cámara a `ubicacionActual`
-        } else {
-            Toast.makeText(requireContext(), "No se pudo obtener la ubicación actual", Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    override fun onLocationAvailability(locationAvailability: LocationAvailability) {
-        if (!locationAvailability.isLocationAvailable) {
-            Toast.makeText(requireContext(), "La ubicación no está disponible", Toast.LENGTH_SHORT).show()
-        }
-    }
-}
-
-    private fun obtenerUbicacionActual() {
-    if (ActivityCompat.checkSelfPermission(
-            requireContext(),
-            Manifest.permission.ACCESS_FINE_LOCATION
-        ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
-            requireContext(),
-            Manifest.permission.ACCESS_COARSE_LOCATION
-        ) != PackageManager.PERMISSION_GRANTED
-    ) {
-        ActivityCompat.requestPermissions(
-            requireActivity(),
-            arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
-            PERMISO_LOCALIZACION
-        )
-        return
-    }
-
-    fusedLocationClient.requestLocationUpdates(
-        locationRequest,
-        locationCallback,
-        Looper.getMainLooper()
-    )
-}
-
-private fun detenerUbicacion() {
-    fusedLocationClient.removeLocationUpdates(locationCallback)
-}
-
-
-
-    // Método para redimensionar el ícono del marcador
-    private fun redimensionarIcono(drawableRes: Int, ancho: Int, alto: Int): BitmapDescriptor {
-        val imageBitmap = BitmapFactory.decodeResource(resources, drawableRes)
-        val redimensionado = Bitmap.createScaledBitmap(imageBitmap, ancho, alto, false)
-        return BitmapDescriptorFactory.fromBitmap(redimensionado)
-    }
-
-    // Método para actualizar la ubicación en el mapa sin crear un nuevo marcador
     private fun actualizarUbicacionMapa(
-        latitud: Double?,
-        longitud: Double?,
+        latitud: Double,
+        longitud: Double,
         codigoPueblo: String?,
         numeroCalle: String?,
         numeroPoste: String?
     ) {
-        if (latitud != null && longitud != null) {
-            val ubicacion = LatLng(latitud, longitud)
+        val map = mapaGoogle ?: return
+        val ubicacion = LatLng(latitud, longitud)
 
-            // Ajustar el código del pueblo, número de calle y número de poste con ceros al frente
-            val snippetInfo = buildString {
-                append(codigoPueblo?.padStart(4, '0') ?: "0000")
-                append("-")
-                append(numeroCalle?.padStart(3, '0') ?: "000")
-                append("-")
-                append(numeroPoste?.padStart(3, '0') ?: "000")
-                append("-00")
-            }
-
-            // Redimensionar ícono personalizado
-            val iconoPersonalizado = redimensionarIcono(R.drawable.poste, 150, 150)
-
-            // Actualizar o crear el marcador
-            if (marcador != null) {
-                actualizarMarcador(ubicacion, snippetInfo, iconoPersonalizado)
-            } else {
-                crearNuevoMarcador(ubicacion, snippetInfo, iconoPersonalizado)
-            }
-
-            // Mover la cámara al nuevo marcador
-            mapaGoogle.moveCamera(CameraUpdateFactory.newLatLngZoom(ubicacion, 18f))
+        // Formato con ceros a la izquierda: PPPP-CCC-XXX-00
+        val snippetInfo = buildString {
+            append((codigoPueblo ?: "0").padStart(4, '0'))
+            append("-")
+            append((numeroCalle ?: "0").padStart(3, '0'))
+            append("-")
+            append((numeroPoste ?: "0").padStart(3, '0'))
+            append("-00")
         }
-    }
 
-    // Método para actualizar el marcador existente
-    private fun actualizarMarcador(ubicacion: LatLng, snippetInfo: String, iconoPersonalizado: BitmapDescriptor) {
-        marcador?.apply {
-            position = ubicacion
-            snippet = snippetInfo
-            setIcon(iconoPersonalizado)
-            showInfoWindow()
+        val icono = redimensionarIcono(R.drawable.poste, 150, 150)
+        if (marcador == null) {
+            marcador = map.addMarker(
+                MarkerOptions()
+                    .position(ubicacion)
+                    .title("Ubicación exacta")
+                    .snippet(snippetInfo)
+                    .icon(icono)
+            )
+        } else {
+            marcador?.apply {
+                position = ubicacion
+                snippet = snippetInfo
+                setIcon(icono)
+                showInfoWindow()
+            }
         }
+
+        // Zoom “de trabajo” para poste
+        map.moveCamera(CameraUpdateFactory.newLatLngZoom(ubicacion, 18f))
+        configurarInfoWindowPersonalizado()
     }
 
-    // Método para crear un nuevo marcador
-    private fun crearNuevoMarcador(ubicacion: LatLng, snippetInfo: String, iconoPersonalizado: BitmapDescriptor) {
-        marcador = mapaGoogle.addMarker(
-            MarkerOptions()
-                .position(ubicacion)
-                .title("Ubicación exacta")
-                .snippet(snippetInfo)
-                .icon(iconoPersonalizado)
-        )
+    private fun redimensionarIcono(drawableRes: Int, w: Int, h: Int): BitmapDescriptor {
+        val bmp = BitmapFactory.decodeResource(resources, drawableRes)
+        val scaled = Bitmap.createScaledBitmap(bmp, w, h, false)
+        return BitmapDescriptorFactory.fromBitmap(scaled)
     }
 
-    // Configurar InfoWindowAdapter para fondo translúcido
     private fun configurarInfoWindowPersonalizado() {
-        mapaGoogle.setInfoWindowAdapter(object : GoogleMap.InfoWindowAdapter {
-            override fun getInfoWindow(marker: Marker): View? {
-                // Usar null para el fondo predeterminado, pero personalizable
-                return null
-            }
-
-            override fun getInfoContents(marker: Marker): View? {
-                // Inflar un layout personalizado para el contenido del InfoWindow
-                val vista = layoutInflater.inflate(R.layout.custom_info_window, null)
-
-                // Obtener los elementos del layout
-                val tituloTextView = vista.findViewById<TextView>(R.id.titulo)
-                val snippetTextView = vista.findViewById<TextView>(R.id.snippet)
-
-                // Asignar el título y el snippet del marcador
-                tituloTextView.text = marker.title
-                snippetTextView.text = marker.snippet
-
-                return vista
+        mapaGoogle?.setInfoWindowAdapter(object : GoogleMap.InfoWindowAdapter {
+            override fun getInfoWindow(marker: Marker): View? = null
+            override fun getInfoContents(marker: Marker): View {
+                val v = layoutInflater.inflate(R.layout.custom_info_window, null)
+                v.findViewById<TextView>(R.id.titulo).text = marker.title
+                v.findViewById<TextView>(R.id.snippet).text = marker.snippet
+                return v
             }
         })
     }
 
-
-    // Gestión de permisos de ubicación
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-
-        if (requestCode == PERMISO_LOCALIZACION) {
-            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                // Si el permiso fue concedido, habilitar la ubicación
-                if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-                    mapaGoogle.isMyLocationEnabled = true
-                    obtenerUbicacionActual()
-                }
-            } else {
-                // Mostrar un mensaje si el permiso no fue concedido
-                Toast.makeText(requireContext(), "Permiso de ubicación denegado", Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
-
+    // ---------------------------------------------------------------------------------------------
+    // Acciones (Navegar / Compartir)
+    // ---------------------------------------------------------------------------------------------
     private fun mostrarOpcionesDeNavegacion() {
-    // Obtener la latitud y longitud desde el ViewModel
-    val latitud = viewModel.localizacion.value?.latitud
-    val longitud = viewModel.localizacion.value?.longitud
+        val lat = viewModel.localizacion.value?.latitud
+        val lng = viewModel.localizacion.value?.longitud
+        if (lat == null || lng == null) {
+            Toast.makeText(requireContext(), "La ubicación no está disponible", Toast.LENGTH_SHORT).show()
+            return
+        }
 
-    if (latitud != null && longitud != null) {
-        // Crear Intent para Google Maps
-        val gmmIntentUri = Uri.parse("google.navigation:q=$latitud,$longitud")
-        val gmmIntent = Intent(Intent.ACTION_VIEW, gmmIntentUri)
-        gmmIntent.setPackage("com.google.android.apps.maps") // Especificar Google Maps
-
-        // Crear Intent para Waze
-        val wazeUri = Uri.parse("waze://?ll=$latitud,$longitud&navigate=yes")
-        val wazeIntent = Intent(Intent.ACTION_VIEW, wazeUri)
-        wazeIntent.setPackage("com.waze") // Especificar Waze
-
-        // Lista de Intents (Google Maps y Waze)
-        val intentList = mutableListOf<Intent>()
-        intentList.add(gmmIntent)
-        intentList.add(wazeIntent)
-
-        // Crear el Intent de selección (Chooser)
-        val chooserIntent = Intent.createChooser(intentList[0], "Selecciona tu aplicación de navegación")
-
-        // Agregar un mensaje adicional (puedes cambiar el texto si lo deseas)
-        chooserIntent.putExtra(Intent.EXTRA_TEXT, "Elige cómo quieres navegar a esta ubicación:")
-
-        // Incluir las opciones de Waze y Google Maps solo
-        chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, intentList.toTypedArray())
-
-        // Mostrar el chooser con el mensaje adicional
-        startActivity(chooserIntent)
-    } else {
-        Toast.makeText(requireContext(), "La ubicación no está disponible", Toast.LENGTH_SHORT).show()
+        val maps = Intent(Intent.ACTION_VIEW, Uri.parse("google.navigation:q=$lat,$lng")).apply {
+            setPackage("com.google.android.apps.maps")
+        }
+        val waze = Intent(Intent.ACTION_VIEW, Uri.parse("waze://?ll=$lat,$lng&navigate=yes")).apply {
+            setPackage("com.waze")
+        }
+        val chooser = Intent.createChooser(maps, "Selecciona tu aplicación de navegación").apply {
+            putExtra(Intent.EXTRA_INITIAL_INTENTS, arrayOf(waze))
+        }
+        startActivity(chooser)
     }
-}
-
 
     private fun compartirUbicacion() {
-    // Recuperar valores de la localización
-    val latitud = viewModel.localizacion.value?.latitud
-    val longitud = viewModel.localizacion.value?.longitud
-    val calle = viewModel.localizacion.value?.direccion // Suponiendo que este campo tiene la dirección
-    val codigoCalle = viewModel.localizacion.value?.calleValor // Asegúrate de que este campo exista
-    val puebloSeleccionado = binding.spinnerPueblos.selectedItem.toString()
-val numeroPoste=viewModel.localizacion.value?.delPoste
+        val loc = viewModel.localizacion.value
+        val lat = loc?.latitud
+        val lng = loc?.longitud
+        val calle = loc?.direccion
+        val codigoCalle = loc?.calleValor
+        val puebloStr = binding.spinnerPueblos.selectedItem?.toString().orEmpty()
+        val poste = loc?.delPoste
 
-    // Verificar que el pueblo seleccionado tenga el formato esperado "Código - Pueblo"
-    val puebloParts = puebloSeleccionado.split(" - ")
-    if (puebloParts.size != 2) {
-        Toast.makeText(requireContext(), "El pueblo seleccionado no tiene un formato válido.", Toast.LENGTH_SHORT).show()
-        return
-    }
-
-    val codigoPueblo = puebloParts[0] // Obtener el código del pueblo
-    val nombrePueblo = puebloParts[1] // Obtener el nombre del pueblo
-
-    // Comprobar si todos los valores necesarios están presentes
-    if (latitud != null && longitud != null && calle != null && codigoCalle != null) {
+        val parts = puebloStr.split(" - ")
+        if (lat == null || lng == null || calle == null || codigoCalle == null || parts.size != 2) {
+            Toast.makeText(requireContext(), "No se puede compartir la ubicación. Intente de nuevo.", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val codigoPueblo = parts[0]
+        val nombrePueblo = parts[1]
 
         val mensaje = """
             Compartiendo la ubicación desde TecniApp ICE:
             
             - Pueblo: (Código: $codigoPueblo) "$nombrePueblo" 
-            
             - Calle: (Código: $codigoCalle) "$calle" 
+            - Poste: "$poste"
             
-            - Poste: "$numeroPoste"
-            
-            
-            https://maps.google.com/?q=$latitud,$longitud
+            https://maps.google.com/?q=$lat,$lng
         """.trimIndent()
 
-        // Crear intent para compartir la ubicación
-        val intent = Intent(Intent.ACTION_SEND)
-        intent.type = "text/plain"
-        intent.putExtra(Intent.EXTRA_TEXT, mensaje)
-
-        // Abrir el selector de aplicaciones para compartir
-        startActivity(Intent.createChooser(intent, "Compartir ubicación con"))
-    } else {
-        // Mostrar mensaje si falta algún dato necesario
-        Toast.makeText(requireContext(), "No se puede compartir la ubicación. Intente de nuevo.", Toast.LENGTH_SHORT).show()
-    }
-}
-
-    private fun configurarBrújula() {
-        mapaGoogle.setOnCameraIdleListener {
-            // Si el mapa está orientado al norte (bearing == 0) y la brújula fue tocada, desactiva la autorrotación
-            if (mapaGoogle.cameraPosition.bearing == 0f) {
-                isCompassTouched = true
-                isAutoRotateEnabled = false // Desactiva la autorrotación solo al tocar la brújula
-                Log.d("Compass", "La brújula fue tocada. Autorrotación desactivada.")
-            }
-        }
+        startActivity(Intent.createChooser(Intent().apply {
+            action = Intent.ACTION_SEND
+            type = "text/plain"
+            putExtra(Intent.EXTRA_TEXT, mensaje)
+        }, "Compartir ubicación con"))
     }
 
-
-
-
-
-private fun configurarBrújulaYRotación() {
-    // Listener para detectar movimientos de la cámara
-    mapaGoogle.setOnCameraMoveListener {
-        val currentBearing = mapaGoogle.cameraPosition.bearing
-
-        // Si el usuario ha girado manualmente el mapa (bearing > 1), activar la autorrotación
-        if (Math.abs(currentBearing) > 1 && !userIsInteracting) {
-            isAutoRotateEnabled = true // Activa la autorrotación al girar el mapa
-            Log.d("AutoRotate", "Autorrotación activada al girar manualmente el mapa.")
-        }
-    }
-
-    // Listener para cuando la cámara está inactiva (brújula o fin del gesto)
-    mapaGoogle.setOnCameraIdleListener {
-        val currentBearing = mapaGoogle.cameraPosition.bearing
-
-        // Si el mapa está orientado al norte (cerca de 0°), desactiva la autorrotación
-        if (Math.abs(currentBearing) < 1 && isCompassTouched) {
-            isAutoRotateEnabled = false
-            isCompassTouched = false // Reinicia el estado de la brújula
-            Log.d("AutoRotate", "Autorrotación desactivada al presionar la brújula.")
-        }
-    }
-}
-
-
-
-
-  private fun configurarCameraMoveListener() {
-    mapaGoogle.setOnCameraMoveStartedListener { reason ->
-        if (reason == GoogleMap.OnCameraMoveStartedListener.REASON_GESTURE) {
-            userIsInteracting = true
-            isAutoRotateEnabled = false // Desactiva la autorrotación durante la interacción manual
-            Log.d("MapInteraction", "Interacción manual detectada. Autorrotación desactivada.")
-        }
-    }
-
-    mapaGoogle.setOnCameraIdleListener {
-        if (userIsInteracting) {
-            userIsInteracting = false
-            // Después de la interacción manual, activa la autorrotación si no se tocó la brújula
-            handler.postDelayed({
-                if (!isCompassTouched) {
-                    isAutoRotateEnabled = true
-                    Log.d("MapInteraction", "Autorrotación reactivada después de la interacción manual.")
-                }
-            }, 3000) // 3 segundos de espera
-        }
-    }
-}
-
-
-
-
+    // ---------------------------------------------------------------------------------------------
+    // Sensores / Autorrotación
+    // ---------------------------------------------------------------------------------------------
     override fun onSensorChanged(event: SensorEvent?) {
-        if (event != null && event.sensor.type == Sensor.TYPE_ROTATION_VECTOR && isAutoRotateEnabled && !isCompassTouched) {
-            val rotationMatrix = FloatArray(9)
-            SensorManager.getRotationMatrixFromVector(rotationMatrix, event.values)
+        val map = mapaGoogle ?: return
+        if (event == null || event.sensor.type != Sensor.TYPE_ROTATION_VECTOR) return
+        if (!isAutoRotateEnabled || isCompassTouched || userIsInteracting) return
 
-            val orientationAngles = FloatArray(3)
-            SensorManager.getOrientation(rotationMatrix, orientationAngles)
+        val rotationMatrix = FloatArray(9)
+        SensorManager.getRotationMatrixFromVector(rotationMatrix, event.values)
 
-            val bearing = Math.toDegrees(orientationAngles[0].toDouble()).toFloat()
+        val orientation = FloatArray(3)
+        SensorManager.getOrientation(rotationMatrix, orientation)
 
-            val currentBearing = mapaGoogle.cameraPosition.bearing
-            // Solo actualiza si el cambio es significativo y no hay interacción manual
-            if (Math.abs(currentBearing - bearing) > 1 && !userIsInteracting) {
-                val cameraPosition = CameraPosition.Builder()
-                    .target(mapaGoogle.cameraPosition.target)
-                    .zoom(mapaGoogle.cameraPosition.zoom)
-                    .bearing(bearing)
-                    .build()
+        val bearing = toDegrees(orientation[0].toDouble()).toFloat()
+        val currentBearing = map.cameraPosition.bearing
 
-                mapaGoogle.moveCamera(CameraUpdateFactory.newCameraPosition(cameraPosition))
-            }
+        // Mover solo si el cambio supera el umbral (anti-jitter)
+        if (abs(currentBearing - bearing) > BEARING_THRESHOLD_DEG) {
+            val pos = CameraPosition.Builder()
+                .target(map.cameraPosition.target)
+                .zoom(map.cameraPosition.zoom)
+                .bearing(bearing)
+                .build()
+            map.moveCamera(CameraUpdateFactory.newCameraPosition(pos))
         }
     }
 
-
-
-    // Método para alternar la autorrotación manualmente (puedes llamarlo desde algún botón si lo deseas)
-private fun toggleAutoRotate() {
-    isAutoRotateEnabled = !isAutoRotateEnabled
-    if (isAutoRotateEnabled) {
-        // Restablecer la cámara al último bearing
-        val cameraPosition = CameraPosition.Builder()
-            .target(mapaGoogle.cameraPosition.target)
-            .zoom(mapaGoogle.cameraPosition.zoom)
-            .bearing(mapaGoogle.cameraPosition.bearing) // Mantener la orientación actual
-            .build()
-        mapaGoogle.moveCamera(CameraUpdateFactory.newCameraPosition(cameraPosition))
-    }
-}
-
-// Método para configurar el listener de cambios en la cámara (para detectar la brújula)
-private fun setupCameraChangeListener() {
-    mapaGoogle.setOnCameraMoveListener {
-        // Detectar si el bearing es cercano a 0 (norte), lo que indica que se presionó la brújula
-        val currentBearing = mapaGoogle.cameraPosition.bearing
-        if (Math.abs(currentBearing) < 1) {
-            // Si el mapa está orientado al norte, desactivar la autorrotación
-            isAutoRotateEnabled = false
+    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
+        // Log de diagnóstico; útil para soporte si el sensor se degrada
+        when (accuracy) {
+            SensorManager.SENSOR_STATUS_NO_CONTACT -> Log.w("Sensor", "Sin contacto con el sensor")
+            SensorManager.SENSOR_STATUS_UNRELIABLE -> Log.w("Sensor", "Precisión no confiable")
+            SensorManager.SENSOR_STATUS_ACCURACY_LOW -> Log.i("Sensor", "Precisión baja")
+            SensorManager.SENSOR_STATUS_ACCURACY_MEDIUM -> Log.i("Sensor", "Precisión media")
+            SensorManager.SENSOR_STATUS_ACCURACY_HIGH -> Log.i("Sensor", "Precisión alta")
         }
     }
-}
 
+    // ---------------------------------------------------------------------------------------------
+    // Ciclo de vida MapView/Sensores
+    // ---------------------------------------------------------------------------------------------
+    override fun onStart() {
+        super.onStart()
+        binding.mapView.onStart()
+    }
 
+    override fun onResume() {
+        super.onResume()
+        binding.mapView.onResume()
+        rotationVectorSensor?.let { sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_UI) }
+        // si ya teníamos permiso, asegúrate de que los updates sigan activos
+        val fine = ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION)
+        val coarse = ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_COARSE_LOCATION)
+        if (fine == PackageManager.PERMISSION_GRANTED || coarse == PackageManager.PERMISSION_GRANTED) {
+            enableMyLocationAndStartUpdates()
+        }
+    }
 
-
-  override fun onStart() {
-    super.onStart()
-    mapaVista.onStart()
-}
-
-override fun onResume() {
-    super.onResume()
-    mapaVista.onResume()
-    obtenerUbicacionActual()
-       rotationVectorSensor?.let {
-            sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_UI)
-
-}}
-
-override fun onPause() {
-    super.onPause()
-    mapaVista.onPause()
-    detenerUbicacion()
-    fusedLocationClient.removeLocationUpdates(locationCallback)
+    override fun onPause() {
+        super.onPause()
+        binding.mapView.onPause()
+        stopLocationUpdates()
         sensorManager.unregisterListener(this)
-}
-
-override fun onStop() {
-    super.onStop()
-    mapaVista.onStop()
-}
-
-override fun onDestroy() {
-    super.onDestroy()
-    mapaVista.onDestroy()
-}
-
-override fun onLowMemory() {
-    super.onLowMemory()
-    mapaVista.onLowMemory()
-}
-     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
-    // Puedes manejar cambios en la precisión del sensor aquí
-    when (accuracy) {
-        SensorManager.SENSOR_STATUS_NO_CONTACT -> {
-            Log.w("SensorAccuracy", "Sin contacto con el sensor")
-        }
-        SensorManager.SENSOR_STATUS_UNRELIABLE -> {
-            Log.w("SensorAccuracy", "Precisión no confiable del sensor")
-        }
-
-        SensorManager.SENSOR_STATUS_ACCURACY_LOW -> {
-            Log.i("SensorAccuracy", "Precisión baja del sensor")
-        }
-        SensorManager.SENSOR_STATUS_ACCURACY_MEDIUM -> {
-            Log.i("SensorAccuracy", "Precisión media del sensor")
-        }
-        SensorManager.SENSOR_STATUS_ACCURACY_HIGH -> {
-            Log.i("SensorAccuracy", "Precisión alta del sensor")
-        }
-        else -> {
-            Log.d("SensorAccuracy", "Precisión desconocida")
-        }
     }
-}
 
+    override fun onStop() {
+        super.onStop()
+        binding.mapView.onStop()
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        binding.mapView.onDestroy()
+        _binding = null
+        mapaGoogle = null
+        marcador = null
+    }
+
+    override fun onLowMemory() {
+        super.onLowMemory()
+        binding.mapView.onLowMemory()
+    }
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        val mapaVistaBundle = outState.getBundle(CLAVE_MAPA_VISTA_BUNDLE) ?: Bundle()
-        mapaVista.onSaveInstanceState(mapaVistaBundle)
-        outState.putBundle(CLAVE_MAPA_VISTA_BUNDLE, mapaVistaBundle)
-
+        val mapaBundle = outState.getBundle(CLAVE_MAPA_VISTA_BUNDLE) ?: Bundle()
+        binding.mapView.onSaveInstanceState(mapaBundle)
+        outState.putBundle(CLAVE_MAPA_VISTA_BUNDLE, mapaBundle)
     }
 }

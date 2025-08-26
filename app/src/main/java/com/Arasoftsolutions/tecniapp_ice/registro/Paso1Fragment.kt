@@ -9,6 +9,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
+import android.widget.Toast
 import androidx.activity.addCallback
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
@@ -270,18 +271,22 @@ class Paso1Fragment : Fragment() {
     """.trimIndent()
 
         // Crear el objeto MailSender y enviar el correo
-        val mailSender = MailSender()
-        mailSender.sendFormattedMail(
-            subject = "Verificación de cuenta TecniApp",
-            body = message,
-            to = email
-        ) { success, errorMessage ->
-            if (success) {
-                Log.d("Registro", "Correo enviado exitosamente.")
-            } else {
-                Log.e("Registro", "Error al enviar el correo: $errorMessage")
-            }
-        }
+       val mailSender = MailSender()
+mailSender.sendFormattedMail(
+    subject = "Verificación de cuenta TecniApp",
+    body = message,
+    to = email
+) { success, errorMessage ->
+    if (success) {
+        Log.d("Registro", "Correo enviado exitosamente.")
+        if (isAdded) Toast.makeText(requireContext(), "Te enviamos un código a $email", Toast.LENGTH_SHORT).show()
+    } else {
+        Log.e("Registro", "Error al enviar el correo: $errorMessage")
+        if (isAdded) Toast.makeText(requireContext(),
+            "No se pudo enviar el correo. Verifica tu buzón/spam o intenta reenviar.", Toast.LENGTH_LONG).show()
+    }
+}
+
     }
 
 
