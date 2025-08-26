@@ -5,6 +5,7 @@ package com.Arasoftsolutions.tecniapp_ice.Database.room
 
 import androidx.room.*
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.MedidorEntity
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface MedidorDao {
@@ -15,4 +16,8 @@ interface MedidorDao {
     // Obtiene todos los medidores guardados
     @Query("SELECT * FROM medidores")
     suspend fun getAll(): List<MedidorEntity>
+
+    // Observa medidores por subregión
+    @Query("SELECT * FROM medidores WHERE subregion = :subregionId")
+    fun observarPorSubregion(subregionId: String): Flow<List<MedidorEntity>>
 }

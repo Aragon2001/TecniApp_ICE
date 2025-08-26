@@ -5,6 +5,7 @@ package com.Arasoftsolutions.tecniapp_ice.Database.room
 
 import androidx.room.*
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.AgenciaEntity
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface AgenciaDao {
@@ -15,4 +16,8 @@ interface AgenciaDao {
     // Obtiene todas las agencias almacenadas
     @Query("SELECT * FROM agencias")
     suspend fun getAll(): List<AgenciaEntity>
+
+    // Observa las agencias filtradas por subregión
+    @Query("SELECT * FROM agencias WHERE subregion = :subregionId")
+    fun observarPorSubregion(subregionId: String): Flow<List<AgenciaEntity>>
 }
