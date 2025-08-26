@@ -6,6 +6,8 @@ import com.Arasoftsolutions.tecniapp_ice.Database.sync.FirebaseSyncManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
+// Si usas transacciones, habilita esto y agrega la dependencia de room-ktx:
+// import androidx.room.withTransaction
 
 /**
  * Repositorio centralizado para exponer operaciones de lectura sobre Room
@@ -32,6 +34,10 @@ class RoomRepository(context: Context) {
     fun observarVehiculos(subregionId: String): Flow<List<VehiculosEntity>> =
         db.vehiculoDao().observarPorSubregion(subregionId)
 
+    /** Obtiene un usuario almacenado localmente por su UID. */
+    suspend fun obtenerUsuario(uid: String): UserEntity? =
+        db.usuarioDao().get(uid)
+
     // ----- Sincronización -----
     /**
      * Descarga los datos de la subregión indicada desde Firebase y los
@@ -45,25 +51,28 @@ class RoomRepository(context: Context) {
         val total = 5
         var done = 0
 
-        val agencias = firebase.obtenerAgencias(subregionId)
-        db.agenciaDao().insertAll(agencias)
-        progress(++done, total, "Agencias")
+        // Si quieres transacción atómica, descomenta y usa withTransaction:
+        // db.withTransaction {
+            val agencias = firebase.obtenerAgencias(subregionId)
+            db.agenciaDao().insertAll(agencias)
+            progress(++done, total, "Agencias")
 
-        val pueblos = firebase.obtenerPueblos(subregionId)
-        db.puebloDao().insertAll(pueblos)
-        progress(++done, total, "Pueblos")
+            val pueblos = firebase.obtenerPueblos(subregionId)
+            db.puebloDao().insertAll(pueblos)
+            progress(++done, total, "Pueblos")
 
-        val localizaciones = firebase.obtenerLocalizaciones(subregionId)
-        db.localizacionDao().insertAll(localizaciones)
-        progress(++done, total, "Localizaciones")
+            val localizaciones = firebase.obtenerLocalizaciones(subregionId)
+            db.localizacionDao().insertAll(localizaciones)
+            progress(++done, total, "Localizaciones")
 
-        val vehiculos = firebase.obtenerVehiculos(subregionId)
-        db.vehiculoDao().insertAll(vehiculos)
-        progress(++done, total, "Vehículos")
+            val vehiculos = firebase.obtenerVehiculos(subregionId)
+            db.vehiculoDao().insertAll(vehiculos)
+            progress(++done, total, "Vehículos")
 
-        val medidores = firebase.obtenerMedidores(subregionId)
-        db.medidorDao().insertAll(medidores)
-        progress(++done, total, "Medidores")
+            val medidores = firebase.obtenerMedidores(subregionId)
+            db.medidorDao().insertAll(medidores)
+            progress(++done, total, "Medidores")
+        // }
     }
 
     /**
