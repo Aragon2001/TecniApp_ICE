@@ -8,20 +8,18 @@ import com.Arasoftsolutions.tecniapp_ice.Database.entities.UserEntity
 
 @Dao
 interface UsuarioDao {
-    // Inserta o actualiza el usuario individualmente
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insert(user: UserEntity)
+    // Obtiene un usuario por su UID de Firebase
+    @Query("SELECT * FROM usuarios WHERE uid = :uid LIMIT 1")
+    suspend fun get(uid: String): UserEntity?
 
-    // Busca un usuario por email
+    // Inserta o actualiza un usuario
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(user: UserEntity)
+
+    // Métodos existentes para compatibilidad
     @Query("SELECT * FROM usuarios WHERE email = :email LIMIT 1")
     suspend fun getByEmail(email: String): UserEntity?
 
-    // Devuelve todos los usuarios guardados
     @Query("SELECT * FROM usuarios")
     suspend fun getAll(): List<UserEntity>
-
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-suspend fun upsert(user: UserEntity)
-
 }
