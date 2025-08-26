@@ -12,5 +12,7 @@ data class LocalizacionesEntity(
     val longitud: Double,
     val pueblo: Int,
     val alPoste: Int,
-    val delPoste: Int
+    val delPoste: Int,
+    // Subregión asociada a la localización.
+    val subregion: String? = null
 )

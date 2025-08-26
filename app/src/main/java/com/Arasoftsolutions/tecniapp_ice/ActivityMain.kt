@@ -24,7 +24,6 @@ import com.google.android.material.navigation.NavigationView
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 class ActivityMain : AppCompatActivity() {
 
@@ -79,17 +78,14 @@ class ActivityMain : AppCompatActivity() {
     }
 
     /**
-     * Carga el usuario desde Room. Prioriza el email del usuario autenticado,
-     * si no existe, toma el primer usuario guardado.
+     * Carga el usuario desde Room usando el UID del usuario autenticado.
      */
     private suspend fun loadUserDataFromDatabase() {
-        val user: UserEntity? = withContext(Dispatchers.IO) {
-            val email = auth.currentUser?.email?.trim()
-            if (!email.isNullOrEmpty()) {
-                repository.obtenerUsuarioPorEmail(email)
-            } else {
-                repository.obtenerTodosLosUsuarios().firstOrNull()
-            }
+        val uid = auth.currentUser?.uid
+        val user: UserEntity? = if (uid != null) {
+            repository.obtenerUsuario(uid)
+        } else {
+            null
         }
 
         user?.let {

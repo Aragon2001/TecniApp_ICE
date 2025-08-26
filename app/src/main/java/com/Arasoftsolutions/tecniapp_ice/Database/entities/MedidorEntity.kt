@@ -11,5 +11,7 @@ data class MedidorEntity(
     val localizacion: String?,            // Localización (ej. "34095000114")
     val metros: String?,                   // Metros (ej. "14")
     val poste: String?,                    // Poste (ej. "001")
-    val pueblo: String?                    // Pueblo (ej. "340")
+    val pueblo: String?,                   // Pueblo (ej. "340")
+    // Subregión del medidor para filtrado.
+    val subregion: String? = null
 )

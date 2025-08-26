@@ -5,6 +5,7 @@ package com.Arasoftsolutions.tecniapp_ice.Database.room
 
 import androidx.room.*
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.VehiculosEntity
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface VehiculoDao {
@@ -15,4 +16,8 @@ interface VehiculoDao {
     // Retorna todos los vehículos existentes
     @Query("SELECT * FROM vehiculos")
     suspend fun getAll(): List<VehiculosEntity>
+
+    // Observa vehículos por subregión
+    @Query("SELECT * FROM vehiculos WHERE subregion = :subregionId")
+    fun observarPorSubregion(subregionId: String): Flow<List<VehiculosEntity>>
 }

@@ -13,6 +13,9 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.Arasoftsolutions.tecniapp_ice.Database.sync.Synchronizer
+import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import android.widget.ProgressBar
 import com.Arasoftsolutions.tecniapp_ice.User.UserViewModel
 import com.google.android.material.button.MaterialButton
 import com.google.firebase.auth.FirebaseAuth
@@ -52,6 +55,7 @@ class LoginActivity : AppCompatActivity() {
     private lateinit var auth: FirebaseAuth
     private lateinit var sharedPreferences: SharedPreferences
     private lateinit var database: DatabaseReference
+    private lateinit var roomRepository: RoomRepository
     private lateinit var synchronizer: Synchronizer
 
     // ViewModel (si luego quieres observar usuario/logs, ya está listo)
@@ -75,7 +79,8 @@ class LoginActivity : AppCompatActivity() {
         // 1) Servicios base
         auth = FirebaseAuth.getInstance()
         database = FirebaseDatabase.getInstance(DATABASE_URL_USERS).reference
-        synchronizer = Synchronizer(this)
+        roomRepository = RoomRepository(this)
+        synchronizer = Synchronizer(roomRepository)
 
         // Si ya está logueado (legacy), entra directo
         sharedPreferences = getSharedPreferences(LEGACY_PREFS, MODE_PRIVATE)
@@ -149,27 +154,40 @@ class LoginActivity : AppCompatActivity() {
                     // Marca "logueado" en **ambas** preferencias (compatibilidad + Synchronizer)
                     markLoggedIn()
 
-                    // (Opcional) Cargar datos de usuario desde RTDB para UI inmediata (no bloquea)
-                    val currentUserEmail = auth.currentUser?.email.orEmpty()
-                    if (currentUserEmail.isNotEmpty()) {
-                        loadUserData(currentUserEmail)
-                    }
+                    val uid = auth.currentUser?.uid ?: return@addOnCompleteListener
+                    val progress = ProgressBar(this)
+                    val dialog = MaterialAlertDialogBuilder(this)
+                        .setTitle("Sincronizando…")
+                        .setView(progress)
+                        .setCancelable(false)
+                        .create()
+                    dialog.show()
 
-                    // Lanza sincronización inicial en hilo de IO y agenda la periódica
                     lifecycleScope.launch {
-                        withContext(Dispatchers.IO) {
-                            try {
-                                synchronizer.initialize()
-                            } catch (e: Exception) {
-                                Log.e(TAG, "Error en sincronización inicial: ${e.message}")
+                        try {
+                            val user = withContext(Dispatchers.IO) {
+                                roomRepository.upsertUserFromFirebase(uid)
                             }
+                            synchronizer.syncSubregion(
+                                user.subregion,
+                                onSyncStart = {},
+                                onSyncProgress = { done, total, msg ->
+                                    dialog.setMessage("${msg ?: ""} $done/$total")
+                                },
+                                onSyncSuccess = {
+                                    dialog.dismiss()
+                                    startActivity(Intent(this@LoginActivity, ActivityMain::class.java))
+                                    finish()
+                                },
+                                onSyncError = {
+                                    dialog.setMessage("Error: ${it.message}")
+                                }
+                            )
+                        } catch (e: Exception) {
+                            dialog.dismiss()
+                            Log.e(TAG, "Error en sincronización inicial: ${e.message}")
                         }
-                        synchronizer.scheduleSync()
                     }
-
-                    // Navega a la Activity principal
-                    startActivity(Intent(this, ActivityMain::class.java))
-                    finish()
                 } else {
                     handleAuthError(task.exception)
                 }
