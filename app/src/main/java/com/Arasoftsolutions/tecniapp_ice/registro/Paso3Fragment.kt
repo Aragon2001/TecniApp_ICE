@@ -76,7 +76,7 @@ class Paso3Fragment : Fragment() {
     private fun setNavigationListeners(view: View) {
         view.findViewById<ImageView>(R.id.backArrow).setOnClickListener {
             // Esto simula el botón de "atrás" del sistema para volver al fragmento anterior
-            requireActivity().onBackPressed()
+            requireActivity().onBackPressedDispatcher.onBackPressed()
         }
     }
 

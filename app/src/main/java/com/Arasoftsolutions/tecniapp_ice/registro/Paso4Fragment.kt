@@ -75,41 +75,50 @@ vehiclesDatabase = FirebaseDatabase.getInstance("https://tecniapp-ice-datosgener
         // Cargar las subregiones desde Firebase
         loadSubregions()
 
-        // Configurar el comportamiento del spinner de subregiones
-        spinnerSubregion.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>, view: View, position: Int, id: Long) {
-                if (position > 0) { // Evitar que el usuario seleccione el valor por defecto
-                    val selectedSubregion = subregions[position]
-                    loadAgencies(selectedSubregion) // Cargar agencias para la subregión seleccionada
-                }
+        // Subregión → carga agencias
+spinnerSubregion.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+    override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
+        try {
+            if (position > 0) {
+                val selectedSubregion = subregions.getOrNull(position) ?: return
+                loadAgencies(selectedSubregion)
+            } else {
+                loadAgencies("Seleccione una Subregion") // fuerza reset seguro
             }
-
-            override fun onNothingSelected(parent: AdapterView<*>) {}
+        } catch (e: Exception) {
+            Log.e("Paso4Fragment", "Error en onItemSelected subregión: ${e.message}", e)
+            showToast("No se pudieron cargar agencias. Intenta de nuevo.")
         }
+    }
+    override fun onNothingSelected(parent: AdapterView<*>) {}
+}
 
-        // Configurar el comportamiento del spinner de agencias
-        spinnerAgencia.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>, view: View, position: Int, id: Long) {
-                if (position > 0) { // Evitar que el usuario seleccione el valor por defecto
-                    val selectedAgency = agencies[position]
-                    loadVehicles(selectedAgency) // Cargar vehículos para la agencia seleccionada
-                }
+// Agencia → carga vehículos
+spinnerAgencia.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+    override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
+        try {
+            if (position > 0) {
+                val selectedAgency = agencies.getOrNull(position) ?: return
+                loadVehicles(selectedAgency)
+            } else {
+                loadVehicles("Seleccione una Agencia") // reset
             }
-
-            override fun onNothingSelected(parent: AdapterView<*>) {}
+        } catch (e: Exception) {
+            Log.e("Paso4Fragment", "Error en onItemSelected agencia: ${e.message}", e)
+            showToast("No se pudieron cargar vehículos. Intenta de nuevo.")
         }
+    }
+    override fun onNothingSelected(parent: AdapterView<*>) {}
+}
 
-        // Configurar el comportamiento del spinner de vehículos
-        spinnerVehiculo.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>, view: View, position: Int, id: Long) {
-                if (position > 0) {
-                    // Habilitar el botón de finalización solo cuando todos los campos están seleccionados
-                    btnFinishRegistration.isEnabled = true
-                }
-            }
+// Vehículo → habilita botón solo con selección válida
+spinnerVehiculo.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+    override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
+        btnFinishRegistration.isEnabled = position > 0
+    }
+    override fun onNothingSelected(parent: AdapterView<*>) {}
+}
 
-            override fun onNothingSelected(parent: AdapterView<*>) {}
-        }
 
         // Configurar el clic del botón de finalización de registro
         btnFinishRegistration.setOnClickListener {
@@ -122,90 +131,135 @@ vehiclesDatabase = FirebaseDatabase.getInstance("https://tecniapp-ice-datosgener
     // Método para configurar la flecha de retroceso
     private fun setNavigationListeners(view: View) {
         view.findViewById<ImageView>(R.id.backArrow).setOnClickListener {
-            requireActivity().onBackPressed() // Navegar hacia atrás cuando se presione la flecha
+            requireActivity().onBackPressedDispatcher.onBackPressed()// Navegar hacia atrás cuando se presione la flecha
         }
     }
 
-    // Método para cargar las subregiones desde Firebase
-    private fun loadSubregions() {
-        subregionsDatabase.addListenerForSingleValueEvent(object : ValueEventListener {
-            override fun onDataChange(dataSnapshot: DataSnapshot) {
-                // Inicializar la lista de subregiones con un valor por defecto
-                subregions = mutableListOf("Seleccione una Subregion")
-                for (subregionSnapshot in dataSnapshot.children) {
-                    // Obtener el nombre de la subregión y agregarlo a la lista
-                    val subregionName = subregionSnapshot.child("nombre").getValue(String::class.java)
-                    if (subregionName != null) {
-                        subregions.add(subregionName)
-                    }
-                }
-                // Configurar el adaptador del spinner
-                val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, subregions)
-                adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-                spinnerSubregion.adapter = adapter
+    // 1) Cargar subregiones con defensas
+private fun loadSubregions() {
+    subregionsDatabase.addListenerForSingleValueEvent(object : ValueEventListener {
+        override fun onDataChange(dataSnapshot: DataSnapshot) {
+            if (!isAdded) return  // ← evita usar context si ya no está el fragment
 
-                // Log para depuración
-                Log.d("Paso4Fragment", "Subregiones cargadas: $subregions")
+            subregions = mutableListOf("Seleccione una Subregion")
+            for (snap in dataSnapshot.children) {
+                val nombre = snap.child("nombre").getValue(String::class.java)
+                if (!nombre.isNullOrBlank()) subregions.add(nombre)
             }
 
-            override fun onCancelled(databaseError: DatabaseError) {
-                // Mostrar un mensaje de error si falla la carga de subregiones
-                showToast("Error al cargar subregiones: ${databaseError.message}")
+            // Adapter con contexto seguro
+            val ctx = context ?: return
+            val adapter = ArrayAdapter(ctx, android.R.layout.simple_spinner_item, subregions).apply {
+                setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
             }
-        })
+            spinnerSubregion.adapter = adapter
+
+            Log.d("Paso4Fragment", "Subregiones cargadas: $subregions")
+        }
+
+        override fun onCancelled(error: DatabaseError) {
+            if (!isAdded) return
+            showToast("Error al cargar subregiones: ${error.message}")
+            Log.e("Paso4Fragment", "loadSubregions cancelled: ${error.toException()}")
+        }
+    })
+}
+
+// 2) Cargar agencias con validaciones y manejo de vacío
+private fun loadAgencies(subregion: String) {
+    // Si seleccionaron el placeholder, limpia y sal
+    if (subregion == "Seleccione una Subregion") {
+        agencies = mutableListOf("Seleccione una Agencia")
+        val ctx = context ?: return
+        spinnerAgencia.adapter = ArrayAdapter(ctx, android.R.layout.simple_spinner_item, agencies).apply {
+            setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        }
+        // También resetea vehículos
+        vehicles = mutableListOf("Seleccione un Vehículo")
+        spinnerVehiculo.adapter = ArrayAdapter(ctx, android.R.layout.simple_spinner_item, vehicles).apply {
+            setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        }
+        btnFinishRegistration.isEnabled = false
+        return
     }
 
-    // Método para cargar las agencias basadas en la subregión seleccionada
-    private fun loadAgencies(subregion: String) {
-        agenciesDatabase.orderByChild("subregion").equalTo(subregion).addListenerForSingleValueEvent(object : ValueEventListener {
+    agenciesDatabase.orderByChild("subregion").equalTo(subregion)
+        .addListenerForSingleValueEvent(object : ValueEventListener {
             override fun onDataChange(dataSnapshot: DataSnapshot) {
-                // Inicializar la lista de agencias con un valor por defecto
+                if (!isAdded) return
+
                 agencies = mutableListOf("Seleccione una Agencia")
-                for (agencySnapshot in dataSnapshot.children) {
-                    // Obtener el nombre de la agencia y agregarlo a la lista
-                    val agencyName = agencySnapshot.child("nombre").getValue(String::class.java)
-                    if (agencyName != null) {
-                        agencies.add(agencyName)
-                    }
+                for (snap in dataSnapshot.children) {
+                    val nombre = snap.child("nombre").getValue(String::class.java)
+                    if (!nombre.isNullOrBlank()) agencies.add(nombre)
                 }
-                // Configurar el adaptador del spinner
-                val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, agencies)
-                adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+
+                val ctx = context ?: return
+                val adapter = ArrayAdapter(ctx, android.R.layout.simple_spinner_item, agencies).apply {
+                    setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+                }
                 spinnerAgencia.adapter = adapter
-            }
 
-            override fun onCancelled(databaseError: DatabaseError) {
-                // Mostrar un mensaje de error si falla la carga de agencias
-                showToast("Error al cargar agencias: ${databaseError.message}")
-            }
-        })
-    }
-
-    // Método para cargar los vehículos basados en la agencia seleccionada
-    private fun loadVehicles(agency: String) {
-        vehiclesDatabase.orderByChild("agencia").equalTo(agency).addListenerForSingleValueEvent(object : ValueEventListener {
-            override fun onDataChange(dataSnapshot: DataSnapshot) {
-                // Inicializar la lista de vehículos con un valor por defecto
-                vehicles = mutableListOf("Seleccione un Vehículo")
-                for (vehicleSnapshot in dataSnapshot.children) {
-                    // Obtener la placa del vehículo y agregarla a la lista
-                    val vehiclePlate = vehicleSnapshot.child("placa").getValue(String::class.java)
-                    if (vehiclePlate != null) {
-                        vehicles.add(vehiclePlate)
+                // Si no hay agencias reales, evita disparar el siguiente spinner
+                if (agencies.size == 1) {
+                    Log.w("Paso4Fragment", "No hay agencias para subregión: $subregion")
+                    vehicles = mutableListOf("Seleccione un Vehículo")
+                    spinnerVehiculo.adapter = ArrayAdapter(ctx, android.R.layout.simple_spinner_item, vehicles).apply {
+                        setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
                     }
+                    btnFinishRegistration.isEnabled = false
                 }
-                // Configurar el adaptador del spinner
-                val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, vehicles)
-                adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-                spinnerVehiculo.adapter = adapter
             }
 
-            override fun onCancelled(databaseError: DatabaseError) {
-                // Mostrar un mensaje de error si falla la carga de vehículos
-                showToast("Error al cargar vehículos: ${databaseError.message}")
+            override fun onCancelled(error: DatabaseError) {
+                if (!isAdded) return
+                showToast("Error al cargar agencias: ${error.message}")
+                Log.e("Paso4Fragment", "loadAgencies cancelled: ${error.toException()}")
             }
         })
+}
+
+// 3) Cargar vehículos con defensas
+private fun loadVehicles(agency: String) {
+    if (agency == "Seleccione una Agencia") {
+        val ctx = context ?: return
+        vehicles = mutableListOf("Seleccione un Vehículo")
+        spinnerVehiculo.adapter = ArrayAdapter(ctx, android.R.layout.simple_spinner_item, vehicles).apply {
+            setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        }
+        btnFinishRegistration.isEnabled = false
+        return
     }
+
+    vehiclesDatabase.orderByChild("agencia").equalTo(agency)
+        .addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(dataSnapshot: DataSnapshot) {
+                if (!isAdded) return
+
+                vehicles = mutableListOf("Seleccione un Vehículo")
+                for (snap in dataSnapshot.children) {
+                    val placa = snap.child("placa").getValue(String::class.java)
+                    if (!placa.isNullOrBlank()) vehicles.add(placa)
+                }
+
+                val ctx = context ?: return
+                val adapter = ArrayAdapter(ctx, android.R.layout.simple_spinner_item, vehicles).apply {
+                    setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+                }
+                spinnerVehiculo.adapter = adapter
+
+                // Si hay al menos una opción válida, el usuario podrá activar el botón al elegirla
+                btnFinishRegistration.isEnabled = false
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                if (!isAdded) return
+                showToast("Error al cargar vehículos: ${error.message}")
+                Log.e("Paso4Fragment", "loadVehicles cancelled: ${error.toException()}")
+            }
+        })
+}
+
 
     // Método para mostrar un Toast con un mensaje
     private fun showToast(message: String) {

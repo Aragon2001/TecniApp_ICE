@@ -12,102 +12,123 @@ import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
-import com.Arasoftsolutions.tecniapp_ice.Database.Synchronizer
-import com.Arasoftsolutions.tecniapp_ice.Database.TecniAppDatabaseHelper
+import com.Arasoftsolutions.tecniapp_ice.Database.sync.Synchronizer
+import com.Arasoftsolutions.tecniapp_ice.User.UserViewModel
 import com.google.android.material.button.MaterialButton
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthInvalidUserException
-import com.google.firebase.database.DataSnapshot
-import com.google.firebase.database.DatabaseError
-import com.google.firebase.database.DatabaseReference
-import com.google.firebase.database.FirebaseDatabase
-import com.Arasoftsolutions.tecniapp_ice.User.UserViewModel
-import com.Arasoftsolutions.tecniapp_ice.User.User
-import com.google.firebase.database.ValueEventListener
+import com.google.firebase.database.*
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
+/**
+ * Pantalla de inicio de sesión.
+ *
+ * Flujo:
+ * 1) Valida email/contraseña y hace sign-in con Firebase Auth.
+ * 2) Marca el estado de sesión en SharedPreferences con las **dos** variantes:
+ *    - "TecniAppPrefs"/"isLoggedIn"  (lo que existía)
+ *    - "app_preferences"/"is_logged_in" (lo que lee Synchronizer)
+ * 3) Lanza la sincronización inicial (Synchronizer.initialize) y agenda la periódica (scheduleSync).
+ * 4) Navega a ActivityMain.
+ *
+ * Notas:
+ * - No insertamos directamente en la DB local aquí. Dejamos que el FirebaseSyncManager
+ *   (invocado por Synchronizer) baje y sincronice el usuario y demás entidades.
+ */
 class LoginActivity : AppCompatActivity() {
 
+    // UI
     private lateinit var emailEditText: EditText
     private lateinit var passwordEditText: EditText
-    private lateinit var sharedPreferences: SharedPreferences
-    private lateinit var auth: FirebaseAuth
-    private lateinit var database: DatabaseReference // Realtime Database
     private lateinit var showPasswordIcon: ImageView
+    private lateinit var signInButton: MaterialButton
+    private lateinit var registerButton: MaterialButton
+    private lateinit var forgotPasswordButton: View
+
+    // Estado / servicios
+    private lateinit var auth: FirebaseAuth
+    private lateinit var sharedPreferences: SharedPreferences
+    private lateinit var database: DatabaseReference
+    private lateinit var synchronizer: Synchronizer
+
+    // ViewModel (si luego quieres observar usuario/logs, ya está listo)
     private val userViewModel: UserViewModel by viewModels()
-    private lateinit var synchronizer: Synchronizer // Instancia de Synchronizer
 
     private companion object {
-        const val DATABASE_URL = "https://tecniapp-ice-user.firebaseio.com"
-        const val PREFS_NAME = "TecniAppPrefs"
-        const val KEY_IS_LOGGED_IN = "isLoggedIn"
+        // URL del Realtime Database **de usuarios**
+        const val DATABASE_URL_USERS = "https://tecniapp-ice-user.firebaseio.com"
+        // Preferencias antiguas (compatibilidad hacia atrás)
+        const val LEGACY_PREFS = "TecniAppPrefs"
+        const val LEGACY_KEY_LOGGED_IN = "isLoggedIn"
+        // Preferencias que consume Synchronizer
+        const val SYNC_PREFS = "app_preferences"
+        const val SYNC_KEY_LOGGED_IN = "is_logged_in"
+        const val TAG = "LoginActivity"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Inicializar FirebaseAuth y Realtime Database
+        // 1) Servicios base
         auth = FirebaseAuth.getInstance()
-        database = FirebaseDatabase.getInstance(DATABASE_URL).reference // URL específica de la base de datos
-
-        // Inicializar la instancia de Synchronizer
+        database = FirebaseDatabase.getInstance(DATABASE_URL_USERS).reference
         synchronizer = Synchronizer(this)
 
-        // Verifica si el usuario ya está logueado
-        sharedPreferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-        val isLoggedIn = sharedPreferences.getBoolean(KEY_IS_LOGGED_IN, false)
-
-        if (isLoggedIn) {
-            // Navegar directamente a la actividad principal si ya está logueado
-            val intent = Intent(this, ActivityMain::class.java)
-            startActivity(intent)
+        // Si ya está logueado (legacy), entra directo
+        sharedPreferences = getSharedPreferences(LEGACY_PREFS, MODE_PRIVATE)
+        val isLoggedIn = sharedPreferences.getBoolean(LEGACY_KEY_LOGGED_IN, false)
+        if (isLoggedIn || getSharedPreferences(SYNC_PREFS, MODE_PRIVATE).getBoolean(SYNC_KEY_LOGGED_IN, false)) {
+            startActivity(Intent(this, ActivityMain::class.java))
             finish()
             return
         }
 
+        // 2) UI
         setContentView(R.layout.login)
-
         emailEditText = findViewById(R.id.email_edit_text)
         passwordEditText = findViewById(R.id.password_edit_text)
         showPasswordIcon = findViewById(R.id.password_icon)
+        signInButton = findViewById(R.id.sign_in_button)
+        registerButton = findViewById(R.id.register_button)
+        forgotPasswordButton = findViewById(R.id.forgot_password_button)
 
-        // Botón de "Iniciar sesión"
-        val signInButton: MaterialButton = findViewById(R.id.sign_in_button)
+        // Acciones
         signInButton.setOnClickListener { signIn() }
-
-        // Botón de "Registrarme"
-        val registerButton: MaterialButton = findViewById(R.id.register_button)
         registerButton.setOnClickListener {
-            // Navegar a RegistroActivity
-            val intent = Intent(this, RegistroActivity::class.java)
-            startActivity(intent)
+            startActivity(Intent(this, RegistroActivity::class.java))
         }
-
-        // Botón de "Olvidé mi contraseña"
-        val forgotPasswordButton: View = findViewById(R.id.forgot_password_button)
         forgotPasswordButton.setOnClickListener { forgotPassword() }
 
-        // Lógica para mostrar/ocultar la contraseña
+        // Mostrar/ocultar contraseña manteniendo cursor al final
         showPasswordIcon.setOnClickListener {
-            if (passwordEditText.inputType == InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD) {
-                passwordEditText.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
-                showPasswordIcon.setImageResource(R.drawable.ic_visibility) // Cambia al ícono de mostrar
-            } else {
-                passwordEditText.inputType = InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
-                showPasswordIcon.setImageResource(R.drawable.ic_visibility_off) // Cambia al ícono de ocultar
-            }
-            passwordEditText.setSelection(passwordEditText.text.length) // Mantener el cursor al final
+            val isVisible = passwordEditText.inputType == InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
+            passwordEditText.inputType =
+                if (isVisible) InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+                else InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
+            passwordEditText.setSelection(passwordEditText.text?.length ?: 0)
+            showPasswordIcon.setImageResource(
+                if (isVisible) R.drawable.ic_visibility else R.drawable.ic_visibility_off
+            )
         }
     }
 
-
+    /**
+     * Inicia sesión con FirebaseAuth y continua el flujo de sincronización.
+     */
     private fun signIn() {
         val email = emailEditText.text.toString().trim()
         val password = passwordEditText.text.toString().trim()
 
+        // Validaciones básicas
         if (email.isEmpty()) {
             emailEditText.error = "El correo es requerido"
+            return
+        }
+        if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            emailEditText.error = "Formato de correo inválido"
             return
         }
         if (password.isEmpty()) {
@@ -115,115 +136,130 @@ class LoginActivity : AppCompatActivity() {
             return
         }
 
-        // Validar formato de correo electrónico
-        if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-            emailEditText.error = "Formato de correo inválido"
-            return
-        }
+        // Deshabilita botón para evitar taps repetidos
+        signInButton.isEnabled = false
 
-        // Autenticarse con Firebase Authentication
         auth.signInWithEmailAndPassword(email, password)
             .addOnCompleteListener { task ->
-                if (task.isSuccessful) {
-                    // Inicio de sesión exitoso
-                    Toast.makeText(this@LoginActivity, "Inicio de sesión exitoso", Toast.LENGTH_SHORT).show()
+                signInButton.isEnabled = true
 
-                    // Obtener el usuario actualmente autenticado
-                    val currentUser = auth.currentUser
-                    currentUser?.let { user ->
-                        // Cargar datos adicionales del usuario desde Realtime Database
-                        loadUserData(user.email ?: "")
+                if (task.isSuccessful) {
+                    Toast.makeText(this, "Inicio de sesión exitoso", Toast.LENGTH_SHORT).show()
+
+                    // Marca "logueado" en **ambas** preferencias (compatibilidad + Synchronizer)
+                    markLoggedIn()
+
+                    // (Opcional) Cargar datos de usuario desde RTDB para UI inmediata (no bloquea)
+                    val currentUserEmail = auth.currentUser?.email.orEmpty()
+                    if (currentUserEmail.isNotEmpty()) {
+                        loadUserData(currentUserEmail)
                     }
+
+                    // Lanza sincronización inicial en hilo de IO y agenda la periódica
+                    lifecycleScope.launch {
+                        withContext(Dispatchers.IO) {
+                            try {
+                                synchronizer.initialize()
+                            } catch (e: Exception) {
+                                Log.e(TAG, "Error en sincronización inicial: ${e.message}")
+                            }
+                        }
+                        synchronizer.scheduleSync()
+                    }
+
+                    // Navega a la Activity principal
+                    startActivity(Intent(this, ActivityMain::class.java))
+                    finish()
                 } else {
                     handleAuthError(task.exception)
                 }
-            }.addOnFailureListener { exception ->
-                Toast.makeText(this@LoginActivity, "Error de autenticación: ${exception.message}", Toast.LENGTH_SHORT).show()
-                Log.e("LoginActivity", "Error de autenticación: ${exception.message}")
+            }
+            .addOnFailureListener { ex ->
+                signInButton.isEnabled = true
+                Toast.makeText(this, "Error de autenticación: ${ex.message}", Toast.LENGTH_SHORT).show()
+                Log.e(TAG, "Auth failure: ${ex.message}", ex)
             }
     }
 
+    /**
+     * Marca el estado de login en las dos variantes de SharedPreferences.
+     * - LEGACY_PREFS/LEGACY_KEY_LOGGED_IN  -> compatibilidad con código existente
+     * - SYNC_PREFS/SYNC_KEY_LOGGED_IN      -> lo que lee el Synchronizer
+     */
+    private fun markLoggedIn() {
+        getSharedPreferences(LEGACY_PREFS, MODE_PRIVATE).edit()
+            .putBoolean(LEGACY_KEY_LOGGED_IN, true)
+            .apply()
+
+        getSharedPreferences(SYNC_PREFS, MODE_PRIVATE).edit()
+            .putBoolean(SYNC_KEY_LOGGED_IN, true)
+            .apply()
+    }
+
+    /**
+     * Recupera datos básicos del usuario en RTDB para log/debug o precargar UI.
+     * No escribe en DB local (eso lo hace el Synchronizer/FirebaseSyncManager).
+     */
     private fun loadUserData(email: String) {
-        database.child("Usuarios").orderByChild("email").equalTo(email) // <- ojo con la mayúscula si aplica
+        // En RTDB “usuarios” se busca por campo "email"
+        database.child("usuarios")
+            .orderByChild("email")
+            .equalTo(email)
             .addListenerForSingleValueEvent(object : ValueEventListener {
-                override fun onDataChange(dataSnapshot: DataSnapshot) {
-                    if (dataSnapshot.exists()) {
-                        val user = dataSnapshot.children.firstOrNull()?.getValue(User::class.java)
-                        user?.let { userObj ->
-                            // 1. Guardar en el ViewModel
-                            userViewModel.updateUserData(userObj)
-
-                            // 2. Guardar en la base local
-                            val dbHelper = TecniAppDatabaseHelper(this@LoginActivity)
-                            dbHelper.insertOrUpdateUser(userObj)
-
-                            // 3. Guardar estado de sesión
-                            sharedPreferences.edit().apply {
-                                putBoolean(KEY_IS_LOGGED_IN, true)
-                                apply()
-                            }
-
-                            // 4. Iniciar sincronización y navegar al Main
-                            lifecycleScope.launch {
-                                try {
-                                    synchronizer.initialize()
-                                    synchronizer.scheduleSync()
-                                } catch (e: Exception) {
-                                    Toast.makeText(
-                                        this@LoginActivity,
-                                        "Error iniciando sincronización: ${e.message}",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                    Log.e("LoginActivity", "Error iniciando sincronización: ${e.message}")
-                                }
-
-                                startActivity(Intent(this@LoginActivity, ActivityMain::class.java))
-                                finish()
-                            }
-                        }
-                    } else {
-                        Toast.makeText(this@LoginActivity, "No se encontraron datos del usuario", Toast.LENGTH_SHORT).show()
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    if (!snapshot.exists()) {
+                        Log.w(TAG, "Usuario no encontrado en RTDB para $email")
+                        return
                     }
+                    // Obtén el primer match
+                    val first = snapshot.children.firstOrNull()
+                    val nombre = first?.child("nombre")?.getValue(String::class.java).orEmpty()
+                    val apellidos = first?.child("apellidos")?.getValue(String::class.java).orEmpty()
+                    val placa = first?.child("placaVehiculo")?.getValue(String::class.java).orEmpty()
+
+                    Log.d(TAG, "Usuario RTDB -> $nombre $apellidos, placa=$placa, email=$email")
+                    // Si quisieras empujar a un VM/UI, puedes hacerlo aquí.
                 }
 
-                override fun onCancelled(databaseError: DatabaseError) {
-                    Toast.makeText(this@LoginActivity, "Error al obtener datos del usuario: ${databaseError.message}", Toast.LENGTH_SHORT).show()
-                    Log.e("LoginActivity", "Error al obtener datos del usuario: ${databaseError.message}")
+                override fun onCancelled(error: DatabaseError) {
+                    Log.e(TAG, "Error al leer RTDB usuario: ${error.message}")
                 }
             })
     }
 
-
-    private fun handleAuthError(exception: Exception?) {
-        when (exception) {
-            is FirebaseAuthInvalidCredentialsException -> {
-                passwordEditText.error = "Contraseña incorrecta"
-            }
-            is FirebaseAuthInvalidUserException -> {
-                emailEditText.error = "El usuario no existe"
-            }
-            else -> {
-                Toast.makeText(this@LoginActivity, "Error: ${exception?.message}", Toast.LENGTH_SHORT).show()
-                Log.e("LoginActivity", "Error: ${exception?.message}")
-            }
+    /**
+     * Maneja los mensajes de error más comunes de Auth.
+     */
+    private fun handleAuthError(ex: Exception?) {
+        when (ex) {
+            is FirebaseAuthInvalidUserException ->
+                Toast.makeText(this, "Usuario no existe o fue deshabilitado.", Toast.LENGTH_LONG).show()
+            is FirebaseAuthInvalidCredentialsException ->
+                Toast.makeText(this, "Credenciales inválidas. Verifica tu contraseña.", Toast.LENGTH_LONG).show()
+            else ->
+                Toast.makeText(this, "No se pudo iniciar sesión: ${ex?.message ?: "Error desconocido"}", Toast.LENGTH_LONG).show()
         }
+        Log.e(TAG, "Auth error: ${ex?.message}", ex)
     }
 
+    /**
+     * Flujo de recuperación de contraseña (placeholder).
+     * Puedes implementar Firebase Auth sendPasswordResetEmail aquí.
+     */
     private fun forgotPassword() {
         val email = emailEditText.text.toString().trim()
-
-        if (email.isEmpty()) {
-            emailEditText.error = "El correo es requerido"
+        if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            Toast.makeText(this, "Ingresa un correo válido para recuperar contraseña.", Toast.LENGTH_SHORT).show()
             return
         }
-
-        auth.sendPasswordResetEmail(email)
-            .addOnCompleteListener { task ->
-                if (task.isSuccessful) {
-                    Toast.makeText(this@LoginActivity, "Correo de recuperación enviado", Toast.LENGTH_SHORT).show()
-                } else {
-                    Toast.makeText(this@LoginActivity, "Error al enviar el correo de recuperación", Toast.LENGTH_SHORT).show()
-                }
+        FirebaseAuth.getInstance().sendPasswordResetEmail(email)
+            .addOnSuccessListener {
+                Toast.makeText(this, "Te enviamos un correo para recuperar tu contraseña.", Toast.LENGTH_LONG).show()
+            }
+            .addOnFailureListener { e ->
+                Toast.makeText(this, "No pudimos enviar el correo: ${e.message}", Toast.LENGTH_LONG).show()
+                Log.e(TAG, "Password reset error: ${e.message}", e)
             }
     }
 }
+

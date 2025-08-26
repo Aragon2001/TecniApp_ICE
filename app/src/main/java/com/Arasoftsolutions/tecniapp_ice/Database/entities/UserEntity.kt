@@ -1,10 +1,11 @@
-package com.Arasoftsolutions.tecniapp_ice.model
+package com.Arasoftsolutions.tecniapp_ice.Database.entities
 
-/**
- * Representa al usuario almacenado localmente y sincronizado con Firebase.
- */
-data class User(
-    val id: Int = 0,
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+
+@Entity(tableName = "usuarios")
+data class UserEntity(
+    @PrimaryKey val id: Int = 0,
     val agencia: String = "",
     val apellidos: String = "",
     val cedula: String = "",
