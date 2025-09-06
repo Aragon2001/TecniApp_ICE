@@ -53,9 +53,11 @@ class AveriasAdapter(
         fun bind(item: AveriaUI) {
             tvTitulo.text = item.descripcion
             chipEstado.text = item.estado
+
             chipAsignado.text = item.supervisor.ifBlank {
                 itemView.context.getString(R.string.averia_sin_asignar)
             }
+
             tvCausa.text = item.prioridad
             tvObs.text = item.ubicacion
             tvCoords.text = if (item.lat == 0.0 && item.lng == 0.0) "—" else "${item.lat}, ${item.lng}"
