@@ -88,6 +88,7 @@ class AveriasRepository(private val db: AppDatabase) {
   suspend fun syncFromIce(bearer: String?): List<String> = withContext(Dispatchers.IO) {
     val list = IceApi.service.getAverias(bearer?.takeIf { it.isNotBlank() }?.let { "Bearer $it" })
       .mapNotNull { map(it) }
+      .filter { it.idEstadoAve == 1 }
     val before = dao.allIds().toSet()
     dao.upsertAll(list)
     val after = dao.allIds().toSet()
