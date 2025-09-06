@@ -1,36 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Colores principales de TecniApp -->
-    <color name="ice_blue">#0071CE</color> <!-- Azul ICE -->
-    <color name="ice_blue_dark">#004C8C</color> <!-- Azul oscuro ICE -->
-    <color name="ice_yellow">#FFDD00</color> <!-- Amarillo ICE -->
-    <color name="ice_yellow_dark">#CCAA00</color> <!-- Amarillo oscuro ICE -->
-    <color name="white">#FFFFFF</color>
-    <color name="black">#000000</color>
-    <color name="soft_dark_gray">#555555</color>  <!-- Gris oscuro suave -->
-    <color name="dark_gray">#2C2C2C</color>  <!-- Gris más oscuro pero no negro puro -->
-    <color name="light_gray">#B3B3B3</color>  <!-- Gris claro para textos -->
-    <color name="red">#FF0000</color>  <!-- Gris claro para textos -->
-    <color name="green">#4CAF50</color>
+    <!-- Marca ICE -->
+    <color name="ice_blue">#0071CE</color>
+    <color name="ice_blue_dark">#004C8C</color>
+    <color name="ice_yellow">#FFDD00</color>
+    <color name="ice_yellow_dark">#CCAA00</color>
 
+    <!-- Neutrales -->
+    <color name="white">#FFFFFFFF</color>
+    <color name="black">#FF000000</color>
 
-    <!-- Colores ajustados para el login -->
-    <color name="login_background">#0071CE</color> <!-- Fondo azul ICE -->
-    <color name="login_card_background">#FFFFFF</color> <!-- Fondo blanco para la tarjeta del login -->
-    <color name="login_text_primary">#004C8C</color> <!-- Texto primario en azul oscuro ICE -->
-    <color name="login_text_secondary">#FFDD00</color> <!-- Texto secundario en amarillo ICE -->
-    <color name="login_button_background">#FFDD00</color> <!-- Fondo de botón amarillo ICE -->
-    <color name="login_button_text">#004C8C</color> <!-- Texto de botón en azul oscuro ICE -->
-    <color name="login_hint_text">#B3B3B3</color> <!-- Texto de hint gris claro -->
-    <color name="white_translucent">#20FFFFFF</color>
+    <!-- Superficies claras -->
+    <color name="bg_light">#F7FAFF</color>
+    <color name="surface_light">#CCFFFFFF</color>
+    <color name="surface_variant_light">#EAF3FF</color>
 
+    <!-- Texto / estados -->
+    <color name="on_light">#0A0A0A</color>
+    <color name="on_dark">#E6E9EF</color>
+    <color name="success_500">#4CAF50</color>
+    <color name="error_500">#D32F2F</color>
 
+    <!-- Login -->
+    <color name="login_background">#0071CE</color>
+    <color name="login_card_background">#FFFFFFFF</color>
+    <color name="login_text_primary">#004C8C</color>
+    <color name="login_text_secondary">#FFDD00</color>
+    <color name="login_button_background">#FFDD00</color>
+    <color name="login_button_text">#004C8C</color>
+    <color name="login_hint_text">#B3B3B3</color>
 
-    <color name="colorPrimary">#6200EE</color>  <!-- Color primario -->
-    <color name="colorPrimaryDark">#3700B3</color>  <!-- Color oscuro primario -->
-    <color name="colorAccent">#03DAC5</color>  <!-- Color acento -->
+    <!-- Scrim / overlay -->
+    <color name="scrim_light">#33000000</color>
+    <color name="scrim_dark">#33FFFFFF</color>
 
-    <!-- Agrega aquí otros colores que necesites -->
+    <!-- Utilitarios glass -->
+    <color name="glass_light">#CCFFFFFF</color>
+    <color name="glass_dark">#33000000</color>
 
+    <!-- Chips por estado (día) -->
+    <color name="chip_asignada">#FFE082</color>
+    <color name="chip_en_atencion">#80D8FF</color>
+    <color name="chip_pendiente">#FFAB91</color>
+    <color name="chip_resuelta">#A5D6A7</color>
 
-
+    <!-- Outline suave -->
+    <color name="outline_soft">#1F000000</color>
 </resources>

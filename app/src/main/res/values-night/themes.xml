@@ -1,43 +1,55 @@
-<resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Tema oscuro suave de la aplicación -->
-    <style name="Theme.TecniApp_ICE" parent="Theme.MaterialComponents.DayNight.NoActionBar">
-        <!-- Color primario (Azul ICE) -->
+<resources>
+    <style name="Theme.TecniAppICE" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Marca -->
         <item name="colorPrimary">@color/ice_blue</item>
-        <item name="colorPrimaryVariant">@color/ice_blue_dark</item>
         <item name="colorOnPrimary">@color/white</item>
-
-        <!-- Color secundario (Amarillo ICE) -->
-        <item name="colorSecondary">@color/ice_yellow</item>
-        <item name="colorSecondaryVariant">@color/ice_yellow_dark</item>
+        <item name="colorSecondary">@color/ice_yellow_dark</item>
         <item name="colorOnSecondary">@color/black</item>
 
-        <!-- Color de la barra de estado y navegación -->
-        <item name="android:statusBarColor">?attr/colorPrimaryVariant</item>
-        <item name="android:navigationBarColor">@color/ice_blue_dark</item>
+        <!-- Superficies/fondos (noche) -->
+        <item name="colorBackground">@color/bg_dark</item>
+        <item name="colorOnBackground">@color/on_dark</item>
+        <item name="colorSurface">@color/surface_dark</item>
+        <item name="colorOnSurface">@color/on_dark</item>
+        <item name="colorSurfaceVariant">@color/surface_variant_dark</item>
 
-        <!-- Colores de fondo y superficie más suaves -->
-        <item name="android:colorBackground">@color/soft_dark_gray</item> <!-- Gris oscuro suave -->
-        <item name="colorOnBackground">@color/light_gray</item> <!-- Texto en gris claro -->
-        <item name="colorSurface">@color/dark_gray</item> <!-- Gris más oscuro para botones, tarjetas, etc. -->
-        <item name="colorOnSurface">@color/white</item> <!-- Texto sobre superficies oscuras -->
+        <!-- Estados -->
+        <item name="colorError">@color/error_500</item>
+        <item name="colorTertiary">@color/success_500</item>
 
-        <!-- Fondo de la ventana y configuración de título -->
-        <item name="android:windowBackground">@color/soft_dark_gray</item>
-        <item name="android:windowNoTitle">true</item>
+        <!-- Dinámico off -->
+        <item name="material3DynamicColor">false</item>
 
-        <!-- Color de acento para resaltados -->
-        <item name="colorAccent">@color/ice_yellow</item> <!-- Amarillo ICE como color de acento -->
+        <!-- Window -->
+        <item name="android:windowBackground">@color/bg_dark</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+
+        <!-- Estética -->
+        <item name="materialCardViewStyle">@style/Tecni.Card.Dark</item>
+        <item name="materialButtonStyle">@style/Tecni.Button.Dark</item>
+        <item name="chipStyle">@style/Tecni.Chip.Dark</item>
+        <item name="toolbarStyle">@style/Tecni.Toolbar.Dark</item>
     </style>
 
-    <!-- Overlay del AppBar con tonos oscuros -->
-    <style name="Theme.TecniApp_ICE.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />
+    <style name="Tecni.Card.Dark" parent="Widget.Material3.CardView.Filled">
+        <item name="cardCornerRadius">20dp</item>
+        <item name="cardElevation">2dp</item>
+        <item name="strokeWidth">0dp</item>
+    </style>
 
-    <!-- Overlay del Popup con fondo oscuro suave -->
-    <style name="Theme.TecniApp_ICE.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
+    <style name="Tecni.Button.Dark" parent="Widget.Material3.Button.TonalButton">
+        <item name="cornerRadius">16dp</item>
+        <item name="android:minHeight">44dp</item>
+    </style>
 
-    <!-- Tema sin ActionBar -->
-    <style name="Theme.TecniApp_ICE.NoActionBar" parent="Theme.TecniApp_ICE">
-        <item name="windowActionBar">false</item>
-        <item name="windowNoTitle">true</item>
+    <style name="Tecni.Chip.Dark" parent="Widget.Material3.Chip.Filter">
+        <item name="android:minHeight">36dp</item>
+    </style>
+
+    <style name="Tecni.Toolbar.Dark" parent="Widget.Material3.Toolbar">
+        <item name="android:elevation">1dp</item>
     </style>
 </resources>

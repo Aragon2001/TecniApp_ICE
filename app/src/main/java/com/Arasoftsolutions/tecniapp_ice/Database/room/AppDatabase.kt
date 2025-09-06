@@ -19,9 +19,10 @@ import com.Arasoftsolutions.tecniapp_ice.Database.entities.*
         MedidorEntity::class,          // Medidores eléctricos
         PueblosEntity::class,          // Pueblos/regiones
         SubregionesEntity::class,      // Subregiones del ICE
-        VehiculosEntity::class         // Vehículos asociados
+        VehiculosEntity::class,         // Vehículos asociados
+        AveriaEntity::class              // AveriasNuevas
     ],
-    version = 1
+    version = 2
 )
 abstract class AppDatabase : RoomDatabase() {
     // Métodos abstractos para acceder a cada DAO correspondiente a su entidad
@@ -32,6 +33,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun puebloDao(): PuebloDao
     abstract fun subregionDao(): SubregionDao
     abstract fun vehiculoDao(): VehiculoDao
+    abstract fun averiaDao(): AveriaDao
 
     companion object {
         // Instancia única de la base de datos (Singleton)
@@ -44,7 +46,7 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "tecniapp_room.db" // Nombre del archivo .db en almacenamiento interno
-                ).build().also { INSTANCE = it }
+                ).fallbackToDestructiveMigration().build().also { INSTANCE = it }
             }
     }
 }

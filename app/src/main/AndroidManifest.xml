@@ -11,6 +11,8 @@
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
     <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" tools:targetApi="30" />
 
+
+
     <!-- Características de hardware -->
     <uses-feature android:name="android.hardware.opengles.aep" android:required="false" />
 

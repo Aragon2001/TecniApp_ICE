@@ -20,6 +20,22 @@
     <string name="menu_programacion">Programación</string>
     <string name="action_accounts">Perfil</string>
      <string name="google_maps_key">AIzaSyBxgf6oA-rRK1-OlNft4oDgzF3gokLl1FU</string>
+    <!-- Dentro de app/src/main/res/values/strings.xml -->
+<string name="averias_buscar">Buscar</string>
+<string name="averias_filtrar">Filtrar</string>
+    <string name="averia_sin_asignar">Sin asignar</string>
+<string name="averia_asignar">Asignar</string>
+<string name="averia_atender">Atender</string>
+<string name="averia_cancelar">Cancelar</string>
+
+<string name="averia_asignar_desc">Asignar esta avería al técnico actual</string>
+<string name="averia_atender_desc">Atender ahora (auto-asigna si es necesario)</string>
+<string name="averia_cancelar_desc">Cancelar asignación y regresar a Pendiente</string>
+
+
+<!-- Necesario para la SearchView de Material -->
+<string name="search_view_behavior">com.google.android.material.searchview.SearchView$Behavior</string>
+
 
 
 </resources>
