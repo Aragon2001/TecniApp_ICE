@@ -1,6 +1,8 @@
 // ui/averias/AveriasRepository.kt
 package com.Arasoftsolutions.tecniapp_ice.ui.averias
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import com.Arasoftsolutions.tecniapp_ice.Database.room.AppDatabase
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.AveriaEntity
 import kotlinx.coroutines.Dispatchers
@@ -16,9 +18,12 @@ class AveriasRepository(private val db: AppDatabase) {
   fun observe(agencias: List<String>, estado: String, q: String): Flow<List<AveriaEntity>> =
     dao.observe(agencias, agencias.size, estado, q)
 
+  @RequiresApi(Build.VERSION_CODES.O)
   private val fmtA = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm")
+  @RequiresApi(Build.VERSION_CODES.O)
   private val fmtB = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
 
+  @RequiresApi(Build.VERSION_CODES.O)
   private fun parseMillis(s: String?): Long? {
     if (s.isNullOrBlank()) return null
     return runCatching { LocalDateTime.parse(s.trim(), fmtA) }
@@ -51,6 +56,7 @@ class AveriasRepository(private val db: AppDatabase) {
     }
   }
 
+  @RequiresApi(Build.VERSION_CODES.O)
   private fun map(e: IceAveria): AveriaEntity? {
     val id = e.noCaso?.trim().orEmpty()
     if (id.isBlank()) return null
@@ -85,6 +91,7 @@ class AveriasRepository(private val db: AppDatabase) {
   }
 
   /** Devuelve los caseId NUEVOS para notificar. */
+  @RequiresApi(Build.VERSION_CODES.O)
   suspend fun syncFromIce(bearer: String?): List<String> = withContext(Dispatchers.IO) {
     val list = IceApi.service.getAverias(bearer?.takeIf { it.isNotBlank() }?.let { "Bearer $it" })
       .mapNotNull { map(it) }
