@@ -1,7 +1,5 @@
 package com.Arasoftsolutions.tecniapp_ice.ui.averias
 
-import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -17,6 +15,7 @@ import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.Arasoftsolutions.tecniapp_ice.R
 import com.Arasoftsolutions.tecniapp_ice.databinding.FragmentAveriasBinding
+import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriaDetalleBottomSheet
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
@@ -39,7 +38,7 @@ class AveriasFragment : Fragment() {
 
         // Recycler
         adapter = AveriasAdapter(
-            onVerDetalle = { openMap(it) },
+            onVerDetalle = { showDetalle(it) },
             onAsignar = { vm.onAsignar(it) },
             onAtender = { vm.onAtender(it) }
         )
@@ -87,10 +86,8 @@ class AveriasFragment : Fragment() {
         }
     }
 
-    private fun openMap(item: AveriaUI) {
-        if (item.lat == 0.0 && item.lng == 0.0) return
-        val uri = Uri.parse("geo:${item.lat},${item.lng}?q=${item.lat},${item.lng}")
-        startActivity(Intent(Intent.ACTION_VIEW, uri))
+    private fun showDetalle(item: AveriaUI) {
+        AveriaDetalleBottomSheet.newInstance(item).show(childFragmentManager, "detalle_averia")
     }
 
     override fun onDestroyView() {
