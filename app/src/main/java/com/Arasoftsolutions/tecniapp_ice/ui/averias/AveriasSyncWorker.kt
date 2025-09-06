@@ -13,6 +13,7 @@ import kotlinx.coroutines.withContext
 import java.util.concurrent.TimeUnit
 import com.Arasoftsolutions.tecniapp_ice.BuildConfig
 import com.Arasoftsolutions.tecniapp_ice.R
+import android.net.Uri
 
 class AveriasSyncWorker(ctx: Context, params: WorkerParameters): CoroutineWorker(ctx, params) {
   override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
@@ -34,6 +35,11 @@ class AveriasSyncWorker(ctx: Context, params: WorkerParameters): CoroutineWorker
             .setContentTitle("Nueva avería")
             .setContentText("Caso $id")
             .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setSound(
+              Uri.parse(
+                "android.resource://${'$'}{applicationContext.packageName}/${R.raw.beep}"
+              )
+            )
             .build()
         )
       }
