@@ -145,7 +145,7 @@ class FragmentUser : Fragment() {
             val databaseRef = FirebaseDatabase
                 .getInstance("https://tecniapp-ice-user.firebaseio.com")
                 .getReference("usuarios")
-                .child(currentUser.cedula)  // ojo: tu key actual es la cédula
+                .child(currentUser.uid)
 
             databaseRef.setValue(updatedUser)
                 .addOnSuccessListener {

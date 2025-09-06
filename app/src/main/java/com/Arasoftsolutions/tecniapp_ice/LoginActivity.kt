@@ -114,31 +114,31 @@ class LoginActivity : AppCompatActivity() {
      */
 
     private fun createUserRtdbIfMissing(uid: String, email: String) {
-    val userRef = FirebaseDatabase.getInstance()
-        .reference.child("usuarios").child(uid)
+        val userRef = FirebaseDatabase.getInstance(DATABASE_URL_USERS)
+            .reference.child("usuarios").child(uid)
 
-    userRef.get()
-        .addOnSuccessListener { snap ->
-            if (!snap.exists()) {
-                val userMap = mapOf(
-                    "uid" to uid,
-                    "email" to email,
-                    "nombre" to "",
-                    "apellidos" to "",
-                    "cedula" to "",
-                    "subregion" to "",   // <- debe llenarse luego o en backoffice
-                    "agencia" to "",
-                    "placaVehiculo" to "",
-                    "telefono" to "",
-                    "password" to ""      // si no lo guardas, déjalo vacío
-                )
-                userRef.setValue(userMap)
+        userRef.get()
+            .addOnSuccessListener { snap ->
+                if (!snap.exists()) {
+                    val userMap = mapOf(
+                        "uid" to uid,
+                        "email" to email,
+                        "nombre" to "",
+                        "apellidos" to "",
+                        "cedula" to "",
+                        "subregion" to "",   // <- debe llenarse luego o en backoffice
+                        "agencia" to "",
+                        "placaVehiculo" to "",
+                        "telefono" to "",
+                        "password" to ""      // si no lo guardas, déjalo vacío
+                    )
+                    userRef.setValue(userMap)
+                }
             }
-        }
-        .addOnFailureListener {
-            // log opcional
-        }
-}
+            .addOnFailureListener {
+                // log opcional
+            }
+    }
 
 
 
