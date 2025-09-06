@@ -284,6 +284,9 @@ private fun finalizeRegistration() {
         return
     }
 
+    // Guardar la selección en el ViewModel
+    viewModel.setDatosAdicionales(selectedSubregion, selectedAgency, selectedVehicle)
+
     // Obtener datos del ViewModel
     val email = viewModel.getEmail()
     val password = viewModel.getPassword()

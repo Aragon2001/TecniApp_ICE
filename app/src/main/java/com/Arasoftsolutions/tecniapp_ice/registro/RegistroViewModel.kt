@@ -2,114 +2,82 @@ package com.Arasoftsolutions.tecniapp_ice.registro
 
 import androidx.lifecycle.ViewModel
 
+/**
+ * ViewModel utilizado durante el proceso de registro para almacenar
+ * temporalmente la información del usuario entre los diferentes pasos.
+ */
 class RegistroViewModel : ViewModel() {
-    // Propiedades para almacenar datos del registro
+
+    // Datos de verificación
     private var verificationCode: String? = null
+
+    // Credenciales de acceso
     private var email: String? = null
     private var telefono: String? = null
     private var password: String? = null
+
+    // Datos personales
     private var nombre: String? = null
     private var apellidos: String? = null
     private var cedula: String? = null
+
+    // Datos adicionales
     private var subregion: String? = null
     private var agencia: String? = null
     private var placa: String? = null
 
-    // Métodos para manejar el código de verificación
-    fun setVerificationCode(code: String) {
-        verificationCode = code
-    }
+    // Código de verificación
+    fun setVerificationCode(code: String) { verificationCode = code }
+    fun getVerificationCode(): String? = verificationCode
 
-    fun getVerificationCode(): String? {
-        return verificationCode
-    }
+    // Email
+    fun setEmail(email: String) { this.email = email }
+    fun getEmail(): String? = email
 
-    // Métodos para manejar el email
-    fun setEmail(email: String) {
-        this.email = email
-    }
+    // Teléfono
+    fun setTelefono(telefono: String) { this.telefono = telefono }
+    fun getTelefono(): String? = telefono
 
-    fun getEmail(): String? {
-        return email
-    }
+    // Contraseña
+    fun setPassword(password: String) { this.password = password }
+    fun getPassword(): String? = password
 
-    // Métodos para manejar el teléfono
-    fun setTelefono(telefono: String) {
-        this.telefono = telefono
-    }
+    // Nombre
+    fun setNombre(nombre: String) { this.nombre = nombre }
+    fun getNombre(): String? = nombre
 
-    fun getTelefono(): String? {
-        return telefono
-    }
+    // Apellidos
+    fun setApellidos(apellidos: String) { this.apellidos = apellidos }
+    fun getApellidos(): String? = apellidos
 
-    // Métodos para manejar la contraseña
-    fun setPassword(password: String) {
-        this.password = password
-    }
+    // Cédula
+    fun setCedula(cedula: String) { this.cedula = cedula }
+    fun getCedula(): String? = cedula
 
-    fun getPassword(): String? {
-        return password
-    }
+    // Subregión
+    fun setSubregion(subregion: String) { this.subregion = subregion }
+    fun getSubregion(): String? = subregion
 
-    // Métodos para manejar los datos del usuario
-    fun setNombre(nombre: String) {
-        this.nombre = nombre
-    }
+    // Agencia
+    fun setAgencia(agencia: String) { this.agencia = agencia }
+    fun getAgencia(): String? = agencia
 
-    fun getNombre(): String? {
-        return nombre
-    }
+    // Placa del vehículo
+    fun setPlaca(placa: String) { this.placa = placa }
+    fun getPlaca(): String? = placa
 
-    fun setApellidos(apellidos: String) {
-        this.apellidos = apellidos
-    }
-
-    fun getApellidos(): String? {
-        return apellidos
-    }
-
-    fun setCedula(cedula: String) {
+    // Datos del técnico (Paso 3)
+    fun setDatosTecnico(firstName: String, lastName: String, cedula: String) {
+        this.nombre = firstName
+        this.apellidos = lastName
         this.cedula = cedula
     }
 
-    fun getCedula(): String? {
-        return cedula
-    }
-
-    fun setSubregion(subregion: String) {
+    // Datos adicionales (Paso 4)
+    fun setDatosAdicionales(subregion: String, agencia: String, placa: String) {
         this.subregion = subregion
-    }
-
-    fun getSubregion(): String? {
-        return subregion
-    }
-
-    fun setAgencia(agencia: String) {
         this.agencia = agencia
-    }
-
-    fun getAgencia(): String? {
-        return agencia
-    }
-
-    fun setPlaca(placa: String) {
         this.placa = placa
     }
-
-    fun getPlaca(): String? {
-        return placa
-    }
-
-
-fun setDatosTecnico(firstName: String, lastName: String, cedula: String) {
-    this.nombre = firstName
-    this.apellidos = lastName
-    this.cedula = cedula
 }
-
-    }
-
-    fun setDatosAdicionales(name: String, lastName: String, idCard: String) {
-
-    }
 
