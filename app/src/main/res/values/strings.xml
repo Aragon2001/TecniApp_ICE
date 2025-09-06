@@ -32,6 +32,8 @@
     <string name="averia_asignar_desc">Asignar esta avería al técnico actual</string>
     <string name="averia_atender_desc">Atender ahora (auto-asigna si es necesario)</string>
     <string name="averia_cancelar_desc">Cancelar asignación y regresar a Pendiente</string>
+    <string name="averia_cerrar">Cerrar</string>
+    <string name="averia_ver_mapa">Ver mapa</string>
     <string name="averias_vacio">No hay averías con los filtros actuales.</string>
     <string name="estado_pendiente">Pendiente</string>
     <string name="estado_asignada">Asignada</string>
