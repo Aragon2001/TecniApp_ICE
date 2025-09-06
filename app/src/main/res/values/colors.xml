@@ -15,6 +15,11 @@
     <color name="surface_light">#CCFFFFFF</color>
     <color name="surface_variant_light">#EAF3FF</color>
 
+    <!-- Superficies oscuras (referenciadas en estilos) -->
+    <color name="bg_dark">#0F1116</color>
+    <color name="surface_dark">#1A2230</color>
+    <color name="surface_variant_dark">#243146</color>
+
     <!-- Texto / estados -->
     <color name="on_light">#0A0A0A</color>
     <color name="on_dark">#E6E9EF</color>
