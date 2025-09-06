@@ -59,14 +59,16 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
           items = list.map { e ->
             AveriaUI(
               id = e.caseId,
-              descripcion = e.caseId,
-              enviadoPor = e.nombreAgencia ?: (e.agencia ?: e.region ?: ""),
+              descripcion = "Avería #${e.caseId}",
               fechaMillis = e.fechaInicioMillis,
-              prioridad = e.causa ?: "Pendiente de verificar",
+              causa = e.causa ?: "Pendiente de verificar",
               estado = e.estado,
-              supervisor = e.observaciones ?: "—",
-              ubicacion = e.clientesAfectados ?: "—",
-              localizacion = if (e.lat!=null && e.lng!=null) "${e.lat},${e.lng}" else "",
+              tecnico = e.tecnicoAsignadoNombre ?: "",
+              observaciones = e.observaciones ?: "—",
+              nise = e.nise ?: "",
+              agencia = e.nombreAgencia ?: (e.agencia ?: ""),
+              region = e.region ?: "",
+              zonaTag = e.agenciaTag,
               lat = e.lat ?: 0.0,
               lng = e.lng ?: 0.0
             )
@@ -103,14 +105,14 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
     viewModelScope.launch {
       repo.enAtencion(
         caseId = ui.id,
-        causa = ui.prioridad.ifBlank { "Pendiente de verificar" },
+        causa = ui.causa.ifBlank { "Pendiente de verificar" },
         obs = "En atención"
       )
     }
   }
 
   fun onCerrar(ui: AveriaUI) {
-    viewModelScope.launch { repo.cerrar(ui.id, ui.prioridad.ifBlank { "Verificada" }, "Cierre desde app") }
+    viewModelScope.launch { repo.cerrar(ui.id, ui.causa.ifBlank { "Verificada" }, "Cierre desde app") }
   }
 
   private fun createNotificationChannel() {
