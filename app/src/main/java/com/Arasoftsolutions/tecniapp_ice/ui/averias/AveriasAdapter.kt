@@ -3,7 +3,6 @@ package com.Arasoftsolutions.tecniapp_ice.ui.averias
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
@@ -11,7 +10,6 @@ import androidx.recyclerview.widget.RecyclerView
 import com.Arasoftsolutions.tecniapp_ice.R
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.chip.Chip
-import com.bumptech.glide.Glide
 import java.text.DateFormat
 import java.util.Date
 
@@ -41,51 +39,31 @@ class AveriasAdapter(
     }
 
     inner class VH(view: View) : RecyclerView.ViewHolder(view) {
-        private val tvDesc = view.findViewById<TextView>(R.id.tvDescripcionAveria)
+        private val tvTitulo = view.findViewById<TextView>(R.id.tvTitulo)
         private val chipEstado = view.findViewById<Chip>(R.id.chipEstado)
-        private val chipPrioridad = view.findViewById<Chip>(R.id.chipPrioridad)
-        private val tvResumen = view.findViewById<TextView>(R.id.tvResumen)
-        private val tvUbic = view.findViewById<TextView>(R.id.tvUbicacion)
-        private val tvLoc = view.findViewById<TextView>(R.id.tvLocalizacion)
-        private val imgMapa = view.findViewById<ImageView>(R.id.imgMapa)
+        private val chipAsignado = view.findViewById<Chip>(R.id.chipAsignadoA)
+        private val tvCausa = view.findViewById<TextView>(R.id.tvCausa)
+        private val tvObs = view.findViewById<TextView>(R.id.tvObs)
+        private val tvCoords = view.findViewById<TextView>(R.id.tvCoords)
+        private val tvFecha = view.findViewById<TextView>(R.id.tvFecha)
         private val btnAsignar = view.findViewById<MaterialButton>(R.id.btnAsignar)
-        private val btnVer = view.findViewById<MaterialButton>(R.id.btnVer)
         private val btnAtender = view.findViewById<MaterialButton>(R.id.btnAtender)
 
 
         fun bind(item: AveriaUI) {
-            tvDesc.text = item.descripcion
+            tvTitulo.text = item.descripcion
             chipEstado.text = item.estado
-            chipPrioridad.text = item.prioridad
-            tvResumen.text = "Enviado por: ${item.enviadoPor}  •  Supervisor: ${item.supervisor}  •  ${
-                DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(Date(item.fechaMillis))
-            }"
-            tvUbic.text = "Ubicación: ${item.ubicacion}"
-            tvLoc.text = "Localización: ${item.localizacion}"
-
-            // ✅ Mostrar mapa solo si hay coordenadas válidas
-            if (item.lat == 0.0 && item.lng == 0.0) {
-                imgMapa.visibility = View.GONE
-            } else {
-                imgMapa.visibility = View.VISIBLE
-                val urlStatic = buildStaticMapUrl(item.lat, item.lng)
-                Glide.with(imgMapa)
-                    .load(urlStatic)
-                    .placeholder(R.drawable.placeholder_map) // crea este drawable
-                    .error(R.drawable.placeholder_map)
-                    .into(imgMapa)
+            chipAsignado.text = item.supervisor.ifBlank {
+                itemView.context.getString(R.string.averia_sin_asignar)
             }
+            tvCausa.text = item.prioridad
+            tvObs.text = item.ubicacion
+            tvCoords.text = if (item.lat == 0.0 && item.lng == 0.0) "—" else "${item.lat}, ${item.lng}"
+            tvFecha.text = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(Date(item.fechaMillis))
 
-            btnVer.setOnClickListener { onVerDetalle(item) }
+            itemView.setOnClickListener { onVerDetalle(item) }
             btnAsignar.setOnClickListener { onAsignar(item) }
             btnAtender.setOnClickListener { onAtender(item) }
-            itemView.setOnClickListener { onVerDetalle(item) }
-        }
-
-
-        private fun buildStaticMapUrl(lat: Double, lng: Double): String {
-            // Reemplaza con tu proveedor (Google Static / Mapbox / OSM tile server propio)
-            return "https://maps.googleapis.com/maps/api/staticmap?center=$lat,$lng&zoom=15&size=400x300&markers=color:red|$lat,$lng&key=TU_API_KEY"
         }
     }
 

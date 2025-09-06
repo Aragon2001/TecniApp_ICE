@@ -1,5 +1,6 @@
 package com.Arasoftsolutions.tecniapp_ice.ui.averias
 
+import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -16,7 +17,6 @@ import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.Arasoftsolutions.tecniapp_ice.R
 import com.Arasoftsolutions.tecniapp_ice.databinding.FragmentAveriasBinding
-import com.google.android.material.search.SearchView
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
@@ -34,14 +34,12 @@ class AveriasFragment : Fragment() {
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        // Toolbar + Search
         b.toolbar.setNavigationOnClickListener { requireActivity().onBackPressedDispatcher.onBackPressed() }
-        b.searchBar.setOnClickListener { b.searchView.show() }
-        setupSearch()
+        b.etBuscar.addTextChangedListener { vm.setQuery(it?.toString().orEmpty()) }
 
         // Recycler
         adapter = AveriasAdapter(
-            onVerDetalle = { vm.onVerDetalle(childFragmentManager, it) },
+            onVerDetalle = { openMap(it) },
             onAsignar = { vm.onAsignar(it) },
             onAtender = { vm.onAtender(it) }
         )
@@ -54,18 +52,22 @@ class AveriasFragment : Fragment() {
         // Pull to refresh → Sync
         b.swipeRefresh.setOnRefreshListener { vm.syncNow() }
 
-        // Chips estado
-        b.chipTodos.setOnClickListener { vm.setEstado(null) }
-        b.chipPendiente.setOnClickListener { vm.setEstado(Estado.PENDIENTE) }
-        b.chipAsignada.setOnClickListener { vm.setEstado(Estado.ASIGNADA) }
-        b.chipEnAtencion.setOnClickListener { vm.setEstado(Estado.EN_ATENCION) }
-        b.chipResuelta.setOnClickListener { vm.setEstado(Estado.RESUELTA) }
+        b.chipGroupEstado.setOnCheckedStateChangeListener { _, checkedIds ->
+            val state = when (checkedIds.firstOrNull()) {
+                b.chipPendiente.id -> Estado.PENDIENTE
+                b.chipAsignada.id -> Estado.ASIGNADA
+                b.chipEnAtencion.id -> Estado.EN_ATENCION
+                b.chipResuelta.id -> Estado.RESUELTA
+                else -> null
+            }
+            vm.setEstado(state)
+        }
 
         // Dropdown Zonas
         viewLifecycleOwner.lifecycleScope.launch {
             vm.zonas.collectLatest { zonas ->
                 val nombres = listOf("Todas") + zonas.map { it.nombreVisible }
-                b.actvZona.setAdapter(ArrayAdapter(requireContext(), R.layout.list_item_dropdown, nombres))
+                b.actvZona.setAdapter(ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, nombres))
                 b.actvZona.setText("Todas", false)
             }
         }
@@ -85,14 +87,10 @@ class AveriasFragment : Fragment() {
         }
     }
 
-    private fun setupSearch() {
-        val sv: SearchView = b.searchView
-        sv.editText.addTextChangedListener { vm.setQuery(it?.toString().orEmpty()) }
-        sv.addTransitionListener { _, _, newState ->
-            if (newState == SearchView.TransitionState.HIDDEN) {
-                b.searchBar.text = sv.text
-            }
-        }
+    private fun openMap(item: AveriaUI) {
+        if (item.lat == 0.0 && item.lng == 0.0) return
+        val uri = Uri.parse("geo:${item.lat},${item.lng}?q=${item.lat},${item.lng}")
+        startActivity(Intent(Intent.ACTION_VIEW, uri))
     }
 
     override fun onDestroyView() {
