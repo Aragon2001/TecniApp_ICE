@@ -141,6 +141,10 @@ class ActivityMain : AppCompatActivity() {
             clear()
             apply()
         }
+        getSharedPreferences("app_preferences", MODE_PRIVATE).edit().apply {
+            clear()
+            apply()
+        }
 
         if (auth.currentUser == null) {
             Toast.makeText(this, "Sesión cerrada correctamente", Toast.LENGTH_SHORT).show()
