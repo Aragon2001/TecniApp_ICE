@@ -45,10 +45,13 @@ class AveriasAdapter(
         private val tvTitulo = view.findViewById<TextView>(R.id.tvTitulo)
         private val chipEstado = view.findViewById<Chip>(R.id.chipEstado)
         private val chipAsignado = view.findViewById<Chip>(R.id.chipAsignadoA)
+
+        // NUEVOS chips de metadatos
         private val chipCaso = view.findViewById<Chip>(R.id.chipCaso)
         private val chipNise = view.findViewById<Chip>(R.id.chipNise)
         private val chipRegion = view.findViewById<Chip>(R.id.chipRegion)
         private val chipAgencia = view.findViewById<Chip>(R.id.chipAgencia)
+
         private val tvCausa = view.findViewById<TextView>(R.id.tvCausa)
         private val tvObs = view.findViewById<TextView>(R.id.tvObs)
         private val tvCoords = view.findViewById<TextView>(R.id.tvCoords)
@@ -56,24 +59,33 @@ class AveriasAdapter(
         private val btnAsignar = view.findViewById<MaterialButton>(R.id.btnAsignar)
         private val btnAtender = view.findViewById<MaterialButton>(R.id.btnAtender)
 
-
         fun bind(item: AveriaUI) {
+            // Título y estado
             tvTitulo.text = item.descripcion
             chipEstado.text = item.estado
+
+            // Chips de metadatos
             chipCaso.text = "Caso ${item.id}"
             chipNise.text = "NISE ${item.nise}"
             chipRegion.text = item.region
             chipAgencia.text = item.agencia
 
+            // Asignado a (fallback “Sin asignar”)
             chipAsignado.text = item.tecnico.ifBlank {
                 itemView.context.getString(R.string.averia_sin_asignar)
             }
 
+            // Texto
             tvCausa.text = item.causa
             tvObs.text = item.observaciones
-            tvCoords.text = if (item.lat == 0.0 && item.lng == 0.0) "—" else "${item.lat}, ${item.lng}"
-            tvFecha.text = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(Date(item.fechaMillis))
 
+            // Coords + fecha
+            tvCoords.text = if (item.lat == 0.0 && item.lng == 0.0) "—" else "${item.lat}, ${item.lng}"
+            tvFecha.text = DateFormat.getDateTimeInstance(
+                DateFormat.SHORT, DateFormat.SHORT
+            ).format(Date(item.fechaMillis))
+
+            // Acciones
             itemView.setOnClickListener { onVerDetalle(item) }
             btnAsignar.setOnClickListener { onAsignar(item) }
             btnAtender.setOnClickListener { onAtender(item) }
