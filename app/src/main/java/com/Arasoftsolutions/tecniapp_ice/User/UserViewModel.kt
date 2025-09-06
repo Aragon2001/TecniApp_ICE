@@ -103,7 +103,7 @@ class UserViewModel : ViewModel() {
 
     // Actualizar datos del usuario
     fun updateUserData(userEntity: UserEntity) {
-        usersDatabase.child(userEntity.cedula).setValue(userEntity)
+        usersDatabase.child(userEntity.uid).setValue(userEntity)
             .addOnSuccessListener {
                 _userEntityData.value = userEntity
                 Log.d("UserViewModel", "Datos del usuario actualizados: $userEntity")
