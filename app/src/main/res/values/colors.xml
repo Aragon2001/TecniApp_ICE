@@ -51,4 +51,9 @@
 
     <!-- Outline suave -->
     <color name="outline_soft">#1F000000</color>
+
+    <!-- Colores utilitarios -->
+    <color name="light_gray">#B3B3B3</color>
+    <color name="dark_gray">#616161</color>
+    <color name="red">#D32F2F</color>
 </resources>
