@@ -12,9 +12,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.util.concurrent.TimeUnit
 import com.Arasoftsolutions.tecniapp_ice.BuildConfig
-
-
-val repo = com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasRepository(db)
+import com.Arasoftsolutions.tecniapp_ice.R
 
 class AveriasSyncWorker(ctx: Context, params: WorkerParameters): CoroutineWorker(ctx, params) {
   override suspend fun doWork(): Result = withContext(Dispatchers.IO) {

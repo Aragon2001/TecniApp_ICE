@@ -99,16 +99,15 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
   }
 
 
- fun onAtender(ui: AveriaUI) {
-  viewModelScope.launch {
-    repo.atenderOCerrar(
-      caseId = ui.id,
-      causa = ui.prioridad.ifBlank { "Pendiente de verificar" },
-      obs = "En atención",
-      cerrar = false
-    )
+  fun onAtender(ui: AveriaUI) {
+    viewModelScope.launch {
+      repo.enAtencion(
+        caseId = ui.id,
+        causa = ui.prioridad.ifBlank { "Pendiente de verificar" },
+        obs = "En atención"
+      )
+    }
   }
-}
 
   fun onCerrar(ui: AveriaUI) {
     viewModelScope.launch { repo.cerrar(ui.id, ui.prioridad.ifBlank { "Verificada" }, "Cierre desde app") }
