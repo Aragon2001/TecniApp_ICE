@@ -38,12 +38,13 @@
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilBuscar"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
-
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:hint="@string/averias_buscar"
+            android:background="@color/glass_light"
             app:startIconDrawable="@android:drawable/ic_menu_search"
-            app:endIconMode="clear_text">
+            app:endIconMode="clear_text"
+            app:boxStrokeColor="@color/ice_blue">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/etBuscar"
@@ -71,22 +72,22 @@
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chipPendiente"
                     style="@style/Tecni.Chip.Pendiente"
-                    android:text="Pendiente" />
+                    android:text="@string/estado_pendiente" />
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chipAsignada"
                     style="@style/Tecni.Chip.Asignada"
-                    android:text="Asignada" />
+                    android:text="@string/estado_asignada" />
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chipEnAtencion"
                     style="@style/Tecni.Chip.EnAtencion"
-                    android:text="En atención" />
+                    android:text="@string/estado_en_atencion" />
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chipResuelta"
                     style="@style/Tecni.Chip.Resuelta"
-                    android:text="Resuelta" />
+                    android:text="@string/estado_resuelta" />
 
             </com.google.android.material.chip.ChipGroup>
 
@@ -128,7 +129,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:paddingTop="12dp"
-            android:text="No hay averías con los filtros actuales."
+            android:text="@string/averias_vacio"
             android:textColor="?attr/colorOnBackground"
             android:gravity="center"
             android:visibility="gone"
