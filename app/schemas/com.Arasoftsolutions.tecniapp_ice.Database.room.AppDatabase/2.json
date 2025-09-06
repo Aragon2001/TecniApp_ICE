@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 2,
-    "identityHash": "70f897b1912a6c14c3c0ef1011c4d79f",
+    "identityHash": "dde8bdee72984f273ad28d255c6fab48",
     "entities": [
       {
         "tableName": "usuarios",
@@ -318,11 +318,170 @@
             "id"
           ]
         }
+      },
+      {
+        "tableName": "averias",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`caseId` TEXT NOT NULL, `region` TEXT, `provincia` INTEGER, `agencia` TEXT, `nombreAgencia` TEXT, `nise` TEXT, `causa` TEXT, `observaciones` TEXT, `estado` TEXT NOT NULL, `idEstadoAve` INTEGER, `idEstadoAranda` INTEGER, `lat` REAL, `lng` REAL, `clientesAfectados` TEXT, `fechaInicioMillis` INTEGER NOT NULL, `horaInicioMillis` INTEGER, `horaFinalMillis` INTEGER, `agenciaTag` TEXT NOT NULL, `vehiculoAsignado` TEXT, `tecnicoAsignadoUid` TEXT, `tecnicoAsignadoNombre` TEXT, PRIMARY KEY(`caseId`))",
+        "fields": [
+          {
+            "fieldPath": "caseId",
+            "columnName": "caseId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "region",
+            "columnName": "region",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "provincia",
+            "columnName": "provincia",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "agencia",
+            "columnName": "agencia",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "nombreAgencia",
+            "columnName": "nombreAgencia",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "nise",
+            "columnName": "nise",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "causa",
+            "columnName": "causa",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "observaciones",
+            "columnName": "observaciones",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "estado",
+            "columnName": "estado",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "idEstadoAve",
+            "columnName": "idEstadoAve",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "idEstadoAranda",
+            "columnName": "idEstadoAranda",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "lat",
+            "columnName": "lat",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "lng",
+            "columnName": "lng",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "clientesAfectados",
+            "columnName": "clientesAfectados",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "fechaInicioMillis",
+            "columnName": "fechaInicioMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "horaInicioMillis",
+            "columnName": "horaInicioMillis",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "horaFinalMillis",
+            "columnName": "horaFinalMillis",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "agenciaTag",
+            "columnName": "agenciaTag",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "vehiculoAsignado",
+            "columnName": "vehiculoAsignado",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "tecnicoAsignadoUid",
+            "columnName": "tecnicoAsignadoUid",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "tecnicoAsignadoNombre",
+            "columnName": "tecnicoAsignadoNombre",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "caseId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_averias_caseId",
+            "unique": true,
+            "columnNames": [
+              "caseId"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_averias_caseId` ON `${TABLE_NAME}` (`caseId`)"
+          },
+          {
+            "name": "index_averias_estado",
+            "unique": false,
+            "columnNames": [
+              "estado"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_averias_estado` ON `${TABLE_NAME}` (`estado`)"
+          },
+          {
+            "name": "index_averias_agenciaTag",
+            "unique": false,
+            "columnNames": [
+              "agenciaTag"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_averias_agenciaTag` ON `${TABLE_NAME}` (`agenciaTag`)"
+          },
+          {
+            "name": "index_averias_fechaInicioMillis",
+            "unique": false,
+            "columnNames": [
+              "fechaInicioMillis"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_averias_fechaInicioMillis` ON `${TABLE_NAME}` (`fechaInicioMillis`)"
+          }
+        ]
       }
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '70f897b1912a6c14c3c0ef1011c4d79f')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'dde8bdee72984f273ad28d255c6fab48')"
     ]
   }
 }

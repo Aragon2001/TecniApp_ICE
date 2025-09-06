@@ -12,23 +12,20 @@ import com.google.android.material.button.MaterialButton
 import com.google.android.material.chip.Chip
 import java.text.DateFormat
 import java.util.Date
-import java.io.Serializable
 
 data class AveriaUI(
     val id: String,
     val descripcion: String,
+    val enviadoPor: String,
     val fechaMillis: Long,
-    val causa: String,
+    val prioridad: String,
     val estado: String,
-    val tecnico: String,
-    val observaciones: String,
-    val nise: String,
-    val agencia: String,
-    val region: String,
-    val zonaTag: String,
+    val supervisor: String,
+    val ubicacion: String,
+    val localizacion: String,
     val lat: Double,
     val lng: Double
-) : Serializable
+)
 
 class AveriasAdapter(
     private val onVerDetalle: (AveriaUI) -> Unit,
@@ -45,10 +42,6 @@ class AveriasAdapter(
         private val tvTitulo = view.findViewById<TextView>(R.id.tvTitulo)
         private val chipEstado = view.findViewById<Chip>(R.id.chipEstado)
         private val chipAsignado = view.findViewById<Chip>(R.id.chipAsignadoA)
-        private val chipCaso = view.findViewById<Chip>(R.id.chipCaso)
-        private val chipNise = view.findViewById<Chip>(R.id.chipNise)
-        private val chipRegion = view.findViewById<Chip>(R.id.chipRegion)
-        private val chipAgencia = view.findViewById<Chip>(R.id.chipAgencia)
         private val tvCausa = view.findViewById<TextView>(R.id.tvCausa)
         private val tvObs = view.findViewById<TextView>(R.id.tvObs)
         private val tvCoords = view.findViewById<TextView>(R.id.tvCoords)
@@ -60,17 +53,9 @@ class AveriasAdapter(
         fun bind(item: AveriaUI) {
             tvTitulo.text = item.descripcion
             chipEstado.text = item.estado
-            chipCaso.text = "Caso ${item.id}"
-            chipNise.text = "NISE ${item.nise}"
-            chipRegion.text = item.region
-            chipAgencia.text = item.agencia
-
-            chipAsignado.text = item.tecnico.ifBlank {
-                itemView.context.getString(R.string.averia_sin_asignar)
-            }
-
-            tvCausa.text = item.causa
-            tvObs.text = item.observaciones
+            chipAsignado.text = item.supervisor.ifBlank { view.context.getString(R.string.averia_sin_asignar) }
+            tvCausa.text = item.prioridad
+            tvObs.text = item.ubicacion
             tvCoords.text = if (item.lat == 0.0 && item.lng == 0.0) "—" else "${item.lat}, ${item.lng}"
             tvFecha.text = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(Date(item.fechaMillis))
 
