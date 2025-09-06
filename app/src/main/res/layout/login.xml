@@ -99,51 +99,51 @@
                 android:background="@drawable/rounded_bg_f0f2f4"
                 android:backgroundTint="@color/white_translucent"
                 android:hint="Ingresa tu correo electrónico"
-                android:textColorHint="@color/white"
                 android:inputType="textEmailAddress"
                 android:padding="10dp"
                 android:textColor="@color/white"
+                android:textColorHint="@color/white"
                 android:textSize="16sp"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/textView7" />
 
-<RelativeLayout
-    android:id="@+id/contenedor"
-    android:layout_width="0dp"
-    android:layout_height="wrap_content"
-    android:layout_marginTop="50dp"
-    android:layout_marginBottom="0dp"
-    app:layout_constraintEnd_toEndOf="parent"
-    app:layout_constraintStart_toStartOf="parent"
-    app:layout_constraintTop_toBottomOf="@id/email_edit_text">
+            <RelativeLayout
+                android:id="@+id/contenedor"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="50dp"
+                android:layout_marginBottom="0dp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/email_edit_text">
 
-    <EditText
-        android:id="@+id/password_edit_text"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@drawable/rounded_bg_f0f2f4"
-        android:backgroundTint="@color/white_translucent"
-        android:hint="Ingresa tu contraseña"
-        android:textColorHint="@color/white"
-        android:inputType="textPassword"
-        android:padding="10dp"
-        android:textColor="@color/white"
-        android:textSize="16sp" />
+                <EditText
+                    android:id="@+id/password_edit_text"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/rounded_bg_f0f2f4"
+                    android:backgroundTint="@color/white_translucent"
+                    android:hint="Ingresa tu contraseña"
+                    android:inputType="textPassword"
+                    android:padding="10dp"
+                    android:textColor="@color/white"
+                    android:textColorHint="@color/white"
+                    android:textSize="16sp" />
 
-    <!-- Icono para mostrar/ocultar contraseña -->
-    <ImageView
-        android:id="@+id/password_icon"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentEnd="true"
-        android:layout_centerVertical="true"
-        android:src="@drawable/password_icon"
-        android:contentDescription="Mostrar/ocultar contraseña"
-        android:clickable="true"
-        android:focusable="true"
-        android:padding="8dp" />
-</RelativeLayout>
+                <!-- Icono para mostrar/ocultar contraseña -->
+                <ImageView
+                    android:id="@+id/password_icon"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentEnd="true"
+                    android:layout_centerVertical="true"
+                    android:clickable="true"
+                    android:contentDescription="Mostrar/ocultar contraseña"
+                    android:focusable="true"
+                    android:padding="8dp"
+                    android:src="@drawable/password_icon" />
+            </RelativeLayout>
 
 
             <TextView
