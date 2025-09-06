@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Marca ICE -->
+    <color name="ice_blue">#0071CE</color>
+    <color name="ice_blue_dark">#004C8C</color>
+    <color name="ice_yellow">#FFDD00</color>
+    <color name="ice_yellow_dark">#CCAA00</color>
+
+    <!-- Neutrales -->
+    <color name="white">#FFFFFFFF</color>
+    <color name="black">#FF000000</color>
+
+    <!-- Superficies oscuras -->
+    <color name="bg_dark">#0F1116</color>
+    <color name="surface_dark">#1A2230</color>
+    <color name="surface_variant_dark">#243146</color>
+
+    <!-- Texto / estados -->
+    <color name="on_light">#0A0A0A</color>
+    <color name="on_dark">#E6E9EF</color>
+    <color name="success_500">#4CAF50</color>
+    <color name="error_500">#D32F2F</color>
+
+    <!-- Login (noche) -->
+    <color name="login_background">#004C8C</color>
+    <color name="login_card_background">#1A2230</color>
+    <color name="login_text_primary">#E6E9EF</color>
+    <color name="login_text_secondary">#FFDD00</color>
+    <color name="login_button_background">#FFDD00</color>
+    <color name="login_button_text">#001A2B</color>
+    <color name="login_hint_text">#80FFFFFF</color>
+
+    <!-- Scrim / overlay -->
+    <color name="scrim_light">#33000000</color>
+    <color name="scrim_dark">#33FFFFFF</color>
+
+    <!-- Utilitarios glass noche -->
+    <color name="glass_light">#1AFFFFFF</color>
+    <color name="glass_dark">#B3000000</color>
+
+    <!-- Chips por estado (noche) -->
+    <color name="chip_asignada">#FFC107</color>
+    <color name="chip_en_atencion">#29B6F6</color>
+    <color name="chip_pendiente">#FF7043</color>
+    <color name="chip_resuelta">#66BB6A</color>
+
+    <!-- Outline suave -->
+    <color name="outline_soft">#33FFFFFF</color>
+</resources>

@@ -1,22 +1,137 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
+<androidx.coordinatorlayout.widget.CoordinatorLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-
-    android:padding="16dp"
     tools:context=".ui.averias.AveriasFragment">
 
-
-
-    <!-- RecyclerView para las averías -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recyclerViewAverias"
+    <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:scrollbars="vertical"
-        tools:listitem="@layout/item_averia" />
+        android:paddingTop="0dp">
 
-</LinearLayout>
+        <com.google.android.material.appbar.MaterialToolbar
+            android:id="@+id/toolbar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize"
+            android:background="?attr/colorPrimary"
+            app:title="@string/menu_averias"
+            app:titleCentered="true"
+            app:titleTextColor="?attr/colorOnPrimary"
+            app:navigationIconTint="?attr/colorOnPrimary"
+            app:popupTheme="@style/ThemeOverlay.Tecni.Toolbar"/>
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <!-- Contenido -->
+    <LinearLayout
+        android:id="@+id/contentContainer"
+        android:orientation="vertical"
+        android:padding="12dp"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="?android:colorBackground"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+        <!-- Búsqueda (MDC, no M3) -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilBuscar"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
+
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+            android:hint="@string/averias_buscar"
+            app:startIconDrawable="@android:drawable/ic_menu_search"
+            app:endIconMode="clear_text">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etBuscar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:imeOptions="actionSearch"
+                android:singleLine="true"/>
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Filtros -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginTop="8dp">
+
+            <!-- Estados -->
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/chipGroupEstado"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingBottom="8dp"
+                app:singleSelection="true">
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipPendiente"
+                    style="@style/Tecni.Chip.Pendiente"
+                    android:text="Pendiente" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipAsignada"
+                    style="@style/Tecni.Chip.Asignada"
+                    android:text="Asignada" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipEnAtencion"
+                    style="@style/Tecni.Chip.EnAtencion"
+                    android:text="En atención" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipResuelta"
+                    style="@style/Tecni.Chip.Resuelta"
+                    android:text="Resuelta" />
+
+            </com.google.android.material.chip.ChipGroup>
+
+            <!-- Zona/Subregión (ExposedDropdown MDC) -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilZona"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense.ExposedDropdownMenu"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Zona / Subregión"
+                app:endIconMode="dropdown_menu">
+
+                <AutoCompleteTextView
+                    android:id="@+id/actvZona"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="none"/>
+            </com.google.android.material.textfield.TextInputLayout>
+        </LinearLayout>
+
+        <!-- Lista con Pull-to-refresh -->
+        <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+            android:id="@+id/swipeRefresh"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1">
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recyclerViewAverias"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scrollbars="vertical"
+                tools:listitem="@layout/item_averia"/>
+        </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+
+        <!-- Estado vacío -->
+        <TextView
+            android:id="@+id/tvVacio"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingTop="12dp"
+            android:text="No hay averías con los filtros actuales."
+            android:textColor="?attr/colorOnBackground"
+            android:gravity="center"
+            android:visibility="gone"
+            tools:visibility="visible"/>
+    </LinearLayout>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

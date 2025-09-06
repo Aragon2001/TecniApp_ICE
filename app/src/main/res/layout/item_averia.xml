@@ -1,109 +1,144 @@
-<LinearLayout
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:background="@drawable/rounded_bg_f0f2f4"
-    android:padding="16dp"
-    android:elevation="4dp"
-    android:layout_margin="8dp"
-    android:layout_marginBottom="12dp"
-    android:backgroundTint="#FFFFFF">
+    android:layout_marginHorizontal="12dp"
+    android:layout_marginVertical="8dp"
+    app:cardCornerRadius="16dp"
+    app:cardUseCompatPadding="true"
+    app:strokeWidth="1dp">
 
-    <!-- Título de la avería -->
-    <TextView
-        android:id="@+id/tvDescripcionAveria"
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Descripción de la avería"
-        android:textColor="#000000"
-        android:textSize="18sp"
-        android:textStyle="bold"
-        android:fontFamily="sans-serif-medium"
-        android:layout_marginBottom="8dp" />
+        android:padding="12dp">
 
-    <!-- Línea divisoria -->
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:background="#E0E0E0"
-        android:layout_marginBottom="12dp" />
+        <!-- Título / Estado -->
+        <TextView
+            android:id="@+id/tvTitulo"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/chipEstado"
+            app:layout_goneMarginEnd="8dp" />
 
-    <!-- Detalles de avería -->
-    <TextView
-        android:id="@+id/tvEnviadoPor"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Enviado por: "
-        android:textColor="#757575"
-        android:textSize="14sp"
-        android:layout_marginBottom="6dp" />
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chipEstado"
+            style="@style/Widget.Material3.Chip.Elevated"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:layout_constraintTop_toTopOf="@id/tvTitulo"
+            app:layout_constraintEnd_toEndOf="parent" />
 
-    <TextView
-        android:id="@+id/tvFechaEnvio"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Fecha de envío: "
-        android:textColor="#757575"
-        android:textSize="14sp"
-        android:layout_marginBottom="6dp" />
+        <!-- Asignado a -->
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chipAsignadoA"
+            style="@style/Widget.Material3.Chip.Suggestion.Elevated"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/averia_sin_asignar"
+            app:layout_constraintTop_toBottomOf="@id/tvTitulo"
+            app:layout_constraintStart_toStartOf="parent"
+            android:layout_marginTop="6dp" />
 
-    <TextView
-        android:id="@+id/tvPrioridad"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Prioridad: Alta"
-        android:textColor="#757575"
-        android:textSize="14sp"
-        android:layout_marginBottom="6dp" />
+        <!-- Causa -->
+        <TextView
+            android:id="@+id/tvCausa"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:textSize="14sp"
+            app:layout_constraintTop_toBottomOf="@id/chipAsignadoA"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginTop="6dp" />
 
-    <TextView
-        android:id="@+id/tvEstado"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Estado: "
-        android:textColor="#757575"
-        android:textSize="14sp"
-        android:layout_marginBottom="6dp" />
+        <!-- Observaciones -->
+        <TextView
+            android:id="@+id/tvObs"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:textSize="14sp"
+            app:layout_constraintTop_toBottomOf="@id/tvCausa"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginTop="2dp" />
 
-    <TextView
-        android:id="@+id/tvSupervisor"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Supervisor: "
-        android:textColor="#757575"
-        android:textSize="14sp"
-        android:layout_marginBottom="6dp" />
+        <!-- Coordenadas -->
+        <TextView
+            android:id="@+id/tvCoords"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:textSize="12sp"
+            android:alpha="0.8"
+            app:layout_constraintTop_toBottomOf="@id/tvObs"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/tvFecha"
+            android:layout_marginTop="6dp" />
 
-    <TextView
-        android:id="@+id/tvUbicacion"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Ubicación: "
-        android:textColor="#757575"
-        android:textSize="14sp"
-        android:layout_marginBottom="6dp" />
+        <!-- Fecha -->
+        <TextView
+            android:id="@+id/tvFecha"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="12sp"
+            android:alpha="0.8"
+            app:layout_constraintTop_toBottomOf="@id/tvObs"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginTop="6dp" />
 
-    <TextView
-        android:id="@+id/tvLocalizacion"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Localización: "
-        android:textColor="#757575"
-        android:textSize="14sp"
-        android:layout_marginBottom="6dp" />
+        <!-- Contenedor de acciones -->
+        <LinearLayout
+            android:id="@+id/layoutAcciones"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="start"
+            android:layout_marginTop="10dp"
+            android:baselineAligned="false"
+            app:layout_constraintTop_toBottomOf="@id/tvCoords"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent">
 
-    <!-- Botón Aceptar -->
-    <Button
-        android:id="@+id/btnAceptar"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Aceptar"
-        android:textColor="#FFFFFF"
-        android:backgroundTint="#111418"
-        android:paddingHorizontal="24dp"
-        android:paddingVertical="8dp"
-        android:layout_gravity="end"
-        android:layout_marginTop="12dp" />
+            <!-- ASIGNAR: fija asignación al técnico actual -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnAsignar"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/averia_asignar"
+                android:contentDescription="@string/averia_asignar_desc" />
 
-</LinearLayout>
+            <!-- ATENDER: empieza de una vez (auto-asigna si no estaba) -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnAtender"
+                style="android:materialButtonTonalStyle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/averia_atender"
+                android:contentDescription="@string/averia_atender_desc"
+                android:layout_marginStart="8dp" />
+
+            <!-- CANCELAR: libera la asignación y vuelve a Pendiente -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnCancelar"
+                style="?attr/materialButtonOutlinedStyle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/averia_cancelar"
+                android:contentDescription="@string/averia_cancelar_desc"
+                android:layout_marginStart="8dp"
+                android:visibility="gone" />
+                <!-- Por defecto GONE; el ViewModel la pone VISIBLE si la avería está asignada al usuario -->
+        </LinearLayout>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</com.google.android.material.card.MaterialCardView>

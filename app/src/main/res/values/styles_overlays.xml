@@ -1,0 +1,54 @@
+<resources>
+
+    <!-- Toolbar (menús emergentes legibles) -->
+    <style name="ThemeOverlay.Tecni.Toolbar" parent="ThemeOverlay.Material3.ActionBar">
+        <item name="colorOnSurface">@color/on_light</item>
+        <item name="android:textColor">@color/on_light</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
+
+    <!-- SearchBar/SearchView (look glass) -->
+    <style name="ThemeOverlay.Tecni.Search" parent="ThemeOverlay.Material3">
+        <item name="colorSurface">@color/glass_light</item>
+        <item name="colorOnSurface">@color/on_light</item>
+        <item name="colorSurfaceVariant">@color/surface_variant_light</item>
+    </style>
+
+    <style name="ThemeOverlay.Tecni.Search.Dark" parent="ThemeOverlay.Material3">
+        <item name="colorSurface">@color/glass_dark</item>
+        <item name="colorOnSurface">@color/on_dark</item>
+        <item name="colorSurfaceVariant">@color/surface_variant_dark</item>
+    </style>
+
+    <!-- Base chips -->
+    <style name="Tecni.Chip.Base" parent="Widget.Material3.Chip.Assist">
+        <item name="android:minHeight">36dp</item>
+        <item name="chipStrokeWidth">0dp</item>
+    </style>
+
+    <!-- Chips por estado -->
+    <style name="Tecni.Chip.Pendiente" parent="Tecni.Chip.Base">
+        <item name="chipBackgroundColor">@color/chip_pendiente</item>
+        <item name="chipIconTint">@android:color/white</item>
+        <item name="android:textColor">@android:color/white</item>
+    </style>
+
+    <style name="Tecni.Chip.Asignada" parent="Tecni.Chip.Base">
+        <item name="chipBackgroundColor">@color/chip_asignada</item>
+        <item name="chipIconTint">@android:color/white</item>
+        <item name="android:textColor">@android:color/white</item>
+    </style>
+
+    <style name="Tecni.Chip.EnAtencion" parent="Tecni.Chip.Base">
+        <item name="chipBackgroundColor">@color/chip_en_atencion</item>
+        <item name="chipIconTint">@android:color/white</item>
+        <item name="android:textColor">@android:color/white</item>
+    </style>
+
+    <style name="Tecni.Chip.Resuelta" parent="Tecni.Chip.Base">
+        <item name="chipBackgroundColor">@color/chip_resuelta</item>
+        <item name="chipIconTint">@android:color/white</item>
+        <item name="android:textColor">@android:color/white</item>
+    </style>
+
+</resources>

@@ -1,64 +1,64 @@
+// =====================================
+// app/build.gradle.kts  (Módulo: app)
+// Plan A: usar BuildConfig generado
+// =====================================
+
 plugins {
-    // Plugin Android para aplicaciones
+    // Android App
     alias(libs.plugins.android.application)
 
-    // Plugin Kotlin para Android
+    // Kotlin Android
     alias(libs.plugins.jetbrains.kotlin.android)
 
-    // Plugin de KSP (reemplazo moderno de kapt)
+    // KSP (Room usa KSP en lugar de kapt)
     alias(libs.plugins.ksp)
 
-    // Plugin de Google Services para Firebase
+    // Google Services (Firebase)
     id("com.google.gms.google-services")
 }
 
 android {
-    // Namespace del proyecto (coincide con el paquete original en tu código)
+    // Debe coincidir con el paquete base de tu app (donde importas BuildConfig)
     namespace = "com.Arasoftsolutions.tecniapp_ice"
 
-    // Versión de compilación del SDK
+    // API de compilación
     compileSdk = 34
 
-    defaultConfig {
-        // ID de aplicación (igual al namespace para evitar conflictos)
-        applicationId = "com.Arasoftsolutions.tecniapp_ice"
-
-        // Mínima versión de Android soportada
-        minSdk = 24
-
-        // Versión objetivo
-        targetSdk = 34
-
-        // Versión de la app
-        versionCode = 1
-        versionName = "1.0"
-
-        // Runner para pruebas
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-    }
-
-    // Activar ViewBinding y DataBinding si ya lo usas en layouts
+    // 🔓 Habilita la generación de BuildConfig (requerido para buildConfigField)
     buildFeatures {
         viewBinding = true
         dataBinding = true
+        buildConfig = true
     }
 
-    // Configuración para usar Java 17 (requerido por Kotlin 2.x y Room 2.7+)
+    defaultConfig {
+        // Suele ser igual al namespace en apps; en libs no aplica
+        applicationId = "com.Arasoftsolutions.tecniapp_ice"
+
+        // Constantes accesibles como BuildConfig.ICE_BASE_URL / ICE_BEARER
+        buildConfigField("String", "ICE_BASE_URL", "\"https://agenciaelectricidad.cn.ice.go.cr/api/\"")
+        buildConfigField("String", "ICE_BEARER", "\"\"") // si luego usas token, colócalo aquí o inyecta en runtime
+
+        minSdk = 24
+        targetSdk = 34
+
+        versionCode = 1
+        versionName = "1.0"
+
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    // Java/Kotlin 17 (alineado con Room moderno y Kotlin 2.x)
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions {
-        jvmTarget = "17"
-    }
-    kotlin {
-        jvmToolchain(17)
-    }
+    kotlinOptions { jvmTarget = "17" }
+    kotlin { jvmToolchain(17) }
 
-    // Evita empaquetar licencias duplicadas que a veces rompen el build
-      packaging {
+    // Evita conflictos de licencias/recursos
+    packaging {
         resources {
-            // Opción recomendada: excluir duplicados de JavaMail
             excludes += setOf(
                 "META-INF/NOTICE.md",
                 "META-INF/LICENSE.md",
@@ -68,24 +68,23 @@ android {
                 "META-INF/AL2.0",
                 "META-INF/LGPL2.1"
             )
-            // Alternativa (si prefieres conservar uno):
+            // Alternativa si prefieres conservar uno:
             // pickFirsts += setOf("META-INF/NOTICE.md", "META-INF/LICENSE.md")
         }
     }
 }
 
 dependencies {
-    // --- AndroidX básico ---
+    // --- AndroidX / UI base ---
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
-    implementation(libs.material)
+    implementation(libs.material)                     // Material Components (usa la versión del catálogo)
     implementation(libs.androidx.constraintlayout)
+    implementation(libs.androidx.swiperefreshlayout)
 
-    // Ciclo de vida (ViewModel y LiveData)
+    // --- Lifecycle / Navigation ---
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
     implementation(libs.androidx.lifecycle.livedata.ktx)
-
-    // Navegación Jetpack
     implementation(libs.androidx.navigation.fragment.ktx)
     implementation(libs.androidx.navigation.ui.ktx)
 
@@ -93,37 +92,51 @@ dependencies {
     implementation(libs.play.services.maps)
     implementation(libs.play.services.location)
 
-    // --- Firebase (usamos BoM para unificar versiones) ---
+    // --- Firebase (BoM para alinear versiones) ---
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.auth.ktx)
     implementation(libs.firebase.database.ktx)
     implementation(libs.firebase.firestore.ktx)
+    implementation("com.google.firebase:firebase-config-ktx:21.6.0")
 
-    // --- ROOM con KSP ---
+    // --- Room + KSP ---
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
-    implementation(libs.androidx.datastore.core.okio.jvm)
-    implementation(libs.androidx.runtime)
-    // Aquí usamos KSP (NO kapt) para generar el código de Room
     ksp(libs.androidx.room.compiler)
+
+    // --- Coroutines ---
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
+
+    // --- WorkManager ---
+    implementation("androidx.work:work-runtime-ktx:2.9.0")
+
+    // --- Retrofit + Moshi + OkHttp (UNA sola vez, sin duplicados) ---
+    implementation("com.squareup.retrofit2:retrofit:2.11.0")
+    implementation("com.squareup.retrofit2:converter-moshi:2.11.0")
+    implementation("com.squareup.moshi:moshi:1.15.1")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+
+    // --- Email (JavaMail para Android) ---
+    implementation("com.sun.mail:android-mail:1.6.7")
+    implementation("com.sun.mail:android-activation:1.6.7")
+
+
+    implementation("com.google.android.material:material:1.12.0")
+    implementation("androidx.core:core-ktx:1.13.1")
+    implementation("androidx.appcompat:appcompat:1.7.0")
+
+
+
 
     // --- Testing ---
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
-
-    // --- envio de emails----
-    implementation("com.sun.mail:android-mail:1.6.7")
-implementation("com.sun.mail:android-activation:1.6.7")
-implementation("com.google.firebase:firebase-config-ktx:21.6.0")
-
-    implementation("androidx.work:work-runtime-ktx:2.9.0")
-
 }
 
-// Configuración extra para KSP + Room
+// KSP - generar esquema Room (útil para migraciones / ver dif de índices)
 ksp {
-    // Generar esquema de base de datos (útil para migraciones)
     arg("room.schemaLocation", "$projectDir/schemas")
     arg("room.incremental", "true")
 }
