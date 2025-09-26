@@ -55,10 +55,17 @@
                 app:singleSelection="true">
 
                 <com.google.android.material.chip.Chip
+                    android:id="@+id/chipTodos"
+                    style="@style/Tecni.Chip.Base"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/averia_estado_todos" />
+
+                <com.google.android.material.chip.Chip
                     android:id="@+id/chipPendiente"
                     style="@style/Tecni.Chip.Pendiente"
                     android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
+                    android:layout_height="wrap_content"
                     android:text="@string/estado_pendiente" />
 
                 <com.google.android.material.chip.Chip

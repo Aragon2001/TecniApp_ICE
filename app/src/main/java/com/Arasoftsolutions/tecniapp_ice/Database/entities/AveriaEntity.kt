@@ -33,14 +33,27 @@ data class AveriaEntity(
     val fechaInicioMillis: Long = 0L,
     val horaInicioMillis: Long? = null,
     val horaFinalMillis: Long? = null,
+    val atencionHoraInicioMillis: Long? = null,
+    val atencionHoraFinalMillis: Long? = null,
+    val kilometrajeInicio: Double? = null,
+    val kilometrajeFinal: Double? = null,
     val agenciaTag: String = "",
     val vehiculoAsignado: String? = null,
     val tecnicoAsignadoUid: String? = null,
-    val tecnicoAsignadoNombre: String? = null
+    val tecnicoAsignadoNombre: String? = null,
+    val atendidoPorUid: String? = null,
+    val atendidoPorNombre: String? = null,
+    val materialesTexto: String? = null,
+    val materialesDetalleJson: String? = null,
+    val isSynced: Boolean = true,
+    val lastUpdated: Long = 0L
 ) {
     constructor() : this(
         "", null, null, null, null, null, null, null,
         "", null, null, null, null, null, 0L, null, null,
-        "", null, null, null
+        null, null, null, null,
+        "", null, null, null, null, null,
+        null, null,
+        true, 0L
     )
 }

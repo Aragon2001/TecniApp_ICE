@@ -16,6 +16,8 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.Arasoftsolutions.tecniapp_ice.R
 import com.Arasoftsolutions.tecniapp_ice.databinding.FragmentAveriasBinding
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriaDetalleBottomSheet
+import com.Arasoftsolutions.tecniapp_ice.ui.averias.PdfGenerator
+import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
@@ -39,8 +41,9 @@ class AveriasFragment : Fragment() {
         // Recycler
         adapter = AveriasAdapter(
             onVerDetalle = { showDetalle(it) },
-            onAsignar = { vm.onAsignar(it) },
-            onAtender = { vm.onAtender(it) }
+            onAsignar = { vm.onToggleAsignacion(it) },
+            onAtender = { handleAtender(it) },
+            onResolver = { handleResolver(it) }
         )
         b.recyclerViewAverias.apply {
             layoutManager = LinearLayoutManager(requireContext())
@@ -48,11 +51,19 @@ class AveriasFragment : Fragment() {
             addItemDecoration(DividerItemDecoration(context, DividerItemDecoration.VERTICAL))
         }
 
+        viewLifecycleOwner.lifecycleScope.launch {
+            vm.usuarioActual.collectLatest { user ->
+                adapter.currentUserUid = user?.uid
+                adapter.notifyDataSetChanged()
+            }
+        }
+
         // Pull to refresh → Sync
         b.swipeRefresh.setOnRefreshListener { vm.syncNow() }
 
         b.chipGroupEstado.setOnCheckedStateChangeListener { _, checkedIds ->
             val state = when (checkedIds.firstOrNull()) {
+                b.chipTodos.id -> null
                 b.chipPendiente.id -> Estado.PENDIENTE
                 b.chipAsignada.id -> Estado.ASIGNADA
                 b.chipEnAtencion.id -> Estado.EN_ATENCION
@@ -61,6 +72,7 @@ class AveriasFragment : Fragment() {
             }
             vm.setEstado(state)
         }
+        b.chipGroupEstado.check(b.chipTodos.id)
 
         // Dropdown Zonas
         viewLifecycleOwner.lifecycleScope.launch {
@@ -72,7 +84,7 @@ class AveriasFragment : Fragment() {
         }
         b.actvZona.setOnItemClickListener { _, _, position, _ -> vm.setZonaIndex(position) }
 
-        // Observa estado UI
+        // Observa estado UI y mensajes
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
@@ -82,7 +94,32 @@ class AveriasFragment : Fragment() {
                         b.tvVacio.visibility = if (state.items.isEmpty() && !state.loading) View.VISIBLE else View.GONE
                     }
                 }
+                launch {
+                    vm.messages.collectLatest { message ->
+                        Snackbar.make(b.root, message, Snackbar.LENGTH_LONG).show()
+                    }
+                }
             }
+        }
+
+        vm.syncNow()
+    }
+
+    private fun handleAtender(item: AveriaUI) {
+        when (Estado.fromLabel(item.estado)) {
+            Estado.ASIGNADA -> showDetalle(item)
+            Estado.EN_ATENCION -> vm.onCancelarAtencion(item)
+            else -> showDetalle(item)
+        }
+    }
+
+    private fun handleResolver(item: AveriaUI) {
+        when (Estado.fromLabel(item.estado)) {
+            Estado.EN_ATENCION -> showDetalle(item)
+            Estado.RESUELTA -> viewLifecycleOwner.lifecycleScope.launch {
+                PdfGenerator.exportAveria(requireContext(), item)
+            }
+            else -> showDetalle(item)
         }
     }
 
@@ -93,5 +130,10 @@ class AveriasFragment : Fragment() {
     override fun onDestroyView() {
         _b = null
         super.onDestroyView()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        vm.syncNow()
     }
 }
