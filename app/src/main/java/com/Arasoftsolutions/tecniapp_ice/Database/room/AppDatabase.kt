@@ -18,7 +18,7 @@ import com.Arasoftsolutions.tecniapp_ice.Database.entities.*
         VehiculosEntity::class,         // Vehículos asociados
         AveriaEntity::class             // Averías
     ],
-    version = 4,                        // ⬅️ súbelo si cambias el schema
+    version = 5,                        // ⬅️ súbelo si cambias el schema
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
