@@ -110,7 +110,8 @@ class AveriasFragment : Fragment() {
         when (Estado.fromLabel(item.estado)) {
             Estado.EN_ATENCION -> showDetalle(item)
             Estado.RESUELTA -> viewLifecycleOwner.lifecycleScope.launch {
-                PdfGenerator.exportAveria(requireContext(), item)
+                PdfGenerator.generarPDF(requireContext(), item)
+
             }
             else -> showDetalle(item)
         }
