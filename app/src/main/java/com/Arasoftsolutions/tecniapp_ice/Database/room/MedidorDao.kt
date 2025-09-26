@@ -20,4 +20,8 @@ interface MedidorDao {
     // Observa medidores por subregión
     @Query("SELECT * FROM medidores WHERE subregion = :subregionId")
     fun observarPorSubregion(subregionId: String): Flow<List<MedidorEntity>>
+
+    @Query("SELECT * FROM medidores WHERE medidorNumber = :numero LIMIT 1")
+suspend fun buscarPorNumero(numero: String): MedidorEntity?
+
 }

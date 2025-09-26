@@ -14,8 +14,11 @@ import java.util.concurrent.TimeUnit
 import com.Arasoftsolutions.tecniapp_ice.BuildConfig
 import com.Arasoftsolutions.tecniapp_ice.R
 import android.net.Uri
+import android.os.Build
+import androidx.annotation.RequiresApi
 
 class AveriasSyncWorker(ctx: Context, params: WorkerParameters): CoroutineWorker(ctx, params) {
+  @RequiresApi(Build.VERSION_CODES.O)
   override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
     val db = com.Arasoftsolutions.tecniapp_ice.Database.room.AppDatabase.getInstance(applicationContext)
     val repo = com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasRepository(db)

@@ -33,7 +33,7 @@ class AveriasFragment : Fragment() {
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        b.toolbar.setNavigationOnClickListener { requireActivity().onBackPressedDispatcher.onBackPressed() }
+
         b.etBuscar.addTextChangedListener { vm.setQuery(it?.toString().orEmpty()) }
 
         // Recycler

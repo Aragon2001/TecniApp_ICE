@@ -12,33 +12,34 @@ import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
-import com.Arasoftsolutions.tecniapp_ice.Database.sync.Synchronizer
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
+import com.Arasoftsolutions.tecniapp_ice.Database.sync.Synchronizer
 import com.Arasoftsolutions.tecniapp_ice.User.UserViewModel
 import com.Arasoftsolutions.tecniapp_ice.ui.modal.SyncDialogFragment
 import com.google.android.material.button.MaterialButton
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthInvalidUserException
-import com.google.firebase.database.*
-import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.database.DatabaseReference
+import com.google.firebase.database.FirebaseDatabase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
- * Pantalla de inicio de sesión (Room-first).
+ * Pantalla de inicio de sesión orientada a “Room-first”.
  *
- * Flujo:
- * 1) Sign-in con Firebase Auth.
- * 2) Guardar flags de sesión en SharedPreferences (legacy + sync).
- * 3) Guardar usuario en Room (upsert desde Firebase por UID).
- * 4) Sincronizar subregión del usuario mostrando un modal de progreso.
- * 5) Navegar a ActivityMain (UI ya leerá desde Room).
+ * Decisiones clave:
+ * - La verificación de existencia de cuenta se hace con FirebaseAuth (fetchSignInMethodsForEmail)
+ *   para evitar reglas de lectura amplias en RTDB.
+ * - El perfil del usuario en RTDB se maneja por UID (nodo /usuarios/{uid}).
+ * - La app guarda sesión en dos SharedPreferences por compatibilidad con código previo
+ *   y con el módulo de sincronización.
+ * - Tras iniciar sesión, se sincroniza la subregión del usuario y luego se navega a la pantalla principal.
  */
 class LoginActivity : AppCompatActivity() {
 
-    // UI
+    // --- UI ---
     private lateinit var emailEditText: EditText
     private lateinit var passwordEditText: EditText
     private lateinit var showPasswordIcon: ImageView
@@ -46,45 +47,52 @@ class LoginActivity : AppCompatActivity() {
     private lateinit var registerButton: MaterialButton
     private lateinit var forgotPasswordButton: View
 
-    // Estado / servicios
+    // --- Estado / servicios ---
     private lateinit var auth: FirebaseAuth
     private lateinit var sharedPreferences: SharedPreferences
     private lateinit var database: DatabaseReference
     private lateinit var roomRepository: RoomRepository
     private lateinit var synchronizer: Synchronizer
 
-    // VM (si luego quieres observar info de usuario/logs)
+    // VM: útil si se desea observar estado de usuario o logs más adelante
     private val userViewModel: UserViewModel by viewModels()
 
     private companion object {
-        const val DATABASE_URL_USERS = "https://tecniapp-ice-user.firebaseio.com" // RTDB de usuarios
+        // Instancia RTDB que contiene los perfiles de usuario (colección /usuarios)
+        const val DATABASE_URL_USERS = "https://tecniapp-ice-user.firebaseio.com"
+
+        // Preferencias históricas (compatibilidad)
         const val LEGACY_PREFS = "TecniAppPrefs"
         const val LEGACY_KEY_LOGGED_IN = "isLoggedIn"
+
+        // Preferencias usadas por el módulo de sincronización
         const val SYNC_PREFS = "app_preferences"
         const val SYNC_KEY_LOGGED_IN = "is_logged_in"
+
         const val TAG = "LoginActivity"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Servicios base
+        // Inicialización de servicios base
         auth = FirebaseAuth.getInstance()
         database = FirebaseDatabase.getInstance(DATABASE_URL_USERS).reference
         roomRepository = RoomRepository(applicationContext)
         synchronizer = Synchronizer(roomRepository)
 
-        // Si ya está logueado (legacy o sync), entra directo a Main
+        // Si ya existe sesión (por cualquiera de los dos flags), navegar directo a Main
         sharedPreferences = getSharedPreferences(LEGACY_PREFS, MODE_PRIVATE)
         val isLoggedInLegacy = sharedPreferences.getBoolean(LEGACY_KEY_LOGGED_IN, false)
-        val isLoggedInSync = getSharedPreferences(SYNC_PREFS, MODE_PRIVATE).getBoolean(SYNC_KEY_LOGGED_IN, false)
+        val isLoggedInSync = getSharedPreferences(SYNC_PREFS, MODE_PRIVATE)
+            .getBoolean(SYNC_KEY_LOGGED_IN, false)
         if (isLoggedInLegacy || isLoggedInSync) {
             startActivity(Intent(this, ActivityMain::class.java))
             finish()
             return
         }
 
-        // UI
+        // Inflado de layout y wiring de vista
         setContentView(R.layout.login)
         emailEditText = findViewById(R.id.email_edit_text)
         passwordEditText = findViewById(R.id.password_edit_text)
@@ -93,26 +101,29 @@ class LoginActivity : AppCompatActivity() {
         registerButton = findViewById(R.id.register_button)
         forgotPasswordButton = findViewById(R.id.forgot_password_button)
 
+        // Acciones de UI
         signInButton.setOnClickListener { signIn() }
         registerButton.setOnClickListener { startActivity(Intent(this, RegistroActivity::class.java)) }
         forgotPasswordButton.setOnClickListener { forgotPassword() }
 
-        // Mostrar/ocultar contraseña manteniendo cursor al final
+        // Toggle de visibilidad de contraseña conservando posición del cursor
         showPasswordIcon.setOnClickListener {
             val isVisible = passwordEditText.inputType == InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
             passwordEditText.inputType =
                 if (isVisible) InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
                 else InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD
             passwordEditText.setSelection(passwordEditText.text?.length ?: 0)
-            showPasswordIcon.setImageResource(if (isVisible) R.drawable.ic_visibility else R.drawable.ic_visibility_off)
-            // (Se elimina la línea que reinicializaba un repo inexistente aquí)
+            showPasswordIcon.setImageResource(
+                if (isVisible) R.drawable.ic_visibility else R.drawable.ic_visibility_off
+            )
         }
     }
 
     /**
-     * crea el usuario
+     * Crea el nodo mínimo de usuario en RTDB bajo /usuarios/{uid} si no existe.
+     * Se persiste también "email_lower" para futuras búsquedas internas case-insensitive
+     * (no se usa en login; la verificación de cuenta se hace con FirebaseAuth).
      */
-
     private fun createUserRtdbIfMissing(uid: String, email: String) {
         val userRef = FirebaseDatabase.getInstance(DATABASE_URL_USERS)
             .reference.child("usuarios").child(uid)
@@ -120,49 +131,65 @@ class LoginActivity : AppCompatActivity() {
         userRef.get()
             .addOnSuccessListener { snap ->
                 if (!snap.exists()) {
+                    val emailLower = email.trim().lowercase()
                     val userMap = mapOf(
                         "uid" to uid,
                         "email" to email,
+                        "email_lower" to emailLower,
                         "nombre" to "",
                         "apellidos" to "",
                         "cedula" to "",
-                        "subregion" to "",   // <- debe llenarse luego o en backoffice
+                        "subregion" to "",
                         "agencia" to "",
                         "placaVehiculo" to "",
                         "telefono" to "",
-                        "password" to ""      // si no lo guardas, déjalo vacío
+                        "password" to ""
                     )
                     userRef.setValue(userMap)
                 }
             }
             .addOnFailureListener {
-                // log opcional
+                Log.w(TAG, "No se pudo verificar/crear nodo de usuario en RTDB: ${it.message}", it)
             }
     }
 
-
-
-
     /**
-     * Inicia sesión con FirebaseAuth y continua el flujo de sincronización.
+     * Inicio de sesión con FirebaseAuth:
+     * - Valida email/contraseña localmente.
+     * - Realiza sign-in.
+     * - Marca sesión en SharedPreferences (compatibilidad + sync).
+     * - Asegura que exista un perfil en RTDB bajo /usuarios/{uid}.
+     * - Upsert del usuario a Room desde RTDB (por UID).
+     * - Sincroniza la subregión asociada y navega a Main al finalizar.
      */
     private fun signIn() {
         val email = emailEditText.text.toString().trim()
         val password = passwordEditText.text.toString().trim()
-        if (email.isEmpty()) { emailEditText.error = "El correo es requerido"; return }
-        if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-            emailEditText.error = "Formato de correo inválido"; return
+
+        if (email.isEmpty()) {
+            emailEditText.error = "El correo es requerido"
+            return
         }
-        if (password.isEmpty()) { passwordEditText.error = "La contraseña es requerida"; return }
+        if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            emailEditText.error = "Formato de correo inválido"
+            return
+        }
+        if (password.isEmpty()) {
+            passwordEditText.error = "La contraseña es requerida"
+            return
+        }
 
         signInButton.isEnabled = false
 
         auth.signInWithEmailAndPassword(email, password)
             .addOnCompleteListener { task ->
                 signInButton.isEnabled = true
-                if (!task.isSuccessful) { handleAuthError(task.exception); return@addOnCompleteListener }
+                if (!task.isSuccessful) {
+                    handleAuthError(task.exception)
+                    return@addOnCompleteListener
+                }
 
-                // NO mostramos Toast todavía
+                // Persistencia de estado de sesión (dos ubicaciones por compatibilidad)
                 markLoggedIn()
 
                 val uid = auth.currentUser?.uid ?: run {
@@ -170,6 +197,7 @@ class LoginActivity : AppCompatActivity() {
                     return@addOnCompleteListener
                 }
 
+                // Diálogo de progreso de sincronización
                 val dlg = SyncDialogFragment.show(supportFragmentManager).apply {
                     setHeader("Sincronizando…")
                     update(0, 0, "Preparando…")
@@ -177,31 +205,34 @@ class LoginActivity : AppCompatActivity() {
 
                 lifecycleScope.launch {
                     try {
-                        // 1) Traer o crear perfil en BD
+                        // 1) Perfil en Room desde RTDB. Si no existe en RTDB, se crea mínimo y se reintenta.
                         val user = withContext(Dispatchers.IO) {
                             try {
-                                roomRepository.upsertUserFromFirebase(uid) // Trae y guarda en Room desde RTDB
-                            } catch (notFound: Exception) {
-                                // Si no existe en RTDB, lo creamos mínimo y reintentamos
+                                roomRepository.upsertUserFromFirebase(uid)
+                            } catch (_: Exception) {
                                 createUserRtdbIfMissing(uid, email)
                                 roomRepository.upsertUserFromFirebase(uid)
                             }
                         }
 
-
-                        // 2) Sincronizar subregión del usuario
+                        // 2) Sincronización de subregión (los datos operativos dependen de esto)
                         val subId = user.subregion
                         synchronizer.syncSubregion(
-                            subId,
-                            onSyncStart = { /* ya está el modal */ },
+                            subId.toString(),
+                            onSyncStart = { /* UI ya muestra modal */ },
                             onSyncProgress = { done, total, msg ->
-                                if (!isFinishing && !isDestroyed) runOnUiThread { dlg.update(done, total, msg ?: "") }
+                                if (!isFinishing && !isDestroyed) {
+                                    runOnUiThread { dlg.update(done, total, msg ?: "") }
+                                }
                             },
                             onSyncSuccess = {
                                 if (!isFinishing && !isDestroyed) {
                                     dlg.dismissAllowingStateLoss()
-                                    // AHORA sí: éxito real
-                                    Toast.makeText(this@LoginActivity, "Inicio de sesión exitoso", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(
+                                        this@LoginActivity,
+                                        "Inicio de sesión exitoso",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
                                     startActivity(Intent(this@LoginActivity, ActivityMain::class.java))
                                     finish()
                                 }
@@ -227,12 +258,10 @@ class LoginActivity : AppCompatActivity() {
             }
     }
 
-
-
     /**
-     * Marca el estado de login en las dos variantes de SharedPreferences.
-     * - LEGACY_PREFS/LEGACY_KEY_LOGGED_IN  -> compatibilidad con código existente
-     * - SYNC_PREFS/SYNC_KEY_LOGGED_IN      -> lo que lee el Synchronizer
+     * Marcado de sesión en dos preferencias:
+     * - LEGACY_PREFS: usado por código histórico que espera esta bandera.
+     * - SYNC_PREFS: usado por el módulo de sincronización.
      */
     private fun markLoggedIn() {
         getSharedPreferences(LEGACY_PREFS, MODE_PRIVATE).edit()
@@ -245,39 +274,31 @@ class LoginActivity : AppCompatActivity() {
     }
 
     /**
-     * Recupera datos básicos del usuario en RTDB para log/debug o precargar UI.
-     * No escribe en DB local (eso lo hace el Synchronizer/FirebaseSyncManager).
+     * Lectura auxiliar del perfil por UID (solo para logging o precarga).
+     * No es necesaria para el login en sí, ya que la sincronización persiste en Room.
      */
-    private fun loadUserData(email: String) {
-        // En RTDB “usuarios” se busca por campo "email"
-        database.child("usuarios")
-            .orderByChild("email")
-            .equalTo(email)
-            .addListenerForSingleValueEvent(object : ValueEventListener {
-                override fun onDataChange(snapshot: DataSnapshot) {
-                    if (!snapshot.exists()) {
-                        Log.w(TAG, "Usuario no encontrado en RTDB para $email")
-                        return
-                    }
-                    // Obtén el primer match
-                    val first = snapshot.children.firstOrNull()
-                    val nombre = first?.child("nombre")?.getValue(String::class.java).orEmpty()
-                    val apellidos = first?.child("apellidos")?.getValue(String::class.java).orEmpty()
-                    val placa = first?.child("placaVehiculo")?.getValue(String::class.java).orEmpty()
-                    val subR = first?.child("subRegion")?.getValue(String::class.java).orEmpty()
-
-                    Log.d(TAG, "Usuario RTDB -> $nombre $apellidos, placa=$placa, email=$email")
-                    // Si quisieras empujar a un VM/UI, puedes hacerlo aquí.
+    private fun loadUserDataByUid(uid: String) {
+        FirebaseDatabase.getInstance(DATABASE_URL_USERS)
+            .reference.child("usuarios").child(uid)
+            .get()
+            .addOnSuccessListener { snap ->
+                if (!snap.exists()) {
+                    Log.w(TAG, "Perfil no encontrado en RTDB para uid=$uid")
+                    return@addOnSuccessListener
                 }
-
-                override fun onCancelled(error: DatabaseError) {
-                    Log.e(TAG, "Error al leer RTDB usuario: ${error.message}")
-                }
-            })
+                val nombre = snap.child("nombre").getValue(String::class.java).orEmpty()
+                val apellidos = snap.child("apellidos").getValue(String::class.java).orEmpty()
+                val placa = snap.child("placaVehiculo").getValue(String::class.java).orEmpty()
+                val subR = snap.child("subregion").getValue(String::class.java).orEmpty()
+                Log.d(TAG, "Perfil RTDB -> $nombre $apellidos, placa=$placa, subregion=$subR")
+            }
+            .addOnFailureListener { e ->
+                Log.e(TAG, "Error leyendo perfil por UID: ${e.message}", e)
+            }
     }
 
     /**
-     * Maneja los mensajes de error más comunes de Auth.
+     * Mapeo de errores comunes de FirebaseAuth a mensajes comprensibles.
      */
     private fun handleAuthError(ex: Exception?) {
         when (ex) {
@@ -292,8 +313,8 @@ class LoginActivity : AppCompatActivity() {
     }
 
     /**
-     * Flujo de recuperación de contraseña (placeholder).
-     * Puedes implementar Firebase Auth sendPasswordResetEmail aquí.
+     * Recuperación de contraseña vía FirebaseAuth.
+     * Envía un correo al email indicado si existe una cuenta asociada.
      */
     private fun forgotPassword() {
         val email = emailEditText.text.toString().trim()
@@ -311,4 +332,3 @@ class LoginActivity : AppCompatActivity() {
             }
     }
 }
-

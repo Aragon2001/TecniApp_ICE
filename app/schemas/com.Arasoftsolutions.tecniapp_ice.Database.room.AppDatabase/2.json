@@ -2,78 +2,71 @@
   "formatVersion": 1,
   "database": {
     "version": 2,
-    "identityHash": "dde8bdee72984f273ad28d255c6fab48",
+    "identityHash": "745cfbf0c6ca88e87562a89900d622d2",
     "entities": [
       {
-        "tableName": "usuarios",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`uid` TEXT NOT NULL, `agencia` TEXT NOT NULL, `apellidos` TEXT NOT NULL, `cedula` TEXT NOT NULL, `email` TEXT NOT NULL, `nombre` TEXT NOT NULL, `placaVehiculo` TEXT NOT NULL, `subregion` TEXT NOT NULL, `telefono` TEXT NOT NULL, `password` TEXT NOT NULL, PRIMARY KEY(`uid`))",
+        "tableName": "UserEntity",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`uid` TEXT, `email` TEXT, `email_lower` TEXT, `nombre` TEXT, `apellidos` TEXT, `cedula` TEXT, `subregion` TEXT, `agencia` TEXT, `placaVehiculo` TEXT, `telefono` TEXT, `password` TEXT)",
         "fields": [
           {
             "fieldPath": "uid",
             "columnName": "uid",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "agencia",
-            "columnName": "agencia",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "apellidos",
-            "columnName": "apellidos",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "cedula",
-            "columnName": "cedula",
-            "affinity": "TEXT",
-            "notNull": true
+            "affinity": "TEXT"
           },
           {
             "fieldPath": "email",
             "columnName": "email",
-            "affinity": "TEXT",
-            "notNull": true
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "email_lower",
+            "columnName": "email_lower",
+            "affinity": "TEXT"
           },
           {
             "fieldPath": "nombre",
             "columnName": "nombre",
-            "affinity": "TEXT",
-            "notNull": true
+            "affinity": "TEXT"
           },
           {
-            "fieldPath": "placaVehiculo",
-            "columnName": "placaVehiculo",
-            "affinity": "TEXT",
-            "notNull": true
+            "fieldPath": "apellidos",
+            "columnName": "apellidos",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "cedula",
+            "columnName": "cedula",
+            "affinity": "TEXT"
           },
           {
             "fieldPath": "subregion",
             "columnName": "subregion",
-            "affinity": "TEXT",
-            "notNull": true
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "agencia",
+            "columnName": "agencia",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "placaVehiculo",
+            "columnName": "placaVehiculo",
+            "affinity": "TEXT"
           },
           {
             "fieldPath": "telefono",
             "columnName": "telefono",
-            "affinity": "TEXT",
-            "notNull": true
+            "affinity": "TEXT"
           },
           {
             "fieldPath": "password",
             "columnName": "password",
-            "affinity": "TEXT",
-            "notNull": true
+            "affinity": "TEXT"
           }
         ],
         "primaryKey": {
           "autoGenerate": false,
-          "columnNames": [
-            "uid"
-          ]
+          "columnNames": []
         }
       },
       {
@@ -481,7 +474,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'dde8bdee72984f273ad28d255c6fab48')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '745cfbf0c6ca88e87562a89900d622d2')"
     ]
   }
 }

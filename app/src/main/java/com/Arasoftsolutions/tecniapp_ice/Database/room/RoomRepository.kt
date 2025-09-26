@@ -33,10 +33,19 @@ class RoomRepository(context: Context) {
 
     fun observarVehiculos(subregionId: String): Flow<List<VehiculosEntity>> =
         db.vehiculoDao().observarPorSubregion(subregionId)
+    /** busca un medidor por numero */
+
+suspend fun buscarMedidorPorNumero(numero: String): MedidorEntity? {
+    return db.medidorDao().buscarPorNumero(numero)
+}
+/** inserta un medidor */
+suspend fun insertarMedidor(entity: MedidorEntity) {
+    db.medidorDao().insertAll(listOf(entity))
+}
 
     /** Obtiene un usuario almacenado localmente por su UID. */
-    suspend fun obtenerUsuario(uid: String): UserEntity? =
-        db.usuarioDao().get(uid)
+  suspend fun obtenerUsuario(uid: String): UserEntity? =
+    db.usuarioDao().getByUid(uid)
 
     // ----- Sincronización -----
     /**
@@ -85,4 +94,17 @@ class RoomRepository(context: Context) {
         db.usuarioDao().upsert(user)
         user
     }
+    companion object {
+    @Volatile
+    private var INSTANCE: RoomRepository? = null
+
+    fun getInstance(context: Context): RoomRepository {
+        return INSTANCE ?: synchronized(this) {
+            INSTANCE ?: RoomRepository(context.applicationContext).also {
+                INSTANCE = it
+            }
+        }
+    }
+}
+
 }

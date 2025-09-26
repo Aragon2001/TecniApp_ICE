@@ -3,11 +3,13 @@ package com.Arasoftsolutions.tecniapp_ice.ui.averias
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.Arasoftsolutions.tecniapp_ice.R
+import com.bumptech.glide.Glide
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.chip.Chip
 import java.text.DateFormat
@@ -42,46 +44,61 @@ class AveriasAdapter(
     }
 
     inner class VH(view: View) : RecyclerView.ViewHolder(view) {
-        private val tvTitulo = view.findViewById<TextView>(R.id.tvTitulo)
-        private val chipEstado = view.findViewById<Chip>(R.id.chipEstado)
-        private val chipAsignado = view.findViewById<Chip>(R.id.chipAsignadoA)
+        // UI
+        private val tvTitulo: TextView = view.findViewById(R.id.tvTitulo)
+        private val chipEstado: Chip = view.findViewById(R.id.chipEstado)
 
-        // NUEVOS chips de metadatos
-        private val chipCaso = view.findViewById<Chip>(R.id.chipCaso)
-        private val chipNise = view.findViewById<Chip>(R.id.chipNise)
-        private val chipRegion = view.findViewById<Chip>(R.id.chipRegion)
-        private val chipAgencia = view.findViewById<Chip>(R.id.chipAgencia)
+        private val tvCausa: TextView = view.findViewById(R.id.tvCausa)
+        private val tvObs: TextView = view.findViewById(R.id.tvObs)
 
-        private val tvCausa = view.findViewById<TextView>(R.id.tvCausa)
-        private val tvObs = view.findViewById<TextView>(R.id.tvObs)
-        private val tvCoords = view.findViewById<TextView>(R.id.tvCoords)
-        private val tvFecha = view.findViewById<TextView>(R.id.tvFecha)
-        private val btnAsignar = view.findViewById<MaterialButton>(R.id.btnAsignar)
-        private val btnAtender = view.findViewById<MaterialButton>(R.id.btnAtender)
+        private val tvCaso: TextView = view.findViewById(R.id.tvCaso)
+        private val tvAsignado: TextView = view.findViewById(R.id.tvAsignado)
+        private val tvNise: TextView = view.findViewById(R.id.tvNise)
+        private val tvRegion: TextView = view.findViewById(R.id.tvRegion)
+        private val tvAgencia: TextView = view.findViewById(R.id.tvAgencia)
+
+        private val tvCoords: TextView = view.findViewById(R.id.tvCoords)
+        private val tvFecha: TextView = view.findViewById(R.id.tvFecha)
+
+        private val btnAsignar: MaterialButton = view.findViewById(R.id.btnAsignar)
+        private val btnAtender: MaterialButton = view.findViewById(R.id.btnAtender)
+        private val btnVer: MaterialButton = view.findViewById(R.id.btnVer)
+
+        private val imgMapa: ImageView = view.findViewById(R.id.imgMapa)
 
         fun bind(item: AveriaUI) {
             // Título y estado
             tvTitulo.text = item.descripcion
             chipEstado.text = item.estado
 
-            // Chips de metadatos
-            chipCaso.text = "Caso ${item.id}"
-            chipNise.text = "NISE ${item.nise}"
-            chipRegion.text = item.region
-            chipAgencia.text = item.agencia
+            // Miniatura de mapa
+            val lat = item.lat
+            val lng = item.lng
+            if (lat != 0.0 && lng != 0.0) {
+                val url = "https://maps.googleapis.com/maps/api/staticmap?" +
+                        "center=$lat,$lng&zoom=16&size=300x300&maptype=roadmap" +
+                        "&markers=color:red|$lat,$lng&key=AIzaSyBxgf6oA-rRK1-OlNft4oDgzF3gokLl1FU"
 
-            // Asignado a (fallback “Sin asignar”)
-            chipAsignado.text = item.tecnico.ifBlank {
-                itemView.context.getString(R.string.averia_sin_asignar)
+                Glide.with(itemView.context)
+                    .load(url)
+                    .placeholder(R.drawable.placeholder_mapa)
+                    .into(imgMapa)
+            } else {
+                imgMapa.setImageResource(R.drawable.placeholder_mapa)
             }
 
-            // Texto
+            // Textos detallados
             tvCausa.text = item.causa
             tvObs.text = item.observaciones
+            tvCaso.text = "Caso: ${item.id}"
+            tvAsignado.text = "Asignado a: ${if (item.tecnico.isBlank()) itemView.context.getString(R.string.averia_sin_asignar) else item.tecnico}"
+            tvNise.text = "NISE: ${item.nise}"
+            tvRegion.text = "Región: ${item.region}"
+            tvAgencia.text = "Agencia: ${item.agencia}"
 
-            // Coords + fecha
-            tvCoords.text = if (item.lat == 0.0 && item.lng == 0.0) "—" else "${item.lat}, ${item.lng}"
-            tvFecha.text = DateFormat.getDateTimeInstance(
+            // Coordenadas + fecha
+            tvCoords.text = if (lat == 0.0 && lng == 0.0) "Coords: —" else "Coords: $lat, $lng"
+            tvFecha.text = "Fecha: " + DateFormat.getDateTimeInstance(
                 DateFormat.SHORT, DateFormat.SHORT
             ).format(Date(item.fechaMillis))
 
@@ -89,6 +106,7 @@ class AveriasAdapter(
             itemView.setOnClickListener { onVerDetalle(item) }
             btnAsignar.setOnClickListener { onAsignar(item) }
             btnAtender.setOnClickListener { onAtender(item) }
+            btnVer.setOnClickListener { onVerDetalle(item) }
         }
     }
 

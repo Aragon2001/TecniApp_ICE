@@ -2,24 +2,29 @@
 package com.Arasoftsolutions.tecniapp_ice.ui.averias
 
 import android.os.Build
+import android.util.Log
 import androidx.annotation.RequiresApi
-import com.Arasoftsolutions.tecniapp_ice.Database.room.AppDatabase
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.AveriaEntity
+import com.Arasoftsolutions.tecniapp_ice.Database.room.AppDatabase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
-import java.time.*
+import java.time.LocalDateTime
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import java.util.*
+import java.util.Locale
 
 class AveriasRepository(private val db: AppDatabase) {
   private val dao get() = db.averiaDao()
 
+  /** Stream de averías con filtros por agencias/estado/búsqueda. */
   fun observe(agencias: List<String>, estado: String, q: String): Flow<List<AveriaEntity>> =
     dao.observe(agencias, agencias.size, estado, q)
 
+  // --- Parseo de fechas ICE ---
   @RequiresApi(Build.VERSION_CODES.O)
   private val fmtA = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm")
+
   @RequiresApi(Build.VERSION_CODES.O)
   private val fmtB = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
 
@@ -29,32 +34,33 @@ class AveriasRepository(private val db: AppDatabase) {
     return runCatching { LocalDateTime.parse(s.trim(), fmtA) }
       .recoverCatching { LocalDateTime.parse(s.trim(), fmtB) }
       .getOrNull()
-      ?.atZone(ZoneId.systemDefault())?.toInstant()?.toEpochMilli()
+      ?.atZone(ZoneId.systemDefault())
+      ?.toInstant()
+      ?.toEpochMilli()
   }
 
+  // --- Normalización de etiquetas de agencia/zona ---
   private fun agenciaTag(region: String?, nombreAgencia: String?): String {
     val n = (nombreAgencia ?: "").lowercase(Locale.ROOT)
-    val isHuetarAtlantica = (region ?: "").contains("huetar atl", true) || (region ?: "").contains("atlánt", true)
-    val tag = when {
+    val isHuetarAtlantica =
+      (region ?: "").contains("huetar atl", true) || (region ?: "").contains("atlánt", true)
+    return when {
       n.contains("guápiles") || n.contains("guapiles") -> "Guapiles"
       n.contains("guácimo")  || n.contains("guacimo")  -> "Guacimo"
       n.contains("cariari")                            -> "Cariari"
       n.contains("tortuguero")                         -> "Tortuguero"
-      else                                             -> if (isHuetarAtlantica) "Guapiles" else "Otra"
+      else -> if (isHuetarAtlantica) "Guapiles" else "Otra"
     }
-    return tag
   }
 
-  private fun estadoFromIce(idEstadoAve: Int?, estadoTexto: String?): String {
-    // Mapa seguro (ajústalo si ICE documenta códigos distintos)
-    return when (idEstadoAve) {
+  private fun estadoFromIce(idEstadoAve: Int?, estadoTexto: String?): String =
+    when (idEstadoAve) {
       1 -> "Pendiente"
       2 -> "Asignada"
       3 -> "En atención"
       4 -> "Resuelta"
       else -> estadoTexto?.ifBlank { "Pendiente" } ?: "Pendiente"
     }
-  }
 
   @RequiresApi(Build.VERSION_CODES.O)
   private fun map(e: IceAveria): AveriaEntity? {
@@ -90,18 +96,30 @@ class AveriasRepository(private val db: AppDatabase) {
     )
   }
 
-  /** Devuelve los caseId NUEVOS para notificar. */
+  /**
+   * Sincroniza desde ICE y devuelve los caseId NUEVOS (para notificación).
+   * Espera que IceApi.getAverias() retorne un envelope y se extrae con payload().
+   */
   @RequiresApi(Build.VERSION_CODES.O)
   suspend fun syncFromIce(bearer: String?): List<String> = withContext(Dispatchers.IO) {
-    val list = IceApi.service.getAverias(bearer?.takeIf { it.isNotBlank() }?.let { "Bearer $it" })
-      .mapNotNull { map(it) }
-      .filter { it.idEstadoAve == 1 }
+    // Soporta token opcional "Bearer <token>"
+    val auth = bearer?.takeIf { it.isNotBlank() }?.let { "Bearer $it" }
+
+    // 🔽 Envelope → lista
+    val envelope = IceApi.service.getAverias(auth)
+val list = envelope.payload().mapNotNull { map(it) }//.filter { it.idEstadoAve == 1 }
+
+Log.d("AveriasRepo", "Sync recibió ${list.size} averías")
+
+
+    // Upsert y cálculo de nuevos IDs para notificar
     val before = dao.allIds().toSet()
-    dao.upsertAll(list)
+    dao.upsertAll(list)          // onConflict = REPLACE en tu DAO
     val after = dao.allIds().toSet()
     (after - before).toList()
   }
 
+  // Acciones operativas
   suspend fun asignar(caseId: String, uid: String, nombre: String?, vehiculo: String?) =
     withContext(Dispatchers.IO) {
       dao.marcarAsignada(caseId, uid, nombre, vehiculo, System.currentTimeMillis())

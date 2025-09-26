@@ -8,15 +8,17 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
-import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
 import com.Arasoftsolutions.tecniapp_ice.R
 import com.Arasoftsolutions.tecniapp_ice.RegistroActivity
-import com.Arasoftsolutions.tecniapp_ice.registro.RegistroViewModel
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
-import com.google.android.material.textfield.TextInputLayout
+import com.google.firebase.database.DatabaseReference
+import com.google.firebase.database.FirebaseDatabase
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 class Paso3Fragment : Fragment() {
 
@@ -26,123 +28,102 @@ class Paso3Fragment : Fragment() {
     private lateinit var etID: TextInputEditText
     private lateinit var btnContinueToStep4: MaterialButton
 
-    // TextViews para los mensajes de error
     private lateinit var tvFirstNameError: TextView
     private lateinit var tvLastNameError: TextView
     private lateinit var tvIDError: TextView
 
+    // RTDB users (mismo host que Paso1/2/4)
+    private val usersDb: DatabaseReference by lazy {
+        FirebaseDatabase.getInstance("https://tecniapp-ice-user.firebaseio.com").reference
+    }
+
+    // Solo dígitos, 9 posiciones (clave de índice)
+    private fun cedulaKey(raw: String): String = raw.filter { it.isDigit() }
+
     override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View? {
+        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
+    ): View {
         val view = inflater.inflate(R.layout.fragment_paso_3, container, false)
 
-         setNavigationListeners(view) // Añadir aquí, no dentro de onCreateView.
+        setNavigationListeners(view)
 
-        // Inicialización del ViewModel
-        viewModel = ViewModelProvider(requireActivity()).get(RegistroViewModel::class.java)
+        viewModel = ViewModelProvider(requireActivity())[RegistroViewModel::class.java]
 
-        // Inicialización de las vistas
         etFirstName = view.findViewById(R.id.etFirstName)
-        etLastName = view.findViewById(R.id.etLastName)
-        etID = view.findViewById(R.id.etID)
+        etLastName  = view.findViewById(R.id.etLastName)
+        etID        = view.findViewById(R.id.etID)
         btnContinueToStep4 = view.findViewById(R.id.btnContinueToStep4)
 
-        // Inicialización de los mensajes de error
         tvFirstNameError = view.findViewById(R.id.tvFirstNameError)
-        tvLastNameError = view.findViewById(R.id.tvLastNameError)
-        tvIDError = view.findViewById(R.id.tvIDError)
+        tvLastNameError  = view.findViewById(R.id.tvLastNameError)
+        tvIDError        = view.findViewById(R.id.tvIDError)
 
-        // Configurar el botón para continuar al siguiente paso
-        btnContinueToStep4.setOnClickListener {
-            if (validateInputs()) {
-                // Obtener los datos ingresados
-                val firstName = etFirstName.text.toString().trim()
-                val lastName = etLastName.text.toString().trim()
-                val cedula = etID.text.toString().trim()
-
-                // Almacenar los datos en el ViewModel
-                viewModel.setDatosTecnico(firstName, lastName, cedula)
-
-                // Cambiar al siguiente paso
-                (activity as RegistroActivity).goToNextStep(3)
-            }
-        }
+        btnContinueToStep4.setOnClickListener { onContinue() }
 
         return view
     }
 
-       // Configuración de la navegación
     private fun setNavigationListeners(view: View) {
         view.findViewById<ImageView>(R.id.backArrow).setOnClickListener {
-            // Esto simula el botón de "atrás" del sistema para volver al fragmento anterior
             requireActivity().onBackPressedDispatcher.onBackPressed()
         }
     }
 
-    // Método para validar los campos de entrada
-    private fun validateInputs(): Boolean {
-        val firstName = etFirstName.text.toString().trim()
-        val lastName = etLastName.text.toString().trim()
-        val cedula = etID.text.toString().trim()
-
+    private fun onContinue() {
         clearErrors()
 
-        // Validar que los campos no estén vacíos y contengan caracteres válidos
-        return when {
-            TextUtils.isEmpty(firstName) -> {
-                tvFirstNameError.text = "Por favor, ingresa tu nombre."
-                tvFirstNameError.visibility = View.VISIBLE
-                false
+        val firstName = etFirstName.text?.toString()?.trim().orEmpty()
+        val lastName  = etLastName.text?.toString()?.trim().orEmpty()
+        val cedulaRaw = etID.text?.toString()?.trim().orEmpty()
+        val cedKey    = cedulaKey(cedulaRaw)
+
+        // Validación local
+        if (firstName.isBlank()) return showFieldError(tvFirstNameError, "Por favor, ingresa tu nombre.")
+        if (!isValidName(firstName)) return showFieldError(tvFirstNameError, "El nombre solo debe contener letras.")
+        if (lastName.isBlank()) return showFieldError(tvLastNameError, "Por favor, ingresa tu apellido.")
+        if (!isValidName(lastName)) return showFieldError(tvLastNameError, "El apellido solo debe contener letras.")
+        if (cedKey.isBlank()) return showFieldError(tvIDError, "Por favor, ingresa tu cédula.")
+        if (!cedKey.all { it.isDigit() }) return showFieldError(tvIDError, "La cédula debe contener solo números.")
+        if (cedKey.length != 9) return showFieldError(tvIDError, "La cédula debe tener exactamente 9 dígitos.")
+
+        // Verificar unicidad de cédula usando /idcards/{cedulaKey} (patrón PRO)
+        setLoading(true)
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val exists = usersDb.child("idcards").child(cedKey).get().await().exists()
+                if (exists) {
+                    showFieldError(tvIDError, "Esta cédula ya está registrada.")
+                    return@launch
+                }
+
+                // OK → guarda en VM y avanza a Paso 4
+                viewModel.setDatosTecnico(firstName, lastName, cedKey)
+                (activity as? RegistroActivity)?.goToNextStep(3)
+
+            } catch (_: Throwable) {
+                Toast.makeText(requireContext(), "No se pudo validar la cédula. Intenta de nuevo.", Toast.LENGTH_SHORT).show()
+            } finally {
+                setLoading(false)
             }
-            !isValidName(firstName) -> {
-                tvFirstNameError.text = "El nombre solo debe contener letras."
-                tvFirstNameError.visibility = View.VISIBLE
-                false
-            }
-            TextUtils.isEmpty(lastName) -> {
-                tvLastNameError.text = "Por favor, ingresa tu apellido."
-                tvLastNameError.visibility = View.VISIBLE
-                false
-            }
-            !isValidName(lastName) -> {
-                tvLastNameError.text = "El apellido solo debe contener letras."
-                tvLastNameError.visibility = View.VISIBLE
-                false
-            }
-            TextUtils.isEmpty(cedula) -> {
-                tvIDError.text = "Por favor, ingresa tu cédula."
-                tvIDError.visibility = View.VISIBLE
-                false
-            }
-            !isValidID(cedula) -> {
-                tvIDError.text = "La cédula debe contener solo números."
-                tvIDError.visibility = View.VISIBLE
-                false
-            }
-            cedula.length != 9 -> {
-                tvIDError.text = "La cédula debe tener exactamente 9 dígitos."
-                tvIDError.visibility = View.VISIBLE
-                false
-            }
-            else -> true
         }
     }
 
-    // Método para validar que un nombre solo contenga letras
-    private fun isValidName(name: String): Boolean {
-        return name.all { it.isLetter() || it.isWhitespace() }
+    private fun setLoading(b: Boolean) {
+        btnContinueToStep4.isEnabled = !b
     }
 
-    // Método para validar que la cédula contenga solo números
-    private fun isValidID(id: String): Boolean {
-        return id.all { it.isDigit() }
+    private fun showFieldError(tv: TextView, msg: String) {
+        tv.text = msg
+        tv.visibility = View.VISIBLE
+        Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show()
     }
 
-    // Método para limpiar los errores
     private fun clearErrors() {
         tvFirstNameError.visibility = View.GONE
         tvLastNameError.visibility = View.GONE
         tvIDError.visibility = View.GONE
     }
+
+    private fun isValidName(name: String): Boolean =
+        name.all { it.isLetter() || it.isWhitespace() }
 }

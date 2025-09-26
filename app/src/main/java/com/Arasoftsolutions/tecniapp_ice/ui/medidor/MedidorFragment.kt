@@ -1,125 +1,135 @@
 package com.Arasoftsolutions.tecniapp_ice.ui.medidor
 
-import android.content.ClipData
-import android.content.ClipboardManager
-import android.content.Context
-import android.content.Intent
+import android.app.AlertDialog
+import android.content.*
 import android.os.Bundle
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
+import android.view.*
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
+import com.Arasoftsolutions.tecniapp_ice.Database.entities.MedidorEntity
+import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
+import com.Arasoftsolutions.tecniapp_ice.Database.sync.FirebaseSyncManager
 import com.Arasoftsolutions.tecniapp_ice.databinding.FragmentMedidorBinding
-import com.google.firebase.database.DataSnapshot
-import com.google.firebase.database.DatabaseError
-import com.google.firebase.database.FirebaseDatabase
-import com.google.firebase.database.ValueEventListener
+import kotlinx.coroutines.launch
 
 class MedidorFragment : Fragment() {
 
     private var _binding: FragmentMedidorBinding? = null
     private val binding get() = _binding!!
 
+    private lateinit var roomRepository: RoomRepository
+    private lateinit var firebaseSyncManager: FirebaseSyncManager
+    private lateinit var subregionId: String
+
     override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
+        inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
         _binding = FragmentMedidorBinding.inflate(inflater, container, false)
-        val root: View = binding.root
+        return binding.root
+    }
 
-        binding.button.setOnClickListener {
-            val medidorNumber = binding.editTextNumber.text.toString()
-            if (medidorNumber.isNotEmpty()) {
-                binding.progressBar.visibility = View.VISIBLE // Muestra el ProgressBar
-                binding.editTextNumber.error = null // Limpia el mensaje de error
-                consultarMedidor(medidorNumber)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        val context = requireContext()
+        roomRepository = RoomRepository.getInstance(context)
+        firebaseSyncManager = FirebaseSyncManager(context)
+
+        // ⚠️ IMPORTANTE: Obtén esta subregión del usuario logueado (reemplazar esto dinámicamente)
+        subregionId = "Guacimo"
+
+        binding.btnConsultar.setOnClickListener {
+            val numero = binding.inputMedidor.text.toString().trim()
+            if (numero.isNotEmpty()) {
+                buscarMedidor(numero)
             } else {
-                binding.editTextNumber.error = "Por favor, ingrese un número de medidor"
+                binding.inputMedidor.error = "Ingrese un número de medidor"
             }
         }
 
-        // Evento para el botón Copiar
-        binding.btnCopy.setOnClickListener {
-            copyInfoToClipboard()
-        }
-
-        // Evento para el botón Compartir
-        binding.btnShare.setOnClickListener {
-            shareInfo()
-        }
-
-        return root
+        binding.btnCopiar.setOnClickListener { copyInfoToClipboard() }
+        binding.btnCompartir.setOnClickListener { shareInfo() }
     }
 
-    private fun consultarMedidor(medidorNumber: String) {
-        val database = FirebaseDatabase.getInstance("https://tecniapp-ice-default-rtdb.firebaseio.com/")
-        val ref = database.getReference("Medidores/Medidores/SubRegion Guapiles")
+    private fun buscarMedidor(medidorNumber: String) {
+        binding.progressBar.visibility = View.VISIBLE
 
-        // Acceder a la ruta correcta, usando el medidorNumber como clave
-        ref.child(medidorNumber).addListenerForSingleValueEvent(object : ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
-                binding.progressBar.visibility = View.GONE // Oculta el ProgressBar
-                if (snapshot.exists()) {
-                    // Obtener los valores directamente desde la clave del medidor
-                    val cliente = snapshot.child("Cliente").getValue(String::class.java)
-                    val localizacion = snapshot.child("Localización").getValue(Long::class.java)?.toString()
-                    val pueblo = snapshot.child("Pueblo").getValue(String::class.java)
-                    val calle = snapshot.child("Calle").getValue(String::class.java)
-                    val poste = snapshot.child("Poste").getValue(String::class.java)
-                    val metros = snapshot.child("Metros").getValue(String::class.java)
+        lifecycleScope.launch {
+            // 1. Buscar en ROOM
+            val local = roomRepository.buscarMedidorPorNumero(medidorNumber)
 
-                    // Actualizar la UI con los datos obtenidos
-                    binding.txtCliente.text = cliente ?: "No disponible"
-                    binding.txtLocation.text = localizacion ?: "No disponible"
-                    binding.txtPueblo.text = pueblo ?: "No disponible"
-                    binding.txtCalle.text = calle ?: "No disponible"
-                    binding.txtPoste.text = poste ?: "No disponible"
-                    binding.txtMetros.text = metros ?: "No disponible"
-                } else {
-                    binding.editTextNumber.error = "Medidor no encontrado"
-                }
+            if (local != null) {
+                mostrarMedidor(local)
+                return@launch
             }
 
-            override fun onCancelled(error: DatabaseError) {
-                binding.progressBar.visibility = View.GONE // Oculta el ProgressBar en caso de error
-                binding.editTextNumber.error = "Error al consultar la base de datos"
+            // 2. Buscar en Firebase
+            val remoto = firebaseSyncManager.buscarMedidorEnFirebase(subregionId, medidorNumber)
+            if (remoto != null) {
+                // Guardar en Room
+                roomRepository.insertarMedidor(remoto)
+                mostrarMedidor(remoto)
+            } else {
+                // 3. No encontrado → sugerir registro
+                binding.progressBar.visibility = View.GONE
+                mostrarDialogoRegistrar(medidorNumber)
             }
-        })
+        }
     }
 
+    private fun mostrarMedidor(medidor: MedidorEntity) {
+        binding.txtCliente.text = medidor.cliente ?: "N/D"
+        binding.txtCalle.text = medidor.calle ?: "N/D"
+        binding.txtPoste.text = medidor.poste ?: "N/D"
+        binding.txtMetros.text = medidor.metros ?: "N/D"
+        binding.txtPueblo.text = medidor.pueblo ?: "N/D"
+        binding.txtLocation.text = (medidor.localizacion ?: "N/D").toString()
+
+        binding.progressBar.visibility = View.GONE
+    }
+
+    private fun mostrarDialogoRegistrar(medidorNumber: String) {
+        AlertDialog.Builder(requireContext())
+            .setTitle("Medidor no encontrado")
+            .setMessage("El medidor $medidorNumber no fue encontrado.\n¿Desea registrarlo manualmente?")
+            .setPositiveButton("Registrar") { _, _ ->
+                // TODO: Navegar a fragmento de registro de medidor
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
 
     private fun copyInfoToClipboard() {
-        val clipboard = ContextCompat.getSystemService(requireContext(), ClipboardManager::class.java)
-        val textToCopy = """
-            ${binding.txtCliente.text}
-            ${binding.txtLocation.text}
-            ${binding.txtPueblo.text}
-            ${binding.txtCalle.text}
-            ${binding.txtPoste.text}
-            ${binding.txtMetros.text}
+        val info = """
+            Cliente: ${binding.txtCliente.text}
+            Calle: ${binding.txtCalle.text}
+            Poste: ${binding.txtPoste.text}
+            Metros: ${binding.txtMetros.text}
+            Pueblo: ${binding.txtPueblo.text}
+            Localización: ${binding.txtLocation.text}
         """.trimIndent()
 
-        val clip = ClipData.newPlainText("Medidor Info", textToCopy)
-        clipboard?.setPrimaryClip(clip)
+        val clipboard = ContextCompat.getSystemService(requireContext(), ClipboardManager::class.java)
+        clipboard?.setPrimaryClip(ClipData.newPlainText("Medidor", info))
     }
 
     private fun shareInfo() {
-        val textToShare = """
-            ${binding.txtCliente.text}
-            ${binding.txtLocation.text}
-            ${binding.txtPueblo.text}
-            ${binding.txtCalle.text}
-            ${binding.txtPoste.text}
-            ${binding.txtMetros.text}
+        val info = """
+            Cliente: ${binding.txtCliente.text}
+            Calle: ${binding.txtCalle.text}
+            Poste: ${binding.txtPoste.text}
+            Metros: ${binding.txtMetros.text}
+            Pueblo: ${binding.txtPueblo.text}
+            Localización: ${binding.txtLocation.text}
         """.trimIndent()
 
         val shareIntent = Intent(Intent.ACTION_SEND).apply {
             type = "text/plain"
-            putExtra(Intent.EXTRA_TEXT, textToShare)
+            putExtra(Intent.EXTRA_TEXT, info)
         }
-        startActivity(Intent.createChooser(shareIntent, "Compartir información"))
+        startActivity(Intent.createChooser(shareIntent, "Compartir información del medidor"))
     }
 
     override fun onDestroyView() {

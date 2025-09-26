@@ -1,11 +1,17 @@
 package com.Arasoftsolutions.tecniapp_ice.Database.entities
 
+import androidx.annotation.Keep
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import com.google.firebase.database.IgnoreExtraProperties
 
-@Entity(tableName = "agencias")
+@Keep
+@IgnoreExtraProperties
+@Entity(tableName = "Agencias")
 data class AgenciaEntity(
-    @PrimaryKey val id: Int,       // Clave primaria: ID de la agencia (ej. 1)
-    val nombre: String,            // Nombre de la agencia (ej. "Agencia Central")
-    val subregion: String          // Subregión de la agencia (ej. "Subregión Norte")
-)
+    @PrimaryKey val id: Int = 0,
+    val nombre: String = "",
+    val subregion: String = ""
+) {
+    constructor() : this(0, "", "")
+}
