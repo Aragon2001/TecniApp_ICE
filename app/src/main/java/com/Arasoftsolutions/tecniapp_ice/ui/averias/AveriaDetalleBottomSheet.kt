@@ -125,7 +125,8 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
             b.btnExportar.visibility = View.VISIBLE
             b.btnExportar.setOnClickListener {
                 viewLifecycleOwner.lifecycleScope.launch {
-                    PdfGenerator.exportAveria(requireContext(), item)
+                    PdfGenerator.generarPDF(requireContext(), item)
+
                 }
             }
         } else {
