@@ -84,6 +84,7 @@ dependencies {
 
     // --- Coroutines / WorkManager ---
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.8.1")
     implementation("androidx.work:work-runtime-ktx:2.9.0")
 
     // --- Retrofit + Moshi (OPCIÓN 2: codegen; sin moshi-kotlin) ---

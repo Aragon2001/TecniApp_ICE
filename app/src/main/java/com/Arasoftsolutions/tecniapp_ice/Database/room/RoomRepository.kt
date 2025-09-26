@@ -33,6 +33,9 @@ class RoomRepository(context: Context) {
 
     fun observarVehiculos(subregionId: String): Flow<List<VehiculosEntity>> =
         db.vehiculoDao().observarPorSubregion(subregionId)
+
+    fun observarMateriales(): Flow<List<MaterialEntity>> =
+        db.materialDao().observarMateriales()
     /** busca un medidor por numero */
 
 suspend fun buscarMedidorPorNumero(numero: String): MedidorEntity? {

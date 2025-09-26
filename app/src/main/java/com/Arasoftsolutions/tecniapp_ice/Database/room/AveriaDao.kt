@@ -24,6 +24,9 @@ interface AveriaDao {
 
   @Insert(onConflict = OnConflictStrategy.REPLACE) suspend fun upsertAll(items: List<AveriaEntity>)
   @Query("SELECT caseId FROM averias") suspend fun allIds(): List<String>
+  @Query("SELECT * FROM averias") suspend fun all(): List<AveriaEntity>
+  @Query("SELECT * FROM averias WHERE caseId=:caseId LIMIT 1") suspend fun getByCaseId(caseId: String): AveriaEntity?
+  @Query("SELECT * FROM averias WHERE isSynced = 0") suspend fun pendingSync(): List<AveriaEntity>
 
   @Query("""
     UPDATE averias SET
@@ -31,10 +34,12 @@ interface AveriaDao {
       tecnicoAsignadoUid=:uid,
       tecnicoAsignadoNombre=:nombre,
       vehiculoAsignado=:vehiculo,
-      horaInicioMillis=COALESCE(horaInicioMillis, :horaInicio)
+      horaInicioMillis=COALESCE(horaInicioMillis, :horaInicio),
+      lastUpdated=:lastUpdated,
+      isSynced=0
     WHERE caseId=:caseId
   """)
-  suspend fun marcarAsignada(caseId: String, uid: String, nombre: String?, vehiculo: String?, horaInicio: Long, nuevoEstado: String = "Asignada")
+  suspend fun marcarAsignada(caseId: String, uid: String, nombre: String?, vehiculo: String?, horaInicio: Long, lastUpdated: Long, nuevoEstado: String = "Asignada")
 
   @Query("""
     UPDATE averias SET
@@ -42,8 +47,62 @@ interface AveriaDao {
       causa=:causa,
       observaciones=:obs,
       horaInicioMillis=COALESCE(horaInicioMillis, :horaInicio),
-      horaFinalMillis=:horaFinal
+      horaFinalMillis=:horaFinal,
+      atencionHoraInicioMillis=:horaInicio,
+      atencionHoraFinalMillis=:horaFinal,
+      kilometrajeInicio=:kmInicio,
+      kilometrajeFinal=:kmFinal,
+      atendidoPorUid=:atendidoPorUid,
+      atendidoPorNombre=:atendidoPorNombre,
+      vehiculoAsignado=:vehiculo,
+      materialesTexto=:materialesResumen,
+      materialesDetalleJson=:materialesDetalle,
+      lastUpdated=:lastUpdated,
+      isSynced=0
     WHERE caseId=:caseId
   """)
-  suspend fun cerrarAveria(caseId: String, causa: String?, obs: String?, horaInicio: Long?, horaFinal: Long?, nuevoEstado: String)
+  suspend fun actualizarAtencion(
+    caseId: String,
+    causa: String?,
+    obs: String?,
+    horaInicio: Long?,
+    horaFinal: Long?,
+    kmInicio: Double?,
+    kmFinal: Double?,
+    atendidoPorUid: String?,
+    atendidoPorNombre: String?,
+    vehiculo: String?,
+    materialesResumen: String?,
+    materialesDetalle: String?,
+    lastUpdated: Long,
+    nuevoEstado: String
+  )
+
+  @Query("""
+    UPDATE averias SET
+      estado='Pendiente',
+      tecnicoAsignadoUid=NULL,
+      tecnicoAsignadoNombre=NULL,
+      vehiculoAsignado=NULL,
+      atendidoPorUid=NULL,
+      atendidoPorNombre=NULL,
+      materialesTexto=NULL,
+      causa=NULL,
+      observaciones=NULL,
+      horaInicioMillis=NULL,
+      horaFinalMillis=NULL,
+      atencionHoraInicioMillis=NULL,
+      atencionHoraFinalMillis=NULL,
+      kilometrajeInicio=NULL,
+      kilometrajeFinal=NULL,
+      lastUpdated=:lastUpdated,
+      materialesTexto=NULL,
+      materialesDetalleJson=NULL,
+      isSynced=0
+    WHERE caseId=:caseId
+  """)
+  suspend fun revertirAPendiente(caseId: String, lastUpdated: Long)
+
+  @Query("UPDATE averias SET isSynced=1 WHERE caseId=:caseId")
+  suspend fun marcarSincronizado(caseId: String)
 }

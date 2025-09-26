@@ -104,13 +104,35 @@
             app:layout_constraintEnd_toStartOf="@id/imgMapa" />
 
         <TextView
+            android:id="@+id/tvAtendido"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="Atendido por: —"
+            android:textSize="13sp"
+            android:textColor="@color/on_light"
+            app:layout_constraintTop_toBottomOf="@id/tvAsignado"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/imgMapa" />
+
+        <TextView
+            android:id="@+id/tvVehiculo"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="Vehículo: —"
+            android:textSize="13sp"
+            android:textColor="@color/on_light"
+            app:layout_constraintTop_toBottomOf="@id/tvAtendido"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/imgMapa" />
+
+        <TextView
             android:id="@+id/tvNise"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:text="NISE: 4830817001"
             android:textSize="13sp"
             android:textColor="@color/on_light"
-            app:layout_constraintTop_toBottomOf="@id/tvAsignado"
+            app:layout_constraintTop_toBottomOf="@id/tvVehiculo"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toStartOf="@id/imgMapa" />
 
@@ -136,6 +158,28 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toStartOf="@id/imgMapa" />
 
+        <TextView
+            android:id="@+id/tvMateriales"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:textSize="13sp"
+            android:textColor="@color/on_light"
+            android:visibility="gone"
+            app:layout_constraintTop_toBottomOf="@id/tvAgencia"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/imgMapa" />
+
+        <TextView
+            android:id="@+id/tvKilometraje"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:textSize="13sp"
+            android:textColor="@color/on_light"
+            android:visibility="gone"
+            app:layout_constraintTop_toBottomOf="@id/tvMateriales"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/imgMapa" />
+
         <!-- Coordenadas y Fecha -->
         <TextView
             android:id="@+id/tvCoords"
@@ -144,7 +188,7 @@
             android:text="Coords: X,Y"
             android:textSize="12sp"
             android:textColor="@color/dark_gray"
-            app:layout_constraintTop_toBottomOf="@id/tvAgencia"
+            app:layout_constraintTop_toBottomOf="@id/tvKilometraje"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toStartOf="@id/imgMapa" />
 
@@ -192,6 +236,18 @@
                 android:textAllCaps="false"
                 app:backgroundTint="@color/ice_blue"
                 android:textColor="@color/white" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnResolver"
+                style="@style/Widget.Material3.Button"
+                android:layout_marginStart="12dp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Resolver"
+                android:textAllCaps="false"
+                app:backgroundTint="@color/ice_blue"
+                android:textColor="@color/white"
+                android:visibility="gone" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnVer"
