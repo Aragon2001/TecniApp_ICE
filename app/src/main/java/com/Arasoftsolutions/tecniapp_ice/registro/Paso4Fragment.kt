@@ -13,343 +13,352 @@ import android.widget.Spinner
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
 import com.Arasoftsolutions.tecniapp_ice.LoginActivity
 import com.Arasoftsolutions.tecniapp_ice.R
 import com.google.android.material.button.MaterialButton
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseAuthUserCollisionException
 import com.google.firebase.database.*
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
+import java.util.Locale
 
 class Paso4Fragment : Fragment() {
 
-    // ViewModel para manejar el estado compartido entre fragmentos
+    // ViewModel compartido del flujo de registro
     private lateinit var viewModel: RegistroViewModel
 
-    // Spinners para las subregiones, agencias y vehículos
+    // UI
     private lateinit var spinnerSubregion: Spinner
     private lateinit var spinnerAgencia: Spinner
     private lateinit var spinnerVehiculo: Spinner
-
-    // Botón de finalización de registro
     private lateinit var btnFinishRegistration: MaterialButton
 
-    // Referencias a la base de datos de Firebase
+    // Firebase (datos generales)
     private lateinit var subregionsDatabase: DatabaseReference
     private lateinit var agenciesDatabase: DatabaseReference
     private lateinit var vehiclesDatabase: DatabaseReference
 
-    // Listas para almacenar las subregiones, agencias y vehículos cargados
+    // Listas
     private lateinit var subregions: MutableList<String>
     private lateinit var agencies: MutableList<String>
     private lateinit var vehicles: MutableList<String>
 
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View? {
-        // Inflar la vista del fragmento
+    // ---------- Helpers para claves seguras ----------
+    private fun emailKey(email: String): String =
+        email.trim().lowercase(Locale.ROOT)
+            .replace(".", ",")
+            .replace("#", "_")
+            .replace("$", "_")
+            .replace("[", "_")
+            .replace("]", "_")
+
+    private fun phoneKey(phone: String): String =
+        phone.filter(Char::isDigit)
+
+    private fun cedulaKey(id: String): String =
+        id.filter(Char::isDigit) // solo dígitos, p.ej. "102030405"
+
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         val view = inflater.inflate(R.layout.fragment_paso_4, container, false)
 
-        // Inicializar la navegación (flecha de retroceso)
+        // Back arrow
         setNavigationListeners(view)
 
-        // Inicializar el ViewModel
-        viewModel = ViewModelProvider(requireActivity()).get(RegistroViewModel::class.java)
+        // VM compartido
+        viewModel = ViewModelProvider(requireActivity())[RegistroViewModel::class.java]
 
-        // Encontrar los Spinners y el botón en la vista
+        // Bind UI
         spinnerSubregion = view.findViewById(R.id.spinnerSubregion)
-        spinnerAgencia = view.findViewById(R.id.spinnerAgencia)
-        spinnerVehiculo = view.findViewById(R.id.spinnerVehiculo)
+        spinnerAgencia   = view.findViewById(R.id.spinnerAgencia)
+        spinnerVehiculo  = view.findViewById(R.id.spinnerVehiculo)
         btnFinishRegistration = view.findViewById(R.id.btnFinishRegistration)
-
-        // Deshabilitar el botón de finalización hasta que todos los campos estén seleccionados
         btnFinishRegistration.isEnabled = false
 
-        //
-        // Inicializar las referencias de Firebase
-subregionsDatabase = FirebaseDatabase.getInstance("https://tecniapp-ice-datosgenerales.firebaseio.com").getReference("subregiones")
-agenciesDatabase = FirebaseDatabase.getInstance("https://tecniapp-ice-datosgenerales.firebaseio.com").getReference("agencias")
-vehiclesDatabase = FirebaseDatabase.getInstance("https://tecniapp-ice-datosgenerales.firebaseio.com").getReference("vehiculos")
+        // Refs Firebase (datos generales)
+        subregionsDatabase = FirebaseDatabase.getInstance("https://tecniapp-ice-datosgenerales.firebaseio.com").getReference("subregiones")
+        agenciesDatabase   = FirebaseDatabase.getInstance("https://tecniapp-ice-datosgenerales.firebaseio.com").getReference("agencias")
+        vehiclesDatabase   = FirebaseDatabase.getInstance("https://tecniapp-ice-datosgenerales.firebaseio.com").getReference("vehiculos")
 
-
-
-        // Cargar las subregiones desde Firebase
+        // Carga inicial
         loadSubregions()
 
-        // Subregión → carga agencias
-spinnerSubregion.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-    override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
-        try {
-            if (position > 0) {
-                val selectedSubregion = subregions.getOrNull(position) ?: return
-                loadAgencies(selectedSubregion)
-            } else {
-                loadAgencies("Seleccione una Subregion") // fuerza reset seguro
+        // Listeners de cascada
+        spinnerSubregion.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>, v: View?, position: Int, id: Long) {
+                try {
+                    if (position > 0) {
+                        val selectedSubregion = subregions.getOrNull(position) ?: return
+                        loadAgencies(selectedSubregion)
+                    } else {
+                        loadAgencies("Seleccione una Subregion") // reset seguro
+                    }
+                } catch (e: Exception) {
+                    Log.e("Paso4Fragment", "onItemSelected subregión: ${e.message}", e)
+                    showToast("No se pudieron cargar agencias. Intenta de nuevo.")
+                }
             }
-        } catch (e: Exception) {
-            Log.e("Paso4Fragment", "Error en onItemSelected subregión: ${e.message}", e)
-            showToast("No se pudieron cargar agencias. Intenta de nuevo.")
+            override fun onNothingSelected(parent: AdapterView<*>) {}
         }
-    }
-    override fun onNothingSelected(parent: AdapterView<*>) {}
-}
 
-// Agencia → carga vehículos
-spinnerAgencia.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-    override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
-        try {
-            if (position > 0) {
-                val selectedAgency = agencies.getOrNull(position) ?: return
-                loadVehicles(selectedAgency)
-            } else {
-                loadVehicles("Seleccione una Agencia") // reset
+        spinnerAgencia.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>, v: View?, position: Int, id: Long) {
+                try {
+                    if (position > 0) {
+                        val selectedAgency = agencies.getOrNull(position) ?: return
+                        loadVehicles(selectedAgency)
+                    } else {
+                        loadVehicles("Seleccione una Agencia") // reset
+                    }
+                } catch (e: Exception) {
+                    Log.e("Paso4Fragment", "onItemSelected agencia: ${e.message}", e)
+                    showToast("No se pudieron cargar vehículos. Intenta de nuevo.")
+                }
             }
-        } catch (e: Exception) {
-            Log.e("Paso4Fragment", "Error en onItemSelected agencia: ${e.message}", e)
-            showToast("No se pudieron cargar vehículos. Intenta de nuevo.")
+            override fun onNothingSelected(parent: AdapterView<*>) {}
         }
-    }
-    override fun onNothingSelected(parent: AdapterView<*>) {}
-}
 
-// Vehículo → habilita botón solo con selección válida
-spinnerVehiculo.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-    override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
-        btnFinishRegistration.isEnabled = position > 0
-    }
-    override fun onNothingSelected(parent: AdapterView<*>) {}
-}
-
-
-        // Configurar el clic del botón de finalización de registro
-        btnFinishRegistration.setOnClickListener {
-            finalizeRegistration() // Finalizar el registro cuando el botón sea presionado
+        spinnerVehiculo.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>, v: View?, position: Int, id: Long) {
+                btnFinishRegistration.isEnabled = position > 0
+            }
+            override fun onNothingSelected(parent: AdapterView<*>) {}
         }
+
+        // Finalizar registro
+        btnFinishRegistration.setOnClickListener { finalizeRegistration() }
 
         return view
     }
 
-    // Método para configurar la flecha de retroceso
     private fun setNavigationListeners(view: View) {
         view.findViewById<ImageView>(R.id.backArrow).setOnClickListener {
-            requireActivity().onBackPressedDispatcher.onBackPressed()// Navegar hacia atrás cuando se presione la flecha
+            requireActivity().onBackPressedDispatcher.onBackPressed()
         }
     }
 
-    // 1) Cargar subregiones con defensas
-private fun loadSubregions() {
-    subregionsDatabase.addListenerForSingleValueEvent(object : ValueEventListener {
-        override fun onDataChange(dataSnapshot: DataSnapshot) {
-            if (!isAdded) return  // ← evita usar context si ya no está el fragment
-
-            subregions = mutableListOf("Seleccione una Subregion")
-            for (snap in dataSnapshot.children) {
-                val nombre = snap.child("nombre").getValue(String::class.java)
-                if (!nombre.isNullOrBlank()) subregions.add(nombre)
-            }
-
-            // Adapter con contexto seguro
-            val ctx = context ?: return
-            val adapter = ArrayAdapter(ctx, android.R.layout.simple_spinner_item, subregions).apply {
-                setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-            }
-            spinnerSubregion.adapter = adapter
-
-            Log.d("Paso4Fragment", "Subregiones cargadas: $subregions")
-        }
-
-        override fun onCancelled(error: DatabaseError) {
-            if (!isAdded) return
-            showToast("Error al cargar subregiones: ${error.message}")
-            Log.e("Paso4Fragment", "loadSubregions cancelled: ${error.toException()}")
-        }
-    })
-}
-
-// 2) Cargar agencias con validaciones y manejo de vacío
-private fun loadAgencies(subregion: String) {
-    // Si seleccionaron el placeholder, limpia y sal
-    if (subregion == "Seleccione una Subregion") {
-        agencies = mutableListOf("Seleccione una Agencia")
-        val ctx = context ?: return
-        spinnerAgencia.adapter = ArrayAdapter(ctx, android.R.layout.simple_spinner_item, agencies).apply {
-            setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        }
-        // También resetea vehículos
-        vehicles = mutableListOf("Seleccione un Vehículo")
-        spinnerVehiculo.adapter = ArrayAdapter(ctx, android.R.layout.simple_spinner_item, vehicles).apply {
-            setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        }
-        btnFinishRegistration.isEnabled = false
-        return
-    }
-
-    agenciesDatabase.orderByChild("subregion").equalTo(subregion)
-        .addListenerForSingleValueEvent(object : ValueEventListener {
-            override fun onDataChange(dataSnapshot: DataSnapshot) {
+    // ---------- 1) Cargar subregiones ----------
+    private fun loadSubregions() {
+        subregionsDatabase.addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(ds: DataSnapshot) {
                 if (!isAdded) return
-
-                agencies = mutableListOf("Seleccione una Agencia")
-                for (snap in dataSnapshot.children) {
+                subregions = mutableListOf("Seleccione una Subregion")
+                for (snap in ds.children) {
                     val nombre = snap.child("nombre").getValue(String::class.java)
-                    if (!nombre.isNullOrBlank()) agencies.add(nombre)
+                    if (!nombre.isNullOrBlank()) subregions.add(nombre)
                 }
-
                 val ctx = context ?: return
-                val adapter = ArrayAdapter(ctx, android.R.layout.simple_spinner_item, agencies).apply {
+                val adapter = ArrayAdapter(ctx, android.R.layout.simple_spinner_item, subregions).apply {
                     setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
                 }
-                spinnerAgencia.adapter = adapter
+                spinnerSubregion.adapter = adapter
+                Log.d("Paso4Fragment", "Subregiones: $subregions")
+            }
+            override fun onCancelled(error: DatabaseError) {
+                if (!isAdded) return
+                showToast("Error al cargar subregiones: ${error.message}")
+                Log.e("Paso4Fragment", "loadSubregions cancelled: ${error.toException()}")
+            }
+        })
+    }
 
-                // Si no hay agencias reales, evita disparar el siguiente spinner
-                if (agencies.size == 1) {
-                    Log.w("Paso4Fragment", "No hay agencias para subregión: $subregion")
+    // ---------- 2) Cargar agencias según subregión ----------
+    private fun loadAgencies(subregion: String) {
+        if (subregion == "Seleccione una Subregion") {
+            val ctx = context ?: return
+            agencies = mutableListOf("Seleccione una Agencia")
+            spinnerAgencia.adapter = ArrayAdapter(ctx, android.R.layout.simple_spinner_item, agencies).apply {
+                setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+            }
+            // reset vehículos
+            vehicles = mutableListOf("Seleccione un Vehículo")
+            spinnerVehiculo.adapter = ArrayAdapter(ctx, android.R.layout.simple_spinner_item, vehicles).apply {
+                setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+            }
+            btnFinishRegistration.isEnabled = false
+            return
+        }
+
+        agenciesDatabase.orderByChild("subregion").equalTo(subregion)
+            .addListenerForSingleValueEvent(object : ValueEventListener {
+                override fun onDataChange(ds: DataSnapshot) {
+                    if (!isAdded) return
+                    agencies = mutableListOf("Seleccione una Agencia")
+                    for (snap in ds.children) {
+                        val nombre = snap.child("nombre").getValue(String::class.java)
+                        if (!nombre.isNullOrBlank()) agencies.add(nombre)
+                    }
+                    val ctx = context ?: return
+                    spinnerAgencia.adapter = ArrayAdapter(ctx, android.R.layout.simple_spinner_item, agencies).apply {
+                        setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+                    }
+
+                    if (agencies.size == 1) {
+                        Log.w("Paso4Fragment", "Sin agencias para subregión: $subregion")
+                        vehicles = mutableListOf("Seleccione un Vehículo")
+                        spinnerVehiculo.adapter = ArrayAdapter(ctx, android.R.layout.simple_spinner_item, vehicles).apply {
+                            setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+                        }
+                        btnFinishRegistration.isEnabled = false
+                    }
+                }
+                override fun onCancelled(error: DatabaseError) {
+                    if (!isAdded) return
+                    showToast("Error al cargar agencias: ${error.message}")
+                    Log.e("Paso4Fragment", "loadAgencies cancelled: ${error.toException()}")
+                }
+            })
+    }
+
+    // ---------- 3) Cargar vehículos según agencia ----------
+    private fun loadVehicles(agency: String) {
+        if (agency == "Seleccione una Agencia") {
+            val ctx = context ?: return
+            vehicles = mutableListOf("Seleccione un Vehículo")
+            spinnerVehiculo.adapter = ArrayAdapter(ctx, android.R.layout.simple_spinner_item, vehicles).apply {
+                setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+            }
+            btnFinishRegistration.isEnabled = false
+            return
+        }
+
+        vehiclesDatabase.orderByChild("agencia").equalTo(agency)
+            .addListenerForSingleValueEvent(object : ValueEventListener {
+                override fun onDataChange(ds: DataSnapshot) {
+                    if (!isAdded) return
                     vehicles = mutableListOf("Seleccione un Vehículo")
+                    for (snap in ds.children) {
+                    val placa = snap.child("placa").value?.toString()
+                    if (!placa.isNullOrBlank()) vehicles.add(placa)
+}
+                    val ctx = context ?: return
                     spinnerVehiculo.adapter = ArrayAdapter(ctx, android.R.layout.simple_spinner_item, vehicles).apply {
                         setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
                     }
-                    btnFinishRegistration.isEnabled = false
+                    btnFinishRegistration.isEnabled = false // se habilita al elegir
                 }
-            }
-
-            override fun onCancelled(error: DatabaseError) {
-                if (!isAdded) return
-                showToast("Error al cargar agencias: ${error.message}")
-                Log.e("Paso4Fragment", "loadAgencies cancelled: ${error.toException()}")
-            }
-        })
-}
-
-// 3) Cargar vehículos con defensas
-private fun loadVehicles(agency: String) {
-    if (agency == "Seleccione una Agencia") {
-        val ctx = context ?: return
-        vehicles = mutableListOf("Seleccione un Vehículo")
-        spinnerVehiculo.adapter = ArrayAdapter(ctx, android.R.layout.simple_spinner_item, vehicles).apply {
-            setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        }
-        btnFinishRegistration.isEnabled = false
-        return
+                override fun onCancelled(error: DatabaseError) {
+                    if (!isAdded) return
+                    showToast("Error al cargar vehículos: ${error.message}")
+                    Log.e("Paso4Fragment", "loadVehicles cancelled: ${error.toException()}")
+                }
+            })
     }
 
-    vehiclesDatabase.orderByChild("agencia").equalTo(agency)
-        .addListenerForSingleValueEvent(object : ValueEventListener {
-            override fun onDataChange(dataSnapshot: DataSnapshot) {
-                if (!isAdded) return
+    // ---------- 4) Finalizar registro ----------
+    private fun finalizeRegistration() {
+        val selectedSubregion = spinnerSubregion.selectedItem as String
+        val selectedAgency    = spinnerAgencia.selectedItem as String
+        val selectedVehicle   = spinnerVehiculo.selectedItem as String
 
-                vehicles = mutableListOf("Seleccione un Vehículo")
-                for (snap in dataSnapshot.children) {
-                    val placa = snap.child("placa").getValue(String::class.java)
-                    if (!placa.isNullOrBlank()) vehicles.add(placa)
+        if (selectedSubregion == "Seleccione una Subregion" ||
+            selectedAgency    == "Seleccione una Agencia" ||
+            selectedVehicle   == "Seleccione un Vehículo") {
+            showToast("Por favor, completa todos los campos.")
+            return
+        }
+
+        // Persistir en el VM (por si lo necesitas después)
+        viewModel.setDatosAdicionales(selectedSubregion, selectedAgency, selectedVehicle)
+
+        val email     = viewModel.getEmail()?.trim().orEmpty()
+        val password  = viewModel.getPassword().orEmpty()
+        val nombre    = viewModel.getNombre().orEmpty()
+        val apellidos = viewModel.getApellidos().orEmpty()
+        val telefono  = viewModel.getTelefono().orEmpty()
+        val cedula    = viewModel.getCedula().orEmpty()
+
+        if (email.isBlank() || password.length < 6 || nombre.isBlank() || apellidos.isBlank() ||
+            telefono.isBlank() || cedula.isBlank()) {
+            showToast("Verifica correo/clave (6+), nombre, apellidos, teléfono y cédula.")
+            return
+        }
+
+        // Deshabilita para evitar doble click
+        btnFinishRegistration.isEnabled = false
+
+        // Crear Auth + multi-escritura atómica (usuarios + emails + phones + idcards)
+        viewLifecycleOwner.lifecycleScope.launch {
+            val auth = FirebaseAuth.getInstance()
+            val dbUsers = FirebaseDatabase
+                .getInstance("https://tecniapp-ice-user.firebaseio.com")
+                .reference
+
+            try {
+                // A) Crear credenciales en Auth
+                val user = auth.createUserWithEmailAndPassword(email, password).await().user
+                    ?: throw IllegalStateException("No se pudo crear el usuario de autenticación.")
+                val uid = user.uid
+
+                // B) Armar perfil (NO guardar password en RTDB). Usa timestamp de servidor.
+                val userData = hashMapOf<String, Any?>(
+                    "uid"           to uid,
+                    "cedula"        to cedula,
+                    "email"         to email,
+                    "email_lower"   to email.lowercase(Locale.ROOT),
+                    "nombre"        to nombre,
+                    "apellidos"     to apellidos,
+                    "telefono"      to telefono,
+                    "subregion"     to selectedSubregion,  // si luego manejas IDs, guarda también subregionId
+                    "agencia"       to selectedAgency,     // idem con agenciaId
+                    "placaVehiculo" to selectedVehicle,
+                    "createdAt"     to ServerValue.TIMESTAMP
+                )
+
+                // C) Multi-location update atómico
+                val eKey   = emailKey(email)
+                val pKey   = phoneKey(telefono)
+                val cedKey = cedulaKey(cedula)
+
+                val updates = hashMapOf<String, Any?>(
+                    "/usuarios/$uid"    to userData,
+                    "/emails/$eKey"     to mapOf("uid" to uid),
+                    "/idcards/$cedKey"  to mapOf("uid" to uid) // reclamo de cédula
+                )
+                if (pKey.isNotBlank()) {
+                    updates["/phones/$pKey"] = mapOf("uid" to uid)
                 }
 
-                val ctx = context ?: return
-                val adapter = ArrayAdapter(ctx, android.R.layout.simple_spinner_item, vehicles).apply {
-                    setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+                // Si alguno ya existe según reglas, falla todo (consistente)
+                dbUsers.updateChildren(updates).await()
+
+                // D) Limpia el código de verificación (si existe) y cierra sesión
+                runCatching {
+                    dbUsers.child("verificationCodes").child(eKey).removeValue().await()
                 }
-                spinnerVehiculo.adapter = adapter
+                auth.signOut()
 
-                // Si hay al menos una opción válida, el usuario podrá activar el botón al elegirla
-                btnFinishRegistration.isEnabled = false
+                // E) OK → navegar a Login
+                if (!isAdded) return@launch
+                showToast("Registro completado con éxito.")
+                val intent = Intent(requireContext(), LoginActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                }
+                startActivity(intent)
+                requireActivity().finish()
+
+            } catch (t: Throwable) {
+                Log.e("Paso4Fragment", "finalizeRegistration error: ${t.message}", t)
+
+                // Mensaje específico si el correo ya existe en Auth
+                if (t is FirebaseAuthUserCollisionException) {
+                    if (isAdded) showToast("Ese correo ya tiene una cuenta. Inicia sesión o recupera tu contraseña.")
+                } else {
+                    if (isAdded) showToast("No se pudo completar el registro: ${t.message}")
+                }
+
+                // Rollback de Auth para no dejar usuario huérfano si llegó a crearse
+                runCatching { FirebaseAuth.getInstance().currentUser?.delete()?.await() }
+
+                if (isAdded) btnFinishRegistration.isEnabled = true
             }
-
-            override fun onCancelled(error: DatabaseError) {
-                if (!isAdded) return
-                showToast("Error al cargar vehículos: ${error.message}")
-                Log.e("Paso4Fragment", "loadVehicles cancelled: ${error.toException()}")
-            }
-        })
-}
+        }
+    }
 
 
-    // Método para mostrar un Toast con un mensaje
     private fun showToast(message: String) {
+        if (!isAdded) return
         Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
     }
-
-    // Método para finalizar el registro cuando se presiona el botón
-
-
-private fun finalizeRegistration() {
-    // Obtener los valores seleccionados en los spinners
-    val selectedSubregion = spinnerSubregion.selectedItem as String
-    val selectedAgency = spinnerAgencia.selectedItem as String
-    val selectedVehicle = spinnerVehiculo.selectedItem as String
-
-    // Validar que se haya seleccionado un valor válido en cada spinner
-    if (selectedSubregion == "Seleccione una Subregion" ||
-        selectedAgency == "Seleccione una Agencia" ||
-        selectedVehicle == "Seleccione un Vehículo") {
-        // Mostrar un mensaje si faltan campos por completar
-        showToast("Por favor, completa todos los campos.")
-        return
-    }
-
-    // Guardar la selección en el ViewModel
-    viewModel.setDatosAdicionales(selectedSubregion, selectedAgency, selectedVehicle)
-
-    // Obtener datos del ViewModel
-    val email = viewModel.getEmail()
-    val password = viewModel.getPassword()
-    val nombre = viewModel.getNombre()
-    val apellidos = viewModel.getApellidos()
-    val telefono = viewModel.getTelefono()
-    val cedula = viewModel.getCedula()
-
-    // Validar que la cédula no sea nula
-    if (cedula.isNullOrEmpty()) {
-        showToast("La cédula no puede estar vacía.")
-        return
-    }
-
-    // Guardar el usuario en Firebase Authentication
-    if (email != null && password != null) {
-        FirebaseAuth.getInstance().createUserWithEmailAndPassword(email, password)
-            .addOnCompleteListener { task ->
-                if (task.isSuccessful) {
-                    // Usar la cédula como ID del usuario en la base de datos
-                    val userId = cedula // Aquí usamos la cédula como ID
-
-                    // Crear el objeto con los datos del usuario (sin el password)
-                    val userData = hashMapOf(
-                        "nombre" to nombre,
-                        "apellidos" to apellidos,
-                        "email" to email,
-                        "telefono" to telefono,
-                        "subregion" to selectedSubregion,
-                        "agencia" to selectedAgency,
-                        "placaVehiculo" to selectedVehicle, // Asegúrate de que este campo esté correctamente asignado
-                        "cedula" to cedula
-                    )
-
-                    // Guardar los datos del usuario en la base de datos de Firebase
-                    val userDatabase = FirebaseDatabase.getInstance("https://tecniapp-ice-user.firebaseio.com/")
-                        .getReference("usuarios")
-                        .child(userId) // Usar cédula como clave
-
-                    userDatabase.setValue(userData)
-                        .addOnCompleteListener { userTask ->
-                            if (userTask.isSuccessful) {
-                                showToast("Registro completado con éxito.")
-
-                                // Redirigir al login tras completar el registro
-                                val intent = Intent(requireContext(), LoginActivity::class.java)
-                                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK // Limpiar el historial de actividades
-                                startActivity(intent)
-                                requireActivity().finish() // Finalizar la actividad actual
-                            } else {
-                                showToast("Error al guardar los datos del usuario: ${userTask.exception?.message}")
-                            }
-                        }
-                } else {
-                    showToast("Error en la creación de la cuenta: ${task.exception?.message}")
-                }
-            }
-    } else {
-        showToast("Por favor, verifica que todos los campos están completos.")
-    }
 }
-
-
-
-
-    }

@@ -6,6 +6,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.FlowPreview
@@ -18,8 +19,9 @@ enum class Estado { PENDIENTE, ASIGNADA, EN_ATENCION, RESUELTA }
 data class ZonaUI(val id: String, val nombreVisible: String)
 data class AveriasUiState(val loading: Boolean = false, val items: List<AveriaUI> = emptyList())
 
-@OptIn(FlowPreview::class)
+@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class, kotlinx.coroutines.FlowPreview::class)
 class AveriasViewModel(app: Application) : AndroidViewModel(app) {
+
 
   private val db = com.Arasoftsolutions.tecniapp_ice.Database.room.AppDatabase.getInstance(app)
 
@@ -83,6 +85,7 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
   fun setEstado(value: Estado?) = viewModelScope.launch { estado.emit(value?.name ?: "Todos") }
   fun setZonaIndex(idx: Int) = viewModelScope.launch { zonaIndex.emit(idx) }
 
+  @RequiresApi(Build.VERSION_CODES.O)
   fun syncNow() {
     viewModelScope.launch {
       isLoading.emit(true)

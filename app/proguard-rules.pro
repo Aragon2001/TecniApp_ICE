@@ -19,3 +19,9 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+# Firebase Realtime Database model
+-keepclassmembers class com.Arasoftsolutions.tecniapp_ice.Database.entities.** {
+    public <init>();
+    public *;
+}
+-keep class com.Arasoftsolutions.tecniapp_ice.Database.entities.** { *; }

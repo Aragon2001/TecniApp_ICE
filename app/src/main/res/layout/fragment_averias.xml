@@ -7,22 +7,7 @@
     android:layout_height="match_parent"
     tools:context=".ui.averias.AveriasFragment">
 
-    <com.google.android.material.appbar.AppBarLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:paddingTop="0dp">
-
-        <com.google.android.material.appbar.MaterialToolbar
-            android:id="@+id/toolbar"
-            android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            android:background="?attr/colorPrimary"
-            app:title="@string/menu_averias"
-            app:titleCentered="true"
-            app:titleTextColor="?attr/colorOnPrimary"
-            app:navigationIconTint="?attr/colorOnPrimary"
-            app:popupTheme="@style/ThemeOverlay.Tecni.Toolbar"/>
-    </com.google.android.material.appbar.AppBarLayout>
+   
 
     <!-- Contenido -->
     <LinearLayout
@@ -72,21 +57,29 @@
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chipPendiente"
                     style="@style/Tecni.Chip.Pendiente"
+                    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
                     android:text="@string/estado_pendiente" />
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chipAsignada"
                     style="@style/Tecni.Chip.Asignada"
+                    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
                     android:text="@string/estado_asignada" />
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chipEnAtencion"
                     style="@style/Tecni.Chip.EnAtencion"
+                    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
                     android:text="@string/estado_en_atencion" />
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chipResuelta"
                     style="@style/Tecni.Chip.Resuelta"
+                    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
                     android:text="@string/estado_resuelta" />
 
             </com.google.android.material.chip.ChipGroup>

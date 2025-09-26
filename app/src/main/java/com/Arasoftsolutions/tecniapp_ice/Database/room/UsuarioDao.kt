@@ -1,25 +1,33 @@
-// ======================
-// UsuarioDao.kt
-// ======================
 package com.Arasoftsolutions.tecniapp_ice.Database.room
 
-import androidx.room.*
+import androidx.room.Dao
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
+import androidx.room.Query
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.UserEntity
 
 @Dao
 interface UsuarioDao {
-    // Obtiene un usuario por su UID de Firebase
-    @Query("SELECT * FROM usuarios WHERE uid = :uid LIMIT 1")
-    suspend fun get(uid: String): UserEntity?
 
-    // Inserta o actualiza un usuario
+    @Query("SELECT * FROM usuarios WHERE cedula = :cedula LIMIT 1")
+    suspend fun getByCedula(cedula: String): UserEntity?
+
+    @Query("SELECT * FROM usuarios WHERE uid = :uid LIMIT 1")
+    suspend fun getByUid(uid: String): UserEntity?
+
+    @Query("SELECT * FROM usuarios ORDER BY nombre")
+    suspend fun getAll(): List<UserEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(user: UserEntity)
 
-    // Métodos existentes para compatibilidad
-    @Query("SELECT * FROM usuarios WHERE email = :email LIMIT 1")
-    suspend fun getByEmail(email: String): UserEntity?
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertAll(users: List<UserEntity>)
 
-    @Query("SELECT * FROM usuarios")
-    suspend fun getAll(): List<UserEntity>
+    @Query("DELETE FROM usuarios")
+    suspend fun clear()
+
+    @Query("SELECT * FROM usuarios WHERE uid = :uid LIMIT 1")
+suspend fun get(uid: String): UserEntity?
+
 }

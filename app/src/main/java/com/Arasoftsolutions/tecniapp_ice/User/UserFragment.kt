@@ -145,7 +145,7 @@ class FragmentUser : Fragment() {
             val databaseRef = FirebaseDatabase
                 .getInstance("https://tecniapp-ice-user.firebaseio.com")
                 .getReference("usuarios")
-                .child(currentUser.uid)
+                .child(currentUser.uid.toString())
 
             databaseRef.setValue(updatedUser)
                 .addOnSuccessListener {
@@ -167,7 +167,7 @@ class FragmentUser : Fragment() {
                     val sync = Synchronizer(RoomRepository(requireContext()))
                     viewLifecycleOwner.lifecycleScope.launch {
                         sync.syncSubregion(
-                            updatedUser.subregion,
+                            updatedUser.subregion.toString(),
                             onSyncStart = { },
                             onSyncProgress = { _, _, _ -> },
                             onSyncSuccess = {},

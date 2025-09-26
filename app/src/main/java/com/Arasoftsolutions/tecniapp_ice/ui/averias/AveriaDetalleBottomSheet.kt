@@ -36,6 +36,12 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
         b.btnAsignar.setOnClickListener { vm.onAsignar(item); dismiss() }
         b.btnAtender.setOnClickListener { vm.onAtender(item); dismiss() }
         b.btnCerrar.setOnClickListener { vm.onCerrar(item); dismiss() }
+        b.btnExportar.setOnClickListener {
+    if (item.estado == "Resuelta") {
+        PdfGenerator.exportAveria(requireContext(), item)
+    }
+}
+
         b.btnVerMapa.setOnClickListener {
             if (item.lat == 0.0 && item.lng == 0.0) return@setOnClickListener
             val uri = Uri.parse("geo:${item.lat},${item.lng}?q=${item.lat},${item.lng}")
