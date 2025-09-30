@@ -16,9 +16,10 @@ import com.Arasoftsolutions.tecniapp_ice.Database.entities.*
         PueblosEntity::class,           // Pueblos/regiones
         SubregionesEntity::class,       // Subregiones del ICE
         VehiculosEntity::class,         // Vehículos asociados
+        MaterialEntity::class,          // Catálogo de materiales
         AveriaEntity::class             // Averías
     ],
-    version = 5,                        // ⬅️ súbelo si cambias el schema
+    version = 6,                        // ✅ mantener la versión más alta
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -30,6 +31,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun puebloDao(): PuebloDao
     abstract fun subregionDao(): SubregionDao
     abstract fun vehiculoDao(): VehiculoDao
+    abstract fun materialDao(): MaterialDao
     abstract fun averiaDao(): AveriaDao
 
     companion object {
@@ -42,7 +44,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "tecniapp_room.db"
                 )
-                    .fallbackToDestructiveMigration(true) // ✅ aquí va, antes de build()
+                    .fallbackToDestructiveMigration(true) // ⚠️ elimina datos si cambia el schema
                     .build()
                     .also { INSTANCE = it }
             }

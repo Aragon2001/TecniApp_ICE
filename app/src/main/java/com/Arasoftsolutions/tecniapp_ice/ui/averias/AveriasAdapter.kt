@@ -24,7 +24,9 @@ data class AveriaUI(
     val causa: String,
     val estado: String,
     val tecnico: String,
+    val tecnicoUid: String?,
     val atendidoPor: String,
+    val atendidoPorUid: String?,
     val observaciones: String,
     val nise: String,
     val agencia: String,
@@ -33,7 +35,12 @@ data class AveriaUI(
     val lat: Double,
     val lng: Double,
     val vehiculo: String?,
-    val materiales: String,
+    val materialesResumen: String,
+    val materialesDetalle: List<MaterialUso>,
+    val horaAtencionInicio: Long?,
+    val horaAtencionFinal: Long?,
+    val kilometrajeInicio: Double?,
+    val kilometrajeFinal: Double?,
     val horaInicio: Long?,
     val horaFinal: Long?
 ) : Serializable
@@ -44,6 +51,8 @@ class AveriasAdapter(
     private val onAtender: (AveriaUI) -> Unit,
     private val onResolver: (AveriaUI) -> Unit
 ) : ListAdapter<AveriaUI, AveriasAdapter.VH>(Diff()) {
+
+    var currentUserUid: String? = null
 
     class Diff : DiffUtil.ItemCallback<AveriaUI>() {
         override fun areItemsTheSame(old: AveriaUI, new: AveriaUI) = old.id == new.id
@@ -66,6 +75,7 @@ class AveriasAdapter(
         private val tvRegion: TextView = view.findViewById(R.id.tvRegion)
         private val tvAgencia: TextView = view.findViewById(R.id.tvAgencia)
         private val tvMateriales: TextView = view.findViewById(R.id.tvMateriales)
+        private val tvKilometraje: TextView = view.findViewById(R.id.tvKilometraje)
 
         private val tvCoords: TextView = view.findViewById(R.id.tvCoords)
         private val tvFecha: TextView = view.findViewById(R.id.tvFecha)
@@ -108,25 +118,42 @@ class AveriasAdapter(
             tvNise.text = "NISE: ${item.nise}"
             tvRegion.text = "Región: ${item.region}"
             tvAgencia.text = "Agencia: ${item.agencia}"
-            tvMateriales.visibility = if (item.materiales.isBlank()) View.GONE else View.VISIBLE
-            tvMateriales.text = itemView.context.getString(R.string.averia_materiales_label, item.materiales)
+
+            // Materiales y kilometrajes
+            tvMateriales.visibility = if (item.materialesResumen.isBlank()) View.GONE else View.VISIBLE
+            tvMateriales.text = itemView.context.getString(R.string.averia_materiales_label, item.materialesResumen)
+            if (item.kilometrajeInicio != null || item.kilometrajeFinal != null) {
+                tvKilometraje.visibility = View.VISIBLE
+                val inicio = item.kilometrajeInicio?.toString() ?: "—"
+                val fin = item.kilometrajeFinal?.toString() ?: "—"
+                tvKilometraje.text = itemView.context.getString(R.string.averia_kilometraje_label, inicio, fin)
+            } else {
+                tvKilometraje.visibility = View.GONE
+            }
 
             // Coordenadas + fecha
             tvCoords.text = if (lat == 0.0 && lng == 0.0) "Coords: —" else "Coords: $lat, $lng"
-            val fechaInicio = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT)
+            val fechaEvento = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT)
                 .format(Date(item.fechaMillis))
-            val fechaFin = item.horaFinal?.let {
-                DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT)
-                    .format(Date(it))
+            val inicioAtencion = item.horaAtencionInicio?.let {
+                DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(Date(it))
+            }
+            val finAtencion = item.horaAtencionFinal?.let {
+                DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(Date(it))
             }
             tvFecha.text = buildString {
-                append(itemView.context.getString(R.string.averia_fecha_inicio, fechaInicio))
-                if (fechaFin != null) {
+                append(itemView.context.getString(R.string.averia_fecha_evento_label, fechaEvento))
+                if (inicioAtencion != null) {
                     append('\n')
-                    append(itemView.context.getString(R.string.averia_fecha_fin, fechaFin))
+                    append(itemView.context.getString(R.string.averia_fecha_atencion_inicio, inicioAtencion))
+                }
+                if (finAtencion != null) {
+                    append('\n')
+                    append(itemView.context.getString(R.string.averia_fecha_atencion_fin, finAtencion))
                 }
             }
 
+            // Colores por estado
             val estadoEnum = Estado.fromLabel(item.estado)
             val chipColor = when (estadoEnum) {
                 Estado.PENDIENTE -> R.color.chip_pendiente
@@ -143,6 +170,9 @@ class AveriasAdapter(
             btnResolver.setOnClickListener { onResolver(item) }
             btnVer.setOnClickListener { onVerDetalle(item) }
 
+            val currentUid = currentUserUid
+            val pertenece = currentUid != null && item.tecnicoUid == currentUid
+
             when (estadoEnum) {
                 Estado.PENDIENTE -> {
                     btnAsignar.text = itemView.context.getString(R.string.averia_asignar)
@@ -150,21 +180,24 @@ class AveriasAdapter(
                     btnAtender.text = itemView.context.getString(R.string.averia_atender)
                     btnAtender.isEnabled = false
                     btnResolver.visibility = View.GONE
+                    btnResolver.isEnabled = false
                 }
                 Estado.ASIGNADA -> {
                     btnAsignar.text = itemView.context.getString(R.string.averia_eliminar_asignacion)
-                    btnAsignar.isEnabled = true
+                    btnAsignar.isEnabled = pertenece
                     btnAtender.text = itemView.context.getString(R.string.averia_atender)
-                    btnAtender.isEnabled = true
+                    btnAtender.isEnabled = pertenece
                     btnResolver.visibility = View.GONE
+                    btnResolver.isEnabled = false
                 }
                 Estado.EN_ATENCION -> {
                     btnAsignar.text = itemView.context.getString(R.string.averia_eliminar_asignacion)
                     btnAsignar.isEnabled = false
                     btnAtender.text = itemView.context.getString(R.string.averia_cancelar_atencion)
-                    btnAtender.isEnabled = true
+                    btnAtender.isEnabled = pertenece
                     btnResolver.visibility = View.VISIBLE
                     btnResolver.text = itemView.context.getString(R.string.averia_resolver)
+                    btnResolver.isEnabled = pertenece
                 }
                 Estado.RESUELTA -> {
                     btnAsignar.text = itemView.context.getString(R.string.averia_asignar)
@@ -173,6 +206,7 @@ class AveriasAdapter(
                     btnAtender.isEnabled = false
                     btnResolver.visibility = View.VISIBLE
                     btnResolver.text = itemView.context.getString(R.string.averia_exportar_pdf)
+                    btnResolver.isEnabled = true
                 }
             }
         }

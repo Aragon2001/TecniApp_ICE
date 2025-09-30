@@ -45,8 +45,10 @@
     <string name="averia_exportar_pdf">Exportar PDF</string>
     <string name="averia_atencion_finalizada">Atención finalizada</string>
     <string name="averia_materiales_label">Materiales: %1$s</string>
-    <string name="averia_fecha_inicio">Inicio: %1$s</string>
-    <string name="averia_fecha_fin">Fin: %1$s</string>
+    <string name="averia_kilometraje_label">Kilometraje: %1$s → %2$s</string>
+    <string name="averia_fecha_evento_label">Evento: %1$s</string>
+    <string name="averia_fecha_atencion_inicio">Inicio de atención: %1$s</string>
+    <string name="averia_fecha_atencion_fin">Fin de atención: %1$s</string>
     <string name="averia_notificacion_asignada_title">Avería asignada</string>
     <string name="averia_notificacion_asignada_body">Caso %1$s asignado a %2$s</string>
     <string name="averia_notificacion_atencion_title">Avería en atención</string>
@@ -55,6 +57,11 @@
     <string name="averia_notificacion_resuelta_body">Caso %1$s resuelto.</string>
     <string name="averia_error_usuario_no_autenticado">Inicia sesión para gestionar averías.</string>
     <string name="averia_error_causa_requerida">Ingresa la causa de la avería.</string>
+    <string name="averia_error_no_autorizado">No puedes gestionar una avería asignada a otro técnico.</string>
+    <string name="averia_error_hora_formato">Ingresa la hora en formato HH:mm.</string>
+    <string name="averia_error_hora_final_menor">La hora final debe ser mayor a la inicial.</string>
+    <string name="averia_error_km_invalido">Ingresa un kilometraje válido.</string>
+    <string name="averia_error_km_final_menor">El kilometraje final no puede ser menor al inicial.</string>
     <string name="averia_exito_asignada">Avería asignada</string>
     <string name="averia_exito_desasignada">Asignación eliminada</string>
     <string name="averia_exito_en_atencion">Avería en atención</string>
@@ -64,6 +71,11 @@
     <string name="averia_export_success">Reporte guardado como %1$s</string>
     <string name="averia_export_error">No se pudo generar el reporte.</string>
     <string name="averia_materiales_hint">Ej.: 3x Cable #6, 1x Medidor</string>
+    <string name="averia_materiales_autocomplete_hint">Buscar material</string>
+    <string name="averia_hora_inicio_hint">Hora de inicio (HH:mm)</string>
+    <string name="averia_hora_fin_hint">Hora de finalización (HH:mm)</string>
+    <string name="averia_km_inicio_hint">Kilometraje inicial</string>
+    <string name="averia_km_fin_hint">Kilometraje final</string>
     <string name="averia_obs_hint">Observaciones</string>
     <string name="averia_causa_hint">Causa de la avería</string>
     <string name="averia_atendido_hint">Nombre del técnico</string>
@@ -77,6 +89,7 @@
     <string name="averia_asignado_a">Asignado a: %1$s</string>
     <string name="averia_atendido_por_format">Atendido por: %1$s</string>
     <string name="averia_vehiculo_format">Vehículo: %1$s</string>
+    <string name="averia_chip_material_format">%1$s (x%2$d)</string>
     <string name="averia_reporte_titulo">Reporte de avería</string>
     <string name="averia_estado_pdf">Estado: %1$s</string>
     <string name="averia_reporte_region">Región: %1$s</string>
