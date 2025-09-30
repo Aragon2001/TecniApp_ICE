@@ -212,14 +212,14 @@
         </com.google.android.material.textfield.TextInputLayout>
 
         <!-- Chips de materiales -->
-        <com.google.android.material.chip.ChipGroup
-            android:id="@+id/chipGroupMateriales"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:isSingleLine="false"
-            app:singleLine="false"
-            app:singleSelection="false" />
+       <com.google.android.material.chip.ChipGroup
+    android:id="@+id/chipGroupMateriales"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="4dp"
+    app:singleLine="false"
+    app:singleSelection="false" />
+
 
         <!-- Botones -->
         <LinearLayout
