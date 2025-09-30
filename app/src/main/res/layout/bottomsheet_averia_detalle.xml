@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content">
 
@@ -66,6 +67,7 @@
             android:layout_marginTop="2dp"
             android:visibility="gone" />
 
+        <!-- Campo causa -->
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilCausa"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
@@ -82,6 +84,7 @@
                 android:minLines="2" />
         </com.google.android.material.textfield.TextInputLayout>
 
+        <!-- Observaciones -->
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilObs"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
@@ -98,6 +101,7 @@
                 android:minLines="2" />
         </com.google.android.material.textfield.TextInputLayout>
 
+        <!-- Atendido por -->
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilAtendido"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
@@ -113,6 +117,7 @@
                 android:inputType="textCapWords" />
         </com.google.android.material.textfield.TextInputLayout>
 
+        <!-- Vehículo -->
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilVehiculo"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
@@ -128,22 +133,95 @@
                 android:inputType="none" />
         </com.google.android.material.textfield.TextInputLayout>
 
+        <!-- Horas -->
         <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/tilMateriales"
+            android:id="@+id/tilHoraInicio"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:hint="@string/averia_materiales_hint">
+            android:hint="@string/averia_hora_inicio_hint">
 
             <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/etMateriales"
+                android:id="@+id/etHoraInicio"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="textCapSentences|textMultiLine"
-                android:minLines="2" />
+                android:inputType="time" />
         </com.google.android.material.textfield.TextInputLayout>
 
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilHoraFinal"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:hint="@string/averia_hora_fin_hint">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etHoraFin"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="time" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Kilometrajes -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilKmInicio"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:hint="@string/averia_km_inicio_hint">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etKmInicio"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="numberDecimal" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilKmFinal"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:hint="@string/averia_km_fin_hint">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etKmFinal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="numberDecimal" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Autocomplete de materiales -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilMaterialBuscar"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:hint="@string/averia_materiales_autocomplete_hint">
+
+            <AutoCompleteTextView
+                android:id="@+id/actvMaterial"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="none" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Chips de materiales -->
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/chipGroupMateriales"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:isSingleLine="false"
+            app:singleLine="false"
+            app:singleSelection="false" />
+
+        <!-- Botones -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

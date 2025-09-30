@@ -33,6 +33,10 @@ data class AveriaEntity(
     val fechaInicioMillis: Long = 0L,
     val horaInicioMillis: Long? = null,
     val horaFinalMillis: Long? = null,
+    val atencionHoraInicioMillis: Long? = null,
+    val atencionHoraFinalMillis: Long? = null,
+    val kilometrajeInicio: Double? = null,
+    val kilometrajeFinal: Double? = null,
     val agenciaTag: String = "",
     val vehiculoAsignado: String? = null,
     val tecnicoAsignadoUid: String? = null,
@@ -40,12 +44,41 @@ data class AveriaEntity(
     val atendidoPorUid: String? = null,
     val atendidoPorNombre: String? = null,
     val materialesTexto: String? = null,
+    val materialesDetalleJson: String? = null, // ✅ campo nuevo unificado
     val isSynced: Boolean = true,
     val lastUpdated: Long = 0L
 ) {
     constructor() : this(
-        "", null, null, null, null, null, null, null,
-        "", null, null, null, null, null, 0L, null, null,
-        "", null, null, null, null, null, null, true, 0L
+        caseId = "",
+        region = null,
+        provincia = null,
+        agencia = null,
+        nombreAgencia = null,
+        nise = null,
+        causa = null,
+        observaciones = null,
+        estado = "",
+        idEstadoAve = null,
+        idEstadoAranda = null,
+        lat = null,
+        lng = null,
+        clientesAfectados = null,
+        fechaInicioMillis = 0L,
+        horaInicioMillis = null,
+        horaFinalMillis = null,
+        atencionHoraInicioMillis = null,
+        atencionHoraFinalMillis = null,
+        kilometrajeInicio = null,
+        kilometrajeFinal = null,
+        agenciaTag = "",
+        vehiculoAsignado = null,
+        tecnicoAsignadoUid = null,
+        tecnicoAsignadoNombre = null,
+        atendidoPorUid = null,
+        atendidoPorNombre = null,
+        materialesTexto = null,
+        materialesDetalleJson = null, // ✅ también en constructor vacío
+        isSynced = true,
+        lastUpdated = 0L
     )
 }

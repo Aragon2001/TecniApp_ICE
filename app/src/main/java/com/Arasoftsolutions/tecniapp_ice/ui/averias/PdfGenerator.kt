@@ -1,141 +1,129 @@
 package com.Arasoftsolutions.tecniapp_ice.ui.averias
 
 import android.content.Context
-import android.graphics.Color
+import android.content.Intent
+import android.graphics.Paint
+import android.graphics.Typeface
 import android.graphics.pdf.PdfDocument
-import android.os.Environment
+import android.net.Uri
 import android.widget.Toast
-import kotlinx.coroutines.CoroutineScope
+import androidx.core.content.FileProvider
+import com.Arasoftsolutions.tecniapp_ice.R
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Date
+import java.util.Locale
 
 object PdfGenerator {
+    private const val PAGE_WIDTH = 595  // A4 px
+    private const val PAGE_HEIGHT = 842
 
-    fun generarPDF(context: Context, averia: AveriaUI) {
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                val doc = PdfDocument()
-                val pageInfo = PdfDocument.PageInfo.Builder(595, 842, 1).create() // A4
-                val page = doc.startPage(pageInfo)
-                val canvas = page.canvas
+    suspend fun exportAveria(context: Context, item: AveriaUI) = withContext(Dispatchers.IO) {
+        val document = PdfDocument()
+        try {
+            val pageInfo = PdfDocument.PageInfo.Builder(PAGE_WIDTH, PAGE_HEIGHT, 1).create()
+            val page = document.startPage(pageInfo)
+            val canvas = page.canvas
 
-                // 🎨 Estilos
-                val titlePaint = android.graphics.Paint().apply {
-                    color = Color.rgb(33, 150, 243) // Azul ICE
-                    textSize = 22f
-                    isFakeBoldText = true
-                }
-
-                val subTitlePaint = android.graphics.Paint().apply {
-                    color = Color.DKGRAY
-                    textSize = 16f
-                    isFakeBoldText = true
-                }
-
-                val textPaint = android.graphics.Paint().apply {
-                    color = Color.BLACK
-                    textSize = 14f
-                }
-
-                val linePaint = android.graphics.Paint().apply {
-                    color = Color.LTGRAY
-                    strokeWidth = 2f
-                }
-
-                var y = 60
-
-                // 🟦 Encabezado
-                canvas.drawText("TecniApp ICE", 40f, y.toFloat(), titlePaint)
-                y += 30
-                canvas.drawText("Reporte de Avería", 40f, y.toFloat(), subTitlePaint)
-                y += 20
-
-                canvas.drawLine(40f, y.toFloat(), 555f, y.toFloat(), linePaint)
-                y += 30
-
-                // 📝 Información general
-                val formatterEvento = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
-                val fecha = formatterEvento.format(Date(averia.fechaMillis))
-
-                canvas.drawText("Caso: ${averia.id}", 40f, y.toFloat(), textPaint); y += 20
-                canvas.drawText("Fecha: $fecha", 40f, y.toFloat(), textPaint); y += 20
-                canvas.drawText("Estado: ${averia.estado}", 40f, y.toFloat(), textPaint); y += 20
-                canvas.drawText("Descripción: ${averia.descripcion}", 40f, y.toFloat(), textPaint); y += 20
-                canvas.drawText("Causa: ${averia.causa}", 40f, y.toFloat(), textPaint); y += 20
-
-                canvas.drawLine(40f, y.toFloat(), 555f, y.toFloat(), linePaint); y += 30
-
-                // 👷 Información de atención
-                canvas.drawText("Asignado a: ${averia.tecnico}", 40f, y.toFloat(), textPaint); y += 20
-                canvas.drawText("Agencia: ${averia.agencia}", 40f, y.toFloat(), textPaint); y += 20
-                canvas.drawText("Región: ${averia.region}", 40f, y.toFloat(), textPaint); y += 20
-                canvas.drawText("Zona: ${averia.zonaTag}", 40f, y.toFloat(), textPaint); y += 20
-
-                canvas.drawLine(40f, y.toFloat(), 555f, y.toFloat(), linePaint); y += 30
-
-                // 🌎 Localización
-                canvas.drawText("NISE: ${averia.nise}", 40f, y.toFloat(), textPaint); y += 20
-                canvas.drawText("Coordenadas: ${averia.lat}, ${averia.lng}", 40f, y.toFloat(), textPaint); y += 20
-
-                canvas.drawLine(40f, y.toFloat(), 555f, y.toFloat(), linePaint); y += 30
-
-                // 🗒️ Observaciones
-                canvas.drawText("Observaciones:", 40f, y.toFloat(), subTitlePaint); y += 20
-                val obsLines = dividirTexto(averia.observaciones, 80)
-                for (line in obsLines) {
-                    canvas.drawText(line, 60f, y.toFloat(), textPaint)
-                    y += 18
-                }
-
-                // 📌 Pie de página
-                y = 800
-                canvas.drawLine(40f, y.toFloat(), 555f, y.toFloat(), linePaint)
-                y += 20
-                canvas.drawText("Generado automáticamente por TecniApp ICE", 40f, y.toFloat(), textPaint)
-
-                doc.finishPage(page)
-
-                // 📂 Guardar archivo
-                val formatterFile = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault())
-                val fileName = "averia_${averia.id}_${formatterFile.format(Date())}.pdf"
-                val dir = File(context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), "Averias")
-                if (!dir.exists()) dir.mkdirs()
-                val file = File(dir, fileName)
-
-                FileOutputStream(file).use { out ->
-                    doc.writeTo(out)
-                }
-                doc.close()
-
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(context, "PDF generado: ${file.absolutePath}", Toast.LENGTH_LONG).show()
-                }
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(context, "Error generando PDF: ${e.message}", Toast.LENGTH_LONG).show()
-                }
+            val titlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                textSize = 18f
             }
-        }
-    }
+            val bodyPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { textSize = 14f }
 
-    private fun dividirTexto(texto: String, maxLength: Int): List<String> {
-        if (texto.isBlank()) return listOf("—")
-        val words = texto.split(" ")
-        val lines = mutableListOf<String>()
-        var currentLine = ""
-        for (word in words) {
-            if ((currentLine + word).length > maxLength) {
-                lines.add(currentLine.trim())
-                currentLine = ""
+            var y = 40f
+            fun drawLine(text: String, bold: Boolean = false) {
+                val paint = if (bold) titlePaint else bodyPaint
+                canvas.drawText(text, 40f, y, paint)
+                y += if (bold) 28f else 22f
             }
-            currentLine += "$word "
+
+            val formatter = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+            fun formatMillis(millis: Long?): String? =
+                millis?.takeIf { it > 0 }?.let { formatter.format(Date(it)) }
+
+            val reporteGenerado = formatter.format(Date())
+            val fechaEvento = formatMillis(item.fechaMillis)
+            val inicioAtencion = formatMillis(item.horaAtencionInicio)
+            val finAtencion = formatMillis(item.horaAtencionFinal)
+
+            // Contenido del reporte
+            drawLine(context.getString(R.string.averia_reporte_titulo), true)
+            drawLine(context.getString(R.string.averia_caso_format, item.id), true)
+            drawLine(context.getString(R.string.averia_nise_format, item.nise))
+            drawLine(context.getString(R.string.averia_asignado_a,
+                item.tecnico.ifBlank { context.getString(R.string.averia_sin_asignar) }))
+            drawLine(context.getString(R.string.averia_atendido_por_format,
+                item.atendidoPor.ifBlank { "—" }))
+            drawLine(context.getString(R.string.averia_vehiculo_format, item.vehiculo ?: "—"))
+            drawLine(context.getString(R.string.averia_estado_pdf, item.estado))
+            fechaEvento?.let {
+                drawLine(context.getString(R.string.averia_reporte_fecha_evento, it))
+            }
+            inicioAtencion?.let {
+                drawLine(context.getString(R.string.averia_reporte_atencion_inicio, it))
+            }
+            finAtencion?.let {
+                drawLine(context.getString(R.string.averia_reporte_atencion_fin, it))
+            }
+            if (item.kilometrajeInicio != null || item.kilometrajeFinal != null) {
+                val inicioKm = item.kilometrajeInicio?.toString() ?: "—"
+                val finKm = item.kilometrajeFinal?.toString() ?: "—"
+                drawLine(context.getString(R.string.averia_kilometraje_label, inicioKm, finKm))
+            }
+            drawLine(context.getString(R.string.averia_reporte_region, item.region))
+            drawLine(context.getString(R.string.averia_reporte_agencia, item.agencia))
+            drawLine(context.getString(R.string.averia_reporte_causa, item.causa.ifBlank { "—" }))
+            drawLine(context.getString(R.string.averia_reporte_obs, item.observaciones.ifBlank { "—" }))
+            drawLine(context.getString(R.string.averia_reporte_materiales, item.materialesResumen.ifBlank { "—" }))
+            if (item.lat == 0.0 && item.lng == 0.0) {
+                drawLine(context.getString(R.string.averia_reporte_coordenadas_sin_datos))
+            } else {
+                drawLine(context.getString(R.string.averia_reporte_coordenadas, item.lat, item.lng))
+            }
+            drawLine(context.getString(R.string.averia_reporte_generado, reporteGenerado))
+
+            document.finishPage(page)
+
+            // Guardar PDF
+            val reportsDir = File(context.getExternalFilesDir(null), "TecniApp/Reportes")
+            if (!reportsDir.exists()) reportsDir.mkdirs()
+            val fileNameFormatter = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault())
+            val fileName = "averia_${item.id}_${fileNameFormatter.format(Date())}.pdf"
+            val file = File(reportsDir, fileName)
+            FileOutputStream(file).use { output ->
+                document.writeTo(output)
+            }
+
+            // Compartir PDF
+            withContext(Dispatchers.Main) {
+                Toast.makeText(context,
+                    context.getString(R.string.averia_export_success, fileName),
+                    Toast.LENGTH_LONG).show()
+                val uri: Uri = FileProvider.getUriForFile(
+                    context, context.packageName + ".fileprovider", file
+                )
+                val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                    type = "application/pdf"
+                    putExtra(Intent.EXTRA_STREAM, uri)
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                }
+                context.startActivity(
+                    Intent.createChooser(shareIntent,
+                        context.getString(R.string.averia_export_share_title))
+                )
+            }
+        } catch (t: Throwable) {
+            withContext(Dispatchers.Main) {
+                Toast.makeText(context,
+                    context.getString(R.string.averia_export_error),
+                    Toast.LENGTH_LONG).show()
+            }
+        } finally {
+            document.close()
         }
-        if (currentLine.isNotBlank()) lines.add(currentLine.trim())
-        return lines
     }
 }

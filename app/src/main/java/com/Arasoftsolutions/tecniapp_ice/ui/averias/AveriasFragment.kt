@@ -15,8 +15,6 @@ import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.Arasoftsolutions.tecniapp_ice.R
 import com.Arasoftsolutions.tecniapp_ice.databinding.FragmentAveriasBinding
-import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriaDetalleBottomSheet
-import com.Arasoftsolutions.tecniapp_ice.ui.averias.PdfGenerator
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -49,6 +47,13 @@ class AveriasFragment : Fragment() {
             layoutManager = LinearLayoutManager(requireContext())
             adapter = this@AveriasFragment.adapter
             addItemDecoration(DividerItemDecoration(context, DividerItemDecoration.VERTICAL))
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            vm.usuarioActual.collectLatest { user ->
+                adapter.currentUserUid = user?.uid
+                adapter.notifyDataSetChanged()
+            }
         }
 
         // Pull to refresh → Sync
@@ -110,8 +115,7 @@ class AveriasFragment : Fragment() {
         when (Estado.fromLabel(item.estado)) {
             Estado.EN_ATENCION -> showDetalle(item)
             Estado.RESUELTA -> viewLifecycleOwner.lifecycleScope.launch {
-                PdfGenerator.generarPDF(requireContext(), item)
-
+                PdfGenerator.exportAveria(requireContext(), item)
             }
             else -> showDetalle(item)
         }
