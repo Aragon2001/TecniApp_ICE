@@ -118,12 +118,14 @@ class AveriasAdapter(
             tvNise.text = "NISE: ${item.nise}"
             tvRegion.text = "Región: ${item.region}"
             tvAgencia.text = "Agencia: ${item.agencia}"
+
+            // Materiales y kilometrajes
             tvMateriales.visibility = if (item.materialesResumen.isBlank()) View.GONE else View.VISIBLE
             tvMateriales.text = itemView.context.getString(R.string.averia_materiales_label, item.materialesResumen)
             if (item.kilometrajeInicio != null || item.kilometrajeFinal != null) {
                 tvKilometraje.visibility = View.VISIBLE
-                val inicio = item.kilometrajeInicio?.let { "${it}" } ?: "—"
-                val fin = item.kilometrajeFinal?.let { "${it}" } ?: "—"
+                val inicio = item.kilometrajeInicio?.toString() ?: "—"
+                val fin = item.kilometrajeFinal?.toString() ?: "—"
                 tvKilometraje.text = itemView.context.getString(R.string.averia_kilometraje_label, inicio, fin)
             } else {
                 tvKilometraje.visibility = View.GONE
@@ -134,12 +136,10 @@ class AveriasAdapter(
             val fechaEvento = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT)
                 .format(Date(item.fechaMillis))
             val inicioAtencion = item.horaAtencionInicio?.let {
-                DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT)
-                    .format(Date(it))
+                DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(Date(it))
             }
             val finAtencion = item.horaAtencionFinal?.let {
-                DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT)
-                    .format(Date(it))
+                DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(Date(it))
             }
             tvFecha.text = buildString {
                 append(itemView.context.getString(R.string.averia_fecha_evento_label, fechaEvento))
@@ -153,6 +153,7 @@ class AveriasAdapter(
                 }
             }
 
+            // Colores por estado
             val estadoEnum = Estado.fromLabel(item.estado)
             val chipColor = when (estadoEnum) {
                 Estado.PENDIENTE -> R.color.chip_pendiente
@@ -171,6 +172,7 @@ class AveriasAdapter(
 
             val currentUid = currentUserUid
             val pertenece = currentUid != null && item.tecnicoUid == currentUid
+
             when (estadoEnum) {
                 Estado.PENDIENTE -> {
                     btnAsignar.text = itemView.context.getString(R.string.averia_asignar)

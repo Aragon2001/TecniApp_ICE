@@ -55,7 +55,7 @@ class AveriasRepository(private val db: AppDatabase) {
         val normalized = (nombreAgencia ?: "").lowercase(Locale.ROOT)
         val isHuetarAtlantica =
             (region ?: "").contains("huetar atl", ignoreCase = true) ||
-                (region ?: "").contains("atlánt", ignoreCase = true)
+            (region ?: "").contains("atlánt", ignoreCase = true)
         return when {
             normalized.contains("guápiles") || normalized.contains("guapiles") -> "Guapiles"
             normalized.contains("guácimo") || normalized.contains("guacimo") -> "Guacimo"
@@ -107,6 +107,7 @@ class AveriasRepository(private val db: AppDatabase) {
             atendidoPorUid = null,
             atendidoPorNombre = null,
             materialesTexto = null,
+            materialesDetalleJson = null,
             isSynced = true,
             lastUpdated = System.currentTimeMillis()
         )
