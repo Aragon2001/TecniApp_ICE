@@ -4,12 +4,18 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.io.Serializable
 
+/**
+ * Representa un material utilizado en la atención de una avería.
+ */
 data class MaterialUso(
     val codigo: String,
     val descripcion: String,
     val cantidad: Int
 ) : Serializable
 
+/**
+ * Datos de acción al atender/cerrar una avería.
+ */
 data class AveriaActionData(
     val causa: String,
     val observaciones: String?,
@@ -23,14 +29,17 @@ data class AveriaActionData(
     val kilometrajeFinal: Double?
 )
 
+/**
+ * Utilidad para serializar/deserializar materiales.
+ */
 object MaterialesSerializer {
 
     fun toSummary(materiales: List<MaterialUso>): String =
         materiales.filter { it.cantidad > 0 }
             .joinToString(separator = ", ") { uso ->
                 val cantidad = uso.cantidad
-                val descripcion = uso.descripcion.ifBlank { uso.codigo }
-                if (cantidad <= 1) descripcion else "${cantidad}x $descripcion"
+                val desc = uso.descripcion.ifBlank { uso.codigo }
+                if (cantidad <= 1) desc else "${cantidad}x $desc"
             }
 
     fun toJson(materiales: List<MaterialUso>): String? {
@@ -58,11 +67,11 @@ object MaterialesSerializer {
                     val codigo = obj.optString("codigo")
                     val descripcion = obj.optString("descripcion")
                     val cantidad = obj.optInt("cantidad", 0)
-                    if (codigo.isNullOrBlank() || cantidad <= 0) continue
+                    if (codigo.isBlank() || cantidad <= 0) continue
                     add(MaterialUso(codigo, descripcion, cantidad))
                 }
             }
-        } catch (t: Throwable) {
+        } catch (_: Throwable) {
             emptyList()
         }
     }

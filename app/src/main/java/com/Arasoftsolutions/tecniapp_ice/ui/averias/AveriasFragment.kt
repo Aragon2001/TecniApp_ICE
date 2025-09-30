@@ -15,8 +15,6 @@ import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.Arasoftsolutions.tecniapp_ice.R
 import com.Arasoftsolutions.tecniapp_ice.databinding.FragmentAveriasBinding
-import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriaDetalleBottomSheet
-import com.Arasoftsolutions.tecniapp_ice.ui.averias.PdfGenerator
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch

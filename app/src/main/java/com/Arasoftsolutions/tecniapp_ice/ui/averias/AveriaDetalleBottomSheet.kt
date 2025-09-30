@@ -41,6 +41,7 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
         super.onViewCreated(view, savedInstanceState)
         var estado = Estado.fromLabel(item.estado)
 
+        // Datos principales
         b.tvCaso.text = getString(R.string.averia_caso_format, item.id)
         b.tvNise.text = getString(R.string.averia_nise_format, item.nise)
         b.tvAgencia.text = item.agencia
@@ -49,8 +50,15 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
         b.tvAsignado.text = getString(R.string.averia_asignado_a, item.tecnico.ifBlank { getString(R.string.averia_sin_asignar) })
         b.tvAtendido.text = getString(R.string.averia_atendido_por_format, item.atendidoPor.ifBlank { "—" })
         b.tvVehiculo.text = getString(R.string.averia_vehiculo_format, item.vehiculo ?: "—")
+
+        // Materiales
+        materialesModificados = false
+        item.materialesDetalle.forEach { uso ->
+            materialesSeleccionados[uso.codigo] = uso
+        }
         renderMateriales()
 
+        // Vehículos
         val nombreActual = vm.nombreTecnicoActual()
         val vehiculoActual = item.vehiculo ?: vm.vehiculoPreferido()
 
@@ -67,6 +75,7 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
         b.tilCausa.error = null
         b.etCausa.doAfterTextChanged { b.tilCausa.error = null }
 
+        // Vehículos disponibles
         viewLifecycleOwner.lifecycleScope.launch {
             vm.vehiculosDisponibles.collectLatest { vehiculos ->
                 val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, vehiculos)
@@ -74,12 +83,7 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
             }
         }
 
-        materialesModificados = false
-        item.materialesDetalle.forEach { uso ->
-            materialesSeleccionados[uso.codigo] = uso
-        }
-        renderMateriales()
-
+        // Materiales disponibles
         viewLifecycleOwner.lifecycleScope.launch {
             vm.materialesDisponibles.collectLatest { lista ->
                 materialesCatalogo = lista
@@ -95,6 +99,7 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
             b.actvMaterial.setText("", false)
         }
 
+        // Botones de acciones
         b.btnAsignar.text = when (estado) {
             Estado.PENDIENTE -> getString(R.string.averia_asignar)
             Estado.ASIGNADA -> getString(R.string.averia_eliminar_asignacion)

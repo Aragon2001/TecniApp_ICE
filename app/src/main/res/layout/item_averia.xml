@@ -198,6 +198,7 @@
             app:layout_constraintTop_toBottomOf="@id/tvCoords"
             tools:text="Evento: 01/01/2025" />
 
+        <!-- Botones -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnVer"
             style="@style/Widget.Material3.Button.TextButton"
@@ -240,5 +241,6 @@
             android:text="@string/averia_resolver"
             app:layout_constraintBaseline_toBaselineOf="@id/btnAsignar"
             app:layout_constraintEnd_toEndOf="parent" />
+
     </androidx.constraintlayout.widget.ConstraintLayout>
 </com.google.android.material.card.MaterialCardView>

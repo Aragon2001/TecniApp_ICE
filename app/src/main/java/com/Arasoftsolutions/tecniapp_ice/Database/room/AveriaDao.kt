@@ -125,8 +125,8 @@ interface AveriaDao {
           atencionHoraFinalMillis = NULL,
           kilometrajeInicio = NULL,
           kilometrajeFinal = NULL,
-          lastUpdated = :lastUpdated,
           materialesDetalleJson = NULL,
+          lastUpdated = :lastUpdated,
           isSynced = 0
         WHERE caseId = :caseId
         """
