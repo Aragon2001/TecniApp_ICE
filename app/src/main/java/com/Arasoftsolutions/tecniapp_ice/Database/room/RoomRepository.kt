@@ -36,26 +36,18 @@ class RoomRepository(context: Context) {
 
     fun observarMateriales(): Flow<List<MaterialEntity>> =
         db.materialDao().observarMateriales()
-    /** busca un medidor por numero */
 
-suspend fun buscarMedidorPorNumero(numero: String): MedidorEntity? {
-    return db.medidorDao().buscarPorNumero(numero)
-}
-/** inserta un medidor */
-suspend fun insertarMedidor(entity: MedidorEntity) {
-    db.medidorDao().insertAll(listOf(entity))
-}
+    suspend fun buscarMedidorPorNumero(numero: String): MedidorEntity? =
+        db.medidorDao().buscarPorNumero(numero)
 
-    /** Obtiene un usuario almacenado localmente por su UID. */
-  suspend fun obtenerUsuario(uid: String): UserEntity? =
-    db.usuarioDao().getByUid(uid)
+    suspend fun insertarMedidor(entity: MedidorEntity) {
+        db.medidorDao().insertAll(listOf(entity))
+    }
+
+    suspend fun obtenerUsuario(uid: String): UserEntity? =
+        db.usuarioDao().getByUid(uid)
 
     // ----- Sincronización -----
-    /**
-     * Descarga los datos de la subregión indicada desde Firebase y los
-     * guarda en Room reemplazando los existentes. El callback de progreso es
-     * opcional y se utiliza para informar al usuario.
-     */
     suspend fun syncSubregion(
         subregionId: String,
         progress: (done: Int, total: Int, msg: String?) -> Unit = { _, _, _ -> }
@@ -65,49 +57,45 @@ suspend fun insertarMedidor(entity: MedidorEntity) {
 
         // Si quieres transacción atómica, descomenta y usa withTransaction:
         // db.withTransaction {
-            val agencias = firebase.obtenerAgencias(subregionId)
-            db.agenciaDao().insertAll(agencias)
-            progress(++done, total, "Agencias")
+        val agencias = firebase.obtenerAgencias(subregionId)
+        db.agenciaDao().insertAll(agencias)
+        progress(++done, total, "Agencias")
 
-            val pueblos = firebase.obtenerPueblos(subregionId)
-            db.puebloDao().insertAll(pueblos)
-            progress(++done, total, "Pueblos")
+        val pueblos = firebase.obtenerPueblos(subregionId)
+        db.puebloDao().insertAll(pueblos)
+        progress(++done, total, "Pueblos")
 
-            val localizaciones = firebase.obtenerLocalizaciones(subregionId)
-            db.localizacionDao().insertAll(localizaciones)
-            progress(++done, total, "Localizaciones")
+        val localizaciones = firebase.obtenerLocalizaciones(subregionId)
+        db.localizacionDao().insertAll(localizaciones)
+        progress(++done, total, "Localizaciones")
 
-            val vehiculos = firebase.obtenerVehiculos(subregionId)
-            db.vehiculoDao().insertAll(vehiculos)
-            progress(++done, total, "Vehículos")
+        val vehiculos = firebase.obtenerVehiculos(subregionId)
+        db.vehiculoDao().insertAll(vehiculos)
+        progress(++done, total, "Vehículos")
 
-            val medidores = firebase.obtenerMedidores(subregionId)
-            db.medidorDao().insertAll(medidores)
-            progress(++done, total, "Medidores")
+        val medidores = firebase.obtenerMedidores(subregionId)
+        db.medidorDao().insertAll(medidores)
+        progress(++done, total, "Medidores")
         // }
     }
 
-    /**
-     * Obtiene un usuario desde Firebase por su UID y lo almacena en la base
-     * de datos local. Devuelve la entidad almacenada.
-     */
     suspend fun upsertUserFromFirebase(uid: String): UserEntity = withContext(Dispatchers.IO) {
         val user = firebase.obtenerUsuario(uid)
             ?: throw IllegalStateException("Usuario no encontrado en Firebase")
         db.usuarioDao().upsert(user)
         user
     }
-    companion object {
-    @Volatile
-    private var INSTANCE: RoomRepository? = null
 
-    fun getInstance(context: Context): RoomRepository {
-        return INSTANCE ?: synchronized(this) {
-            INSTANCE ?: RoomRepository(context.applicationContext).also {
-                INSTANCE = it
+    companion object {
+        @Volatile
+        private var INSTANCE: RoomRepository? = null
+
+        fun getInstance(context: Context): RoomRepository {
+            return INSTANCE ?: synchronized(this) {
+                INSTANCE ?: RoomRepository(context.applicationContext).also {
+                    INSTANCE = it
+                }
             }
         }
     }
-}
-
 }
