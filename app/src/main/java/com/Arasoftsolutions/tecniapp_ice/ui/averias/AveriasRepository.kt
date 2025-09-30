@@ -23,7 +23,7 @@ class AveriasRepository(private val db: AppDatabase) {
 
     private val dao get() = db.averiaDao()
     private val firebaseRef = FirebaseDatabase
-        .getInstance("https://tecniapp-ice-default-rtdb.firebaseio.com")
+        .getInstance("https://averias.firebaseio.com")
         .reference
         .child("averias")
 
@@ -303,6 +303,8 @@ class AveriasRepository(private val db: AppDatabase) {
             }
             if (updated.isNotEmpty()) {
                 dao.upsertAll(updated)
+            } else {
+
             }
         } catch (t: Throwable) {
             Log.e(TAG, "Firebase pull failed", t)
