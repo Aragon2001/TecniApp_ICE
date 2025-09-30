@@ -91,8 +91,8 @@ object PdfGenerator {
 
       val reportsDir = File(context.getExternalFilesDir(null), "TecniApp/Reportes")
       if (!reportsDir.exists()) reportsDir.mkdirs()
-      val formatter = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault())
-      val fileName = "averia_${item.id}_${formatter.format(Date())}.pdf"
+      val fileNameFormatter = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault())
+      val fileName = "averia_${item.id}_${fileNameFormatter.format(Date())}.pdf"
       val file = File(reportsDir, fileName)
       FileOutputStream(file).use { output ->
         document.writeTo(output)

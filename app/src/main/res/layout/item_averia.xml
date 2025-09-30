@@ -6,27 +6,26 @@
     android:layout_height="wrap_content"
     android:layout_marginHorizontal="12dp"
     android:layout_marginVertical="8dp"
+    app:cardBackgroundColor="@color/glass_light"
     app:cardCornerRadius="16dp"
     app:cardUseCompatPadding="true"
-    app:strokeWidth="1dp"
     app:strokeColor="@color/outline_soft"
-    app:cardBackgroundColor="@color/glass_light">
+    app:strokeWidth="1dp">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:padding="12dp">
 
-        <!-- Título / Estado -->
         <TextView
             android:id="@+id/tvTitulo"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="@color/on_light"
             android:textSize="16sp"
             android:textStyle="bold"
-            android:textColor="@color/on_light"
-            android:maxLines="1"
-            android:ellipsize="end"
             app:layout_constraintEnd_toStartOf="@+id/chipEstado"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
@@ -36,20 +35,17 @@
             style="@style/Tecni.Chip.Pendiente"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Pendiente"
+            android:text="@string/estado_pendiente"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="@id/tvTitulo" />
 
-        <!-- Miniatura de mapa -->
-
-        <!-- Causa -->
         <ImageView
             android:id="@+id/imgMapa"
             android:layout_width="100dp"
             android:layout_height="100dp"
             android:layout_marginTop="68dp"
             android:background="@drawable/bg_rounded_mapa"
-            android:contentDescription="Mapa de ubicación"
+            android:contentDescription="@string/averia_ver_mapa"
             android:scaleType="centerCrop"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@id/tvTitulo" />
@@ -59,207 +55,190 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
-            android:textSize="14sp"
             android:textColor="@color/on_light"
+            android:textSize="14sp"
             app:layout_constraintEnd_toStartOf="@id/imgMapa"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/chipEstado" />
 
-        <!-- Observaciones -->
         <TextView
             android:id="@+id/tvObs"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
-            android:textSize="13sp"
-            android:textColor="@color/on_light"
-            android:maxLines="3"
             android:ellipsize="end"
-            app:layout_constraintTop_toBottomOf="@id/tvCausa"
+            android:maxLines="3"
+            android:textColor="@color/on_light"
+            android:textSize="13sp"
+            app:layout_constraintEnd_toStartOf="@id/imgMapa"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toStartOf="@id/imgMapa" />
+            app:layout_constraintTop_toBottomOf="@id/tvCausa" />
 
-        <!-- Datos en TextViews -->
         <TextView
             android:id="@+id/tvCaso"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
-            android:text="Caso: 12345"
-            android:textSize="13sp"
             android:textColor="@color/on_light"
-            app:layout_constraintTop_toBottomOf="@id/tvObs"
+            android:textSize="13sp"
+            app:layout_constraintEnd_toStartOf="@id/imgMapa"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toStartOf="@id/imgMapa" />
+            app:layout_constraintTop_toBottomOf="@id/tvObs"
+            tools:text="Caso: 12345" />
 
         <TextView
             android:id="@+id/tvAsignado"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="Asignado a: Juan Pérez"
-            android:textSize="13sp"
             android:textColor="@color/on_light"
-            app:layout_constraintTop_toBottomOf="@id/tvCaso"
+            android:textSize="13sp"
+            app:layout_constraintEnd_toStartOf="@id/imgMapa"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toStartOf="@id/imgMapa" />
+            app:layout_constraintTop_toBottomOf="@id/tvCaso"
+            tools:text="Asignado a: Juan Pérez" />
 
         <TextView
             android:id="@+id/tvAtendido"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="Atendido por: —"
-            android:textSize="13sp"
             android:textColor="@color/on_light"
-            app:layout_constraintTop_toBottomOf="@id/tvAsignado"
+            android:textSize="13sp"
+            app:layout_constraintEnd_toStartOf="@id/imgMapa"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toStartOf="@id/imgMapa" />
+            app:layout_constraintTop_toBottomOf="@id/tvAsignado"
+            tools:text="Atendido por: —" />
 
         <TextView
             android:id="@+id/tvVehiculo"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="Vehículo: —"
-            android:textSize="13sp"
             android:textColor="@color/on_light"
-            app:layout_constraintTop_toBottomOf="@id/tvAtendido"
+            android:textSize="13sp"
+            app:layout_constraintEnd_toStartOf="@id/imgMapa"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toStartOf="@id/imgMapa" />
+            app:layout_constraintTop_toBottomOf="@id/tvAtendido"
+            tools:text="Vehículo: ICE-001" />
 
         <TextView
             android:id="@+id/tvNise"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="NISE: 4830817001"
-            android:textSize="13sp"
             android:textColor="@color/on_light"
-            app:layout_constraintTop_toBottomOf="@id/tvVehiculo"
+            android:textSize="13sp"
+            app:layout_constraintEnd_toStartOf="@id/imgMapa"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toStartOf="@id/imgMapa" />
+            app:layout_constraintTop_toBottomOf="@id/tvVehiculo"
+            tools:text="NISE: 4830817001" />
 
         <TextView
             android:id="@+id/tvRegion"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="Región: Guápiles"
-            android:textSize="13sp"
             android:textColor="@color/on_light"
-            app:layout_constraintTop_toBottomOf="@id/tvNise"
+            android:textSize="13sp"
+            app:layout_constraintEnd_toStartOf="@id/imgMapa"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toStartOf="@id/imgMapa" />
+            app:layout_constraintTop_toBottomOf="@id/tvNise"
+            tools:text="Región: Guápiles" />
 
         <TextView
             android:id="@+id/tvAgencia"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="Agencia: Guácimo"
-            android:textSize="13sp"
             android:textColor="@color/on_light"
-            app:layout_constraintTop_toBottomOf="@id/tvRegion"
+            android:textSize="13sp"
+            app:layout_constraintEnd_toStartOf="@id/imgMapa"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toStartOf="@id/imgMapa" />
+            app:layout_constraintTop_toBottomOf="@id/tvRegion"
+            tools:text="Agencia: Guácimo" />
 
         <TextView
             android:id="@+id/tvMateriales"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:textSize="13sp"
             android:textColor="@color/on_light"
+            android:textSize="13sp"
             android:visibility="gone"
-            app:layout_constraintTop_toBottomOf="@id/tvAgencia"
+            app:layout_constraintEnd_toStartOf="@id/imgMapa"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toStartOf="@id/imgMapa" />
+            app:layout_constraintTop_toBottomOf="@id/tvAgencia"
+            tools:text="Materiales: Cable x3" />
 
         <TextView
             android:id="@+id/tvKilometraje"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:textSize="13sp"
             android:textColor="@color/on_light"
+            android:textSize="13sp"
             android:visibility="gone"
-            app:layout_constraintTop_toBottomOf="@id/tvMateriales"
+            app:layout_constraintEnd_toStartOf="@id/imgMapa"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toStartOf="@id/imgMapa" />
+            app:layout_constraintTop_toBottomOf="@id/tvMateriales"
+            tools:text="Kilometraje: 12000 → 12050" />
 
-        <!-- Coordenadas y Fecha -->
         <TextView
             android:id="@+id/tvCoords"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="Coords: X,Y"
-            android:textSize="12sp"
             android:textColor="@color/dark_gray"
-            app:layout_constraintTop_toBottomOf="@id/tvKilometraje"
+            android:textSize="12sp"
+            app:layout_constraintEnd_toStartOf="@id/imgMapa"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toStartOf="@id/imgMapa" />
+            app:layout_constraintTop_toBottomOf="@id/tvKilometraje"
+            tools:text="Coords: 10.1234, -84.0987" />
 
         <TextView
             android:id="@+id/tvFecha"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="Fecha: 2025-09-25"
-            android:textSize="12sp"
             android:textColor="@color/dark_gray"
-            app:layout_constraintTop_toBottomOf="@id/tvCoords"
+            android:textSize="12sp"
+            app:layout_constraintEnd_toStartOf="@id/imgMapa"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toStartOf="@id/imgMapa" />
+            app:layout_constraintTop_toBottomOf="@id/tvCoords"
+            tools:text="Evento: 01/01/2025" />
 
-        <!-- Botones -->
-        <LinearLayout
-            android:id="@+id/layoutAcciones"
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnVer"
+            style="@style/Widget.Material3.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/averia_cerrar"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tvFecha" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnAsignar"
+            style="@style/Widget.Material3.Button.ElevatedButton"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:gravity="start"
-            android:orientation="horizontal"
-            app:layout_constraintTop_toBottomOf="@id/tvFecha"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            android:text="@string/averia_asignar"
+            app:layout_constraintEnd_toStartOf="@id/btnAtender"
+            app:layout_constraintHorizontal_chainStyle="packed"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent">
+            app:layout_constraintTop_toBottomOf="@id/btnVer" />
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnAsignar"
-                style="@style/Widget.Material3.Button"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Asignar"
-                android:textAllCaps="false"
-                app:backgroundTint="@color/ice_yellow"
-                android:textColor="@color/ice_blue_dark" />
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnAtender"
+            style="@style/Widget.Material3.Button.ElevatedButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="@string/averia_atender"
+            app:layout_constraintBaseline_toBaselineOf="@id/btnAsignar"
+            app:layout_constraintEnd_toStartOf="@id/btnResolver" />
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnAtender"
-                style="@style/Widget.Material3.Button"
-                android:layout_marginStart="12dp"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Atender"
-                android:textAllCaps="false"
-                app:backgroundTint="@color/ice_blue"
-                android:textColor="@color/white" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnResolver"
-                style="@style/Widget.Material3.Button"
-                android:layout_marginStart="12dp"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Resolver"
-                android:textAllCaps="false"
-                app:backgroundTint="@color/ice_blue"
-                android:textColor="@color/white"
-                android:visibility="gone" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnVer"
-                style="@style/Widget.Material3.Button.OutlinedButton"
-                android:layout_marginStart="12dp"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Ver"
-                android:textAllCaps="false"
-                app:strokeColor="@color/ice_blue"
-                android:textColor="@color/ice_blue" />
-        </LinearLayout>
-
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnResolver"
+            style="@style/Widget.Material3.Button.ElevatedButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="@string/averia_resolver"
+            app:layout_constraintBaseline_toBaselineOf="@id/btnAsignar"
+            app:layout_constraintEnd_toEndOf="parent" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 </com.google.android.material.card.MaterialCardView>

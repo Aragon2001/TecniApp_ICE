@@ -9,12 +9,13 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface MaterialDao {
-  @Query("SELECT * FROM materiales ORDER BY descripcion")
-  fun observarMateriales(): Flow<List<MaterialEntity>>
 
-  @Insert(onConflict = OnConflictStrategy.REPLACE)
-  suspend fun insertAll(items: List<MaterialEntity>)
+    @Query("SELECT * FROM materiales ORDER BY descripcion")
+    fun observarMateriales(): Flow<List<MaterialEntity>>
 
-  @Query("SELECT * FROM materiales WHERE codigo = :codigo LIMIT 1")
-  suspend fun obtenerPorCodigo(codigo: String): MaterialEntity?
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(items: List<MaterialEntity>)
+
+    @Query("SELECT * FROM materiales WHERE codigo = :codigo LIMIT 1")
+    suspend fun obtenerPorCodigo(codigo: String): MaterialEntity?
 }
