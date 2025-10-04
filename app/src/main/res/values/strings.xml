@@ -39,7 +39,7 @@
     <string name="estado_asignada">Asignada</string>
     <string name="estado_en_atencion">En atención</string>
     <string name="estado_resuelta">Resuelta</string>
-    <string name="averia_eliminar_asignacion">Eliminar asignación</string>
+    <string name="averia_eliminar_asignacion">Eliminar</string>
     <string name="averia_cancelar_atencion">Cancelar atención</string>
     <string name="averia_resolver">Resolver</string>
     <string name="averia_exportar_pdf">Exportar PDF</string>

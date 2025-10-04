@@ -7,28 +7,29 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface AveriaDao {
 
-    @Query(
-        """
-        SELECT * FROM averias
-        WHERE (:agenciasSize = 0 OR agenciaTag IN (:agencias))
-          AND (:estado = '' OR estado = :estado)
-          AND (
-            :q = '' OR
-            caseId LIKE '%'||:q||'%' OR
-            nombreAgencia LIKE '%'||:q||'%' OR
-            causa LIKE '%'||:q||'%' OR
-            observaciones LIKE '%'||:q||'%' OR
-            clientesAfectados LIKE '%'||:q||'%'
-          )
-        ORDER BY fechaInicioMillis DESC
-        """
-    )
-    fun observe(
-        agencias: List<String>,
-        agenciasSize: Int,
-        estado: String,
-        q: String
-    ): Flow<List<AveriaEntity>>
+@Query(
+    """
+    SELECT * FROM averias
+    WHERE (:agenciasSize = 0 OR agenciaTag IN (:agencias))
+      AND (:estado = '' OR lower(estado) = lower(:estado))
+      AND (
+        :q = '' OR
+        caseId LIKE '%'||:q||'%' OR
+        nombreAgencia LIKE '%'||:q||'%' OR
+        causa LIKE '%'||:q||'%' OR
+        observaciones LIKE '%'||:q||'%' OR
+        clientesAfectados LIKE '%'||:q||'%'
+      )
+    ORDER BY fechaInicioMillis DESC
+    """
+)
+fun observe(
+    agencias: List<String>,
+    agenciasSize: Int,
+    estado: String,
+    q: String
+): Flow<List<AveriaEntity>>
+
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertAll(items: List<AveriaEntity>)
