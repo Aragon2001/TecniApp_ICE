@@ -5,6 +5,7 @@ package com.Arasoftsolutions.tecniapp_ice.Database.room
 
 import androidx.room.*
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.SubregionesEntity
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface SubregionDao {
@@ -15,4 +16,10 @@ interface SubregionDao {
     // Devuelve todas las subregiones disponibles
     @Query("SELECT * FROM subregiones")
     suspend fun getAll(): List<SubregionesEntity>
+
+    @Query("SELECT * FROM subregiones")
+    fun observarTodas(): Flow<List<SubregionesEntity>>
+
+    @Query("SELECT COUNT(*) FROM subregiones")
+    suspend fun count(): Int
 }

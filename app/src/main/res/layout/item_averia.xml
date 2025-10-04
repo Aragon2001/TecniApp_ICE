@@ -202,7 +202,7 @@
         <!-- Botones -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnVer"
-            style="@style/Widget.Material3.Button.TextButton"
+            style="@style/Tecni.Button.Secondary"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
@@ -212,36 +212,39 @@
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnAsignar"
-            style="@style/Widget.Material3.Button.ElevatedButton"
+            style="@style/Tecni.Button.Primary"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
             android:layout_marginTop="8dp"
             android:text="@string/averia_asignar"
             app:layout_constraintEnd_toStartOf="@id/btnAtender"
-            app:layout_constraintHorizontal_chainStyle="packed"
+            app:layout_constraintHorizontal_chainStyle="spreadInside"
+            app:layout_constraintHorizontal_weight="1"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/btnVer" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnAtender"
-            style="@style/Widget.Material3.Button.ElevatedButton"
-            android:layout_width="wrap_content"
+            style="@style/Tecni.Button.Primary"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
             android:text="@string/averia_atender"
             app:layout_constraintBaseline_toBaselineOf="@id/btnAsignar"
-            app:layout_constraintEnd_toStartOf="@id/btnResolver" />
+            app:layout_constraintEnd_toStartOf="@id/btnResolver"
+            app:layout_constraintHorizontal_weight="1" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnResolver"
-            style="@style/Widget.Material3.Button.ElevatedButton"
-            android:layout_width="wrap_content"
+            style="@style/Tecni.Button.Primary"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
             android:text="@string/averia_resolver"
             app:layout_constraintBaseline_toBaselineOf="@id/btnAsignar"
-            app:layout_constraintEnd_toEndOf="parent" />
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_weight="1" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </com.google.android.material.card.MaterialCardView>

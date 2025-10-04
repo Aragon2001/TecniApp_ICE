@@ -17,7 +17,14 @@ interface AgenciaDao {
     @Query("SELECT * FROM agencias")
     suspend fun getAll(): List<AgenciaEntity>
 
+    // Observa todas las agencias almacenadas
+    @Query("SELECT * FROM agencias")
+    fun observarTodas(): Flow<List<AgenciaEntity>>
+
     // Observa las agencias filtradas por subregión
     @Query("SELECT * FROM agencias WHERE subregion = :subregionId")
     fun observarPorSubregion(subregionId: String): Flow<List<AgenciaEntity>>
+
+    @Query("SELECT COUNT(*) FROM agencias")
+    suspend fun count(): Int
 }
