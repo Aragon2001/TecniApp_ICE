@@ -72,15 +72,41 @@ class AveriasFragment : Fragment() {
         }
         b.chipGroupEstado.check(b.chipTodos.id)
 
-        // Dropdown Zonas
+        // Dropdown Regiones
         viewLifecycleOwner.lifecycleScope.launch {
-            vm.zonas.collectLatest { zonas ->
-                val nombres = listOf("Todas") + zonas.map { it.nombreVisible }
-                b.actvZona.setAdapter(ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, nombres))
-                b.actvZona.setText("Todas", false)
+            vm.regiones.collectLatest { regiones ->
+                val nombres = regiones.map { it.nombreVisible }
+                b.actvRegion.setAdapter(
+                    ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, nombres)
+                )
             }
         }
-        b.actvZona.setOnItemClickListener { _, _, position, _ -> vm.setZonaIndex(position) }
+        viewLifecycleOwner.lifecycleScope.launch {
+            vm.regionSeleccionada.collectLatest { region ->
+                if (b.actvRegion.text?.toString() != region.nombreVisible) {
+                    b.actvRegion.setText(region.nombreVisible, false)
+                }
+            }
+        }
+        b.actvRegion.setOnItemClickListener { _, _, position, _ -> vm.setRegionIndex(position) }
+
+        // Dropdown Agencias
+        viewLifecycleOwner.lifecycleScope.launch {
+            vm.agencias.collectLatest { agencias ->
+                val nombres = agencias.map { it.nombreVisible }
+                b.actvAgencia.setAdapter(
+                    ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, nombres)
+                )
+            }
+        }
+        viewLifecycleOwner.lifecycleScope.launch {
+            vm.agenciaSeleccionada.collectLatest { agencia ->
+                if (b.actvAgencia.text?.toString() != agencia.nombreVisible) {
+                    b.actvAgencia.setText(agencia.nombreVisible, false)
+                }
+            }
+        }
+        b.actvAgencia.setOnItemClickListener { _, _, position, _ -> vm.setAgenciaIndex(position) }
 
         // Observa estado UI y mensajes
         viewLifecycleOwner.lifecycleScope.launch {

@@ -5,6 +5,7 @@ import com.Arasoftsolutions.tecniapp_ice.Database.entities.*
 import com.Arasoftsolutions.tecniapp_ice.Database.sync.FirebaseSyncManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.withContext
 // Si usas transacciones, habilita esto y agrega la dependencia de room-ktx:
 // import androidx.room.withTransaction
@@ -31,11 +32,28 @@ class RoomRepository(context: Context) {
     fun observarAgencias(subregionId: String): Flow<List<AgenciaEntity>> =
         db.agenciaDao().observarPorSubregion(subregionId)
 
+    fun observarAgenciasCatalogo(): Flow<List<AgenciaEntity>> =
+        db.agenciaDao().observarTodas()
+
     fun observarVehiculos(subregionId: String): Flow<List<VehiculosEntity>> =
         db.vehiculoDao().observarPorSubregion(subregionId)
 
     fun observarMateriales(): Flow<List<MaterialEntity>> =
         db.materialDao().observarMateriales()
+
+    fun observarRegiones(): Flow<List<RegionEntity>> = db.regionDao().observarTodas()
+
+    fun observarSubregiones(): Flow<List<SubregionesEntity>> =
+        db.subregionDao().observarTodas()
+
+    fun observarCatalogosGenerales(): Flow<Triple<List<RegionEntity>, List<SubregionesEntity>, List<AgenciaEntity>>> =
+        combine(
+            observarRegiones(),
+            observarSubregiones(),
+            observarAgenciasCatalogo()
+        ) { regiones, subregiones, agencias ->
+            Triple(regiones, subregiones, agencias)
+        }
 
     suspend fun buscarMedidorPorNumero(numero: String): MedidorEntity? =
         db.medidorDao().buscarPorNumero(numero)
@@ -84,6 +102,28 @@ class RoomRepository(context: Context) {
             ?: throw IllegalStateException("Usuario no encontrado en Firebase")
         db.usuarioDao().upsert(user)
         user
+    }
+
+    suspend fun syncCatalogosGenerales() = withContext(Dispatchers.IO) {
+        val regiones = firebase.obtenerRegiones()
+        if (regiones.isNotEmpty()) {
+            db.regionDao().insertAll(regiones)
+        }
+
+        val subregiones = firebase.obtenerSubregiones()
+        if (subregiones.isNotEmpty()) {
+            db.subregionDao().insertAll(subregiones)
+        }
+
+        val agencias = firebase.obtenerAgencias()
+        if (agencias.isNotEmpty()) {
+            db.agenciaDao().insertAll(agencias)
+        }
+
+        val vehiculos = firebase.obtenerVehiculos()
+        if (vehiculos.isNotEmpty()) {
+            db.vehiculoDao().insertAll(vehiculos)
+        }
     }
 
     companion object {
