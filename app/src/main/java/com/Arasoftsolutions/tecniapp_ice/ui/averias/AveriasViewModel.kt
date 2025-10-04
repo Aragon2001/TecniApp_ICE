@@ -163,7 +163,18 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun setQuery(value: String) = viewModelScope.launch { q.emit(value) }
-    fun setEstado(value: Estado?) = viewModelScope.launch { estado.emit(value?.name ?: "Todos") }
+    fun setEstado(value: Estado?) = viewModelScope.launch {
+    estado.emit(
+        when (value) {
+            Estado.PENDIENTE -> "Pendiente"
+            Estado.ASIGNADA -> "Asignada"
+            Estado.EN_ATENCION -> "En atención"
+            Estado.RESUELTA -> "Resuelta"
+            else -> "Todos"
+        }
+    )
+}
+
     fun setZonaIndex(idx: Int) = viewModelScope.launch { zonaIndex.emit(idx) }
 
     fun nombreTecnicoActual(): String? = _usuario.value?.let { nombreCompleto(it) }

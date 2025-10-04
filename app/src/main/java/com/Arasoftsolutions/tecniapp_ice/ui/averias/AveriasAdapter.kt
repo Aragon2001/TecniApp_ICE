@@ -174,41 +174,67 @@ class AveriasAdapter(
             val pertenece = currentUid != null && item.tecnicoUid == currentUid
 
             when (estadoEnum) {
-                Estado.PENDIENTE -> {
-                    btnAsignar.text = itemView.context.getString(R.string.averia_asignar)
-                    btnAsignar.isEnabled = true
-                    btnAtender.text = itemView.context.getString(R.string.averia_atender)
-                    btnAtender.isEnabled = false
-                    btnResolver.visibility = View.GONE
-                    btnResolver.isEnabled = false
-                }
-                Estado.ASIGNADA -> {
-                    btnAsignar.text = itemView.context.getString(R.string.averia_eliminar_asignacion)
-                    btnAsignar.isEnabled = pertenece
-                    btnAtender.text = itemView.context.getString(R.string.averia_atender)
-                    btnAtender.isEnabled = pertenece
-                    btnResolver.visibility = View.GONE
-                    btnResolver.isEnabled = false
-                }
-                Estado.EN_ATENCION -> {
-                    btnAsignar.text = itemView.context.getString(R.string.averia_eliminar_asignacion)
-                    btnAsignar.isEnabled = false
-                    btnAtender.text = itemView.context.getString(R.string.averia_cancelar_atencion)
-                    btnAtender.isEnabled = pertenece
-                    btnResolver.visibility = View.VISIBLE
-                    btnResolver.text = itemView.context.getString(R.string.averia_resolver)
-                    btnResolver.isEnabled = pertenece
-                }
-                Estado.RESUELTA -> {
-                    btnAsignar.text = itemView.context.getString(R.string.averia_asignar)
-                    btnAsignar.isEnabled = false
-                    btnAtender.text = itemView.context.getString(R.string.averia_atencion_finalizada)
-                    btnAtender.isEnabled = false
-                    btnResolver.visibility = View.VISIBLE
-                    btnResolver.text = itemView.context.getString(R.string.averia_exportar_pdf)
-                    btnResolver.isEnabled = true
-                }
-            }
+    Estado.PENDIENTE -> {
+        btnAsignar.apply {
+            text = context.getString(R.string.averia_asignar)
+            isEnabled = true
+            visibility = View.VISIBLE
+        }
+        btnAtender.apply {
+            text = context.getString(R.string.averia_atender)
+            isEnabled = true
+            visibility = View.VISIBLE
+        }
+        btnResolver.visibility = View.GONE
+    }
+    Estado.ASIGNADA -> {
+        btnAsignar.apply {
+            text = context.getString(R.string.averia_eliminar_asignacion)
+            isEnabled = pertenece
+            visibility = View.VISIBLE
+        }
+        btnAtender.apply {
+            text = context.getString(R.string.averia_atender)
+            isEnabled = pertenece
+            visibility = View.VISIBLE
+        }
+        btnResolver.visibility = View.GONE
+    }
+    Estado.EN_ATENCION -> {
+        btnAsignar.apply {
+            text = context.getString(R.string.averia_eliminar_asignacion)
+            isEnabled = false
+            visibility = View.VISIBLE
+        }
+        btnAtender.apply {
+            text = context.getString(R.string.averia_cancelar_atencion)
+            isEnabled = pertenece
+            visibility = View.VISIBLE
+        }
+        btnResolver.apply {
+            text = context.getString(R.string.averia_resolver)
+            isEnabled = pertenece
+            visibility = View.VISIBLE
+        }
+    }
+    Estado.RESUELTA -> {
+        btnAsignar.apply {
+            text = context.getString(R.string.averia_asignar)
+            isEnabled = false
+        }
+        btnAtender.apply {
+            text = context.getString(R.string.averia_atencion_finalizada)
+            isEnabled = false
+            visibility = View.VISIBLE
+        }
+        btnResolver.apply {
+            text = context.getString(R.string.averia_exportar_pdf)
+            isEnabled = true
+            visibility = View.VISIBLE
+        }
+    }
+}
+
         }
     }
 
