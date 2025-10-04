@@ -25,6 +25,10 @@
     <!-- Averías -->
     <string name="averias_buscar">Buscar</string>
     <string name="averias_filtrar">Filtrar</string>
+    <string name="averias_filtrar_region">Región</string>
+    <string name="averias_filtrar_agencia">Agencia</string>
+    <string name="averias_filtro_region_todas">Todas las regiones</string>
+    <string name="averias_filtro_agencia_todas">Todas las agencias</string>
     <string name="averia_sin_asignar">Sin asignar</string>
     <string name="averia_asignar">Asignar</string>
     <string name="averia_atender">Atender</string>

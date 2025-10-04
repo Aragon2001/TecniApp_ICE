@@ -10,6 +10,7 @@ import com.Arasoftsolutions.tecniapp_ice.Database.entities.*
 @Database(
     entities = [
         UserEntity::class,              // Usuarios
+        RegionEntity::class,            // Regiones del ICE
         AgenciaEntity::class,           // Agencias
         LocalizacionesEntity::class,    // Localizaciones geográficas
         MedidorEntity::class,           // Medidores eléctricos
@@ -19,13 +20,14 @@ import com.Arasoftsolutions.tecniapp_ice.Database.entities.*
         MaterialEntity::class,          // Catálogo de materiales
         AveriaEntity::class             // Averías
     ],
-    version = 6,                        // ✅ mantener la versión más alta
+    version = 7,                        // ✅ mantener la versión más alta
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun usuarioDao(): UsuarioDao
     abstract fun agenciaDao(): AgenciaDao
+    abstract fun regionDao(): RegionDao
     abstract fun localizacionDao(): LocalizacionDao
     abstract fun medidorDao(): MedidorDao
     abstract fun puebloDao(): PuebloDao
