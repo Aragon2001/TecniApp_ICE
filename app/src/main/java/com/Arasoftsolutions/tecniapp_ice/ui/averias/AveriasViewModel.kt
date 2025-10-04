@@ -15,12 +15,17 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.Arasoftsolutions.tecniapp_ice.BuildConfig
+import com.Arasoftsolutions.tecniapp_ice.Database.entities.AgenciaEntity
+import com.Arasoftsolutions.tecniapp_ice.Database.entities.AveriaEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.MaterialEntity
+import com.Arasoftsolutions.tecniapp_ice.Database.entities.RegionEntity
+import com.Arasoftsolutions.tecniapp_ice.Database.entities.SubregionesEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.UserEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.room.AppDatabase
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
 import com.Arasoftsolutions.tecniapp_ice.R
 import com.google.firebase.auth.FirebaseAuth
+import java.text.Normalizer
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
@@ -43,7 +48,8 @@ enum class Estado {
     }
 }
 
-data class ZonaUI(val id: String, val nombreVisible: String)
+data class RegionUI(val id: String?, val nombreVisible: String)
+data class AgenciaUI(val id: String?, val nombreVisible: String)
 data class AveriasUiState(val loading: Boolean = false, val items: List<AveriaUI> = emptyList())
 
 @OptIn(FlowPreview::class, kotlinx.coroutines.ExperimentalCoroutinesApi::class)
@@ -58,17 +64,20 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
     private val notificationManager = NotificationManagerCompat.from(app)
 
     private val q = MutableStateFlow("")
-    private val estado = MutableStateFlow("Todos")
-    private val zonaIndex = MutableStateFlow(0)
-    private val _zonas = MutableStateFlow(
-        listOf(
-            ZonaUI("Guapiles", "Guápiles"),
-            ZonaUI("Guacimo", "Guácimo"),
-            ZonaUI("Cariari", "Cariari"),
-            ZonaUI("Tortuguero", "Tortuguero")
-        )
-    )
-    val zonas: StateFlow<List<ZonaUI>> = _zonas.asStateFlow()
+    private val estado = MutableStateFlow<Estado?>(null)
+
+    private val allRegionsLabel = app.getString(R.string.averias_filtro_region_todas)
+    private val allAgenciesLabel = app.getString(R.string.averias_filtro_agencia_todas)
+
+    private val _regiones = MutableStateFlow(listOf(RegionUI(null, allRegionsLabel)))
+    val regiones: StateFlow<List<RegionUI>> = _regiones.asStateFlow()
+    private val _regionSeleccionada = MutableStateFlow(RegionUI(null, allRegionsLabel))
+    val regionSeleccionada: StateFlow<RegionUI> = _regionSeleccionada.asStateFlow()
+    private val _agencias = MutableStateFlow(listOf(AgenciaUI(null, allAgenciesLabel)))
+    val agencias: StateFlow<List<AgenciaUI>> = _agencias.asStateFlow()
+    private val _agenciaSeleccionada = MutableStateFlow(AgenciaUI(null, allAgenciesLabel))
+    val agenciaSeleccionada: StateFlow<AgenciaUI> = _agenciaSeleccionada.asStateFlow()
+
     private val isLoading = MutableStateFlow(false)
     private val _messages = MutableSharedFlow<String>(extraBufferCapacity = 1)
     val messages = _messages.asSharedFlow()
@@ -80,20 +89,35 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
     val materialesDisponibles: StateFlow<List<MaterialEntity>> = _materiales.asStateFlow()
 
     private var syncJob: Job? = null
+    private var cachedSubregiones: List<SubregionesEntity> = emptyList()
+    private var cachedAgencias: List<AgenciaEntity> = emptyList()
+    private val regionKeywords = MutableStateFlow<Map<String, List<String>>>(emptyMap())
 
-    private fun agenciesSel(): List<String> = when (zonaIndex.value) {
-        0 -> listOf("Guapiles", "Guacimo", "Cariari", "Tortuguero")
-        else -> listOf(_zonas.value[zonaIndex.value - 1].id)
-    }
+    private data class FilterConfig(
+        val query: String,
+        val estado: Estado?,
+        val region: RegionUI,
+        val agencia: AgenciaUI
+    )
 
     val uiState: StateFlow<AveriasUiState> =
         combine(
             q.debounce(250).map { it.trim() }.distinctUntilChanged(),
             estado,
-            zonaIndex
-        ) { qv, est, _ -> Triple(qv, est, agenciesSel()) }
-            .flatMapLatest { (qv, est, ags) ->
-                repo.observe(ags, if (est == "Todos") "" else est, qv)
+            _regionSeleccionada,
+            _agenciaSeleccionada
+        ) { qv, est, regionSel, agenciaSel ->
+            FilterConfig(qv, est, regionSel, agenciaSel)
+        }
+            .flatMapLatest { config ->
+                repo.observe(emptyList(), "", config.query)
+                    .map { list ->
+                        list.filter { entity ->
+                            matchesEstado(entity, config.estado) &&
+                                    matchesRegion(entity, config.region) &&
+                                    matchesAgencia(entity, config.agencia)
+                        }
+                    }
             }
             .map { list ->
                 AveriasUiState(
@@ -137,7 +161,9 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
     init {
         repo.startRealtimeListener()
         createNotificationChannel()
+        observeCatalogos()
         viewModelScope.launch { loadUsuarioActual() }
+        viewModelScope.launch { syncCatalogosGenerales() }
         viewModelScope.launch {
             usuarioActual
                 .filterNotNull()
@@ -163,22 +189,51 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun setQuery(value: String) = viewModelScope.launch { q.emit(value) }
-    fun setEstado(value: Estado?) = viewModelScope.launch {
-    estado.emit(
-        when (value) {
-            Estado.PENDIENTE -> "Pendiente"
-            Estado.ASIGNADA -> "Asignada"
-            Estado.EN_ATENCION -> "En atención"
-            Estado.RESUELTA -> "Resuelta"
-            else -> "Todos"
-        }
-    )
-}
+    fun setEstado(value: Estado?) = viewModelScope.launch { estado.emit(value) }
 
-    fun setZonaIndex(idx: Int) = viewModelScope.launch { zonaIndex.emit(idx) }
+    fun setRegionIndex(idx: Int) = viewModelScope.launch {
+        val regiones = _regiones.value
+        val selected = regiones.getOrNull(idx) ?: regiones.first()
+        _regionSeleccionada.emit(selected)
+        val nuevasAgencias = buildAgencias(selected.id)
+        _agencias.emit(nuevasAgencias)
+        _agenciaSeleccionada.emit(nuevasAgencias.first())
+    }
+
+    fun setAgenciaIndex(idx: Int) = viewModelScope.launch {
+        val agencias = _agencias.value
+        val selected = agencias.getOrNull(idx) ?: agencias.first()
+        _agenciaSeleccionada.emit(selected)
+    }
 
     fun nombreTecnicoActual(): String? = _usuario.value?.let { nombreCompleto(it) }
     fun vehiculoPreferido(): String? = _usuario.value?.placaVehiculo
+
+    private fun matchesEstado(entity: AveriaEntity, estadoSeleccionado: Estado?): Boolean {
+        if (estadoSeleccionado == null) return true
+        val estadoEntity = Estado.fromLabel(entity.estado)
+        return estadoEntity == estadoSeleccionado
+    }
+
+    private fun matchesRegion(entity: AveriaEntity, region: RegionUI): Boolean {
+        val regionId = region.id ?: return true
+        val haystack = listOfNotNull(entity.region, entity.nombreAgencia, entity.agencia)
+            .joinToString(" ")
+            .normalize()
+        if (haystack.isBlank()) return false
+        val keywords = regionKeywords.value[regionId].orEmpty()
+        if (keywords.isEmpty()) return false
+        return keywords.any { haystack.contains(it) }
+    }
+
+    private fun matchesAgencia(entity: AveriaEntity, agencia: AgenciaUI): Boolean {
+        val nombre = agencia.id ?: return true
+        val haystack = listOfNotNull(entity.nombreAgencia, entity.agencia)
+            .joinToString(" ")
+            .normalize()
+        if (haystack.isBlank()) return false
+        return haystack.contains(nombre.normalize())
+    }
 
     private suspend fun loadUsuarioActual() {
         val uid = auth.currentUser?.uid ?: return
@@ -422,6 +477,76 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    private fun buildAgencias(regionId: String?): List<AgenciaUI> {
+        val filtered = cachedAgencias
+            .filter { agency ->
+                if (regionId == null) return@filter true
+                val agencyRegion = agency.regionId
+                    ?: cachedSubregiones.firstOrNull { sub ->
+                        sub.id.equals(agency.subregion, ignoreCase = true)
+                    }?.regionId
+                agencyRegion.equals(regionId, ignoreCase = true)
+            }
+            .sortedBy { it.nombre }
+            .distinctBy { it.nombre }
+            .map { AgenciaUI(it.nombre, it.nombre) }
+
+        return listOf(AgenciaUI(null, allAgenciesLabel)) + filtered
+    }
+
+    private fun observeCatalogos() {
+        viewModelScope.launch {
+            roomRepo.observarCatalogosGenerales().collectLatest { (regiones, subregiones, agencias) ->
+                cachedSubregiones = subregiones
+                cachedAgencias = agencias
+
+                val regionItems = listOf(RegionUI(null, allRegionsLabel)) +
+                    regiones.sortedBy { it.nombre }
+                        .distinctBy { it.id }
+                        .map { RegionUI(it.id, it.nombre) }
+                _regiones.emit(regionItems)
+
+                val selectedRegion = regionItems.firstOrNull { it.id == _regionSeleccionada.value.id }
+                    ?: regionItems.first()
+                _regionSeleccionada.emit(selectedRegion)
+
+                val agenciasItems = buildAgencias(selectedRegion.id)
+                _agencias.emit(agenciasItems)
+
+                val selectedAgency = agenciasItems.firstOrNull { it.id == _agenciaSeleccionada.value.id }
+                    ?: agenciasItems.first()
+                _agenciaSeleccionada.emit(selectedAgency)
+
+                regionKeywords.value = computeRegionKeywords(regiones, subregiones, agencias)
+            }
+        }
+    }
+
+    private suspend fun syncCatalogosGenerales() {
+        runCatching { roomRepo.syncCatalogosGenerales() }
+            .onFailure { Log.w(TAG, "No se pudieron sincronizar catálogos generales", it) }
+    }
+
+    private fun computeRegionKeywords(
+        regiones: List<RegionEntity>,
+        subregiones: List<SubregionesEntity>,
+        agencias: List<AgenciaEntity>
+    ): Map<String, List<String>> {
+        if (regiones.isEmpty()) return emptyMap()
+        val subregionesPorRegion = subregiones.groupBy { it.regionId }
+        val agenciasPorRegion = agencias.groupBy { agency ->
+            agency.regionId
+                ?: subregiones.firstOrNull { it.id.equals(agency.subregion, ignoreCase = true) }
+                    ?.regionId
+        }
+        return regiones.associate { region ->
+            val keywords = mutableSetOf(region.nombre.normalize())
+            subregionesPorRegion[region.id]?.forEach { keywords += it.nombre.normalize() }
+            agenciasPorRegion[region.id]?.forEach { keywords += it.nombre.normalize() }
+            region.id to keywords.toList()
+        }
+    }
+
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val mgr = getApplication<Application>().getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -435,4 +560,10 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
         super.onCleared()
         repo.stopRealtimeListener()
     }
+}
+
+private fun String.normalize(): String {
+    val normalized = Normalizer.normalize(this, Normalizer.Form.NFD)
+    return normalized.replace("\\p{InCombiningDiacriticalMarks}+".toRegex(), "")
+        .lowercase(Locale.getDefault())
 }

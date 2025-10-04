@@ -7,11 +7,10 @@ import com.google.firebase.database.IgnoreExtraProperties
 
 @Keep
 @IgnoreExtraProperties
-@Entity(tableName = "subregiones")
-data class SubregionesEntity(
+@Entity(tableName = "regiones")
+data class RegionEntity(
     @PrimaryKey val id: String = "",
-    val nombre: String = "",
-    val regionId: String = ""
+    val nombre: String = ""
 ) {
-    constructor() : this("", "", "")
+    constructor() : this("", "")
 }

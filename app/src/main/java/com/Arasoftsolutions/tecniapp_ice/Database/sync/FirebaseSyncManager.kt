@@ -6,6 +6,8 @@ import com.Arasoftsolutions.tecniapp_ice.Database.entities.*
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 import kotlinx.coroutines.tasks.await
+import com.google.firebase.database.DataSnapshot
+import java.util.Locale
 
 /**
  * Acceso centralizado a Realtime Database en *varios* proyectos.
@@ -60,22 +62,105 @@ class FirebaseSyncManager(context: Context) {
         return first.getValue(UserEntity::class.java)
     }
 
-    // --- DATOS GENERALES (Agencias / Subregiones / Vehículos) ---
-    suspend fun obtenerAgencias(subregionId: String): List<AgenciaEntity> {
-        val snap = dbDatosGenerales.child("agencias").get().await()
-        return snap.children.mapNotNull { it.getValue(AgenciaEntity::class.java) }
-            .filter { it.subregion == subregionId }
+    // --- DATOS GENERALES (Regiones / Agencias / Subregiones / Vehículos) ---
+    suspend fun obtenerRegiones(): List<RegionEntity> {
+        val snap = dbDatosGenerales.child("regiones").get().await()
+        return snap.children.mapNotNull { child ->
+            val id = child.stringChild("id") ?: child.key ?: return@mapNotNull null
+            val nombre = child.stringChild("nombre") ?: return@mapNotNull null
+            val trimmedId = id.trim()
+            if (trimmedId.isEmpty()) return@mapNotNull null
+            RegionEntity(id = trimmedId, nombre = nombre.trim())
+        }
     }
 
-    suspend fun obtenerVehiculos(subregionId: String): List<VehiculosEntity> {
+    suspend fun obtenerAgencias(subregionId: String? = null): List<AgenciaEntity> {
+        val snap = dbDatosGenerales.child("agencias").get().await()
+        val filtroSubregion = subregionId?.trim()?.takeIf { it.isNotEmpty() }
+        val regionPorSubregion = if (filtroSubregion != null) {
+            runCatching {
+                obtenerSubregiones().associate { it.id.lowercase(Locale.getDefault()) to it.regionId }
+            }.getOrDefault(emptyMap())
+        } else emptyMap()
+        return snap.children.mapNotNull { child ->
+            val id = child.stringChild("id") ?: child.key
+            val nombre = child.stringChild("nombre") ?: return@mapNotNull null
+            val regionId = child.stringChild("region_id")
+                ?: child.stringChild("regionId")
+                ?: child.stringChild("region")
+            val subregion = child.stringChild("subregion")
+                ?: child.stringChild("subregion_id")
+                ?: child.stringChild("subregionId")
+            val entityId = (id ?: nombre).trim()
+            if (entityId.isEmpty()) return@mapNotNull null
+            AgenciaEntity(
+                id = entityId,
+                nombre = nombre.trim(),
+                regionId = regionId?.trim(),
+                subregion = subregion?.trim()
+            )
+        }.filter { agency ->
+            if (filtroSubregion == null) {
+                true
+            } else {
+                val matchesSubregion = agency.subregion?.equals(filtroSubregion, ignoreCase = true) == true
+                val regionOfSub = regionPorSubregion[filtroSubregion.lowercase(Locale.getDefault())]
+                val matchesRegion = regionOfSub != null && agency.regionId?.equals(regionOfSub, ignoreCase = true) == true
+                matchesSubregion || matchesRegion
+            }
+        }
+    }
+
+    suspend fun obtenerVehiculos(subregionId: String? = null): List<VehiculosEntity> {
         val snap = dbDatosGenerales.child("vehiculos").get().await()
-        return snap.children.mapNotNull { it.getValue(VehiculosEntity::class.java) }
-            .filter { it.subregion == subregionId }
+        val filtroSubregion = subregionId?.trim()?.takeIf { it.isNotEmpty() }
+        return snap.children.mapNotNull { child ->
+            val idValue = child.stringChild("id") ?: child.key
+            val agencia = child.stringChild("agencia") ?: return@mapNotNull null
+            val tipo = child.stringChild("tipo") ?: ""
+            val subregion = child.stringChild("subregion")
+                ?: child.stringChild("subregion_id")
+                ?: child.stringChild("subregionId")
+            val placaRaw = child.child("placa").value
+            val placa = when (placaRaw) {
+                is Long -> placaRaw
+                is Int -> placaRaw.toLong()
+                is Double -> placaRaw.toLong()
+                is String -> placaRaw.trim().toLongOrNull()
+                else -> null
+            } ?: return@mapNotNull null
+            val entityId = idValue?.toIntOrNull()
+                ?: idValue?.hashCode()
+                ?: "${agencia.trim()}_${placa}".hashCode()
+            VehiculosEntity(
+                id = entityId,
+                agencia = agencia.trim(),
+                placa = placa,
+                tipo = tipo.trim(),
+                subregion = subregion?.trim()
+            )
+        }.filter { vehiculo ->
+            filtroSubregion == null || vehiculo.subregion?.equals(filtroSubregion, ignoreCase = true) == true
+        }
     }
 
     suspend fun obtenerSubregiones(): List<SubregionesEntity> {
         val snap = dbDatosGenerales.child("subregiones").get().await()
-        return snap.children.mapNotNull { it.getValue(SubregionesEntity::class.java) }
+        return snap.children.mapNotNull { child ->
+            val id = child.stringChild("id") ?: child.key ?: return@mapNotNull null
+            val nombre = child.stringChild("nombre") ?: return@mapNotNull null
+            val regionId = child.stringChild("region_id")
+                ?: child.stringChild("regionId")
+                ?: child.stringChild("region")
+                ?: ""
+            val trimmedId = id.trim()
+            if (trimmedId.isEmpty()) return@mapNotNull null
+            SubregionesEntity(
+                id = trimmedId,
+                nombre = nombre.trim(),
+                regionId = regionId.trim()
+            )
+        }
     }
 
     // --- LOCALIZACIONES / PUEBLOS ---
@@ -135,4 +220,7 @@ class FirebaseSyncManager(context: Context) {
             null
         }
     }
+
+    private fun DataSnapshot.stringChild(name: String): String? =
+        child(name).getValue(String::class.java)?.takeIf { it.isNotBlank() }
 }

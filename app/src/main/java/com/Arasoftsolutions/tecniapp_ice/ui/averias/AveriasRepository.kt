@@ -74,6 +74,20 @@ class AveriasRepository(private val db: AppDatabase) {
             else -> estadoTexto?.ifBlank { "Pendiente" } ?: "Pendiente"
         }
 
+    private fun shouldInclude(remote: IceAveria): Boolean {
+        val estadoTexto = remote.estado?.lowercase(Locale.getDefault()) ?: ""
+        val byId = when (remote.idEstadoAve) {
+            1 -> true // Pendiente
+            2 -> false
+            3 -> false
+            4 -> false
+            else -> false
+        }
+        if (byId) return true
+        if (estadoTexto.isBlank()) return false
+        return estadoTexto.contains("nuevo") || estadoTexto.contains("pend")
+    }
+
     private fun map(remote: IceAveria): AveriaEntity? {
         val id = remote.noCaso?.trim().orEmpty()
         if (id.isBlank()) return null
@@ -116,7 +130,9 @@ class AveriasRepository(private val db: AppDatabase) {
     suspend fun syncFromIce(bearer: String?): List<String> = withContext(Dispatchers.IO) {
         val authHeader = bearer?.takeIf { it.isNotBlank() }?.let { "Bearer $it" }
         val envelope = IceApi.service.getAverias(authHeader)
-        val incoming = envelope.payload().mapNotNull { map(it) }
+        val incoming = envelope.payload()
+            .filter { shouldInclude(it) }
+            .mapNotNull { map(it) }
 
         val current = dao.all().associateBy { it.caseId }
         val merged = incoming.map { remote ->
@@ -155,6 +171,10 @@ class AveriasRepository(private val db: AppDatabase) {
         }
 
         dao.upsertAll(merged)
+
+        val newOnes = merged.filter { !current.containsKey(it.caseId) }
+        registerNewOnFirebase(newOnes)
+
         incoming.map { it.caseId }.filter { !current.containsKey(it) }
     }
 
@@ -243,40 +263,56 @@ class AveriasRepository(private val db: AppDatabase) {
     }
 
     private suspend fun pushToFirebase(entity: AveriaEntity) {
-        val payload = hashMapOf<String, Any?>(
-            "caseId" to entity.caseId,
-            "region" to entity.region,
-            "provincia" to entity.provincia,
-            "agencia" to entity.agencia,
-            "nombreAgencia" to entity.nombreAgencia,
-            "nise" to entity.nise,
-            "causa" to entity.causa,
-            "observaciones" to entity.observaciones,
-            "estado" to entity.estado,
-            "idEstadoAve" to entity.idEstadoAve,
-            "idEstadoAranda" to entity.idEstadoAranda,
-            "lat" to entity.lat,
-            "lng" to entity.lng,
-            "clientesAfectados" to entity.clientesAfectados,
-            "fechaInicioMillis" to entity.fechaInicioMillis,
-            "horaInicioMillis" to entity.horaInicioMillis,
-            "horaFinalMillis" to entity.horaFinalMillis,
-            "atencionHoraInicioMillis" to entity.atencionHoraInicioMillis,
-            "atencionHoraFinalMillis" to entity.atencionHoraFinalMillis,
-            "kilometrajeInicio" to entity.kilometrajeInicio,
-            "kilometrajeFinal" to entity.kilometrajeFinal,
-            "agenciaTag" to entity.agenciaTag,
-            "vehiculoAsignado" to entity.vehiculoAsignado,
-            "tecnicoAsignadoUid" to entity.tecnicoAsignadoUid,
-            "tecnicoAsignadoNombre" to entity.tecnicoAsignadoNombre,
-            "atendidoPorUid" to entity.atendidoPorUid,
-            "atendidoPorNombre" to entity.atendidoPorNombre,
-            "materialesTexto" to entity.materialesTexto,
-            "materialesDetalleJson" to entity.materialesDetalleJson,
-            "lastUpdated" to entity.lastUpdated
-        )
+        val payload = entity.toFirebasePayload()
         firebaseRef.child(entity.caseId).updateChildren(payload).await()
     }
+
+    private suspend fun registerNewOnFirebase(entities: List<AveriaEntity>) {
+        entities.forEach { entity ->
+            try {
+                val ref = firebaseRef.child(entity.caseId)
+                val snapshot = ref.get().await()
+                if (!snapshot.exists()) {
+                    ref.setValue(entity.toFirebasePayload()).await()
+                }
+            } catch (t: Throwable) {
+                Log.e(TAG, "No se pudo registrar avería nueva ${entity.caseId} en Firebase", t)
+            }
+        }
+    }
+
+    private fun AveriaEntity.toFirebasePayload(): Map<String, Any?> = hashMapOf(
+        "caseId" to caseId,
+        "region" to region,
+        "provincia" to provincia,
+        "agencia" to agencia,
+        "nombreAgencia" to nombreAgencia,
+        "nise" to nise,
+        "causa" to causa,
+        "observaciones" to observaciones,
+        "estado" to estado,
+        "idEstadoAve" to idEstadoAve,
+        "idEstadoAranda" to idEstadoAranda,
+        "lat" to lat,
+        "lng" to lng,
+        "clientesAfectados" to clientesAfectados,
+        "fechaInicioMillis" to fechaInicioMillis,
+        "horaInicioMillis" to horaInicioMillis,
+        "horaFinalMillis" to horaFinalMillis,
+        "atencionHoraInicioMillis" to atencionHoraInicioMillis,
+        "atencionHoraFinalMillis" to atencionHoraFinalMillis,
+        "kilometrajeInicio" to kilometrajeInicio,
+        "kilometrajeFinal" to kilometrajeFinal,
+        "agenciaTag" to agenciaTag,
+        "vehiculoAsignado" to vehiculoAsignado,
+        "tecnicoAsignadoUid" to tecnicoAsignadoUid,
+        "tecnicoAsignadoNombre" to tecnicoAsignadoNombre,
+        "atendidoPorUid" to atendidoPorUid,
+        "atendidoPorNombre" to atendidoPorNombre,
+        "materialesTexto" to materialesTexto,
+        "materialesDetalleJson" to materialesDetalleJson,
+        "lastUpdated" to lastUpdated
+    )
 
     suspend fun pullFromFirebaseOnce() = withContext(Dispatchers.IO) {
         try {
