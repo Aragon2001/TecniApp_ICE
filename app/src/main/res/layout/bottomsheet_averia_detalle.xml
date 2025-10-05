@@ -211,14 +211,22 @@
                 android:inputType="none" />
         </com.google.android.material.textfield.TextInputLayout>
 
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnAgregarMaterial"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Agregar +"
+            style="?attr/materialButtonOutlinedStyle" />
+
         <!-- Chips de materiales -->
-       <com.google.android.material.chip.ChipGroup
-    android:id="@+id/chipGroupMateriales"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:layout_marginTop="4dp"
-    app:singleLine="false"
-    app:singleSelection="false" />
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/chipGroupMateriales"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            app:singleLine="false"
+            app:singleSelection="false" />
 
 
         <!-- Botones -->
