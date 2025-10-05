@@ -45,6 +45,8 @@ data class AveriaEntity(
     val atendidoPorNombre: String? = null,
     val materialesTexto: String? = null,
     val materialesDetalleJson: String? = null, // ✅ campo nuevo unificado
+    val cliente: String? = null,
+    val localizacion: String? = null,
     val isSynced: Boolean = true,
     val lastUpdated: Long = 0L
 ) {
@@ -78,6 +80,8 @@ data class AveriaEntity(
         atendidoPorNombre = null,
         materialesTexto = null,
         materialesDetalleJson = null, // ✅ también en constructor vacío
+        cliente = null,
+        localizacion = null,
         isSynced = true,
         lastUpdated = 0L
     )

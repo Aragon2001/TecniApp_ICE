@@ -28,6 +28,11 @@ class AveriasRepository(private val db: AppDatabase) {
         .reference
         .child("averias")
 
+    // Base de materiales usada por ICE
+    private val materialesRef = FirebaseDatabase
+        .getInstance("https://tecniapp-ice-materiales.firebaseio.com/")
+        .reference
+
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var realtimeListener: ValueEventListener? = null
 
@@ -418,6 +423,7 @@ class AveriasRepository(private val db: AppDatabase) {
             nuevoEstado = "En atención"
         )
         syncSingle(caseId)
+        registrarMaterialesUsados(data.materiales)
     }
 
     suspend fun cerrar(caseId: String, data: AveriaActionData) = withContext(Dispatchers.IO) {
@@ -443,6 +449,7 @@ class AveriasRepository(private val db: AppDatabase) {
             nuevoEstado = "Resuelta"
         )
         syncSingle(caseId)
+        registrarMaterialesUsados(data.materiales)
     }
 
     private suspend fun syncSingle(caseId: String) {
@@ -457,7 +464,8 @@ class AveriasRepository(private val db: AppDatabase) {
 
     private suspend fun pushToFirebase(entity: AveriaEntity) {
         val payload = entity.toFirebasePayload()
-        firebaseRef.child(entity.caseId).updateChildren(payload).await()
+        // 👇 En lugar de updateChildren usamos setValue para reemplazar todo el objeto completo
+        firebaseRef.child(entity.caseId).setValue(payload).await()
     }
 
     private suspend fun registerNewOnFirebase(entities: List<AveriaEntity>) {
@@ -504,8 +512,21 @@ class AveriasRepository(private val db: AppDatabase) {
         "atendidoPorNombre" to atendidoPorNombre,
         "materialesTexto" to materialesTexto,
         "materialesDetalleJson" to materialesDetalleJson,
+        "cliente" to cliente,
+        "localizacion" to localizacion,
         "lastUpdated" to lastUpdated
     )
+
+    private suspend fun registrarMaterialesUsados(lista: List<MaterialUso>) {
+        lista.forEach { uso ->
+            val ref = materialesRef.child(uso.codigo)
+            val map = mapOf(
+                "Nombre" to uso.descripcion,
+                "Cantidad" to uso.cantidad
+            )
+            ref.setValue(map).await()
+        }
+    }
 
     // ---------------------------------------------------------------------------------------------
     // Firebase: pull (una vez) y realtime (con normalización y sin bajar estado)
