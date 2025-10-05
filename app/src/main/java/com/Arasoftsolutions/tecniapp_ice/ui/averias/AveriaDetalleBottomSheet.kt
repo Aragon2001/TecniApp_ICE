@@ -1,5 +1,6 @@
 package com.Arasoftsolutions.tecniapp_ice.ui.averias
 
+import android.app.TimePickerDialog
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -40,6 +41,30 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         var estado = Estado.fromLabel(item.estado)
+
+        // Selector de hora para hora inicio
+        b.etHoraInicio.setOnClickListener {
+            val cal = Calendar.getInstance()
+            TimePickerDialog(
+                requireContext(),
+                { _, h, m -> b.etHoraInicio.setText(String.format(Locale.getDefault(), "%02d:%02d", h, m)) },
+                cal.get(Calendar.HOUR_OF_DAY),
+                cal.get(Calendar.MINUTE),
+                true
+            ).show()
+        }
+
+        // Selector de hora para hora final
+        b.etHoraFin.setOnClickListener {
+            val cal = Calendar.getInstance()
+            TimePickerDialog(
+                requireContext(),
+                { _, h, m -> b.etHoraFin.setText(String.format(Locale.getDefault(), "%02d:%02d", h, m)) },
+                cal.get(Calendar.HOUR_OF_DAY),
+                cal.get(Calendar.MINUTE),
+                true
+            ).show()
+        }
 
         // Datos principales
         b.tvCaso.text = getString(R.string.averia_caso_format, item.id)
@@ -97,6 +122,17 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
             val material = materialesCatalogo.getOrNull(position) ?: return@setOnItemClickListener
             agregarMaterial(material)
             b.actvMaterial.setText("", false)
+        }
+
+        b.btnAgregarMaterial.setOnClickListener {
+            val materialSel = materialesCatalogo.find {
+                val texto = b.actvMaterial.text?.toString()?.lowercase() ?: ""
+                texto.contains(it.codigo.lowercase()) || texto.contains(it.descripcion.lowercase())
+            }
+            if (materialSel != null) {
+                agregarMaterial(materialSel)
+                b.actvMaterial.setText("", false)
+            }
         }
 
         // Botones de acciones
@@ -277,12 +313,13 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
 
         val horaInicioTexto = b.etHoraInicio.text?.toString()?.trim()
         val horaFinalTexto = b.etHoraFin.text?.toString()?.trim()
-        val horaInicio = parseHora(horaInicioTexto) { error -> b.tilHoraInicio.error = error }
+        val horaInicio = parseHora(horaInicioTexto) { error -> b.tilHoraInicio.error = error } ?: System.currentTimeMillis()
+        val horaInicioAuto = horaInicioTexto.isNullOrBlank()
         val horaFinal = parseHora(horaFinalTexto) { error -> b.tilHoraFinal.error = error }
 
-        if (!horaInicioTexto.isNullOrBlank() && horaInicio == null) return null
+        if (!horaInicioAuto && b.tilHoraInicio.error != null) return null
         if (!horaFinalTexto.isNullOrBlank() && horaFinal == null) return null
-        if (horaInicio != null && horaFinal != null && horaFinal <= horaInicio) {
+        if (horaFinal != null && horaFinal <= horaInicio) {
             b.tilHoraFinal.error = getString(R.string.averia_error_hora_final_menor)
             return null
         }
