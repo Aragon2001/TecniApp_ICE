@@ -80,6 +80,7 @@ dependencies {
     // Room + KSP
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
+    implementation(libs.androidx.gridlayout)
     ksp(libs.androidx.room.compiler)
 
     // Coroutines / WorkManager

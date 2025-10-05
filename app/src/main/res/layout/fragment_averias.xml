@@ -7,122 +7,156 @@
     android:layout_height="match_parent"
     tools:context=".ui.averias.AveriasFragment">
 
-    <LinearLayout
-        android:id="@+id/contentContainer"
+    <!-- AppBar completamente colapsable -->
+    <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/appBarLayout"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical"
-        android:padding="12dp"
+        android:layout_height="wrap_content"
         android:background="?android:colorBackground"
-        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+        app:elevation="0dp">
 
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/tilBuscar"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
+        <com.google.android.material.appbar.CollapsingToolbarLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@color/glass_light"
-            android:hint="@string/averias_buscar"
-            app:boxStrokeColor="@color/ice_blue"
-            app:endIconMode="clear_text"
-            app:startIconDrawable="@android:drawable/ic_menu_search">
+            app:layout_scrollFlags="scroll|exitUntilCollapsed"
+            app:titleEnabled="false">
 
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/etBuscar"
+            <!-- Contenedor completo que se ocultará -->
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:imeOptions="actionSearch"
-                android:singleLine="true" />
-        </com.google.android.material.textfield.TextInputLayout>
+                android:orientation="vertical"
+                android:padding="12dp"
+                app:layout_collapseMode="parallax">
+
+                <!-- Barra de búsqueda -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilBuscar"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@color/glass_light"
+                    android:hint="@string/averias_buscar"
+                    app:boxStrokeColor="@color/ice_blue"
+                    app:endIconMode="clear_text"
+                    app:startIconDrawable="@android:drawable/ic_menu_search">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etBuscar"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:imeOptions="actionSearch"
+                        android:singleLine="true" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <!-- Filtros en scroll horizontal -->
+                <HorizontalScrollView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:scrollbars="none">
+
+                    <com.google.android.material.chip.ChipGroup
+                        android:id="@+id/chipGroupEstado"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:paddingBottom="8dp"
+                        app:singleLine="true"
+                        app:singleSelection="true">
+
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/chipTodos"
+                            style="@style/Tecni.Chip.Base"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/averia_estado_todos" />
+
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/chipPendiente"
+                            style="@style/Tecni.Chip.Pendiente"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/estado_pendiente" />
+
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/chipAsignada"
+                            style="@style/Tecni.Chip.Asignada"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/estado_asignada" />
+
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/chipEnAtencion"
+                            style="@style/Tecni.Chip.EnAtencion"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/estado_en_atencion" />
+
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/chipResuelta"
+                            style="@style/Tecni.Chip.Resuelta"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/estado_resuelta" />
+                    </com.google.android.material.chip.ChipGroup>
+                </HorizontalScrollView>
+
+                <!-- Filtros Región y Agencia en horizontal -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:weightSum="2">
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tilRegion"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense.ExposedDropdownMenu"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="4dp"
+                        android:layout_weight="1"
+                        android:hint="@string/averias_filtrar_region"
+                        app:endIconMode="dropdown_menu">
+
+                        <AutoCompleteTextView
+                            android:id="@+id/actvRegion"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="none" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tilAgencia"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense.ExposedDropdownMenu"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:layout_weight="1"
+                        android:hint="@string/averias_filtrar_agencia"
+                        app:endIconMode="dropdown_menu">
+
+                        <AutoCompleteTextView
+                            android:id="@+id/actvAgencia"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="none" />
+                    </com.google.android.material.textfield.TextInputLayout>
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.appbar.CollapsingToolbarLayout>
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <!-- Contenido principal SIN NestedScrollView -->
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:id="@+id/swipeRefresh"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
+            android:layout_height="match_parent"
             android:orientation="vertical">
-
-            <com.google.android.material.chip.ChipGroup
-                android:id="@+id/chipGroupEstado"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:paddingBottom="8dp"
-                app:singleLine="false"
-                app:singleSelection="true">
-
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/chipTodos"
-                    style="@style/Tecni.Chip.Base"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/averia_estado_todos" />
-
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/chipPendiente"
-                    style="@style/Tecni.Chip.Pendiente"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/estado_pendiente" />
-
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/chipAsignada"
-                    style="@style/Tecni.Chip.Asignada"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/estado_asignada" />
-
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/chipEnAtencion"
-                    style="@style/Tecni.Chip.EnAtencion"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/estado_en_atencion" />
-
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/chipResuelta"
-                    style="@style/Tecni.Chip.Resuelta"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/estado_resuelta" />
-            </com.google.android.material.chip.ChipGroup>
-
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/tilRegion"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense.ExposedDropdownMenu"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:hint="@string/averias_filtrar_region"
-                app:endIconMode="dropdown_menu">
-
-                <AutoCompleteTextView
-                    android:id="@+id/actvRegion"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:inputType="none" />
-            </com.google.android.material.textfield.TextInputLayout>
-
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/tilAgencia"
-                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense.ExposedDropdownMenu"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:hint="@string/averias_filtrar_agencia"
-                app:endIconMode="dropdown_menu">
-
-                <AutoCompleteTextView
-                    android:id="@+id/actvAgencia"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:inputType="none" />
-            </com.google.android.material.textfield.TextInputLayout>
-        </LinearLayout>
-
-        <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-            android:id="@+id/swipeRefresh"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1">
 
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/recyclerViewAverias"
@@ -130,17 +164,28 @@
                 android:layout_height="match_parent"
                 android:scrollbars="vertical"
                 tools:listitem="@layout/item_averia" />
-        </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
-        <TextView
-            android:id="@+id/tvVacio"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:paddingTop="12dp"
-            android:text="@string/averias_vacio"
-            android:textColor="?attr/colorOnBackground"
-            android:visibility="gone"
-            tools:visibility="visible" />
-    </LinearLayout>
+            <TextView
+                android:id="@+id/tvVacio"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:padding="24dp"
+                android:text="@string/averias_vacio"
+                android:textColor="?attr/colorOnBackground"
+                android:visibility="gone"
+                tools:visibility="visible" />
+        </LinearLayout>
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+
+    <!-- Floating Action Button para mostrar filtros -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabFilters"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="16dp"
+        android:src="@drawable/ic_filter_list"
+        android:tint="@android:color/white"
+        app:backgroundTint="@color/ice_blue" />
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
