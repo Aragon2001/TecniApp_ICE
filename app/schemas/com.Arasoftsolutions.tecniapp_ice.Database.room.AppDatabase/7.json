@@ -1,0 +1,645 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 7,
+    "identityHash": "2a4bf6a7a4b208447cebc82c076eae5e",
+    "entities": [
+      {
+        "tableName": "usuarios",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`uid` TEXT NOT NULL, `email` TEXT, `email_lower` TEXT, `nombre` TEXT, `apellidos` TEXT, `cedula` TEXT, `subregion` TEXT, `agencia` TEXT, `placaVehiculo` TEXT, `telefono` TEXT, `password` TEXT, PRIMARY KEY(`uid`))",
+        "fields": [
+          {
+            "fieldPath": "uid",
+            "columnName": "uid",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "email",
+            "columnName": "email",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "email_lower",
+            "columnName": "email_lower",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "nombre",
+            "columnName": "nombre",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "apellidos",
+            "columnName": "apellidos",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "cedula",
+            "columnName": "cedula",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "subregion",
+            "columnName": "subregion",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "agencia",
+            "columnName": "agencia",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "placaVehiculo",
+            "columnName": "placaVehiculo",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "telefono",
+            "columnName": "telefono",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "password",
+            "columnName": "password",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "uid"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_usuarios_email_lower",
+            "unique": false,
+            "columnNames": [
+              "email_lower"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_usuarios_email_lower` ON `${TABLE_NAME}` (`email_lower`)"
+          },
+          {
+            "name": "index_usuarios_cedula",
+            "unique": false,
+            "columnNames": [
+              "cedula"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_usuarios_cedula` ON `${TABLE_NAME}` (`cedula`)"
+          },
+          {
+            "name": "index_usuarios_telefono",
+            "unique": false,
+            "columnNames": [
+              "telefono"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_usuarios_telefono` ON `${TABLE_NAME}` (`telefono`)"
+          }
+        ]
+      },
+      {
+        "tableName": "regiones",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `nombre` TEXT NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nombre",
+            "columnName": "nombre",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "agencias",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `nombre` TEXT NOT NULL, `regionId` TEXT, `subregion` TEXT, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nombre",
+            "columnName": "nombre",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "regionId",
+            "columnName": "regionId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "subregion",
+            "columnName": "subregion",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "localizaciones",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `calle` INTEGER NOT NULL, `direccion` TEXT NOT NULL, `latitud` REAL NOT NULL, `longitud` REAL NOT NULL, `pueblo` INTEGER NOT NULL, `alPoste` INTEGER NOT NULL, `delPoste` INTEGER NOT NULL, `subregion` TEXT, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "calle",
+            "columnName": "calle",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "direccion",
+            "columnName": "direccion",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "latitud",
+            "columnName": "latitud",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "longitud",
+            "columnName": "longitud",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pueblo",
+            "columnName": "pueblo",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "alPoste",
+            "columnName": "alPoste",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "delPoste",
+            "columnName": "delPoste",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "subregion",
+            "columnName": "subregion",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "medidores",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`medidorNumber` TEXT NOT NULL, `calle` TEXT, `cliente` TEXT, `localizacion` INTEGER, `metros` TEXT, `poste` TEXT, `pueblo` TEXT, `subregion` TEXT, PRIMARY KEY(`medidorNumber`))",
+        "fields": [
+          {
+            "fieldPath": "medidorNumber",
+            "columnName": "medidorNumber",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "calle",
+            "columnName": "calle",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "cliente",
+            "columnName": "cliente",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "localizacion",
+            "columnName": "localizacion",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "metros",
+            "columnName": "metros",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "poste",
+            "columnName": "poste",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "pueblo",
+            "columnName": "pueblo",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "subregion",
+            "columnName": "subregion",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "medidorNumber"
+          ]
+        }
+      },
+      {
+        "tableName": "pueblos",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `nombre` TEXT NOT NULL, `subregion` TEXT NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nombre",
+            "columnName": "nombre",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "subregion",
+            "columnName": "subregion",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "subregiones",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `nombre` TEXT NOT NULL, `regionId` TEXT NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nombre",
+            "columnName": "nombre",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "regionId",
+            "columnName": "regionId",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "vehiculos",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `agencia` TEXT NOT NULL, `placa` INTEGER NOT NULL, `tipo` TEXT NOT NULL, `subregion` TEXT, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "agencia",
+            "columnName": "agencia",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "placa",
+            "columnName": "placa",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tipo",
+            "columnName": "tipo",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "subregion",
+            "columnName": "subregion",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "materiales",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `codigo` TEXT NOT NULL, `descripcion` TEXT NOT NULL, `unidad` TEXT NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "codigo",
+            "columnName": "codigo",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "descripcion",
+            "columnName": "descripcion",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "unidad",
+            "columnName": "unidad",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_materiales_codigo",
+            "unique": true,
+            "columnNames": [
+              "codigo"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_materiales_codigo` ON `${TABLE_NAME}` (`codigo`)"
+          }
+        ]
+      },
+      {
+        "tableName": "averias",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`caseId` TEXT NOT NULL, `region` TEXT, `provincia` INTEGER, `agencia` TEXT, `nombreAgencia` TEXT, `nise` TEXT, `causa` TEXT, `observaciones` TEXT, `estado` TEXT NOT NULL, `idEstadoAve` INTEGER, `idEstadoAranda` INTEGER, `lat` REAL, `lng` REAL, `clientesAfectados` TEXT, `fechaInicioMillis` INTEGER NOT NULL, `horaInicioMillis` INTEGER, `horaFinalMillis` INTEGER, `atencionHoraInicioMillis` INTEGER, `atencionHoraFinalMillis` INTEGER, `kilometrajeInicio` REAL, `kilometrajeFinal` REAL, `agenciaTag` TEXT NOT NULL, `vehiculoAsignado` TEXT, `tecnicoAsignadoUid` TEXT, `tecnicoAsignadoNombre` TEXT, `atendidoPorUid` TEXT, `atendidoPorNombre` TEXT, `materialesTexto` TEXT, `materialesDetalleJson` TEXT, `isSynced` INTEGER NOT NULL, `lastUpdated` INTEGER NOT NULL, PRIMARY KEY(`caseId`))",
+        "fields": [
+          {
+            "fieldPath": "caseId",
+            "columnName": "caseId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "region",
+            "columnName": "region",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "provincia",
+            "columnName": "provincia",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "agencia",
+            "columnName": "agencia",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "nombreAgencia",
+            "columnName": "nombreAgencia",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "nise",
+            "columnName": "nise",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "causa",
+            "columnName": "causa",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "observaciones",
+            "columnName": "observaciones",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "estado",
+            "columnName": "estado",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "idEstadoAve",
+            "columnName": "idEstadoAve",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "idEstadoAranda",
+            "columnName": "idEstadoAranda",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "lat",
+            "columnName": "lat",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "lng",
+            "columnName": "lng",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "clientesAfectados",
+            "columnName": "clientesAfectados",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "fechaInicioMillis",
+            "columnName": "fechaInicioMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "horaInicioMillis",
+            "columnName": "horaInicioMillis",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "horaFinalMillis",
+            "columnName": "horaFinalMillis",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "atencionHoraInicioMillis",
+            "columnName": "atencionHoraInicioMillis",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "atencionHoraFinalMillis",
+            "columnName": "atencionHoraFinalMillis",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "kilometrajeInicio",
+            "columnName": "kilometrajeInicio",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "kilometrajeFinal",
+            "columnName": "kilometrajeFinal",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "agenciaTag",
+            "columnName": "agenciaTag",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "vehiculoAsignado",
+            "columnName": "vehiculoAsignado",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "tecnicoAsignadoUid",
+            "columnName": "tecnicoAsignadoUid",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "tecnicoAsignadoNombre",
+            "columnName": "tecnicoAsignadoNombre",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "atendidoPorUid",
+            "columnName": "atendidoPorUid",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "atendidoPorNombre",
+            "columnName": "atendidoPorNombre",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "materialesTexto",
+            "columnName": "materialesTexto",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "materialesDetalleJson",
+            "columnName": "materialesDetalleJson",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "isSynced",
+            "columnName": "isSynced",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastUpdated",
+            "columnName": "lastUpdated",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "caseId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_averias_caseId",
+            "unique": true,
+            "columnNames": [
+              "caseId"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_averias_caseId` ON `${TABLE_NAME}` (`caseId`)"
+          },
+          {
+            "name": "index_averias_estado",
+            "unique": false,
+            "columnNames": [
+              "estado"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_averias_estado` ON `${TABLE_NAME}` (`estado`)"
+          },
+          {
+            "name": "index_averias_agenciaTag",
+            "unique": false,
+            "columnNames": [
+              "agenciaTag"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_averias_agenciaTag` ON `${TABLE_NAME}` (`agenciaTag`)"
+          },
+          {
+            "name": "index_averias_fechaInicioMillis",
+            "unique": false,
+            "columnNames": [
+              "fechaInicioMillis"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_averias_fechaInicioMillis` ON `${TABLE_NAME}` (`fechaInicioMillis`)"
+          }
+        ]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '2a4bf6a7a4b208447cebc82c076eae5e')"
+    ]
+  }
+}

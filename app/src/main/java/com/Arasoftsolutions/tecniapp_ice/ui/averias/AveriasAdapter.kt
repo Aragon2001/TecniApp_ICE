@@ -76,8 +76,12 @@ class AveriasAdapter(
         private val tvAgencia: TextView = view.findViewById(R.id.tvAgencia)
         private val tvMateriales: TextView = view.findViewById(R.id.tvMateriales)
         private val tvKilometraje: TextView = view.findViewById(R.id.tvKilometraje)
+        private val tvCliente: TextView? = view.findViewById(R.id.tvCliente)
+private val tvLocalizacion: TextView? = view.findViewById(R.id.tvLocalizacion)
 
-        private val tvCoords: TextView = view.findViewById(R.id.tvCoords)
+
+
+
         private val tvFecha: TextView = view.findViewById(R.id.tvFecha)
 
         private val btnAsignar: MaterialButton = view.findViewById(R.id.btnAsignar)
@@ -132,12 +136,29 @@ class AveriasAdapter(
             }
 
             // Coordenadas + fecha
-            tvCoords.text = if (lat == 0.0 && lng == 0.0) "Coords: —" else "Coords: $lat, $lng"
+
             val fechaEvento = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT)
                 .format(Date(item.fechaMillis))
             val inicioAtencion = item.horaAtencionInicio?.let {
                 DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(Date(it))
             }
+            // Cliente: no viene nombre de cliente en el modelo; mostramos NISE como identificador
+tvCliente?.apply {
+    val nise = item.nise
+    visibility = if (nise.isNotBlank()) View.VISIBLE else View.GONE
+    text = "Cliente: -"
+}
+
+// Localización: si no hay campo dedicado, toma la primera línea de observaciones (o lo ocultás)
+tvLocalizacion?.apply {
+    val loc = item.observaciones
+        .lineSequence()
+        .firstOrNull()
+        ?.trim()
+        ?.takeIf { it.isNotBlank() }
+    visibility = if (loc != null) View.VISIBLE else View.GONE
+    text = "Localización: ${loc ?: "—"}"
+}
             val finAtencion = item.horaAtencionFinal?.let {
                 DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(Date(it))
             }

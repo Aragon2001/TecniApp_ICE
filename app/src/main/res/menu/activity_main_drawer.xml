@@ -23,18 +23,22 @@
         <item
             android:id="@+id/nav_luminarias"
             android:icon="@drawable/ic_menu_luminarias"
-            android:title="@string/menu_luminarias" />
+            android:title="@string/menu_luminarias"
+            android:visible="false"/>
         <item
             android:id="@+id/nav_inventario"
             android:icon="@drawable/ic_menu_inventario"
-            android:title="@string/menu_inventario" />
+            android:title="@string/menu_inventario"
+            android:visible="false"/>
         <item
             android:id="@+id/nav_reportes"
             android:icon="@drawable/ic_menu_reportes"
-            android:title="@string/menu_reportes" />
+            android:title="@string/menu_reportes"
+            android:visible="false"/>
         <item
             android:id="@+id/nav_programacion"
             android:icon="@drawable/ic_menu_programacion"
-            android:title="@string/menu_programacion" />
+            android:title="@string/menu_programacion"
+            android:visible="false"/>
     </group>
 </menu>

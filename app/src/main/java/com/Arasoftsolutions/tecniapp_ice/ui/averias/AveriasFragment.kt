@@ -33,8 +33,20 @@ class AveriasFragment : Fragment() {
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        // Configurar FAB para mostrar filtros
+        b.fabFilters.setOnClickListener {
+            b.appBarLayout.setExpanded(true, true) // Expande el AppBar
+        }
 
-        b.etBuscar.addTextChangedListener { vm.setQuery(it?.toString().orEmpty()) }
+        // Ocultar FAB cuando los filtros están visibles
+        b.appBarLayout.addOnOffsetChangedListener { appBarLayout, verticalOffset ->
+            val isExpanded = Math.abs(verticalOffset) < appBarLayout.totalScrollRange
+            b.fabFilters.visibility = if (isExpanded) View.GONE else View.VISIBLE
+        }
+
+        b.etBuscar.addTextChangedListener { text ->
+            vm.setQuery(text?.toString().orEmpty())
+        }
 
         // Recycler
         adapter = AveriasAdapter(
@@ -43,22 +55,29 @@ class AveriasFragment : Fragment() {
             onAtender = { handleAtender(it) },
             onResolver = { handleResolver(it) }
         )
+
         b.recyclerViewAverias.apply {
             layoutManager = LinearLayoutManager(requireContext())
             adapter = this@AveriasFragment.adapter
             addItemDecoration(DividerItemDecoration(context, DividerItemDecoration.VERTICAL))
         }
 
+        // Usuario actual
         viewLifecycleOwner.lifecycleScope.launch {
-            vm.usuarioActual.collectLatest { user ->
-                adapter.currentUserUid = user?.uid
-                adapter.notifyDataSetChanged()
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                vm.usuarioActual.collectLatest { user ->
+                    adapter.currentUserUid = user?.uid
+                    adapter.notifyDataSetChanged()
+                }
             }
         }
 
         // Pull to refresh → Sync
-        b.swipeRefresh.setOnRefreshListener { vm.syncNow() }
+        b.swipeRefresh.setOnRefreshListener {
+            vm.syncNow()
+        }
 
+        // Chip Group Estado
         b.chipGroupEstado.setOnCheckedStateChangeListener { _, checkedIds ->
             val state = when (checkedIds.firstOrNull()) {
                 b.chipTodos.id -> null
@@ -74,39 +93,55 @@ class AveriasFragment : Fragment() {
 
         // Dropdown Regiones
         viewLifecycleOwner.lifecycleScope.launch {
-            vm.regiones.collectLatest { regiones ->
-                val nombres = regiones.map { it.nombreVisible }
-                b.actvRegion.setAdapter(
-                    ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, nombres)
-                )
-            }
-        }
-        viewLifecycleOwner.lifecycleScope.launch {
-            vm.regionSeleccionada.collectLatest { region ->
-                if (b.actvRegion.text?.toString() != region.nombreVisible) {
-                    b.actvRegion.setText(region.nombreVisible, false)
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                vm.regiones.collectLatest { regiones ->
+                    val nombres = regiones.map { it.nombreVisible }
+                    b.actvRegion.setAdapter(
+                        ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, nombres)
+                    )
                 }
             }
         }
-        b.actvRegion.setOnItemClickListener { _, _, position, _ -> vm.setRegionIndex(position) }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                vm.regionSeleccionada.collectLatest { region ->
+                    if (b.actvRegion.text?.toString() != region.nombreVisible) {
+                        b.actvRegion.setText(region.nombreVisible, false)
+                    }
+                }
+            }
+        }
+
+        b.actvRegion.setOnItemClickListener { _, _, position, _ ->
+            vm.setRegionIndex(position)
+        }
 
         // Dropdown Agencias
         viewLifecycleOwner.lifecycleScope.launch {
-            vm.agencias.collectLatest { agencias ->
-                val nombres = agencias.map { it.nombreVisible }
-                b.actvAgencia.setAdapter(
-                    ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, nombres)
-                )
-            }
-        }
-        viewLifecycleOwner.lifecycleScope.launch {
-            vm.agenciaSeleccionada.collectLatest { agencia ->
-                if (b.actvAgencia.text?.toString() != agencia.nombreVisible) {
-                    b.actvAgencia.setText(agencia.nombreVisible, false)
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                vm.agencias.collectLatest { agencias ->
+                    val nombres = agencias.map { it.nombreVisible }
+                    b.actvAgencia.setAdapter(
+                        ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, nombres)
+                    )
                 }
             }
         }
-        b.actvAgencia.setOnItemClickListener { _, _, position, _ -> vm.setAgenciaIndex(position) }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                vm.agenciaSeleccionada.collectLatest { agencia ->
+                    if (b.actvAgencia.text?.toString() != agencia.nombreVisible) {
+                        b.actvAgencia.setText(agencia.nombreVisible, false)
+                    }
+                }
+            }
+        }
+
+        b.actvAgencia.setOnItemClickListener { _, _, position, _ ->
+            vm.setAgenciaIndex(position)
+        }
 
         // Observa estado UI y mensajes
         viewLifecycleOwner.lifecycleScope.launch {
@@ -126,9 +161,9 @@ class AveriasFragment : Fragment() {
             }
         }
 
+        // Sincronizar datos iniciales
         vm.syncNow()
     }
-
     private fun handleAtender(item: AveriaUI) {
         when (Estado.fromLabel(item.estado)) {
             Estado.ASIGNADA -> showDetalle(item)

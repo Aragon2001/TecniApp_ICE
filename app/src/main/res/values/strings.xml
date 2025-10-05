@@ -51,6 +51,8 @@
     <string name="averia_materiales_label">Materiales: %1$s</string>
     <string name="averia_kilometraje_label">Kilometraje: %1$s → %2$s</string>
     <string name="averia_fecha_evento_label">Evento: %1$s</string>
+    <string name="averias_title">Averías</string>
+    <string name="averia_ver_detalle">Ver detalle</string>
     <string name="averia_fecha_atencion_inicio">Inicio de atención: %1$s</string>
     <string name="averia_fecha_atencion_fin">Fin de atención: %1$s</string>
     <string name="averia_notificacion_asignada_title">Avería asignada</string>

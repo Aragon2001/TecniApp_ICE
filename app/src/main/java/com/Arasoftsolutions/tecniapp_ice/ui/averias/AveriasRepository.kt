@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
+import java.text.Normalizer
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.TimeZone
@@ -32,6 +33,175 @@ class AveriasRepository(private val db: AppDatabase) {
 
     fun observe(agencias: List<String>, estado: String, q: String): Flow<List<AveriaEntity>> =
         dao.observe(agencias, agencias.size, estado, q)
+
+    // ---------------------------------------------------------------------------------------------
+    // Normalizadores (región / agencia) y utilitarios
+    // ---------------------------------------------------------------------------------------------
+
+    private fun stripAccentsLower(s: String): String {
+        val n = Normalizer.normalize(s, Normalizer.Form.NFD)
+        return n.replace("\\p{InCombiningDiacriticalMarks}+".toRegex(), "")
+            .lowercase(Locale.getDefault())
+    }
+
+    private fun normalizeKey(s: String?): String {
+        if (s.isNullOrBlank()) return ""
+        var k = stripAccentsLower(s)
+        k = k.replace("[^a-z0-9 ]".toRegex(), " ")
+            .replace("\\s+".toRegex(), " ")
+            .trim()
+        // Remueve prefijos ruidosos frecuentes (S., SUB, AGENCIA, etc.)
+        k = k.removePrefix("s ").removePrefix("sub ").removePrefix("agencia ")
+        return k
+    }
+
+    private fun titleCase(s: String): String =
+        s.split(" ").filter { it.isNotBlank() }
+            .joinToString(" ") { part ->
+                if (part.length == 1) part.uppercase()
+                else part.substring(0, 1).uppercase() + part.substring(1).lowercase()
+            }
+
+    private fun slugTag(s: String): String {
+        val n = stripAccentsLower(s).replace("\\s+".toRegex(), " ").trim()
+        return n.split(" ").joinToString("") { titleCase(it) } // "Río Frío" -> "RioFrio"
+    }
+
+    // Regiones canónicas
+    private val REGION_CANON = mapOf(
+        "huetar atlantica" to "Huetar Atlántica",
+        "atlantica" to "Huetar Atlántica",
+        "caribe" to "Huetar Atlántica",
+        "huetar norte" to "Huetar Norte",
+        "norte" to "Huetar Norte",
+        "pacifico central" to "Pacífico Central",
+        "central pacifico" to "Pacífico Central",
+        "central" to "Central",
+        "chorotega" to "Chorotega",
+        "brunca" to "Brunca"
+    )
+
+    private fun canonicalRegion(raw: String?): String? {
+        val k = normalizeKey(raw)
+        return REGION_CANON[k] ?: raw?.trim()
+    }
+
+    // Alias de agencias -> nombre canónico (enfocado en Huetar Atlántica + frecuentes)
+    private val AGENCIA_CANON = mapOf(
+        // Huetar Atlántica
+        "guapiles" to "Guápiles",
+        "s guapiles" to "Guápiles",
+        "sub guapiles" to "Guápiles",
+
+        "guacimo" to "Guácimo",
+
+        "siquirres" to "Siquirres",
+        "s siquirres" to "Siquirres",
+
+        "limon" to "Limón",
+        "puerto limon" to "Limón",
+
+        "talamanca" to "Talamanca",
+        "bri bri" to "Talamanca",
+        "bribri" to "Talamanca",
+        "s limon talamanca" to "Talamanca",
+
+        "cariari" to "Cariari",
+
+        "batan" to "Batán",
+        "bataan" to "Batán",
+
+        "tortuguero" to "Tortuguero",
+
+        "rio frio" to "Río Frío",
+        "riofrio" to "Río Frío",
+
+        "turrialba" to "Turrialba",
+        "juan vinas" to "Juan Viñas",
+
+        // Otras frecuentes (por si llegan)
+        "heredia" to "Heredia",
+        "cartago" to "Cartago",
+        "san jose" to "San José",
+        "alajuela" to "Alajuela",
+        "liberia" to "Liberia",
+        "perez zeledon" to "Pérez Zeledón",
+        "jaco" to "Jacó"
+    )
+
+    private data class AgenciaCanon(val agencia: String?, val nombre: String?, val tag: String?)
+
+    private fun canonicalizeAgency(region: String?, agencia: String?, nombreAgencia: String?): AgenciaCanon {
+        // Preferimos el nombre visible si existe
+        val source = nombreAgencia?.takeIf { it.isNotBlank() } ?: agencia ?: ""
+        val k = normalizeKey(source)
+        val canonNombre = AGENCIA_CANON[k] ?: run {
+            // Si no tenemos alias directo, intentar heurística simple (title case)
+            if (source.isBlank()) null else titleCase(stripAccentsLower(source))
+        }
+
+        val tag = canonNombre?.let { slugTag(it) }
+        // En "agencia" guardamos el mismo canónico, y en nombre también
+        return AgenciaCanon(
+            agencia = canonNombre,
+            nombre = canonNombre,
+            tag = tag
+        )
+    }
+
+    private fun canonicalizeAgenciaFields(entity: AveriaEntity): AveriaEntity {
+        val regionCanon = canonicalRegion(entity.region)
+        val canon = canonicalizeAgency(regionCanon, entity.agencia, entity.nombreAgencia)
+        return entity.copy(
+            region = regionCanon,
+            agencia = canon.agencia ?: entity.agencia,
+            nombreAgencia = canon.nombre ?: entity.nombreAgencia,
+            agenciaTag = canon.tag ?: entity.agenciaTag
+        )
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // Estado (no “bajar” estado) + utilitarios
+    // ---------------------------------------------------------------------------------------------
+
+    private enum class EstadoRank { PENDIENTE, ASIGNADA, EN_ATENCION, RESUELTA }
+
+    private fun normalizeEstadoLabel(raw: String?): String {
+        if (raw.isNullOrBlank()) return "Pendiente"
+        val v = raw.trim().lowercase(Locale.getDefault())
+        return when {
+            "resuel" in v -> "Resuelta"
+            "en at" in v || "atenci" in v -> "En atención"
+            "asign" in v -> "Asignada"
+            "nuevo" in v -> "Pendiente"
+            else -> if (v.isBlank()) "Pendiente" else raw.trim()
+        }
+    }
+
+    private fun rankOfEstado(label: String?): EstadoRank = when (normalizeEstadoLabel(label)) {
+        "Resuelta" -> EstadoRank.RESUELTA
+        "En atención" -> EstadoRank.EN_ATENCION
+        "Asignada" -> EstadoRank.ASIGNADA
+        else -> EstadoRank.PENDIENTE
+    }
+
+    private fun pickEstadoPreferAdvanced(local: String?, remote: String?): String {
+        val l = normalizeEstadoLabel(local)
+        val r = normalizeEstadoLabel(remote)
+        return if (rankOfEstado(l) >= rankOfEstado(r)) l else r
+    }
+
+    private fun idEstadoFromLabel(label: String?): Int = when (normalizeEstadoLabel(label)) {
+        "Pendiente" -> 1
+        "Asignada" -> 2
+        "En atención" -> 3
+        "Resuelta" -> 4
+        else -> 1
+    }
+
+    // ---------------------------------------------------------------------------------------------
+    // Fechas, filtros de inclusión y tag de agencia (compat)
+    // ---------------------------------------------------------------------------------------------
 
     private val datePatterns = listOf(
         "yyyy-MM-dd'T'HH:mm",
@@ -51,28 +221,22 @@ class AveriasRepository(private val db: AppDatabase) {
         return null
     }
 
+    // Mantengo este método (usado por vistas antiguas) redirigiendo al canónico.
     private fun agenciaTag(region: String?, nombreAgencia: String?): String {
-        val normalized = (nombreAgencia ?: "").lowercase(Locale.ROOT)
-        val isHuetarAtlantica =
-            (region ?: "").contains("huetar atl", ignoreCase = true) ||
-            (region ?: "").contains("atlánt", ignoreCase = true)
-        return when {
-            normalized.contains("guápiles") || normalized.contains("guapiles") -> "Guapiles"
-            normalized.contains("guácimo") || normalized.contains("guacimo") -> "Guacimo"
-            normalized.contains("cariari") -> "Cariari"
-            normalized.contains("tortuguero") -> "Tortuguero"
-            else -> if (isHuetarAtlantica) "Guapiles" else "Otra"
-        }
+        val canon = canonicalizeAgency(canonicalRegion(region), null, nombreAgencia)
+        return canon.tag ?: "Otra"
     }
 
     private fun estadoFromIce(idEstadoAve: Int?, estadoTexto: String?): String =
-        when (idEstadoAve) {
-            1 -> "Pendiente"
-            2 -> "Asignada"
-            3 -> "En atención"
-            4 -> "Resuelta"
-            else -> estadoTexto?.ifBlank { "Pendiente" } ?: "Pendiente"
-        }
+        normalizeEstadoLabel(
+            when (idEstadoAve) {
+                1 -> "Pendiente"
+                2 -> "Asignada"
+                3 -> "En atención"
+                4 -> "Resuelta"
+                else -> estadoTexto?.ifBlank { "Pendiente" } ?: "Pendiente"
+            }
+        )
 
     private fun shouldInclude(remote: IceAveria): Boolean {
         val estadoTexto = remote.estado?.lowercase(Locale.getDefault()) ?: ""
@@ -88,6 +252,10 @@ class AveriasRepository(private val db: AppDatabase) {
         return estadoTexto.contains("nuevo") || estadoTexto.contains("pend")
     }
 
+    // ---------------------------------------------------------------------------------------------
+    // Map desde ICE (con normalización de región/agencia)
+    // ---------------------------------------------------------------------------------------------
+
     private fun map(remote: IceAveria): AveriaEntity? {
         val id = remote.noCaso?.trim().orEmpty()
         if (id.isBlank()) return null
@@ -96,17 +264,20 @@ class AveriasRepository(private val db: AppDatabase) {
         val lng = remote.longitud?.replace(",", ".")?.toDoubleOrNull()
         val estado = estadoFromIce(remote.idEstadoAve, remote.estado)
 
+        val regionCanon = canonicalRegion(remote.region)
+        val agenciaCanon = canonicalizeAgency(regionCanon, remote.agencia, remote.nombreAgencia)
+
         return AveriaEntity(
             caseId = id,
-            region = remote.region,
+            region = regionCanon,
             provincia = remote.provincia,
-            agencia = remote.agencia,
-            nombreAgencia = remote.nombreAgencia,
+            agencia = agenciaCanon.agencia ?: remote.agencia,
+            nombreAgencia = agenciaCanon.nombre ?: remote.nombreAgencia,
             nise = remote.nise,
             causa = remote.causa,
             observaciones = remote.observaciones,
             estado = estado,
-            idEstadoAve = remote.idEstadoAve,
+            idEstadoAve = idEstadoAveFromLabelOrRemote(estado, remote.idEstadoAve),
             idEstadoAranda = remote.idEstadoAranda,
             lat = lat?.takeIf { it in -90.0..90.0 },
             lng = lng?.takeIf { it in -180.0..180.0 },
@@ -114,7 +285,7 @@ class AveriasRepository(private val db: AppDatabase) {
             fechaInicioMillis = parseMillis(remote.fechaInicio) ?: System.currentTimeMillis(),
             horaInicioMillis = parseMillis(remote.manualSalidaVehiculo),
             horaFinalMillis = parseMillis(remote.horaCierreInterrupcion),
-            agenciaTag = agenciaTag(remote.region, remote.nombreAgencia),
+            agenciaTag = agenciaCanon.tag ?: agenciaTag(regionCanon, agenciaCanon.nombre),
             vehiculoAsignado = null,
             tecnicoAsignadoUid = null,
             tecnicoAsignadoNombre = null,
@@ -126,6 +297,13 @@ class AveriasRepository(private val db: AppDatabase) {
             lastUpdated = System.currentTimeMillis()
         )
     }
+
+    private fun idEstadoAveFromLabelOrRemote(label: String, remoteId: Int?): Int =
+        remoteId ?: idEstadoFromLabel(label)
+
+    // ---------------------------------------------------------------------------------------------
+    // Sync desde ICE (merge sin bajar estado + conservar lastUpdated más nuevo)
+    // ---------------------------------------------------------------------------------------------
 
     suspend fun syncFromIce(bearer: String?): List<String> = withContext(Dispatchers.IO) {
         val authHeader = bearer?.takeIf { it.isNotBlank() }?.let { "Bearer $it" }
@@ -140,33 +318,44 @@ class AveriasRepository(private val db: AppDatabase) {
             when {
                 existing == null -> remote
                 !existing.isSynced -> existing
-                else -> existing.copy(
-                    region = remote.region,
-                    provincia = remote.provincia,
-                    agencia = remote.agencia,
-                    nombreAgencia = remote.nombreAgencia,
-                    nise = remote.nise,
-                    causa = remote.causa ?: existing.causa,
-                    observaciones = remote.observaciones ?: existing.observaciones,
-                    estado = remote.estado,
-                    idEstadoAve = remote.idEstadoAve,
-                    idEstadoAranda = remote.idEstadoAranda,
-                    lat = remote.lat,
-                    lng = remote.lng,
-                    clientesAfectados = remote.clientesAfectados,
-                    fechaInicioMillis = remote.fechaInicioMillis,
-                    horaInicioMillis = existing.horaInicioMillis ?: remote.horaInicioMillis,
-                    horaFinalMillis = remote.horaFinalMillis ?: existing.horaFinalMillis,
-                    atencionHoraInicioMillis = existing.atencionHoraInicioMillis,
-                    atencionHoraFinalMillis = existing.atencionHoraFinalMillis,
-                    kilometrajeInicio = existing.kilometrajeInicio,
-                    kilometrajeFinal = existing.kilometrajeFinal,
-                    materialesTexto = existing.materialesTexto,
-                    materialesDetalleJson = existing.materialesDetalleJson,
-                    agenciaTag = remote.agenciaTag,
-                    lastUpdated = remote.lastUpdated,
-                    isSynced = true
-                )
+                else -> {
+                    // No bajar estado y normalizar agencias
+                    val estadoElegido = pickEstadoPreferAdvanced(existing.estado, remote.estado)
+                    val idEstadoElegido = idEstadoFromLabel(estadoElegido)
+
+                    val normalRemote = canonicalizeAgenciaFields(remote)
+                    existing.copy(
+                        region = normalRemote.region,
+                        provincia = normalRemote.provincia,
+                        agencia = normalRemote.agencia,
+                        nombreAgencia = normalRemote.nombreAgencia,
+                        nise = normalRemote.nise,
+                        causa = normalRemote.causa ?: existing.causa,
+                        observaciones = normalRemote.observaciones ?: existing.observaciones,
+
+                        estado = estadoElegido,
+                        idEstadoAve = idEstadoElegido,
+                        idEstadoAranda = normalRemote.idEstadoAranda,
+
+                        lat = normalRemote.lat,
+                        lng = normalRemote.lng,
+                        clientesAfectados = normalRemote.clientesAfectados,
+                        fechaInicioMillis = normalRemote.fechaInicioMillis,
+                        horaInicioMillis = existing.horaInicioMillis ?: normalRemote.horaInicioMillis,
+                        horaFinalMillis = normalRemote.horaFinalMillis ?: existing.horaFinalMillis,
+                        atencionHoraInicioMillis = existing.atencionHoraInicioMillis,
+                        atencionHoraFinalMillis = existing.atencionHoraFinalMillis,
+                        kilometrajeInicio = existing.kilometrajeInicio,
+                        kilometrajeFinal = existing.kilometrajeFinal,
+
+                        materialesTexto = existing.materialesTexto,
+                        materialesDetalleJson = existing.materialesDetalleJson,
+
+                        agenciaTag = normalRemote.agenciaTag,
+                        lastUpdated = maxOf(existing.lastUpdated, normalRemote.lastUpdated),
+                        isSynced = true
+                    )
+                }
             }
         }
 
@@ -177,6 +366,10 @@ class AveriasRepository(private val db: AppDatabase) {
 
         incoming.map { it.caseId }.filter { !current.containsKey(it) }
     }
+
+    // ---------------------------------------------------------------------------------------------
+    // Acciones y sync con Firebase
+    // ---------------------------------------------------------------------------------------------
 
     suspend fun syncPendientesConFirebase() = withContext(Dispatchers.IO) {
         dao.pendingSync().forEach { entity ->
@@ -314,27 +507,62 @@ class AveriasRepository(private val db: AppDatabase) {
         "lastUpdated" to lastUpdated
     )
 
+    // ---------------------------------------------------------------------------------------------
+    // Firebase: pull (una vez) y realtime (con normalización y sin bajar estado)
+    // ---------------------------------------------------------------------------------------------
+
     suspend fun pullFromFirebaseOnce() = withContext(Dispatchers.IO) {
         try {
             val snapshot = firebaseRef.get().await()
             val current = dao.all().associateBy { it.caseId }
             val updated = mutableListOf<AveriaEntity>()
             snapshot.children.forEach { child ->
-                val remote = child.getValue(AveriaEntity::class.java) ?: return@forEach
-                val estadoRemoto = remote.estado ?: ""
-                val normalizedEstado = when (estadoRemoto.lowercase(Locale.getDefault())) {
-                    "nuevo" -> "Pendiente"
-                    else -> estadoRemoto.ifBlank { "Pendiente" }
-                }
-                val remoteEntity = remote.copy(
-                    estado = normalizedEstado,
-                    isSynced = true
-                )
-                val existing = current[remoteEntity.caseId]
-                if (existing == null) {
-                    updated += remoteEntity
-                } else if (existing.isSynced && remoteEntity.lastUpdated >= existing.lastUpdated) {
-                    updated += remoteEntity
+                val remote0 = child.getValue(AveriaEntity::class.java) ?: return@forEach
+                // Normalizar estado "nuevo" -> "Pendiente"
+                val normalizedEstado = normalizeEstadoLabel(remote0.estado)
+                val remoteBase = remote0.copy(estado = normalizedEstado, isSynced = true)
+                val remote = canonicalizeAgenciaFields(remoteBase)
+
+                val existing = current[remote.caseId]
+                when {
+                    existing == null -> updated += remote
+                    existing.isSynced && remote.lastUpdated >= existing.lastUpdated -> {
+                        // Merge sin bajar estado
+                        val estadoElegido = pickEstadoPreferAdvanced(existing.estado, remote.estado)
+                        val idEstadoElegido = idEstadoFromLabel(estadoElegido)
+                        updated += existing.copy(
+                            region = remote.region,
+                            provincia = remote.provincia,
+                            agencia = remote.agencia,
+                            nombreAgencia = remote.nombreAgencia,
+                            nise = remote.nise,
+                            causa = remote.causa ?: existing.causa,
+                            observaciones = remote.observaciones ?: existing.observaciones,
+                            estado = estadoElegido,
+                            idEstadoAve = idEstadoElegido,
+                            idEstadoAranda = remote.idEstadoAranda,
+                            lat = remote.lat,
+                            lng = remote.lng,
+                            clientesAfectados = remote.clientesAfectados,
+                            fechaInicioMillis = remote.fechaInicioMillis,
+                            horaInicioMillis = remote.horaInicioMillis,
+                            horaFinalMillis = remote.horaFinalMillis,
+                            atencionHoraInicioMillis = remote.atencionHoraInicioMillis,
+                            atencionHoraFinalMillis = remote.atencionHoraFinalMillis,
+                            kilometrajeInicio = remote.kilometrajeInicio,
+                            kilometrajeFinal = remote.kilometrajeFinal,
+                            vehiculoAsignado = remote.vehiculoAsignado,
+                            tecnicoAsignadoUid = remote.tecnicoAsignadoUid,
+                            tecnicoAsignadoNombre = remote.tecnicoAsignadoNombre,
+                            atendidoPorUid = remote.atendidoPorUid,
+                            atendidoPorNombre = remote.atendidoPorNombre,
+                            materialesTexto = remote.materialesTexto,
+                            materialesDetalleJson = remote.materialesDetalleJson,
+                            agenciaTag = remote.agenciaTag,
+                            lastUpdated = maxOf(existing.lastUpdated, remote.lastUpdated),
+                            isSynced = true
+                        )
+                    }
                 }
             }
             if (updated.isNotEmpty()) {
@@ -355,53 +583,53 @@ class AveriasRepository(private val db: AppDatabase) {
                     val current = dao.all().associateBy { it.caseId }
                     val toUpsert = mutableListOf<AveriaEntity>()
                     snapshot.children.forEach { child ->
-                        val remote = child.getValue(AveriaEntity::class.java) ?: return@forEach
-                        val estadoRemoto = remote.estado ?: ""
-                        val normalizedEstado = when (estadoRemoto.lowercase(Locale.getDefault())) {
-                            "nuevo" -> "Pendiente"
-                            else -> estadoRemoto.ifBlank { "Pendiente" }
-                        }
-                        val remoteEntity = remote.copy(
-                            estado = normalizedEstado,
-                            isSynced = true
-                        )
-                        val existing = current[remoteEntity.caseId]
+                        val remote0 = child.getValue(AveriaEntity::class.java) ?: return@forEach
+                        val normalizedEstado = normalizeEstadoLabel(remote0.estado)
+                        val remoteBase = remote0.copy(estado = normalizedEstado, isSynced = true)
+                        val remote = canonicalizeAgenciaFields(remoteBase)
+
+                        val existing = current[remote.caseId]
                         when {
-                            existing == null -> toUpsert += remoteEntity
-                            !existing.isSynced -> if (remoteEntity.lastUpdated > existing.lastUpdated) {
-                                toUpsert += remoteEntity
+                            existing == null -> toUpsert += remote
+                            !existing.isSynced -> if (remote.lastUpdated > existing.lastUpdated) {
+                                toUpsert += remote
                             }
-                            remoteEntity.lastUpdated >= existing.lastUpdated -> toUpsert += existing.copy(
-                                region = remoteEntity.region,
-                                provincia = remoteEntity.provincia,
-                                agencia = remoteEntity.agencia,
-                                nombreAgencia = remoteEntity.nombreAgencia,
-                                nise = remoteEntity.nise,
-                                causa = remoteEntity.causa ?: existing.causa,
-                                observaciones = remoteEntity.observaciones ?: existing.observaciones,
-                                estado = remoteEntity.estado,
-                                idEstadoAve = remoteEntity.idEstadoAve,
-                                idEstadoAranda = remoteEntity.idEstadoAranda,
-                                lat = remoteEntity.lat,
-                                lng = remoteEntity.lng,
-                                clientesAfectados = remoteEntity.clientesAfectados,
-                                fechaInicioMillis = remoteEntity.fechaInicioMillis,
-                                horaInicioMillis = remoteEntity.horaInicioMillis,
-                                horaFinalMillis = remoteEntity.horaFinalMillis,
-                                atencionHoraInicioMillis = remoteEntity.atencionHoraInicioMillis,
-                                atencionHoraFinalMillis = remoteEntity.atencionHoraFinalMillis,
-                                kilometrajeInicio = remoteEntity.kilometrajeInicio,
-                                kilometrajeFinal = remoteEntity.kilometrajeFinal,
-                                vehiculoAsignado = remoteEntity.vehiculoAsignado,
-                                tecnicoAsignadoUid = remoteEntity.tecnicoAsignadoUid,
-                                tecnicoAsignadoNombre = remoteEntity.tecnicoAsignadoNombre,
-                                atendidoPorUid = remoteEntity.atendidoPorUid,
-                                atendidoPorNombre = remoteEntity.atendidoPorNombre,
-                                materialesTexto = remoteEntity.materialesTexto,
-                                materialesDetalleJson = remoteEntity.materialesDetalleJson,
-                                lastUpdated = remoteEntity.lastUpdated,
-                                isSynced = true
-                            )
+                            remote.lastUpdated >= existing.lastUpdated -> {
+                                val estadoElegido = pickEstadoPreferAdvanced(existing.estado, remote.estado)
+                                val idEstadoElegido = idEstadoFromLabel(estadoElegido)
+                                toUpsert += existing.copy(
+                                    region = remote.region,
+                                    provincia = remote.provincia,
+                                    agencia = remote.agencia,
+                                    nombreAgencia = remote.nombreAgencia,
+                                    nise = remote.nise,
+                                    causa = remote.causa ?: existing.causa,
+                                    observaciones = remote.observaciones ?: existing.observaciones,
+                                    estado = estadoElegido,
+                                    idEstadoAve = idEstadoElegido,
+                                    idEstadoAranda = remote.idEstadoAranda,
+                                    lat = remote.lat,
+                                    lng = remote.lng,
+                                    clientesAfectados = remote.clientesAfectados,
+                                    fechaInicioMillis = remote.fechaInicioMillis,
+                                    horaInicioMillis = remote.horaInicioMillis,
+                                    horaFinalMillis = remote.horaFinalMillis,
+                                    atencionHoraInicioMillis = remote.atencionHoraInicioMillis,
+                                    atencionHoraFinalMillis = remote.atencionHoraFinalMillis,
+                                    kilometrajeInicio = remote.kilometrajeInicio,
+                                    kilometrajeFinal = remote.kilometrajeFinal,
+                                    vehiculoAsignado = remote.vehiculoAsignado,
+                                    tecnicoAsignadoUid = remote.tecnicoAsignadoUid,
+                                    tecnicoAsignadoNombre = remote.tecnicoAsignadoNombre,
+                                    atendidoPorUid = remote.atendidoPorUid,
+                                    atendidoPorNombre = remote.atendidoPorNombre,
+                                    materialesTexto = remote.materialesTexto,
+                                    materialesDetalleJson = remote.materialesDetalleJson,
+                                    agenciaTag = remote.agenciaTag,
+                                    lastUpdated = maxOf(existing.lastUpdated, remote.lastUpdated),
+                                    isSynced = true
+                                )
+                            }
                         }
                     }
                     if (toUpsert.isNotEmpty()) {

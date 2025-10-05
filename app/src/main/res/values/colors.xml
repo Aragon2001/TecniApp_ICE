@@ -58,5 +58,8 @@
     <color name="red">#D32F2F</color>
 
     <color name="white_translucent">#80FFFFFF</color>
+    <color name="transparent">#00000000</color>
+<color name="primary_dark">#1A237E</color>
+<color name="overlay_dark">#80000000</color>
 
 </resources>
