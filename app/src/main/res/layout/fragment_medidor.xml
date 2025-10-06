@@ -6,17 +6,6 @@
     android:layout_height="match_parent"
     tools:context=".ui.medidor.MedidorFragment">
 
-    <com.google.android.material.appbar.MaterialToolbar
-        android:id="@+id/toolbar"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="?attr/colorPrimaryContainer"
-        android:title="Buscar Medidor"
-        android:titleTextColor="?android:attr/textColorPrimaryInverse"
-        app:layout_scrollFlags="scroll|enterAlways"
-        app:navigationIcon="@drawable/ic_arrow_back"
-        app:titleCentered="true" />
-
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"

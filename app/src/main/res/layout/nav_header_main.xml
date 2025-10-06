@@ -104,10 +104,10 @@
         android:text="@string/nav_header_vehicle_placeholder"
         android:textAllCaps="false"
         android:textColor="@android:color/white"
-        app:chipBackgroundColor="@android:color/transparent"
-        app:chipIconTint="@android:color/white"
+        app:chipBackgroundColor="@color/transparent"
+        app:chipIconTint="@color/white"
         app:rippleColor="@color/ice_blue"
-        app:strokeColor="@android:color/white"
+        app:strokeColor="@color/white"
         app:strokeWidth="1dp"
         tools:visibility="visible" />
 
