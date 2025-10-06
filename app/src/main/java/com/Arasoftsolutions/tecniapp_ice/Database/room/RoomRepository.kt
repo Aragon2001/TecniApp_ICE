@@ -83,11 +83,45 @@ class RoomRepository(context: Context) {
         db.medidorDao().insertAll(listOf(entity))
     }
 
+    suspend fun insertarMedidores(medidores: List<MedidorEntity>) {
+        if (medidores.isNotEmpty()) {
+            db.medidorDao().insertAll(medidores)
+        }
+    }
+
+    suspend fun contarMedidores(subregionId: String): Int =
+        db.medidorDao().contarPorSubregion(subregionId)
+
     suspend fun obtenerUsuario(uid: String): UserEntity? =
         db.usuarioDao().getByUid(uid)
 
     suspend fun saveUser(user: UserEntity) = withContext(Dispatchers.IO) {
         db.usuarioDao().upsert(user)
+    }
+
+    suspend fun obtenerPuebloPorId(subregionId: String, puebloId: Int): PueblosEntity? =
+        db.puebloDao().buscarPorId(subregionId, puebloId)
+
+    suspend fun obtenerCallesPorPueblo(
+        subregionId: String,
+        puebloId: Int
+    ): List<LocalizacionesEntity> =
+        db.localizacionDao().obtenerPorPueblo(subregionId, puebloId)
+
+    suspend fun buscarLocalizacion(
+        subregionId: String,
+        puebloId: Int,
+        calleId: Int,
+        direccion: String?
+    ): LocalizacionesEntity? {
+        val coincidencias = db.localizacionDao().buscarPorCalle(subregionId, puebloId, calleId)
+        if (coincidencias.isEmpty()) return null
+
+        val direccionNormalizada = direccion?.trim()?.lowercase()
+        return coincidencias.firstOrNull { loc ->
+            val dir = loc.direccion.trim().lowercase()
+            direccionNormalizada?.let { dir == it } ?: true
+        } ?: coincidencias.first()
     }
 
     // ----- Sincronización -----

@@ -1,159 +1,155 @@
 package com.Arasoftsolutions.tecniapp_ice.ui.localizacion
 
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.ViewModel
-import com.google.firebase.database.DataSnapshot
-import com.google.firebase.database.DatabaseError
-import com.google.firebase.database.FirebaseDatabase
-import com.google.firebase.database.ValueEventListener
-import android.util.Log
+import androidx.lifecycle.viewModelScope
+import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
+import com.Arasoftsolutions.tecniapp_ice.R
+import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
-class LocalizacionViewModel : ViewModel() {
+class LocalizacionViewModel(app: Application) : AndroidViewModel(app) {
 
+    private val repository = RoomRepository.getInstance(app)
+    private val auth = FirebaseAuth.getInstance()
 
-    // LiveData para los pueblos
     private val _pueblos = MutableLiveData<List<String>>()
-    val pueblos: LiveData<List<String>> get() = _pueblos
+    val pueblos: LiveData<List<String>> = _pueblos
 
-    // LiveData para las calles
     private val _calles = MutableLiveData<List<String>>()
-    val calles: LiveData<List<String>> get() = _calles
+    val calles: LiveData<List<String>> = _calles
 
-    // LiveData para manejar el estado de carga
     private val _estado = MutableLiveData<Estado>()
-    val estado: LiveData<Estado> get() = _estado
+    val estado: LiveData<Estado> = _estado
 
-    // LiveData para manejar la localización
-    private val _localizacion = MutableLiveData<Localizacion>()
-    val localizacion: LiveData<Localizacion> get() = _localizacion
+    private val _localizacion = MutableLiveData<Localizacion?>()
+    val localizacion: LiveData<Localizacion?> = _localizacion
 
-    private val referenciaDB = FirebaseDatabase.getInstance("https://tecniapp-ice.firebaseio.com/")
-        .getReference("LocalizacionesEntity")
-     private val PueblosDB = FirebaseDatabase.getInstance("https://tecniapp-ice.firebaseio.com/")
-        .getReference("pueblos")
+    private var subregionActual: String? = null
+    private var initialized = false
+    private var pueblosJob: Job? = null
 
-    // Método para cargar los pueblos
-    fun cargarPueblos() {
-        _estado.value = Estado.Cargando
-        PueblosDB.addListenerForSingleValueEvent(object : ValueEventListener {
+    fun prepararDatos() {
+        if (initialized) return
+        initialized = true
+        viewModelScope.launch { cargarContexto() }
+    }
 
-            override fun onDataChange(snapshot: DataSnapshot) {
-                val listaPueblos = mutableListOf("Seleccione un pueblo")
-                for (data in snapshot.children) {
-                    val codigoPueblo = data.key
-                    val nombrePueblo = data.child("nombre").getValue(String::class.java)
-                    if (codigoPueblo != null && nombrePueblo != null) {
-                        listaPueblos.add("$codigoPueblo - $nombrePueblo")
-                    }
+    private suspend fun cargarContexto() {
+        val context = getApplication<Application>()
+        val uid = auth.currentUser?.uid
+        if (uid.isNullOrBlank()) {
+            _estado.postValue(Estado.Error(context.getString(R.string.medidor_estado_requiere_sesion)))
+            return
+        }
+
+        try {
+            val subregion = withContext(Dispatchers.IO) {
+                repository.obtenerUsuario(uid)?.subregion?.trim()?.takeIf { it.isNotEmpty() }
+            }
+
+            if (subregion.isNullOrBlank()) {
+                _estado.postValue(Estado.Error(context.getString(R.string.localizacion_estado_sin_subregion)))
+                return
+            }
+
+            subregionActual = subregion
+            observarPueblos(subregion)
+        } catch (t: Throwable) {
+            _estado.postValue(Estado.Error(context.getString(R.string.localizacion_estado_error_generico)))
+        }
+    }
+
+    private fun observarPueblos(subregion: String) {
+        pueblosJob?.cancel()
+        pueblosJob = viewModelScope.launch {
+            repository.observarPueblos(subregion).collectLatest { lista ->
+                if (lista.isEmpty()) {
+                    _pueblos.postValue(listOf("Seleccione un pueblo"))
+                    _estado.postValue(Estado.Error(getApplication<Application>().getString(R.string.localizacion_estado_sin_pueblos)))
+                } else {
+                    val pueblosOrdenados = lista.sortedBy { it.nombre }
+                        .map { "${it.id} - ${it.nombre}" }
+                    _pueblos.postValue(listOf("Seleccione un pueblo") + pueblosOrdenados)
+                    _estado.postValue(Estado.Exito)
                 }
-                _pueblos.value = listaPueblos
+            }
+        }
+    }
+
+    fun cargarCallesParaPueblo(pueblo: Int) {
+        val subregion = subregionActual ?: run {
+            _estado.value = Estado.Error(getApplication<Application>().getString(R.string.localizacion_estado_sin_subregion))
+            return
+        }
+
+        viewModelScope.launch {
+            _estado.value = Estado.Cargando
+            val calles = withContext(Dispatchers.IO) {
+                repository.obtenerCallesPorPueblo(subregion, pueblo)
+            }
+
+            if (calles.isEmpty()) {
+                _calles.value = listOf("Seleccione una calle")
+                _estado.value = Estado.Error(getApplication<Application>().getString(R.string.localizacion_estado_sin_calles))
+            } else {
+                val opciones = mutableListOf("Seleccione una calle")
+                opciones += calles
+                    .sortedBy { it.calle }
+                    .distinctBy { it.calle to it.direccion }
+                    .map { "${it.calle} - ${it.direccion}" }
+                _calles.value = opciones
                 _estado.value = Estado.Exito
             }
-
-            override fun onCancelled(error: DatabaseError) {
-                _estado.value = Estado.Error("Error al cargar pueblos: ${error.message}")
-                Log.e("FirebaseErrorPueblos", "Error al cargar pueblos: ${error.message}")
-            }
-        })
+        }
     }
 
-    // Método para cargar las calles basadas en el pueblo seleccionado
-    fun cargarCallesParaPueblo(pueblo: Int) {
-        _estado.value = Estado.Cargando
-
-        referenciaDB.orderByChild("Pueblo")
-            .equalTo(pueblo.toDouble())
-            .addListenerForSingleValueEvent(object : ValueEventListener {
-                override fun onDataChange(snapshot: DataSnapshot) {
-                    val listaCalles = mutableListOf<String>("Seleccione una calle")
-                    for (data in snapshot.children) {
-                        val calleLong = data.child("Calle").getValue(Long::class.java)
-                        val direccion = data.child("Dirección").getValue(String::class.java)
-
-                        if (calleLong != null && direccion != null) {
-                            listaCalles.add("$calleLong - $direccion")
-                        }
-                    }
-
-                    if (listaCalles.isEmpty()) {
-                        _estado.value = Estado.Error("No hay calles disponibles para mostrar.")
-                    } else {
-                        _calles.value = listaCalles
-                        _estado.value = Estado.Exito
-                    }
-                }
-
-                override fun onCancelled(error: DatabaseError) {
-                    _estado.value = Estado.Error("Error al cargar calles: ${error.message}")
-                    Log.e("FirebaseErrorCalles", "Error al cargar calles: ${error.message}")
-                }
-            })
-    }
-
-
-
-    // Método para cargar la localización basada en la calle seleccionada
     fun cargarLocalizacionParaCalle(calle: Int, codigoPueblo: Int, direccion: String?) {
-        _estado.value = Estado.Cargando
+        val subregion = subregionActual ?: run {
+            _estado.value = Estado.Error(getApplication<Application>().getString(R.string.localizacion_estado_sin_subregion))
+            return
+        }
 
-        referenciaDB
-            .orderByChild("Pueblo")
-            .equalTo(codigoPueblo.toDouble())
-            .addListenerForSingleValueEvent(object : ValueEventListener {
-                override fun onDataChange(snapshot: DataSnapshot) {
-                    var encontrado = false
+        viewModelScope.launch {
+            _estado.value = Estado.Cargando
+            val entidad = withContext(Dispatchers.IO) {
+                repository.buscarLocalizacion(subregion, codigoPueblo, calle, direccion)
+            }
 
-                    for (data in snapshot.children) {
-                        val calleValor = data.child("Calle").getValue(Double::class.java)
-                        val direccionValor = data.child("Dirección").getValue(String::class.java)
-
-                        if (calleValor?.toInt() == calle && direccionValor == direccion) {
-                            val latitud = data.child("Latitud").getValue(Double::class.java)
-                            val longitud = data.child("Longitud").getValue(Double::class.java)
-                            val delPoste = data.child("del poste ").getValue(Double::class.java)?.toInt()
-                            val alPoste = data.child("al poste").getValue(Double::class.java)?.toInt()
-
-                            val localizacion = Localizacion(
-                                direccion = direccion ?: "Sin dirección",
-                                latitud = latitud ?: 0.0,
-                                longitud = longitud ?: 0.0,
-                                delPoste = delPoste ?: 0,
-                                alPoste = alPoste ?: 0,
-                                calleValor = calle ?:0
-                            )
-
-                            _localizacion.value = localizacion
-                            encontrado = true
-                            break
-                        }
-                    }
-
-                    if (!encontrado) {
-                        _estado.value = Estado.Error("No se encontró la localización para la calle seleccionada en el pueblo.")
-                    } else {
-                        _estado.value = Estado.Exito
-                    }
-                }
-
-                override fun onCancelled(error: DatabaseError) {
-                    _estado.value = Estado.Error("Error al cargar la localización: ${error.message}")
-                    Log.e("FirebaseErrorLocalizacion", "Error al cargar la localización: ${error.message}")
-                }
-            })
+            if (entidad == null) {
+                _localizacion.value = null
+                _estado.value = Estado.Error(getApplication<Application>().getString(R.string.localizacion_estado_sin_localizacion))
+            } else {
+                _localizacion.value = Localizacion(
+                    direccion = entidad.direccion.ifBlank {
+                        getApplication<Application>().getString(R.string.profile_summary_placeholder)
+                    },
+                    latitud = entidad.latitud,
+                    longitud = entidad.longitud,
+                    delPoste = entidad.delPoste,
+                    alPoste = entidad.alPoste,
+                    calleValor = entidad.calle
+                )
+                _estado.value = Estado.Exito
+            }
+        }
     }
 
-    // Clase de datos para la localización
     data class Localizacion(
         val direccion: String,
         val latitud: Double,
         val longitud: Double,
         val delPoste: Int,
         val alPoste: Int,
-        val calleValor: Int
+        val calleValor: Int,
     )
 
-    // Clase sellada para representar el estado de la carga
     sealed class Estado {
         object Cargando : Estado()
         object Exito : Estado()

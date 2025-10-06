@@ -178,15 +178,31 @@ class FirebaseSyncManager(context: Context) {
         }
 
         val snap = dbLocal.child(node).get().await()
-        return snap.children.mapNotNull { it.getValue(LocalizacionesEntity::class.java) }
-            .filter { it.subregion == subregionId }
+        return snap.children.mapNotNull { child ->
+            val entity = child.getValue(LocalizacionesEntity::class.java) ?: return@mapNotNull null
+            val normalizedSubregion = entity.subregion?.takeIf { it.isNotBlank() } ?: subregionId
+            entity.copy(
+                direccion = entity.direccion.trim(),
+                subregion = normalizedSubregion.trim()
+            )
+        }.filter { loc ->
+            loc.subregion?.equals(subregionId, ignoreCase = true) == true
+        }
     }
 
     suspend fun obtenerPueblos(subregionId: String): List<PueblosEntity> {
         val node = if (dbLocal.child("pueblos").get().await().exists()) "pueblos" else "Pueblos"
         val snap = dbLocal.child(node).get().await()
-        return snap.children.mapNotNull { it.getValue(PueblosEntity::class.java) }
-            .filter { it.subregion == subregionId }
+        return snap.children.mapNotNull { child ->
+            val entity = child.getValue(PueblosEntity::class.java) ?: return@mapNotNull null
+            val normalizedSubregion = entity.subregion.ifBlank { subregionId }
+            entity.copy(
+                nombre = entity.nombre.trim(),
+                subregion = normalizedSubregion.trim()
+            )
+        }.filter { pueblo ->
+            pueblo.subregion.equals(subregionId, ignoreCase = true)
+        }
     }
 
     // --- MEDIDORES (Sync completa) ---
@@ -201,7 +217,18 @@ class FirebaseSyncManager(context: Context) {
                 try {
                     val entity = medidor.getValue(MedidorEntity::class.java)
                     if (entity != null) {
-                        list.add(entity.copy(subregion = subregion))
+                        val cleaned = entity.copy(
+                            medidorNumber = entity.medidorNumber.trim(),
+                            calle = entity.calle?.trim(),
+                            cliente = entity.cliente?.trim(),
+                            metros = entity.metros?.trim(),
+                            poste = entity.poste?.trim(),
+                            pueblo = entity.pueblo?.trim(),
+                            subregion = subregion.trim()
+                        )
+                        if (cleaned.medidorNumber.isNotBlank()) {
+                            list.add(cleaned)
+                        }
                     }
                 } catch (e: Exception) {
                     Log.e("SYNC", "🛑 Error MedidorEntity: ${e.message}")
@@ -216,15 +243,33 @@ class FirebaseSyncManager(context: Context) {
     // --- MEDIDOR (Búsqueda puntual de uno solo) ---
     suspend fun buscarMedidorEnFirebase(subregion: String, medidorNumber: String): MedidorEntity? {
         val ruta = "Medidores/Medidores/SubRegion $subregion"
-        val snap = dbMedidores.child(ruta).child(medidorNumber).get().await()
+        val snap = dbMedidores.child(ruta).get().await()
 
-        return try {
-            val entity = snap.getValue(MedidorEntity::class.java)
-            entity?.copy(subregion = subregion)
-        } catch (e: Exception) {
-            Log.e("SYNC", "🛑 Error MedidorEntity único: ${e.message}")
-            null
+        for (grupo in snap.children) {
+            val directo = grupo.child(medidorNumber)
+            val candidato = when {
+                directo.exists() -> directo
+                else -> grupo.children.firstOrNull { it.key?.trim() == medidorNumber }
+            } ?: continue
+
+            return try {
+                val entity = candidato.getValue(MedidorEntity::class.java) ?: continue
+                entity.copy(
+                    medidorNumber = entity.medidorNumber.ifBlank { medidorNumber }.trim(),
+                    calle = entity.calle?.trim(),
+                    cliente = entity.cliente?.trim(),
+                    metros = entity.metros?.trim(),
+                    poste = entity.poste?.trim(),
+                    pueblo = entity.pueblo?.trim(),
+                    subregion = subregion.trim()
+                )
+            } catch (e: Exception) {
+                Log.e("SYNC", "🛑 Error MedidorEntity único: ${e.message}")
+                null
+            }
         }
+
+        return null
     }
 
     // --- TÉCNICOS ---
