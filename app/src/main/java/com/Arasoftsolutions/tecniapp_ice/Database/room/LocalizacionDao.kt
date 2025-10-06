@@ -20,4 +20,19 @@ interface LocalizacionDao {
     // Observa localizaciones filtradas por subregión
     @Query("SELECT * FROM localizaciones WHERE subregion = :subregionId")
     fun observarPorSubregion(subregionId: String): Flow<List<LocalizacionesEntity>>
+
+    @Query("SELECT * FROM localizaciones WHERE subregion = :subregionId AND pueblo = :puebloId")
+    suspend fun obtenerPorPueblo(subregionId: String, puebloId: Int): List<LocalizacionesEntity>
+
+    @Query(
+        "SELECT * FROM localizaciones WHERE subregion = :subregionId AND pueblo = :puebloId AND calle = :calleId"
+    )
+    suspend fun buscarPorCalle(
+        subregionId: String,
+        puebloId: Int,
+        calleId: Int
+    ): List<LocalizacionesEntity>
+
+    @Query("SELECT * FROM localizaciones WHERE id = :localizacionId LIMIT 1")
+    suspend fun buscarPorId(localizacionId: Long): LocalizacionesEntity?
 }

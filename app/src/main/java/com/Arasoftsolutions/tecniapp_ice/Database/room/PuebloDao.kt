@@ -20,4 +20,7 @@ interface PuebloDao {
     // Observa pueblos filtrados por subregión
     @Query("SELECT * FROM pueblos WHERE subregion = :subregionId")
     fun observarPorSubregion(subregionId: String): Flow<List<PueblosEntity>>
+
+    @Query("SELECT * FROM pueblos WHERE subregion = :subregionId AND id = :puebloId LIMIT 1")
+    suspend fun buscarPorId(subregionId: String, puebloId: Int): PueblosEntity?
 }
