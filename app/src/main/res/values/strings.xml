@@ -109,6 +109,10 @@
     <string name="averia_atendido_por_format">Atendido por: %1$s</string>
     <string name="averia_vehiculo_format">Vehículo: %1$s</string>
     <string name="averia_chip_material_format">%1$s (x%2$d)</string>
+    <string name="averia_material_cantidad_titulo">Cantidad de %1$s</string>
+    <string name="averia_material_cantidad_hint">Cantidad utilizada</string>
+    <string name="averia_material_cantidad_error">Ingresa una cantidad válida.</string>
+    <string name="averia_material_cantidad_guardar">Guardar</string>
     <string name="averia_reporte_titulo">Reporte de avería</string>
     <string name="averia_estado_pdf">Estado: %1$s</string>
     <string name="averia_reporte_region">Región: %1$s</string>
