@@ -73,6 +73,9 @@ class MedidorFragment : Fragment() {
                     binding.textStatus.text = mensaje
 
                     estado.medidor?.let { medidor ->
+                        binding.valueNumero.text = medidor.medidorNumber.ifBlank {
+                            getString(R.string.profile_summary_placeholder)
+                        }
                         binding.valueCliente.text = medidor.cliente.orEmpty().ifBlank {
                             getString(R.string.profile_summary_placeholder)
                         }
@@ -83,6 +86,9 @@ class MedidorFragment : Fragment() {
                             getString(R.string.profile_summary_placeholder)
                         }
                         binding.valueMetros.text = medidor.metros.orEmpty().ifBlank {
+                            getString(R.string.profile_summary_placeholder)
+                        }
+                        binding.valueSubregion.text = medidor.subregion.orEmpty().ifBlank {
                             getString(R.string.profile_summary_placeholder)
                         }
                         binding.valueLocalizacion.text = medidor.localizacion?.toString()
@@ -101,11 +107,13 @@ class MedidorFragment : Fragment() {
     }
 
     private fun limpiarCampos() {
+        binding.valueNumero.text = ""
         binding.valueCliente.text = ""
         binding.valueCalle.text = ""
         binding.valuePoste.text = ""
         binding.valueMetros.text = ""
         binding.valuePueblo.text = ""
+        binding.valueSubregion.text = ""
         binding.valueLocalizacion.text = ""
     }
 
@@ -121,11 +129,13 @@ class MedidorFragment : Fragment() {
 
     private fun copiarInformacion() {
         val info = buildString {
+            appendLine("${getString(R.string.medidor_numero_label)}: ${binding.valueNumero.text}")
             appendLine("${getString(R.string.medidor_cliente_label)}: ${binding.valueCliente.text}")
             appendLine("${getString(R.string.medidor_calle_label)}: ${binding.valueCalle.text}")
             appendLine("${getString(R.string.medidor_poste_label)}: ${binding.valuePoste.text}")
             appendLine("${getString(R.string.medidor_metros_label)}: ${binding.valueMetros.text}")
             appendLine("${getString(R.string.medidor_pueblo_label)}: ${binding.valuePueblo.text}")
+            appendLine("${getString(R.string.medidor_subregion_label)}: ${binding.valueSubregion.text}")
             append("${getString(R.string.medidor_localizacion_label)}: ${binding.valueLocalizacion.text}")
         }
 
@@ -136,12 +146,13 @@ class MedidorFragment : Fragment() {
     private fun compartirInformacion() {
         val medidor = viewModel.obtenerMedidorActual() ?: return
         val info = buildString {
-            appendLine("${getString(R.string.medidor_numero_hint)}: ${medidor.medidorNumber}")
+            appendLine("${getString(R.string.medidor_numero_label)}: ${medidor.medidorNumber}")
             appendLine("${getString(R.string.medidor_cliente_label)}: ${binding.valueCliente.text}")
             appendLine("${getString(R.string.medidor_calle_label)}: ${binding.valueCalle.text}")
             appendLine("${getString(R.string.medidor_poste_label)}: ${binding.valuePoste.text}")
             appendLine("${getString(R.string.medidor_metros_label)}: ${binding.valueMetros.text}")
             appendLine("${getString(R.string.medidor_pueblo_label)}: ${binding.valuePueblo.text}")
+            appendLine("${getString(R.string.medidor_subregion_label)}: ${binding.valueSubregion.text}")
             append("${getString(R.string.medidor_localizacion_label)}: ${binding.valueLocalizacion.text}")
         }
 

@@ -5,6 +5,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
+import com.Arasoftsolutions.tecniapp_ice.Database.entities.LocalizacionesEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
 import com.Arasoftsolutions.tecniapp_ice.R
 import com.google.firebase.auth.FirebaseAuth
@@ -19,6 +20,9 @@ class LocalizacionViewModel(app: Application) : AndroidViewModel(app) {
     private val repository = RoomRepository.getInstance(app)
     private val auth = FirebaseAuth.getInstance()
 
+    private val puebloPlaceholder = app.getString(R.string.localizacion_select_pueblo)
+    private val callePlaceholder = app.getString(R.string.localizacion_select_calle)
+
     private val _pueblos = MutableLiveData<List<String>>()
     val pueblos: LiveData<List<String>> = _pueblos
 
@@ -31,13 +35,21 @@ class LocalizacionViewModel(app: Application) : AndroidViewModel(app) {
     private val _localizacion = MutableLiveData<Localizacion?>()
     val localizacion: LiveData<Localizacion?> = _localizacion
 
+    private val _marcadoresCalles = MutableLiveData<List<MarcadorCalle>>(emptyList())
+    val marcadoresCalles: LiveData<List<MarcadorCalle>> = _marcadoresCalles
+
     private var subregionActual: String? = null
     private var initialized = false
     private var pueblosJob: Job? = null
+    private var sincronizando = false
+    private var intentoSyncRealizado = false
+    private var cacheCallesActuales: List<LocalizacionesEntity> = emptyList()
+    private var puebloSeleccionadoActual: Int? = null
 
     fun prepararDatos() {
         if (initialized) return
         initialized = true
+        _estado.value = Estado.Cargando
         viewModelScope.launch { cargarContexto() }
     }
 
@@ -60,6 +72,7 @@ class LocalizacionViewModel(app: Application) : AndroidViewModel(app) {
             }
 
             subregionActual = subregion
+            _estado.postValue(Estado.Cargando)
             observarPueblos(subregion)
         } catch (t: Throwable) {
             _estado.postValue(Estado.Error(context.getString(R.string.localizacion_estado_error_generico)))
@@ -68,15 +81,26 @@ class LocalizacionViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun observarPueblos(subregion: String) {
         pueblosJob?.cancel()
+        intentoSyncRealizado = false
         pueblosJob = viewModelScope.launch {
             repository.observarPueblos(subregion).collectLatest { lista ->
                 if (lista.isEmpty()) {
-                    _pueblos.postValue(listOf("Seleccione un pueblo"))
-                    _estado.postValue(Estado.Error(getApplication<Application>().getString(R.string.localizacion_estado_sin_pueblos)))
+                    if (!intentoSyncRealizado) {
+                        intentoSyncRealizado = true
+                        sincronizarSubregion(subregion)
+                        return@collectLatest
+                    }
+                    _pueblos.postValue(listOf(puebloPlaceholder))
+                    _estado.postValue(
+                        Estado.Error(
+                            getApplication<Application>().getString(R.string.localizacion_estado_sin_pueblos)
+                        )
+                    )
                 } else {
+                    intentoSyncRealizado = false
                     val pueblosOrdenados = lista.sortedBy { it.nombre }
                         .map { "${it.id} - ${it.nombre}" }
-                    _pueblos.postValue(listOf("Seleccione un pueblo") + pueblosOrdenados)
+                    _pueblos.postValue(listOf(puebloPlaceholder) + pueblosOrdenados)
                     _estado.postValue(Estado.Exito)
                 }
             }
@@ -91,15 +115,28 @@ class LocalizacionViewModel(app: Application) : AndroidViewModel(app) {
 
         viewModelScope.launch {
             _estado.value = Estado.Cargando
-            val calles = withContext(Dispatchers.IO) {
+            puebloSeleccionadoActual = pueblo
+            var calles = withContext(Dispatchers.IO) {
                 repository.obtenerCallesPorPueblo(subregion, pueblo)
             }
 
             if (calles.isEmpty()) {
-                _calles.value = listOf("Seleccione una calle")
-                _estado.value = Estado.Error(getApplication<Application>().getString(R.string.localizacion_estado_sin_calles))
+                sincronizarSubregion(subregion)
+                calles = withContext(Dispatchers.IO) {
+                    repository.obtenerCallesPorPueblo(subregion, pueblo)
+                }
+            }
+
+            cacheCallesActuales = calles
+            _marcadoresCalles.value = emptyList()
+
+            if (calles.isEmpty()) {
+                _calles.value = listOf(callePlaceholder)
+                _estado.value = Estado.Error(
+                    getApplication<Application>().getString(R.string.localizacion_estado_sin_calles)
+                )
             } else {
-                val opciones = mutableListOf("Seleccione una calle")
+                val opciones = mutableListOf(callePlaceholder)
                 opciones += calles
                     .sortedBy { it.calle }
                     .distinctBy { it.calle to it.direccion }
@@ -141,6 +178,85 @@ class LocalizacionViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    fun mostrarMarcadoresDeCalles() {
+        val seleccion = puebloSeleccionadoActual ?: run {
+            _estado.value = Estado.Error(
+                getApplication<Application>().getString(R.string.localizacion_calles_toast_sin_pueblo)
+            )
+            return
+        }
+
+        val marcadores = cacheCallesActuales
+            .filter { it.latitud != 0.0 || it.longitud != 0.0 }
+            .filter { it.pueblo == seleccion }
+            .distinctBy { it.calle to it.direccion }
+            .map { entidad ->
+                MarcadorCalle(
+                    latitud = entidad.latitud,
+                    longitud = entidad.longitud,
+                    titulo = "${entidad.calle} - ${entidad.direccion}",
+                    snippet = buildString {
+                        val codigo = buildString {
+                            append(entidad.pueblo.toString().padStart(4, '0'))
+                            append("-")
+                            append(entidad.calle.toString().padStart(3, '0'))
+                            append("-")
+                            append(entidad.delPoste.toString().padStart(3, '0'))
+                            append("-00")
+                        }
+                        append(codigo)
+                        append("\n")
+                        val postes = if (entidad.alPoste != 0 && entidad.alPoste != entidad.delPoste) {
+                            getApplication<Application>().getString(
+                                R.string.localizacion_marker_rango_postes,
+                                entidad.delPoste,
+                                entidad.alPoste
+                            )
+                        } else {
+                            getApplication<Application>().getString(
+                                R.string.localizacion_marker_poste_unico,
+                                entidad.delPoste
+                            )
+                        }
+                        append(postes)
+                    }
+                )
+            }
+
+        if (marcadores.isEmpty()) {
+            _estado.value = Estado.Error(
+                getApplication<Application>().getString(R.string.localizacion_estado_calles_sin_coordenadas)
+            )
+            return
+        }
+
+        _marcadoresCalles.value = marcadores
+    }
+
+    fun limpiarMarcadoresDeCalles() {
+        _marcadoresCalles.value = emptyList()
+    }
+
+    private suspend fun sincronizarSubregion(subregion: String) {
+        if (sincronizando) return
+        sincronizando = true
+        try {
+            _estado.postValue(Estado.Cargando)
+            withContext(Dispatchers.IO) {
+                repository.syncSubregion(subregion)
+            }
+        } catch (t: Throwable) {
+            _estado.postValue(
+                Estado.Error(
+                    getApplication<Application>().getString(R.string.localizacion_estado_sync_error)
+                )
+            )
+            intentoSyncRealizado = false
+        } finally {
+            sincronizando = false
+        }
+    }
+
     data class Localizacion(
         val direccion: String,
         val latitud: Double,
@@ -148,6 +264,13 @@ class LocalizacionViewModel(app: Application) : AndroidViewModel(app) {
         val delPoste: Int,
         val alPoste: Int,
         val calleValor: Int,
+    )
+
+    data class MarcadorCalle(
+        val latitud: Double,
+        val longitud: Double,
+        val titulo: String,
+        val snippet: String,
     )
 
     sealed class Estado {
