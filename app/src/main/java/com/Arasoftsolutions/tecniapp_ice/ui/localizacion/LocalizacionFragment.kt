@@ -76,6 +76,7 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
     private lateinit var mapaVista: MapView
     private var mapaGoogle: GoogleMap? = null        // nullable para evitar isInitialized siempre-true
     private var marcador: Marker? = null
+    private val marcadoresCalles = mutableListOf<Marker>()
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private val CLAVE_MAPA_VISTA_BUNDLE = "ClaveMapaVistaBundle"
 
@@ -176,14 +177,14 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
             binding.spinnerCalles.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
                 override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
                     val calleSeleccionada = parent?.getItemAtPosition(position)?.toString().orEmpty()
-                    if (calleSeleccionada == "Seleccione una calle") return
+                    if (calleSeleccionada == getString(R.string.localizacion_select_calle)) return
 
                     try {
                         val partes = calleSeleccionada.split(" - ")
                         val codigoCalle = partes[0].toInt()
                         val direccionCalle = partes[1]
-                        val puebloSel = binding.spinnerPueblos.selectedItem.toString()
-                        if (puebloSel == "Seleccione un pueblo") return
+                        val puebloSel = binding.spinnerPueblos.selectedItem?.toString().orEmpty()
+                        if (puebloSel == getString(R.string.localizacion_select_pueblo)) return
                         val codigoPueblo = puebloSel.split(" - ")[0].toInt()
 
                         viewModel.cargarLocalizacionParaCalle(codigoCalle, codigoPueblo, direccionCalle)
@@ -211,6 +212,16 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
             binding.alposteTextView.text = "Al Poste: ${loc.alPoste}"
         }
 
+        viewModel.marcadoresCalles.observe(viewLifecycleOwner) { marcadores ->
+            val lista = marcadores.orEmpty()
+            actualizarMarcadoresDeCalles(lista)
+            binding.buttonAll.text = if (lista.isEmpty()) {
+                getString(R.string.localizacion_calles_show)
+            } else {
+                getString(R.string.localizacion_calles_hide)
+            }
+        }
+
         // Estado (progress + errores)
         viewModel.estado.observe(viewLifecycleOwner) { estado ->
             when (estado) {
@@ -228,10 +239,11 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
         binding.spinnerPueblos.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
                 val puebloSeleccionado = parent?.getItemAtPosition(position)?.toString().orEmpty()
-                if (puebloSeleccionado == "Seleccione un pueblo") return
+                if (puebloSeleccionado == getString(R.string.localizacion_select_pueblo)) return
                 try {
                     val codigoPueblo = puebloSeleccionado.split(" - ")[0].toInt()
                     limpiarCamposDeTexto()
+                    viewModel.limpiarMarcadoresDeCalles()
                     viewModel.cargarCallesParaPueblo(codigoPueblo)
                 } catch (e: Exception) {
                     Log.e("Localizacion", "Error parseando pueblo seleccionado: ${e.message}", e)
@@ -245,7 +257,21 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
         binding.buttonNavegar.setOnClickListener { mostrarOpcionesDeNavegacion() }
         binding.buttonShare.setOnClickListener { compartirUbicacion() }
         binding.buttonAll.setOnClickListener {
-            // Si quieres listar todas las calles del pueblo actual, llama un método en el VM aquí.
+            val puebloSeleccionado = binding.spinnerPueblos.selectedItem?.toString().orEmpty()
+            if (puebloSeleccionado.isBlank() || puebloSeleccionado == getString(R.string.localizacion_select_pueblo)) {
+                Toast.makeText(
+                    requireContext(),
+                    getString(R.string.localizacion_calles_toast_sin_pueblo),
+                    Toast.LENGTH_SHORT
+                ).show()
+                return@setOnClickListener
+            }
+
+            if (viewModel.marcadoresCalles.value.isNullOrEmpty()) {
+                viewModel.mostrarMarcadoresDeCalles()
+            } else {
+                viewModel.limpiarMarcadoresDeCalles()
+            }
         }
     }
 
@@ -426,6 +452,28 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
         configurarInfoWindowPersonalizado()
     }
 
+    private fun actualizarMarcadoresDeCalles(marcadores: List<LocalizacionViewModel.MarcadorCalle>) {
+        val map = mapaGoogle ?: return
+        marcadoresCalles.forEach { it.remove() }
+        marcadoresCalles.clear()
+
+        if (marcadores.isEmpty()) {
+            return
+        }
+
+        val icono = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)
+        marcadores.forEach { data ->
+            val marker = map.addMarker(
+                MarkerOptions()
+                    .position(LatLng(data.latitud, data.longitud))
+                    .title(data.titulo)
+                    .snippet(data.snippet)
+                    .icon(icono)
+            )
+            marker?.let { marcadoresCalles += it }
+        }
+    }
+
     private fun redimensionarIcono(drawableRes: Int, w: Int, h: Int): BitmapDescriptor {
         val bmp = BitmapFactory.decodeResource(resources, drawableRes)
         val scaled = Bitmap.createScaledBitmap(bmp, w, h, false)
@@ -577,6 +625,8 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
         binding.mapView.onDestroy()
         _binding = null
         mapaGoogle = null
+        marcadoresCalles.forEach { it.remove() }
+        marcadoresCalles.clear()
         marcador = null
     }
 
