@@ -265,10 +265,11 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
         b.tvRegion.text = getString(R.string.averia_region_label, item.region.ifBlank { "—" })
         b.tvAgencia.text = getString(R.string.averia_agencia_label, item.agencia.ifBlank { "—" })
 
-        val cliente = item.cliente?.takeIf { it.isNotBlank() }
+        val emptyValue = getString(R.string.averia_pdf_empty_value)
+        val cliente = item.cliente?.takeIf { it.isNotBlank() } ?: emptyValue
         b.tvCliente.apply {
-            isVisible = !cliente.isNullOrBlank()
-            text = cliente?.let { getString(R.string.averia_cliente_label, it) } ?: ""
+            isVisible = true
+            text = getString(R.string.averia_cliente_label, cliente)
         }
 
         val coordsText = if (item.lat != 0.0 && item.lng != 0.0) {
@@ -290,10 +291,11 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
     }
 
     private fun bindResumenes() {
-        b.tvCausaActual.text = getString(R.string.averia_causa_resumen, item.causa.ifBlank { "—" })
-        b.tvObservacionesActuales.text = getString(R.string.averia_observaciones_resumen, item.observaciones.ifBlank { "—" })
-        b.tvLocalizacionActual.isVisible = !item.localizacion.isNullOrBlank()
-        b.tvLocalizacionActual.text = item.localizacion?.let { getString(R.string.averia_localizacion_label, it) }
+        val emptyValue = getString(R.string.averia_pdf_empty_value)
+        b.tvCausaActual.text = item.causa.ifBlank { emptyValue }
+        b.tvObservacionesActuales.text = item.observaciones.ifBlank { emptyValue }
+        val localizacion = item.localizacion?.takeIf { it.isNotBlank() } ?: emptyValue
+        b.tvLocalizacionActual.text = getString(R.string.averia_localizacion_label, localizacion)
     }
 
     private fun bindInputs() {
@@ -646,7 +648,7 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
             kilometrajeInicio = b.etKmInicio.text.toString().toDoubleOrNull(),
             kilometrajeFinal = b.etKmFinal.text.toString().toDoubleOrNull(),
             cliente = item.cliente,
-            localizacion = b.etLocalizacion.text?.toString(),
+            localizacion = b.etLocalizacion.text?.toString()?.trim(),
             tecnicos = tecnicos
         )
     }

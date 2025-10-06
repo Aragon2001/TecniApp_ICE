@@ -114,8 +114,15 @@ class AveriasAdapter(
             }
 
             // Textos detallados
-            tvCausa.text = item.causa.ifBlank { "—" }
-            tvObs.text = item.observaciones.ifBlank { "—" }
+            val emptyValue = itemView.context.getString(R.string.averia_pdf_empty_value)
+            tvCausa.text = itemView.context.getString(
+                R.string.averia_causa_resumen,
+                item.causa.ifBlank { emptyValue }
+            )
+            tvObs.text = itemView.context.getString(
+                R.string.averia_observaciones_resumen,
+                item.observaciones.ifBlank { emptyValue }
+            )
             tvCaso.text = "Caso: ${item.id}"
             tvAsignado.text = "Asignado a: ${if (item.tecnico.isBlank()) itemView.context.getString(R.string.averia_sin_asignar) else item.tecnico}"
             tvAtendido.text = "Atendido por: ${if (item.atendidoPor.isBlank()) "—" else item.atendidoPor}"
@@ -147,23 +154,15 @@ class AveriasAdapter(
                 DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(Date(it))
             }
             tvCliente?.let { label ->
-                val cliente = item.cliente?.takeIf { it.isNotBlank() }
-                if (cliente.isNullOrBlank()) {
-                    label.visibility = View.GONE
-                } else {
-                    label.visibility = View.VISIBLE
-                    label.text = itemView.context.getString(R.string.averia_cliente_label, cliente)
-                }
+                val cliente = item.cliente?.takeIf { it.isNotBlank() } ?: emptyValue
+                label.visibility = View.VISIBLE
+                label.text = itemView.context.getString(R.string.averia_cliente_label, cliente)
             }
 
             tvLocalizacion?.let { label ->
-                val loc = item.localizacion?.takeIf { it.isNotBlank() }
-                if (loc.isNullOrBlank()) {
-                    label.visibility = View.GONE
-                } else {
-                    label.visibility = View.VISIBLE
-                    label.text = itemView.context.getString(R.string.averia_localizacion_label, loc)
-                }
+                val loc = item.localizacion?.takeIf { it.isNotBlank() } ?: emptyValue
+                label.visibility = View.VISIBLE
+                label.text = itemView.context.getString(R.string.averia_localizacion_label, loc)
             }
             val finAtencion = item.horaAtencionFinal?.let {
                 DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(Date(it))
