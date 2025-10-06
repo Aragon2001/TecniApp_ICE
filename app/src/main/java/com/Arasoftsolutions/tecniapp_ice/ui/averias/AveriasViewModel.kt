@@ -87,6 +87,8 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
     val vehiculosDisponibles: StateFlow<List<String>> = _vehiculos.asStateFlow()
     private val _materiales = MutableStateFlow<List<MaterialEntity>>(emptyList())
     val materialesDisponibles: StateFlow<List<MaterialEntity>> = _materiales.asStateFlow()
+    private val _tecnicos = MutableStateFlow<List<TecnicoEntity>>(emptyList())
+    val tecnicosDisponibles: StateFlow<List<TecnicoEntity>> = _tecnicos.asStateFlow()
 
     private var syncJob: Job? = null
     private var cachedSubregiones: List<SubregionesEntity> = emptyList()
@@ -126,17 +128,18 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
                         val materialesDetalle = MaterialesSerializer.fromJson(e.materialesDetalleJson)
                         val materialesResumen = e.materialesTexto
                             ?: MaterialesSerializer.toSummary(materialesDetalle)
+                        val tecnicosAtendieron = TecnicosSerializer.fromJson(e.tecnicosAtendieronJson)
                         AveriaUI(
                             id = e.caseId,
                             descripcion = "Avería #${e.caseId}",
                             fechaMillis = e.fechaInicioMillis,
-                            causa = e.causa ?: "Pendiente de verificar",
+                            causa = e.causa?.trim().orEmpty(),
                             estado = e.estado,
                             tecnico = e.tecnicoAsignadoNombre ?: "",
                             tecnicoUid = e.tecnicoAsignadoUid,
                             atendidoPor = e.atendidoPorNombre ?: "",
                             atendidoPorUid = e.atendidoPorUid,
-                            observaciones = e.observaciones ?: "—",
+                            observaciones = e.observaciones?.trim().orEmpty(),
                             nise = e.nise ?: "",
                             agencia = e.nombreAgencia ?: (e.agencia ?: ""),
                             region = e.region ?: "",
@@ -151,7 +154,10 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
                             kilometrajeInicio = e.kilometrajeInicio,
                             kilometrajeFinal = e.kilometrajeFinal,
                             horaInicio = e.horaInicioMillis,
-                            horaFinal = e.horaFinalMillis
+                            horaFinal = e.horaFinalMillis,
+                            cliente = e.cliente?.trim(),
+                            localizacion = e.localizacion?.trim(),
+                            tecnicosAtendieron = tecnicosAtendieron
                         )
                     }
                 )
@@ -184,6 +190,11 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             roomRepo.observarMateriales().collectLatest { catalogo ->
                 _materiales.value = catalogo
+            }
+        }
+        viewModelScope.launch {
+            roomRepo.observarTecnicos().collectLatest { lista ->
+                _tecnicos.value = lista
             }
         }
     }
@@ -267,6 +278,9 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
             ?: ui.vehiculo
         val observaciones = data.observaciones?.takeIf { it.isNotBlank() }
         val materiales = if (data.materiales.isNotEmpty()) data.materiales else ui.materialesDetalle
+        val tecnicos = if (data.tecnicos.isNotEmpty()) data.tecnicos else ui.tecnicosAtendieron
+        val localizacion = data.localizacion ?: ui.localizacion
+        val cliente = data.cliente ?: ui.cliente
         val horaInicio = data.horaInicioMillis
             ?: ui.horaAtencionInicio
             ?: ui.horaInicio
@@ -280,6 +294,9 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
             vehiculo = vehiculo,
             observaciones = observaciones,
             materiales = materiales,
+            tecnicos = tecnicos,
+            localizacion = localizacion,
+            cliente = cliente,
             horaInicioMillis = horaInicio,
             horaFinalMillis = horaFinal,
             kilometrajeInicio = kmInicio,

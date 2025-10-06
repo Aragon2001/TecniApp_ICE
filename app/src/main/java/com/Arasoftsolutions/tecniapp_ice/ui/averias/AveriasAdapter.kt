@@ -1,11 +1,12 @@
 package com.Arasoftsolutions.tecniapp_ice.ui.averias
 
+import android.content.res.ColorStateList
+import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
-import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -42,7 +43,10 @@ data class AveriaUI(
     val kilometrajeInicio: Double?,
     val kilometrajeFinal: Double?,
     val horaInicio: Long?,
-    val horaFinal: Long?
+    val horaFinal: Long?,
+    val cliente: String?,
+    val localizacion: String?,
+    val tecnicosAtendieron: List<TecnicoAtencion>
 ) : Serializable
 
 class AveriasAdapter(
@@ -77,10 +81,7 @@ class AveriasAdapter(
         private val tvMateriales: TextView = view.findViewById(R.id.tvMateriales)
         private val tvKilometraje: TextView = view.findViewById(R.id.tvKilometraje)
         private val tvCliente: TextView? = view.findViewById(R.id.tvCliente)
-private val tvLocalizacion: TextView? = view.findViewById(R.id.tvLocalizacion)
-
-
-
+        private val tvLocalizacion: TextView? = view.findViewById(R.id.tvLocalizacion)
 
         private val tvFecha: TextView = view.findViewById(R.id.tvFecha)
 
@@ -113,8 +114,8 @@ private val tvLocalizacion: TextView? = view.findViewById(R.id.tvLocalizacion)
             }
 
             // Textos detallados
-            tvCausa.text = item.causa
-            tvObs.text = item.observaciones
+            tvCausa.text = item.causa.ifBlank { "—" }
+            tvObs.text = item.observaciones.ifBlank { "—" }
             tvCaso.text = "Caso: ${item.id}"
             tvAsignado.text = "Asignado a: ${if (item.tecnico.isBlank()) itemView.context.getString(R.string.averia_sin_asignar) else item.tecnico}"
             tvAtendido.text = "Atendido por: ${if (item.atendidoPor.isBlank()) "—" else item.atendidoPor}"
@@ -124,8 +125,11 @@ private val tvLocalizacion: TextView? = view.findViewById(R.id.tvLocalizacion)
             tvAgencia.text = "Agencia: ${item.agencia}"
 
             // Materiales y kilometrajes
-            tvMateriales.visibility = if (item.materialesResumen.isBlank()) View.GONE else View.VISIBLE
-            tvMateriales.text = itemView.context.getString(R.string.averia_materiales_label, item.materialesResumen)
+            val materialesResumen = item.materialesResumen.trim()
+            tvMateriales.visibility = if (materialesResumen.isEmpty()) View.GONE else View.VISIBLE
+            if (materialesResumen.isNotEmpty()) {
+                tvMateriales.text = itemView.context.getString(R.string.averia_materiales_label, materialesResumen)
+            }
             if (item.kilometrajeInicio != null || item.kilometrajeFinal != null) {
                 tvKilometraje.visibility = View.VISIBLE
                 val inicio = item.kilometrajeInicio?.toString() ?: "—"
@@ -142,23 +146,25 @@ private val tvLocalizacion: TextView? = view.findViewById(R.id.tvLocalizacion)
             val inicioAtencion = item.horaAtencionInicio?.let {
                 DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(Date(it))
             }
-            // Cliente: no viene nombre de cliente en el modelo; mostramos NISE como identificador
-tvCliente?.apply {
-    val nise = item.nise
-    visibility = if (nise.isNotBlank()) View.VISIBLE else View.GONE
-    text = "Cliente: -"
-}
+            tvCliente?.let { label ->
+                val cliente = item.cliente?.takeIf { it.isNotBlank() }
+                if (cliente.isNullOrBlank()) {
+                    label.visibility = View.GONE
+                } else {
+                    label.visibility = View.VISIBLE
+                    label.text = itemView.context.getString(R.string.averia_cliente_label, cliente)
+                }
+            }
 
-// Localización: si no hay campo dedicado, toma la primera línea de observaciones (o lo ocultás)
-tvLocalizacion?.apply {
-    val loc = item.observaciones
-        .lineSequence()
-        .firstOrNull()
-        ?.trim()
-        ?.takeIf { it.isNotBlank() }
-    visibility = if (loc != null) View.VISIBLE else View.GONE
-    text = "Localización: ${loc ?: "—"}"
-}
+            tvLocalizacion?.let { label ->
+                val loc = item.localizacion?.takeIf { it.isNotBlank() }
+                if (loc.isNullOrBlank()) {
+                    label.visibility = View.GONE
+                } else {
+                    label.visibility = View.VISIBLE
+                    label.text = itemView.context.getString(R.string.averia_localizacion_label, loc)
+                }
+            }
             val finAtencion = item.horaAtencionFinal?.let {
                 DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(Date(it))
             }
@@ -177,12 +183,13 @@ tvLocalizacion?.apply {
             // Colores por estado
             val estadoEnum = Estado.fromLabel(item.estado)
             val chipColor = when (estadoEnum) {
-                Estado.PENDIENTE -> R.color.chip_pendiente
-                Estado.ASIGNADA -> R.color.chip_asignada
-                Estado.EN_ATENCION -> R.color.chip_en_atencion
-                Estado.RESUELTA -> R.color.chip_resuelta
+                Estado.PENDIENTE -> Color.parseColor("#E53935")
+                Estado.ASIGNADA -> Color.parseColor("#FBC02D")
+                Estado.EN_ATENCION -> Color.parseColor("#1E88E5")
+                Estado.RESUELTA -> Color.parseColor("#43A047")
             }
-            chipEstado.chipBackgroundColor = ContextCompat.getColorStateList(itemView.context, chipColor)
+            chipEstado.chipBackgroundColor = ColorStateList.valueOf(chipColor)
+            chipEstado.setTextColor(Color.WHITE)
 
             // Acciones
             itemView.setOnClickListener { onVerDetalle(item) }
