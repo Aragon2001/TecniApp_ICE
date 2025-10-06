@@ -67,7 +67,13 @@ class MedidorViewModel(app: Application) : AndroidViewModel(app) {
 
         try {
             val subregion = withContext(Dispatchers.IO) {
-                repository.obtenerUsuario(uid)?.subregion?.trim()?.takeIf { it.isNotEmpty() }
+                val local = repository.obtenerUsuario(uid)
+                val ensured = local ?: runCatching { repository.upsertUserFromFirebase(uid) }
+                    .onFailure { throwable ->
+                        Log.e("MedidorViewModel", "Error obteniendo usuario desde Firebase", throwable)
+                    }
+                    .getOrNull()
+                ensured?.subregion?.trim()?.takeIf { it.isNotEmpty() }
             }
 
             if (subregion.isNullOrBlank()) {
@@ -90,16 +96,31 @@ class MedidorViewModel(app: Application) : AndroidViewModel(app) {
                 _uiState.update {
                     it.copy(message = context.getString(R.string.medidor_estado_cargando_cache))
                 }
-                val medidoresDescargados = withContext(Dispatchers.IO) {
-                    runCatching { firebase.obtenerMedidores(subregion) }
-                        .getOrElse { throwable ->
-                            Log.e("MedidorViewModel", "Error descargando medidores", throwable)
-                            emptyList()
-                        }
+
+                val syncResult = withContext(Dispatchers.IO) {
+                    runCatching { repository.syncSubregion(subregion) }
                 }
-                if (medidoresDescargados.isNotEmpty()) {
-                    withContext(Dispatchers.IO) {
-                        repository.insertarMedidores(medidoresDescargados)
+
+                if (syncResult.isFailure) {
+                    Log.e("MedidorViewModel", "Error sincronizando subregión", syncResult.exceptionOrNull())
+                }
+
+                val medidoresPostSync = withContext(Dispatchers.IO) {
+                    repository.contarMedidores(subregion)
+                }
+
+                if (medidoresPostSync == 0) {
+                    val medidoresDescargados = withContext(Dispatchers.IO) {
+                        runCatching { firebase.obtenerMedidores(subregion) }
+                            .getOrElse { throwable ->
+                                Log.e("MedidorViewModel", "Error descargando medidores", throwable)
+                                emptyList()
+                            }
+                    }
+                    if (medidoresDescargados.isNotEmpty()) {
+                        withContext(Dispatchers.IO) {
+                            repository.insertarMedidores(medidoresDescargados)
+                        }
                     }
                 }
             }
