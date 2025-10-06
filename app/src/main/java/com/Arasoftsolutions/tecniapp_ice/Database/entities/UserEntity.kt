@@ -28,7 +28,8 @@ data class UserEntity(
     var agencia: String? = null,
     var placaVehiculo: String? = null,
     var telefono: String? = null,
-    var password: String? = null
+    var password: String? = null,
+    var fotoUrl: String? = null
 ) {
     constructor() : this(
         uid = "",
@@ -41,7 +42,8 @@ data class UserEntity(
         agencia = null,
         placaVehiculo = null,
         telefono = null,
-        password = null
+        password = null,
+        fotoUrl = null
     )
 }
 

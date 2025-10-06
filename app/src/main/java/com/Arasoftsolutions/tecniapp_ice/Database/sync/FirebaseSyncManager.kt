@@ -32,6 +32,12 @@ class FirebaseSyncManager(context: Context) {
     private val dbMedidores: DatabaseReference =
         FirebaseDatabase.getInstance("https://tecniapp-ice-default-rtdb.firebaseio.com").reference
 
+    private val dbTecnicos: DatabaseReference =
+        FirebaseDatabase.getInstance("https://tecniapp-ice-personal.firebaseio.com/").reference
+
+    private val dbMaterialesIce: DatabaseReference =
+        FirebaseDatabase.getInstance("https://tecniapp-ice-materiales.firebaseio.com/").reference
+
     // --- USUARIOS ---
     suspend fun obtenerUsuario(uid: String): UserEntity? {
         val snap = dbUsers.child("usuarios").child(uid).get().await()
@@ -218,6 +224,38 @@ class FirebaseSyncManager(context: Context) {
         } catch (e: Exception) {
             Log.e("SYNC", "🛑 Error MedidorEntity único: ${e.message}")
             null
+        }
+    }
+
+    // --- TÉCNICOS ---
+    suspend fun obtenerTecnicos(): List<TecnicoEntity> {
+        val root = dbTecnicos.get().await()
+        val nodo = when {
+            root.hasChild("personal") -> root.child("personal")
+            else -> root
+        }
+        return nodo.children.mapNotNull { child ->
+            val cedula = child.key?.trim().orEmpty()
+            val nombre = child.child("nombre").value?.toString()?.trim().orEmpty()
+            if (cedula.isBlank() || nombre.isBlank()) return@mapNotNull null
+            TecnicoEntity(cedula = cedula, nombre = nombre)
+        }
+    }
+
+    // --- MATERIALES ---
+    suspend fun obtenerMaterialesCatalogo(): List<MaterialEntity> {
+        val snap = dbMaterialesIce.get().await()
+        return snap.children.mapNotNull { child ->
+            val codigo = child.key?.trim().orEmpty()
+            val nombre = child.child("Nombre").value?.toString()?.trim().orEmpty()
+            if (codigo.isBlank() || nombre.isBlank()) return@mapNotNull null
+            val unidad = child.child("Unidad").value?.toString()?.trim().orEmpty()
+            MaterialEntity(
+                id = codigo.hashCode().toLong(),
+                codigo = codigo,
+                descripcion = nombre,
+                unidad = unidad
+            )
         }
     }
 
