@@ -193,12 +193,14 @@
     <string name="medidor_copiar">Copiar</string>
     <string name="medidor_compartir">Compartir</string>
     <string name="medidor_result_title">Información del medidor</string>
+    <string name="medidor_numero_label">Número de medidor</string>
     <string name="medidor_cliente_label">Cliente</string>
     <string name="medidor_calle_label">Calle</string>
     <string name="medidor_poste_label">Poste</string>
     <string name="medidor_metros_label">Metros</string>
     <string name="medidor_pueblo_label">Pueblo</string>
     <string name="medidor_localizacion_label">Localización</string>
+    <string name="medidor_subregion_label">Subregión</string>
     <string name="medidor_estado_instruccion">Consulta medidores incluso sin conexión.</string>
     <string name="medidor_estado_preparando">Preparando tus datos…</string>
     <string name="medidor_estado_cargando_cache">Descargando medidores para uso sin conexión…</string>
@@ -215,4 +217,13 @@
     <string name="localizacion_estado_sin_calles">No hay calles disponibles para el pueblo seleccionado.</string>
     <string name="localizacion_estado_sin_localizacion">No se encontró la localización para la calle seleccionada.</string>
     <string name="localizacion_estado_error_generico">Ocurrió un error al cargar la localización.</string>
+    <string name="localizacion_select_pueblo">Seleccione un pueblo</string>
+    <string name="localizacion_select_calle">Seleccione una calle</string>
+    <string name="localizacion_calles_show">Cargar calles</string>
+    <string name="localizacion_calles_hide">Desmarcar calles</string>
+    <string name="localizacion_calles_toast_sin_pueblo">Selecciona un pueblo antes de cargar las calles.</string>
+    <string name="localizacion_estado_sync_error">No se pudo sincronizar la información. Intenta nuevamente.</string>
+    <string name="localizacion_estado_calles_sin_coordenadas">No hay coordenadas disponibles para las calles seleccionadas.</string>
+    <string name="localizacion_marker_rango_postes">Postes %1$d – %2$d</string>
+    <string name="localizacion_marker_poste_unico">Poste %1$d</string>
 </resources>
