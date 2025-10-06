@@ -22,6 +22,7 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.chip.Chip
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -71,18 +72,29 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
         renderTecnicos()
 
         viewLifecycleOwner.lifecycleScope.launch {
-            vm.vehiculosDisponibles.collectLatest { vehiculos ->
-                val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, vehiculos)
-                b.actvVehiculo.setAdapter(adapter)
+            vm.vehiculosDisponibles.collectLatest {
+                b.actvVehiculo.setAdapter(ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, it))
             }
         }
 
         viewLifecycleOwner.lifecycleScope.launch {
             vm.materialesDisponibles.collectLatest { lista ->
                 materialesCatalogo = lista
-                val display = lista.map { "${it.codigo} - ${it.descripcion}" }
-                val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, display)
+                val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, lista.map { "${it.codigo} - ${it.descripcion}" })
                 b.actvMaterial.setAdapter(adapter)
+            }
+        }
+        viewLifecycleOwner.lifecycleScope.launch {
+            vm.tecnicosDisponibles.collectLatest { lista ->
+                tecnicosCatalogo = lista
+                val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, lista.map { "${it.cedula} - ${it.nombre}" })
+                b.actvTecnico.setAdapter(adapter)
+            }
+        }
+        viewLifecycleOwner.lifecycleScope.launch {
+            vm.usuarioActual.filterNotNull().collectLatest {
+                ensureTecnicoActual()
+                renderTecnicos()
             }
         }
 
@@ -205,11 +217,6 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
             Estado.ASIGNADA -> getString(R.string.averia_eliminar_asignacion)
             else -> getString(R.string.averia_asignar)
         }
-        b.btnAsignar.isEnabled = estado == Estado.PENDIENTE || estado == Estado.ASIGNADA
-        b.btnAsignar.setOnClickListener {
-            vm.onToggleAsignacion(item)
-            dismissAllowingStateLoss()
-        }
 
         val usuarioActualUid = vm.usuarioActual.value?.uid
         val esPropietario = item.tecnicoUid.isNullOrBlank() || item.tecnicoUid == usuarioActualUid
@@ -239,6 +246,7 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
             Estado.ASIGNADA -> {
                 b.btnAtender.isVisible = true
                 b.btnAtender.text = getString(R.string.averia_guardar_en_atencion)
+                b.btnAtender.isEnabled = esPropio
                 b.btnAtender.setOnClickListener {
                     val data = collectFormData() ?: return@setOnClickListener
                     if (data.causa.isBlank()) {
@@ -248,16 +256,17 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
                     vm.onAtender(item, data)
                     dismissAllowingStateLoss()
                 }
-                b.btnAtender.isEnabled = esPropietario
             }
             Estado.EN_ATENCION -> {
                 b.btnAtender.isVisible = true
                 b.btnAtender.text = getString(R.string.averia_cancelar_atencion)
-                b.btnAtender.setOnClickListener {
-                    vm.onCancelarAtencion(item)
+                b.btnAtender.setOnClickListener { vm.onCancelarAtencion(item); dismissAllowingStateLoss() }
+                b.btnResolver.isVisible = true
+                b.btnResolver.setOnClickListener {
+                    val data = collectFormData() ?: return@setOnClickListener
+                    vm.onCerrar(item, data)
                     dismissAllowingStateLoss()
                 }
-                b.btnAtender.isEnabled = esPropietario
             }
             Estado.RESUELTA -> {
                 b.btnAtender.isVisible = true
@@ -394,34 +403,60 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
         b.chipGroupMateriales.isVisible = materiales.isNotEmpty()
     }
 
-    private fun formatHora(millis: Long?): String {
-        if (millis == null || millis <= 0) return ""
-        return horaFormatter.format(millis)
+    private fun ensureTecnicoActual() {
+        val user = vm.usuarioActual.value ?: return
+        val nombre = vm.nombreTecnicoActual() ?: return
+        val cedula = user.cedula?.trim().orEmpty()
+        val key = if (cedula.isNotBlank()) cedula else nombre
+        if (!tecnicosSeleccionados.containsKey(key))
+            tecnicosSeleccionados[key] = TecnicoAtencion(cedula, nombre)
     }
 
-    private fun parseHora(texto: String?, onError: (String) -> Unit): Long? {
-        if (texto.isNullOrBlank()) return null
-        return try {
-            val parsed = horaFormatter.parse(texto.trim()) ?: return null
-            val calendarParsed = Calendar.getInstance().apply { time = parsed }
-            val calendarNow = Calendar.getInstance().apply {
-                set(Calendar.HOUR_OF_DAY, calendarParsed.get(Calendar.HOUR_OF_DAY))
-                set(Calendar.MINUTE, calendarParsed.get(Calendar.MINUTE))
-                set(Calendar.SECOND, 0)
-                set(Calendar.MILLISECOND, 0)
+    private fun renderTecnicos() {
+        b.chipGroupTecnicos.removeAllViews()
+        tecnicosSeleccionados.forEach { (key, tec) ->
+            val chip = Chip(requireContext()).apply {
+                text = tec.nombre.ifBlank { tec.cedula }
+                isCloseIconVisible = true
+                setOnCloseIconClickListener {
+                    tecnicosSeleccionados.remove(key)
+                    renderTecnicos()
+                }
             }
-            calendarNow.timeInMillis
-        } catch (t: Throwable) {
-            onError(getString(R.string.averia_error_hora_formato))
-            null
+            b.chipGroupTecnicos.addView(chip)
+        }
+        b.chipGroupTecnicos.isVisible = tecnicosSeleccionados.isNotEmpty()
+        b.tvTecnicosTitulo.isVisible = tecnicosSeleccionados.isNotEmpty()
+    }
+
+    private fun renderMateriales() {
+        val lista = materialesSeleccionados.values.toList()
+        val resumen = MaterialesSerializer.toSummary(lista)
+        val bullets = lista.joinToString("\n") { "• ${it.descripcion.ifBlank { it.codigo }} x${it.cantidad}" }
+        b.tvMaterialesLista.text = bullets
+        b.tvMaterialesLista.isVisible = bullets.isNotBlank()
+        b.chipGroupMateriales.removeAllViews()
+        lista.forEach {
+            val chip = Chip(requireContext()).apply {
+                text = "${it.descripcion.ifBlank { it.codigo }} (${it.cantidad})"
+                isCloseIconVisible = true
+                setOnCloseIconClickListener {
+                    materialesSeleccionados.remove(it.codigo)
+                    renderMateriales()
+                }
+            }
+            b.chipGroupMateriales.addView(chip)
         }
     }
 
+    private fun formatHora(millis: Long?): String =
+        millis?.takeIf { it > 0 }?.let { horaFormatter.format(it) } ?: ""
+
     private fun collectFormData(): AveriaActionData? {
         val causa = b.etCausa.text?.toString()?.trim().orEmpty()
-        val obs = b.etObs.text?.toString()?.trim().takeIf { !it.isNullOrBlank() }
-        val vehiculo = b.actvVehiculo.text?.toString()?.trim().takeIf { !it.isNullOrBlank() }
-        val atendido = b.etAtendido.text?.toString()?.trim().takeIf { !it.isNullOrBlank() }
+        val obs = b.etObs.text?.toString()?.trim()
+        val vehiculo = b.actvVehiculo.text?.toString()?.trim()
+        val atendido = b.etAtendido.text?.toString()?.trim()
         val uid = vm.usuarioActual.value?.uid ?: item.tecnicoUid
 
         b.tilHoraInicio.error = null

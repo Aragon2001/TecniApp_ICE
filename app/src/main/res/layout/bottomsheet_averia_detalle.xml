@@ -37,8 +37,27 @@
                 app:chipIconVisible="false" />
         </LinearLayout>
 
-        <TextView
-            android:id="@+id/tvNise"
+            <TextView
+                android:id="@+id/tvCaso"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textStyle="bold"
+                android:textSize="18sp" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipEstado"
+                style="@style/Widget.MaterialComponents.Chip.Entry"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:clickable="false"
+                android:checkable="false"
+                android:textColor="@android:color/white"
+                app:chipIconVisible="false" />
+        </LinearLayout>
+
+        <!-- DATOS PRINCIPALES -->
+        <TextView android:id="@+id/tvNise"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
@@ -51,8 +70,7 @@
             android:layout_marginTop="4dp"
             android:textAppearance="?attr/textAppearanceBodyMedium" />
 
-        <TextView
-            android:id="@+id/tvAgencia"
+        <TextView android:id="@+id/tvRegion"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="2dp"
@@ -80,27 +98,82 @@
             android:layout_marginTop="2dp"
             android:textAppearance="?attr/textAppearanceBodySmall" />
 
+        <TextView android:id="@+id/tvAtendido"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:textAppearance="?attr/textAppearanceBodyMedium" />
+
+        <TextView android:id="@+id/tvVehiculo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:textAppearance="?attr/textAppearanceBodyMedium" />
+
+        <!-- Localización actual -->
         <TextView
-            android:id="@+id/tvAsignado"
+            android:id="@+id/tvLocalizacionActual"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:textAppearance="?attr/textAppearanceBodyMedium" />
 
+        <!-- Resumen de causa/observaciones -->
         <TextView
-            android:id="@+id/tvAtendido"
+            android:id="@+id/tvCausaActual"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="2dp"
             android:textAppearance="?attr/textAppearanceBodyMedium" />
 
         <TextView
-            android:id="@+id/tvVehiculo"
+            android:id="@+id/tvObservacionesActuales"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="2dp"
             android:textAppearance="?attr/textAppearanceBodyMedium" />
 
+        <!-- TÉCNICOS -->
+        <TextView
+            android:id="@+id/tvTecnicosTitulo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="@string/averia_tecnicos_atendieron"
+            android:textAppearance="?attr/textAppearanceTitleSmall" />
+
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/chipGroupTecnicos"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            app:singleLine="false"
+            app:singleSelection="false" />
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilTecnicoBuscar"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:hint="@string/averia_tecnico_autocomplete_hint">
+
+            <AutoCompleteTextView
+                android:id="@+id/actvTecnico"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="none" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnAgregarTecnico"
+            style="?attr/materialButtonOutlinedStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/averia_agregar_tecnico" />
+
+        <!-- MATERIALES -->
         <TextView
             android:id="@+id/tvLocalizacionActual"
             android:layout_width="match_parent"
