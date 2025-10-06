@@ -20,8 +20,8 @@
         android:contentDescription="@string/nav_header_desc"
         android:scaleType="centerCrop"
         android:src="@drawable/default_profile_picture"
-        app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.Material3.Corner.Full"
-        app:strokeColor="@android:color/white"
+        app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.Material3.Corner.Bottom"
+        app:strokeColor="@color/white"
         app:strokeWidth="2dp" />
 
     <TextView
@@ -81,10 +81,10 @@
         android:text="@string/nav_header_vehicle_placeholder"
         android:textAllCaps="false"
         android:textColor="@android:color/white"
-        app:chipBackgroundColor="@android:color/transparent"
-        app:chipIconTint="@android:color/white"
+        app:chipBackgroundColor="@color/transparent"
+        app:chipIconTint="@color/white"
         app:rippleColor="@color/ice_blue"
-        app:strokeColor="@android:color/white"
+        app:strokeColor="@color/white"
         app:strokeWidth="1dp"
         tools:visibility="visible" />
 
