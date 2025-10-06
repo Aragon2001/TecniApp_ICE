@@ -18,25 +18,39 @@ import java.util.Locale
  * - Localizaciones / pueblos: https://tecniapp-ice.firebaseio.com/
  * - Medidores: https://tecniapp-ice-default-rtdb.firebaseio.com/
  */
-class FirebaseSyncManager(context: Context) {
+class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
 
-    private val dbUsers: DatabaseReference =
-        FirebaseDatabase.getInstance("https://tecniapp-ice-user.firebaseio.com").reference
+    private val dbUsers: DatabaseReference by lazy {
+        database("https://tecniapp-ice-user.firebaseio.com")
+    }
 
-    private val dbDatosGenerales: DatabaseReference =
-        FirebaseDatabase.getInstance("https://tecniapp-ice-datosgenerales.firebaseio.com").reference
+    private val dbDatosGenerales: DatabaseReference by lazy {
+        database("https://tecniapp-ice-datosgenerales.firebaseio.com")
+    }
 
-    private val dbLocal: DatabaseReference =
-        FirebaseDatabase.getInstance("https://tecniapp-ice.firebaseio.com").reference
+    private val dbLocal: DatabaseReference by lazy {
+        database("https://tecniapp-ice.firebaseio.com")
+    }
 
-    private val dbMedidores: DatabaseReference =
-        FirebaseDatabase.getInstance("https://tecniapp-ice-default-rtdb.firebaseio.com").reference
+    private val dbMedidores: DatabaseReference by lazy {
+        database("https://tecniapp-ice-default-rtdb.firebaseio.com")
+    }
 
-    private val dbTecnicos: DatabaseReference =
-        FirebaseDatabase.getInstance("https://tecniapp-ice-personal.firebaseio.com/").reference
+    private val dbTecnicos: DatabaseReference by lazy {
+        database("https://tecniapp-ice-personal.firebaseio.com/")
+    }
 
-    private val dbMaterialesIce: DatabaseReference =
-        FirebaseDatabase.getInstance("https://tecniapp-ice-materiales.firebaseio.com/").reference
+    private val dbMaterialesIce: DatabaseReference by lazy {
+        database("https://tecniapp-ice-materiales.firebaseio.com/")
+    }
+
+    private fun database(url: String): DatabaseReference {
+        return runCatching { FirebaseDatabase.getInstance(url).reference }
+            .getOrElse { throwable ->
+                Log.e(TAG, "Error inicializando FirebaseDatabase", throwable)
+                throw IllegalStateException("No se pudo inicializar la base de datos en $url", throwable)
+            }
+    }
 
     // --- USUARIOS ---
     suspend fun obtenerUsuario(uid: String): UserEntity? {
@@ -262,3 +276,5 @@ class FirebaseSyncManager(context: Context) {
     private fun DataSnapshot.stringChild(name: String): String? =
         child(name).getValue(String::class.java)?.takeIf { it.isNotBlank() }
 }
+
+private const val TAG = "FirebaseSyncManager"

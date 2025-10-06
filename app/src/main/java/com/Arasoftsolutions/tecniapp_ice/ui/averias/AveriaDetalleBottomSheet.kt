@@ -10,8 +10,9 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
-import androidx.lifecycle.lifecycleScope
-
+import android.widget.Filter
+import android.widget.TextView
+import androidx.appcompat.app.AlertDialog
 import androidx.core.view.isVisible
 import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.viewModels
@@ -20,8 +21,11 @@ import com.Arasoftsolutions.tecniapp_ice.Database.entities.MaterialEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.TecnicoEntity
 import com.Arasoftsolutions.tecniapp_ice.R
 import com.Arasoftsolutions.tecniapp_ice.databinding.BottomsheetAveriaDetalleBinding
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.chip.Chip
+import com.google.android.material.textfield.TextInputEditText
+import com.google.android.material.textfield.TextInputLayout
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
@@ -29,61 +33,6 @@ import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
-import android.content.Context
-
-import android.widget.Filter
-import android.widget.TextView
-import java.text.Normalizer
-
-
-class FreeMatchAdapter<T>(
-    context: Context,
-    private val layoutId: Int,
-    private val items: List<T>,
-    private val itemToText: (T) -> String
-) : ArrayAdapter<String>(context, layoutId, items.map(itemToText)) {
-
-    private var filteredItems: List<T> = items
-
-    override fun getCount(): Int = filteredItems.size
-    override fun getItem(position: Int): String = itemToText(filteredItems[position])
-    fun getObject(position: Int): T = filteredItems[position]
-
-    private fun norm(s: String): String =
-        Normalizer.normalize(s, Normalizer.Form.NFD)
-            .replace("\\p{InCombiningDiacriticalMarks}+".toRegex(), "")
-            .lowercase(Locale.getDefault())
-
-    override fun getFilter(): Filter = object : Filter() {
-        override fun performFiltering(constraint: CharSequence?): FilterResults {
-            val q = norm(constraint?.toString()?.trim().orEmpty())
-            val tokens = q.split("\\s+".toRegex()).filter { it.isNotBlank() }
-
-            val list = if (tokens.isEmpty()) items else items.filter { item ->
-                val haystack = norm(itemToText(item))
-                // Coincidencia por tokens en cualquier orden: “jos arag” -> “Jostin Emanuel Aragon Barboza”
-                tokens.all { haystack.contains(it) }
-            }
-
-            return FilterResults().apply {
-                values = list
-                count = list.size
-            }
-        }
-
-        override fun publishResults(constraint: CharSequence?, results: FilterResults?) {
-            filteredItems = results?.values as? List<T> ?: items
-            notifyDataSetChanged()
-        }
-
-        override fun convertResultToString(resultValue: Any?): CharSequence {
-            val item = resultValue as? T ?: return super.convertResultToString(resultValue)
-            return itemToText(item)
-        }
-    }
-}
-
-
 class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
 
     private var _b: BottomsheetAveriaDetalleBinding? = null
@@ -184,7 +133,11 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
                             }
 
                             override fun publishResults(constraint: CharSequence?, results: FilterResults?) {
-                                filtrados = (results?.values as? MutableList<MaterialEntity>) ?: mutableListOf()
+                                filtrados = when (val value = results?.values) {
+                                    is Collection<*> -> value.filterIsInstance<MaterialEntity>().toMutableList()
+                                    is Array<*> -> value.filterIsInstance<MaterialEntity>().toMutableList()
+                                    else -> lista.toMutableList()
+                                }
                                 notifyDataSetChanged()
                             }
 
@@ -201,18 +154,7 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
 
                 b.actvMaterial.setOnItemClickListener { _, _, position, _ ->
                     val material = adapterMat.getObject(position)
-                    agregarMaterial(material)
-                    b.actvMaterial.setText("", false)
-                }
-
-                b.btnAgregarMaterial.setOnClickListener {
-                    val texto = b.actvMaterial.text?.toString().orEmpty().lowercase(Locale.getDefault())
-                    val tokens = texto.split("\\s+".toRegex()).filter { it.isNotBlank() }
-                    val match = lista.firstOrNull { m ->
-                        val hay = ("${m.codigo} ${m.descripcion}").lowercase(Locale.getDefault())
-                        tokens.all { hay.contains(it) }
-                    }
-                    if (match != null) agregarMaterial(match)
+                    solicitarCantidadMaterial(material)
                     b.actvMaterial.setText("", false)
                 }
             }
@@ -260,7 +202,11 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
                             }
 
                             override fun publishResults(constraint: CharSequence?, results: FilterResults?) {
-                                filtrados = (results?.values as? MutableList<TecnicoEntity>) ?: mutableListOf()
+                                filtrados = when (val value = results?.values) {
+                                    is Collection<*> -> value.filterIsInstance<TecnicoEntity>().toMutableList()
+                                    is Array<*> -> value.filterIsInstance<TecnicoEntity>().toMutableList()
+                                    else -> lista.toMutableList()
+                                }
                                 notifyDataSetChanged()
                             }
 
@@ -278,17 +224,6 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
                 b.actvTecnico.setOnItemClickListener { _, _, position, _ ->
                     val tecnico = adapterTec.getObject(position)
                     agregarTecnico(tecnico)
-                    b.actvTecnico.setText("", false)
-                }
-
-                b.btnAgregarTecnico.setOnClickListener {
-                    val texto = b.actvTecnico.text?.toString().orEmpty().lowercase(Locale.getDefault())
-                    val tokens = texto.split("\\s+".toRegex()).filter { it.isNotBlank() }
-                    val match = lista.firstOrNull { t ->
-                        val hay = ("${t.cedula} ${t.nombre}").lowercase(Locale.getDefault())
-                        tokens.all { hay.contains(it) }
-                    }
-                    if (match != null) agregarTecnico(match)
                     b.actvTecnico.setText("", false)
                 }
             }
@@ -380,7 +315,6 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
     private fun configureButtons(initialEstado: Estado) {
         var estado = initialEstado
         val usuarioUid = vm.usuarioActual.value?.uid
-        val esPropio = item.tecnicoUid.isNullOrBlank() || item.tecnicoUid == usuarioUid
 
         b.btnAsignar.text = when (estado) {
             Estado.PENDIENTE -> getString(R.string.averia_asignar)
@@ -412,12 +346,16 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
             b.btnAsignar.isEnabled = false
         }
 
+        b.btnAtender.isVisible = false
+        b.btnResolver.isVisible = false
+
         when (estado) {
             Estado.ASIGNADA -> {
                 b.btnAtender.isVisible = true
                 b.btnAtender.text = getString(R.string.averia_guardar_en_atencion)
                 b.btnAtender.isEnabled = puedeGestionar
                 b.btnAtender.setOnClickListener {
+                    if (!puedeGestionar) return@setOnClickListener
                     val data = collectFormData() ?: return@setOnClickListener
                     if (data.causa.isBlank()) {
                         b.tilCausa.error = getString(R.string.averia_error_causa_requerida)
@@ -430,38 +368,34 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
             Estado.EN_ATENCION -> {
                 b.btnAtender.isVisible = true
                 b.btnAtender.text = getString(R.string.averia_cancelar_atencion)
+                b.btnAtender.isEnabled = puedeGestionar
                 b.btnAtender.setOnClickListener {
+                    if (!puedeGestionar) return@setOnClickListener
                     vm.onCancelarAtencion(item)
                     dismissAllowingStateLoss()
                 }
                 b.btnResolver.isVisible = true
+                b.btnResolver.isEnabled = puedeGestionar
                 b.btnResolver.setOnClickListener {
+                    if (!puedeGestionar) return@setOnClickListener
                     val data = collectFormData() ?: return@setOnClickListener
+                    if (data.causa.isBlank()) {
+                        b.tilCausa.error = getString(R.string.averia_error_causa_requerida)
+                        return@setOnClickListener
+                    }
+                    if (data.materiales.isEmpty()) {
+                        materialesModificados = true
+                        renderMateriales()
+                    }
                     vm.onResolver(item, data)
                     dismissAllowingStateLoss()
                 }
             }
-            else -> {
-                b.btnAtender.isVisible = false
-                b.btnResolver.isVisible = false
+            Estado.RESUELTA -> {
+                b.btnAsignar.isEnabled = false
             }
+            else -> Unit
         }
-
-        b.btnResolver.isVisible = estado == Estado.EN_ATENCION || estado == Estado.ASIGNADA
-        b.btnResolver.setOnClickListener {
-            val data = collectFormData() ?: return@setOnClickListener
-            if (data.causa.isBlank()) {
-                b.tilCausa.error = getString(R.string.averia_error_causa_requerida)
-                return@setOnClickListener
-            }
-            if (data.materiales.isEmpty()) {
-                materialesModificados = true
-                renderMateriales()
-            }
-            vm.onResolver(item, data)
-            dismissAllowingStateLoss()
-        }
-        b.btnResolver.isEnabled = puedeGestionar
 
         b.btnVerMapa.setOnClickListener {
             val lat = item.lat
@@ -480,13 +414,69 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
         ).show()
     }
 
-    private fun agregarMaterial(material: MaterialEntity) {
-        val actual = materialesSeleccionados[material.codigo]
-        val actualizado = actual?.copy(cantidad = actual.cantidad + 1)
-            ?: MaterialUso(material.codigo, material.descripcion, 1)
-        materialesSeleccionados[material.codigo] = actualizado
-        materialesModificados = true
+    private fun solicitarCantidadMaterial(material: MaterialEntity) {
+        val cantidadActual = materialesSeleccionados[material.codigo]?.cantidad?.takeIf { it > 0 } ?: 1
+        mostrarDialogoCantidadMaterial(material, cantidadActual) { cantidadSeleccionada ->
+            actualizarMaterial(material, cantidadSeleccionada)
+        }
+    }
+
+    private fun actualizarMaterial(material: MaterialEntity, cantidad: Int) {
+        val clave = material.codigo
+        val cantidadNormalizada = cantidad.coerceAtLeast(0)
+        if (cantidadNormalizada == 0) {
+            if (materialesSeleccionados.remove(clave) != null) {
+                materialesModificados = true
+                renderMateriales()
+            }
+            return
+        }
+        val anterior = materialesSeleccionados[clave]
+        val actualizado = MaterialUso(clave, material.descripcion, cantidadNormalizada)
+        materialesSeleccionados[clave] = actualizado
+        if (anterior != actualizado) {
+            materialesModificados = true
+        }
         renderMateriales()
+    }
+
+    private fun mostrarDialogoCantidadMaterial(
+        material: MaterialEntity,
+        cantidadInicial: Int,
+        onCantidadSeleccionada: (Int) -> Unit
+    ) {
+        val view = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_material_cantidad, null)
+        val tilCantidad = view.findViewById<TextInputLayout>(R.id.tilCantidad)
+        val etCantidad = view.findViewById<TextInputEditText>(R.id.etCantidad)
+        if (cantidadInicial > 0) {
+            etCantidad.setText(cantidadInicial.toString())
+            etCantidad.setSelection(etCantidad.text?.length ?: 0)
+        }
+
+        val descripcion = material.descripcion.ifBlank { material.codigo }
+        val dialog = MaterialAlertDialogBuilder(requireContext())
+            .setTitle(getString(R.string.averia_material_cantidad_titulo, descripcion))
+            .setView(view)
+            .setPositiveButton(R.string.averia_material_cantidad_guardar, null)
+            .setNegativeButton(android.R.string.cancel, null)
+            .create()
+
+        dialog.setOnShowListener {
+            val positive = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+            positive.setOnClickListener {
+                tilCantidad.error = null
+                val cantidadTexto = etCantidad.text?.toString()?.trim()
+                val cantidadSeleccionada = cantidadTexto?.toIntOrNull()
+                if (cantidadSeleccionada == null || cantidadSeleccionada < 0) {
+                    tilCantidad.error = getString(R.string.averia_material_cantidad_error)
+                    return@setOnClickListener
+                }
+                onCantidadSeleccionada(cantidadSeleccionada)
+                dialog.dismiss()
+            }
+        }
+
+        dialog.show()
     }
 
     private fun agregarTecnico(t: TecnicoEntity) {
@@ -527,7 +517,7 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
 
     private fun renderMateriales() {
         if (_b == null) return
-        val materiales = materialesSeleccionados.values.toList()
+        val materiales = materialesSeleccionados.values.filter { it.cantidad > 0 }
         val resumenCalculado = MaterialesSerializer.toSummary(materiales)
         val resumen = when {
             resumenCalculado.isNotBlank() -> resumenCalculado
@@ -562,6 +552,13 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
                     materialesSeleccionados.remove(uso.codigo)
                     materialesModificados = true
                     renderMateriales()
+                }
+                setOnClickListener {
+                    val materialBase = materialesCatalogo.firstOrNull { it.codigo == uso.codigo }
+                        ?: MaterialEntity(codigo = uso.codigo, descripcion = uso.descripcion)
+                    mostrarDialogoCantidadMaterial(materialBase, uso.cantidad) { cantidadActualizada ->
+                        actualizarMaterial(materialBase, cantidadActualizada)
+                    }
                 }
             }
             b.chipGroupMateriales.addView(chip)
@@ -634,7 +631,7 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
             return null
         }
 
-        val materiales = materialesSeleccionados.values.toList()
+        val materiales = materialesSeleccionados.values.filter { it.cantidad > 0 }
         val tecnicos = tecnicosSeleccionados.values.toList()
 
         return AveriaActionData(
