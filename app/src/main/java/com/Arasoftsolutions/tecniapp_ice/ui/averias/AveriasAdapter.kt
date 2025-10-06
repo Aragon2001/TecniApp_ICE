@@ -232,7 +232,7 @@ class AveriasAdapter(
         btnAsignar.apply {
             text = context.getString(R.string.averia_eliminar_asignacion)
             isEnabled = false
-            visibility = View.VISIBLE
+            visibility = View.GONE
         }
         btnAtender.apply {
             text = context.getString(R.string.averia_cancelar_atencion)
@@ -249,11 +249,12 @@ class AveriasAdapter(
         btnAsignar.apply {
             text = context.getString(R.string.averia_asignar)
             isEnabled = false
+            visibility = View.GONE
         }
         btnAtender.apply {
             text = context.getString(R.string.averia_atencion_finalizada)
             isEnabled = false
-            visibility = View.VISIBLE
+            visibility = View.GONE
         }
         btnResolver.apply {
             text = context.getString(R.string.averia_exportar_pdf)
