@@ -20,6 +20,7 @@ import com.Arasoftsolutions.tecniapp_ice.Database.entities.AveriaEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.MaterialEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.RegionEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.SubregionesEntity
+import com.Arasoftsolutions.tecniapp_ice.Database.entities.TecnicoEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.UserEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.room.AppDatabase
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
@@ -201,6 +202,7 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
 
     fun setQuery(value: String) = viewModelScope.launch { q.emit(value) }
     fun setEstado(value: Estado?) = viewModelScope.launch { estado.emit(value) }
+
 
     fun setRegionIndex(idx: Int) = viewModelScope.launch {
         val regiones = _regiones.value
