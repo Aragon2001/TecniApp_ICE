@@ -1,6 +1,7 @@
 package com.Arasoftsolutions.tecniapp_ice.ui.localizacion
 
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -63,7 +64,13 @@ class LocalizacionViewModel(app: Application) : AndroidViewModel(app) {
 
         try {
             val subregion = withContext(Dispatchers.IO) {
-                repository.obtenerUsuario(uid)?.subregion?.trim()?.takeIf { it.isNotEmpty() }
+                val local = repository.obtenerUsuario(uid)
+                val ensured = local ?: runCatching { repository.upsertUserFromFirebase(uid) }
+                    .onFailure { throwable ->
+                        Log.e("LocalizacionViewModel", "Error obteniendo usuario desde Firebase", throwable)
+                    }
+                    .getOrNull()
+                ensured?.subregion?.trim()?.takeIf { it.isNotEmpty() }
             }
 
             if (subregion.isNullOrBlank()) {
