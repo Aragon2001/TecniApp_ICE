@@ -441,6 +441,7 @@ class AveriasRepository(private val db: AppDatabase) {
         registrarMaterialesUsados(data.materiales)
     }
 
+
     suspend fun cerrar(caseId: String, data: AveriaActionData) = withContext(Dispatchers.IO) {
         val now = System.currentTimeMillis()
         val horaInicio = data.horaInicioMillis ?: now

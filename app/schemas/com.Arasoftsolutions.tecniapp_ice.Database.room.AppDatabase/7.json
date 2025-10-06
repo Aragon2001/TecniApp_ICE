@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 7,
-    "identityHash": "2a4bf6a7a4b208447cebc82c076eae5e",
+    "identityHash": "42568f9ebf7d9eb9752f1ed5d1ac310a",
     "entities": [
       {
         "tableName": "usuarios",
@@ -427,7 +427,7 @@
       },
       {
         "tableName": "averias",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`caseId` TEXT NOT NULL, `region` TEXT, `provincia` INTEGER, `agencia` TEXT, `nombreAgencia` TEXT, `nise` TEXT, `causa` TEXT, `observaciones` TEXT, `estado` TEXT NOT NULL, `idEstadoAve` INTEGER, `idEstadoAranda` INTEGER, `lat` REAL, `lng` REAL, `clientesAfectados` TEXT, `fechaInicioMillis` INTEGER NOT NULL, `horaInicioMillis` INTEGER, `horaFinalMillis` INTEGER, `atencionHoraInicioMillis` INTEGER, `atencionHoraFinalMillis` INTEGER, `kilometrajeInicio` REAL, `kilometrajeFinal` REAL, `agenciaTag` TEXT NOT NULL, `vehiculoAsignado` TEXT, `tecnicoAsignadoUid` TEXT, `tecnicoAsignadoNombre` TEXT, `atendidoPorUid` TEXT, `atendidoPorNombre` TEXT, `materialesTexto` TEXT, `materialesDetalleJson` TEXT, `isSynced` INTEGER NOT NULL, `lastUpdated` INTEGER NOT NULL, PRIMARY KEY(`caseId`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`caseId` TEXT NOT NULL, `region` TEXT, `provincia` INTEGER, `agencia` TEXT, `nombreAgencia` TEXT, `nise` TEXT, `causa` TEXT, `observaciones` TEXT, `estado` TEXT NOT NULL, `idEstadoAve` INTEGER, `idEstadoAranda` INTEGER, `lat` REAL, `lng` REAL, `clientesAfectados` TEXT, `fechaInicioMillis` INTEGER NOT NULL, `horaInicioMillis` INTEGER, `horaFinalMillis` INTEGER, `atencionHoraInicioMillis` INTEGER, `atencionHoraFinalMillis` INTEGER, `kilometrajeInicio` REAL, `kilometrajeFinal` REAL, `agenciaTag` TEXT NOT NULL, `vehiculoAsignado` TEXT, `tecnicoAsignadoUid` TEXT, `tecnicoAsignadoNombre` TEXT, `atendidoPorUid` TEXT, `atendidoPorNombre` TEXT, `materialesTexto` TEXT, `materialesDetalleJson` TEXT, `cliente` TEXT, `localizacion` TEXT, `isSynced` INTEGER NOT NULL, `lastUpdated` INTEGER NOT NULL, PRIMARY KEY(`caseId`))",
         "fields": [
           {
             "fieldPath": "caseId",
@@ -579,6 +579,16 @@
             "affinity": "TEXT"
           },
           {
+            "fieldPath": "cliente",
+            "columnName": "cliente",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "localizacion",
+            "columnName": "localizacion",
+            "affinity": "TEXT"
+          },
+          {
             "fieldPath": "isSynced",
             "columnName": "isSynced",
             "affinity": "INTEGER",
@@ -639,7 +649,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '2a4bf6a7a4b208447cebc82c076eae5e')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '42568f9ebf7d9eb9752f1ed5d1ac310a')"
     ]
   }
 }
