@@ -53,6 +53,9 @@ class RoomRepository(context: Context) {
     fun observarVehiculos(subregionId: String): Flow<List<VehiculosEntity>> =
         db.vehiculoDao().observarPorSubregion(subregionId)
 
+    fun observarVehiculosCatalogo(): Flow<List<VehiculosEntity>> =
+        db.vehiculoDao().observarTodos()
+
     fun observarMateriales(): Flow<List<MaterialEntity>> =
         db.materialDao().observarMateriales()
 
@@ -82,6 +85,10 @@ class RoomRepository(context: Context) {
 
     suspend fun obtenerUsuario(uid: String): UserEntity? =
         db.usuarioDao().getByUid(uid)
+
+    suspend fun saveUser(user: UserEntity) = withContext(Dispatchers.IO) {
+        db.usuarioDao().upsert(user)
+    }
 
     // ----- Sincronización -----
     suspend fun syncTecnicos() = withContext(Dispatchers.IO) {

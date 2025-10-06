@@ -5,12 +5,11 @@ import android.os.Bundle
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
-import android.view.View
-import android.widget.ImageView
-import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.drawerlayout.widget.DrawerLayout
+import androidx.core.view.GravityCompat
+import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
@@ -20,9 +19,10 @@ import androidx.navigation.ui.setupWithNavController
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.UserEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
 import com.Arasoftsolutions.tecniapp_ice.databinding.ActivityMainBinding
+import com.Arasoftsolutions.tecniapp_ice.databinding.NavHeaderMainBinding
+import com.bumptech.glide.Glide
 import com.google.android.material.navigation.NavigationView
 import com.google.firebase.auth.FirebaseAuth
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 class ActivityMain : AppCompatActivity() {
@@ -31,6 +31,7 @@ class ActivityMain : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var auth: FirebaseAuth
     private lateinit var repository: RoomRepository
+    private lateinit var headerBinding: NavHeaderMainBinding
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -47,7 +48,7 @@ class ActivityMain : AppCompatActivity() {
         auth = FirebaseAuth.getInstance()
 
         // Room Repository
-        repository = RoomRepository(applicationContext)
+        repository = RoomRepository.getInstance(applicationContext)
 
         // Cargar datos del usuario local (Room)
         lifecycleScope.launch {
@@ -58,6 +59,12 @@ class ActivityMain : AppCompatActivity() {
         val drawerLayout: DrawerLayout = binding.drawerLayout
         val navView: NavigationView = binding.navView
         val navController = findNavController(R.id.nav_host_fragment_content_main)
+
+        headerBinding = NavHeaderMainBinding.bind(navView.getHeaderView(0)).also { header ->
+            header.chipVehicle.isVisible = false
+            header.chipVehicle.text = getString(R.string.nav_header_vehicle_placeholder)
+            header.root.setOnClickListener { openUserFragment() }
+        }
 
         appBarConfiguration = AppBarConfiguration(
             setOf(
@@ -98,17 +105,43 @@ class ActivityMain : AppCompatActivity() {
     }
 
     private fun updateNavHeader(usuario: UserEntity) {
-        val headerView: View = binding.navView.getHeaderView(0)
-        val profileImageView = headerView.findViewById<ImageView>(R.id.imageViewProfile)
-        val fullNameTextView = headerView.findViewById<TextView>(R.id.textViewFullName)
-        val emailTextView = headerView.findViewById<TextView>(R.id.textViewEmail)
-        val vehiculoTextView = headerView.findViewById<TextView>(R.id.textViewVehiculo)
+        val fullName = listOfNotNull(usuario.nombre, usuario.apellidos)
+            .joinToString(" ")
+            .trim()
+            .ifBlank { getString(R.string.profile_default_name) }
 
-        fullNameTextView.text = "${usuario.nombre} ${usuario.apellidos}"
-        emailTextView.text = usuario.email
-        vehiculoTextView.text = "Vehículo: ${usuario.placaVehiculo ?: "No disponible"}"
-        // Si en el futuro agregas foto de perfil, úsala en profileImageView.
+        headerBinding.textViewFullName.text = fullName
+        headerBinding.textViewEmail.text = usuario.email ?: getString(R.string.profile_summary_placeholder)
+        headerBinding.textViewCedula.text = getString(
+            R.string.nav_header_cedula_format,
+            displayValue(usuario.cedula)
+        )
+        headerBinding.textViewSubregion.text = getString(
+            R.string.nav_header_subregion_format,
+            displayValue(usuario.subregion)
+        )
+        headerBinding.textViewAgency.text = getString(
+            R.string.nav_header_agency_format,
+            displayValue(usuario.agencia)
+        )
+
+        val vehiculo = usuario.placaVehiculo?.takeUnless { it.isBlank() }
+        if (vehiculo.isNullOrBlank()) {
+            headerBinding.chipVehicle.isVisible = false
+        } else {
+            headerBinding.chipVehicle.isVisible = true
+            headerBinding.chipVehicle.text = getString(R.string.nav_header_vehicle_format, vehiculo)
+        }
+
+        Glide.with(this)
+            .load(usuario.fotoUrl)
+            .placeholder(R.drawable.default_profile_picture)
+            .error(R.drawable.default_profile_picture)
+            .into(headerBinding.imageViewProfile)
     }
+
+    private fun displayValue(value: String?): String =
+        value?.takeIf { it.isNotBlank() } ?: getString(R.string.profile_summary_placeholder)
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.main, menu)
@@ -132,6 +165,7 @@ class ActivityMain : AppCompatActivity() {
     private fun openUserFragment() {
         val navController = findNavController(R.id.nav_host_fragment_content_main)
         navController.navigate(R.id.nav_account)
+        binding.drawerLayout.closeDrawer(GravityCompat.START)
     }
 
     private fun signOutAndRedirect() {
@@ -163,5 +197,14 @@ class ActivityMain : AppCompatActivity() {
     override fun onSupportNavigateUp(): Boolean {
         val navController = findNavController(R.id.nav_host_fragment_content_main)
         return navController.navigateUp(appBarConfiguration) || super.onSupportNavigateUp()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        lifecycleScope.launch { loadUserDataFromDatabase() }
+    }
+
+    fun refreshNavHeader() {
+        lifecycleScope.launch { loadUserDataFromDatabase() }
     }
 }

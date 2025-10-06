@@ -533,9 +533,7 @@ class AveriasRepository(private val db: AppDatabase) {
         "atendidoPorNombre" to atendidoPorNombre,
         "materialesTexto" to materialesTexto,
         "materialesDetalleJson" to materialesDetalleJson,
-
         "tecnicosAtendieronJson" to tecnicosAtendieronJson,
-
         "cliente" to cliente,
         "localizacion" to localizacion,
         "lastUpdated" to lastUpdated

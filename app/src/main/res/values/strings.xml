@@ -125,4 +125,35 @@
 
     <!-- Material SearchView -->
     <string name="search_view_behavior">com.google.android.material.searchview.SearchView$Behavior</string>
+
+    <!-- Perfil de usuario -->
+    <string name="profile_default_name">Técnico ICE</string>
+    <string name="profile_summary_placeholder">—</string>
+    <string name="profile_user_id_format">Cédula: %1$s</string>
+    <string name="profile_change_photo">Cambiar foto</string>
+    <string name="profile_subregion_label">Subregión</string>
+    <string name="profile_agency_label">Agencia</string>
+    <string name="profile_vehicle_label">Vehículo asignado</string>
+    <string name="profile_phone_hint">Teléfono</string>
+    <string name="profile_password_hint">Nueva contraseña</string>
+    <string name="profile_confirm_password_hint">Confirmar contraseña</string>
+    <string name="profile_save_changes">Guardar cambios</string>
+    <string name="profile_password_too_short">La contraseña debe tener al menos 8 caracteres.</string>
+    <string name="profile_password_mismatch">Las contraseñas no coinciden.</string>
+    <string name="profile_save_success">Perfil actualizado</string>
+    <string name="profile_save_error">No se pudo guardar los cambios.%1$s</string>
+    <string name="profile_photo_updated">Foto de perfil actualizada</string>
+    <string name="profile_photo_update_error">No se pudo actualizar la foto.%1$s</string>
+    <string name="profile_summary_subregion">Subregión: %1$s</string>
+    <string name="profile_summary_agency">Agencia: %1$s</string>
+    <string name="profile_summary_vehicle">Vehículo: %1$s</string>
+    <string name="profile_vehicle_format">%1$s • %2$s</string>
+    <string name="profile_error_user_not_found">No se encontró la información del usuario.</string>
+
+    <!-- Header navegación -->
+    <string name="nav_header_cedula_format">Cédula: %1$s</string>
+    <string name="nav_header_subregion_format">Subregión: %1$s</string>
+    <string name="nav_header_agency_format">Agencia: %1$s</string>
+    <string name="nav_header_vehicle_format">Vehículo • %1$s</string>
+    <string name="nav_header_vehicle_placeholder">Sin vehículo asignado</string>
 </resources>
