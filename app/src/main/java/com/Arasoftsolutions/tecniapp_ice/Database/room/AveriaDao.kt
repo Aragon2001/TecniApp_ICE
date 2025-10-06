@@ -86,6 +86,9 @@ fun observe(
           vehiculoAsignado = :vehiculo,
           materialesTexto = :materialesResumen,
           materialesDetalleJson = :materialesDetalle,
+          tecnicosAtendieronJson = :tecnicosAtendieron,
+          cliente = COALESCE(:cliente, cliente),
+          localizacion = :localizacion,
           lastUpdated = :lastUpdated,
           isSynced = 0
         WHERE caseId = :caseId
@@ -104,6 +107,9 @@ fun observe(
         vehiculo: String?,
         materialesResumen: String?,
         materialesDetalle: String?,
+        tecnicosAtendieron: String?,
+        cliente: String?,
+        localizacion: String?,
         lastUpdated: Long,
         nuevoEstado: String
     )
@@ -127,6 +133,8 @@ fun observe(
           kilometrajeInicio = NULL,
           kilometrajeFinal = NULL,
           materialesDetalleJson = NULL,
+          tecnicosAtendieronJson = NULL,
+          localizacion = NULL,
           lastUpdated = :lastUpdated,
           isSynced = 0
         WHERE caseId = :caseId
