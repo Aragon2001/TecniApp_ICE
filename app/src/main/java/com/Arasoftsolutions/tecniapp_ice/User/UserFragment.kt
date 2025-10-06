@@ -20,9 +20,11 @@ import com.Arasoftsolutions.tecniapp_ice.Database.entities.SubregionesEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.UserEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.VehiculosEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
+
 import com.Arasoftsolutions.tecniapp_ice.R
 import com.Arasoftsolutions.tecniapp_ice.databinding.FragmentUserBinding
 import com.bumptech.glide.Glide
+
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.storage.FirebaseStorage
@@ -325,6 +327,7 @@ class UserFragment : Fragment() {
             return
         }
 
+
         val newPassword = binding.etPassword.text?.toString().orEmpty()
         val confirmPassword = binding.etConfirmPassword.text?.toString().orEmpty()
         if (newPassword.isNotEmpty() && newPassword.length < MIN_PASSWORD_LENGTH) {
@@ -349,6 +352,7 @@ class UserFragment : Fragment() {
             try {
                 if (newPassword.isNotEmpty()) {
                     auth.currentUser?.updatePassword(newPassword)?.await()
+
                 }
                 persistUserRemote(updatedUser)
                 viewModel.updateCachedUser(updatedUser, persist = true)

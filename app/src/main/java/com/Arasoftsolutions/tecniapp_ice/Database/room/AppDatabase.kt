@@ -21,7 +21,9 @@ import com.Arasoftsolutions.tecniapp_ice.Database.entities.*
         TecnicoEntity::class,           // Personal técnico
         AveriaEntity::class             // Averías
     ],
+
     version = 9,                        // ✅ mantener la versión más alta
+
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
