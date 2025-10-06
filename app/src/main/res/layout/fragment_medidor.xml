@@ -100,7 +100,7 @@
 
                     <TextView
                         style="@style/TextAppearance.Material3.TitleMedium"
-                        android:layout_width="wrap_content"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="@string/medidor_result_title" />
 
@@ -125,11 +125,57 @@
 
                             <TextView
                                 style="@style/TextAppearance.Material3.LabelMedium"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="@string/medidor_numero_label" />
+
+                            <TextView
+                                android:id="@+id/valueNumero"
+                                style="@style/TextAppearance.Material3.BodyLarge"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:textColor="?attr/colorOnBackground"
+                                tools:text="714" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:paddingBottom="8dp">
+
+                            <TextView
+                                style="@style/TextAppearance.Material3.LabelMedium"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="@string/medidor_subregion_label" />
+
+                            <TextView
+                                android:id="@+id/valueSubregion"
+                                style="@style/TextAppearance.Material3.BodyLarge"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:textColor="?attr/colorOnBackground"
+                                tools:text="SJO" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:paddingBottom="8dp">
+
+                            <TextView
+                                style="@style/TextAppearance.Material3.LabelMedium"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
                                 android:text="@string/medidor_cliente_label" />
 
                             <TextView
                                 android:id="@+id/valueCliente"
                                 style="@style/TextAppearance.Material3.BodyLarge"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
                                 android:textColor="?attr/colorOnBackground"
                                 tools:text="GAS NACIONAL ZETA S.A." />
                         </LinearLayout>
@@ -142,11 +188,15 @@
 
                             <TextView
                                 style="@style/TextAppearance.Material3.LabelMedium"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
                                 android:text="@string/medidor_calle_label" />
 
                             <TextView
                                 android:id="@+id/valueCalle"
                                 style="@style/TextAppearance.Material3.BodyLarge"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
                                 android:textColor="?attr/colorOnBackground"
                                 tools:text="950" />
                         </LinearLayout>
@@ -159,11 +209,15 @@
 
                             <TextView
                                 style="@style/TextAppearance.Material3.LabelMedium"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
                                 android:text="@string/medidor_poste_label" />
 
                             <TextView
                                 android:id="@+id/valuePoste"
                                 style="@style/TextAppearance.Material3.BodyLarge"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
                                 android:textColor="?attr/colorOnBackground"
                                 tools:text="001" />
                         </LinearLayout>
@@ -176,11 +230,15 @@
 
                             <TextView
                                 style="@style/TextAppearance.Material3.LabelMedium"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
                                 android:text="@string/medidor_metros_label" />
 
                             <TextView
                                 android:id="@+id/valueMetros"
                                 style="@style/TextAppearance.Material3.BodyLarge"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
                                 android:textColor="?attr/colorOnBackground"
                                 tools:text="14" />
                         </LinearLayout>
@@ -193,11 +251,15 @@
 
                             <TextView
                                 style="@style/TextAppearance.Material3.LabelMedium"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
                                 android:text="@string/medidor_pueblo_label" />
 
                             <TextView
                                 android:id="@+id/valuePueblo"
                                 style="@style/TextAppearance.Material3.BodyLarge"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
                                 android:textColor="?attr/colorOnBackground"
                                 tools:text="340 - Guápiles" />
                         </LinearLayout>
@@ -209,11 +271,15 @@
 
                             <TextView
                                 style="@style/TextAppearance.Material3.LabelMedium"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
                                 android:text="@string/medidor_localizacion_label" />
 
                             <TextView
                                 android:id="@+id/valueLocalizacion"
                                 style="@style/TextAppearance.Material3.BodyLarge"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
                                 android:textColor="?attr/colorOnBackground"
                                 tools:text="34095000114" />
                         </LinearLayout>

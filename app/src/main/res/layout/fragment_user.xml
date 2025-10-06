@@ -73,13 +73,15 @@
                     </FrameLayout>
 
                     <!-- BOTÓN CAMBIAR FOTO -->
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnChangePhoto"
-                        style="@style/Tecni.Button.Outlined"
-                        android:layout_marginTop="12dp"
-                        android:text="Cambiar foto"
-                        app:icon="@drawable/ic_camera"
-                        app:iconGravity="textStart"
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnChangePhoto"
+            style="@style/Tecni.Button.Outlined"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="Cambiar foto"
+            app:icon="@drawable/ic_camera"
+            app:iconGravity="textStart"
                         app:iconPadding="8dp" />
 
                     <!-- DATOS DE USUARIO -->
