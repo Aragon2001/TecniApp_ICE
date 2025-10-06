@@ -16,7 +16,7 @@
 
         <com.google.android.material.progressindicator.LinearProgressIndicator
             android:id="@+id/progressLoading"
-            style="@style/Widget.Material3.ProgressIndicator.Linear"
+            style="@style/Widget.Material3.LinearProgressIndicator"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:visibility="gone"
@@ -55,7 +55,10 @@
                             android:scaleType="centerCrop"
                             android:contentDescription="@string/nav_header_desc"
                             android:src="@drawable/default_profile_picture"
-                            app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.Material3.Corner.Full"
+                            app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.Material3.Corner.Bottom"
+
+
+
                             app:strokeWidth="2dp"
                             app:strokeColor="@color/ice_blue" />
 
@@ -271,7 +274,7 @@
 
             <com.google.android.material.progressindicator.LinearProgressIndicator
                 android:id="@+id/progressSaving"
-                style="@style/Widget.Material3.ProgressIndicator.Linear"
+                style="@style/Widget.Material3.LinearProgressIndicator"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"

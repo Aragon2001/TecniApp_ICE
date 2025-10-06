@@ -1,12 +1,12 @@
 {
   "formatVersion": 1,
   "database": {
-    "version": 7,
-    "identityHash": "42568f9ebf7d9eb9752f1ed5d1ac310a",
+    "version": 9,
+    "identityHash": "3e383e9acef5438c3dd111522492082c",
     "entities": [
       {
         "tableName": "usuarios",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`uid` TEXT NOT NULL, `email` TEXT, `email_lower` TEXT, `nombre` TEXT, `apellidos` TEXT, `cedula` TEXT, `subregion` TEXT, `agencia` TEXT, `placaVehiculo` TEXT, `telefono` TEXT, `password` TEXT, PRIMARY KEY(`uid`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`uid` TEXT NOT NULL, `email` TEXT, `email_lower` TEXT, `nombre` TEXT, `apellidos` TEXT, `cedula` TEXT, `subregion` TEXT, `agencia` TEXT, `placaVehiculo` TEXT, `telefono` TEXT, `password` TEXT, `fotoUrl` TEXT, PRIMARY KEY(`uid`))",
         "fields": [
           {
             "fieldPath": "uid",
@@ -62,6 +62,11 @@
           {
             "fieldPath": "password",
             "columnName": "password",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "fotoUrl",
+            "columnName": "fotoUrl",
             "affinity": "TEXT"
           }
         ],
@@ -426,8 +431,43 @@
         ]
       },
       {
+        "tableName": "tecnicos",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`cedula` TEXT NOT NULL, `nombre` TEXT NOT NULL, PRIMARY KEY(`cedula`))",
+        "fields": [
+          {
+            "fieldPath": "cedula",
+            "columnName": "cedula",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nombre",
+            "columnName": "nombre",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "cedula"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_tecnicos_nombre",
+            "unique": false,
+            "columnNames": [
+              "nombre"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_tecnicos_nombre` ON `${TABLE_NAME}` (`nombre`)"
+          }
+        ]
+      },
+      {
         "tableName": "averias",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`caseId` TEXT NOT NULL, `region` TEXT, `provincia` INTEGER, `agencia` TEXT, `nombreAgencia` TEXT, `nise` TEXT, `causa` TEXT, `observaciones` TEXT, `estado` TEXT NOT NULL, `idEstadoAve` INTEGER, `idEstadoAranda` INTEGER, `lat` REAL, `lng` REAL, `clientesAfectados` TEXT, `fechaInicioMillis` INTEGER NOT NULL, `horaInicioMillis` INTEGER, `horaFinalMillis` INTEGER, `atencionHoraInicioMillis` INTEGER, `atencionHoraFinalMillis` INTEGER, `kilometrajeInicio` REAL, `kilometrajeFinal` REAL, `agenciaTag` TEXT NOT NULL, `vehiculoAsignado` TEXT, `tecnicoAsignadoUid` TEXT, `tecnicoAsignadoNombre` TEXT, `atendidoPorUid` TEXT, `atendidoPorNombre` TEXT, `materialesTexto` TEXT, `materialesDetalleJson` TEXT, `cliente` TEXT, `localizacion` TEXT, `isSynced` INTEGER NOT NULL, `lastUpdated` INTEGER NOT NULL, PRIMARY KEY(`caseId`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`caseId` TEXT NOT NULL, `region` TEXT, `provincia` INTEGER, `agencia` TEXT, `nombreAgencia` TEXT, `nise` TEXT, `causa` TEXT, `observaciones` TEXT, `estado` TEXT NOT NULL, `idEstadoAve` INTEGER, `idEstadoAranda` INTEGER, `lat` REAL, `lng` REAL, `clientesAfectados` TEXT, `fechaInicioMillis` INTEGER NOT NULL, `horaInicioMillis` INTEGER, `horaFinalMillis` INTEGER, `atencionHoraInicioMillis` INTEGER, `atencionHoraFinalMillis` INTEGER, `kilometrajeInicio` REAL, `kilometrajeFinal` REAL, `agenciaTag` TEXT NOT NULL, `vehiculoAsignado` TEXT, `tecnicoAsignadoUid` TEXT, `tecnicoAsignadoNombre` TEXT, `atendidoPorUid` TEXT, `atendidoPorNombre` TEXT, `materialesTexto` TEXT, `materialesDetalleJson` TEXT, `tecnicosAtendieronJson` TEXT, `cliente` TEXT, `localizacion` TEXT, `isSynced` INTEGER NOT NULL, `lastUpdated` INTEGER NOT NULL, PRIMARY KEY(`caseId`))",
         "fields": [
           {
             "fieldPath": "caseId",
@@ -579,6 +619,11 @@
             "affinity": "TEXT"
           },
           {
+            "fieldPath": "tecnicosAtendieronJson",
+            "columnName": "tecnicosAtendieronJson",
+            "affinity": "TEXT"
+          },
+          {
             "fieldPath": "cliente",
             "columnName": "cliente",
             "affinity": "TEXT"
@@ -649,7 +694,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '42568f9ebf7d9eb9752f1ed5d1ac310a')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '3e383e9acef5438c3dd111522492082c')"
     ]
   }
 }
