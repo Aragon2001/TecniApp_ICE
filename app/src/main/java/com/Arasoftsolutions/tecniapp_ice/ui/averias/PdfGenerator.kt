@@ -82,7 +82,7 @@ object PdfGenerator {
             val headerSubtitle = context.getString(R.string.averia_pdf_header_subtitle)
             val headerTagline = context.getString(R.string.averia_pdf_header_tagline)
 
-            val logoDrawable = ContextCompat.getDrawable(context, R.drawable.ic_tecniapp_logo)
+            val logoDrawable = ContextCompat.getDrawable(context, R.drawable.logo)
             logoDrawable?.let { drawable ->
                 val logoBitmapSize = 256
                 val logoBitmap = Bitmap.createBitmap(logoBitmapSize, logoBitmapSize, Bitmap.Config.ARGB_8888)
@@ -133,7 +133,7 @@ object PdfGenerator {
 
             val emptyValue = context.getString(R.string.averia_pdf_empty_value)
             val assigned = item.tecnico.ifBlank { context.getString(R.string.averia_sin_asignar) }
-            val attended = item.atendidoPor.ifBlank { emptyValue }
+            val attended = item.resolvedAtendidoDisplay(emptyValue)
             val vehicle = item.vehiculo ?: emptyValue
             val nise = item.nise.ifBlank { emptyValue }
             val description = item.descripcion.ifBlank { emptyValue }
@@ -347,11 +347,22 @@ object PdfGenerator {
             )
 
             val materialesLines = when {
-                item.materialesDetalle.isNotEmpty() -> item.materialesDetalle.map { uso ->
-                    val descripcionMaterial = uso.descripcion.ifBlank { uso.codigo }
-                    context.getString(R.string.averia_pdf_material_line, descripcionMaterial, uso.cantidad, uso.codigo)
-                }
-                item.materialesResumen.isNotBlank() -> listOf(item.materialesResumen)
+                item.materialesDetalle.any { it.cantidad > 0 } -> item.materialesDetalle
+                    .filter { it.cantidad > 0 }
+                    .map { uso ->
+                        val descripcionMaterial = uso.descripcion.ifBlank { uso.codigo }
+                        context.getString(
+                            R.string.averia_pdf_material_line,
+                            descripcionMaterial,
+                            uso.cantidad,
+                            uso.codigo
+                        )
+                    }
+                item.materialesResumen.isNotBlank() -> item.materialesResumen
+                    .split("[\\n;,]".toRegex())
+                    .map { it.trim() }
+                    .filter { it.isNotEmpty() }
+                    .ifEmpty { listOf(item.materialesResumen.trim()) }
                 else -> listOf(context.getString(R.string.averia_pdf_no_materials))
             }
             drawCard(
@@ -360,14 +371,24 @@ object PdfGenerator {
                 bullet = true
             )
 
-            val tecnicosLines = if (item.tecnicosAtendieron.isNotEmpty()) {
-                item.tecnicosAtendieron.map { tecnico ->
-                    val nombre = tecnico.nombre.ifBlank { emptyValue }
-                    val cedula = tecnico.cedula.ifBlank { emptyValue }
-                    context.getString(R.string.averia_pdf_technician_line, nombre, cedula)
+            val tecnicosLinesFromList = item.tecnicosAtendieron.mapNotNull { tecnico ->
+                val nombre = tecnico.nombre.trim()
+                val cedula = tecnico.cedula.trim()
+                when {
+                    nombre.isNotBlank() && cedula.isNotBlank() ->
+                        context.getString(R.string.averia_pdf_technician_line, nombre, cedula)
+                    nombre.isNotBlank() -> nombre
+                    cedula.isNotBlank() -> cedula
+                    else -> null
                 }
+            }
+            val tecnicosLines = if (tecnicosLinesFromList.isNotEmpty()) {
+                tecnicosLinesFromList
             } else {
-                listOf(context.getString(R.string.averia_pdf_no_technicians))
+                val attendedFallback = item.resolvedAtendidoLines(emptyValue)
+                    .filter { it.isNotBlank() && it != emptyValue }
+                if (attendedFallback.isNotEmpty()) attendedFallback
+                else listOf(context.getString(R.string.averia_pdf_no_technicians))
             }
             drawCard(
                 context.getString(R.string.averia_pdf_section_technicians),
