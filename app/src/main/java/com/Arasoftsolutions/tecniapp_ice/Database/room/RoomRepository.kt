@@ -19,6 +19,21 @@ class RoomRepository(context: Context) {
     private val db = AppDatabase.getInstance(context.applicationContext)
     private val firebase = FirebaseSyncManager(context.applicationContext)
 
+    companion object {
+        const val SUBREGION_SYNC_STEPS = 5
+
+        @Volatile
+        private var INSTANCE: RoomRepository? = null
+
+        fun getInstance(context: Context): RoomRepository {
+            return INSTANCE ?: synchronized(this) {
+                INSTANCE ?: RoomRepository(context.applicationContext).also {
+                    INSTANCE = it
+                }
+            }
+        }
+    }
+
     // ----- Lecturas observables -----
     fun observarMedidores(subregionId: String): Flow<List<MedidorEntity>> =
         db.medidorDao().observarPorSubregion(subregionId)
@@ -40,6 +55,9 @@ class RoomRepository(context: Context) {
 
     fun observarMateriales(): Flow<List<MaterialEntity>> =
         db.materialDao().observarMateriales()
+
+    fun observarTecnicos(): Flow<List<TecnicoEntity>> =
+        db.tecnicoDao().observarTecnicos()
 
     fun observarRegiones(): Flow<List<RegionEntity>> = db.regionDao().observarTodas()
 
@@ -66,11 +84,25 @@ class RoomRepository(context: Context) {
         db.usuarioDao().getByUid(uid)
 
     // ----- Sincronización -----
+    suspend fun syncTecnicos() = withContext(Dispatchers.IO) {
+        val tecnicos = firebase.obtenerTecnicos()
+        if (tecnicos.isNotEmpty()) {
+            db.tecnicoDao().insertAll(tecnicos)
+        }
+    }
+
+    suspend fun syncMateriales() = withContext(Dispatchers.IO) {
+        val materiales = firebase.obtenerMaterialesCatalogo()
+        if (materiales.isNotEmpty()) {
+            db.materialDao().insertAll(materiales)
+        }
+    }
+
     suspend fun syncSubregion(
         subregionId: String,
         progress: (done: Int, total: Int, msg: String?) -> Unit = { _, _, _ -> }
     ) = withContext(Dispatchers.IO) {
-        val total = 5
+        val total = SUBREGION_SYNC_STEPS
         var done = 0
 
         // Si quieres transacción atómica, descomenta y usa withTransaction:
@@ -124,18 +156,9 @@ class RoomRepository(context: Context) {
         if (vehiculos.isNotEmpty()) {
             db.vehiculoDao().insertAll(vehiculos)
         }
+
+        runCatching { syncTecnicos() }
+        runCatching { syncMateriales() }
     }
 
-    companion object {
-        @Volatile
-        private var INSTANCE: RoomRepository? = null
-
-        fun getInstance(context: Context): RoomRepository {
-            return INSTANCE ?: synchronized(this) {
-                INSTANCE ?: RoomRepository(context.applicationContext).also {
-                    INSTANCE = it
-                }
-            }
-        }
-    }
 }

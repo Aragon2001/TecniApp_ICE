@@ -13,6 +13,11 @@ data class MaterialUso(
     val cantidad: Int
 ) : Serializable
 
+data class TecnicoAtencion(
+    val cedula: String,
+    val nombre: String
+) : Serializable
+
 /**
  * Datos de acción al atender/cerrar una avería.
  */
@@ -26,7 +31,10 @@ data class AveriaActionData(
     val horaInicioMillis: Long?,
     val horaFinalMillis: Long?,
     val kilometrajeInicio: Double?,
-    val kilometrajeFinal: Double?
+    val kilometrajeFinal: Double?,
+    val cliente: String?,
+    val localizacion: String?,
+    val tecnicos: List<TecnicoAtencion>
 )
 
 /**
@@ -69,6 +77,41 @@ object MaterialesSerializer {
                     val cantidad = obj.optInt("cantidad", 0)
                     if (codigo.isBlank() || cantidad <= 0) continue
                     add(MaterialUso(codigo, descripcion, cantidad))
+                }
+            }
+        } catch (_: Throwable) {
+            emptyList()
+        }
+    }
+}
+
+object TecnicosSerializer {
+
+    fun toJson(tecnicos: List<TecnicoAtencion>): String? {
+        if (tecnicos.isEmpty()) return null
+        val array = JSONArray()
+        tecnicos.forEach { tecnico ->
+            if (tecnico.cedula.isBlank() && tecnico.nombre.isBlank()) return@forEach
+            val obj = JSONObject().apply {
+                put("cedula", tecnico.cedula)
+                put("nombre", tecnico.nombre)
+            }
+            array.put(obj)
+        }
+        return if (array.length() == 0) null else array.toString()
+    }
+
+    fun fromJson(json: String?): List<TecnicoAtencion> {
+        if (json.isNullOrBlank()) return emptyList()
+        return try {
+            val array = JSONArray(json)
+            buildList {
+                for (i in 0 until array.length()) {
+                    val obj = array.optJSONObject(i) ?: continue
+                    val cedula = obj.optString("cedula")
+                    val nombre = obj.optString("nombre")
+                    if (cedula.isBlank() && nombre.isBlank()) continue
+                    add(TecnicoAtencion(cedula, nombre))
                 }
             }
         } catch (_: Throwable) {

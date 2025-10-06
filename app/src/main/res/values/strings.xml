@@ -49,6 +49,17 @@
     <string name="averia_exportar_pdf">Exportar PDF</string>
     <string name="averia_atencion_finalizada">Atención finalizada</string>
     <string name="averia_materiales_label">Materiales: %1$s</string>
+    <string name="averia_cliente_label">Cliente: %1$s</string>
+    <string name="averia_localizacion_label">Localización: %1$s</string>
+    <string name="averia_localizacion_label_hint">Localización (opcional)</string>
+    <string name="averia_tecnicos_atendieron">Técnicos que atendieron</string>
+    <string name="averia_tecnico_autocomplete_hint">Buscar técnico</string>
+    <string name="averia_agregar_tecnico">Agregar +</string>
+    <string name="averia_materiales_usados">Materiales usados</string>
+    <string name="averia_causa_resumen">Causa: %1$s</string>
+    <string name="averia_observaciones_resumen">Observaciones: %1$s</string>
+    <string name="sync_error_title">Error de sincronización</string>
+    <string name="sync_retry">Reintentar</string>
     <string name="averia_kilometraje_label">Kilometraje: %1$s → %2$s</string>
     <string name="averia_fecha_evento_label">Evento: %1$s</string>
     <string name="averias_title">Averías</string>
@@ -92,6 +103,8 @@
     <string name="averia_estado_todos">Todos</string>
     <string name="averia_caso_format">Caso %1$s</string>
     <string name="averia_nise_format">NISE %1$s</string>
+    <string name="averia_region_label">Región: %1$s</string>
+    <string name="averia_agencia_label">Agencia: %1$s</string>
     <string name="averia_asignado_a">Asignado a: %1$s</string>
     <string name="averia_atendido_por_format">Atendido por: %1$s</string>
     <string name="averia_vehiculo_format">Vehículo: %1$s</string>

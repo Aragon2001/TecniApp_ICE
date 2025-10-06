@@ -2,7 +2,8 @@
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content">
+    android:layout_height="wrap_content"
+    android:background="?attr/colorSurface">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -10,70 +11,226 @@
         android:orientation="vertical"
         android:padding="20dp">
 
-        <TextView
-            android:id="@+id/tvCaso"
+        <!-- CABECERA -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textStyle="bold"
-            android:textSize="18sp" />
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:baselineAligned="false">
 
-        <TextView
-            android:id="@+id/tvNise"
+            <TextView
+                android:id="@+id/tvCaso"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textStyle="bold"
+                android:textSize="18sp" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipEstado"
+                style="@style/Widget.MaterialComponents.Chip.Entry"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:clickable="false"
+                android:checkable="false"
+                android:textColor="@android:color/white"
+                app:chipIconVisible="false" />
+        </LinearLayout>
+
+        <!-- DATOS PRINCIPALES -->
+        <TextView android:id="@+id/tvNise"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp" />
+            android:layout_marginTop="4dp"
+            android:textAppearance="?attr/textAppearanceBodyMedium" />
 
-        <TextView
-            android:id="@+id/tvAgencia"
+        <TextView android:id="@+id/tvRegion"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp" />
+            android:layout_marginTop="4dp"
+            android:textAppearance="?attr/textAppearanceBodyMedium" />
 
-        <TextView
-            android:id="@+id/tvRegion"
+        <TextView android:id="@+id/tvAgencia"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="2dp" />
+            android:layout_marginTop="2dp"
+            android:textAppearance="?attr/textAppearanceBodyMedium" />
 
-        <TextView
-            android:id="@+id/tvEstado"
+        <TextView android:id="@+id/tvCliente"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:textAppearance="?attr/textAppearanceBodyMedium"
+            android:visibility="gone" />
+
+        <TextView android:id="@+id/tvCoordenadas"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:textAppearance="?attr/textAppearanceBodySmall" />
+
+        <TextView android:id="@+id/tvFechaDetalle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:textAppearance="?attr/textAppearanceBodySmall" />
+
+        <TextView android:id="@+id/tvAsignado"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:textStyle="bold" />
+            android:textAppearance="?attr/textAppearanceBodyMedium" />
 
-        <TextView
-            android:id="@+id/tvAsignado"
+        <TextView android:id="@+id/tvAtendido"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp" />
+            android:layout_marginTop="2dp"
+            android:textAppearance="?attr/textAppearanceBodyMedium" />
 
-        <TextView
-            android:id="@+id/tvAtendido"
+        <TextView android:id="@+id/tvVehiculo"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="2dp" />
+            android:layout_marginTop="2dp"
+            android:textAppearance="?attr/textAppearanceBodyMedium" />
 
+        <!-- Localización actual -->
         <TextView
-            android:id="@+id/tvVehiculo"
+            android:id="@+id/tvLocalizacionActual"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="2dp" />
+            android:layout_marginTop="2dp"
+            android:textAppearance="?attr/textAppearanceBodyMedium"
+            android:visibility="gone" />
 
+        <!-- Resumen de causa/observaciones -->
+        <TextView
+            android:id="@+id/tvCausaActual"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:textAppearance="?attr/textAppearanceBodyMedium" />
+
+        <TextView
+            android:id="@+id/tvObservacionesActuales"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:textAppearance="?attr/textAppearanceBodyMedium" />
+
+        <!-- Localización editable -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilLocalizacion"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:hint="@string/averia_localizacion_label_hint">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etLocalizacion"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textCapSentences|textMultiLine"
+                android:minLines="2" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- TÉCNICOS -->
+        <TextView
+            android:id="@+id/tvTecnicosTitulo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="@string/averia_tecnicos_atendieron"
+            android:textAppearance="?attr/textAppearanceTitleSmall" />
+
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/chipGroupTecnicos"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            app:singleLine="false"
+            app:singleSelection="false" />
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilTecnicoBuscar"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:hint="@string/averia_tecnico_autocomplete_hint">
+
+            <AutoCompleteTextView
+                android:id="@+id/actvTecnico"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="none" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnAgregarTecnico"
+            style="?attr/materialButtonOutlinedStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/averia_agregar_tecnico" />
+
+        <!-- MATERIALES -->
         <TextView
             android:id="@+id/tvMateriales"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
+            android:layout_marginTop="16dp"
+            android:textAppearance="?attr/textAppearanceTitleSmall"
+            android:text="@string/averia_materiales_usados"
             android:visibility="gone" />
 
-        <!-- Campo causa -->
+        <TextView
+            android:id="@+id/tvMaterialesLista"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:textAppearance="?attr/textAppearanceBodyMedium"
+            android:visibility="gone" />
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilMaterialBuscar"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:hint="@string/averia_materiales_autocomplete_hint">
+
+            <AutoCompleteTextView
+                android:id="@+id/actvMaterial"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="none" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnAgregarMaterial"
+            style="?attr/materialButtonOutlinedStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Agregar +" />
+
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/chipGroupMateriales"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            app:singleLine="false"
+            app:singleSelection="false" />
+
+        <!-- CAMPOS EDITABLES -->
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilCausa"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
+            android:layout_marginTop="16dp"
             android:hint="@string/averia_causa_hint">
 
             <com.google.android.material.textfield.TextInputEditText
@@ -84,7 +241,6 @@
                 android:minLines="2" />
         </com.google.android.material.textfield.TextInputLayout>
 
-        <!-- Observaciones -->
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilObs"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
@@ -101,7 +257,6 @@
                 android:minLines="2" />
         </com.google.android.material.textfield.TextInputLayout>
 
-        <!-- Atendido por -->
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilAtendido"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
@@ -117,7 +272,6 @@
                 android:inputType="textCapWords" />
         </com.google.android.material.textfield.TextInputLayout>
 
-        <!-- Vehículo -->
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilVehiculo"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
@@ -133,7 +287,6 @@
                 android:inputType="none" />
         </com.google.android.material.textfield.TextInputLayout>
 
-        <!-- Horas -->
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilHoraInicio"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
@@ -164,7 +317,6 @@
                 android:inputType="time" />
         </com.google.android.material.textfield.TextInputLayout>
 
-        <!-- Kilometrajes -->
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilKmInicio"
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
@@ -195,41 +347,7 @@
                 android:inputType="numberDecimal" />
         </com.google.android.material.textfield.TextInputLayout>
 
-        <!-- Autocomplete de materiales -->
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/tilMaterialBuscar"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:hint="@string/averia_materiales_autocomplete_hint">
-
-            <AutoCompleteTextView
-                android:id="@+id/actvMaterial"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="none" />
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnAgregarMaterial"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="Agregar +"
-            style="?attr/materialButtonOutlinedStyle" />
-
-        <!-- Chips de materiales -->
-        <com.google.android.material.chip.ChipGroup
-            android:id="@+id/chipGroupMateriales"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            app:singleLine="false"
-            app:singleSelection="false" />
-
-
-        <!-- Botones -->
+        <!-- BOTONES -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

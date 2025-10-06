@@ -12,10 +12,12 @@ import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
+import com.Arasoftsolutions.tecniapp_ice.Database.room.AppDatabase
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
 import com.Arasoftsolutions.tecniapp_ice.Database.sync.Synchronizer
 import com.Arasoftsolutions.tecniapp_ice.User.UserViewModel
 import com.Arasoftsolutions.tecniapp_ice.ui.modal.SyncDialogFragment
+import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasRepository
 import com.google.android.material.button.MaterialButton
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
@@ -52,6 +54,7 @@ class LoginActivity : AppCompatActivity() {
     private lateinit var sharedPreferences: SharedPreferences
     private lateinit var database: DatabaseReference
     private lateinit var roomRepository: RoomRepository
+    private lateinit var averiasRepository: AveriasRepository
     private lateinit var synchronizer: Synchronizer
 
     // VM: útil si se desea observar estado de usuario o logs más adelante
@@ -78,8 +81,10 @@ class LoginActivity : AppCompatActivity() {
         // Inicialización de servicios base
         auth = FirebaseAuth.getInstance()
         database = FirebaseDatabase.getInstance(DATABASE_URL_USERS).reference
-        roomRepository = RoomRepository(applicationContext)
-        synchronizer = Synchronizer(roomRepository)
+        val localDb = AppDatabase.getInstance(applicationContext)
+        roomRepository = RoomRepository.getInstance(applicationContext)
+        averiasRepository = AveriasRepository(localDb)
+        synchronizer = Synchronizer(roomRepository, averiasRepository)
 
         // Si ya existe sesión (por cualquiera de los dos flags), navegar directo a Main
         sharedPreferences = getSharedPreferences(LEGACY_PREFS, MODE_PRIVATE)
@@ -219,7 +224,11 @@ class LoginActivity : AppCompatActivity() {
                         val subId = user.subregion
                         synchronizer.syncSubregion(
                             subId.toString(),
-                            onSyncStart = { /* UI ya muestra modal */ },
+                            onSyncStart = { message ->
+                                if (!isFinishing && !isDestroyed) {
+                                    runOnUiThread { dlg.setHeader(message) }
+                                }
+                            },
                             onSyncProgress = { done, total, msg ->
                                 if (!isFinishing && !isDestroyed) {
                                     runOnUiThread { dlg.update(done, total, msg ?: "") }

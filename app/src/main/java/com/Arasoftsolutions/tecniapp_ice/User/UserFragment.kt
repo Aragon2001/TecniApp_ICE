@@ -15,6 +15,7 @@ import com.Arasoftsolutions.tecniapp_ice.R
 import com.Arasoftsolutions.tecniapp_ice.Database.sync.Synchronizer
 import com.Arasoftsolutions.tecniapp_ice.Database.room.AppDatabase
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
+import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasRepository
 // import com.Arasoftsolutions.tecniapp_ice.data.UserEntity  // <- si lo necesitas explícito
 
 import com.google.firebase.auth.FirebaseAuth
@@ -164,7 +165,12 @@ class FragmentUser : Fragment() {
                     userViewModel.updateUserData(updatedUser)
 
                     // 4) ✅ DISPARA SINCRONIZACIÓN GLOBAL (Firebase → Room para catálogos/medidores, etc.)
-                    val sync = Synchronizer(RoomRepository(requireContext()))
+                    val ctx = requireContext()
+                    val db = AppDatabase.getInstance(ctx)
+                    val sync = Synchronizer(
+                        RoomRepository.getInstance(ctx),
+                        AveriasRepository(db)
+                    )
                     viewLifecycleOwner.lifecycleScope.launch {
                         sync.syncSubregion(
                             updatedUser.subregion.toString(),

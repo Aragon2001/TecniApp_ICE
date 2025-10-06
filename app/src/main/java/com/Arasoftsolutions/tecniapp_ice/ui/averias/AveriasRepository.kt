@@ -72,6 +72,12 @@ class AveriasRepository(private val db: AppDatabase) {
         return n.split(" ").joinToString("") { titleCase(it) } // "Río Frío" -> "RioFrio"
     }
 
+    private fun mergeRemoteString(remote: String?, local: String?): String? {
+        val raw = remote ?: return local
+        val trimmed = raw.trim()
+        return if (trimmed.isEmpty()) null else trimmed
+    }
+
     // Regiones canónicas
     private val REGION_CANON = mapOf(
         "huetar atlantica" to "Huetar Atlántica",
@@ -298,6 +304,9 @@ class AveriasRepository(private val db: AppDatabase) {
             atendidoPorNombre = null,
             materialesTexto = null,
             materialesDetalleJson = null,
+            tecnicosAtendieronJson = null,
+            cliente = null,
+            localizacion = null,
             isSynced = true,
             lastUpdated = System.currentTimeMillis()
         )
@@ -406,6 +415,9 @@ class AveriasRepository(private val db: AppDatabase) {
         val horaInicio = data.horaInicioMillis ?: now
         val resumen = MaterialesSerializer.toSummary(data.materiales).ifBlank { null }
         val detalle = MaterialesSerializer.toJson(data.materiales)
+        val tecnicosJson = TecnicosSerializer.toJson(data.tecnicos)
+        val localizacion = data.localizacion?.trim()?.takeIf { it.isNotBlank() }
+        val cliente = data.cliente?.trim()?.takeIf { it.isNotBlank() }
         dao.actualizarAtencion(
             caseId = caseId,
             causa = data.causa,
@@ -419,6 +431,9 @@ class AveriasRepository(private val db: AppDatabase) {
             vehiculo = data.vehiculo,
             materialesResumen = resumen,
             materialesDetalle = detalle,
+            tecnicosAtendieron = tecnicosJson,
+            cliente = cliente,
+            localizacion = localizacion,
             lastUpdated = now,
             nuevoEstado = "En atención"
         )
@@ -432,6 +447,9 @@ class AveriasRepository(private val db: AppDatabase) {
         val horaFinal = data.horaFinalMillis ?: now
         val resumen = MaterialesSerializer.toSummary(data.materiales).ifBlank { null }
         val detalle = MaterialesSerializer.toJson(data.materiales)
+        val tecnicosJson = TecnicosSerializer.toJson(data.tecnicos)
+        val localizacion = data.localizacion?.trim()?.takeIf { it.isNotBlank() }
+        val cliente = data.cliente?.trim()?.takeIf { it.isNotBlank() }
         dao.actualizarAtencion(
             caseId = caseId,
             causa = data.causa,
@@ -445,6 +463,9 @@ class AveriasRepository(private val db: AppDatabase) {
             vehiculo = data.vehiculo,
             materialesResumen = resumen,
             materialesDetalle = detalle,
+            tecnicosAtendieron = tecnicosJson,
+            cliente = cliente,
+            localizacion = localizacion,
             lastUpdated = now,
             nuevoEstado = "Resuelta"
         )
@@ -512,6 +533,9 @@ class AveriasRepository(private val db: AppDatabase) {
         "atendidoPorNombre" to atendidoPorNombre,
         "materialesTexto" to materialesTexto,
         "materialesDetalleJson" to materialesDetalleJson,
+
+        "tecnicosAtendieronJson" to tecnicosAtendieronJson,
+
         "cliente" to cliente,
         "localizacion" to localizacion,
         "lastUpdated" to lastUpdated
@@ -579,6 +603,12 @@ class AveriasRepository(private val db: AppDatabase) {
                             atendidoPorNombre = remote.atendidoPorNombre,
                             materialesTexto = remote.materialesTexto,
                             materialesDetalleJson = remote.materialesDetalleJson,
+                            tecnicosAtendieronJson = mergeRemoteString(
+                                remote.tecnicosAtendieronJson,
+                                existing.tecnicosAtendieronJson
+                            ),
+                            cliente = mergeRemoteString(remote.cliente, existing.cliente),
+                            localizacion = mergeRemoteString(remote.localizacion, existing.localizacion),
                             agenciaTag = remote.agenciaTag,
                             lastUpdated = maxOf(existing.lastUpdated, remote.lastUpdated),
                             isSynced = true
@@ -646,6 +676,12 @@ class AveriasRepository(private val db: AppDatabase) {
                                     atendidoPorNombre = remote.atendidoPorNombre,
                                     materialesTexto = remote.materialesTexto,
                                     materialesDetalleJson = remote.materialesDetalleJson,
+                                    tecnicosAtendieronJson = mergeRemoteString(
+                                        remote.tecnicosAtendieronJson,
+                                        existing.tecnicosAtendieronJson
+                                    ),
+                                    cliente = mergeRemoteString(remote.cliente, existing.cliente),
+                                    localizacion = mergeRemoteString(remote.localizacion, existing.localizacion),
                                     agenciaTag = remote.agenciaTag,
                                     lastUpdated = maxOf(existing.lastUpdated, remote.lastUpdated),
                                     isSynced = true
