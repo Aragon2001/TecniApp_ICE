@@ -47,7 +47,31 @@ data class AveriaUI(
     val cliente: String?,
     val localizacion: String?,
     val tecnicosAtendieron: List<TecnicoAtencion>
-) : Serializable
+) : Serializable {
+    fun resolvedAtendidoDisplay(emptyValue: String): String {
+        if (atendidoPor.isNotBlank()) return atendidoPor
+        val tecnicos = resolvedTechniciansDisplay()
+        return if (tecnicos.isNotEmpty()) tecnicos.joinToString(", ") else emptyValue
+    }
+
+    fun resolvedAtendidoLines(emptyValue: String): List<String> {
+        if (atendidoPor.isNotBlank()) return listOf(atendidoPor)
+        val tecnicos = resolvedTechniciansDisplay()
+        return if (tecnicos.isNotEmpty()) tecnicos else listOf(emptyValue)
+    }
+
+    fun resolvedTechniciansDisplay(): List<String> = tecnicosAtendieron
+        .mapNotNull { tecnico ->
+            val nombre = tecnico.nombre.trim()
+            val cedula = tecnico.cedula.trim()
+            when {
+                nombre.isNotBlank() && cedula.isNotBlank() -> "$nombre ($cedula)"
+                nombre.isNotBlank() -> nombre
+                cedula.isNotBlank() -> cedula
+                else -> null
+            }
+        }
+}
 
 class AveriasAdapter(
     private val onVerDetalle: (AveriaUI) -> Unit,
@@ -125,7 +149,8 @@ class AveriasAdapter(
             )
             tvCaso.text = "Caso: ${item.id}"
             tvAsignado.text = "Asignado a: ${if (item.tecnico.isBlank()) itemView.context.getString(R.string.averia_sin_asignar) else item.tecnico}"
-            tvAtendido.text = "Atendido por: ${if (item.atendidoPor.isBlank()) "—" else item.atendidoPor}"
+            val atendidoDisplay = item.resolvedAtendidoDisplay(emptyValue)
+            tvAtendido.text = itemView.context.getString(R.string.averia_atendido_por_format, atendidoDisplay)
             tvVehiculo.text = "Vehículo: ${item.vehiculo ?: "—"}"
             tvNise.text = "NISE: ${item.nise}"
             tvRegion.text = "Región: ${item.region}"

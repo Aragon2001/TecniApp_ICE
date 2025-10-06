@@ -286,7 +286,8 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
             R.string.averia_asignado_a,
             item.tecnico.ifBlank { getString(R.string.averia_sin_asignar) }
         )
-        b.tvAtendido.text = getString(R.string.averia_atendido_por_format, item.atendidoPor.ifBlank { "—" })
+        val atendidoDisplay = item.resolvedAtendidoDisplay(emptyValue)
+        b.tvAtendido.text = getString(R.string.averia_atendido_por_format, atendidoDisplay)
         b.tvVehiculo.text = getString(R.string.averia_vehiculo_format, item.vehiculo ?: "—")
     }
 
