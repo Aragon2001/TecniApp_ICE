@@ -18,9 +18,10 @@ import com.Arasoftsolutions.tecniapp_ice.Database.entities.*
         SubregionesEntity::class,       // Subregiones del ICE
         VehiculosEntity::class,         // Vehículos asociados
         MaterialEntity::class,          // Catálogo de materiales
+        TecnicoEntity::class,           // Personal técnico
         AveriaEntity::class             // Averías
     ],
-    version = 7,                        // ✅ mantener la versión más alta
+    version = 9,                        // ✅ mantener la versión más alta
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -34,6 +35,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun subregionDao(): SubregionDao
     abstract fun vehiculoDao(): VehiculoDao
     abstract fun materialDao(): MaterialDao
+    abstract fun tecnicoDao(): TecnicoDao
     abstract fun averiaDao(): AveriaDao
 
     companion object {

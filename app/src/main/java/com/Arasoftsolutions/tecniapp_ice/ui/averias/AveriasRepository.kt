@@ -28,6 +28,11 @@ class AveriasRepository(private val db: AppDatabase) {
         .reference
         .child("averias")
 
+    // Base de materiales usada por ICE
+    private val materialesRef = FirebaseDatabase
+        .getInstance("https://tecniapp-ice-materiales.firebaseio.com/")
+        .reference
+
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var realtimeListener: ValueEventListener? = null
 
@@ -65,6 +70,12 @@ class AveriasRepository(private val db: AppDatabase) {
     private fun slugTag(s: String): String {
         val n = stripAccentsLower(s).replace("\\s+".toRegex(), " ").trim()
         return n.split(" ").joinToString("") { titleCase(it) } // "Río Frío" -> "RioFrio"
+    }
+
+    private fun mergeRemoteString(remote: String?, local: String?): String? {
+        val raw = remote ?: return local
+        val trimmed = raw.trim()
+        return if (trimmed.isEmpty()) null else trimmed
     }
 
     // Regiones canónicas
@@ -293,6 +304,9 @@ class AveriasRepository(private val db: AppDatabase) {
             atendidoPorNombre = null,
             materialesTexto = null,
             materialesDetalleJson = null,
+            tecnicosAtendieronJson = null,
+            cliente = null,
+            localizacion = null,
             isSynced = true,
             lastUpdated = System.currentTimeMillis()
         )
@@ -401,6 +415,9 @@ class AveriasRepository(private val db: AppDatabase) {
         val horaInicio = data.horaInicioMillis ?: now
         val resumen = MaterialesSerializer.toSummary(data.materiales).ifBlank { null }
         val detalle = MaterialesSerializer.toJson(data.materiales)
+        val tecnicosJson = TecnicosSerializer.toJson(data.tecnicos)
+        val localizacion = data.localizacion?.trim()?.takeIf { it.isNotBlank() }
+        val cliente = data.cliente?.trim()?.takeIf { it.isNotBlank() }
         dao.actualizarAtencion(
             caseId = caseId,
             causa = data.causa,
@@ -414,10 +431,14 @@ class AveriasRepository(private val db: AppDatabase) {
             vehiculo = data.vehiculo,
             materialesResumen = resumen,
             materialesDetalle = detalle,
+            tecnicosAtendieron = tecnicosJson,
+            cliente = cliente,
+            localizacion = localizacion,
             lastUpdated = now,
             nuevoEstado = "En atención"
         )
         syncSingle(caseId)
+        registrarMaterialesUsados(data.materiales)
     }
 
     suspend fun cerrar(caseId: String, data: AveriaActionData) = withContext(Dispatchers.IO) {
@@ -426,6 +447,9 @@ class AveriasRepository(private val db: AppDatabase) {
         val horaFinal = data.horaFinalMillis ?: now
         val resumen = MaterialesSerializer.toSummary(data.materiales).ifBlank { null }
         val detalle = MaterialesSerializer.toJson(data.materiales)
+        val tecnicosJson = TecnicosSerializer.toJson(data.tecnicos)
+        val localizacion = data.localizacion?.trim()?.takeIf { it.isNotBlank() }
+        val cliente = data.cliente?.trim()?.takeIf { it.isNotBlank() }
         dao.actualizarAtencion(
             caseId = caseId,
             causa = data.causa,
@@ -439,10 +463,14 @@ class AveriasRepository(private val db: AppDatabase) {
             vehiculo = data.vehiculo,
             materialesResumen = resumen,
             materialesDetalle = detalle,
+            tecnicosAtendieron = tecnicosJson,
+            cliente = cliente,
+            localizacion = localizacion,
             lastUpdated = now,
             nuevoEstado = "Resuelta"
         )
         syncSingle(caseId)
+        registrarMaterialesUsados(data.materiales)
     }
 
     private suspend fun syncSingle(caseId: String) {
@@ -457,7 +485,8 @@ class AveriasRepository(private val db: AppDatabase) {
 
     private suspend fun pushToFirebase(entity: AveriaEntity) {
         val payload = entity.toFirebasePayload()
-        firebaseRef.child(entity.caseId).updateChildren(payload).await()
+        // 👇 En lugar de updateChildren usamos setValue para reemplazar todo el objeto completo
+        firebaseRef.child(entity.caseId).setValue(payload).await()
     }
 
     private suspend fun registerNewOnFirebase(entities: List<AveriaEntity>) {
@@ -504,8 +533,22 @@ class AveriasRepository(private val db: AppDatabase) {
         "atendidoPorNombre" to atendidoPorNombre,
         "materialesTexto" to materialesTexto,
         "materialesDetalleJson" to materialesDetalleJson,
+        "tecnicosAtendieronJson" to tecnicosAtendieronJson,
+        "cliente" to cliente,
+        "localizacion" to localizacion,
         "lastUpdated" to lastUpdated
     )
+
+    private suspend fun registrarMaterialesUsados(lista: List<MaterialUso>) {
+        lista.forEach { uso ->
+            val ref = materialesRef.child(uso.codigo)
+            val map = mapOf(
+                "Nombre" to uso.descripcion,
+                "Cantidad" to uso.cantidad
+            )
+            ref.setValue(map).await()
+        }
+    }
 
     // ---------------------------------------------------------------------------------------------
     // Firebase: pull (una vez) y realtime (con normalización y sin bajar estado)
@@ -558,6 +601,12 @@ class AveriasRepository(private val db: AppDatabase) {
                             atendidoPorNombre = remote.atendidoPorNombre,
                             materialesTexto = remote.materialesTexto,
                             materialesDetalleJson = remote.materialesDetalleJson,
+                            tecnicosAtendieronJson = mergeRemoteString(
+                                remote.tecnicosAtendieronJson,
+                                existing.tecnicosAtendieronJson
+                            ),
+                            cliente = mergeRemoteString(remote.cliente, existing.cliente),
+                            localizacion = mergeRemoteString(remote.localizacion, existing.localizacion),
                             agenciaTag = remote.agenciaTag,
                             lastUpdated = maxOf(existing.lastUpdated, remote.lastUpdated),
                             isSynced = true
@@ -625,6 +674,12 @@ class AveriasRepository(private val db: AppDatabase) {
                                     atendidoPorNombre = remote.atendidoPorNombre,
                                     materialesTexto = remote.materialesTexto,
                                     materialesDetalleJson = remote.materialesDetalleJson,
+                                    tecnicosAtendieronJson = mergeRemoteString(
+                                        remote.tecnicosAtendieronJson,
+                                        existing.tecnicosAtendieronJson
+                                    ),
+                                    cliente = mergeRemoteString(remote.cliente, existing.cliente),
+                                    localizacion = mergeRemoteString(remote.localizacion, existing.localizacion),
                                     agenciaTag = remote.agenciaTag,
                                     lastUpdated = maxOf(existing.lastUpdated, remote.lastUpdated),
                                     isSynced = true

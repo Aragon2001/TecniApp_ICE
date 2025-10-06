@@ -20,4 +20,7 @@ interface VehiculoDao {
     // Observa vehículos por subregión
     @Query("SELECT * FROM vehiculos WHERE subregion = :subregionId")
     fun observarPorSubregion(subregionId: String): Flow<List<VehiculosEntity>>
+
+    @Query("SELECT * FROM vehiculos")
+    fun observarTodos(): Flow<List<VehiculosEntity>>
 }

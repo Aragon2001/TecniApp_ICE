@@ -1,151 +1,78 @@
 package com.Arasoftsolutions.tecniapp_ice.User
 
-import android.util.Log
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.database.*
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
+import com.Arasoftsolutions.tecniapp_ice.Database.entities.AgenciaEntity
+import com.Arasoftsolutions.tecniapp_ice.Database.entities.SubregionesEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.UserEntity
+import com.Arasoftsolutions.tecniapp_ice.Database.entities.VehiculosEntity
+import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
+class UserViewModel(private val repository: RoomRepository) : ViewModel() {
 
+    private val _user = MutableStateFlow<UserEntity?>(null)
+    val user: StateFlow<UserEntity?> = _user.asStateFlow()
 
+    private val _loading = MutableStateFlow(false)
+    val loading: StateFlow<Boolean> = _loading.asStateFlow()
 
-class UserViewModel : ViewModel() {
+    private val _error = MutableStateFlow<String?>(null)
+    val error: StateFlow<String?> = _error.asStateFlow()
 
-    private val _subregions = MutableLiveData<List<String>>()
-    val subregions: LiveData<List<String>> get() = _subregions
+    val subregions: StateFlow<List<SubregionesEntity>> = repository.observarSubregiones()
+        .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
-    private val _agencies = MutableLiveData<List<String>>()
-    val agencies: LiveData<List<String>> get() = _agencies
+    val agencies: StateFlow<List<AgenciaEntity>> = repository.observarAgenciasCatalogo()
+        .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
-    private val _vehicles = MutableLiveData<List<String>>()
-    val vehicles: LiveData<List<String>> get() = _vehicles
+    val vehicles: StateFlow<List<VehiculosEntity>> = repository.observarVehiculosCatalogo()
+        .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
-    private val _userEntityData = MutableLiveData<UserEntity>()
-    val userEntityData: LiveData<UserEntity> get() = _userEntityData
-
-    private val _error = MutableLiveData<String>()
-    val error: LiveData<String> get() = _error
-
-    private val auth: FirebaseAuth = FirebaseAuth.getInstance()
-
-    private val subregionsDatabase: DatabaseReference = FirebaseDatabase.getInstance("https://tecniapp-ice-datosgenerales.firebaseio.com").getReference("subregiones")
-    private val agenciesDatabase: DatabaseReference = FirebaseDatabase.getInstance("https://tecniapp-ice-datosgenerales.firebaseio.com").getReference("agencias")
-    private val vehiclesDatabase: DatabaseReference = FirebaseDatabase.getInstance("https://tecniapp-ice-datosgenerales.firebaseio.com").getReference("vehiculos")
-    private val usersDatabase: DatabaseReference = FirebaseDatabase.getInstance("https://tecniapp-ice-user.firebaseio.com").getReference("usuarios")
-
-    // Cargar subregiones
-    fun loadSubregions() {
-        subregionsDatabase.addListenerForSingleValueEvent(object : ValueEventListener {
-            override fun onDataChange(dataSnapshot: DataSnapshot) {
-                val subregionList = mutableListOf("Seleccione una Subregion")
-                for (subregionSnapshot in dataSnapshot.children) {
-                    val subregionName = subregionSnapshot.child("nombre").getValue(String::class.java)
-                    subregionName?.let {
-                        subregionList.add(it)
-                    }
-                }
-                _subregions.value = subregionList
-                Log.d("UserViewModel", "SubregionesEntity cargadas: $subregionList")
+    fun loadUser(uid: String) {
+        if (uid.isBlank()) {
+            _error.value = "UID inválido"
+            return
+        }
+        if (_user.value?.uid == uid) return
+        viewModelScope.launch {
+            _loading.value = true
+            try {
+                val local = repository.obtenerUsuario(uid)
+                val userEntity = local ?: repository.upsertUserFromFirebase(uid)
+                _user.value = userEntity
+            } catch (e: Exception) {
+                _error.value = e.localizedMessage ?: "No se pudo cargar el perfil"
+            } finally {
+                _loading.value = false
             }
-
-            override fun onCancelled(databaseError: DatabaseError) {
-                _error.postValue("Error al cargar subregiones: ${databaseError.message}")
-                Log.e("UserViewModel", "Error al cargar subregiones: ${databaseError.message}")
-            }
-        })
+        }
     }
 
-    // Cargar agencias
-    fun loadAgencies(selectedSubregion: String) {
-        agenciesDatabase.orderByChild("subregion").equalTo(selectedSubregion).addListenerForSingleValueEvent(object : ValueEventListener {
-            override fun onDataChange(dataSnapshot: DataSnapshot) {
-                val agencyList = mutableListOf("Seleccione una Agencia")
-                for (agencySnapshot in dataSnapshot.children) {
-                    val agencyName = agencySnapshot.child("nombre").getValue(String::class.java)
-                    agencyName?.let {
-                        agencyList.add(it)
-                    }
-                }
-                _agencies.value = agencyList
-                Log.d("UserViewModel", "Agencias cargadas para $selectedSubregion: $agencyList")
-            }
-
-            override fun onCancelled(databaseError: DatabaseError) {
-                _error.postValue("Error al cargar agencias: ${databaseError.message}")
-                Log.e("UserViewModel", "Error al cargar agencias: ${databaseError.message}")
-            }
-        })
+    fun updateCachedUser(userEntity: UserEntity, persist: Boolean = false) {
+        _user.value = userEntity
+        if (persist) {
+            viewModelScope.launch { repository.saveUser(userEntity) }
+        }
     }
 
-    // Cargar vehículos
-    fun loadVehicles(selectedAgency: String) {
-        vehiclesDatabase.orderByChild("agencia").equalTo(selectedAgency).addListenerForSingleValueEvent(object : ValueEventListener {
-            override fun onDataChange(dataSnapshot: DataSnapshot) {
-                val vehicleList = mutableListOf("Seleccione un Vehículo")
-                for (vehicleSnapshot in dataSnapshot.children) {
-                    val vehiclePlate = vehicleSnapshot.child("placa").getValue(String::class.java)
-                    vehiclePlate?.let {
-                        vehicleList.add(it)
-                    }
-                }
-                _vehicles.value = vehicleList
-                Log.d("UserViewModel", "Vehículos cargados para $selectedAgency: $vehicleList")
-            }
-
-            override fun onCancelled(databaseError: DatabaseError) {
-                _error.postValue("Error al cargar vehículos: ${databaseError.message}")
-                Log.e("UserViewModel", "Error al cargar vehículos: ${databaseError.message}")
-            }
-        })
+    fun clearError() {
+        _error.value = null
     }
 
-    // Actualizar datos del usuario
-    fun updateUserData(userEntity: UserEntity) {
-        usersDatabase.child(userEntity.uid.toString()).setValue(userEntity)
-            .addOnSuccessListener {
-                _userEntityData.value = userEntity
-                Log.d("UserViewModel", "Datos del usuario actualizados: $userEntity")
+    class Factory(private val repository: RoomRepository) : ViewModelProvider.Factory {
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            if (modelClass.isAssignableFrom(UserViewModel::class.java)) {
+                @Suppress("UNCHECKED_CAST")
+                return UserViewModel(repository) as T
             }
-            .addOnFailureListener {
-                _error.postValue("Error al actualizar datos del usuario: ${it.message}")
-                Log.e("UserViewModel", "Error al actualizar datos del usuario: ${it.message}")
-            }
-    }
-
-    fun loadCurrentUser(email: String) {
-        usersDatabase.orderByChild("email").equalTo(email).addListenerForSingleValueEvent(object : ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
-                if (snapshot.exists()) {
-                    val userEntity = snapshot.children.firstOrNull()?.getValue(UserEntity::class.java)
-                    userEntity?.let {
-                        _userEntityData.postValue(it)
-                        Log.d("UserViewModel", "Datos del usuario cargados: $it")
-                    }
-                } else {
-                    _error.postValue("Usuario no encontrado con email: $email")
-                    Log.w("UserViewModel", "Usuario no encontrado con email: $email")
-                }
-            }
-
-            override fun onCancelled(error: DatabaseError) {
-                _error.postValue("Error al cargar datos del usuario: ${error.message}")
-                Log.e("UserViewModel", "Error al cargar datos del usuario: ${error.message}")
-            }
-        })
-    }
-
-    // Actualizar contraseña
-    fun updatePassword(newPassword: String) {
-        val user = auth.currentUser
-        user?.updatePassword(newPassword)?.addOnCompleteListener { task ->
-            if (task.isSuccessful) {
-                Log.d("UserViewModel", "Contraseña actualizada correctamente")
-            } else {
-                _error.postValue("Error al actualizar contraseña: ${task.exception?.message}")
-                Log.e("UserViewModel", "Error al actualizar contraseña: ${task.exception?.message}")
-            }
+            throw IllegalArgumentException("Unknown ViewModel class")
         }
     }
 }
