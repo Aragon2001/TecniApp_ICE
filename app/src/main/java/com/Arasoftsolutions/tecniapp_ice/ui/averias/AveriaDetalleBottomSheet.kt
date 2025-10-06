@@ -134,6 +134,11 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
             b.actvTecnico.setText("", false)
         }
 
+        b.actvTecnico.setOnItemClickListener { _, _, position, _ ->
+            tecnicosCatalogo.getOrNull(position)?.let { agregarTecnico(it) }
+            b.actvTecnico.setText("", false)
+        }
+
         b.btnAgregarTecnico.setOnClickListener {
             val texto = b.actvTecnico.text?.toString()?.lowercase(Locale.getDefault()) ?: ""
             tecnicosCatalogo.find {
@@ -219,14 +224,35 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
             else -> getString(R.string.averia_asignar)
         }
 
-        b.btnAsignar.setOnClickListener { vm.onToggleAsignacion(item); dismissAllowingStateLoss() }
-        b.btnAsignar.isEnabled = estado == Estado.PENDIENTE || (estado == Estado.ASIGNADA && esPropio)
+        val usuarioActualUid = vm.usuarioActual.value?.uid
+        val puedeGestionar = item.tecnicoUid.isNullOrBlank() || item.tecnicoUid == usuarioActualUid
+
+        if (estado == Estado.PENDIENTE && usuarioActualUid != null && item.tecnicoUid.isNullOrBlank()) {
+            vm.onAutoAsignarPendiente(item)
+            vm.nombreTecnicoActual()?.let { nombre ->
+                b.tvAsignado.text = getString(R.string.averia_asignado_a, nombre)
+                item = item.copy(
+                    estado = getString(R.string.estado_asignada),
+                    tecnico = nombre,
+                    tecnicoUid = usuarioActualUid
+                )
+                estado = Estado.ASIGNADA
+                b.chipEstado.text = getString(R.string.estado_asignada)
+                b.chipEstado.chipBackgroundColor = ColorStateList.valueOf(Color.parseColor("#FBC02D"))
+                b.btnAsignar.text = getString(R.string.averia_eliminar_asignacion)
+                b.btnAsignar.isEnabled = true
+            }
+        }
+
+        if (estado == Estado.ASIGNADA && !puedeGestionar) {
+            b.btnAsignar.isEnabled = false
+        }
 
         when (estado) {
             Estado.ASIGNADA -> {
                 b.btnAtender.isVisible = true
                 b.btnAtender.text = getString(R.string.averia_guardar_en_atencion)
-                b.btnAtender.isEnabled = esPropietario
+                b.btnAtender.isEnabled = puedeGestionar
                 b.btnAtender.setOnClickListener {
                     val data = collectFormData() ?: return@setOnClickListener
                     if (data.causa.isBlank()) {
@@ -271,7 +297,7 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
             vm.onResolver(item, data)
             dismissAllowingStateLoss()
         }
-        b.btnResolver.isEnabled = esPropietario
+        b.btnResolver.isEnabled = puedeGestionar
 
         b.btnVerMapa.setOnClickListener {
             val lat = item.lat
@@ -396,7 +422,7 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
             base.set(Calendar.MILLISECOND, 0)
             base.timeInMillis
         } catch (ex: ParseException) {
-            onError(getString(R.string.averia_error_hora_invalida))
+            onError(getString(R.string.averia_error_hora_formato))
             null
         }
     }
