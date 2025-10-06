@@ -160,4 +160,33 @@
     <string name="nav_header_agency_format">Agencia: %1$s</string>
     <string name="nav_header_vehicle_format">Vehículo • %1$s</string>
     <string name="nav_header_vehicle_placeholder">Sin vehículo asignado</string>
+
+    <!-- Medidores -->
+    <string name="medidor_numero_hint">Número de medidor</string>
+    <string name="medidor_consultar">Consultar</string>
+    <string name="medidor_copiar">Copiar</string>
+    <string name="medidor_compartir">Compartir</string>
+    <string name="medidor_result_title">Información del medidor</string>
+    <string name="medidor_cliente_label">Cliente</string>
+    <string name="medidor_calle_label">Calle</string>
+    <string name="medidor_poste_label">Poste</string>
+    <string name="medidor_metros_label">Metros</string>
+    <string name="medidor_pueblo_label">Pueblo</string>
+    <string name="medidor_localizacion_label">Localización</string>
+    <string name="medidor_estado_instruccion">Consulta medidores incluso sin conexión.</string>
+    <string name="medidor_estado_preparando">Preparando tus datos…</string>
+    <string name="medidor_estado_cargando_cache">Descargando medidores para uso sin conexión…</string>
+    <string name="medidor_estado_no_result">No se encontró el medidor %1$s.</string>
+    <string name="medidor_estado_error_generico">Ocurrió un error al consultar el medidor. Intenta nuevamente.</string>
+    <string name="medidor_estado_sin_subregion">No se pudo determinar tu subregión. Revisa tu perfil e intenta sincronizar de nuevo.</string>
+    <string name="medidor_estado_requiere_sesion">Inicia sesión nuevamente para consultar medidores.</string>
+    <string name="medidor_estado_listo">Consulta un número para ver los detalles.</string>
+    <string name="medidor_error_numero">Ingrese un número de medidor.</string>
+
+    <!-- Localización -->
+    <string name="localizacion_estado_sin_subregion">No se pudo cargar la subregión del usuario.</string>
+    <string name="localizacion_estado_sin_pueblos">No hay pueblos disponibles para esta subregión.</string>
+    <string name="localizacion_estado_sin_calles">No hay calles disponibles para el pueblo seleccionado.</string>
+    <string name="localizacion_estado_sin_localizacion">No se encontró la localización para la calle seleccionada.</string>
+    <string name="localizacion_estado_error_generico">Ocurrió un error al cargar la localización.</string>
 </resources>

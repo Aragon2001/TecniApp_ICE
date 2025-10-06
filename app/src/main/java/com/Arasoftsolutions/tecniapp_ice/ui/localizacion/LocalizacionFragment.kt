@@ -29,7 +29,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.ActivityCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.Observer
 import com.Arasoftsolutions.tecniapp_ice.R
 import com.Arasoftsolutions.tecniapp_ice.databinding.FragmentLocalizacionBinding
 import com.google.android.gms.location.FusedLocationProviderClient
@@ -151,7 +150,7 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
         inicializarMapaVista(savedInstanceState)
 
         // Datos iniciales
-        viewModel.cargarPueblos()
+        viewModel.prepararDatos()
 
         return binding.root
     }
@@ -197,21 +196,20 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
         }
 
         // Localización ↦ actualizar mapa + textos
-        viewModel.localizacion.observe(viewLifecycleOwner, Observer { loc ->
-            val lat = loc.latitud ?: return@Observer
-            val lng = loc.longitud ?: return@Observer
+        viewModel.localizacion.observe(viewLifecycleOwner) { loc ->
+            if (loc == null) return@observe
 
             val puebloSel = binding.spinnerPueblos.selectedItem?.toString().orEmpty()
-            val codigoPueblo = puebloSel.takeIf { it.contains(" - ") }?.split(" - ")?.get(0)
-            val codigoCalle = loc.calleValor?.toString()
-            val numeroPoste = loc.delPoste?.toString()
+            val codigoPueblo = puebloSel.takeIf { it.contains(" - ") }?.split(" - ")?.getOrNull(0)
+            val codigoCalle = loc.calleValor.toString()
+            val numeroPoste = loc.delPoste.toString()
 
-            actualizarUbicacionMapa(lat, lng, codigoPueblo, codigoCalle, numeroPoste)
+            actualizarUbicacionMapa(loc.latitud, loc.longitud, codigoPueblo, codigoCalle, numeroPoste)
 
-            binding.direccionTextView.text = "Dirección: ${loc.direccion ?: "N/A"}"
-            binding.delposteTextView.text = "Del Poste: ${loc.delPoste ?: 0}"
-            binding.alposteTextView.text = "Al Poste: ${loc.alPoste ?: 0}"
-        })
+            binding.direccionTextView.text = "Dirección: ${loc.direccion}"
+            binding.delposteTextView.text = "Del Poste: ${loc.delPoste}"
+            binding.alposteTextView.text = "Al Poste: ${loc.alPoste}"
+        }
 
         // Estado (progress + errores)
         viewModel.estado.observe(viewLifecycleOwner) { estado ->
