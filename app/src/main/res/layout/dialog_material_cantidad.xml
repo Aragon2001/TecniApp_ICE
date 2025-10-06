@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.textfield.TextInputLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    style="@style/Widget.Material3.TextInputLayout.FilledBox"
+    android:id="@+id/tilCantidad"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:hint="@string/averia_material_cantidad_hint">
+
+    <com.google.android.material.textfield.TextInputEditText
+        android:id="@+id/etCantidad"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:inputType="number"
+        android:maxLines="1" />
+</com.google.android.material.textfield.TextInputLayout>
