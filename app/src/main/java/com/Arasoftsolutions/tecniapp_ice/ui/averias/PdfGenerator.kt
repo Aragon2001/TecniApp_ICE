@@ -2,6 +2,7 @@ package com.Arasoftsolutions.tecniapp_ice.ui.averias
 
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.LinearGradient
 import android.graphics.Paint
@@ -12,6 +13,7 @@ import android.graphics.pdf.PdfDocument
 import android.net.Uri
 import android.widget.Toast
 import androidx.core.content.FileProvider
+import androidx.core.content.ContextCompat
 import com.Arasoftsolutions.tecniapp_ice.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -80,12 +82,30 @@ object PdfGenerator {
             val headerSubtitle = context.getString(R.string.averia_pdf_header_subtitle)
             val headerTagline = context.getString(R.string.averia_pdf_header_tagline)
 
+            val logoDrawable = ContextCompat.getDrawable(context, R.drawable.ic_tecniapp_logo)
+            logoDrawable?.let { drawable ->
+                val logoBitmapSize = 256
+                val logoBitmap = Bitmap.createBitmap(logoBitmapSize, logoBitmapSize, Bitmap.Config.ARGB_8888)
+                val logoCanvas = android.graphics.Canvas(logoBitmap)
+                drawable.setBounds(0, 0, logoBitmapSize, logoBitmapSize)
+                drawable.draw(logoCanvas)
+                val logoSize = 88f
+                val logoRect = RectF(
+                    headerRect.right - headerPadding - logoSize,
+                    headerRect.top + headerPadding / 2f,
+                    headerRect.right - headerPadding,
+                    headerRect.top + headerPadding / 2f + logoSize
+                )
+                canvas.drawBitmap(logoBitmap, null, logoRect, null)
+            }
+
             var textY = headerRect.top + headerPadding
-            canvas.drawText(headerTitle, headerRect.left + headerPadding, textY, headerTitlePaint)
+            val textX = headerRect.left + headerPadding
+            canvas.drawText(headerTitle, textX, textY, headerTitlePaint)
             textY += 36f
-            canvas.drawText(headerSubtitle, headerRect.left + headerPadding, textY, headerSubtitlePaint)
+            canvas.drawText(headerSubtitle, textX, textY, headerSubtitlePaint)
             textY += 26f
-            canvas.drawText(headerTagline, headerRect.left + headerPadding, textY, headerTagPaint)
+            canvas.drawText(headerTagline, textX, textY, headerTagPaint)
 
             // Sección tabla principal
             val titlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -116,6 +136,9 @@ object PdfGenerator {
             val attended = item.atendidoPor.ifBlank { emptyValue }
             val vehicle = item.vehiculo ?: emptyValue
             val nise = item.nise.ifBlank { emptyValue }
+            val description = item.descripcion.ifBlank { emptyValue }
+            val client = item.cliente?.takeIf { it.isNotBlank() } ?: emptyValue
+            val textualLocation = item.localizacion?.takeIf { it.isNotBlank() } ?: emptyValue
             val kilometraje = if (item.kilometrajeInicio != null || item.kilometrajeFinal != null) {
                 val inicioKm = item.kilometrajeInicio?.toString() ?: emptyValue
                 val finKm = item.kilometrajeFinal?.toString() ?: emptyValue
@@ -133,11 +156,14 @@ object PdfGenerator {
 
             val tableData = listOf(
                 context.getString(R.string.averia_pdf_table_label_case) to item.id,
+                context.getString(R.string.averia_pdf_table_label_description) to description,
                 context.getString(R.string.averia_pdf_table_label_nise) to nise,
                 context.getString(R.string.averia_pdf_table_label_status) to item.estado,
                 context.getString(R.string.averia_pdf_table_label_assigned) to assigned,
                 context.getString(R.string.averia_pdf_table_label_attended_by) to attended,
                 context.getString(R.string.averia_pdf_table_label_vehicle) to vehicle,
+                context.getString(R.string.averia_pdf_table_label_client) to client,
+                context.getString(R.string.averia_pdf_table_label_location_text) to textualLocation,
                 context.getString(R.string.averia_pdf_table_label_event_date) to (fechaEvento ?: emptyValue),
                 context.getString(R.string.averia_pdf_table_label_start_time) to (inicioAtencion ?: emptyValue),
                 context.getString(R.string.averia_pdf_table_label_end_time) to (finAtencion ?: emptyValue),
@@ -211,39 +237,80 @@ object PdfGenerator {
 
             canvas.drawLine(columnDivider, tableTop, columnDivider, tableTop + tableHeight, dividerPaint)
 
-            var currentY = tableTop + tableHeight + 22f
+            var currentY = tableTop + tableHeight + 28f
+            val innerWidth = contentWidth - 40f
 
-            fun wrapText(text: String): List<String> {
-                if (text.isBlank()) return listOf(emptyValue)
+            fun wrapParagraphs(text: String, availableWidth: Float): List<String> {
+                if (text.isBlank()) return listOf("")
+                val result = mutableListOf<String>()
                 val paragraphs = text.split('\n')
-                val lines = mutableListOf<String>()
-                val maxWidth = contentWidth - 48f
                 paragraphs.forEach { paragraph ->
-                    if (paragraph.isBlank()) {
-                        lines.add("")
+                    val trimmed = paragraph.trim()
+                    if (trimmed.isEmpty()) {
+                        result += ""
                     } else {
-                        val words = paragraph.split(" ").filter { it.isNotEmpty() }
-                        var currentLine = ""
-                        words.forEach { word ->
-                            val candidate = if (currentLine.isEmpty()) word else "$currentLine $word"
-                            if (valuePaint.measureText(candidate) <= maxWidth) {
-                                currentLine = candidate
-                            } else {
-                                if (currentLine.isNotEmpty()) lines.add(currentLine)
-                                currentLine = word
+                        var remaining = trimmed
+                        while (remaining.isNotEmpty()) {
+                            var count = valuePaint.breakText(remaining, true, availableWidth, null)
+                            if (count <= 0) break
+                            if (count < remaining.length) {
+                                val lastSpace = remaining.substring(0, count).lastIndexOf(' ')
+                                if (lastSpace > 0) {
+                                    count = lastSpace + 1
+                                }
                             }
+                            val segment = remaining.substring(0, count).trim()
+                            result += segment
+                            remaining = remaining.substring(count).trimStart()
                         }
-                        if (currentLine.isNotEmpty()) lines.add(currentLine)
                     }
                 }
-                return lines.ifEmpty { listOf(emptyValue) }
+                return result.ifEmpty { listOf("") }
             }
 
-            fun drawHighlightSection(title: String, content: String) {
-                val lines = wrapText(content)
-                val lineHeight = 18f
+            fun buildCardLines(entries: List<String>, bullet: Boolean = false): List<String> {
+                if (entries.isEmpty()) return if (bullet) listOf("• $emptyValue") else listOf(emptyValue)
+                val bulletPrefix = "• "
+                val indentPrefix = "  "
+                val indentWidth = valuePaint.measureText(bulletPrefix)
+                val lines = mutableListOf<String>()
+                var hasContent = false
+                entries.forEach { entry ->
+                    val paragraphs = wrapParagraphs(entry, if (bullet) innerWidth - indentWidth else innerWidth)
+                    if (paragraphs.size == 1 && paragraphs.first().isBlank()) {
+                        val placeholder = if (bullet) "$bulletPrefix$emptyValue" else emptyValue
+                        lines += placeholder
+                    } else {
+                        paragraphs.forEachIndexed { index, paragraph ->
+                            val display = paragraph.ifBlank { emptyValue }
+                            if (bullet) {
+                                val prefix = if (index == 0) bulletPrefix else indentPrefix
+                                lines += prefix + display
+                            } else {
+                                lines += display
+                            }
+                            if (paragraph.isNotBlank()) {
+                                hasContent = true
+                            }
+                        }
+                    }
+                }
+                if (!hasContent && lines.isEmpty()) {
+                    return if (bullet) listOf("$bulletPrefix$emptyValue") else listOf(emptyValue)
+                }
+                return lines
+            }
+
+            val cardTitlePaint = Paint(labelPaint).apply {
+                textSize = 14f
+            }
+
+            fun drawCard(title: String, entries: List<String>, bullet: Boolean = false) {
+                val lines = buildCardLines(entries, bullet)
                 val boxPadding = 20f
-                val boxHeight = boxPadding * 2 + (lines.size * lineHeight)
+                val lineSpacing = valuePaint.textSize + 8f
+                val gapAfterTitle = 16f
+                val boxHeight = boxPadding * 2 + cardTitlePaint.textSize + gapAfterTitle + (lines.size * lineSpacing)
                 val boxRect = RectF(margin, currentY, margin + contentWidth, currentY + boxHeight)
                 val boxPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.parseColor("#FFFFFF") }
                 val boxShadowPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -255,22 +322,57 @@ object PdfGenerator {
                 canvas.drawRoundRect(boxRect, 26f, 26f, boxPaint)
                 canvas.drawRoundRect(boxRect, 26f, 26f, boxShadowPaint)
 
-                canvas.drawText(title, boxRect.left + boxPadding, boxRect.top + boxPadding - 2f, labelPaint)
-                var lineY = boxRect.top + boxPadding + 14f
+                val titleBaseline = boxRect.top + boxPadding + cardTitlePaint.textSize
+                canvas.drawText(title, boxRect.left + boxPadding, titleBaseline, cardTitlePaint)
+
+                var lineY = titleBaseline + gapAfterTitle
                 lines.forEach { line ->
                     canvas.drawText(line, boxRect.left + boxPadding, lineY, valuePaint)
-                    lineY += lineHeight
+                    lineY += lineSpacing
                 }
-                currentY += boxHeight + 12f
+                currentY += boxHeight + 16f
             }
 
-            drawHighlightSection(
-                context.getString(R.string.averia_pdf_section_notes),
-                item.observaciones.ifBlank { emptyValue }
+            drawCard(
+                context.getString(R.string.averia_pdf_section_description),
+                listOf(description)
             )
-            drawHighlightSection(
+            drawCard(
+                context.getString(R.string.averia_pdf_section_cause),
+                listOf(item.causa.ifBlank { emptyValue })
+            )
+            drawCard(
+                context.getString(R.string.averia_pdf_section_notes),
+                listOf(item.observaciones.ifBlank { emptyValue })
+            )
+
+            val materialesLines = when {
+                item.materialesDetalle.isNotEmpty() -> item.materialesDetalle.map { uso ->
+                    val descripcionMaterial = uso.descripcion.ifBlank { uso.codigo }
+                    context.getString(R.string.averia_pdf_material_line, descripcionMaterial, uso.cantidad, uso.codigo)
+                }
+                item.materialesResumen.isNotBlank() -> listOf(item.materialesResumen)
+                else -> listOf(context.getString(R.string.averia_pdf_no_materials))
+            }
+            drawCard(
                 context.getString(R.string.averia_pdf_section_materials),
-                item.materialesResumen.ifBlank { emptyValue }
+                materialesLines,
+                bullet = true
+            )
+
+            val tecnicosLines = if (item.tecnicosAtendieron.isNotEmpty()) {
+                item.tecnicosAtendieron.map { tecnico ->
+                    val nombre = tecnico.nombre.ifBlank { emptyValue }
+                    val cedula = tecnico.cedula.ifBlank { emptyValue }
+                    context.getString(R.string.averia_pdf_technician_line, nombre, cedula)
+                }
+            } else {
+                listOf(context.getString(R.string.averia_pdf_no_technicians))
+            }
+            drawCard(
+                context.getString(R.string.averia_pdf_section_technicians),
+                tecnicosLines,
+                bullet = true
             )
 
             val footerRect = RectF(margin, currentY, margin + contentWidth, currentY + 62f)
