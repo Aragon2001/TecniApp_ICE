@@ -156,16 +156,10 @@
                 android:id="@+id/actvTecnico"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="none" />
+                android:inputType="text" />
         </com.google.android.material.textfield.TextInputLayout>
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnAgregarTecnico"
-            style="?attr/materialButtonOutlinedStyle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="@string/averia_agregar_tecnico" />
+
 
         <!-- MATERIALES -->
         <TextView
@@ -197,16 +191,10 @@
                 android:id="@+id/actvMaterial"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="none" />
+                android:inputType="text" />
         </com.google.android.material.textfield.TextInputLayout>
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnAgregarMaterial"
-            style="?attr/materialButtonOutlinedStyle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="Agregar +" />
+
 
         <com.google.android.material.chip.ChipGroup
             android:id="@+id/chipGroupMateriales"
@@ -229,7 +217,7 @@
                 android:id="@+id/etLocalizacion"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="textCapSentences|textMultiLine"
+                android:inputType="number"
                 android:minLines="2" />
         </com.google.android.material.textfield.TextInputLayout>
 
@@ -292,7 +280,7 @@
                 android:id="@+id/actvVehiculo"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="none" />
+                android:inputType="number" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout

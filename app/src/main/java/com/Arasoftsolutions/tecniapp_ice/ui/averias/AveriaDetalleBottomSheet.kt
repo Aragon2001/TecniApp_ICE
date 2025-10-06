@@ -29,6 +29,60 @@ import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
+import android.content.Context
+
+import android.widget.Filter
+import android.widget.TextView
+import java.text.Normalizer
+
+
+class FreeMatchAdapter<T>(
+    context: Context,
+    private val layoutId: Int,
+    private val items: List<T>,
+    private val itemToText: (T) -> String
+) : ArrayAdapter<String>(context, layoutId, items.map(itemToText)) {
+
+    private var filteredItems: List<T> = items
+
+    override fun getCount(): Int = filteredItems.size
+    override fun getItem(position: Int): String = itemToText(filteredItems[position])
+    fun getObject(position: Int): T = filteredItems[position]
+
+    private fun norm(s: String): String =
+        Normalizer.normalize(s, Normalizer.Form.NFD)
+            .replace("\\p{InCombiningDiacriticalMarks}+".toRegex(), "")
+            .lowercase(Locale.getDefault())
+
+    override fun getFilter(): Filter = object : Filter() {
+        override fun performFiltering(constraint: CharSequence?): FilterResults {
+            val q = norm(constraint?.toString()?.trim().orEmpty())
+            val tokens = q.split("\\s+".toRegex()).filter { it.isNotBlank() }
+
+            val list = if (tokens.isEmpty()) items else items.filter { item ->
+                val haystack = norm(itemToText(item))
+                // Coincidencia por tokens en cualquier orden: “jos arag” -> “Jostin Emanuel Aragon Barboza”
+                tokens.all { haystack.contains(it) }
+            }
+
+            return FilterResults().apply {
+                values = list
+                count = list.size
+            }
+        }
+
+        override fun publishResults(constraint: CharSequence?, results: FilterResults?) {
+            filteredItems = results?.values as? List<T> ?: items
+            notifyDataSetChanged()
+        }
+
+        override fun convertResultToString(resultValue: Any?): CharSequence {
+            val item = resultValue as? T ?: return super.convertResultToString(resultValue)
+            return itemToText(item)
+        }
+    }
+}
+
 
 class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
 
@@ -79,36 +133,169 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
         ensureTecnicoActual()
         renderTecnicos()
 
-        // --- Catálogos en tiempo real ---
+        // Vehículos (simple)
         viewLifecycleOwner.lifecycleScope.launch {
             vm.vehiculosDisponibles.collectLatest {
-                b.actvVehiculo.setAdapter(ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, it))
+                b.actvVehiculo.setAdapter(
+                    ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, it)
+                )
             }
         }
+
+        // Materiales con búsqueda libre y selección precisa
         viewLifecycleOwner.lifecycleScope.launch {
             vm.materialesDisponibles.collectLatest { lista ->
                 materialesCatalogo = lista
-                val adapter = ArrayAdapter(
+
+                val adapterMat = object : ArrayAdapter<MaterialEntity>(
                     requireContext(),
                     android.R.layout.simple_dropdown_item_1line,
-                    lista.map { "${it.codigo} - ${it.descripcion}" }
-                )
-                b.actvMaterial.setAdapter(adapter)
+                    lista.toMutableList()
+                ) {
+                    private var filtrados = lista.toMutableList()
+
+                    override fun getCount(): Int = filtrados.size
+                    override fun getItem(position: Int): MaterialEntity? = filtrados.getOrNull(position)
+                    fun getObject(position: Int): MaterialEntity = filtrados[position]
+
+                    override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+                        val view = super.getView(position, convertView, parent)
+                        (view as TextView).text =
+                            "${filtrados[position].codigo} - ${filtrados[position].descripcion}"
+                        return view
+                    }
+
+                    override fun getFilter(): Filter {
+                        return object : Filter() {
+                            override fun performFiltering(prefix: CharSequence?): FilterResults {
+                                val query = prefix?.toString()?.trim()?.lowercase(Locale.getDefault()).orEmpty()
+                                filtrados = if (query.isBlank()) {
+                                    lista.toMutableList()
+                                } else {
+                                    lista.filter { m ->
+                                        val texto = "${m.codigo} ${m.descripcion}".lowercase(Locale.getDefault())
+                                        query.split("\\s+".toRegex()).all { texto.contains(it) }
+                                    }.toMutableList()
+                                }
+                                return FilterResults().apply {
+                                    values = filtrados
+                                    count = filtrados.size
+                                }
+                            }
+
+                            override fun publishResults(constraint: CharSequence?, results: FilterResults?) {
+                                filtrados = (results?.values as? MutableList<MaterialEntity>) ?: mutableListOf()
+                                notifyDataSetChanged()
+                            }
+
+                            override fun convertResultToString(resultValue: Any?): CharSequence {
+                                val mat = resultValue as? MaterialEntity
+                                return if (mat != null) "${mat.codigo} - ${mat.descripcion}" else ""
+                            }
+                        }
+                    }
+                }
+
+                b.actvMaterial.setAdapter(adapterMat)
+                b.actvMaterial.threshold = 1
+
+                b.actvMaterial.setOnItemClickListener { _, _, position, _ ->
+                    val material = adapterMat.getObject(position)
+                    agregarMaterial(material)
+                    b.actvMaterial.setText("", false)
+                }
+
+                b.btnAgregarMaterial.setOnClickListener {
+                    val texto = b.actvMaterial.text?.toString().orEmpty().lowercase(Locale.getDefault())
+                    val tokens = texto.split("\\s+".toRegex()).filter { it.isNotBlank() }
+                    val match = lista.firstOrNull { m ->
+                        val hay = ("${m.codigo} ${m.descripcion}").lowercase(Locale.getDefault())
+                        tokens.all { hay.contains(it) }
+                    }
+                    if (match != null) agregarMaterial(match)
+                    b.actvMaterial.setText("", false)
+                }
             }
         }
 
+// Técnicos con búsqueda libre y selección precisa
         viewLifecycleOwner.lifecycleScope.launch {
             vm.tecnicosDisponibles.collectLatest { lista ->
                 tecnicosCatalogo = lista
-                val adapter = ArrayAdapter(
+
+                val adapterTec = object : ArrayAdapter<TecnicoEntity>(
                     requireContext(),
                     android.R.layout.simple_dropdown_item_1line,
-                    lista.map { "${it.cedula} - ${it.nombre}" }
-                )
-                b.actvTecnico.setAdapter(adapter)
+                    lista.toMutableList()
+                ) {
+                    private var filtrados = lista.toMutableList()
+
+                    override fun getCount(): Int = filtrados.size
+                    override fun getItem(position: Int): TecnicoEntity? = filtrados.getOrNull(position)
+                    fun getObject(position: Int): TecnicoEntity = filtrados[position]
+
+                    override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+                        val view = super.getView(position, convertView, parent)
+                        (view as TextView).text =
+                            "${filtrados[position].cedula} - ${filtrados[position].nombre}"
+                        return view
+                    }
+
+                    override fun getFilter(): Filter {
+                        return object : Filter() {
+                            override fun performFiltering(prefix: CharSequence?): FilterResults {
+                                val query = prefix?.toString()?.trim()?.lowercase(Locale.getDefault()).orEmpty()
+                                filtrados = if (query.isBlank()) {
+                                    lista.toMutableList()
+                                } else {
+                                    lista.filter { t ->
+                                        val texto = "${t.cedula} ${t.nombre}".lowercase(Locale.getDefault())
+                                        query.split("\\s+".toRegex()).all { texto.contains(it) }
+                                    }.toMutableList()
+                                }
+                                return FilterResults().apply {
+                                    values = filtrados
+                                    count = filtrados.size
+                                }
+                            }
+
+                            override fun publishResults(constraint: CharSequence?, results: FilterResults?) {
+                                filtrados = (results?.values as? MutableList<TecnicoEntity>) ?: mutableListOf()
+                                notifyDataSetChanged()
+                            }
+
+                            override fun convertResultToString(resultValue: Any?): CharSequence {
+                                val tec = resultValue as? TecnicoEntity
+                                return if (tec != null) "${tec.cedula} - ${tec.nombre}" else ""
+                            }
+                        }
+                    }
+                }
+
+                b.actvTecnico.setAdapter(adapterTec)
+                b.actvTecnico.threshold = 1
+
+                b.actvTecnico.setOnItemClickListener { _, _, position, _ ->
+                    val tecnico = adapterTec.getObject(position)
+                    agregarTecnico(tecnico)
+                    b.actvTecnico.setText("", false)
+                }
+
+                b.btnAgregarTecnico.setOnClickListener {
+                    val texto = b.actvTecnico.text?.toString().orEmpty().lowercase(Locale.getDefault())
+                    val tokens = texto.split("\\s+".toRegex()).filter { it.isNotBlank() }
+                    val match = lista.firstOrNull { t ->
+                        val hay = ("${t.cedula} ${t.nombre}").lowercase(Locale.getDefault())
+                        tokens.all { hay.contains(it) }
+                    }
+                    if (match != null) agregarTecnico(match)
+                    b.actvTecnico.setText("", false)
+                }
             }
         }
 
+
+        // Mantén técnico actual sincronizado
         viewLifecycleOwner.lifecycleScope.launch {
             vm.usuarioActual.filterNotNull().collectLatest {
                 ensureTecnicoActual()
@@ -116,36 +303,13 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
             }
         }
 
-        b.actvMaterial.setOnItemClickListener { _, _, position, _ ->
-            materialesCatalogo.getOrNull(position)?.let { agregarMaterial(it) }
-            b.actvMaterial.setText("", false)
-        }
-
-        b.btnAgregarMaterial.setOnClickListener {
-            val texto = b.actvMaterial.text?.toString()?.lowercase(Locale.getDefault()) ?: ""
-            materialesCatalogo.find {
-                texto.contains(it.codigo.lowercase(Locale.getDefault())) || texto.contains(it.descripcion.lowercase(Locale.getDefault()))
-            }?.let { agregarMaterial(it) }
-            b.actvMaterial.setText("", false)
-        }
-
-        b.actvTecnico.setOnItemClickListener { _, _, position, _ ->
-            tecnicosCatalogo.getOrNull(position)?.let { agregarTecnico(it) }
-            b.actvTecnico.setText("", false)
-        }
-
-        b.actvTecnico.setOnItemClickListener { _, _, position, _ ->
-            tecnicosCatalogo.getOrNull(position)?.let { agregarTecnico(it) }
-            b.actvTecnico.setText("", false)
-        }
-
-        b.btnAgregarTecnico.setOnClickListener {
-            val texto = b.actvTecnico.text?.toString()?.lowercase(Locale.getDefault()) ?: ""
-            tecnicosCatalogo.find {
-                texto.contains(it.cedula.lowercase(Locale.getDefault())) || texto.contains(it.nombre.lowercase(Locale.getDefault()))
-            }?.let { agregarTecnico(it) }
-            b.actvTecnico.setText("", false)
-        }
+        // Asegurar teclado y foco en autocompletes
+        b.actvMaterial.inputType = android.text.InputType.TYPE_CLASS_TEXT
+        b.actvMaterial.isFocusable = true
+        b.actvMaterial.isFocusableInTouchMode = true
+        b.actvTecnico.inputType = android.text.InputType.TYPE_CLASS_TEXT
+        b.actvTecnico.isFocusable = true
+        b.actvTecnico.isFocusableInTouchMode = true
 
         configureButtons(estadoInicial)
     }

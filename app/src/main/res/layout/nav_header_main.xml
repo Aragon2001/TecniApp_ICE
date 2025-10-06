@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/navHeaderRoot"
     android:layout_width="match_parent"
-    android:layout_height="@dimen/nav_header_height"
+    android:layout_height="wrap_content"
     android:background="@drawable/side_nav_bar"
     android:clickable="true"
     android:focusable="true"
@@ -26,8 +26,8 @@
             android:contentDescription="@string/nav_header_desc"
             android:scaleType="centerCrop"
             android:src="@drawable/default_profile_picture"
-            app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.Material3.Corner.Full"
-            app:strokeColor="@android:color/white"
+            app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.Material3.Corner.Top"
+            app:strokeColor="@color/white"
             app:strokeWidth="2dp" />
 
         <LinearLayout
