@@ -9,13 +9,11 @@ import android.view.View
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.Toast
-import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.Arasoftsolutions.tecniapp_ice.Database.room.AppDatabase
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
 import com.Arasoftsolutions.tecniapp_ice.Database.sync.Synchronizer
-import com.Arasoftsolutions.tecniapp_ice.User.UserViewModel
 import com.Arasoftsolutions.tecniapp_ice.ui.modal.SyncDialogFragment
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasRepository
 import com.google.android.material.button.MaterialButton
@@ -56,9 +54,6 @@ class LoginActivity : AppCompatActivity() {
     private lateinit var roomRepository: RoomRepository
     private lateinit var averiasRepository: AveriasRepository
     private lateinit var synchronizer: Synchronizer
-
-    // VM: útil si se desea observar estado de usuario o logs más adelante
-    private val userViewModel: UserViewModel by viewModels()
 
     private companion object {
         // Instancia RTDB que contiene los perfiles de usuario (colección /usuarios)

@@ -76,6 +76,7 @@ dependencies {
     implementation(libs.firebase.database.ktx)
     implementation(libs.firebase.firestore.ktx)
     implementation("com.google.firebase:firebase-config-ktx:21.6.0")
+    implementation("com.google.firebase:firebase-storage-ktx")
 
     // Room + KSP
     implementation(libs.androidx.room.runtime)

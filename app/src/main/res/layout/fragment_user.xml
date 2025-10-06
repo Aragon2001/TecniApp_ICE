@@ -1,267 +1,290 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:orientation="vertical"
+    android:layout_height="match_parent"
     android:padding="16dp"
+    android:clipToPadding="false"
     tools:context=".User.UserFragment">
 
-    <ScrollView
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:fillViewport="true"
-    android:scrollbars="none">
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center_horizontal">
 
-        <!-- Contenedor para la información del usuario -->
-        <LinearLayout
+        <com.google.android.material.progressindicator.LinearProgressIndicator
+            android:id="@+id/progressLoading"
+            style="@style/Widget.Material3.ProgressIndicator.Linear"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
+            android:visibility="gone"
+            app:trackThickness="4dp" />
 
-            <!-- Imagen de perfil -->
-            <ImageView
-                android:id="@+id/imageViewProfile"
-                android:layout_width="100dp"
-                android:layout_height="100dp"
-                android:layout_gravity="center"
-                android:src="@drawable/default_profile_picture"
-                android:contentDescription="Foto de perfil"
-                android:scaleType="centerCrop"
-                />
+        <LinearLayout
+            android:id="@+id/contentGroup"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center_horizontal">
 
-            <!-- Nombre del usuario -->
-            <TextView
-                android:id="@+id/tvNombre"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:layout_marginTop="16dp"
-                android:text="Nombre del Usuario"
-                android:textColor="@color/ice_blue_dark"
-                android:textSize="22sp"
-                android:textStyle="bold" />
-
-            <!-- Identificación del usuario -->
-            <TextView
-                android:id="@+id/tvId"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Identificación: 0-0000-0000"
-                android:textSize="16sp"
-                android:textColor="@color/dark_gray"
-                android:layout_marginTop="4dp"
-                android:layout_gravity="center" />
-
-            <!-- Correo electrónico del usuario -->
-            <TextView
-                android:id="@+id/tvEmail"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="email@ejemplo.com"
-                android:textSize="16sp"
-                android:textColor="@color/dark_gray"
-                android:layout_marginTop="4dp"
-                android:layout_gravity="center" />
-
-            <!-- Layout para el Paso 4: Información adicional -->
-            <LinearLayout
-                android:id="@+id/datos"
+            <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:orientation="vertical"
-                android:visibility="visible"
-                android:layout_marginTop="4dp">
-
-                <!-- Spinner para seleccionar la subregión -->
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Subregión"
-                    android:textSize="18sp"
-                    android:textColor="@color/ice_blue_dark"
-                    android:textStyle="bold"
-                    android:layout_marginTop="16dp"
-                    android:layout_marginBottom="4dp" />
-
-                <Spinner
-                    android:id="@+id/spinnerSubregion"
-                    android:layout_width="match_parent"
-                    android:layout_height="50dp"
-                    android:background="@drawable/rounded_bg_f0f2f4"
-                    android:drawableEnd="@drawable/ic_arrow_down" />
-
-                <!-- Spinner para seleccionar la agencia -->
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Agencia"
-                    android:textSize="18sp"
-                    android:textColor="@color/ice_blue_dark"
-                    android:textStyle="bold"
-                    android:layout_marginTop="16dp"
-                    android:layout_marginBottom="4dp" />
-
-                <Spinner
-                    android:id="@+id/spinnerAgencia"
-                    android:layout_width="match_parent"
-                    android:layout_height="50dp"
-                    android:background="@drawable/rounded_bg_f0f2f4"
-                    android:drawableEnd="@drawable/ic_arrow_down" />
-
-                <!-- Spinner para seleccionar el vehículo -->
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Vehículo"
-                    android:textSize="18sp"
-                    android:textColor="@color/ice_blue_dark"
-                    android:textStyle="bold"
-                    android:layout_marginTop="16dp"
-                    android:layout_marginBottom="4dp" />
-
-                <Spinner
-                    android:id="@+id/spinnerVehiculo"
-                    android:layout_width="match_parent"
-                    android:layout_height="50dp"
-                    android:background="@drawable/rounded_bg_f0f2f4"
-                    android:drawableEnd="@drawable/ic_arrow_down" />
-
-                <!-- Número celular -->
-                <TextView
-                    android:id="@+id/tvTelefono"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Número celular"
-                    android:textSize="18sp"
-                    android:textColor="@color/ice_blue_dark"
-                    android:textStyle="bold"
-                    android:layout_marginTop="16dp" />
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="12dp"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="2dp">
 
                 <LinearLayout
-                    android:id="@+id/phoneLayout"
                     android:layout_width="match_parent"
-                    android:layout_height="50dp"
-                    android:layout_marginTop="4dp"
-                    android:orientation="horizontal">
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp"
+                    android:gravity="center_horizontal">
 
-                    <LinearLayout
+                    <FrameLayout
                         android:layout_width="wrap_content"
-                        android:layout_height="match_parent"
-                        android:background="@drawable/rounded_bg_f0f2f4"
-                        android:padding="8dp">
+                        android:layout_height="wrap_content">
 
-                        <ImageView
-                            android:layout_width="24dp"
-                            android:layout_height="24dp"
-                            android:contentDescription="Bandera CR"
-                            android:src="@drawable/crflag" />
+                        <com.google.android.material.imageview.ShapeableImageView
+                            android:id="@+id/imageProfile"
+                            android:layout_width="110dp"
+                            android:layout_height="110dp"
+                            android:scaleType="centerCrop"
+                            android:contentDescription="@string/nav_header_desc"
+                            android:src="@drawable/default_profile_picture"
+                            app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.Material3.Corner.Full"
+                            app:strokeWidth="2dp"
+                            app:strokeColor="@color/ice_blue" />
 
-                        <TextView
-                            android:id="@+id/tvCountryCode"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="4dp"
-                            android:text="+506"
-                            android:textColor="@color/dark_gray"
-                            android:textSize="18sp" />
-                    </LinearLayout>
+                        <com.google.android.material.progressindicator.CircularProgressIndicator
+                            android:id="@+id/progressPhoto"
+                            style="@style/Widget.Material3.CircularProgressIndicator.Small"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:visibility="gone"
+                            app:indicatorDirectionCircular="clockwise"
+                            app:trackThickness="4dp" />
+                    </FrameLayout>
 
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/etPhoneNumber"
-                        android:layout_width="0dp"
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnChangePhoto"
+                        style="@style/Tecni.Button.Outlined"
+                        android:layout_marginTop="12dp"
+                        android:text="@string/profile_change_photo"
+                        app:icon="@drawable/ic_camera"
+                        app:iconGravity="textStart"
+                        app:iconPadding="8dp" />
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:id="@+id/textDisplayName"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
-                        android:background="@drawable/rounded_bg_f0f2f4"
-                        android:maxLength="9"
-                        android:textColorHint="@color/light_gray"
+                        android:layout_marginTop="16dp"
+                        android:textAppearance="@style/TextAppearance.Material3.TitleLarge"
+                        android:textColor="@color/ice_blue_dark"
+                        tools:text="Carlos Rodríguez" />
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:id="@+id/textEmail"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
                         android:textColor="@color/dark_gray"
-                        android:inputType="phone"
-                        android:padding="12dp"
-                        android:layout_weight="1" />
+                        tools:text="carlos@ice.go.cr" />
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:id="@+id/textUserId"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:textAppearance="@style/TextAppearance.Material3.LabelMedium"
+                        android:textColor="@color/dark_gray"
+                        tools:text="Cédula: 1-1234-5678" />
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginTop="16dp"
+                        android:layout_marginBottom="12dp"
+                        android:background="@color/outline_soft" />
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:id="@+id/textSummarySubregion"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
+                        android:textColor="@color/dark_gray"
+                        tools:text="Subregión: GAM" />
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:id="@+id/textSummaryAgency"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
+                        android:textColor="@color/dark_gray"
+                        tools:text="Agencia: San José" />
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:id="@+id/textSummaryVehicle"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
+                        android:textColor="@color/dark_gray"
+                        tools:text="Vehículo: 123456 • Hilux" />
+
                 </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
-                <!-- Contraseña -->
-                <TextView
-                    android:id="@+id/tvPasswordLabel"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Contraseña"
-                    android:textSize="18sp"
-                    android:textColor="@color/ice_blue_dark"
-                    android:textStyle="bold"
-                    android:layout_marginTop="16dp" />
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="2dp">
 
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/etPassword"
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Ingresa tu contraseña"
-                    android:inputType="textPassword"
-                    android:background="@drawable/rounded_bg_f0f2f4"
-                    android:padding="12dp"
-                    android:textColorHint="@color/light_gray"
-                    android:textColor="@color/dark_gray"
-                    android:layout_marginTop="4dp" />
+                    android:orientation="vertical"
+                    android:padding="20dp">
 
-                <TextView
-                    android:id="@+id/tvPasswordError"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textColor="@color/red"
-                    android:textSize="12sp"
-                    android:visibility="gone" />
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/layoutSubregion"
+                        style="@style/Widget.Material3.TextInputLayout.FilledBox.ExposedDropdownMenu"
+                        android:hint="@string/profile_subregion_label"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
 
-                <TextView
-                    android:id="@+id/tvConfirmPasswordLabel"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Confirmar contraseña"
-                    android:textSize="18sp"
-                    android:textColor="@color/ice_blue_dark"
-                    android:textStyle="bold"
-                    android:layout_marginTop="16dp" />
+                        <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                            android:id="@+id/actvSubregion"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="none"
+                            android:dropDownHeight="wrap_content"
+                            android:importantForAutofill="no"
+                            android:focusable="false"
+                            android:clickable="true"
+                            android:padding="12dp"
+                            tools:text="GAM" />
+                    </com.google.android.material.textfield.TextInputLayout>
 
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/etConfirmPassword"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="Confirma tu contraseña"
-                    android:inputType="textPassword"
-                    android:background="@drawable/rounded_bg_f0f2f4"
-                    android:padding="12dp"
-                    android:textColorHint="@color/light_gray"
-                    android:textColor="@color/dark_gray"
-                    android:layout_marginTop="4dp" />
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/layoutAgency"
+                        style="@style/Widget.Material3.TextInputLayout.FilledBox.ExposedDropdownMenu"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:hint="@string/profile_agency_label">
 
-                <TextView
-                    android:id="@+id/tvConfirmPasswordError"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textColor="@color/red"
-                    android:textSize="12sp"
-                    android:visibility="gone" />
+                        <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                            android:id="@+id/actvAgency"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="none"
+                            android:dropDownHeight="wrap_content"
+                            android:importantForAutofill="no"
+                            android:focusable="false"
+                            android:clickable="true"
+                            android:padding="12dp"
+                            tools:text="San José" />
+                    </com.google.android.material.textfield.TextInputLayout>
 
-                <CheckBox
-                    android:id="@+id/checkboxShowPassword"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Mostrar contraseña"
-                    android:layout_marginTop="8dp"
-                    android:textColor="@color/dark_gray" />
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/layoutVehicle"
+                        style="@style/Widget.Material3.TextInputLayout.FilledBox.ExposedDropdownMenu"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:hint="@string/profile_vehicle_label">
 
-            </LinearLayout>
+                        <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                            android:id="@+id/actvVehicle"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="none"
+                            android:dropDownHeight="wrap_content"
+                            android:importantForAutofill="no"
+                            android:focusable="false"
+                            android:clickable="true"
+                            android:padding="12dp"
+                            tools:text="123456 • Hilux" />
+                    </com.google.android.material.textfield.TextInputLayout>
 
-            <!-- Botón para guardar cambios -->
-            <Button
-                android:id="@+id/btnSaveChanges"
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/layoutPhone"
+                        style="@style/Widget.Material3.TextInputLayout.FilledBox"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:hint="@string/profile_phone_hint">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etPhoneNumber"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="phone"
+                            android:maxLength="9"
+                            android:padding="12dp"
+                            tools:text="88888888" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/layoutPassword"
+                        style="@style/Widget.Material3.TextInputLayout.FilledBox"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:hint="@string/profile_password_hint"
+                        app:endIconMode="password_toggle">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etPassword"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="textPassword"
+                            android:padding="12dp" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/layoutConfirmPassword"
+                        style="@style/Widget.Material3.TextInputLayout.FilledBox"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:hint="@string/profile_confirm_password_hint"
+                        app:endIconMode="password_toggle">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etConfirmPassword"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="textPassword"
+                            android:padding="12dp" />
+                    </com.google.android.material.textfield.TextInputLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.progressindicator.LinearProgressIndicator
+                android:id="@+id/progressSaving"
+                style="@style/Widget.Material3.ProgressIndicator.Linear"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:backgroundTint="@color/ice_blue_dark"
-                android:text="Guardar cambios"
-                android:textColor="@android:color/white" />
+                android:visibility="gone"
+                app:trackThickness="4dp" />
 
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSaveChanges"
+                style="@style/Tecni.Button.Primary.Original"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="@string/profile_save_changes" />
         </LinearLayout>
-    </ScrollView>
-</LinearLayout>
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>
