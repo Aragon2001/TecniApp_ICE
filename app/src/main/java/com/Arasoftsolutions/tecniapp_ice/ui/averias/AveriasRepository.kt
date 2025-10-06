@@ -75,7 +75,7 @@ class AveriasRepository(private val db: AppDatabase) {
     private fun mergeRemoteString(remote: String?, local: String?): String? {
         val raw = remote ?: return local
         val trimmed = raw.trim()
-        return if (trimmed.isEmpty()) null else trimmed
+        return if (trimmed.isEmpty()) "" else trimmed
     }
 
     // Regiones canónicas
@@ -416,8 +416,8 @@ class AveriasRepository(private val db: AppDatabase) {
         val resumen = MaterialesSerializer.toSummary(data.materiales).ifBlank { null }
         val detalle = MaterialesSerializer.toJson(data.materiales)
         val tecnicosJson = TecnicosSerializer.toJson(data.tecnicos)
-        val localizacion = data.localizacion?.trim()?.takeIf { it.isNotBlank() }
-        val cliente = data.cliente?.trim()?.takeIf { it.isNotBlank() }
+        val localizacion = data.localizacion?.trim()
+        val cliente = data.cliente?.trim()
         dao.actualizarAtencion(
             caseId = caseId,
             causa = data.causa,
@@ -449,8 +449,8 @@ class AveriasRepository(private val db: AppDatabase) {
         val resumen = MaterialesSerializer.toSummary(data.materiales).ifBlank { null }
         val detalle = MaterialesSerializer.toJson(data.materiales)
         val tecnicosJson = TecnicosSerializer.toJson(data.tecnicos)
-        val localizacion = data.localizacion?.trim()?.takeIf { it.isNotBlank() }
-        val cliente = data.cliente?.trim()?.takeIf { it.isNotBlank() }
+        val localizacion = data.localizacion?.trim()
+        val cliente = data.cliente?.trim()
         dao.actualizarAtencion(
             caseId = caseId,
             causa = data.causa,

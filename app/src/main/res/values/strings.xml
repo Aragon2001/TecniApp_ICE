@@ -126,6 +126,45 @@
     <string name="averia_reporte_coordenadas">Ubicación: %1$.5f, %2$.5f</string>
     <string name="averia_reporte_coordenadas_sin_datos">Ubicación: —</string>
     <string name="averia_reporte_generado">Reporte generado: %1$s</string>
+    <string name="averia_pdf_header_title">TecniApp ICE</string>
+    <string name="averia_pdf_header_subtitle">Plataforma integral de intervención técnica</string>
+    <string name="averia_pdf_header_tagline">Arasoft Solutions © 2024 · Todos los derechos reservados</string>
+    <string name="averia_pdf_section_title">Detalle del servicio</string>
+    <string name="averia_pdf_table_label_case">ID del caso</string>
+    <string name="averia_pdf_table_label_nise">Código NISE</string>
+    <string name="averia_pdf_table_label_status">Estado</string>
+    <string name="averia_pdf_table_label_assigned">Asignado a</string>
+    <string name="averia_pdf_table_label_attended_by">Atendido por</string>
+    <string name="averia_pdf_table_label_vehicle">Vehículo asignado</string>
+    <string name="averia_pdf_table_label_description">Descripción</string>
+    <string name="averia_pdf_table_label_event_date">Fecha del evento</string>
+    <string name="averia_pdf_table_label_start_time">Inicio de atención</string>
+    <string name="averia_pdf_table_label_end_time">Fin de atención</string>
+    <string name="averia_pdf_table_label_kilometers">Kilometraje recorrido</string>
+    <string name="averia_pdf_table_label_region">Región</string>
+    <string name="averia_pdf_table_label_agency">Agencia</string>
+    <string name="averia_pdf_table_label_client">Cliente</string>
+    <string name="averia_pdf_table_label_location_text">Localización</string>
+    <string name="averia_pdf_table_label_location">Coordenadas</string>
+    <string name="averia_pdf_table_label_generated">Generado el</string>
+    <string name="averia_pdf_empty_value">—</string>
+    <string name="averia_pdf_kilometers_value">%1$s km → %2$s km</string>
+    <string name="averia_pdf_location_value">%1$.5f, %2$.5f</string>
+    <string name="averia_pdf_location_no_data">Sin coordenadas registradas</string>
+    <string name="averia_pdf_section_description">Descripción del incidente</string>
+    <string name="averia_pdf_section_cause">Causa identificada</string>
+    <string name="averia_pdf_section_notes">Observaciones registradas</string>
+    <string name="averia_pdf_section_materials">Materiales utilizados</string>
+    <string name="averia_pdf_section_technicians">Técnicos que atendieron</string>
+    <string name="averia_pdf_material_line">%2$d × %1$s (%3$s)</string>
+    <string name="averia_pdf_no_materials">No se registraron materiales.</string>
+    <string name="averia_pdf_technician_line">%1$s • Cédula %2$s</string>
+    <string name="averia_pdf_no_technicians">No se registraron técnicos adicionales.</string>
+    <string name="averia_pdf_footer_title">TecniApp ICE</string>
+    <string name="averia_pdf_footer_content">Sistema TecniApp ICE • Arasoft Solutions • Derechos reservados</string>
+
+    <string name="averia_detalle_causa_title">Causa identificada</string>
+    <string name="averia_detalle_observaciones_title">Observaciones registradas</string>
 
     <!-- Material SearchView -->
     <string name="search_view_behavior">com.google.android.material.searchview.SearchView$Behavior</string>
