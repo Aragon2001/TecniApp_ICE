@@ -18,6 +18,7 @@ import com.Arasoftsolutions.tecniapp_ice.BuildConfig
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.AgenciaEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.AveriaEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.MaterialEntity
+import com.Arasoftsolutions.tecniapp_ice.Database.entities.MedidorEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.RegionEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.SubregionesEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.TecnicoEntity
@@ -25,13 +26,16 @@ import com.Arasoftsolutions.tecniapp_ice.Database.entities.UserEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.apellidosCompletos
 import com.Arasoftsolutions.tecniapp_ice.Database.room.AppDatabase
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
+import com.Arasoftsolutions.tecniapp_ice.Database.sync.FirebaseSyncManager
 import com.Arasoftsolutions.tecniapp_ice.R
 import com.google.firebase.auth.FirebaseAuth
 import java.text.Normalizer
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.Locale
 
 enum class Estado {
@@ -54,6 +58,14 @@ data class RegionUI(val id: String?, val nombreVisible: String)
 data class AgenciaUI(val id: String?, val nombreVisible: String)
 data class AveriasUiState(val loading: Boolean = false, val items: List<AveriaUI> = emptyList())
 
+sealed class MedidorLookupState {
+    object Idle : MedidorLookupState()
+    object Loading : MedidorLookupState()
+    data class Success(val medidor: MedidorEntity) : MedidorLookupState()
+    data class NotFound(val numero: String) : MedidorLookupState()
+    data class Error(val message: String) : MedidorLookupState()
+}
+
 @OptIn(FlowPreview::class, kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class AveriasViewModel(app: Application) : AndroidViewModel(app) {
 
@@ -69,6 +81,7 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
     private val db = AppDatabase.getInstance(app)
     private val repo = AveriasRepository(db)
     private val roomRepo = RoomRepository.getInstance(app)
+    private val firebaseSync = FirebaseSyncManager(app)
     private val auth = FirebaseAuth.getInstance()
     private val notificationManager = NotificationManagerCompat.from(app)
     private val prefs = app.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -99,6 +112,8 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
     val materialesDisponibles: StateFlow<List<MaterialEntity>> = _materiales.asStateFlow()
     private val _tecnicos = MutableStateFlow<List<TecnicoEntity>>(emptyList())
     val tecnicosDisponibles: StateFlow<List<TecnicoEntity>> = _tecnicos.asStateFlow()
+    private val _medidorEstado = MutableStateFlow<MedidorLookupState>(MedidorLookupState.Idle)
+    val medidorEstado: StateFlow<MedidorLookupState> = _medidorEstado.asStateFlow()
 
     private var syncJob: Job? = null
     private var cachedRegiones: List<RegionEntity> = emptyList()
@@ -173,7 +188,13 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
                             horaFinal = e.horaFinalMillis,
                             cliente = e.cliente?.trim(),
                             localizacion = e.localizacion?.trim(),
-                            tecnicosAtendieron = tecnicosAtendieron
+                            tecnicosAtendieron = tecnicosAtendieron,
+                            tipoAfectacion = TipoAfectacion.fromRaw(e.tipoAfectacion),
+                            numeroMedidor = e.numeroMedidor?.trim(),
+                            medidorCalle = e.medidorCalle?.trim(),
+                            medidorPueblo = e.medidorPueblo?.trim(),
+                            medidorMetros = e.medidorMetros?.trim(),
+                            medidorPoste = e.medidorPoste?.trim()
                         )
                     }
                 )
@@ -246,6 +267,52 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
         _agenciaSeleccionada.emit(selected)
         savePreferredAgency(selected)
         clearPendingAgencySelection()
+    }
+
+    fun resetMedidorEstado() {
+        _medidorEstado.value = MedidorLookupState.Idle
+    }
+
+    fun buscarMedidor(numero: String) {
+        val trimmed = numero.trim()
+        if (trimmed.isEmpty()) {
+            _medidorEstado.value = MedidorLookupState.Idle
+            return
+        }
+        viewModelScope.launch {
+            _medidorEstado.value = MedidorLookupState.Loading
+            try {
+                val user = requireUsuario() ?: run {
+                    _medidorEstado.value = MedidorLookupState.Error(
+                        getApplication<Application>().getString(R.string.averia_error_usuario_no_autenticado)
+                    )
+                    return@launch
+                }
+                val subregion = user.subregion?.takeIf { it.isNotBlank() }
+                if (subregion.isNullOrBlank()) {
+                    _medidorEstado.value = MedidorLookupState.Error(
+                        getApplication<Application>().getString(R.string.medidor_estado_sin_subregion)
+                    )
+                    return@launch
+                }
+                val medidor = withContext(Dispatchers.IO) {
+                    roomRepo.buscarMedidorPorNumero(trimmed)
+                        ?: firebaseSync.buscarMedidorEnFirebase(subregion, trimmed)?.also {
+                            roomRepo.insertarMedidor(it)
+                        }
+                }
+                if (medidor != null) {
+                    _medidorEstado.value = MedidorLookupState.Success(medidor)
+                } else {
+                    _medidorEstado.value = MedidorLookupState.NotFound(trimmed)
+                }
+            } catch (t: Throwable) {
+                _medidorEstado.value = MedidorLookupState.Error(
+                    t.localizedMessage
+                        ?: getApplication<Application>().getString(R.string.medidor_estado_error_generico)
+                )
+            }
+        }
     }
 
     fun nombreTecnicoActual(): String? = _usuario.value?.let { nombreCompleto(it) }
@@ -327,6 +394,12 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
         val tecnicos = if (data.tecnicos.isNotEmpty()) data.tecnicos else ui.tecnicosAtendieron
         val localizacion = data.localizacion ?: ui.localizacion
         val cliente = data.cliente ?: ui.cliente
+        val tipo = data.tipoAfectacion
+        val numeroMedidor = data.numeroMedidor?.takeIf { it.isNotBlank() } ?: ui.numeroMedidor
+        val medidorCalle = data.medidorCalle?.takeIf { it.isNotBlank() } ?: ui.medidorCalle
+        val medidorPueblo = data.medidorPueblo?.takeIf { it.isNotBlank() } ?: ui.medidorPueblo
+        val medidorMetros = data.medidorMetros?.takeIf { it.isNotBlank() } ?: ui.medidorMetros
+        val medidorPoste = data.medidorPoste?.takeIf { it.isNotBlank() } ?: ui.medidorPoste
         val horaInicio = data.horaInicioMillis
             ?: ui.horaAtencionInicio
             ?: ui.horaInicio
@@ -346,7 +419,13 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
             horaInicioMillis = horaInicio,
             horaFinalMillis = horaFinal,
             kilometrajeInicio = kmInicio,
-            kilometrajeFinal = kmFinal
+            kilometrajeFinal = kmFinal,
+            tipoAfectacion = tipo,
+            numeroMedidor = numeroMedidor,
+            medidorCalle = medidorCalle,
+            medidorPueblo = medidorPueblo,
+            medidorMetros = medidorMetros,
+            medidorPoste = medidorPoste
         )
     }
 
