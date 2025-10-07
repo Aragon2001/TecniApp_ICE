@@ -50,6 +50,12 @@ data class AveriaEntity(
 
     val cliente: String? = null,
     val localizacion: String? = null,
+    val tipoAfectacion: String? = null,
+    val numeroMedidor: String? = null,
+    val medidorCalle: String? = null,
+    val medidorPueblo: String? = null,
+    val medidorMetros: String? = null,
+    val medidorPoste: String? = null,
     val isSynced: Boolean = true,
     val lastUpdated: Long = 0L
 ) {
@@ -88,6 +94,12 @@ data class AveriaEntity(
         tecnicosAtendieronJson = null,
         cliente = null,
         localizacion = null,
+        tipoAfectacion = null,
+        numeroMedidor = null,
+        medidorCalle = null,
+        medidorPueblo = null,
+        medidorMetros = null,
+        medidorPoste = null,
         isSynced = true,
         lastUpdated = 0L
     )

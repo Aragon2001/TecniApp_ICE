@@ -89,6 +89,12 @@ fun observe(
           tecnicosAtendieronJson = :tecnicosAtendieron,
           cliente = COALESCE(:cliente, cliente),
           localizacion = :localizacion,
+          tipoAfectacion = :tipoAfectacion,
+          numeroMedidor = :numeroMedidor,
+          medidorCalle = :medidorCalle,
+          medidorPueblo = :medidorPueblo,
+          medidorMetros = :medidorMetros,
+          medidorPoste = :medidorPoste,
           lastUpdated = :lastUpdated,
           isSynced = 0
         WHERE caseId = :caseId
@@ -110,6 +116,12 @@ fun observe(
         tecnicosAtendieron: String?,
         cliente: String?,
         localizacion: String?,
+        tipoAfectacion: String?,
+        numeroMedidor: String?,
+        medidorCalle: String?,
+        medidorPueblo: String?,
+        medidorMetros: String?,
+        medidorPoste: String?,
         lastUpdated: Long,
         nuevoEstado: String
     )
@@ -135,6 +147,12 @@ fun observe(
           materialesDetalleJson = NULL,
           tecnicosAtendieronJson = NULL,
           localizacion = NULL,
+          tipoAfectacion = NULL,
+          numeroMedidor = NULL,
+          medidorCalle = NULL,
+          medidorPueblo = NULL,
+          medidorMetros = NULL,
+          medidorPoste = NULL,
           lastUpdated = :lastUpdated,
           isSynced = 0
         WHERE caseId = :caseId

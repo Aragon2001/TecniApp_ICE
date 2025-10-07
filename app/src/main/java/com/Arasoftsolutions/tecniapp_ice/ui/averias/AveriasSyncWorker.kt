@@ -15,8 +15,11 @@ import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import com.Arasoftsolutions.tecniapp_ice.BuildConfig
 import com.Arasoftsolutions.tecniapp_ice.R
+import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
+import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.text.Normalizer
 import java.util.concurrent.TimeUnit
 
 class AveriasSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx, params) {
@@ -24,6 +27,7 @@ class AveriasSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorke
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         val db = com.Arasoftsolutions.tecniapp_ice.Database.room.AppDatabase.getInstance(applicationContext)
         val repo = AveriasRepository(db)
+        val roomRepo = RoomRepository.getInstance(applicationContext)
 
         // 1. Sube los pendientes a Firebase
         repo.syncPendientesConFirebase()
@@ -31,10 +35,28 @@ class AveriasSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorke
         // 2. Descarga averías nuevas desde ICE
         val nuevos = repo.syncFromIce(BuildConfig.ICE_BEARER)
 
+        val usuario = FirebaseAuth.getInstance().currentUser?.uid?.let { uid ->
+            runCatching { roomRepo.obtenerUsuario(uid) }.getOrNull()
+        }
+
+        val regionObjetivo = usuario?.regionNombre?.takeIf { !it.isNullOrBlank() }
+            ?: usuario?.region?.takeIf { !it.isNullOrBlank() }
+        val regionNormalizada = regionObjetivo?.let { normalize(it) }
+
+        val porRegion = if (regionNormalizada.isNullOrBlank()) {
+            nuevos
+        } else {
+            nuevos.filter { averia ->
+                val regionAveria = normalize(averia.region)
+                regionAveria.contains(regionNormalizada)
+            }
+        }
+
         // 3. Notifica si hay nuevos casos
-        if (nuevos.isNotEmpty()) {
+        if (porRegion.isNotEmpty()) {
             val nm = NotificationManagerCompat.from(applicationContext)
-            nuevos.forEach forEachId@{ id ->
+            porRegion.forEach forEachId@{ averia ->
+                val id = averia.caseId
                 if (
                     ActivityCompat.checkSelfPermission(
                         applicationContext,
@@ -45,8 +67,14 @@ class AveriasSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorke
                     id.hashCode(),
                     NotificationCompat.Builder(applicationContext, "averias_channel")
                         .setSmallIcon(R.drawable.ic_notification)
-                        .setContentTitle("Nueva avería")
-                        .setContentText("Caso $id")
+                        .setContentTitle(applicationContext.getString(R.string.averia_notificacion_nueva_title))
+                        .setContentText(
+                            applicationContext.getString(
+                                R.string.averia_notificacion_nueva_body,
+                                id,
+                                averia.nombreAgencia ?: averia.agencia ?: ""
+                            )
+                        )
                         .setPriority(NotificationCompat.PRIORITY_HIGH)
                         .setSound(
                             Uri.parse(
@@ -58,6 +86,13 @@ class AveriasSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorke
             }
         }
         Result.success()
+    }
+
+    private fun normalize(value: String?): String {
+        if (value.isNullOrBlank()) return ""
+        val normalized = Normalizer.normalize(value, Normalizer.Form.NFD)
+        return normalized.replace("\\p{InCombiningDiacriticalMarks}+".toRegex(), "")
+            .lowercase()
     }
 
     companion object {

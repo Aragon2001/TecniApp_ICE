@@ -73,9 +73,17 @@ class AveriasRepository(private val db: AppDatabase) {
     }
 
     private fun mergeRemoteString(remote: String?, local: String?): String? {
-        val raw = remote ?: return local
-        val trimmed = raw.trim()
-        return if (trimmed.isEmpty()) "" else trimmed
+        val trimmed = remote?.trim()
+        return when {
+            trimmed == null -> local
+            trimmed.isEmpty() -> local
+            else -> trimmed
+        }
+    }
+
+    private fun preferMeaningful(remote: String?, local: String?): String? {
+        val trimmed = remote?.trim()
+        return if (trimmed.isNullOrEmpty()) local else trimmed
     }
 
     // Regiones canónicas
@@ -319,66 +327,26 @@ class AveriasRepository(private val db: AppDatabase) {
     // Sync desde ICE (merge sin bajar estado + conservar lastUpdated más nuevo)
     // ---------------------------------------------------------------------------------------------
 
-    suspend fun syncFromIce(bearer: String?): List<String> = withContext(Dispatchers.IO) {
+    suspend fun syncFromIce(bearer: String?): List<AveriaEntity> = withContext(Dispatchers.IO) {
         val authHeader = bearer?.takeIf { it.isNotBlank() }?.let { "Bearer $it" }
         val envelope = IceApi.service.getAverias(authHeader)
         val incoming = envelope.payload()
             .filter { shouldInclude(it) }
             .mapNotNull { map(it) }
 
-        val current = dao.all().associateBy { it.caseId }
-        val merged = incoming.map { remote ->
-            val existing = current[remote.caseId]
-            when {
-                existing == null -> remote
-                !existing.isSynced -> existing
-                else -> {
-                    // No bajar estado y normalizar agencias
-                    val estadoElegido = pickEstadoPreferAdvanced(existing.estado, remote.estado)
-                    val idEstadoElegido = idEstadoFromLabel(estadoElegido)
+        if (incoming.isEmpty()) return@withContext emptyList()
 
-                    val normalRemote = canonicalizeAgenciaFields(remote)
-                    existing.copy(
-                        region = normalRemote.region,
-                        provincia = normalRemote.provincia,
-                        agencia = normalRemote.agencia,
-                        nombreAgencia = normalRemote.nombreAgencia,
-                        nise = normalRemote.nise,
-                        causa = normalRemote.causa ?: existing.causa,
-                        observaciones = normalRemote.observaciones ?: existing.observaciones,
+        val existentes = dao.allIds().toSet()
+        val nuevos = incoming
+            .filterNot { existentes.contains(it.caseId) }
+            .map { canonicalizeAgenciaFields(it) }
 
-                        estado = estadoElegido,
-                        idEstadoAve = idEstadoElegido,
-                        idEstadoAranda = normalRemote.idEstadoAranda,
-
-                        lat = normalRemote.lat,
-                        lng = normalRemote.lng,
-                        clientesAfectados = normalRemote.clientesAfectados,
-                        fechaInicioMillis = normalRemote.fechaInicioMillis,
-                        horaInicioMillis = existing.horaInicioMillis ?: normalRemote.horaInicioMillis,
-                        horaFinalMillis = normalRemote.horaFinalMillis ?: existing.horaFinalMillis,
-                        atencionHoraInicioMillis = existing.atencionHoraInicioMillis,
-                        atencionHoraFinalMillis = existing.atencionHoraFinalMillis,
-                        kilometrajeInicio = existing.kilometrajeInicio,
-                        kilometrajeFinal = existing.kilometrajeFinal,
-
-                        materialesTexto = existing.materialesTexto,
-                        materialesDetalleJson = existing.materialesDetalleJson,
-
-                        agenciaTag = normalRemote.agenciaTag,
-                        lastUpdated = maxOf(existing.lastUpdated, normalRemote.lastUpdated),
-                        isSynced = true
-                    )
-                }
-            }
+        if (nuevos.isNotEmpty()) {
+            dao.upsertAll(nuevos)
+            registerNewOnFirebase(nuevos)
         }
 
-        dao.upsertAll(merged)
-
-        val newOnes = merged.filter { !current.containsKey(it.caseId) }
-        registerNewOnFirebase(newOnes)
-
-        incoming.map { it.caseId }.filter { !current.containsKey(it) }
+        nuevos
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -418,6 +386,7 @@ class AveriasRepository(private val db: AppDatabase) {
         val tecnicosJson = TecnicosSerializer.toJson(data.tecnicos)
         val localizacion = data.localizacion?.trim()
         val cliente = data.cliente?.trim()
+        val tipo = data.tipoAfectacion.name
         dao.actualizarAtencion(
             caseId = caseId,
             causa = data.causa,
@@ -434,6 +403,12 @@ class AveriasRepository(private val db: AppDatabase) {
             tecnicosAtendieron = tecnicosJson,
             cliente = cliente,
             localizacion = localizacion,
+            tipoAfectacion = tipo,
+            numeroMedidor = data.numeroMedidor,
+            medidorCalle = data.medidorCalle,
+            medidorPueblo = data.medidorPueblo,
+            medidorMetros = data.medidorMetros,
+            medidorPoste = data.medidorPoste,
             lastUpdated = now,
             nuevoEstado = "En atención"
         )
@@ -451,6 +426,7 @@ class AveriasRepository(private val db: AppDatabase) {
         val tecnicosJson = TecnicosSerializer.toJson(data.tecnicos)
         val localizacion = data.localizacion?.trim()
         val cliente = data.cliente?.trim()
+        val tipo = data.tipoAfectacion.name
         dao.actualizarAtencion(
             caseId = caseId,
             causa = data.causa,
@@ -467,6 +443,12 @@ class AveriasRepository(private val db: AppDatabase) {
             tecnicosAtendieron = tecnicosJson,
             cliente = cliente,
             localizacion = localizacion,
+            tipoAfectacion = tipo,
+            numeroMedidor = data.numeroMedidor,
+            medidorCalle = data.medidorCalle,
+            medidorPueblo = data.medidorPueblo,
+            medidorMetros = data.medidorMetros,
+            medidorPoste = data.medidorPoste,
             lastUpdated = now,
             nuevoEstado = "Resuelta"
         )
@@ -537,6 +519,12 @@ class AveriasRepository(private val db: AppDatabase) {
         "tecnicosAtendieronJson" to tecnicosAtendieronJson,
         "cliente" to cliente,
         "localizacion" to localizacion,
+        "tipoAfectacion" to tipoAfectacion,
+        "numeroMedidor" to numeroMedidor,
+        "medidorCalle" to medidorCalle,
+        "medidorPueblo" to medidorPueblo,
+        "medidorMetros" to medidorMetros,
+        "medidorPoste" to medidorPoste,
         "lastUpdated" to lastUpdated
     )
 
@@ -580,8 +568,8 @@ class AveriasRepository(private val db: AppDatabase) {
                             agencia = remote.agencia,
                             nombreAgencia = remote.nombreAgencia,
                             nise = remote.nise,
-                            causa = remote.causa ?: existing.causa,
-                            observaciones = remote.observaciones ?: existing.observaciones,
+                            causa = preferMeaningful(remote.causa, existing.causa),
+                            observaciones = preferMeaningful(remote.observaciones, existing.observaciones),
                             estado = estadoElegido,
                             idEstadoAve = idEstadoElegido,
                             idEstadoAranda = remote.idEstadoAranda,
@@ -600,14 +588,23 @@ class AveriasRepository(private val db: AppDatabase) {
                             tecnicoAsignadoNombre = remote.tecnicoAsignadoNombre,
                             atendidoPorUid = remote.atendidoPorUid,
                             atendidoPorNombre = remote.atendidoPorNombre,
-                            materialesTexto = remote.materialesTexto,
-                            materialesDetalleJson = remote.materialesDetalleJson,
+                            materialesTexto = preferMeaningful(remote.materialesTexto, existing.materialesTexto),
+                            materialesDetalleJson = preferMeaningful(
+                                remote.materialesDetalleJson,
+                                existing.materialesDetalleJson
+                            ),
                             tecnicosAtendieronJson = mergeRemoteString(
                                 remote.tecnicosAtendieronJson,
                                 existing.tecnicosAtendieronJson
                             ),
-                            cliente = mergeRemoteString(remote.cliente, existing.cliente),
-                            localizacion = mergeRemoteString(remote.localizacion, existing.localizacion),
+                            cliente = preferMeaningful(remote.cliente, existing.cliente),
+                            localizacion = preferMeaningful(remote.localizacion, existing.localizacion),
+                            tipoAfectacion = preferMeaningful(remote.tipoAfectacion, existing.tipoAfectacion),
+                            numeroMedidor = preferMeaningful(remote.numeroMedidor, existing.numeroMedidor),
+                            medidorCalle = preferMeaningful(remote.medidorCalle, existing.medidorCalle),
+                            medidorPueblo = preferMeaningful(remote.medidorPueblo, existing.medidorPueblo),
+                            medidorMetros = preferMeaningful(remote.medidorMetros, existing.medidorMetros),
+                            medidorPoste = preferMeaningful(remote.medidorPoste, existing.medidorPoste),
                             agenciaTag = remote.agenciaTag,
                             lastUpdated = maxOf(existing.lastUpdated, remote.lastUpdated),
                             isSynced = true
@@ -653,8 +650,8 @@ class AveriasRepository(private val db: AppDatabase) {
                                     agencia = remote.agencia,
                                     nombreAgencia = remote.nombreAgencia,
                                     nise = remote.nise,
-                                    causa = remote.causa ?: existing.causa,
-                                    observaciones = remote.observaciones ?: existing.observaciones,
+                                    causa = preferMeaningful(remote.causa, existing.causa),
+                                    observaciones = preferMeaningful(remote.observaciones, existing.observaciones),
                                     estado = estadoElegido,
                                     idEstadoAve = idEstadoElegido,
                                     idEstadoAranda = remote.idEstadoAranda,
@@ -673,14 +670,23 @@ class AveriasRepository(private val db: AppDatabase) {
                                     tecnicoAsignadoNombre = remote.tecnicoAsignadoNombre,
                                     atendidoPorUid = remote.atendidoPorUid,
                                     atendidoPorNombre = remote.atendidoPorNombre,
-                                    materialesTexto = remote.materialesTexto,
-                                    materialesDetalleJson = remote.materialesDetalleJson,
+                                    materialesTexto = preferMeaningful(remote.materialesTexto, existing.materialesTexto),
+                                    materialesDetalleJson = preferMeaningful(
+                                        remote.materialesDetalleJson,
+                                        existing.materialesDetalleJson
+                                    ),
                                     tecnicosAtendieronJson = mergeRemoteString(
                                         remote.tecnicosAtendieronJson,
                                         existing.tecnicosAtendieronJson
                                     ),
-                                    cliente = mergeRemoteString(remote.cliente, existing.cliente),
-                                    localizacion = mergeRemoteString(remote.localizacion, existing.localizacion),
+                                    cliente = preferMeaningful(remote.cliente, existing.cliente),
+                                    localizacion = preferMeaningful(remote.localizacion, existing.localizacion),
+                                    tipoAfectacion = preferMeaningful(remote.tipoAfectacion, existing.tipoAfectacion),
+                                    numeroMedidor = preferMeaningful(remote.numeroMedidor, existing.numeroMedidor),
+                                    medidorCalle = preferMeaningful(remote.medidorCalle, existing.medidorCalle),
+                                    medidorPueblo = preferMeaningful(remote.medidorPueblo, existing.medidorPueblo),
+                                    medidorMetros = preferMeaningful(remote.medidorMetros, existing.medidorMetros),
+                                    medidorPoste = preferMeaningful(remote.medidorPoste, existing.medidorPoste),
                                     agenciaTag = remote.agenciaTag,
                                     lastUpdated = maxOf(existing.lastUpdated, remote.lastUpdated),
                                     isSynced = true
