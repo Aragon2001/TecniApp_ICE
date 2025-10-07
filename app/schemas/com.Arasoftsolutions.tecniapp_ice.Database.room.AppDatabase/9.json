@@ -2,11 +2,11 @@
   "formatVersion": 1,
   "database": {
     "version": 9,
-    "identityHash": "3e383e9acef5438c3dd111522492082c",
+    "identityHash": "61edac1bd89888e12e876840f1358cde",
     "entities": [
       {
         "tableName": "usuarios",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`uid` TEXT NOT NULL, `email` TEXT, `email_lower` TEXT, `nombre` TEXT, `apellidos` TEXT, `cedula` TEXT, `subregion` TEXT, `agencia` TEXT, `placaVehiculo` TEXT, `telefono` TEXT, `password` TEXT, `fotoUrl` TEXT, PRIMARY KEY(`uid`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`uid` TEXT NOT NULL, `email` TEXT, `email_lower` TEXT, `nombre` TEXT, `apellidos` TEXT, `primerApellido` TEXT, `segundoApellido` TEXT, `cedula` TEXT, `region` TEXT, `regionNombre` TEXT, `subregion` TEXT, `subregionNombre` TEXT, `agenciaId` TEXT, `agencia` TEXT, `placaVehiculo` TEXT, `telefono` TEXT, `password` TEXT, `fotoUrl` TEXT, PRIMARY KEY(`uid`))",
         "fields": [
           {
             "fieldPath": "uid",
@@ -35,13 +35,43 @@
             "affinity": "TEXT"
           },
           {
+            "fieldPath": "primerApellido",
+            "columnName": "primerApellido",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "segundoApellido",
+            "columnName": "segundoApellido",
+            "affinity": "TEXT"
+          },
+          {
             "fieldPath": "cedula",
             "columnName": "cedula",
             "affinity": "TEXT"
           },
           {
+            "fieldPath": "region",
+            "columnName": "region",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "regionNombre",
+            "columnName": "regionNombre",
+            "affinity": "TEXT"
+          },
+          {
             "fieldPath": "subregion",
             "columnName": "subregion",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "subregionNombre",
+            "columnName": "subregionNombre",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "agenciaId",
+            "columnName": "agenciaId",
             "affinity": "TEXT"
           },
           {
@@ -694,7 +724,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '3e383e9acef5438c3dd111522492082c')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '61edac1bd89888e12e876840f1358cde')"
     ]
   }
 }

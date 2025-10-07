@@ -221,7 +221,7 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
 
     // --- MEDIDORES (Sync completa) ---
     suspend fun obtenerMedidores(subregion: String): List<MedidorEntity> {
-        val ruta = "Medidores/Medidores/SubRegion $subregion"
+        val ruta = "Medidores/Medidores/SubRegion"
         val snap = dbMedidores.child(ruta).get().await()
 
         val list = mutableListOf<MedidorEntity>()
