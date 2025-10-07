@@ -425,10 +425,15 @@ class UserFragment : Fragment() {
 
     private fun updateSummary() {
         val user = currentUser
+        val regionValue = selectedSubregion?.nombre ?: user?.subregion
         val subregionValue = selectedSubregion?.nombre ?: user?.subregion
         val agencyValue = selectedAgency?.nombre ?: user?.agencia
         val vehicleValue = selectedVehicle?.let { formatVehicle(it) } ?: user?.placaVehiculo
 
+        binding.textSummaryRegion.text = getString(
+            R.string.profile_summary_subregion,
+            summaryValue(subregionValue)
+        )
         binding.textSummarySubregion.text = getString(
             R.string.profile_summary_subregion,
             summaryValue(subregionValue)
