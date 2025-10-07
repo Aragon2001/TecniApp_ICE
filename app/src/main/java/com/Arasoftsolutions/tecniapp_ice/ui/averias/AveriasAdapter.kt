@@ -46,7 +46,13 @@ data class AveriaUI(
     val horaFinal: Long?,
     val cliente: String?,
     val localizacion: String?,
-    val tecnicosAtendieron: List<TecnicoAtencion>
+    val tecnicosAtendieron: List<TecnicoAtencion>,
+    val tipoAfectacion: TipoAfectacion,
+    val numeroMedidor: String?,
+    val medidorCalle: String?,
+    val medidorPueblo: String?,
+    val medidorMetros: String?,
+    val medidorPoste: String?
 ) : Serializable {
     fun resolvedAtendidoDisplay(emptyValue: String): String {
         if (atendidoPor.isNotBlank()) return atendidoPor
@@ -179,15 +185,46 @@ class AveriasAdapter(
                 DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(Date(it))
             }
             tvCliente?.let { label ->
+                val context = itemView.context
                 val cliente = item.cliente?.takeIf { it.isNotBlank() } ?: emptyValue
+                val tipo = when (item.tipoAfectacion) {
+                    TipoAfectacion.CLIENTE -> context.getString(R.string.averia_tipo_cliente)
+                    TipoAfectacion.SECTOR -> context.getString(R.string.averia_tipo_sector)
+                }
+                val medidor = item.numeroMedidor?.takeIf { it.isNotBlank() }
+                    ?.let { context.getString(R.string.averia_medidor_label, it) }
+                val extras = buildList {
+                    add(tipo)
+                    if (medidor != null) add(medidor)
+                }.joinToString(" • ")
+                val base = context.getString(R.string.averia_cliente_label, cliente)
                 label.visibility = View.VISIBLE
-                label.text = itemView.context.getString(R.string.averia_cliente_label, cliente)
+                label.text = context.getString(R.string.averia_cliente_detalle_format, base, extras)
             }
 
             tvLocalizacion?.let { label ->
+                val context = itemView.context
                 val loc = item.localizacion?.takeIf { it.isNotBlank() } ?: emptyValue
+                val detalles = buildList {
+                    item.medidorPueblo?.takeIf { it.isNotBlank() }?.let {
+                        add(context.getString(R.string.averia_medidor_pueblo, it))
+                    }
+                    item.medidorCalle?.takeIf { it.isNotBlank() }?.let {
+                        add(context.getString(R.string.averia_medidor_calle, it))
+                    }
+                    item.medidorPoste?.takeIf { it.isNotBlank() }?.let {
+                        add(context.getString(R.string.averia_medidor_poste, it))
+                    }
+                    item.medidorMetros?.takeIf { it.isNotBlank() }?.let {
+                        add(context.getString(R.string.averia_medidor_metros, it))
+                    }
+                }.joinToString(" • ")
                 label.visibility = View.VISIBLE
-                label.text = itemView.context.getString(R.string.averia_localizacion_label, loc)
+                label.text = if (detalles.isNotBlank()) {
+                    context.getString(R.string.averia_localizacion_detalle_format, loc, detalles)
+                } else {
+                    context.getString(R.string.averia_localizacion_label, loc)
+                }
             }
             val finAtencion = item.horaAtencionFinal?.let {
                 DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(Date(it))

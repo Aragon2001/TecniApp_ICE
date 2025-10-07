@@ -18,6 +18,20 @@ data class TecnicoAtencion(
     val nombre: String
 ) : Serializable
 
+enum class TipoAfectacion : Serializable {
+    SECTOR,
+    CLIENTE;
+
+    companion object {
+        fun fromRaw(raw: String?): TipoAfectacion = when (raw?.trim()?.lowercase()) {
+            "cliente" -> CLIENTE
+            else -> SECTOR
+        }
+
+        fun toRaw(tipo: TipoAfectacion?): String? = tipo?.name
+    }
+}
+
 /**
  * Datos de acción al atender/cerrar una avería.
  */
@@ -34,7 +48,13 @@ data class AveriaActionData(
     val kilometrajeFinal: Double?,
     val cliente: String?,
     val localizacion: String?,
-    val tecnicos: List<TecnicoAtencion>
+    val tecnicos: List<TecnicoAtencion>,
+    val tipoAfectacion: TipoAfectacion,
+    val numeroMedidor: String?,
+    val medidorCalle: String?,
+    val medidorPueblo: String?,
+    val medidorMetros: String?,
+    val medidorPoste: String?
 )
 
 /**

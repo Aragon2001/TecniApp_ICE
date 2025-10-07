@@ -18,9 +18,12 @@ import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.MaterialEntity
+import com.Arasoftsolutions.tecniapp_ice.Database.entities.MedidorEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.TecnicoEntity
 import com.Arasoftsolutions.tecniapp_ice.R
 import com.Arasoftsolutions.tecniapp_ice.databinding.BottomsheetAveriaDetalleBinding
+import com.Arasoftsolutions.tecniapp_ice.ui.averias.MedidorLookupState
+import com.Arasoftsolutions.tecniapp_ice.ui.averias.TipoAfectacion
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.chip.Chip
@@ -41,6 +44,10 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
 
 
     private lateinit var item: AveriaUI
+    private var tipoSeleccionado: TipoAfectacion = TipoAfectacion.SECTOR
+    private var medidorSeleccionado: MedidorEntity? = null
+    private var clienteSeleccionado: String? = null
+    private var suppressTipoListener = false
     private var materialesCatalogo: List<MaterialEntity> = emptyList()
     private val materialesSeleccionados = linkedMapOf<String, MaterialUso>()
     private var materialesModificados = false
@@ -57,6 +64,9 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         val estadoInicial = Estado.fromLabel(item.estado)
+        vm.resetMedidorEstado()
+        tipoSeleccionado = item.tipoAfectacion
+        clienteSeleccionado = item.cliente
 
         b.etHoraInicio.setOnClickListener { openTimePicker { h, m ->
             b.etHoraInicio.setText(String.format(Locale.getDefault(), "%02d:%02d", h, m))
@@ -68,6 +78,8 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
         bindHeader(estadoInicial)
         bindResumenes()
         bindInputs()
+        setupTipoAfectacion()
+        setupMedidorBusqueda()
 
         materialesSeleccionados.clear()
         item.materialesDetalle.forEach { materialesSeleccionados[it.codigo] = it }
@@ -265,6 +277,35 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
         b.tvRegion.text = getString(R.string.averia_region_label, item.region.ifBlank { "—" })
         b.tvAgencia.text = getString(R.string.averia_agencia_label, item.agencia.ifBlank { "—" })
 
+        val tipoTexto = when (item.tipoAfectacion) {
+            TipoAfectacion.CLIENTE -> getString(R.string.averia_tipo_cliente)
+            TipoAfectacion.SECTOR -> getString(R.string.averia_tipo_sector)
+        }
+        b.tvTipoAfectacion.text = getString(R.string.averia_tipo_actual_label, tipoTexto)
+        val medidorNumero = item.numeroMedidor?.takeIf { it.isNotBlank() }
+        val medidorResumen = medidorNumero?.let {
+            getString(R.string.averia_medidor_actual_label, it)
+        } ?: getString(R.string.averia_medidor_sin_datos)
+        b.tvMedidorActual.text = medidorResumen
+        val detalleParts = buildList {
+            item.medidorPueblo?.takeIf { it.isNotBlank() }?.let {
+                add(getString(R.string.averia_medidor_pueblo, it))
+            }
+            item.medidorCalle?.takeIf { it.isNotBlank() }?.let {
+                add(getString(R.string.averia_medidor_calle, it))
+            }
+            item.medidorPoste?.takeIf { it.isNotBlank() }?.let {
+                add(getString(R.string.averia_medidor_poste, it))
+            }
+            item.medidorMetros?.takeIf { it.isNotBlank() }?.let {
+                add(getString(R.string.averia_medidor_metros, it))
+            }
+        }
+        b.tvMedidorResumen.apply {
+            text = detalleParts.joinToString(" • ")
+            isVisible = detalleParts.isNotEmpty()
+        }
+
         val emptyValue = getString(R.string.averia_pdf_empty_value)
         val cliente = item.cliente?.takeIf { it.isNotBlank() } ?: emptyValue
         b.tvCliente.apply {
@@ -296,7 +337,30 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
         b.tvCausaActual.text = item.causa.ifBlank { emptyValue }
         b.tvObservacionesActuales.text = item.observaciones.ifBlank { emptyValue }
         val localizacion = item.localizacion?.takeIf { it.isNotBlank() } ?: emptyValue
-        b.tvLocalizacionActual.text = getString(R.string.averia_localizacion_label, localizacion)
+        val detalleParts = buildList {
+            item.medidorPueblo?.takeIf { it.isNotBlank() }?.let {
+                add(getString(R.string.averia_medidor_pueblo, it))
+            }
+            item.medidorCalle?.takeIf { it.isNotBlank() }?.let {
+                add(getString(R.string.averia_medidor_calle, it))
+            }
+            item.medidorPoste?.takeIf { it.isNotBlank() }?.let {
+                add(getString(R.string.averia_medidor_poste, it))
+            }
+            item.medidorMetros?.takeIf { it.isNotBlank() }?.let {
+                add(getString(R.string.averia_medidor_metros, it))
+            }
+        }
+        val baseLocalizacion = getString(R.string.averia_localizacion_label, localizacion)
+        b.tvLocalizacionActual.text = if (detalleParts.isNotEmpty()) {
+            getString(
+                R.string.averia_localizacion_detalle_format,
+                baseLocalizacion,
+                detalleParts.joinToString(" • ")
+            )
+        } else {
+            baseLocalizacion
+        }
     }
 
     private fun bindInputs() {
@@ -311,91 +375,280 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
         b.etHoraFin.setText(formatHora(item.horaAtencionFinal))
         b.etKmInicio.setText(item.kilometrajeInicio?.toString().orEmpty())
         b.etKmFinal.setText(item.kilometrajeFinal?.toString().orEmpty())
+        b.etMedidor.setText(item.numeroMedidor.orEmpty())
         b.tilCausa.error = null
         b.etCausa.doAfterTextChanged { b.tilCausa.error = null }
     }
 
-    private fun configureButtons(initialEstado: Estado) {
-        var estado = initialEstado
-        val usuarioUid = vm.usuarioActual.value?.uid
-
-        b.btnAsignar.text = when (estado) {
-            Estado.PENDIENTE -> getString(R.string.averia_asignar)
-            Estado.ASIGNADA -> getString(R.string.averia_eliminar_asignacion)
-            else -> getString(R.string.averia_asignar)
+    private fun setupTipoAfectacion() {
+        suppressTipoListener = true
+        b.toggleTipoAfectacion.check(
+            if (tipoSeleccionado == TipoAfectacion.CLIENTE) b.btnTipoCliente.id else b.btnTipoSector.id
+        )
+        suppressTipoListener = false
+        b.toggleTipoAfectacion.addOnButtonCheckedListener { _, checkedId, isChecked ->
+            if (!isChecked || suppressTipoListener) return@addOnButtonCheckedListener
+            tipoSeleccionado = if (checkedId == b.btnTipoCliente.id) {
+                TipoAfectacion.CLIENTE
+            } else {
+                TipoAfectacion.SECTOR
+            }
+            if (tipoSeleccionado == TipoAfectacion.SECTOR) {
+                medidorSeleccionado = null
+                clienteSeleccionado = item.cliente
+                vm.resetMedidorEstado()
+            }
+            updateTipoSection()
         }
+        updateTipoSection()
+    }
 
-        val usuarioActualUid = vm.usuarioActual.value?.uid
-        val puedeGestionar = item.tecnicoUid.isNullOrBlank() || item.tecnicoUid == usuarioActualUid
-
-        if (estado == Estado.PENDIENTE && usuarioActualUid != null && item.tecnicoUid.isNullOrBlank()) {
-            vm.onAutoAsignarPendiente(item)
-            vm.nombreTecnicoActual()?.let { nombre ->
-                b.tvAsignado.text = getString(R.string.averia_asignado_a, nombre)
-                item = item.copy(
-                    estado = getString(R.string.estado_asignada),
-                    tecnico = nombre,
-                    tecnicoUid = usuarioActualUid
-                )
-                estado = Estado.ASIGNADA
-                b.chipEstado.text = getString(R.string.estado_asignada)
-                b.chipEstado.chipBackgroundColor = ColorStateList.valueOf(Color.parseColor("#FBC02D"))
-                b.btnAsignar.text = getString(R.string.averia_eliminar_asignacion)
-                b.btnAsignar.isEnabled = true
+    private fun setupMedidorBusqueda() {
+        b.tilMedidor.setEndIconOnClickListener {
+            if (tipoSeleccionado == TipoAfectacion.CLIENTE) {
+                vm.buscarMedidor(b.etMedidor.text?.toString().orEmpty())
+            }
+        }
+        b.etMedidor.doAfterTextChanged {
+            if (it.isNullOrBlank()) {
+                medidorSeleccionado = null
+                clienteSeleccionado = item.cliente
+                b.tilMedidor.error = null
+                b.tilMedidor.helperText = null
+                if (tipoSeleccionado == TipoAfectacion.CLIENTE) {
+                    renderMedidorInfo(null)
+                }
             }
         }
 
-        if (estado == Estado.ASIGNADA && !puedeGestionar) {
-            b.btnAsignar.isEnabled = false
+        viewLifecycleOwner.lifecycleScope.launch {
+            vm.medidorEstado.collectLatest { state ->
+                when (state) {
+                    MedidorLookupState.Idle -> {
+                        b.tilMedidor.isEndIconVisible = true
+                        if (tipoSeleccionado == TipoAfectacion.CLIENTE) {
+                            b.tilMedidor.error = null
+                            b.tilMedidor.helperText = null
+                        }
+                    }
+                    MedidorLookupState.Loading -> {
+                        b.tilMedidor.isEndIconVisible = false
+                        b.tilMedidor.error = null
+                        b.tilMedidor.helperText = getString(R.string.averia_medidor_busqueda)
+                    }
+                    is MedidorLookupState.Success -> {
+                        medidorSeleccionado = state.medidor
+                        clienteSeleccionado = state.medidor.cliente?.trim().takeIf { !it.isNullOrBlank() }
+                            ?: clienteSeleccionado
+                        b.tilMedidor.isEndIconVisible = true
+                        b.tilMedidor.error = null
+                        b.tilMedidor.helperText = getString(
+                            R.string.averia_medidor_encontrado,
+                            state.medidor.medidorNumber
+                        )
+                        val numero = state.medidor.medidorNumber.takeIf { it.isNotBlank() }
+                        if (!numero.isNullOrBlank()) {
+                            b.etMedidor.setText(numero)
+                            b.etMedidor.setSelection(numero.length)
+                        }
+                        state.medidor.localizacion?.toString()?.takeIf { it.isNotBlank() }?.let { loc ->
+                            if (b.etLocalizacion.text.isNullOrBlank()) {
+                                b.etLocalizacion.setText(loc)
+                            }
+                        }
+                        if (tipoSeleccionado != TipoAfectacion.CLIENTE) {
+                            suppressTipoListener = true
+                            b.toggleTipoAfectacion.check(b.btnTipoCliente.id)
+                            suppressTipoListener = false
+                            tipoSeleccionado = TipoAfectacion.CLIENTE
+                        }
+                        renderMedidorInfo(state.medidor)
+                        updateTipoSection()
+                    }
+                    is MedidorLookupState.NotFound -> {
+                        medidorSeleccionado = null
+                        b.tilMedidor.isEndIconVisible = true
+                        b.tilMedidor.helperText = null
+                        b.tilMedidor.error = getString(R.string.averia_medidor_no_encontrado, state.numero)
+                    }
+                    is MedidorLookupState.Error -> {
+                        b.tilMedidor.isEndIconVisible = true
+                        b.tilMedidor.helperText = null
+                        b.tilMedidor.error = state.message.ifBlank {
+                            getString(R.string.medidor_estado_error_generico)
+                        }
+                    }
+                }
+            }
+        }
+
+        renderMedidorInfo(if (tipoSeleccionado == TipoAfectacion.CLIENTE) medidorSeleccionado else null)
+    }
+
+    private fun updateTipoSection() {
+        if (_b == null) return
+        suppressTipoListener = true
+        b.toggleTipoAfectacion.check(
+            if (tipoSeleccionado == TipoAfectacion.CLIENTE) b.btnTipoCliente.id else b.btnTipoSector.id
+        )
+        suppressTipoListener = false
+        val esCliente = tipoSeleccionado == TipoAfectacion.CLIENTE
+        b.tilMedidor.isVisible = esCliente
+        if (!esCliente) {
+            b.tilMedidor.error = null
+            b.tilMedidor.helperText = null
+        }
+        renderMedidorInfo(if (esCliente) medidorSeleccionado else null)
+    }
+
+    private fun renderMedidorInfo(medidor: MedidorEntity?) {
+        if (_b == null) return
+        val esCliente = tipoSeleccionado == TipoAfectacion.CLIENTE
+        val emptyValue = getString(R.string.averia_pdf_empty_value)
+        val tipoLabel = when (tipoSeleccionado) {
+            TipoAfectacion.CLIENTE -> getString(R.string.averia_tipo_cliente)
+            TipoAfectacion.SECTOR -> getString(R.string.averia_tipo_sector)
+        }
+        b.tvTipoAfectacion.text = getString(R.string.averia_tipo_actual_label, tipoLabel)
+        val clienteTexto = when {
+            medidor?.cliente?.isNotBlank() == true -> medidor.cliente!!.trim()
+            clienteSeleccionado?.isNotBlank() == true -> clienteSeleccionado!!.trim()
+            item.cliente?.isNotBlank() == true -> item.cliente!!.trim()
+            else -> emptyValue
+        }
+        b.tvCliente.text = getString(R.string.averia_cliente_label, clienteTexto.ifBlank { emptyValue })
+        b.tvMedidorCliente.apply {
+            text = getString(R.string.averia_cliente_label, clienteTexto.ifBlank { emptyValue })
+            isVisible = esCliente && clienteTexto.isNotBlank()
+        }
+        val localizacionTexto = medidor?.localizacion?.toString()?.takeIf { it.isNotBlank() }
+            ?: b.etLocalizacion.text?.toString()?.trim()?.takeIf { it.isNotBlank() }
+            ?: item.localizacion?.takeIf { it.isNotBlank() }
+        b.tvMedidorLocalizacion.apply {
+            text = getString(
+                R.string.averia_localizacion_label,
+                localizacionTexto ?: emptyValue
+            )
+            isVisible = esCliente && !localizacionTexto.isNullOrBlank()
+        }
+        val detalleParts = buildList {
+            val pueblo = medidor?.pueblo?.takeIf { it.isNotBlank() } ?: item.medidorPueblo
+            if (!pueblo.isNullOrBlank()) add(getString(R.string.averia_medidor_pueblo, pueblo))
+            val calle = medidor?.calle?.takeIf { it.isNotBlank() } ?: item.medidorCalle
+            if (!calle.isNullOrBlank()) add(getString(R.string.averia_medidor_calle, calle))
+            val poste = medidor?.poste?.takeIf { it.isNotBlank() } ?: item.medidorPoste
+            if (!poste.isNullOrBlank()) add(getString(R.string.averia_medidor_poste, poste))
+            val metros = medidor?.metros?.takeIf { it.isNotBlank() } ?: item.medidorMetros
+            if (!metros.isNullOrBlank()) add(getString(R.string.averia_medidor_metros, metros))
+        }
+        val numero = medidor?.medidorNumber?.takeIf { it.isNotBlank() } ?: item.numeroMedidor
+        val medidorLabel = numero?.takeIf { it.isNotBlank() }
+            ?.let { getString(R.string.averia_medidor_actual_label, it) }
+            ?: getString(R.string.averia_medidor_sin_datos)
+        b.tvMedidorActual.text = medidorLabel
+        b.tvMedidorResumen.apply {
+            text = detalleParts.joinToString(" • ")
+            isVisible = text.isNotBlank()
+        }
+        b.tvMedidorDetalle.apply {
+            text = detalleParts.joinToString(" • ")
+            isVisible = esCliente && detalleParts.isNotEmpty()
+        }
+    }
+
+    private fun configureButtons(initialEstado: Estado) {
+        val usuarioUid = vm.usuarioActual.value?.uid
+        val puedeGestionar = item.tecnicoUid.isNullOrBlank() || item.tecnicoUid == usuarioUid
+
+        b.btnAsignar.apply {
+            when (initialEstado) {
+                Estado.PENDIENTE -> {
+                    text = getString(R.string.averia_asignar)
+                    isVisible = true
+                    isEnabled = usuarioUid != null
+                    setOnClickListener {
+                        vm.onToggleAsignacion(item)
+                        dismissAllowingStateLoss()
+                    }
+                }
+                Estado.ASIGNADA -> {
+                    text = getString(R.string.averia_eliminar_asignacion)
+                    isVisible = true
+                    isEnabled = puedeGestionar
+                    setOnClickListener {
+                        if (!puedeGestionar) return@setOnClickListener
+                        vm.onToggleAsignacion(item)
+                        dismissAllowingStateLoss()
+                    }
+                }
+                else -> {
+                    isVisible = false
+                }
+            }
         }
 
         b.btnAtender.isVisible = false
         b.btnResolver.isVisible = false
+        b.btnExportar.isVisible = false
 
-        when (estado) {
+        when (initialEstado) {
             Estado.ASIGNADA -> {
-                b.btnAtender.isVisible = true
-                b.btnAtender.text = getString(R.string.averia_guardar_en_atencion)
-                b.btnAtender.isEnabled = puedeGestionar
-                b.btnAtender.setOnClickListener {
-                    if (!puedeGestionar) return@setOnClickListener
-                    val data = collectFormData() ?: return@setOnClickListener
-                    if (data.causa.isBlank()) {
-                        b.tilCausa.error = getString(R.string.averia_error_causa_requerida)
-                        return@setOnClickListener
+                b.btnAtender.apply {
+                    isVisible = true
+                    text = getString(R.string.averia_guardar_en_atencion)
+                    isEnabled = puedeGestionar
+                    setOnClickListener {
+                        if (!puedeGestionar) return@setOnClickListener
+                        val data = collectFormData() ?: return@setOnClickListener
+                        if (data.causa.isBlank()) {
+                            b.tilCausa.error = getString(R.string.averia_error_causa_requerida)
+                            return@setOnClickListener
+                        }
+                        vm.onAtender(item, data)
+                        dismissAllowingStateLoss()
                     }
-                    vm.onAtender(item, data)
-                    dismissAllowingStateLoss()
                 }
             }
             Estado.EN_ATENCION -> {
-                b.btnAtender.isVisible = true
-                b.btnAtender.text = getString(R.string.averia_cancelar_atencion)
-                b.btnAtender.isEnabled = puedeGestionar
-                b.btnAtender.setOnClickListener {
-                    if (!puedeGestionar) return@setOnClickListener
-                    vm.onCancelarAtencion(item)
-                    dismissAllowingStateLoss()
+                b.btnAtender.apply {
+                    isVisible = true
+                    text = getString(R.string.averia_cancelar_atencion)
+                    isEnabled = puedeGestionar
+                    setOnClickListener {
+                        if (!puedeGestionar) return@setOnClickListener
+                        vm.onCancelarAtencion(item)
+                        dismissAllowingStateLoss()
+                    }
                 }
-                b.btnResolver.isVisible = true
-                b.btnResolver.isEnabled = puedeGestionar
-                b.btnResolver.setOnClickListener {
-                    if (!puedeGestionar) return@setOnClickListener
-                    val data = collectFormData() ?: return@setOnClickListener
-                    if (data.causa.isBlank()) {
-                        b.tilCausa.error = getString(R.string.averia_error_causa_requerida)
-                        return@setOnClickListener
+                b.btnResolver.apply {
+                    isVisible = true
+                    isEnabled = puedeGestionar
+                    text = getString(R.string.averia_guardar_resolucion)
+                    setOnClickListener {
+                        if (!puedeGestionar) return@setOnClickListener
+                        val data = collectFormData() ?: return@setOnClickListener
+                        if (data.causa.isBlank()) {
+                            b.tilCausa.error = getString(R.string.averia_error_causa_requerida)
+                            return@setOnClickListener
+                        }
+                        if (data.materiales.isEmpty()) {
+                            materialesModificados = true
+                            renderMateriales()
+                        }
+                        vm.onResolver(item, data)
+                        dismissAllowingStateLoss()
                     }
-                    if (data.materiales.isEmpty()) {
-                        materialesModificados = true
-                        renderMateriales()
-                    }
-                    vm.onResolver(item, data)
-                    dismissAllowingStateLoss()
                 }
             }
             Estado.RESUELTA -> {
-                b.btnAsignar.isEnabled = false
+                b.btnExportar.apply {
+                    isVisible = true
+                    setOnClickListener {
+                        viewLifecycleOwner.lifecycleScope.launch {
+                            PdfGenerator.exportAveria(requireContext(), item)
+                        }
+                    }
+                }
             }
             else -> Unit
         }
@@ -636,6 +889,21 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
 
         val materiales = materialesSeleccionados.values.filter { it.cantidad > 0 }
         val tecnicos = tecnicosSeleccionados.values.toList()
+        val tipo = tipoSeleccionado
+        val numeroMedidor = if (tipo == TipoAfectacion.CLIENTE) {
+            val input = b.etMedidor.text?.toString()?.trim()
+            when {
+                !input.isNullOrBlank() -> input
+                medidorSeleccionado?.medidorNumber?.isNotBlank() == true -> medidorSeleccionado!!.medidorNumber.trim()
+                else -> null
+            }
+        } else null
+        val medidorCalle = if (tipo == TipoAfectacion.CLIENTE) medidorSeleccionado?.calle?.trim() else null
+        val medidorPueblo = if (tipo == TipoAfectacion.CLIENTE) medidorSeleccionado?.pueblo?.trim() else null
+        val medidorMetros = if (tipo == TipoAfectacion.CLIENTE) medidorSeleccionado?.metros?.trim() else null
+        val medidorPoste = if (tipo == TipoAfectacion.CLIENTE) medidorSeleccionado?.poste?.trim() else null
+        val localizacionTexto = b.etLocalizacion.text?.toString()?.trim()?.takeIf { it.isNotBlank() }
+        val cliente = clienteSeleccionado ?: item.cliente
 
         return AveriaActionData(
             causa = causa,
@@ -648,13 +916,20 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
             horaFinalMillis = null,
             kilometrajeInicio = b.etKmInicio.text.toString().toDoubleOrNull(),
             kilometrajeFinal = b.etKmFinal.text.toString().toDoubleOrNull(),
-            cliente = item.cliente,
-            localizacion = b.etLocalizacion.text?.toString()?.trim(),
-            tecnicos = tecnicos
+            cliente = cliente,
+            localizacion = localizacionTexto,
+            tecnicos = tecnicos,
+            tipoAfectacion = tipo,
+            numeroMedidor = numeroMedidor,
+            medidorCalle = medidorCalle,
+            medidorPueblo = medidorPueblo,
+            medidorMetros = medidorMetros,
+            medidorPoste = medidorPoste
         )
     }
 
     override fun onDestroyView() {
+        vm.resetMedidorEstado()
         _b = null
         super.onDestroyView()
     }
