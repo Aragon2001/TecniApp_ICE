@@ -25,11 +25,13 @@ class Paso3Fragment : Fragment() {
     private lateinit var viewModel: RegistroViewModel
     private lateinit var etFirstName: TextInputEditText
     private lateinit var etLastName: TextInputEditText
+    private lateinit var etLastName2: TextInputEditText
     private lateinit var etID: TextInputEditText
     private lateinit var btnContinueToStep4: MaterialButton
 
     private lateinit var tvFirstNameError: TextView
     private lateinit var tvLastNameError: TextView
+    private lateinit var tvLastNameError2: TextView
     private lateinit var tvIDError: TextView
 
     // RTDB users (mismo host que Paso1/2/4)
@@ -74,14 +76,19 @@ class Paso3Fragment : Fragment() {
 
         val firstName = etFirstName.text?.toString()?.trim().orEmpty()
         val lastName  = etLastName.text?.toString()?.trim().orEmpty()
+        val lastName2  = etLastName2.text?.toString()?.trim().orEmpty()
         val cedulaRaw = etID.text?.toString()?.trim().orEmpty()
         val cedKey    = cedulaKey(cedulaRaw)
 
         // Validación local
         if (firstName.isBlank()) return showFieldError(tvFirstNameError, "Por favor, ingresa tu nombre.")
         if (!isValidName(firstName)) return showFieldError(tvFirstNameError, "El nombre solo debe contener letras.")
-        if (lastName.isBlank()) return showFieldError(tvLastNameError, "Por favor, ingresa tu apellido.")
+        if (lastName.isBlank()) return showFieldError(tvLastNameError, "Por favor, ingresa tu primer apellido.")
         if (!isValidName(lastName)) return showFieldError(tvLastNameError, "El apellido solo debe contener letras.")
+
+        if (lastName2.isBlank()) return showFieldError(tvLastNameError2, "Por favor, ingresa tu segundo apellido.")
+        if (!isValidName(lastName2)) return showFieldError(tvLastNameError2, "El apellido solo debe contener letras.")
+
         if (cedKey.isBlank()) return showFieldError(tvIDError, "Por favor, ingresa tu cédula.")
         if (!cedKey.all { it.isDigit() }) return showFieldError(tvIDError, "La cédula debe contener solo números.")
         if (cedKey.length != 9) return showFieldError(tvIDError, "La cédula debe tener exactamente 9 dígitos.")
