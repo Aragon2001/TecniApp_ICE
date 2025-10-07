@@ -121,7 +121,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
             android:layout_marginBottom="4dp"
-            android:text="Apellido"
+            android:text="Primer Apellido"
             android:textColor="@color/ice_blue_dark"
             android:textSize="18sp"
             android:textStyle="bold" />
@@ -131,7 +131,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="@drawable/rounded_bg_f0f2f4"
-            android:hint="Ingresa tu apellido"
+            android:hint="Ingresa tu primer apellido"
             android:padding="12dp"
             android:textColor="@color/dark_gray"
             android:textColorHint="@color/light_gray" />
@@ -139,6 +139,37 @@
         <!-- Mensaje de error para el apellido -->
         <TextView
             android:id="@+id/tvLastNameError"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:textColor="@color/red"
+            android:visibility="gone" />
+
+
+        <!-- Campo para ingresar el apellido 2-->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="4dp"
+            android:text="Segundo Apellido "
+            android:textColor="@color/ice_blue_dark"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etLastName2"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/rounded_bg_f0f2f4"
+            android:hint="Ingresa tu segundo apellido"
+            android:padding="12dp"
+            android:textColor="@color/dark_gray"
+            android:textColorHint="@color/light_gray" />
+
+        <!-- Mensaje de error para el segundo apellido -->
+        <TextView
+            android:id="@+id/tvLastNameError2"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
