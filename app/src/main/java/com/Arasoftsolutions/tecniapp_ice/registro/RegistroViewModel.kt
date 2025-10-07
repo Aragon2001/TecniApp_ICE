@@ -18,11 +18,17 @@ class RegistroViewModel : ViewModel() {
 
     // Datos personales
     private var nombre: String? = null
-    private var apellidos: String? = null
+    private var primerApellido: String? = null
+    private var segundoApellido: String? = null
     private var cedula: String? = null
 
     // Datos adicionales
+    private var region: String? = null
+    private var regionNombre: String? = null
     private var subregion: String? = null
+    private var subregionNombre: String? = null
+    private var agenciaId: String? = null
+    private var agenciaNombre: String? = null
     private var agencia: String? = null
     private var placa: String? = null
 
@@ -47,36 +53,76 @@ class RegistroViewModel : ViewModel() {
     fun getNombre(): String? = nombre
 
     // Apellidos
-    fun setApellidos(apellidos: String) { this.apellidos = apellidos }
-    fun getApellidos(): String? = apellidos
+    fun setApellidos(primer: String, segundo: String) {
+        primerApellido = primer
+        segundoApellido = segundo
+    }
+    fun getPrimerApellido(): String? = primerApellido
+    fun getSegundoApellido(): String? = segundoApellido
+    fun getApellidosCompletos(): String? {
+        val parts = listOfNotNull(primerApellido?.takeIf { it.isNotBlank() }, segundoApellido?.takeIf { it.isNotBlank() })
+        val joined = parts.joinToString(" ").trim()
+        return joined.ifBlank { null }
+    }
 
     // Cédula
     fun setCedula(cedula: String) { this.cedula = cedula }
     fun getCedula(): String? = cedula
 
-    // Subregión
-    fun setSubregion(subregion: String) { this.subregion = subregion }
+    // Región y subregión
+    fun setRegion(id: String, nombre: String) {
+        region = id
+        regionNombre = nombre
+    }
+    fun getRegion(): String? = region
+    fun getRegionNombre(): String? = regionNombre
+
+    fun setSubregion(subregion: String, nombre: String) {
+        this.subregion = subregion
+        this.subregionNombre = nombre
+    }
     fun getSubregion(): String? = subregion
+    fun getSubregionNombre(): String? = subregionNombre
 
     // Agencia
-    fun setAgencia(agencia: String) { this.agencia = agencia }
+    fun setAgencia(id: String?, nombre: String) {
+        agenciaId = id
+        agenciaNombre = nombre
+        agencia = nombre
+    }
     fun getAgencia(): String? = agencia
+    fun getAgenciaId(): String? = agenciaId
+    fun getAgenciaNombre(): String? = agenciaNombre
 
     // Placa del vehículo
     fun setPlaca(placa: String) { this.placa = placa }
     fun getPlaca(): String? = placa
 
     // Datos del técnico (Paso 3)
-    fun setDatosTecnico(firstName: String, lastName: String, cedula: String) {
+    fun setDatosTecnico(firstName: String, lastName: String, secondLastName: String, cedula: String) {
         this.nombre = firstName
-        this.apellidos = lastName
+        this.primerApellido = lastName
+        this.segundoApellido = secondLastName
         this.cedula = cedula
     }
 
     // Datos adicionales (Paso 4)
-    fun setDatosAdicionales(subregion: String, agencia: String, placa: String) {
-        this.subregion = subregion
-        this.agencia = agencia
+    fun setDatosAdicionales(
+        regionId: String,
+        regionNombre: String,
+        subregionId: String,
+        subregionNombre: String,
+        agenciaId: String?,
+        agenciaNombre: String,
+        placa: String
+    ) {
+        this.region = regionId
+        this.regionNombre = regionNombre
+        this.subregion = subregionId
+        this.subregionNombre = subregionNombre
+        this.agenciaId = agenciaId
+        this.agenciaNombre = agenciaNombre
+        this.agencia = agenciaNombre
         this.placa = placa
     }
 }
