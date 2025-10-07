@@ -53,11 +53,13 @@ class Paso3Fragment : Fragment() {
 
         etFirstName = view.findViewById(R.id.etFirstName)
         etLastName  = view.findViewById(R.id.etLastName)
+        etLastName2 = view.findViewById(R.id.etLastName2)
         etID        = view.findViewById(R.id.etID)
         btnContinueToStep4 = view.findViewById(R.id.btnContinueToStep4)
 
         tvFirstNameError = view.findViewById(R.id.tvFirstNameError)
         tvLastNameError  = view.findViewById(R.id.tvLastNameError)
+        tvLastNameError2 = view.findViewById(R.id.tvLastNameError2)
         tvIDError        = view.findViewById(R.id.tvIDError)
 
         btnContinueToStep4.setOnClickListener { onContinue() }
@@ -104,7 +106,7 @@ class Paso3Fragment : Fragment() {
                 }
 
                 // OK → guarda en VM y avanza a Paso 4
-                viewModel.setDatosTecnico(firstName, lastName, cedKey)
+                viewModel.setDatosTecnico(firstName, lastName, lastName2, cedKey)
                 (activity as? RegistroActivity)?.goToNextStep(3)
 
             } catch (_: Throwable) {
@@ -128,6 +130,7 @@ class Paso3Fragment : Fragment() {
     private fun clearErrors() {
         tvFirstNameError.visibility = View.GONE
         tvLastNameError.visibility = View.GONE
+        tvLastNameError2.visibility = View.GONE
         tvIDError.visibility = View.GONE
     }
 

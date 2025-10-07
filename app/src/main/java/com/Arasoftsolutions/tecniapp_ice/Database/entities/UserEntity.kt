@@ -6,6 +6,7 @@ import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.google.firebase.database.IgnoreExtraProperties
+import com.google.firebase.database.PropertyName
 
 @Keep
 @IgnoreExtraProperties
@@ -22,10 +23,20 @@ data class UserEntity(
     var email: String? = null,
     var email_lower: String? = null,
     var nombre: String? = null,
-    var primer_apellidos: String? = null,
-    var segundo_apellidos: String? = null,
+    var apellidos: String? = null,
+    @get:PropertyName("primer_apellido") @set:PropertyName("primer_apellido")
+    var primerApellido: String? = null,
+    @get:PropertyName("segundo_apellido") @set:PropertyName("segundo_apellido")
+    var segundoApellido: String? = null,
     var cedula: String? = null,
+    var region: String? = null,
+    @get:PropertyName("region_nombre") @set:PropertyName("region_nombre")
+    var regionNombre: String? = null,
     var subregion: String? = null,
+    @get:PropertyName("subregion_nombre") @set:PropertyName("subregion_nombre")
+    var subregionNombre: String? = null,
+    @get:PropertyName("agencia_id") @set:PropertyName("agencia_id")
+    var agenciaId: String? = null,
     var agencia: String? = null,
     var placaVehiculo: String? = null,
     var telefono: String? = null,
@@ -37,10 +48,15 @@ data class UserEntity(
         email = null,
         email_lower = null,
         nombre = null,
-        primer_apellidos = null,
-        segundo_apellidos = null,
+        apellidos = null,
+        primerApellido = null,
+        segundoApellido = null,
         cedula = null,
+        region = null,
+        regionNombre = null,
         subregion = null,
+        subregionNombre = null,
+        agenciaId = null,
         agencia = null,
         placaVehiculo = null,
         telefono = null,
@@ -48,4 +64,17 @@ data class UserEntity(
         fotoUrl = null
     )
 }
+
+val UserEntity.apellidosCompletos: String?
+    get() {
+        val partes = listOfNotNull(
+            primerApellido?.takeIf { it.isNotBlank() },
+            segundoApellido?.takeIf { it.isNotBlank() }
+        )
+        val combinados = partes.joinToString(" ").trim()
+        return when {
+            combinados.isNotEmpty() -> combinados
+            else -> apellidos?.takeIf { it.isNotBlank() }
+        }
+    }
 
