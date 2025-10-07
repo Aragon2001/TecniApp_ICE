@@ -138,9 +138,15 @@ class LoginActivity : AppCompatActivity() {
                         "email_lower" to emailLower,
                         "nombre" to "",
                         "apellidos" to "",
+                        "primer_apellido" to "",
+                        "segundo_apellido" to "",
                         "cedula" to "",
+                        "region" to "",
+                        "region_nombre" to "",
                         "subregion" to "",
+                        "subregion_nombre" to "",
                         "agencia" to "",
+                        "agencia_id" to "",
                         "placaVehiculo" to "",
                         "telefono" to "",
                         "password" to ""
@@ -291,10 +297,20 @@ class LoginActivity : AppCompatActivity() {
                     return@addOnSuccessListener
                 }
                 val nombre = snap.child("nombre").getValue(String::class.java).orEmpty()
-                val apellidos = snap.child("apellidos").getValue(String::class.java).orEmpty()
+                val apellido1 = snap.child("primer_apellido").getValue(String::class.java).orEmpty()
+                val apellido2 = snap.child("segundo_apellido").getValue(String::class.java).orEmpty()
+                val apellidos = listOf(apellido1, apellido2)
+                    .filter { it.isNotBlank() }
+                    .joinToString(" ")
+                    .ifBlank { snap.child("apellidos").getValue(String::class.java).orEmpty() }
                 val placa = snap.child("placaVehiculo").getValue(String::class.java).orEmpty()
                 val subR = snap.child("subregion").getValue(String::class.java).orEmpty()
-                Log.d(TAG, "Perfil RTDB -> $nombre $apellidos, placa=$placa, subregion=$subR")
+                val region = snap.child("region").getValue(String::class.java).orEmpty()
+                val agencia = snap.child("agencia").getValue(String::class.java).orEmpty()
+                Log.d(
+                    TAG,
+                    "Perfil RTDB -> $nombre $apellidos, region=$region, agencia=$agencia, placa=$placa, subregion=$subR"
+                )
             }
             .addOnFailureListener { e ->
                 Log.e(TAG, "Error leyendo perfil por UID: ${e.message}", e)

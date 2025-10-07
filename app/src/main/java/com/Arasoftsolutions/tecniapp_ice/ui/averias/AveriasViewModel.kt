@@ -22,6 +22,7 @@ import com.Arasoftsolutions.tecniapp_ice.Database.entities.RegionEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.SubregionesEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.TecnicoEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.UserEntity
+import com.Arasoftsolutions.tecniapp_ice.Database.entities.apellidosCompletos
 import com.Arasoftsolutions.tecniapp_ice.Database.room.AppDatabase
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
 import com.Arasoftsolutions.tecniapp_ice.R
@@ -56,13 +57,21 @@ data class AveriasUiState(val loading: Boolean = false, val items: List<AveriaUI
 @OptIn(FlowPreview::class, kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class AveriasViewModel(app: Application) : AndroidViewModel(app) {
 
-    companion object { private const val TAG = "AveriasVM" }
+    companion object {
+        private const val TAG = "AveriasVM"
+        private const val PREFS_NAME = "app_preferences"
+        private const val PREF_REGION_ID = "averias_pref_region_id"
+        private const val PREF_REGION_NAME = "averias_pref_region_name"
+        private const val PREF_AGENCIA_ID = "averias_pref_agencia_id"
+        private const val PREF_AGENCIA_NAME = "averias_pref_agencia_name"
+    }
 
     private val db = AppDatabase.getInstance(app)
     private val repo = AveriasRepository(db)
     private val roomRepo = RoomRepository.getInstance(app)
     private val auth = FirebaseAuth.getInstance()
     private val notificationManager = NotificationManagerCompat.from(app)
+    private val prefs = app.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
     private val q = MutableStateFlow("")
     private val estado = MutableStateFlow<Estado?>(null)
@@ -92,9 +101,15 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
     val tecnicosDisponibles: StateFlow<List<TecnicoEntity>> = _tecnicos.asStateFlow()
 
     private var syncJob: Job? = null
+    private var cachedRegiones: List<RegionEntity> = emptyList()
     private var cachedSubregiones: List<SubregionesEntity> = emptyList()
     private var cachedAgencias: List<AgenciaEntity> = emptyList()
     private val regionKeywords = MutableStateFlow<Map<String, List<String>>>(emptyMap())
+    private var pendingUser: UserEntity? = null
+    private var pendingRegionId: String? = prefs.getString(PREF_REGION_ID, null)
+    private var pendingRegionName: String? = prefs.getString(PREF_REGION_NAME, null)
+    private var pendingAgencyId: String? = prefs.getString(PREF_AGENCIA_ID, null)
+    private var pendingAgencyName: String? = prefs.getString(PREF_AGENCIA_NAME, null)
 
     private data class FilterConfig(
         val query: String,
@@ -208,15 +223,29 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
         val regiones = _regiones.value
         val selected = regiones.getOrNull(idx) ?: regiones.first()
         _regionSeleccionada.emit(selected)
+        savePreferredRegion(selected)
+
         val nuevasAgencias = buildAgencias(selected.id)
         _agencias.emit(nuevasAgencias)
-        _agenciaSeleccionada.emit(nuevasAgencias.first())
+
+        val agenciaActual = _agenciaSeleccionada.value
+        val agenciaPorDefecto = nuevasAgencias.firstOrNull { opcion ->
+            val actualId = agenciaActual.id?.takeIf { it.isNotBlank() }
+            val actualNombre = agenciaActual.nombreVisible
+            (actualId != null && opcion.id?.equals(actualId, ignoreCase = true) == true) ||
+                    opcion.nombreVisible.equals(actualNombre, ignoreCase = true)
+        } ?: selectPendingAgency(nuevasAgencias)
+        _agenciaSeleccionada.emit(agenciaPorDefecto)
+        savePreferredAgency(agenciaPorDefecto)
+        clearPendingAgencySelection()
     }
 
     fun setAgenciaIndex(idx: Int) = viewModelScope.launch {
         val agencias = _agencias.value
         val selected = agencias.getOrNull(idx) ?: agencias.first()
         _agenciaSeleccionada.emit(selected)
+        savePreferredAgency(selected)
+        clearPendingAgencySelection()
     }
 
     fun nombreTecnicoActual(): String? = _usuario.value?.let { nombreCompleto(it) }
@@ -240,12 +269,17 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private fun matchesAgencia(entity: AveriaEntity, agencia: AgenciaUI): Boolean {
-        val nombre = agencia.id ?: return true
+        if (agencia.id == null) return true
         val haystack = listOfNotNull(entity.nombreAgencia, entity.agencia)
             .joinToString(" ")
             .normalize()
         if (haystack.isBlank()) return false
-        return haystack.contains(nombre.normalize())
+
+        val normalizedName = agencia.nombreVisible.normalize()
+        if (normalizedName.isNotBlank() && haystack.contains(normalizedName)) return true
+
+        val normalizedId = agencia.id.normalize()
+        return normalizedId.isNotBlank() && haystack.contains(normalizedId)
     }
 
     private suspend fun loadUsuarioActual() {
@@ -253,6 +287,14 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
         val local = roomRepo.obtenerUsuario(uid)
         val user = local ?: runCatching { roomRepo.upsertUserFromFirebase(uid) }.getOrNull()
         _usuario.emit(user)
+        if (user != null) {
+            pendingUser = user
+            refreshPendingSelection()
+            val regionItems = _regiones.value
+            if (regionItems.isNotEmpty()) {
+                applyPendingSelectionsIfPossible(regionItems)
+            }
+        }
     }
 
     private suspend fun requireUsuario(): UserEntity? {
@@ -267,7 +309,9 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private fun nombreCompleto(user: UserEntity): String {
-        val nombre = listOfNotNull(user.nombre, user.apellidos).joinToString(" ").trim()
+        val nombre = listOfNotNull(user.nombre, user.apellidosCompletos)
+            .joinToString(" ")
+            .trim()
         return nombre.ifBlank { user.email ?: user.uid }
     }
 
@@ -499,7 +543,7 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
     private fun buildAgencias(regionId: String?): List<AgenciaUI> {
         val filtered = cachedAgencias
             .filter { agency ->
-                if (regionId == null) return@filter true
+                if (regionId.isNullOrBlank()) return@filter true
                 val agencyRegion = agency.regionId
                     ?: cachedSubregiones.firstOrNull { sub ->
                         sub.id.equals(agency.subregion, ignoreCase = true)
@@ -507,8 +551,14 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
                 agencyRegion.equals(regionId, ignoreCase = true)
             }
             .sortedBy { it.nombre }
-            .distinctBy { it.nombre }
-            .map { AgenciaUI(it.nombre, it.nombre) }
+            .distinctBy { agency ->
+                agency.id.takeIf { !it.isNullOrBlank() }?.lowercase(Locale.getDefault())
+                    ?: agency.nombre.lowercase(Locale.getDefault())
+            }
+            .map { agency ->
+                val id = agency.id.takeIf { !it.isNullOrBlank() } ?: agency.nombre
+                AgenciaUI(id, agency.nombre)
+            }
 
         return listOf(AgenciaUI(null, allAgenciesLabel)) + filtered
     }
@@ -516,8 +566,10 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
     private fun observeCatalogos() {
         viewModelScope.launch {
             roomRepo.observarCatalogosGenerales().collectLatest { (regiones, subregiones, agencias) ->
+                cachedRegiones = regiones
                 cachedSubregiones = subregiones
                 cachedAgencias = agencias
+                refreshPendingSelection()
 
                 val regionItems = listOf(RegionUI(null, allRegionsLabel)) +
                     regiones.sortedBy { it.nombre }
@@ -525,20 +577,118 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
                         .map { RegionUI(it.id, it.nombre) }
                 _regiones.emit(regionItems)
 
-                val selectedRegion = regionItems.firstOrNull { it.id == _regionSeleccionada.value.id }
-                    ?: regionItems.first()
-                _regionSeleccionada.emit(selectedRegion)
+                val applied = applyPendingSelectionsIfPossible(regionItems)
+                if (!applied) {
+                    val selectedRegion = regionItems.firstOrNull { it.id == _regionSeleccionada.value.id }
+                        ?: regionItems.first()
+                    _regionSeleccionada.emit(selectedRegion)
 
-                val agenciasItems = buildAgencias(selectedRegion.id)
-                _agencias.emit(agenciasItems)
+                    val agenciasItems = buildAgencias(selectedRegion.id)
+                    _agencias.emit(agenciasItems)
 
-                val selectedAgency = agenciasItems.firstOrNull { it.id == _agenciaSeleccionada.value.id }
-                    ?: agenciasItems.first()
-                _agenciaSeleccionada.emit(selectedAgency)
+                    val selectedAgency = agenciasItems.firstOrNull { it.id == _agenciaSeleccionada.value.id }
+                        ?: agenciasItems.first()
+                    _agenciaSeleccionada.emit(selectedAgency)
+                }
 
                 regionKeywords.value = computeRegionKeywords(regiones, subregiones, agencias)
             }
         }
+    }
+
+    private fun selectPendingAgency(options: List<AgenciaUI>): AgenciaUI {
+        if (options.isEmpty()) return AgenciaUI(null, allAgenciesLabel)
+        val pendingId = pendingAgencyId?.takeIf { it.isNotBlank() }
+            ?: prefs.getString(PREF_AGENCIA_ID, null)?.takeIf { it.isNotBlank() }
+        val pendingName = pendingAgencyName?.takeIf { it.isNotBlank() }
+            ?: prefs.getString(PREF_AGENCIA_NAME, null)?.takeIf { it.isNotBlank() }
+        return options.firstOrNull { agency ->
+            (pendingId != null && agency.id?.equals(pendingId, ignoreCase = true) == true) ||
+                    (pendingName != null && agency.nombreVisible.equals(pendingName, ignoreCase = true))
+        } ?: options.first()
+    }
+
+    private fun savePreferredRegion(region: RegionUI) {
+        prefs.edit().apply {
+            if (region.id.isNullOrBlank()) {
+                remove(PREF_REGION_ID)
+                remove(PREF_REGION_NAME)
+            } else {
+                putString(PREF_REGION_ID, region.id)
+                putString(PREF_REGION_NAME, region.nombreVisible)
+            }
+        }.apply()
+    }
+
+    private fun savePreferredAgency(agency: AgenciaUI) {
+        prefs.edit().apply {
+            if (agency.id.isNullOrBlank()) {
+                remove(PREF_AGENCIA_ID)
+                remove(PREF_AGENCIA_NAME)
+            } else {
+                putString(PREF_AGENCIA_ID, agency.id)
+                putString(PREF_AGENCIA_NAME, agency.nombreVisible)
+            }
+        }.apply()
+    }
+
+    private fun clearPendingAgencySelection() {
+        pendingAgencyId = null
+        pendingAgencyName = null
+    }
+
+    private fun refreshPendingSelection() {
+        pendingUser?.let { user ->
+            val regionIdFromUser = user.region?.takeIf { it.isNotBlank() }
+                ?: user.subregion?.let { subId ->
+                    cachedSubregiones.firstOrNull { it.id.equals(subId, ignoreCase = true) }?.regionId
+                }
+            if (!regionIdFromUser.isNullOrBlank()) {
+                pendingRegionId = regionIdFromUser
+                pendingRegionName = user.regionNombre?.takeIf { it.isNotBlank() }
+                    ?: cachedRegiones.firstOrNull { it.id.equals(regionIdFromUser, ignoreCase = true) }?.nombre
+            } else {
+                val regionNameFromUser = user.regionNombre?.takeIf { it.isNotBlank() }
+                if (!regionNameFromUser.isNullOrBlank()) {
+                    pendingRegionName = regionNameFromUser
+                }
+            }
+
+            val agencyIdFromUser = user.agenciaId?.takeIf { it.isNotBlank() }
+            val agencyNameFromUser = user.agencia?.takeIf { it.isNotBlank() }
+            if (!agencyIdFromUser.isNullOrBlank()) pendingAgencyId = agencyIdFromUser
+            if (!agencyNameFromUser.isNullOrBlank()) pendingAgencyName = agencyNameFromUser
+        }
+    }
+
+    private suspend fun applyPendingSelectionsIfPossible(regionItems: List<RegionUI>): Boolean {
+        val regionId = pendingRegionId?.takeIf { it.isNotBlank() }
+        val regionName = pendingRegionName?.takeIf { it.isNotBlank() }
+        val targetRegion = when {
+            regionId != null -> regionItems.firstOrNull { it.id?.equals(regionId, ignoreCase = true) == true }
+            regionName != null -> regionItems.firstOrNull { it.nombreVisible.equals(regionName, ignoreCase = true) }
+            else -> null
+        } ?: return false
+
+        _regionSeleccionada.emit(targetRegion)
+
+        val agencias = buildAgencias(targetRegion.id)
+        _agencias.emit(agencias)
+
+        val agency = selectPendingAgency(agencias)
+        _agenciaSeleccionada.emit(agency)
+
+        savePreferredRegion(targetRegion)
+        savePreferredAgency(agency)
+        clearPendingSelections()
+        return true
+    }
+
+    private fun clearPendingSelections() {
+        pendingRegionId = null
+        pendingRegionName = null
+        pendingAgencyId = null
+        pendingAgencyName = null
     }
 
     private suspend fun syncCatalogosGenerales() {

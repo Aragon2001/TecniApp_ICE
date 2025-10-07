@@ -17,6 +17,7 @@ import androidx.navigation.ui.navigateUp
 import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.UserEntity
+import com.Arasoftsolutions.tecniapp_ice.Database.entities.apellidosCompletos
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
 import com.Arasoftsolutions.tecniapp_ice.databinding.ActivityMainBinding
 import com.Arasoftsolutions.tecniapp_ice.databinding.NavHeaderMainBinding
@@ -97,7 +98,10 @@ class ActivityMain : AppCompatActivity() {
         }
 
         user?.let {
-            Log.d("ActivityMain", "Usuario local: ${it.nombre} ${it.apellidos} - ${it.email}")
+            val nombreLog = listOfNotNull(it.nombre, it.apellidosCompletos)
+                .joinToString(" ")
+                .ifBlank { it.email ?: it.uid }
+            Log.d("ActivityMain", "Usuario local: $nombreLog - ${it.email}")
             updateNavHeader(it)
         } ?: run {
             Log.e("ActivityMain", "No se encontró usuario en la base local.")
@@ -105,7 +109,7 @@ class ActivityMain : AppCompatActivity() {
     }
 
     private fun updateNavHeader(usuario: UserEntity) {
-        val fullName = listOfNotNull(usuario.nombre, usuario.apellidos)
+        val fullName = listOfNotNull(usuario.nombre, usuario.apellidosCompletos)
             .joinToString(" ")
             .trim()
             .ifBlank { getString(R.string.profile_default_name) }
