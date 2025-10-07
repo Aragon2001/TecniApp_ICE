@@ -19,6 +19,7 @@ import com.Arasoftsolutions.tecniapp_ice.Database.entities.AgenciaEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.SubregionesEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.UserEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.VehiculosEntity
+import com.Arasoftsolutions.tecniapp_ice.Database.entities.apellidosCompletos
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
 
 import com.Arasoftsolutions.tecniapp_ice.R
@@ -225,7 +226,7 @@ class UserFragment : Fragment() {
 
     private fun bindUser(user: UserEntity) {
         currentUser = user
-        val fullName = listOfNotNull(user.nombre, user.apellidos)
+        val fullName = listOfNotNull(user.nombre, user.apellidosCompletos)
             .joinToString(" ")
             .trim()
             .ifBlank { getString(R.string.profile_default_name) }
@@ -343,8 +344,11 @@ class UserFragment : Fragment() {
 
         val updatedUser = user.copy(
             telefono = binding.etPhoneNumber.text?.toString()?.trim().takeUnless { it.isNullOrBlank() },
+            region = (selectedSubregion?.regionId ?: user.region).takeUnless { it.isNullOrBlank() },
             subregion = (selectedSubregion?.id ?: user.subregion).takeUnless { it.isNullOrBlank() },
+            subregionNombre = (selectedSubregion?.nombre ?: user.subregionNombre).takeUnless { it.isNullOrBlank() },
             agencia = (selectedAgency?.nombre ?: user.agencia).takeUnless { it.isNullOrBlank() },
+            agenciaId = (selectedAgency?.id ?: user.agenciaId).takeUnless { it.isNullOrBlank() },
             placaVehiculo = (selectedVehicle?.placa?.toString() ?: user.placaVehiculo).takeUnless { it.isNullOrBlank() },
             password = if (newPassword.isNotEmpty()) newPassword else user.password
         )
