@@ -61,5 +61,6 @@
     <color name="transparent">#00000000</color>
 <color name="primary_dark">#1A237E</color>
 <color name="overlay_dark">#80000000</color>
+    <color name="medidor_warning_background">#FFF3E0</color>
 
 </resources>

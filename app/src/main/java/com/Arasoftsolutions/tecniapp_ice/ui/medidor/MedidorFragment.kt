@@ -10,6 +10,7 @@ import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
+import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
@@ -54,6 +55,23 @@ class MedidorFragment : Fragment() {
         }
         binding.btnCopiar.setOnClickListener { copiarInformacion() }
         binding.btnCompartir.setOnClickListener { compartirInformacion() }
+        binding.btnMostrarRegistro.setOnClickListener {
+            viewModel.habilitarRegistroManual()
+            binding.tilRegistroNumero.error = null
+            binding.tilRegistroLocalizacion.error = null
+        }
+        binding.btnCancelarRegistro.setOnClickListener {
+            viewModel.cancelarRegistroManual()
+            limpiarFormularioManual()
+        }
+        binding.btnGuardarManual.setOnClickListener { registrarMedidorManual() }
+
+        binding.inputRegistroNumero.doAfterTextChanged {
+            binding.tilRegistroNumero.error = null
+        }
+        binding.inputRegistroLocalizacion.doAfterTextChanged {
+            binding.tilRegistroLocalizacion.error = null
+        }
     }
 
     private fun observarEstado() {
@@ -61,16 +79,56 @@ class MedidorFragment : Fragment() {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.uiState.collect { estado ->
                     binding.progressIndicator.isVisible = estado.isLoading
-                    binding.btnConsultar.isEnabled = !estado.isLoading
+                    binding.btnConsultar.isEnabled = !estado.isLoading && !estado.isRegistering
                     binding.cardResultado.isVisible = estado.medidor != null
                     binding.layoutAcciones.isVisible = estado.medidor != null
+                    binding.cardNoEncontrado.isVisible = estado.notFoundNumero != null && !estado.showManualForm
+                    binding.cardRegistroManual.isVisible = estado.showManualForm
+                    binding.btnGuardarManual.isEnabled = !estado.isRegistering
+                    binding.progressRegistro.isVisible = estado.isRegistering
+                    binding.btnMostrarRegistro.isEnabled = !estado.isRegistering
+                    binding.btnCancelarRegistro.isEnabled = !estado.isRegistering
 
-                    val mensaje = when {
-                        estado.message != null -> estado.message
-                        estado.medidor != null -> getString(R.string.medidor_result_title)
-                        else -> getString(R.string.medidor_estado_listo)
+                    val mensaje = estado.message ?: getString(R.string.medidor_estado_listo)
+                    val infoMessages = setOf(
+                        getString(R.string.medidor_estado_listo),
+                        getString(R.string.medidor_estado_instruccion),
+                        getString(R.string.medidor_estado_cargando_cache)
+                    )
+                    val tituloEstado = when {
+                        estado.isLoading || estado.isRegistering -> getString(R.string.medidor_estado_titulo_preparando)
+                        estado.medidor != null -> getString(R.string.medidor_estado_titulo_exito)
+                        estado.notFoundNumero != null -> getString(R.string.medidor_estado_titulo_no_encontrado)
+                        estado.message != null && estado.message !in infoMessages -> getString(R.string.medidor_estado_titulo_error)
+                        else -> getString(R.string.medidor_estado_titulo_listo)
                     }
-                    binding.textStatus.text = mensaje
+                    binding.textEstadoTitle.text = tituloEstado
+                    binding.textEstadoMessage.text = mensaje
+
+                    val chipTexto = if (estado.isReady) {
+                        estado.subregionNombre?.let {
+                            getString(R.string.medidor_estado_chip_listo, it)
+                        } ?: getString(R.string.medidor_estado_chip_listo_generico)
+                    } else {
+                        getString(R.string.medidor_estado_chip_preparando)
+                    }
+                    binding.chipEstado.text = chipTexto
+
+                    estado.notFoundNumero?.let { numero ->
+                        binding.textNoEncontradoDescription.text = getString(
+                            R.string.medidor_no_encontrado_descripcion,
+                            numero
+                        )
+                        if (estado.showManualForm && binding.inputRegistroNumero.text.isNullOrBlank()) {
+                            binding.inputRegistroNumero.setText(numero)
+                            binding.inputRegistroNumero.setSelection(numero.length)
+                        }
+                    } ?: run {
+                        binding.textNoEncontradoDescription.text = getString(R.string.medidor_no_encontrado_descripcion_vacia)
+                        if (!estado.showManualForm) {
+                            limpiarFormularioManual()
+                        }
+                    }
 
                     estado.medidor?.let { medidor ->
                         binding.valueNumero.text = medidor.medidorNumber.ifBlank {
@@ -88,9 +146,11 @@ class MedidorFragment : Fragment() {
                         binding.valueMetros.text = medidor.metros.orEmpty().ifBlank {
                             getString(R.string.profile_summary_placeholder)
                         }
-                        binding.valueSubregion.text = medidor.subregion.orEmpty().ifBlank {
-                            getString(R.string.profile_summary_placeholder)
-                        }
+                        val subregionDisplay = estado.subregionNombre
+                            ?: medidor.subregion.orEmpty().ifBlank {
+                                getString(R.string.profile_summary_placeholder)
+                            }
+                        binding.valueSubregionHeader.text = subregionDisplay
                         binding.valueLocalizacion.text = medidor.localizacion?.toString()
                             ?: getString(R.string.profile_summary_placeholder)
 
@@ -113,8 +173,8 @@ class MedidorFragment : Fragment() {
         binding.valuePoste.text = ""
         binding.valueMetros.text = ""
         binding.valuePueblo.text = ""
-        binding.valueSubregion.text = ""
         binding.valueLocalizacion.text = ""
+        binding.valueSubregionHeader.text = ""
     }
 
     private fun consultarMedidor() {
@@ -135,7 +195,7 @@ class MedidorFragment : Fragment() {
             appendLine("${getString(R.string.medidor_poste_label)}: ${binding.valuePoste.text}")
             appendLine("${getString(R.string.medidor_metros_label)}: ${binding.valueMetros.text}")
             appendLine("${getString(R.string.medidor_pueblo_label)}: ${binding.valuePueblo.text}")
-            appendLine("${getString(R.string.medidor_subregion_label)}: ${binding.valueSubregion.text}")
+            appendLine("${getString(R.string.medidor_subregion_label)}: ${binding.valueSubregionHeader.text}")
             append("${getString(R.string.medidor_localizacion_label)}: ${binding.valueLocalizacion.text}")
         }
 
@@ -152,7 +212,7 @@ class MedidorFragment : Fragment() {
             appendLine("${getString(R.string.medidor_poste_label)}: ${binding.valuePoste.text}")
             appendLine("${getString(R.string.medidor_metros_label)}: ${binding.valueMetros.text}")
             appendLine("${getString(R.string.medidor_pueblo_label)}: ${binding.valuePueblo.text}")
-            appendLine("${getString(R.string.medidor_subregion_label)}: ${binding.valueSubregion.text}")
+            appendLine("${getString(R.string.medidor_subregion_label)}: ${binding.valueSubregionHeader.text}")
             append("${getString(R.string.medidor_localizacion_label)}: ${binding.valueLocalizacion.text}")
         }
 
@@ -161,6 +221,50 @@ class MedidorFragment : Fragment() {
             putExtra(Intent.EXTRA_TEXT, info)
         }
         startActivity(Intent.createChooser(shareIntent, getString(R.string.medidor_compartir)))
+    }
+
+    private fun registrarMedidorManual() {
+        val numero = binding.inputRegistroNumero.text?.toString().orEmpty().trim()
+        if (numero.isEmpty()) {
+            binding.tilRegistroNumero.error = getString(R.string.medidor_registro_requerido_numero)
+            return
+        }
+
+        val cliente = binding.inputRegistroCliente.text?.toString()?.trim().takeIf { !it.isNullOrEmpty() }
+        val calle = binding.inputRegistroCalle.text?.toString()?.trim().takeIf { !it.isNullOrEmpty() }
+        val poste = binding.inputRegistroPoste.text?.toString()?.trim().takeIf { !it.isNullOrEmpty() }
+        val metros = binding.inputRegistroMetros.text?.toString()?.trim().takeIf { !it.isNullOrEmpty() }
+        val pueblo = binding.inputRegistroPueblo.text?.toString()?.trim().takeIf { !it.isNullOrEmpty() }
+
+        val localizacionTexto = binding.inputRegistroLocalizacion.text?.toString()?.trim()
+        val localizacion = localizacionTexto?.takeIf { it.isNotEmpty() }?.toLongOrNull()
+        if (localizacionTexto?.isNotEmpty() == true && localizacion == null) {
+            binding.tilRegistroLocalizacion.error = getString(R.string.medidor_registro_localizacion_error)
+            return
+        }
+        binding.tilRegistroLocalizacion.error = null
+
+        viewModel.registrarMedidorManual(
+            numero = numero,
+            cliente = cliente,
+            localizacion = localizacion,
+            calle = calle,
+            poste = poste,
+            metros = metros,
+            pueblo = pueblo
+        )
+    }
+
+    private fun limpiarFormularioManual() {
+        binding.tilRegistroNumero.error = null
+        binding.tilRegistroLocalizacion.error = null
+        binding.inputRegistroNumero.setText("")
+        binding.inputRegistroCliente.setText("")
+        binding.inputRegistroLocalizacion.setText("")
+        binding.inputRegistroCalle.setText("")
+        binding.inputRegistroPoste.setText("")
+        binding.inputRegistroMetros.setText("")
+        binding.inputRegistroPueblo.setText("")
     }
 
     override fun onDestroyView() {

@@ -7,6 +7,7 @@ import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 import kotlinx.coroutines.tasks.await
 import com.google.firebase.database.DataSnapshot
+import java.text.Normalizer
 import java.util.Locale
 
 /**
@@ -43,6 +44,8 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
     private val dbMaterialesIce: DatabaseReference by lazy {
         database("https://tecniapp-ice-materiales.firebaseio.com/")
     }
+
+    private val subregionNombreCache = mutableMapOf<String, String>()
 
     private fun database(url: String): DatabaseReference {
         return runCatching { FirebaseDatabase.getInstance(url).reference }
@@ -220,70 +223,254 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
     }
 
     // --- MEDIDORES (Sync completa) ---
-    suspend fun obtenerMedidores(subregion: String): List<MedidorEntity> {
-        val ruta = "Medidores/Medidores/SubRegion"
-        val snap = dbMedidores.child(ruta).get().await()
+    suspend fun obtenerMedidores(subregionId: String, subregionNombre: String? = null): List<MedidorEntity> {
+        val storageKey = subregionId.takeIf { it.isNotBlank() }?.trim()
+            ?: subregionNombre?.takeIf { it.isNotBlank() }?.trim()
+            ?: return emptyList()
 
-        val list = mutableListOf<MedidorEntity>()
+        val lookupNombre = subregionNombre?.takeIf { it.isNotBlank() }
+            ?: nombreSubregionDesdeCatalogo(subregionId)
 
-        for (grupo in snap.children) {
-            for (medidor in grupo.children) {
-                try {
-                    val entity = medidor.getValue(MedidorEntity::class.java)
-                    if (entity != null) {
-                        val cleaned = entity.copy(
-                            medidorNumber = entity.medidorNumber.trim(),
-                            calle = entity.calle?.trim(),
-                            cliente = entity.cliente?.trim(),
-                            metros = entity.metros?.trim(),
-                            poste = entity.poste?.trim(),
-                            pueblo = entity.pueblo?.trim(),
-                            subregion = subregion.trim()
-                        )
-                        if (cleaned.medidorNumber.isNotBlank()) {
-                            list.add(cleaned)
-                        }
-                    }
-                } catch (e: Exception) {
-                    Log.e("SYNC", "🛑 Error MedidorEntity: ${e.message}")
-                    Log.e("SYNC", "⛔ Data: ${medidor.value}")
-                }
-            }
+        val referencia = obtenerReferenciaSubregion(storageKey, lookupNombre, createIfMissing = false)
+            ?: return emptyList()
+
+        val snapshot = referencia.get().await()
+        if (!snapshot.exists()) return emptyList()
+
+        val result = mutableListOf<MedidorEntity>()
+        snapshot.children.forEach { child ->
+            result += extraerMedidores(child, storageKey)
         }
-
-        return list
+        return result.distinctBy { it.medidorNumber }
     }
 
     // --- MEDIDOR (Búsqueda puntual de uno solo) ---
-    suspend fun buscarMedidorEnFirebase(subregion: String, medidorNumber: String): MedidorEntity? {
-        val ruta = "Medidores/Medidores/SubRegion" $
-        val snap = dbMedidores.child(ruta).get().await()
+    suspend fun buscarMedidorEnFirebase(
+        subregionId: String,
+        subregionNombre: String?,
+        medidorNumber: String
+    ): MedidorEntity? {
+        val storageKey = subregionId.takeIf { it.isNotBlank() }?.trim()
+            ?: subregionNombre?.takeIf { it.isNotBlank() }?.trim()
+            ?: return null
+        val numeroBuscado = medidorNumber.trim()
+        if (numeroBuscado.isEmpty()) return null
 
-        for (grupo in snap.children) {
-            val directo = grupo.child(medidorNumber)
-            val candidato = when {
-                directo.exists() -> directo
-                else -> grupo.children.firstOrNull { it.key?.trim() == medidorNumber }
-            } ?: continue
+        val lookupNombre = subregionNombre?.takeIf { it.isNotBlank() }
+            ?: nombreSubregionDesdeCatalogo(subregionId)
 
-            return try {
-                val entity = candidato.getValue(MedidorEntity::class.java) ?: continue
-                entity.copy(
-                    medidorNumber = entity.medidorNumber.ifBlank { medidorNumber }.trim(),
-                    calle = entity.calle?.trim(),
-                    cliente = entity.cliente?.trim(),
-                    metros = entity.metros?.trim(),
-                    poste = entity.poste?.trim(),
-                    pueblo = entity.pueblo?.trim(),
-                    subregion = subregion.trim()
-                )
-            } catch (e: Exception) {
-                Log.e("SYNC", "🛑 Error MedidorEntity único: ${e.message}")
-                null
+        val referencia = obtenerReferenciaSubregion(storageKey, lookupNombre, createIfMissing = false)
+            ?: return null
+
+        val directo = referencia.child(numeroBuscado).get().await()
+        if (directo.exists()) {
+            parseMedidorSnapshot(directo, storageKey, numeroBuscado)?.let { return it }
+        }
+
+        val snapshot = referencia.get().await()
+        return buscarMedidorEnNodo(snapshot, storageKey, numeroBuscado)
+    }
+
+    suspend fun registrarMedidorManual(
+        subregionId: String,
+        subregionNombre: String?,
+        medidor: MedidorEntity
+    ) {
+        val storageKey = subregionId.takeIf { it.isNotBlank() }?.trim()
+            ?: subregionNombre?.takeIf { it.isNotBlank() }?.trim()
+            ?: throw IllegalArgumentException("Subregión inválida para registrar medidor")
+        val numero = medidor.medidorNumber.trim()
+        require(numero.isNotEmpty()) { "Número de medidor vacío" }
+
+        val lookupNombre = subregionNombre?.takeIf { it.isNotBlank() }
+            ?: nombreSubregionDesdeCatalogo(subregionId)
+
+        val referencia = obtenerReferenciaSubregion(storageKey, lookupNombre, createIfMissing = true)
+            ?: throw IllegalStateException("No se pudo resolver el nodo de la subregión para medidores")
+
+        val payload = mutableMapOf<String, Any?>()
+        payload["medidorNumber"] = numero
+        medidor.cliente?.takeIf { it.isNotBlank() }?.let { payload["cliente"] = it }
+        medidor.calle?.takeIf { it.isNotBlank() }?.let { payload["calle"] = it }
+        medidor.poste?.takeIf { it.isNotBlank() }?.let { payload["poste"] = it }
+        medidor.metros?.takeIf { it.isNotBlank() }?.let { payload["metros"] = it }
+        medidor.pueblo?.takeIf { it.isNotBlank() }?.let { payload["pueblo"] = it }
+        medidor.localizacion?.let { payload["localizacion"] = it }
+        payload["subregion"] = storageKey
+
+        referencia.child(numero).setValue(payload).await()
+    }
+
+    private suspend fun nombreSubregionDesdeCatalogo(subregionId: String): String? {
+        val id = subregionId.trim()
+        if (id.isEmpty()) return null
+        subregionNombreCache[id]?.let { return it }
+        val catalogo = runCatching { obtenerSubregiones() }.getOrElse { emptyList() }
+        catalogo.forEach { subregion ->
+            if (subregion.id.isNotBlank() && subregion.nombre.isNotBlank()) {
+                subregionNombreCache[subregion.id] = subregion.nombre
+            }
+        }
+        return subregionNombreCache[id]
+    }
+
+    private suspend fun obtenerReferenciaSubregion(
+        storageKey: String,
+        lookupNombre: String?,
+        createIfMissing: Boolean
+    ): DatabaseReference? {
+        val candidatos = buildList {
+            add(storageKey)
+            lookupNombre?.takeIf { it.isNotBlank() }?.let { add(it) }
+            nombreSubregionDesdeCatalogo(storageKey)?.let { add(it) }
+        }.mapNotNull { it?.trim()?.takeIf { trimmed -> trimmed.isNotEmpty() } }
+            .distinct()
+
+        if (candidatos.isEmpty()) return null
+
+        val normalizedTargets = candidatos.mapNotNull { normalizarClave(it) }.distinct()
+        val rootCandidates = listOf("Medidores", "medidores")
+        var fallbackRoot: DatabaseReference? = null
+
+        for (rootKey in rootCandidates) {
+            val rootRef = dbMedidores.child(rootKey)
+            val rootSnap = runCatching { rootRef.get().await() }.getOrNull()
+            fallbackRoot = rootRef
+            if (rootSnap == null || !rootSnap.exists()) continue
+            val match = encontrarSubregion(rootSnap, normalizedTargets)
+            if (match != null) return match.ref
+        }
+
+        if (!createIfMissing) return null
+        val rootRef = fallbackRoot ?: dbMedidores.child(rootCandidates.first())
+        val preferred = lookupNombre?.takeIf { it.isNotBlank() }?.trim()
+        val newKey = preferred ?: candidatos.first()
+        return rootRef.child(newKey)
+    }
+
+    private fun encontrarSubregion(
+        snapshot: DataSnapshot,
+        normalizedTargets: List<String>
+    ): DataSnapshot? {
+        if (normalizedTargets.isEmpty()) return null
+        snapshot.children.forEach { child ->
+            val keyNormalized = normalizarClave(child.key)
+            if (keyNormalized != null && normalizedTargets.any { it == keyNormalized }) {
+                return child
             }
         }
 
+        snapshot.children.forEach { child ->
+            val key = child.key ?: return@forEach
+            val shouldDive = key.any { it.isLetter() } && child.childrenCount > 0
+            if (!shouldDive) return@forEach
+            val nested = encontrarSubregion(child, normalizedTargets)
+            if (nested != null) return nested
+        }
         return null
+    }
+
+    private fun extraerMedidores(node: DataSnapshot, storageKey: String): List<MedidorEntity> {
+        val result = mutableListOf<MedidorEntity>()
+        if (esNodoMedidor(node)) {
+            parseMedidorSnapshot(node, storageKey)?.let { result.add(it) }
+        } else {
+            node.children.forEach { child ->
+                result += extraerMedidores(child, storageKey)
+            }
+        }
+        return result
+    }
+
+    private fun esNodoMedidor(node: DataSnapshot): Boolean {
+        if (!node.hasChildren()) return false
+        val keys = node.children.mapNotNull { it.key?.lowercase(Locale.getDefault()) }
+        if (keys.isEmpty()) return false
+        val expected = setOf(
+            "cliente",
+            "calle",
+            "metros",
+            "poste",
+            "pueblo",
+            "localizacion",
+            "localización",
+            "medidornumber"
+        )
+        return keys.any { it in expected }
+    }
+
+    private fun parseMedidorSnapshot(
+        snapshot: DataSnapshot,
+        storageKey: String,
+        fallbackNumero: String? = null
+    ): MedidorEntity? {
+        if (!snapshot.hasChildren()) return null
+        val entity = snapshot.getValue(MedidorEntity::class.java)
+        val numero = (entity?.medidorNumber?.takeIf { it.isNotBlank() }
+            ?: snapshot.key?.takeIf { it.isNotBlank() }
+            ?: fallbackNumero).orEmpty().trim()
+        if (numero.isEmpty()) return null
+
+        val cliente = entity?.cliente?.trim()
+            ?: snapshot.stringChildAny("cliente", "Cliente")
+        val calle = entity?.calle?.trim()
+            ?: snapshot.stringChildAny("calle", "Calle")
+        val metros = entity?.metros?.trim()
+            ?: snapshot.stringChildAny("metros", "Metros")
+        val poste = entity?.poste?.trim()
+            ?: snapshot.stringChildAny("poste", "Poste")
+        val pueblo = entity?.pueblo?.trim()
+            ?: snapshot.stringChildAny("pueblo", "Pueblo")
+        val localizacion = entity?.localizacion
+            ?: snapshot.longChildAny("localizacion", "Localizacion", "Localización")
+            ?: snapshot.stringChildAny("localizacion", "Localizacion", "Localización")?.toLongOrNull()
+
+        val base = entity ?: MedidorEntity()
+        val cleaned = base.copy(
+            medidorNumber = numero,
+            cliente = cliente,
+            calle = calle,
+            metros = metros,
+            poste = poste,
+            pueblo = pueblo,
+            localizacion = localizacion,
+            subregion = storageKey
+        )
+        return cleaned.takeIf { it.medidorNumber.isNotBlank() }
+    }
+
+    private fun buscarMedidorEnNodo(
+        node: DataSnapshot,
+        storageKey: String,
+        numero: String
+    ): MedidorEntity? {
+        if (!node.hasChildren()) return null
+        if (esNodoMedidor(node)) {
+            val candidato = parseMedidorSnapshot(node, storageKey, numero)
+            if (candidato != null && coincideNumero(numero, candidato.medidorNumber)) {
+                return candidato
+            }
+        }
+        node.children.forEach { child ->
+            val encontrado = buscarMedidorEnNodo(child, storageKey, numero)
+            if (encontrado != null) return encontrado
+        }
+        return null
+    }
+
+    private fun coincideNumero(target: String, candidate: String?): Boolean {
+        if (candidate.isNullOrBlank()) return false
+        val esperado = target.trim()
+        val comparado = candidate.trim()
+        if (esperado.equals(comparado, ignoreCase = true)) return true
+        return esperado.trimStart('0') == comparado.trimStart('0')
+    }
+
+    private fun normalizarClave(valor: String?): String? {
+        if (valor.isNullOrBlank()) return null
+        val normalized = Normalizer.normalize(valor, Normalizer.Form.NFD)
+        val sinTildes = DIACRITIC_REGEX.replace(normalized, "")
+        return NON_ALNUM_REGEX.replace(sinTildes.lowercase(Locale.getDefault()), "")
     }
 
     // --- TÉCNICOS ---
@@ -318,8 +505,33 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
         }
     }
 
+    private fun DataSnapshot.stringChildAny(vararg names: String): String? {
+        names.forEach { nombre ->
+            val valor = child(nombre).value?.toString()?.trim()
+            if (!valor.isNullOrEmpty()) return valor
+        }
+        return null
+    }
+
+    private fun DataSnapshot.longChildAny(vararg names: String): Long? {
+        names.forEach { nombre ->
+            val valor = child(nombre).value ?: return@forEach
+            when (valor) {
+                is Long -> return valor
+                is Int -> return valor.toLong()
+                is Double -> return valor.toLong()
+                is Float -> return valor.toLong()
+                else -> valor.toString().toLongOrNull()?.let { return it }
+            }
+        }
+        return null
+    }
+
     private fun DataSnapshot.stringChild(name: String): String? =
         child(name).getValue(String::class.java)?.takeIf { it.isNotBlank() }
 }
+
+private val DIACRITIC_REGEX = Regex("\\p{Mn}+")
+private val NON_ALNUM_REGEX = Regex("[^a-z0-9]+")
 
 private const val TAG = "FirebaseSyncManager"
