@@ -256,7 +256,7 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
 
     // --- MEDIDOR (Búsqueda puntual de uno solo) ---
     suspend fun buscarMedidorEnFirebase(subregion: String, medidorNumber: String): MedidorEntity? {
-        val ruta = "Medidores/Medidores/SubRegion $subregion"
+        val ruta = "Medidores/Medidores/SubRegion" $
         val snap = dbMedidores.child(ruta).get().await()
 
         for (grupo in snap.children) {
