@@ -565,7 +565,7 @@ class UserFragment : Fragment() {
         )
         binding.textSummaryVehicle.text = getString(
             R.string.profile_summary_vehicle,
-            summaryValue(vehicleValue)
+            summaryValue(vehicleValue)a
         )
     }
 
