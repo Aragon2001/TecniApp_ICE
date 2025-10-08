@@ -205,6 +205,7 @@
     <string name="profile_save_error">No se pudo guardar los cambios.%1$s</string>
     <string name="profile_photo_updated">Foto de perfil actualizada</string>
     <string name="profile_photo_update_error">No se pudo actualizar la foto.%1$s</string>
+    <string name="profile_summary_region">Región: %1$s</string>
     <string name="profile_summary_subregion">Subregión: %1$s</string>
     <string name="profile_summary_agency">Agencia: %1$s</string>
     <string name="profile_summary_vehicle">Vehículo: %1$s</string>
