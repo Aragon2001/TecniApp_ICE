@@ -1,0 +1,31 @@
+{
+  "agencias": [
+    {
+      "nombre": "Guácimo",
+      "subregion": "Guápiles"
+    }
+  ],
+  "subregiones": [
+    {
+      "id": 0,
+      "nombre": "Guápiles"
+    }
+  ],
+  "vehiculos": [
+    {
+      "agencia": "Guácimo",
+      "placa": 9559,
+      "tipo": "Grua Pequeña"
+    },
+    {
+      "agencia": "Guácimo",
+      "placa": 7696,
+      "tipo": "Grua Pequeña"
+    },
+    {
+      "agencia": "Guácimo",
+      "placa": 9465,
+      "tipo": "Doble Canasta"
+    }
+  ]
+}
