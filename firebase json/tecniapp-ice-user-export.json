@@ -1,0 +1,20 @@
+{
+  "usuarios": {
+    "702860717": {
+      "agencia": "Guácimo",
+      "apellidos": "Aragón Barboza",
+      "cedula": "702860717",
+      "email": "jaragon@ice.go.cr",
+      "id": 0,
+      "nombre": "Jostin",
+      "password": "",
+      "placaVehiculo": "9559",
+      "subregion": "Guápiles",
+      "telefono": "60407517"
+    }
+  },
+  "verificationCodes": {
+    "fumanaA@ice,go,cr": "866912",
+    "jaragon@ice,go,cr": "623682"
+  }
+}
