@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.AgenciaEntity
+import com.Arasoftsolutions.tecniapp_ice.Database.entities.RegionEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.SubregionesEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.UserEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.VehiculosEntity
@@ -25,6 +26,9 @@ class UserViewModel(private val repository: RoomRepository) : ViewModel() {
 
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
+
+    val regions: StateFlow<List<RegionEntity>> = repository.observarRegiones()
+        .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     val subregions: StateFlow<List<SubregionesEntity>> = repository.observarSubregiones()
         .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
