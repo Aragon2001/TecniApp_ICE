@@ -542,6 +542,9 @@ class UserFragment : Fragment() {
     }
 
     private fun updateSummary() {
+        val binding = _binding ?: return
+        if (!isAdded) return
+
         val user = currentUser
         val regionEntity = selectedRegion
             ?: selectedSubregion?.let { findRegion(it.regionId) }
@@ -550,32 +553,29 @@ class UserFragment : Fragment() {
         val subregionValue = selectedSubregion?.nombre ?: user?.subregionNombre ?: user?.subregion
         val agencyValue = selectedAgency?.nombre ?: user?.agencia
         val vehicleValue = selectedVehicle?.let { formatVehicle(it) } ?: user?.placaVehiculo
+        val placeholder = binding.root.context.getString(R.string.profile_summary_placeholder)
 
-        binding.textSummaryRegion.text = getString(
+        binding.textSummaryRegion.text = binding.root.context.getString(
             R.string.profile_summary_region,
-            summaryValue(regionValue)
+            summaryValue(regionValue, placeholder)
         )
-        binding.textSummarySubregion.text = getString(
+        binding.textSummarySubregion.text = binding.root.context.getString(
             R.string.profile_summary_subregion,
-            summaryValue(subregionValue)
+            summaryValue(subregionValue, placeholder)
         )
-        binding.textSummaryAgency.text = getString(
+        binding.textSummaryAgency.text = binding.root.context.getString(
             R.string.profile_summary_agency,
-            summaryValue(agencyValue)
+            summaryValue(agencyValue, placeholder)
         )
-        binding.textSummaryVehicle.text = getString(
+        binding.textSummaryVehicle.text = binding.root.context.getString(
             R.string.profile_summary_vehicle,
-            summaryValue(vehicleValue)a
+            summaryValue(vehicleValue, placeholder)
         )
     }
 
-    private fun summaryValue(raw: String?): String {
+    private fun summaryValue(raw: String?, placeholder: String): String {
         val value = raw?.trim().orEmpty()
-        return if (value.isEmpty()) {
-            getString(R.string.profile_summary_placeholder)
-        } else {
-            value
-        }
+        return if (value.isEmpty()) placeholder else value
     }
 
     private fun findSubregion(value: String?): SubregionesEntity? {
