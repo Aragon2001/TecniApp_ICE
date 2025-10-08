@@ -9,90 +9,179 @@
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:padding="24dp">
+        android:padding="24dp"
+        android:clipToPadding="false">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:paddingBottom="24dp">
+            android:orientation="vertical">
 
-            <TextView
-                android:id="@+id/textTitle"
-                style="@style/TextAppearance.Material3.TitleLarge"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/menu_medidor"
-                android:textColor="?attr/colorOnBackground" />
-
-            <TextView
-                android:id="@+id/textSubtitle"
-                style="@style/TextAppearance.Material3.BodyMedium"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:text="@string/medidor_estado_instruccion"
-                android:textColor="?attr/colorOutline" />
-
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/layoutMedidor"
-                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardHero"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
-                android:hint="@string/medidor_numero_hint"
-                app:startIconDrawable="@drawable/ic_round_search_24">
+                android:layout_marginBottom="16dp"
+                app:cardBackgroundColor="@android:color/transparent"
+                app:cardCornerRadius="28dp"
+                app:cardElevation="0dp"
+                app:cardUseCompatPadding="false">
 
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/inputMedidor"
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:imeOptions="actionSearch"
-                    android:inputType="number"
-                    android:maxLines="1" />
-            </com.google.android.material.textfield.TextInputLayout>
+                    android:background="@drawable/bg_medidor_header"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="20dp">
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnConsultar"
-                style="@style/Widget.Material3.Button.OutlinedButton"
+                    <ImageView
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:contentDescription="@string/menu_medidor"
+                        android:src="@drawable/ic_menu_medidor"
+                        android:tint="@android:color/white" />
 
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="16dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
 
+                        <TextView
+                            android:id="@+id/textTitle"
+                            style="@style/TextAppearance.Material3.TitleLarge"
+                            android:text="@string/menu_medidor"
+                            android:textColor="@android:color/white" />
+
+                        <TextView
+                            android:id="@+id/textSubtitle"
+                            style="@style/TextAppearance.Material3.BodyMedium"
+                            android:layout_marginTop="4dp"
+                            android:text="@string/medidor_header_subtitle"
+                            android:textColor="@android:color/white" />
+
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/chipEstado"
+                            style="@style/Widget.Material3.Chip.Assist"
+                            android:layout_marginTop="12dp"
+                            android:text="@string/medidor_estado_chip_preparando"
+                            app:chipBackgroundColor="@color/surface_variant_light"
+                            app:chipIcon="@drawable/ic_check"
+                            app:chipIconTint="@color/ice_blue"
+                            app:textColor="?attr/colorOnSurface" />
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardConsulta"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:text="@string/medidor_consultar"
-                app:icon="@drawable/ic_round_search_24"
-                app:iconGravity="textStart"
-                app:iconPadding="8dp" />
+                android:layout_marginBottom="16dp"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="2dp">
 
-            <com.google.android.material.progressindicator.CircularProgressIndicator
-                android:id="@+id/progressIndicator"
-                style="@style/Widget.Material3.CircularProgressIndicator.ExtraSmall"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center_horizontal"
-                android:layout_marginTop="16dp"
-                android:visibility="gone" />
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp">
 
-            <TextView
-                android:id="@+id/textStatus"
-                style="@style/TextAppearance.Material3.BodyMedium"
+                    <TextView
+                        style="@style/TextAppearance.Material3.BodyMedium"
+                        android:text="@string/medidor_consulta_descripcion"
+                        android:textColor="?attr/colorOnSurfaceVariant" />
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/layoutMedidor"
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:hint="@string/medidor_numero_hint"
+                        app:startIconDrawable="@drawable/ic_round_search_24">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/inputMedidor"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:imeOptions="actionSearch"
+                            android:inputType="number"
+                            android:maxLines="1" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnConsultar"
+                        style="@style/Widget.Material3.Button.FilledTonalButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:text="@string/medidor_consultar"
+                        app:icon="@drawable/ic_round_search_24"
+                        app:iconGravity="textStart"
+                        app:iconPadding="8dp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardEstado"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:textColor="?attr/colorOnSurfaceVariant"
-                tools:text="Prepárate para consultar un medidor." />
+                android:layout_marginBottom="16dp"
+                app:cardBackgroundColor="@color/surface_variant_light"
+                app:cardCornerRadius="24dp"
+                app:cardElevation="0dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/textEstadoTitle"
+                            style="@style/TextAppearance.Material3.TitleMedium"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:textColor="?attr/colorOnSurface"
+                            tools:text="Listo para consultar" />
+
+                        <com.google.android.material.progressindicator.CircularProgressIndicator
+                            android:id="@+id/progressIndicator"
+                            style="@style/Widget.Material3.CircularProgressIndicator.ExtraSmall"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:visibility="gone" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/textEstadoMessage"
+                        style="@style/TextAppearance.Material3.BodyMedium"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        tools:text="Consulta medidores incluso sin conexión." />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardResultado"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
+                android:layout_marginBottom="16dp"
                 android:visibility="gone"
-                app:cardCornerRadius="20dp"
-                app:cardElevation="3dp"
-                app:strokeColor="?attr/colorOutline"
-                app:strokeWidth="1dp">
+                app:cardCornerRadius="26dp"
+                app:cardElevation="3dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -102,9 +191,17 @@
 
                     <TextView
                         style="@style/TextAppearance.Material3.TitleMedium"
-                        android:layout_width="match_parent"
+                        android:text="@string/medidor_result_title"
+                        android:textColor="?attr/colorOnSurface" />
+
+                    <TextView
+                        android:id="@+id/valueSubregionHeader"
+                        style="@style/TextAppearance.Material3.LabelMedium"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="@string/medidor_result_title" />
+                        android:layout_marginTop="4dp"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        tools:text="Subregión Guápiles" />
 
                     <com.google.android.material.divider.MaterialDivider
                         android:layout_width="match_parent"
@@ -115,155 +212,24 @@
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:dividerPadding="16dp"
                         android:orientation="vertical"
-                        android:showDividers="middle"
-                        android:dividerPadding="12dp">
+                        android:showDividers="middle">
 
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:orientation="vertical"
-                            android:paddingBottom="8dp">
+                            android:orientation="vertical">
 
                             <TextView
-                                style="@style/TextAppearance.Material3.LabelMedium"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
+                                style="@style/TextAppearance.Material3.LabelSmall"
                                 android:text="@string/medidor_numero_label" />
 
                             <TextView
                                 android:id="@+id/valueNumero"
                                 style="@style/TextAppearance.Material3.BodyLarge"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:textColor="?attr/colorOnBackground"
+                                android:textColor="?attr/colorOnSurface"
                                 tools:text="714" />
-                        </LinearLayout>
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="vertical"
-                            android:paddingBottom="8dp">
-
-                            <TextView
-                                style="@style/TextAppearance.Material3.LabelMedium"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:text="@string/medidor_subregion_label" />
-
-                            <TextView
-                                android:id="@+id/valueSubregion"
-                                style="@style/TextAppearance.Material3.BodyLarge"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:textColor="?attr/colorOnBackground"
-                                tools:text="SJO" />
-                        </LinearLayout>
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="vertical"
-                            android:paddingBottom="8dp">
-
-                            <TextView
-                                style="@style/TextAppearance.Material3.LabelMedium"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:text="@string/medidor_cliente_label" />
-
-                            <TextView
-                                android:id="@+id/valueCliente"
-                                style="@style/TextAppearance.Material3.BodyLarge"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:textColor="?attr/colorOnBackground"
-                                tools:text="GAS NACIONAL ZETA S.A." />
-                        </LinearLayout>
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="vertical"
-                            android:paddingBottom="8dp">
-
-                            <TextView
-                                style="@style/TextAppearance.Material3.LabelMedium"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:text="@string/medidor_calle_label" />
-
-                            <TextView
-                                android:id="@+id/valueCalle"
-                                style="@style/TextAppearance.Material3.BodyLarge"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:textColor="?attr/colorOnBackground"
-                                tools:text="950" />
-                        </LinearLayout>
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="vertical"
-                            android:paddingBottom="8dp">
-
-                            <TextView
-                                style="@style/TextAppearance.Material3.LabelMedium"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:text="@string/medidor_poste_label" />
-
-                            <TextView
-                                android:id="@+id/valuePoste"
-                                style="@style/TextAppearance.Material3.BodyLarge"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:textColor="?attr/colorOnBackground"
-                                tools:text="001" />
-                        </LinearLayout>
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="vertical"
-                            android:paddingBottom="8dp">
-
-                            <TextView
-                                style="@style/TextAppearance.Material3.LabelMedium"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:text="@string/medidor_metros_label" />
-
-                            <TextView
-                                android:id="@+id/valueMetros"
-                                style="@style/TextAppearance.Material3.BodyLarge"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:textColor="?attr/colorOnBackground"
-                                tools:text="14" />
-                        </LinearLayout>
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="vertical"
-                            android:paddingBottom="8dp">
-
-                            <TextView
-                                style="@style/TextAppearance.Material3.LabelMedium"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:text="@string/medidor_pueblo_label" />
-
-                            <TextView
-                                android:id="@+id/valuePueblo"
-                                style="@style/TextAppearance.Material3.BodyLarge"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:textColor="?attr/colorOnBackground"
-                                tools:text="340 - Guápiles" />
                         </LinearLayout>
 
                         <LinearLayout
@@ -272,18 +238,94 @@
                             android:orientation="vertical">
 
                             <TextView
-                                style="@style/TextAppearance.Material3.LabelMedium"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
+                                style="@style/TextAppearance.Material3.LabelSmall"
+                                android:text="@string/medidor_cliente_label" />
+
+                            <TextView
+                                android:id="@+id/valueCliente"
+                                style="@style/TextAppearance.Material3.BodyLarge"
+                                android:textColor="?attr/colorOnSurface"
+                                tools:text="GAS NACIONAL ZETA S.A." />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical">
+
+                            <TextView
+                                style="@style/TextAppearance.Material3.LabelSmall"
                                 android:text="@string/medidor_localizacion_label" />
 
                             <TextView
                                 android:id="@+id/valueLocalizacion"
                                 style="@style/TextAppearance.Material3.BodyLarge"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:textColor="?attr/colorOnBackground"
+                                android:textColor="?attr/colorOnSurface"
                                 tools:text="34095000114" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical">
+
+                            <TextView
+                                style="@style/TextAppearance.Material3.LabelSmall"
+                                android:text="@string/medidor_calle_label" />
+
+                            <TextView
+                                android:id="@+id/valueCalle"
+                                style="@style/TextAppearance.Material3.BodyLarge"
+                                android:textColor="?attr/colorOnSurface"
+                                tools:text="950" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical">
+
+                            <TextView
+                                style="@style/TextAppearance.Material3.LabelSmall"
+                                android:text="@string/medidor_poste_label" />
+
+                            <TextView
+                                android:id="@+id/valuePoste"
+                                style="@style/TextAppearance.Material3.BodyLarge"
+                                android:textColor="?attr/colorOnSurface"
+                                tools:text="001" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical">
+
+                            <TextView
+                                style="@style/TextAppearance.Material3.LabelSmall"
+                                android:text="@string/medidor_metros_label" />
+
+                            <TextView
+                                android:id="@+id/valueMetros"
+                                style="@style/TextAppearance.Material3.BodyLarge"
+                                android:textColor="?attr/colorOnSurface"
+                                tools:text="14" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical">
+
+                            <TextView
+                                style="@style/TextAppearance.Material3.LabelSmall"
+                                android:text="@string/medidor_pueblo_label" />
+
+                            <TextView
+                                android:id="@+id/valuePueblo"
+                                style="@style/TextAppearance.Material3.BodyLarge"
+                                android:textColor="?attr/colorOnSurface"
+                                tools:text="340 - Guápiles" />
                         </LinearLayout>
                     </LinearLayout>
                 </LinearLayout>
@@ -293,14 +335,14 @@
                 android:id="@+id/layoutAcciones"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
+                android:layout_marginBottom="16dp"
                 android:gravity="center"
                 android:orientation="horizontal"
                 android:visibility="gone">
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnCopiar"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    style="@style/Widget.Material3.Button.FilledTonalButton"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
@@ -324,6 +366,219 @@
                     app:iconGravity="textStart"
                     app:iconPadding="8dp" />
             </LinearLayout>
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardNoEncontrado"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:visibility="gone"
+                app:cardBackgroundColor="@color/medidor_warning_background"
+                app:cardCornerRadius="22dp"
+                app:cardElevation="0dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp">
+
+                    <TextView
+                        android:id="@+id/textNoEncontradoTitle"
+                        style="@style/TextAppearance.Material3.TitleMedium"
+                        android:text="@string/medidor_no_encontrado_titulo"
+                        android:textColor="?attr/colorOnSurface" />
+
+                    <TextView
+                        android:id="@+id/textNoEncontradoDescription"
+                        style="@style/TextAppearance.Material3.BodyMedium"
+                        android:layout_marginTop="8dp"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        tools:text="No encontramos el medidor 714. Puedes registrarlo manualmente." />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnMostrarRegistro"
+                        style="@style/Widget.Material3.Button.FilledButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:text="@string/medidor_no_encontrado_accion"
+                        app:icon="@drawable/ic_round_search_24"
+                        app:iconGravity="textStart"
+                        app:iconPadding="8dp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardRegistroManual"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="24dp"
+                android:visibility="gone"
+                app:cardCornerRadius="26dp"
+                app:cardElevation="2dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp">
+
+                    <TextView
+                        android:id="@+id/textRegistroTitulo"
+                        style="@style/TextAppearance.Material3.TitleMedium"
+                        android:text="@string/medidor_registro_manual_titulo"
+                        android:textColor="?attr/colorOnSurface" />
+
+                    <TextView
+                        android:id="@+id/textRegistroDescripcion"
+                        style="@style/TextAppearance.Material3.BodyMedium"
+                        android:layout_marginTop="4dp"
+                        android:text="@string/medidor_registro_manual_subtitulo"
+                        android:textColor="?attr/colorOnSurfaceVariant" />
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tilRegistroNumero"
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:hint="@string/medidor_numero_hint"
+                        app:startIconDrawable="@drawable/ic_round_search_24">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/inputRegistroNumero"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="number"
+                            android:maxLines="1" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tilRegistroCliente"
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:hint="@string/medidor_registro_cliente_hint">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/inputRegistroCliente"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="textCapWords" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tilRegistroLocalizacion"
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:hint="@string/medidor_registro_localizacion_hint">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/inputRegistroLocalizacion"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="number" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tilRegistroCalle"
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:hint="@string/medidor_calle_label">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/inputRegistroCalle"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="textCapCharacters" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tilRegistroPoste"
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:hint="@string/medidor_poste_label">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/inputRegistroPoste"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="textCapCharacters" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tilRegistroMetros"
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:hint="@string/medidor_metros_label">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/inputRegistroMetros"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="text" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tilRegistroPueblo"
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:hint="@string/medidor_pueblo_label">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/inputRegistroPueblo"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="text" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="20dp"
+                        android:gravity="end"
+                        android:orientation="horizontal">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnCancelarRegistro"
+                            style="@style/Widget.Material3.Button.TextButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/medidor_registro_cancelar" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnGuardarManual"
+                            style="@style/Widget.Material3.Button.FilledButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="12dp"
+                            android:text="@string/medidor_registro_guardar"
+                            app:icon="@drawable/ic_check"
+                            app:iconGravity="textStart"
+                            app:iconPadding="8dp" />
+
+                        <com.google.android.material.progressindicator.CircularProgressIndicator
+                            android:id="@+id/progressRegistro"
+                            style="@style/Widget.Material3.CircularProgressIndicator.ExtraSmall"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="12dp"
+                            android:visibility="gone" />
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
     </ScrollView>
 

@@ -288,8 +288,10 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
                     )
                     return@launch
                 }
-                val subregion = user.subregion?.takeIf { it.isNotBlank() }
-                if (subregion.isNullOrBlank()) {
+                val subregionId = user.subregion?.takeIf { it.isNotBlank() }
+                val subregionNombre = user.subregionNombre?.takeIf { it.isNotBlank() }
+                val storageKey = subregionId ?: subregionNombre
+                if (storageKey.isNullOrBlank()) {
                     _medidorEstado.value = MedidorLookupState.Error(
                         getApplication<Application>().getString(R.string.medidor_estado_sin_subregion)
                     )
@@ -297,7 +299,7 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
                 }
                 val medidor = withContext(Dispatchers.IO) {
                     roomRepo.buscarMedidorPorNumero(trimmed)
-                        ?: firebaseSync.buscarMedidorEnFirebase(subregion, trimmed)?.also {
+                        ?: firebaseSync.buscarMedidorEnFirebase(storageKey, subregionNombre, trimmed)?.also {
                             roomRepo.insertarMedidor(it)
                         }
                 }
