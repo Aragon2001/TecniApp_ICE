@@ -273,10 +273,11 @@ class UserFragment : Fragment() {
             .trim()
             .ifBlank { getString(R.string.profile_default_name) }
         binding.textDisplayName.text = fullName
-        binding.textEmail.text = user.email ?: getString(R.string.profile_summary_placeholder)
+        val placeholder = binding.root.context.getString(R.string.profile_summary_placeholder)
+        binding.textEmail.text = user.email ?: placeholder
         binding.textUserId.text = getString(
             R.string.profile_user_id_format,
-            summaryValue(user.cedula)
+            summaryValue(user.cedula, placeholder)
         )
         binding.etPhoneNumber.setText(user.telefono.orEmpty())
 

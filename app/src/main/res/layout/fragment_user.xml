@@ -286,6 +286,57 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
+            <!-- TARJETA DE RESUMEN -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="2dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="20dp">
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:id="@+id/textSummaryRegion"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
+                        android:textColor="@color/dark_gray"
+                        tools:text="Región: —" />
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:id="@+id/textSummarySubregion"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
+                        android:textColor="@color/dark_gray"
+                        tools:text="Subregión: —" />
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:id="@+id/textSummaryAgency"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
+                        android:textColor="@color/dark_gray"
+                        tools:text="Agencia: —" />
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:id="@+id/textSummaryVehicle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
+                        android:textColor="@color/dark_gray"
+                        tools:text="Vehículo: —" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
             <!-- Indicador de guardado -->
             <com.google.android.material.progressindicator.LinearProgressIndicator
                 android:id="@+id/progressSaving"
