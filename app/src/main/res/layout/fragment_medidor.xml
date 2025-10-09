@@ -52,12 +52,14 @@
                         <TextView
                             android:id="@+id/textTitle"
                             style="@style/TextAppearance.Material3.TitleLarge"
+                            android:layout_width="match_parent"
                             android:text="@string/menu_medidor"
                             android:textColor="@android:color/white" />
 
                         <TextView
                             android:id="@+id/textSubtitle"
                             style="@style/TextAppearance.Material3.BodyMedium"
+                            android:layout_width="match_parent"
                             android:layout_marginTop="4dp"
                             android:text="@string/medidor_header_subtitle"
                             android:textColor="@android:color/white" />
@@ -91,6 +93,7 @@
 
                     <TextView
                         style="@style/TextAppearance.Material3.BodyMedium"
+                        android:layout_width="match_parent"
                         android:text="@string/medidor_consulta_descripcion"
                         android:textColor="?attr/colorOnSurfaceVariant" />
 
@@ -191,13 +194,14 @@
 
                     <TextView
                         style="@style/TextAppearance.Material3.TitleMedium"
+                        android:layout_width="match_parent"
                         android:text="@string/medidor_result_title"
                         android:textColor="?attr/colorOnSurface" />
 
                     <TextView
                         android:id="@+id/valueSubregionHeader"
                         style="@style/TextAppearance.Material3.LabelMedium"
-                        android:layout_width="wrap_content"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
                         android:textColor="?attr/colorOnSurfaceVariant"
@@ -223,11 +227,13 @@
 
                             <TextView
                                 style="@style/TextAppearance.Material3.LabelSmall"
+                                android:layout_width="match_parent"
                                 android:text="@string/medidor_numero_label" />
 
                             <TextView
                                 android:id="@+id/valueNumero"
                                 style="@style/TextAppearance.Material3.BodyLarge"
+                                android:layout_width="match_parent"
                                 android:textColor="?attr/colorOnSurface"
                                 tools:text="714" />
                         </LinearLayout>
@@ -239,11 +245,13 @@
 
                             <TextView
                                 style="@style/TextAppearance.Material3.LabelSmall"
+                                android:layout_width="match_parent"
                                 android:text="@string/medidor_cliente_label" />
 
                             <TextView
                                 android:id="@+id/valueCliente"
                                 style="@style/TextAppearance.Material3.BodyLarge"
+                                android:layout_width="match_parent"
                                 android:textColor="?attr/colorOnSurface"
                                 tools:text="GAS NACIONAL ZETA S.A." />
                         </LinearLayout>
@@ -255,11 +263,13 @@
 
                             <TextView
                                 style="@style/TextAppearance.Material3.LabelSmall"
+                                android:layout_width="match_parent"
                                 android:text="@string/medidor_localizacion_label" />
 
                             <TextView
                                 android:id="@+id/valueLocalizacion"
                                 style="@style/TextAppearance.Material3.BodyLarge"
+                                android:layout_width="match_parent"
                                 android:textColor="?attr/colorOnSurface"
                                 tools:text="34095000114" />
                         </LinearLayout>
@@ -271,11 +281,13 @@
 
                             <TextView
                                 style="@style/TextAppearance.Material3.LabelSmall"
+                                android:layout_width="match_parent"
                                 android:text="@string/medidor_calle_label" />
 
                             <TextView
                                 android:id="@+id/valueCalle"
                                 style="@style/TextAppearance.Material3.BodyLarge"
+                                android:layout_width="match_parent"
                                 android:textColor="?attr/colorOnSurface"
                                 tools:text="950" />
                         </LinearLayout>
@@ -287,11 +299,13 @@
 
                             <TextView
                                 style="@style/TextAppearance.Material3.LabelSmall"
+                                android:layout_width="match_parent"
                                 android:text="@string/medidor_poste_label" />
 
                             <TextView
                                 android:id="@+id/valuePoste"
                                 style="@style/TextAppearance.Material3.BodyLarge"
+                                android:layout_width="match_parent"
                                 android:textColor="?attr/colorOnSurface"
                                 tools:text="001" />
                         </LinearLayout>
@@ -303,11 +317,13 @@
 
                             <TextView
                                 style="@style/TextAppearance.Material3.LabelSmall"
+                                android:layout_width="match_parent"
                                 android:text="@string/medidor_metros_label" />
 
                             <TextView
                                 android:id="@+id/valueMetros"
                                 style="@style/TextAppearance.Material3.BodyLarge"
+                                android:layout_width="match_parent"
                                 android:textColor="?attr/colorOnSurface"
                                 tools:text="14" />
                         </LinearLayout>
@@ -319,11 +335,13 @@
 
                             <TextView
                                 style="@style/TextAppearance.Material3.LabelSmall"
+                                android:layout_width="match_parent"
                                 android:text="@string/medidor_pueblo_label" />
 
                             <TextView
                                 android:id="@+id/valuePueblo"
                                 style="@style/TextAppearance.Material3.BodyLarge"
+                                android:layout_width="match_parent"
                                 android:textColor="?attr/colorOnSurface"
                                 tools:text="340 - Guápiles" />
                         </LinearLayout>
@@ -386,12 +404,14 @@
                     <TextView
                         android:id="@+id/textNoEncontradoTitle"
                         style="@style/TextAppearance.Material3.TitleMedium"
+                        android:layout_width="match_parent"
                         android:text="@string/medidor_no_encontrado_titulo"
                         android:textColor="?attr/colorOnSurface" />
 
                     <TextView
                         android:id="@+id/textNoEncontradoDescription"
                         style="@style/TextAppearance.Material3.BodyMedium"
+                        android:layout_width="match_parent"
                         android:layout_marginTop="8dp"
                         android:textColor="?attr/colorOnSurfaceVariant"
                         tools:text="No encontramos el medidor 714. Puedes registrarlo manualmente." />
@@ -427,12 +447,14 @@
                     <TextView
                         android:id="@+id/textRegistroTitulo"
                         style="@style/TextAppearance.Material3.TitleMedium"
+                        android:layout_width="match_parent"
                         android:text="@string/medidor_registro_manual_titulo"
                         android:textColor="?attr/colorOnSurface" />
 
                     <TextView
                         android:id="@+id/textRegistroDescripcion"
                         style="@style/TextAppearance.Material3.BodyMedium"
+                        android:layout_width="match_parent"
                         android:layout_marginTop="4dp"
                         android:text="@string/medidor_registro_manual_subtitulo"
                         android:textColor="?attr/colorOnSurfaceVariant" />

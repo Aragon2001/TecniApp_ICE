@@ -125,6 +125,8 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
     private var pendingRegionName: String? = prefs.getString(PREF_REGION_NAME, null)
     private var pendingAgencyId: String? = prefs.getString(PREF_AGENCIA_ID, null)
     private var pendingAgencyName: String? = prefs.getString(PREF_AGENCIA_NAME, null)
+    private var catalogosSyncAttempted = false
+    private var tecnicosSyncAttempted = false
 
     private data class FilterConfig(
         val query: String,
@@ -231,6 +233,15 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
         }
         viewModelScope.launch {
             roomRepo.observarTecnicos().collectLatest { lista ->
+                if (lista.isEmpty()) {
+                    if (!tecnicosSyncAttempted) {
+                        tecnicosSyncAttempted = true
+                        runCatching { roomRepo.syncTecnicos() }
+                            .onFailure { Log.w(TAG, "No se pudieron sincronizar técnicos", it) }
+                    }
+                } else {
+                    tecnicosSyncAttempted = false
+                }
                 _tecnicos.value = lista
             }
         }
@@ -651,6 +662,18 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
                 cachedSubregiones = subregiones
                 cachedAgencias = agencias
                 refreshPendingSelection()
+
+                if (regiones.isEmpty() && subregiones.isEmpty() && agencias.isEmpty()) {
+                    if (!catalogosSyncAttempted) {
+                        catalogosSyncAttempted = true
+                        syncCatalogosGenerales()
+                    }
+                    _regiones.emit(listOf(RegionUI(null, allRegionsLabel)))
+                    _agencias.emit(listOf(AgenciaUI(null, allAgenciesLabel)))
+                    continue@collectLatest
+                } else {
+                    catalogosSyncAttempted = false
+                }
 
                 val regionItems = listOf(RegionUI(null, allRegionsLabel)) +
                     regiones.sortedBy { it.nombre }
