@@ -165,6 +165,13 @@
     <string name="averia_pdf_table_label_location_text">Localización</string>
     <string name="averia_pdf_table_label_location">Coordenadas</string>
     <string name="averia_pdf_table_label_generated">Generado el</string>
+    <string name="averia_pdf_table_label_affectation">Tipo de afectación</string>
+    <string name="averia_pdf_table_label_zone">Zona / Tag</string>
+    <string name="averia_pdf_table_label_medidor">Medidor</string>
+    <string name="averia_pdf_table_label_street">Calle del medidor</string>
+    <string name="averia_pdf_table_label_town">Pueblo del medidor</string>
+    <string name="averia_pdf_table_label_meters">Metros</string>
+    <string name="averia_pdf_table_label_post">Poste</string>
     <string name="averia_pdf_empty_value">—</string>
     <string name="averia_pdf_kilometers_value">%1$s km → %2$s km</string>
     <string name="averia_pdf_location_value">%1$.5f, %2$.5f</string>
@@ -174,6 +181,7 @@
     <string name="averia_pdf_section_notes">Observaciones registradas</string>
     <string name="averia_pdf_section_materials">Materiales utilizados</string>
     <string name="averia_pdf_section_technicians">Técnicos que atendieron</string>
+    <string name="averia_pdf_section_medidor">Detalle del medidor</string>
     <string name="averia_pdf_material_line">%2$d × %1$s (%3$s)</string>
     <string name="averia_pdf_no_materials">No se registraron materiales.</string>
     <string name="averia_pdf_technician_line">%1$s • Cédula %2$s</string>

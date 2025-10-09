@@ -153,6 +153,16 @@ object PdfGenerator {
             }
             val region = item.region.ifBlank { emptyValue }
             val agency = item.agencia.ifBlank { emptyValue }
+            val affectation = when (item.tipoAfectacion) {
+                TipoAfectacion.CLIENTE -> context.getString(R.string.averia_tipo_cliente)
+                TipoAfectacion.SECTOR -> context.getString(R.string.averia_tipo_sector)
+            }
+            val zoneTag = item.zonaTag.ifBlank { emptyValue }
+            val medidorNumero = item.numeroMedidor?.takeIf { it.isNotBlank() } ?: emptyValue
+            val medidorCalle = item.medidorCalle?.takeIf { it.isNotBlank() } ?: emptyValue
+            val medidorPueblo = item.medidorPueblo?.takeIf { it.isNotBlank() } ?: emptyValue
+            val medidorMetros = item.medidorMetros?.takeIf { it.isNotBlank() } ?: emptyValue
+            val medidorPoste = item.medidorPoste?.takeIf { it.isNotBlank() } ?: emptyValue
 
             val tableData = listOf(
                 context.getString(R.string.averia_pdf_table_label_case) to item.id,
@@ -170,6 +180,13 @@ object PdfGenerator {
                 context.getString(R.string.averia_pdf_table_label_kilometers) to kilometraje,
                 context.getString(R.string.averia_pdf_table_label_region) to region,
                 context.getString(R.string.averia_pdf_table_label_agency) to agency,
+                context.getString(R.string.averia_pdf_table_label_affectation) to affectation,
+                context.getString(R.string.averia_pdf_table_label_zone) to zoneTag,
+                context.getString(R.string.averia_pdf_table_label_medidor) to medidorNumero,
+                context.getString(R.string.averia_pdf_table_label_street) to medidorCalle,
+                context.getString(R.string.averia_pdf_table_label_town) to medidorPueblo,
+                context.getString(R.string.averia_pdf_table_label_meters) to medidorMetros,
+                context.getString(R.string.averia_pdf_table_label_post) to medidorPoste,
                 context.getString(R.string.averia_pdf_table_label_location) to location,
                 context.getString(R.string.averia_pdf_table_label_generated) to reporteGenerado
             )
@@ -344,6 +361,28 @@ object PdfGenerator {
             drawCard(
                 context.getString(R.string.averia_pdf_section_notes),
                 listOf(item.observaciones.ifBlank { emptyValue })
+            )
+            val medidorDetalle = buildList {
+                if (item.numeroMedidor?.isNotBlank() == true) {
+                    add(context.getString(R.string.averia_medidor_label, item.numeroMedidor))
+                }
+                if (item.medidorCalle?.isNotBlank() == true) {
+                    add("${context.getString(R.string.medidor_calle_label)}: ${item.medidorCalle}")
+                }
+                if (item.medidorPueblo?.isNotBlank() == true) {
+                    add("${context.getString(R.string.medidor_pueblo_label)}: ${item.medidorPueblo}")
+                }
+                if (item.medidorMetros?.isNotBlank() == true) {
+                    add("${context.getString(R.string.medidor_metros_label)}: ${item.medidorMetros}")
+                }
+                if (item.medidorPoste?.isNotBlank() == true) {
+                    add("${context.getString(R.string.medidor_poste_label)}: ${item.medidorPoste}")
+                }
+            }
+            drawCard(
+                context.getString(R.string.averia_pdf_section_medidor),
+                medidorDetalle,
+                bullet = true
             )
 
             val materialesLines = when {

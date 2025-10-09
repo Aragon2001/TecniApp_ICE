@@ -44,6 +44,9 @@ class RoomRepository(context: Context) {
     fun observarPueblos(subregionId: String): Flow<List<PueblosEntity>> =
         db.puebloDao().observarPorSubregion(subregionId)
 
+    fun observarTodosLosPueblos(): Flow<List<PueblosEntity>> =
+        db.puebloDao().observarTodos()
+
     fun observarAgencias(subregionId: String): Flow<List<AgenciaEntity>> =
         db.agenciaDao().observarPorSubregion(subregionId)
 
@@ -108,6 +111,9 @@ class RoomRepository(context: Context) {
     ): List<LocalizacionesEntity> =
         db.localizacionDao().obtenerPorPueblo(subregionId, puebloId)
 
+    suspend fun obtenerCallesPorPuebloGlobal(puebloId: Int): List<LocalizacionesEntity> =
+        db.localizacionDao().obtenerPorPuebloGlobal(puebloId)
+
     suspend fun buscarLocalizacion(
         subregionId: String,
         puebloId: Int,
@@ -115,6 +121,22 @@ class RoomRepository(context: Context) {
         direccion: String?
     ): LocalizacionesEntity? {
         val coincidencias = db.localizacionDao().buscarPorCalle(subregionId, puebloId, calleId)
+        return seleccionarLocalizacion(coincidencias, direccion)
+    }
+
+    suspend fun buscarLocalizacionGlobal(
+        puebloId: Int,
+        calleId: Int,
+        direccion: String?
+    ): LocalizacionesEntity? {
+        val coincidencias = db.localizacionDao().buscarPorCalleGlobal(puebloId, calleId)
+        return seleccionarLocalizacion(coincidencias, direccion)
+    }
+
+    private fun seleccionarLocalizacion(
+        coincidencias: List<LocalizacionesEntity>,
+        direccion: String?
+    ): LocalizacionesEntity? {
         if (coincidencias.isEmpty()) return null
 
         val direccionNormalizada = direccion?.trim()?.lowercase()
