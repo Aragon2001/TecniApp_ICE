@@ -24,11 +24,20 @@ interface LocalizacionDao {
     @Query("SELECT * FROM localizaciones WHERE subregion = :subregionId AND pueblo = :puebloId")
     suspend fun obtenerPorPueblo(subregionId: String, puebloId: Int): List<LocalizacionesEntity>
 
+    @Query("SELECT * FROM localizaciones WHERE pueblo = :puebloId")
+    suspend fun obtenerPorPuebloGlobal(puebloId: Int): List<LocalizacionesEntity>
+
     @Query(
         "SELECT * FROM localizaciones WHERE subregion = :subregionId AND pueblo = :puebloId AND calle = :calleId"
     )
     suspend fun buscarPorCalle(
         subregionId: String,
+        puebloId: Int,
+        calleId: Int
+    ): List<LocalizacionesEntity>
+
+    @Query("SELECT * FROM localizaciones WHERE pueblo = :puebloId AND calle = :calleId")
+    suspend fun buscarPorCalleGlobal(
         puebloId: Int,
         calleId: Int
     ): List<LocalizacionesEntity>
