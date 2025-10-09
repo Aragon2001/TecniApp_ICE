@@ -17,6 +17,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -97,8 +98,12 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
     private var isCompassTouched = false    // true cuando la orientación vuelve ~Norte (bearing≈0)
     private var userIsInteracting = false   // true mientras el usuario mueve la cámara
 
-    // Umbral en grados para mover cámara (evita jitter excesivo)
-    private val BEARING_THRESHOLD_DEG = 1.5f
+    // Brújula
+    private val BEARING_THRESHOLD_DEG = 2f
+    private val BEARING_MIN_INTERVAL_MS = 350L
+    private val BEARING_SMOOTHING = 0.18f
+    private var lastCompassBearing: Float? = null
+    private var lastBearingUpdateAt = 0L
 
     // --- Handler para pequeñas demoras (re-activar autorrotación tras gestos, etc.) ---
     private val handler = Handler(Looper.getMainLooper())
@@ -300,15 +305,22 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
         mapaGoogle?.uiSettings?.apply {
             isZoomControlsEnabled = true
             isMyLocationButtonEnabled = true
-            isMapToolbarEnabled = true
+            isMapToolbarEnabled = false
             isZoomGesturesEnabled = true
             isTiltGesturesEnabled = true
             isCompassEnabled = true
             isRotateGesturesEnabled = true
             isScrollGesturesEnabledDuringRotateOrZoom = true
             isScrollGesturesEnabled = true
+            isIndoorLevelPickerEnabled = true
         }
-        mapaGoogle?.isTrafficEnabled = true
+        mapaGoogle?.apply {
+            isTrafficEnabled = true
+            isBuildingsEnabled = true
+            isIndoorEnabled = true
+            setMinZoomPreference(6f)
+            setMaxZoomPreference(21f)
+        }
 
         configurarTipoDeMapa()
         setupCameraListeners()        // mueve/idle centralizado
@@ -333,6 +345,8 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
             if (reason == GoogleMap.OnCameraMoveStartedListener.REASON_GESTURE) {
                 userIsInteracting = true
                 isAutoRotateEnabled = false
+                lastCompassBearing = mapaGoogle?.cameraPosition?.bearing?.let { normalizeBearing(it) }
+                lastBearingUpdateAt = SystemClock.elapsedRealtime()
                 Log.d("Localizacion", "Gesto detectado → autorrotación OFF")
             }
         }
@@ -372,6 +386,8 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
                     }
                 }, 3000)
             }
+
+            lastCompassBearing = normalizeBearing(bearing)
         }
     }
 
@@ -407,6 +423,7 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
     private fun centrarMapaEnCostaRica() {
         val cr = LatLng(9.7489, -83.7534)
         mapaGoogle?.moveCamera(CameraUpdateFactory.newLatLngZoom(cr, 7f))
+        lastCompassBearing = null
     }
 
     private fun actualizarUbicacionMapa(
@@ -447,8 +464,15 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
             }
         }
 
-        // Zoom “de trabajo” para poste
-        map.moveCamera(CameraUpdateFactory.newLatLngZoom(ubicacion, 18f))
+        val cameraPosition = CameraPosition.Builder()
+            .target(ubicacion)
+            .zoom(18f)
+            .bearing(map.cameraPosition.bearing)
+            .tilt(45f)
+            .build()
+        map.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition), 600, null)
+        lastCompassBearing = normalizeBearing(cameraPosition.bearing)
+        lastBearingUpdateAt = SystemClock.elapsedRealtime()
         configurarInfoWindowPersonalizado()
     }
 
@@ -478,6 +502,24 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
         val bmp = BitmapFactory.decodeResource(resources, drawableRes)
         val scaled = Bitmap.createScaledBitmap(bmp, w, h, false)
         return BitmapDescriptorFactory.fromBitmap(scaled)
+    }
+
+    private fun normalizeBearing(raw: Float): Float {
+        var value = raw
+        while (value < 0f) value += 360f
+        while (value >= 360f) value -= 360f
+        return value
+    }
+
+    private fun deltaBearing(from: Float, to: Float): Float {
+        val diff = (to - from + 540f) % 360f - 180f
+        return diff
+    }
+
+    private fun smoothBearing(previous: Float, target: Float): Float {
+        val delta = deltaBearing(previous, target)
+        val adjusted = previous + delta * BEARING_SMOOTHING
+        return normalizeBearing(adjusted)
     }
 
     private fun configurarInfoWindowPersonalizado() {
@@ -563,17 +605,20 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
         val orientation = FloatArray(3)
         SensorManager.getOrientation(rotationMatrix, orientation)
 
-        val bearing = toDegrees(orientation[0].toDouble()).toFloat()
-        val currentBearing = map.cameraPosition.bearing
+        val rawBearing = toDegrees(orientation[0].toDouble()).toFloat()
+        val normalizedBearing = normalizeBearing(rawBearing)
+        val smoothed = lastCompassBearing?.let { smoothBearing(it, normalizedBearing) } ?: normalizedBearing
+        val currentBearing = normalizeBearing(map.cameraPosition.bearing)
+        val delta = deltaBearing(currentBearing, smoothed)
+        val now = SystemClock.elapsedRealtime()
 
-        // Mover solo si el cambio supera el umbral (anti-jitter)
-        if (abs(currentBearing - bearing) > BEARING_THRESHOLD_DEG) {
-            val pos = CameraPosition.Builder()
-                .target(map.cameraPosition.target)
-                .zoom(map.cameraPosition.zoom)
-                .bearing(bearing)
+        if (abs(delta) > BEARING_THRESHOLD_DEG && now - lastBearingUpdateAt > BEARING_MIN_INTERVAL_MS) {
+            lastCompassBearing = smoothed
+            lastBearingUpdateAt = now
+            val pos = CameraPosition.Builder(map.cameraPosition)
+                .bearing(smoothed)
                 .build()
-            map.moveCamera(CameraUpdateFactory.newCameraPosition(pos))
+            map.animateCamera(CameraUpdateFactory.newCameraPosition(pos))
         }
     }
 
