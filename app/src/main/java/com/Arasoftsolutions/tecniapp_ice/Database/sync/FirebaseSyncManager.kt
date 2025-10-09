@@ -188,6 +188,9 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
 
     // --- LOCALIZACIONES / PUEBLOS ---
     suspend fun obtenerLocalizaciones(subregionId: String): List<LocalizacionesEntity> {
+        val subregionKey = subregionId.trim()
+        if (subregionKey.isEmpty()) return emptyList()
+
         val node = if (dbLocal.child("Localizaciones").get().await().exists()) {
             "Localizaciones"
         } else {
@@ -195,31 +198,139 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
         }
 
         val snap = dbLocal.child(node).get().await()
-        return snap.children.mapNotNull { child ->
-            val entity = child.getValue(LocalizacionesEntity::class.java) ?: return@mapNotNull null
-            val normalizedSubregion = entity.subregion?.takeIf { it.isNotBlank() } ?: subregionId
-            entity.copy(
-                direccion = entity.direccion.trim(),
-                subregion = normalizedSubregion.trim()
-            )
-        }.filter { loc ->
-            loc.subregion?.equals(subregionId, ignoreCase = true) == true
+        if (!snap.exists()) return emptyList()
+
+        val catalogName = runCatching { nombreSubregionDesdeCatalogo(subregionKey) }
+            .getOrNull()
+            ?.takeIf { it.isNotBlank() }
+        val normalizedTargets = mutableSetOf<String>().apply {
+            normalizarClave(subregionKey)?.let { add(it) }
+            catalogName?.let { normalizarClave(it)?.let { normalized -> add(normalized) } }
         }
+
+        return snap.children.flatMap { child ->
+            parseLocalizacionNode(child, subregionKey, catalogName, normalizedTargets)
+        }.map { entity ->
+            val direccionLimpia = entity.direccion.trim()
+            val subregionAsignada = subregionKey
+            entity.copy(
+                direccion = direccionLimpia,
+                subregion = subregionAsignada
+            )
+        }.distinctBy { it.id }
     }
 
     suspend fun obtenerPueblos(subregionId: String): List<PueblosEntity> {
+        val subregionKey = subregionId.trim()
+        if (subregionKey.isEmpty()) return emptyList()
+
         val node = if (dbLocal.child("pueblos").get().await().exists()) "pueblos" else "Pueblos"
         val snap = dbLocal.child(node).get().await()
-        return snap.children.mapNotNull { child ->
-            val entity = child.getValue(PueblosEntity::class.java) ?: return@mapNotNull null
-            val normalizedSubregion = entity.subregion.ifBlank { subregionId }
-            entity.copy(
-                nombre = entity.nombre.trim(),
-                subregion = normalizedSubregion.trim()
-            )
-        }.filter { pueblo ->
-            pueblo.subregion.equals(subregionId, ignoreCase = true)
+        if (!snap.exists()) return emptyList()
+
+        val catalogName = runCatching { nombreSubregionDesdeCatalogo(subregionKey) }
+            .getOrNull()
+            ?.takeIf { it.isNotBlank() }
+        val normalizedTargets = mutableSetOf<String>().apply {
+            normalizarClave(subregionKey)?.let { add(it) }
+            catalogName?.let { normalizarClave(it)?.let { normalized -> add(normalized) } }
         }
+
+        return snap.children.mapNotNull { child ->
+            val id = child.key?.trim()?.toIntOrNull()
+                ?: child.intValueAny("id", "Id", "ID")
+                ?: return@mapNotNull null
+            val nombre = child.stringValueAny("nombre", "Nombre", "NOMBRE")?.trim()
+                ?: return@mapNotNull null
+            val remoteSubregion = child.stringValueAny("subregion", "Subregion", "SubRegión", "Subregión")
+                ?.trim()
+
+            val matches = when {
+                remoteSubregion.isNullOrBlank() -> true
+                normalizedTargets.isEmpty() -> true
+                else -> {
+                    val normalizedRemote = normalizarClave(remoteSubregion)
+                    val directMatch = remoteSubregion.equals(subregionKey, ignoreCase = true)
+                    val catalogMatch = catalogName?.let { remoteSubregion.equals(it, ignoreCase = true) } == true
+                    val normalizedMatch = normalizedRemote != null && normalizedRemote in normalizedTargets
+                    directMatch || catalogMatch || normalizedMatch
+                }
+            }
+
+            if (!matches) return@mapNotNull null
+
+            PueblosEntity(
+                id = id,
+                nombre = nombre,
+                subregion = subregionKey
+            )
+        }.distinctBy { it.id }
+    }
+
+    private fun parseLocalizacionNode(
+        node: DataSnapshot,
+        subregionId: String,
+        catalogName: String?,
+        normalizedTargets: Set<String>
+    ): List<LocalizacionesEntity> {
+        if (!node.exists()) return emptyList()
+
+        val calle = node.intValueAny("calle", "Calle", "CALLE")
+        val pueblo = node.intValueAny("pueblo", "Pueblo", "PUEBLO")
+        val direccion = node.stringValueAny("direccion", "Dirección", "Direccion", "DIRECCION", "DIRECCIÓN")
+        val hasLeafData = calle != null || pueblo != null || !direccion.isNullOrBlank()
+
+        if (!hasLeafData && node.childrenCount > 0) {
+            return node.children.flatMap { child ->
+                parseLocalizacionNode(child, subregionId, catalogName, normalizedTargets)
+            }
+        }
+
+        val latitud = node.doubleValueAny("latitud", "Latitud", "LATITUD") ?: 0.0
+        val longitud = node.doubleValueAny("longitud", "Longitud", "LONGITUD") ?: 0.0
+        val delPoste = node.intValueAny("del poste", "del poste ", "Del poste", "DelPoste", "del_poste", "delposte") ?: 0
+        val alPoste = node.intValueAny("al poste", "Al poste", "al_poste", "alposte") ?: 0
+        val remoteSubregion = node.stringValueAny("subregion", "Subregion", "SubRegión", "Subregión")
+            ?.trim()
+
+        val matchesSubregion = when {
+            normalizedTargets.isEmpty() -> true
+            remoteSubregion.isNullOrBlank() -> true
+            else -> {
+                val normalizedRemote = normalizarClave(remoteSubregion)
+                val directMatch = remoteSubregion.equals(subregionId, ignoreCase = true)
+                val catalogMatch = catalogName?.let { remoteSubregion.equals(it, ignoreCase = true) } == true
+                val normalizedMatch = normalizedRemote != null && normalizedRemote in normalizedTargets
+                directMatch || catalogMatch || normalizedMatch
+            }
+        }
+
+        val calleValue = calle ?: 0
+        val puebloValue = pueblo ?: 0
+        val direccionValue = direccion?.trim().orEmpty()
+        val id = node.intValueAny("id", "Id", "ID")
+            ?: node.key?.trim()?.toIntOrNull()
+            ?: generarIdLocalizacion(puebloValue, calleValue, delPoste, direccionValue, node.key)
+
+        if (puebloValue == 0 && calleValue == 0 && direccionValue.isBlank()) {
+            return emptyList()
+        }
+
+        if (!matchesSubregion) return emptyList()
+
+        val entity = LocalizacionesEntity(
+            id = id,
+            calle = calleValue,
+            direccion = direccionValue,
+            latitud = latitud,
+            longitud = longitud,
+            pueblo = puebloValue,
+            alPoste = alPoste,
+            delPoste = delPoste,
+            subregion = subregionId
+        )
+
+        return listOf(entity)
     }
 
     // --- MEDIDORES (Sync completa) ---
@@ -525,6 +636,74 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
             }
         }
         return null
+    }
+
+    private fun DataSnapshot.valueAny(vararg names: String): Any? {
+        names.forEach { nombre ->
+            val direct = child(nombre)
+            if (direct.exists()) return direct.value
+        }
+        val normalizedTargets = names.mapNotNull { normalizarClave(it) }.toSet()
+        if (normalizedTargets.isEmpty()) return null
+        children.forEach { child ->
+            val keyNormalized = normalizarClave(child.key)
+            if (keyNormalized != null && keyNormalized in normalizedTargets) {
+                return child.value
+            }
+        }
+        return null
+    }
+
+    private fun DataSnapshot.intValueAny(vararg names: String): Int? {
+        val value = valueAny(*names) ?: return null
+        return when (value) {
+            is Int -> value
+            is Long -> value.toInt()
+            is Double -> value.toInt()
+            is Float -> value.toInt()
+            is String -> value.trim().takeIf { it.isNotEmpty() }?.toDoubleOrNull()?.toInt()
+            else -> value.toString().toDoubleOrNull()?.toInt()
+        }
+    }
+
+    private fun DataSnapshot.doubleValueAny(vararg names: String): Double? {
+        val value = valueAny(*names) ?: return null
+        return when (value) {
+            is Double -> value
+            is Float -> value.toDouble()
+            is Int -> value.toDouble()
+            is Long -> value.toDouble()
+            is String -> value.trim().replace(",", ".").toDoubleOrNull()
+            else -> value.toString().toDoubleOrNull()
+        }
+    }
+
+    private fun DataSnapshot.stringValueAny(vararg names: String): String? {
+        val value = valueAny(*names) ?: return null
+        return value.toString()
+    }
+
+    private fun generarIdLocalizacion(
+        pueblo: Int,
+        calle: Int,
+        delPoste: Int,
+        direccion: String?,
+        rawKey: String?
+    ): Int {
+        val composite = pueblo * 100_000 + calle * 1_000 + delPoste
+        if (composite != 0) return composite
+        val source = buildString {
+            append(pueblo)
+            append('_')
+            append(calle)
+            append('_')
+            append(delPoste)
+            append('_')
+            append(rawKey.orEmpty())
+            append('_')
+            append(direccion.orEmpty())
+        }
+        return source.hashCode()
     }
 
     private fun DataSnapshot.stringChild(name: String): String? =
