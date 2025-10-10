@@ -9,58 +9,70 @@
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:padding="24dp"
-        android:clipToPadding="false">
+        android:clipToPadding="false"
+        android:padding="24dp">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:showDividers="none">
 
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardHero"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                app:cardBackgroundColor="@color/transparent"
+                android:layout_marginBottom="20dp"
+                app:cardBackgroundColor="@android:color/transparent"
                 app:cardCornerRadius="28dp"
                 app:cardElevation="0dp"
-                app:cardUseCompatPadding="false">
+                app:cardUseCompatPadding="false"
+                app:strokeColor="@android:color/transparent">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:background="@drawable/bg_medidor_header"
                     android:gravity="center_vertical"
+                    android:minHeight="120dp"
                     android:orientation="horizontal"
-                    android:padding="20dp">
+                    android:padding="24dp">
 
-                    <ImageView
-                        android:layout_width="48dp"
-                        android:layout_height="48dp"
-                        android:contentDescription="@string/menu_medidor"
-                        android:src="@drawable/ic_menu_medidor"
-                        app:tint="@color/white" />
+                    <FrameLayout
+                        android:layout_width="64dp"
+                        android:layout_height="64dp"
+                        android:background="@drawable/rounded_bg_f0f2f4"
+                        android:foregroundGravity="center"
+                        android:padding="12dp">
+
+                        <ImageView
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:contentDescription="@string/menu_medidor"
+                            android:scaleType="centerInside"
+                            android:src="@drawable/ic_menu_medidor"
+                            app:tint="@color/ice_blue_dark" />
+                    </FrameLayout>
 
                     <LinearLayout
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="16dp"
+                        android:layout_marginStart="20dp"
                         android:layout_weight="1"
                         android:orientation="vertical">
 
                         <TextView
                             android:id="@+id/textTitle"
-                            style="@style/TextAppearance.Material3.TitleLarge"
+                            style="@style/TextAppearance.Material3.HeadlineSmall"
                             android:layout_width="match_parent"
                             android:text="@string/menu_medidor"
                             android:textColor="@android:color/white" />
 
                         <TextView
                             android:id="@+id/textSubtitle"
-                            style="@style/TextAppearance.Material3.BodyMedium"
+                            style="@style/TextAppearance.Material3.BodyLarge"
                             android:layout_width="match_parent"
-                            android:layout_marginTop="4dp"
+                            android:layout_marginTop="6dp"
                             android:text="@string/medidor_header_subtitle"
                             android:textColor="@android:color/white" />
 
@@ -69,7 +81,7 @@
                             style="@style/Widget.Material3.Chip.Assist"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="12dp"
+                            android:layout_marginTop="14dp"
                             android:text="@string/medidor_estado_chip_preparando"
                             android:textColor="?attr/colorOnPrimaryContainer"
                             app:chipBackgroundColor="@color/surface_variant_light"
@@ -77,8 +89,6 @@
                             app:chipIconTint="?attr/colorPrimary"
                             app:checkedIconVisible="false"
                             app:closeIconVisible="false" />
-
-
                     </LinearLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
@@ -87,19 +97,28 @@
                 android:id="@+id/cardConsulta"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
+                android:layout_marginBottom="20dp"
+                app:cardBackgroundColor="@android:color/transparent"
                 app:cardCornerRadius="24dp"
-                app:cardElevation="2dp">
+                app:cardElevation="0dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:background="@drawable/rounded_bg_f0f2f4"
                     android:orientation="vertical"
-                    android:padding="20dp">
+                    android:padding="24dp">
+
+                    <TextView
+                        style="@style/TextAppearance.Material3.TitleMedium"
+                        android:layout_width="match_parent"
+                        android:text="@string/medidor_consulta_title"
+                        android:textColor="@color/ice_blue_dark" />
 
                     <TextView
                         style="@style/TextAppearance.Material3.BodyMedium"
                         android:layout_width="match_parent"
+                        android:layout_marginTop="4dp"
                         android:text="@string/medidor_consulta_descripcion"
                         android:textColor="?attr/colorOnSurfaceVariant" />
 
@@ -108,7 +127,7 @@
                         style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="16dp"
+                        android:layout_marginTop="20dp"
                         android:hint="@string/medidor_numero_hint"
                         app:startIconDrawable="@drawable/ic_round_search_24">
 
@@ -123,10 +142,10 @@
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnConsultar"
-                        style="@style/Widget.Material3.Button.TonalButton"
+                        style="@style/Widget.Material3.Button"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="16dp"
+                        android:layout_marginTop="20dp"
                         android:text="@string/medidor_consultar"
                         app:icon="@drawable/ic_round_search_24"
                         app:iconGravity="textStart"
@@ -138,16 +157,17 @@
                 android:id="@+id/cardEstado"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                app:cardBackgroundColor="@color/surface_variant_light"
+                android:layout_marginBottom="20dp"
+                app:cardBackgroundColor="@android:color/transparent"
                 app:cardCornerRadius="24dp"
                 app:cardElevation="0dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:background="@drawable/rounded_bg_f0f2f4"
                     android:orientation="vertical"
-                    android:padding="20dp">
+                    android:padding="24dp">
 
                     <LinearLayout
                         android:layout_width="match_parent"
@@ -187,44 +207,44 @@
                 android:id="@+id/cardResultado"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
+                android:layout_marginBottom="20dp"
                 android:visibility="gone"
+                app:cardBackgroundColor="@android:color/transparent"
                 app:cardCornerRadius="26dp"
-                app:cardElevation="3dp">
+                app:cardElevation="0dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:background="@drawable/rounded_bg_f0f2f4"
                     android:orientation="vertical"
-                    android:padding="20dp">
+                    android:padding="24dp">
 
                     <TextView
                         style="@style/TextAppearance.Material3.TitleMedium"
                         android:layout_width="match_parent"
                         android:text="@string/medidor_result_title"
-                        android:textColor="?attr/colorOnSurface" />
+                        android:textColor="@color/ice_blue_dark" />
 
                     <TextView
                         android:id="@+id/valueSubregionHeader"
-                        style="@style/TextAppearance.Material3.LabelMedium"
+                        style="@style/TextAppearance.Material3.BodyMedium"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
+                        android:layout_marginTop="6dp"
                         android:textColor="?attr/colorOnSurfaceVariant"
                         tools:text="Subregión Guápiles" />
 
                     <com.google.android.material.divider.MaterialDivider
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:layout_marginBottom="12dp" />
+                        android:layout_marginTop="16dp"
+                        android:layout_marginBottom="16dp" />
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:dividerPadding="16dp"
-                        android:orientation="vertical"
-                        android:showDividers="middle">
+                        android:orientation="vertical">
 
                         <LinearLayout
                             android:layout_width="match_parent"
@@ -240,6 +260,7 @@
                                 android:id="@+id/valueNumero"
                                 style="@style/TextAppearance.Material3.BodyLarge"
                                 android:layout_width="match_parent"
+                                android:layout_marginTop="2dp"
                                 android:textColor="?attr/colorOnSurface"
                                 tools:text="714" />
                         </LinearLayout>
@@ -247,7 +268,8 @@
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:orientation="vertical">
+                            android:orientation="vertical"
+                            android:paddingTop="12dp">
 
                             <TextView
                                 style="@style/TextAppearance.Material3.LabelSmall"
@@ -258,6 +280,7 @@
                                 android:id="@+id/valueCliente"
                                 style="@style/TextAppearance.Material3.BodyLarge"
                                 android:layout_width="match_parent"
+                                android:layout_marginTop="2dp"
                                 android:textColor="?attr/colorOnSurface"
                                 tools:text="GAS NACIONAL ZETA S.A." />
                         </LinearLayout>
@@ -265,7 +288,8 @@
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:orientation="vertical">
+                            android:orientation="vertical"
+                            android:paddingTop="12dp">
 
                             <TextView
                                 style="@style/TextAppearance.Material3.LabelSmall"
@@ -276,6 +300,7 @@
                                 android:id="@+id/valueLocalizacion"
                                 style="@style/TextAppearance.Material3.BodyLarge"
                                 android:layout_width="match_parent"
+                                android:layout_marginTop="2dp"
                                 android:textColor="?attr/colorOnSurface"
                                 tools:text="34095000114" />
                         </LinearLayout>
@@ -283,7 +308,8 @@
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:orientation="vertical">
+                            android:orientation="vertical"
+                            android:paddingTop="12dp">
 
                             <TextView
                                 style="@style/TextAppearance.Material3.LabelSmall"
@@ -294,6 +320,7 @@
                                 android:id="@+id/valueCalle"
                                 style="@style/TextAppearance.Material3.BodyLarge"
                                 android:layout_width="match_parent"
+                                android:layout_marginTop="2dp"
                                 android:textColor="?attr/colorOnSurface"
                                 tools:text="950" />
                         </LinearLayout>
@@ -301,7 +328,8 @@
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:orientation="vertical">
+                            android:orientation="vertical"
+                            android:paddingTop="12dp">
 
                             <TextView
                                 style="@style/TextAppearance.Material3.LabelSmall"
@@ -312,6 +340,7 @@
                                 android:id="@+id/valuePoste"
                                 style="@style/TextAppearance.Material3.BodyLarge"
                                 android:layout_width="match_parent"
+                                android:layout_marginTop="2dp"
                                 android:textColor="?attr/colorOnSurface"
                                 tools:text="001" />
                         </LinearLayout>
@@ -319,7 +348,8 @@
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:orientation="vertical">
+                            android:orientation="vertical"
+                            android:paddingTop="12dp">
 
                             <TextView
                                 style="@style/TextAppearance.Material3.LabelSmall"
@@ -330,6 +360,7 @@
                                 android:id="@+id/valueMetros"
                                 style="@style/TextAppearance.Material3.BodyLarge"
                                 android:layout_width="match_parent"
+                                android:layout_marginTop="2dp"
                                 android:textColor="?attr/colorOnSurface"
                                 tools:text="14" />
                         </LinearLayout>
@@ -337,7 +368,8 @@
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:orientation="vertical">
+                            android:orientation="vertical"
+                            android:paddingTop="12dp">
 
                             <TextView
                                 style="@style/TextAppearance.Material3.LabelSmall"
@@ -348,20 +380,22 @@
                                 android:id="@+id/valuePueblo"
                                 style="@style/TextAppearance.Material3.BodyLarge"
                                 android:layout_width="match_parent"
+                                android:layout_marginTop="2dp"
                                 android:textColor="?attr/colorOnSurface"
-                                tools:text="340 - Guápiles" />
+                                tools:text="La Argentina" />
                         </LinearLayout>
                     </LinearLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
             <LinearLayout
-                android:id="@+id/layoutAcciones"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
+                android:layout_marginBottom="20dp"
+                android:background="@drawable/rounded_bg_f0f2f4"
                 android:gravity="center"
                 android:orientation="horizontal"
+                android:padding="16dp"
                 android:visibility="gone">
 
                 <com.google.android.material.button.MaterialButton
@@ -395,24 +429,25 @@
                 android:id="@+id/cardNoEncontrado"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
+                android:layout_marginBottom="20dp"
                 android:visibility="gone"
-                app:cardBackgroundColor="@color/medidor_warning_background"
-                app:cardCornerRadius="22dp"
+                app:cardBackgroundColor="@android:color/transparent"
+                app:cardCornerRadius="26dp"
                 app:cardElevation="0dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:background="@drawable/rounded_bg_f0f2f4"
                     android:orientation="vertical"
-                    android:padding="20dp">
+                    android:padding="24dp">
 
                     <TextView
                         android:id="@+id/textNoEncontradoTitle"
                         style="@style/TextAppearance.Material3.TitleMedium"
                         android:layout_width="match_parent"
                         android:text="@string/medidor_no_encontrado_titulo"
-                        android:textColor="?attr/colorOnSurface" />
+                        android:textColor="@color/ice_blue_dark" />
 
                     <TextView
                         android:id="@+id/textNoEncontradoDescription"
@@ -427,7 +462,7 @@
                         style="@style/Widget.Material3.Button"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="16dp"
+                        android:layout_marginTop="20dp"
                         android:text="@string/medidor_no_encontrado_accion"
                         app:icon="@drawable/ic_round_search_24"
                         app:iconGravity="textStart"
@@ -441,27 +476,29 @@
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="24dp"
                 android:visibility="gone"
+                app:cardBackgroundColor="@android:color/transparent"
                 app:cardCornerRadius="26dp"
-                app:cardElevation="2dp">
+                app:cardElevation="0dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:background="@drawable/rounded_bg_f0f2f4"
                     android:orientation="vertical"
-                    android:padding="20dp">
+                    android:padding="24dp">
 
                     <TextView
                         android:id="@+id/textRegistroTitulo"
                         style="@style/TextAppearance.Material3.TitleMedium"
                         android:layout_width="match_parent"
                         android:text="@string/medidor_registro_manual_titulo"
-                        android:textColor="?attr/colorOnSurface" />
+                        android:textColor="@color/ice_blue_dark" />
 
                     <TextView
                         android:id="@+id/textRegistroDescripcion"
                         style="@style/TextAppearance.Material3.BodyMedium"
                         android:layout_width="match_parent"
-                        android:layout_marginTop="4dp"
+                        android:layout_marginTop="6dp"
                         android:text="@string/medidor_registro_manual_subtitulo"
                         android:textColor="?attr/colorOnSurfaceVariant" />
 
@@ -470,7 +507,7 @@
                         style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="16dp"
+                        android:layout_marginTop="20dp"
                         android:hint="@string/medidor_numero_hint"
                         app:startIconDrawable="@drawable/ic_round_search_24">
 
@@ -487,7 +524,7 @@
                         style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
+                        android:layout_marginTop="14dp"
                         android:hint="@string/medidor_registro_cliente_hint">
 
                         <com.google.android.material.textfield.TextInputEditText
@@ -502,7 +539,7 @@
                         style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
+                        android:layout_marginTop="14dp"
                         android:hint="@string/medidor_registro_localizacion_hint">
 
                         <com.google.android.material.textfield.TextInputEditText
@@ -517,7 +554,7 @@
                         style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
+                        android:layout_marginTop="14dp"
                         android:hint="@string/medidor_calle_label">
 
                         <com.google.android.material.textfield.TextInputEditText
@@ -532,7 +569,7 @@
                         style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
+                        android:layout_marginTop="14dp"
                         android:hint="@string/medidor_poste_label">
 
                         <com.google.android.material.textfield.TextInputEditText
@@ -547,7 +584,7 @@
                         style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
+                        android:layout_marginTop="14dp"
                         android:hint="@string/medidor_metros_label">
 
                         <com.google.android.material.textfield.TextInputEditText
@@ -562,7 +599,7 @@
                         style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
+                        android:layout_marginTop="14dp"
                         android:hint="@string/medidor_pueblo_label">
 
                         <com.google.android.material.textfield.TextInputEditText
@@ -575,7 +612,7 @@
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="20dp"
+                        android:layout_marginTop="24dp"
                         android:gravity="end"
                         android:orientation="horizontal">
 
