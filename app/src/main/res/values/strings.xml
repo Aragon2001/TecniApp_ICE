@@ -247,6 +247,7 @@ Cliente: %4$s</string>
     <!-- Medidores -->
     <string name="medidor_numero_hint">Número de medidor</string>
     <string name="medidor_header_subtitle">Gestiona y consulta medidores incluso sin conexión.</string>
+    <string name="medidor_consulta_title">Consulta de medidores</string>
     <string name="medidor_consulta_descripcion">Ingresa el número del medidor para obtener la información disponible.</string>
     <string name="medidor_consultar">Consultar</string>
     <string name="medidor_copiar">Copiar</string>
