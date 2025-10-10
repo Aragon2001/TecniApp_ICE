@@ -22,7 +22,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
-                app:cardBackgroundColor="@android:color/transparent"
+                app:cardBackgroundColor="@color/transparent"
                 app:cardCornerRadius="28dp"
                 app:cardElevation="0dp"
                 app:cardUseCompatPadding="false">
@@ -40,7 +40,7 @@
                         android:layout_height="48dp"
                         android:contentDescription="@string/menu_medidor"
                         android:src="@drawable/ic_menu_medidor"
-                        android:tint="@android:color/white" />
+                        app:tint="@color/white" />
 
                     <LinearLayout
                         android:layout_width="0dp"
@@ -67,12 +67,18 @@
                         <com.google.android.material.chip.Chip
                             android:id="@+id/chipEstado"
                             style="@style/Widget.Material3.Chip.Assist"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
                             android:layout_marginTop="12dp"
                             android:text="@string/medidor_estado_chip_preparando"
+                            android:textColor="?attr/colorOnPrimaryContainer"
                             app:chipBackgroundColor="@color/surface_variant_light"
                             app:chipIcon="@drawable/ic_check"
-                            app:chipIconTint="@color/ice_blue"
-                            app:chipForegroundColor="?attr/colorOnSurface" />
+                            app:chipIconTint="?attr/colorPrimary"
+                            app:checkedIconVisible="false"
+                            app:closeIconVisible="false" />
+
+
                     </LinearLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>

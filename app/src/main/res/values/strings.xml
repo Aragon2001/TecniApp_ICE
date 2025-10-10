@@ -147,7 +147,7 @@
     <string name="averia_pdf_header_title">TecniApp ICE</string>
     <string name="averia_pdf_header_subtitle">Plataforma integral de intervención técnica</string>
     <string name="averia_pdf_header_tagline">Arasoft Solutions © 2024 · Todos los derechos reservados</string>
-    <string name="averia_pdf_section_title">Detalle del servicio</string>
+    <string name="averia_pdf_section_title">Detalle de la Averia</string>
     <string name="averia_pdf_table_label_case">ID del caso</string>
     <string name="averia_pdf_table_label_nise">Código NISE</string>
     <string name="averia_pdf_table_label_status">Estado</string>

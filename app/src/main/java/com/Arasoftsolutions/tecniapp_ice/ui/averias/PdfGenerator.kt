@@ -136,7 +136,7 @@ object PdfGenerator {
             val attended = item.resolvedAtendidoDisplay(emptyValue)
             val vehicle = item.vehiculo ?: emptyValue
             val nise = item.nise.ifBlank { emptyValue }
-            val description = item.descripcion.ifBlank { emptyValue }
+            val observaciones = item.observaciones.ifBlank { emptyValue }
             val client = item.cliente?.takeIf { it.isNotBlank() } ?: emptyValue
             val textualLocation = item.localizacion?.takeIf { it.isNotBlank() } ?: emptyValue
             val kilometraje = if (item.kilometrajeInicio != null || item.kilometrajeFinal != null) {
@@ -157,16 +157,13 @@ object PdfGenerator {
                 TipoAfectacion.CLIENTE -> context.getString(R.string.averia_tipo_cliente)
                 TipoAfectacion.SECTOR -> context.getString(R.string.averia_tipo_sector)
             }
-            val zoneTag = item.zonaTag.ifBlank { emptyValue }
+
             val medidorNumero = item.numeroMedidor?.takeIf { it.isNotBlank() } ?: emptyValue
-            val medidorCalle = item.medidorCalle?.takeIf { it.isNotBlank() } ?: emptyValue
-            val medidorPueblo = item.medidorPueblo?.takeIf { it.isNotBlank() } ?: emptyValue
-            val medidorMetros = item.medidorMetros?.takeIf { it.isNotBlank() } ?: emptyValue
-            val medidorPoste = item.medidorPoste?.takeIf { it.isNotBlank() } ?: emptyValue
+
 
             val tableData = listOf(
                 context.getString(R.string.averia_pdf_table_label_case) to item.id,
-                context.getString(R.string.averia_pdf_table_label_description) to description,
+                context.getString(R.string.averia_pdf_table_label_description) to observaciones,
                 context.getString(R.string.averia_pdf_table_label_nise) to nise,
                 context.getString(R.string.averia_pdf_table_label_status) to item.estado,
                 context.getString(R.string.averia_pdf_table_label_assigned) to assigned,
@@ -181,12 +178,9 @@ object PdfGenerator {
                 context.getString(R.string.averia_pdf_table_label_region) to region,
                 context.getString(R.string.averia_pdf_table_label_agency) to agency,
                 context.getString(R.string.averia_pdf_table_label_affectation) to affectation,
-                context.getString(R.string.averia_pdf_table_label_zone) to zoneTag,
+
                 context.getString(R.string.averia_pdf_table_label_medidor) to medidorNumero,
-                context.getString(R.string.averia_pdf_table_label_street) to medidorCalle,
-                context.getString(R.string.averia_pdf_table_label_town) to medidorPueblo,
-                context.getString(R.string.averia_pdf_table_label_meters) to medidorMetros,
-                context.getString(R.string.averia_pdf_table_label_post) to medidorPoste,
+
                 context.getString(R.string.averia_pdf_table_label_location) to location,
                 context.getString(R.string.averia_pdf_table_label_generated) to reporteGenerado
             )
@@ -352,7 +346,7 @@ object PdfGenerator {
 
             drawCard(
                 context.getString(R.string.averia_pdf_section_description),
-                listOf(description)
+                listOf(observaciones)
             )
             drawCard(
                 context.getString(R.string.averia_pdf_section_cause),
@@ -366,18 +360,7 @@ object PdfGenerator {
                 if (item.numeroMedidor?.isNotBlank() == true) {
                     add(context.getString(R.string.averia_medidor_label, item.numeroMedidor))
                 }
-                if (item.medidorCalle?.isNotBlank() == true) {
-                    add("${context.getString(R.string.medidor_calle_label)}: ${item.medidorCalle}")
-                }
-                if (item.medidorPueblo?.isNotBlank() == true) {
-                    add("${context.getString(R.string.medidor_pueblo_label)}: ${item.medidorPueblo}")
-                }
-                if (item.medidorMetros?.isNotBlank() == true) {
-                    add("${context.getString(R.string.medidor_metros_label)}: ${item.medidorMetros}")
-                }
-                if (item.medidorPoste?.isNotBlank() == true) {
-                    add("${context.getString(R.string.medidor_poste_label)}: ${item.medidorPoste}")
-                }
+
             }
             drawCard(
                 context.getString(R.string.averia_pdf_section_medidor),

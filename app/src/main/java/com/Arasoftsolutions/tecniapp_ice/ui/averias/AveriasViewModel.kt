@@ -23,6 +23,7 @@ import com.Arasoftsolutions.tecniapp_ice.Database.entities.RegionEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.SubregionesEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.TecnicoEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.UserEntity
+import kotlinx.coroutines.flow.collectLatest
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.apellidosCompletos
 import com.Arasoftsolutions.tecniapp_ice.Database.room.AppDatabase
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
@@ -670,7 +671,7 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
                     }
                     _regiones.emit(listOf(RegionUI(null, allRegionsLabel)))
                     _agencias.emit(listOf(AgenciaUI(null, allAgenciesLabel)))
-                    continue@collectLatest
+                    return@collectLatest
                 } else {
                     catalogosSyncAttempted = false
                 }
