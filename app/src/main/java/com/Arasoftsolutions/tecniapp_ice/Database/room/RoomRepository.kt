@@ -3,9 +3,11 @@ package com.Arasoftsolutions.tecniapp_ice.Database.room
 import android.content.Context
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.*
 import com.Arasoftsolutions.tecniapp_ice.Database.sync.FirebaseSyncManager
+import com.Arasoftsolutions.tecniapp_ice.Database.sync.SubregionNormalizer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.withContext
 // Si usas transacciones, habilita esto y agrega la dependencia de room-ktx:
 // import androidx.room.withTransaction
@@ -38,14 +40,14 @@ class RoomRepository(context: Context) {
     fun observarMedidores(subregionId: String): Flow<List<MedidorEntity>> =
         db.medidorDao().observarPorSubregion(subregionId)
 
-    fun observarLocalizaciones(subregionId: String): Flow<List<LocalizacionesEntity>> =
-        db.localizacionDao().observarPorSubregion(subregionId)
-
     fun observarPueblos(subregionId: String): Flow<List<PueblosEntity>> =
         db.puebloDao().observarPorSubregion(subregionId)
 
-    fun observarTodosLosPueblos(): Flow<List<PueblosEntity>> =
-        db.puebloDao().observarTodos()
+    fun observarLocalizacionesPorPueblo(puebloId: Int): Flow<List<LocalizacionesEntity>> =
+        db.localizacionDao().observarPorPueblo(puebloId)
+
+    fun observarLocalizacionesDePueblos(puebloIds: List<Int>): Flow<List<LocalizacionesEntity>> =
+        if (puebloIds.isEmpty()) flowOf(emptyList()) else db.localizacionDao().observarPorPueblos(puebloIds)
 
     fun observarAgencias(subregionId: String): Flow<List<AgenciaEntity>> =
         db.agenciaDao().observarPorSubregion(subregionId)
@@ -102,34 +104,18 @@ class RoomRepository(context: Context) {
         db.usuarioDao().upsert(user)
     }
 
-    suspend fun obtenerPuebloPorId(subregionId: String, puebloId: Int): PueblosEntity? =
-        db.puebloDao().buscarPorId(subregionId, puebloId)
+    suspend fun obtenerPuebloPorId(puebloId: Int): PueblosEntity? =
+        db.puebloDao().buscarPorId(puebloId)
 
-    suspend fun obtenerCallesPorPueblo(
-        subregionId: String,
-        puebloId: Int
-    ): List<LocalizacionesEntity> =
-        db.localizacionDao().obtenerPorPueblo(subregionId, puebloId)
-
-    suspend fun obtenerCallesPorPuebloGlobal(puebloId: Int): List<LocalizacionesEntity> =
-        db.localizacionDao().obtenerPorPuebloGlobal(puebloId)
+    suspend fun obtenerCallesPorPueblo(puebloId: Int): List<LocalizacionesEntity> =
+        db.localizacionDao().obtenerPorPueblo(puebloId)
 
     suspend fun buscarLocalizacion(
-        subregionId: String,
         puebloId: Int,
         calleId: Int,
         direccion: String?
     ): LocalizacionesEntity? {
-        val coincidencias = db.localizacionDao().buscarPorCalle(subregionId, puebloId, calleId)
-        return seleccionarLocalizacion(coincidencias, direccion)
-    }
-
-    suspend fun buscarLocalizacionGlobal(
-        puebloId: Int,
-        calleId: Int,
-        direccion: String?
-    ): LocalizacionesEntity? {
-        val coincidencias = db.localizacionDao().buscarPorCalleGlobal(puebloId, calleId)
+        val coincidencias = db.localizacionDao().buscarPorCalle(puebloId, calleId)
         return seleccionarLocalizacion(coincidencias, direccion)
     }
 
@@ -170,23 +156,46 @@ class RoomRepository(context: Context) {
 
         // Si quieres transacción atómica, descomenta y usa withTransaction:
         // db.withTransaction {
-        val agencias = firebase.obtenerAgencias(subregionId)
+        val canonicalSubregion = SubregionNormalizer.canonicalIdOrSelf(subregionId)
+            ?: throw IllegalArgumentException("Subregión inválida: $subregionId")
+
+        val agencias = firebase.obtenerAgencias(canonicalSubregion)
         db.agenciaDao().insertAll(agencias)
         progress(++done, total, "Agencias")
 
-        val pueblos = firebase.obtenerPueblos(subregionId)
-        db.puebloDao().insertAll(pueblos)
+        val pueblosRemotos = firebase.obtenerPueblos()
+        val pueblosNormalizados = pueblosRemotos.map { remoto ->
+            val base = remoto.subregion_id_normalizado.takeIf { it.isNotBlank() } ?: remoto.subregion
+            val canonico = SubregionNormalizer.canonicalIdOrSelf(base) ?: ""
+            remoto.copy(subregion_id_normalizado = canonico)
+        }
+        val pueblosFiltrados = pueblosNormalizados.filter { it.subregion_id_normalizado == canonicalSubregion }
+        db.puebloDao().eliminarFueraDeSubregion(canonicalSubregion)
+        if (pueblosFiltrados.isNotEmpty()) {
+            db.puebloDao().limpiarSubregion(canonicalSubregion)
+            db.puebloDao().insertAll(pueblosFiltrados)
+        }
         progress(++done, total, "Pueblos")
 
-        val localizaciones = firebase.obtenerLocalizaciones(subregionId)
-        db.localizacionDao().insertAll(localizaciones)
+        val idsPueblos = if (pueblosFiltrados.isNotEmpty()) {
+            pueblosFiltrados.map { it.id }
+        } else {
+            db.puebloDao().obtenerIdsPorSubregion(canonicalSubregion)
+        }
+        val idsSet = idsPueblos.toSet()
+        val localizacionesRemotas = firebase.obtenerLocalizaciones()
+        val localizacionesFiltradas = localizacionesRemotas.filter { it.pueblo in idsSet }
+        db.localizacionDao().limpiarTodo()
+        if (localizacionesFiltradas.isNotEmpty()) {
+            db.localizacionDao().insertAll(localizacionesFiltradas)
+        }
         progress(++done, total, "Localizaciones")
 
-        val vehiculos = firebase.obtenerVehiculos(subregionId)
+        val vehiculos = firebase.obtenerVehiculos(canonicalSubregion)
         db.vehiculoDao().insertAll(vehiculos)
         progress(++done, total, "Vehículos")
 
-        val medidores = firebase.obtenerMedidores(subregionId)
+        val medidores = firebase.obtenerMedidores(canonicalSubregion)
         db.medidorDao().insertAll(medidores)
         progress(++done, total, "Medidores")
         // }

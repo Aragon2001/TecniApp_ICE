@@ -17,31 +17,24 @@ interface LocalizacionDao {
     @Query("SELECT * FROM localizaciones")
     suspend fun getAll(): List<LocalizacionesEntity>
 
-    // Observa localizaciones filtradas por subregión
-    @Query("SELECT * FROM localizaciones WHERE subregion = :subregionId")
-    fun observarPorSubregion(subregionId: String): Flow<List<LocalizacionesEntity>>
+    @Query("SELECT * FROM localizaciones WHERE pueblo = :puebloId ORDER BY calle, direccion")
+    fun observarPorPueblo(puebloId: Int): Flow<List<LocalizacionesEntity>>
 
-    @Query("SELECT * FROM localizaciones WHERE subregion = :subregionId AND pueblo = :puebloId")
-    suspend fun obtenerPorPueblo(subregionId: String, puebloId: Int): List<LocalizacionesEntity>
+    @Query("SELECT * FROM localizaciones WHERE pueblo IN (:puebloIds)")
+    fun observarPorPueblos(puebloIds: List<Int>): Flow<List<LocalizacionesEntity>>
 
     @Query("SELECT * FROM localizaciones WHERE pueblo = :puebloId")
-    suspend fun obtenerPorPuebloGlobal(puebloId: Int): List<LocalizacionesEntity>
-
-    @Query(
-        "SELECT * FROM localizaciones WHERE subregion = :subregionId AND pueblo = :puebloId AND calle = :calleId"
-    )
-    suspend fun buscarPorCalle(
-        subregionId: String,
-        puebloId: Int,
-        calleId: Int
-    ): List<LocalizacionesEntity>
+    suspend fun obtenerPorPueblo(puebloId: Int): List<LocalizacionesEntity>
 
     @Query("SELECT * FROM localizaciones WHERE pueblo = :puebloId AND calle = :calleId")
-    suspend fun buscarPorCalleGlobal(
+    suspend fun buscarPorCalle(
         puebloId: Int,
         calleId: Int
     ): List<LocalizacionesEntity>
 
     @Query("SELECT * FROM localizaciones WHERE id = :localizacionId LIMIT 1")
     suspend fun buscarPorId(localizacionId: Long): LocalizacionesEntity?
+
+    @Query("DELETE FROM localizaciones")
+    suspend fun limpiarTodo()
 }
