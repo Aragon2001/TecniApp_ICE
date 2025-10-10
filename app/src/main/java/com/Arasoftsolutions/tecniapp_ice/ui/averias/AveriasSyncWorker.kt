@@ -5,11 +5,15 @@ import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
+import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
 import androidx.work.CoroutineWorker
 import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.ExistingWorkPolicy
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.OutOfQuotaPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
@@ -21,6 +25,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.text.Normalizer
 import java.util.concurrent.TimeUnit
+import com.Arasoftsolutions.tecniapp_ice.Database.entities.AveriaEntity
 
 class AveriasSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx, params) {
 
@@ -54,34 +59,13 @@ class AveriasSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorke
 
         // 3. Notifica si hay nuevos casos
         if (porRegion.isNotEmpty()) {
+            AveriaNotifications.ensureChannel(applicationContext)
             val nm = NotificationManagerCompat.from(applicationContext)
-            porRegion.forEach forEachId@{ averia ->
-                val id = averia.caseId
-                if (
-                    ActivityCompat.checkSelfPermission(
-                        applicationContext,
-                        Manifest.permission.POST_NOTIFICATIONS
-                    ) != PackageManager.PERMISSION_GRANTED
-                ) return@forEachId
+            porRegion.forEach { averia ->
+                if (!hasNotificationPermission()) return@forEach
                 nm.notify(
-                    id.hashCode(),
-                    NotificationCompat.Builder(applicationContext, "averias_channel")
-                        .setSmallIcon(R.drawable.ic_notification)
-                        .setContentTitle(applicationContext.getString(R.string.averia_notificacion_nueva_title))
-                        .setContentText(
-                            applicationContext.getString(
-                                R.string.averia_notificacion_nueva_body,
-                                id,
-                                averia.nombreAgencia ?: averia.agencia ?: ""
-                            )
-                        )
-                        .setPriority(NotificationCompat.PRIORITY_HIGH)
-                        .setSound(
-                            Uri.parse(
-                                "android.resource://${applicationContext.packageName}/${R.raw.beep}"
-                            )
-                        )
-                        .build()
+                    averia.caseId.hashCode(),
+                    buildNewCaseNotification(averia)
                 )
             }
         }
@@ -95,6 +79,86 @@ class AveriasSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorke
             .lowercase()
     }
 
+    private fun hasNotificationPermission(): Boolean {
+        val manager = NotificationManagerCompat.from(applicationContext)
+        val enabled = manager.areNotificationsEnabled()
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+            return enabled
+        }
+        val granted = ActivityCompat.checkSelfPermission(
+            applicationContext,
+            Manifest.permission.POST_NOTIFICATIONS
+        ) == PackageManager.PERMISSION_GRANTED
+        return enabled && granted
+    }
+
+    private fun buildNewCaseNotification(averia: AveriaEntity): android.app.Notification {
+        val hora = AveriaNotifications.formatDateTime(averia.horaInicioMillis ?: averia.fechaInicioMillis)
+            ?: applicationContext.getString(R.string.averia_notificacion_sin_hora)
+        val lugar = resolveLugar(averia)
+        val agencia = resolveAgencia(averia)
+        val cliente = averia.cliente?.takeIf { it.isNotBlank() }
+            ?: applicationContext.getString(R.string.averia_notificacion_sin_cliente)
+
+        return NotificationCompat.Builder(applicationContext, AveriaNotifications.CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentTitle(
+                applicationContext.getString(
+                    R.string.averia_notificacion_nueva_title_case,
+                    averia.caseId
+                )
+            )
+            .setContentText(
+                applicationContext.getString(
+                    R.string.averia_notificacion_nueva_summary,
+                    hora,
+                    lugar
+                )
+            )
+            .setStyle(
+                NotificationCompat.BigTextStyle().bigText(
+                    applicationContext.getString(
+                        R.string.averia_notificacion_nueva_bigtext,
+                        agencia,
+                        lugar,
+                        hora,
+                        cliente
+                    )
+                ).setSummaryText(averia.caseId)
+            )
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_EVENT)
+            .setAutoCancel(true)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setContentIntent(AveriaNotifications.averiasPendingIntent(applicationContext))
+            .setSound(
+                Uri.parse(
+                    "android.resource://${applicationContext.packageName}/${R.raw.beep}"
+                )
+            )
+            .apply {
+                AveriaNotifications.mapAction(
+                    applicationContext,
+                    averia.lat,
+                    averia.lng,
+                    lugar,
+                    averia.caseId.hashCode()
+                )?.let { addAction(it) }
+            }
+            .build()
+    }
+
+    private fun resolveLugar(averia: AveriaEntity): String =
+        averia.localizacion?.takeIf { it.isNotBlank() }
+            ?: averia.nombreAgencia?.takeIf { it.isNotBlank() }
+            ?: averia.agencia?.takeIf { it.isNotBlank() }
+            ?: applicationContext.getString(R.string.averia_notificacion_sin_lugar)
+
+    private fun resolveAgencia(averia: AveriaEntity): String =
+        averia.nombreAgencia?.takeIf { it.isNotBlank() }
+            ?: averia.agencia?.takeIf { it.isNotBlank() }
+            ?: applicationContext.getString(R.string.averia_notificacion_sin_agencia)
+
     companion object {
         fun schedule(ctx: Context) {
             val req = PeriodicWorkRequestBuilder<AveriasSyncWorker>(15, TimeUnit.MINUTES).build()
@@ -102,6 +166,17 @@ class AveriasSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorke
                 "averias_sync",
                 ExistingPeriodicWorkPolicy.KEEP,
                 req
+            )
+        }
+
+        fun triggerNow(ctx: Context) {
+            val request = OneTimeWorkRequestBuilder<AveriasSyncWorker>()
+                .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+                .build()
+            WorkManager.getInstance(ctx).enqueueUniqueWork(
+                "averias_sync_now",
+                ExistingWorkPolicy.REPLACE,
+                request
             )
         }
     }
