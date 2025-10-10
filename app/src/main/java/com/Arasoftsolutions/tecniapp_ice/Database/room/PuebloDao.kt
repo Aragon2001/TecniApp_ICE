@@ -17,13 +17,19 @@ interface PuebloDao {
     @Query("SELECT * FROM pueblos")
     suspend fun getAll(): List<PueblosEntity>
 
-    @Query("SELECT * FROM pueblos ORDER BY nombre")
-    fun observarTodos(): Flow<List<PueblosEntity>>
-
-    // Observa pueblos filtrados por subregión
-    @Query("SELECT * FROM pueblos WHERE subregion = :subregionId")
+    // Observa pueblos filtrados por subregión normalizada
+    @Query("SELECT * FROM pueblos WHERE subregion_id_normalizado = :subregionId ORDER BY nombre")
     fun observarPorSubregion(subregionId: String): Flow<List<PueblosEntity>>
 
-    @Query("SELECT * FROM pueblos WHERE subregion = :subregionId AND id = :puebloId LIMIT 1")
-    suspend fun buscarPorId(subregionId: String, puebloId: Int): PueblosEntity?
+    @Query("SELECT * FROM pueblos WHERE id = :puebloId LIMIT 1")
+    suspend fun buscarPorId(puebloId: Int): PueblosEntity?
+
+    @Query("SELECT id FROM pueblos WHERE subregion_id_normalizado = :subregionId")
+    suspend fun obtenerIdsPorSubregion(subregionId: String): List<Int>
+
+    @Query("DELETE FROM pueblos WHERE subregion_id_normalizado = :subregionId")
+    suspend fun limpiarSubregion(subregionId: String)
+
+    @Query("DELETE FROM pueblos WHERE subregion_id_normalizado != :subregionId")
+    suspend fun eliminarFueraDeSubregion(subregionId: String)
 }
