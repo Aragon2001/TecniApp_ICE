@@ -1,12 +1,17 @@
 package com.Arasoftsolutions.tecniapp_ice
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.core.view.GravityCompat
 import androidx.core.view.isVisible
@@ -21,6 +26,8 @@ import com.Arasoftsolutions.tecniapp_ice.Database.entities.apellidosCompletos
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
 import com.Arasoftsolutions.tecniapp_ice.databinding.ActivityMainBinding
 import com.Arasoftsolutions.tecniapp_ice.databinding.NavHeaderMainBinding
+import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriaNotifications
+import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasSyncWorker
 import com.bumptech.glide.Glide
 import com.google.android.material.navigation.NavigationView
 import com.google.firebase.auth.FirebaseAuth
@@ -33,6 +40,16 @@ class ActivityMain : AppCompatActivity() {
     private lateinit var auth: FirebaseAuth
     private lateinit var repository: RoomRepository
     private lateinit var headerBinding: NavHeaderMainBinding
+
+    private val requestNotificationPermission =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            val messageRes = if (granted) {
+                R.string.averia_notification_permission_granted
+            } else {
+                R.string.averia_notification_permission_denied
+            }
+            Toast.makeText(this, messageRes, Toast.LENGTH_LONG).show()
+        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -55,6 +72,11 @@ class ActivityMain : AppCompatActivity() {
         lifecycleScope.launch {
             loadUserDataFromDatabase()
         }
+
+        AveriaNotifications.ensureChannel(this)
+        requestNotificationPermissionIfNeeded()
+        AveriasSyncWorker.schedule(applicationContext)
+        AveriasSyncWorker.triggerNow(applicationContext)
 
         // Drawer + Navigation
         val drawerLayout: DrawerLayout = binding.drawerLayout
@@ -196,6 +218,16 @@ class ActivityMain : AppCompatActivity() {
         }
         startActivity(intent)
         finish()
+    }
+
+    private fun requestNotificationPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
+        val granted = ContextCompat.checkSelfPermission(
+            this,
+            Manifest.permission.POST_NOTIFICATIONS
+        ) == PackageManager.PERMISSION_GRANTED
+        if (granted) return
+        requestNotificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
     }
 
     override fun onSupportNavigateUp(): Boolean {

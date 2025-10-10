@@ -2,13 +2,10 @@ package com.Arasoftsolutions.tecniapp_ice.ui.averias
 
 import android.Manifest
 import android.app.Application
-import android.app.NotificationChannel
-import android.app.NotificationManager
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import android.util.Log
-import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
@@ -206,7 +203,7 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
 
     init {
         repo.startRealtimeListener()
-        createNotificationChannel()
+        AveriaNotifications.ensureChannel(app)
         observeCatalogos()
         viewModelScope.launch { loadUsuarioActual() }
         viewModelScope.launch { syncCatalogosGenerales() }
@@ -471,20 +468,17 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
             caseId,
             tecnico ?: context.getString(R.string.averia_sin_asignar)
         )
-        val notification = NotificationCompat.Builder(context, "averias_channel")
+        val notification = NotificationCompat.Builder(context, AveriaNotifications.CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(title)
             .setContentText(body)
             .setStyle(NotificationCompat.BigTextStyle().bigText(body))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_STATUS)
+            .setAutoCancel(true)
+            .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
+            .setContentIntent(AveriaNotifications.averiasPendingIntent(context))
             .build()
-        if (ActivityCompat.checkSelfPermission(
-        context,
-        Manifest.permission.POST_NOTIFICATIONS
-    ) != PackageManager.PERMISSION_GRANTED
-) {
-    return
-}
 
         notificationManager.notify(caseId.hashCode(), notification)
     }
@@ -498,20 +492,17 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
             caseId,
             tecnico ?: context.getString(R.string.averia_sin_asignar)
         )
-        val notification = NotificationCompat.Builder(context, "averias_channel")
+        val notification = NotificationCompat.Builder(context, AveriaNotifications.CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(title)
             .setContentText(body)
             .setStyle(NotificationCompat.BigTextStyle().bigText(body))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_STATUS)
+            .setAutoCancel(true)
+            .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
+            .setContentIntent(AveriaNotifications.averiasPendingIntent(context))
             .build()
-        if (ActivityCompat.checkSelfPermission(
-        context,
-        Manifest.permission.POST_NOTIFICATIONS
-    ) != PackageManager.PERMISSION_GRANTED
-) {
-    return
-}
 
         notificationManager.notify((caseId.hashCode() shl 1), notification)
     }
@@ -521,20 +512,17 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
         val context = getApplication<Application>()
         val title = context.getString(R.string.averia_notificacion_resuelta_title)
         val body = context.getString(R.string.averia_notificacion_resuelta_body, caseId)
-        val notification = NotificationCompat.Builder(context, "averias_channel")
+        val notification = NotificationCompat.Builder(context, AveriaNotifications.CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(title)
             .setContentText(body)
             .setStyle(NotificationCompat.BigTextStyle().bigText(body))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_STATUS)
+            .setAutoCancel(true)
+            .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
+            .setContentIntent(AveriaNotifications.averiasPendingIntent(context))
             .build()
-        if (ActivityCompat.checkSelfPermission(
-        context,
-        Manifest.permission.POST_NOTIFICATIONS
-    ) != PackageManager.PERMISSION_GRANTED
-) {
-    return
-}
 
         notificationManager.notify((caseId.hashCode() shl 2), notification)
     }
@@ -818,15 +806,6 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
             subregionesPorRegion[region.id]?.forEach { keywords += it.nombre.normalize() }
             agenciasPorRegion[region.id]?.forEach { keywords += it.nombre.normalize() }
             region.id to keywords.toList()
-        }
-    }
-
-    private fun createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val mgr = getApplication<Application>().getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            mgr.createNotificationChannel(
-                NotificationChannel("averias_channel", "Averías", NotificationManager.IMPORTANCE_HIGH)
-            )
         }
     }
 
