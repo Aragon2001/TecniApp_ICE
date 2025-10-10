@@ -74,6 +74,22 @@
     <string name="averia_notificacion_resuelta_body">Caso %1$s resuelto.</string>
     <string name="averia_notificacion_nueva_title">Nueva avería</string>
     <string name="averia_notificacion_nueva_body">Caso %1$s • %2$s</string>
+    <string name="averia_notificacion_nueva_title_case">Nueva avería #%1$s</string>
+    <string name="averia_notificacion_nueva_summary">Hora: %1$s • Lugar: %2$s</string>
+    <string name="averia_notificacion_nueva_bigtext">Agencia: %1$s
+Lugar: %2$s
+Hora: %3$s
+Cliente: %4$s</string>
+    <string name="averia_notificacion_sin_hora">Sin hora registrada</string>
+    <string name="averia_notificacion_sin_lugar">Ubicación no disponible</string>
+    <string name="averia_notificacion_sin_agencia">Agencia no registrada</string>
+    <string name="averia_notificacion_sin_cliente">Cliente no registrado</string>
+    <string name="averia_notificacion_map_action">Ver en mapa</string>
+    <string name="averia_notificacion_map_label_default">Avería reportada</string>
+    <string name="averia_channel_name">Averías</string>
+    <string name="averia_channel_description">Alertas sobre nuevas averías y cambios de estado.</string>
+    <string name="averia_notification_permission_granted">Notificaciones activadas.</string>
+    <string name="averia_notification_permission_denied">Las notificaciones están desactivadas. Actívalas en Ajustes para recibir alertas de averías.</string>
     <string name="averia_error_usuario_no_autenticado">Inicia sesión para gestionar averías.</string>
     <string name="averia_error_causa_requerida">Ingresa la causa de la avería.</string>
     <string name="averia_error_no_autorizado">No puedes gestionar una avería asignada a otro técnico.</string>
