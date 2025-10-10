@@ -278,7 +278,7 @@
     <string name="medidor_registro_localizacion_error">La localización debe ser numérica.</string>
 
     <!-- Localización -->
-    <string name="localizacion_estado_sin_subregion">No se pudo cargar la subregión del usuario.</string>
+    <string name="localizacion_estado_sin_subregion">No se pudo determinar la subregión del usuario.</string>
     <string name="localizacion_estado_sin_pueblos">No hay pueblos disponibles para esta subregión.</string>
     <string name="localizacion_estado_sin_calles">No hay calles disponibles para el pueblo seleccionado.</string>
     <string name="localizacion_estado_sin_localizacion">No se encontró la localización para la calle seleccionada.</string>
@@ -288,6 +288,9 @@
     <string name="localizacion_calles_show">Cargar calles</string>
     <string name="localizacion_calles_hide">Desmarcar calles</string>
     <string name="localizacion_calles_toast_sin_pueblo">Selecciona un pueblo antes de cargar las calles.</string>
+    <string name="localizacion_calles_toggle_label">Mostrar todas las calles del pueblo</string>
+    <string name="localizacion_fieldmaps_no_disponible">Field Maps no está instalado. Abriendo Google Maps.</string>
+    <string name="localizacion_navegacion_chooser">Selecciona una aplicación para navegar</string>
     <string name="localizacion_estado_sync_error">No se pudo sincronizar la información. Intenta nuevamente.</string>
     <string name="localizacion_estado_calles_sin_coordenadas">No hay coordenadas disponibles para las calles seleccionadas.</string>
     <string name="localizacion_marker_rango_postes">Postes %1$d – %2$d</string>
