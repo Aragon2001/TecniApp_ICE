@@ -101,6 +101,8 @@ Cliente: %4$s</string>
     <string name="averia_notificacion_filtro_titulo">Filtrar notificaciones por agencia</string>
     <string name="averia_notificacion_filtro_hint">Agencia (Guácimo, Guápiles, etc.)</string>
     <string name="averia_notificacion_filtro_vacio">Sin filtros: recibirás avisos de todas las agencias.</string>
+    <string name="averia_notificacion_menu">Notificaciones</string>
+    <string name="averia_notificacion_sheet_title">Preferencias de notificaciones</string>
     <string name="averia_error_usuario_no_autenticado">Inicia sesión para gestionar averías.</string>
     <string name="averia_error_causa_requerida">Ingresa la causa de la avería.</string>
     <string name="averia_error_no_autorizado">No puedes gestionar una avería asignada a otro técnico.</string>
