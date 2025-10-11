@@ -313,4 +313,37 @@ Cliente: %4$s</string>
     <string name="localizacion_estado_calles_sin_coordenadas">No hay coordenadas disponibles para las calles seleccionadas.</string>
     <string name="localizacion_marker_rango_postes">Postes %1$d – %2$d</string>
     <string name="localizacion_marker_poste_unico">Poste %1$d</string>
+    <!-- Reportes -->
+    <string name="reportes_filtro_rango">Rango de fechas</string>
+    <string name="reportes_btn_rango">Cambiar rango</string>
+    <string name="reportes_totales_resumen">Averías atendidas: %1$d&#10;Materiales registrados: %2$d unidades en %3$d códigos.</string>
+    <string name="reportes_averias_titulo">Averías atendidas</string>
+    <string name="reportes_averias_vacio">No hay averías atendidas en el rango seleccionado.</string>
+    <string name="reportes_material_por_averia_titulo">Material gastado por avería</string>
+    <string name="reportes_material_por_averia_vacio">No hay materiales registrados en las averías atendidas.</string>
+    <string name="reportes_material_total_titulo">Material gastado total</string>
+    <string name="reportes_material_total_vacio">No hay consumo de material registrado en este rango.</string>
+    <string name="reportes_dialog_rango_titulo">Selecciona el rango de fechas</string>
+    <string name="reportes_material_sin_detalle">Sin materiales registrados.</string>
+    <string name="reportes_error_carga">No se pudo generar el reporte.</string>
+    <string name="reportes_material_desconocido">Material sin descripción</string>
+    <string name="reportes_item_caso">Caso %1$s</string>
+    <string name="reportes_item_fecha">Atendida: %1$s</string>
+    <string name="reportes_item_agencia">Agencia: %1$s</string>
+    <string name="reportes_item_estado">Estado: %1$s</string>
+    <string name="reportes_item_atendido">Atendido por: %1$s</string>
+    <string name="reportes_item_vehiculo">Vehículo: %1$s</string>
+    <string name="reportes_item_materiales">%1$d unidades · %2$s</string>
+    <string name="reportes_item_materiales_sin">Sin materiales registrados</string>
+    <string name="reportes_material_codigo">Código: %1$s</string>
+    <string name="reportes_material_total_detalle">%1$s · %2$s</string>
+    <plurals name="reportes_material_total_unidades">
+        <item quantity="one">%d unidad</item>
+        <item quantity="other">%d unidades</item>
+    </plurals>
+    <plurals name="reportes_material_total_averias">
+        <item quantity="one">%d avería</item>
+        <item quantity="other">%d averías</item>
+    </plurals>
+
 </resources>
