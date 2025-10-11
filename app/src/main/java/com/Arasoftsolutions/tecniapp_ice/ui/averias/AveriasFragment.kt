@@ -5,6 +5,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
+import android.widget.CompoundButton
 import androidx.core.widget.addTextChangedListener
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -16,6 +17,8 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.Arasoftsolutions.tecniapp_ice.R
 import com.Arasoftsolutions.tecniapp_ice.databinding.FragmentAveriasBinding
 import com.google.android.material.snackbar.Snackbar
+import com.google.android.material.chip.Chip
+import android.view.inputmethod.EditorInfo
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
@@ -46,6 +49,31 @@ class AveriasFragment : Fragment() {
 
         b.etBuscar.addTextChangedListener { text ->
             vm.setQuery(text?.toString().orEmpty())
+        }
+
+        val notificationSwitchListener = CompoundButton.OnCheckedChangeListener { _, isChecked ->
+            vm.setNotificationsEnabled(isChecked)
+        }
+        b.switchNotifications.setOnCheckedChangeListener(notificationSwitchListener)
+
+        b.actvNotificationAgency.setOnItemClickListener { parent, _, position, _ ->
+            val value = parent.getItemAtPosition(position)?.toString()?.trim().orEmpty()
+            if (value.isNotEmpty()) {
+                vm.addNotificationAgency(value)
+                b.actvNotificationAgency.setText("", false)
+            }
+        }
+        b.actvNotificationAgency.setOnEditorActionListener { textView, actionId, _ ->
+            if (actionId == EditorInfo.IME_ACTION_DONE) {
+                val value = textView.text?.toString()?.trim().orEmpty()
+                if (value.isNotEmpty()) {
+                    vm.addNotificationAgency(value)
+                    textView.text = null
+                }
+                true
+            } else {
+                false
+            }
         }
 
         // Recycler
@@ -143,6 +171,41 @@ class AveriasFragment : Fragment() {
             vm.setAgenciaIndex(position)
         }
 
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    vm.notificationSuggestions.collectLatest { sugerencias ->
+                        b.actvNotificationAgency.setAdapter(
+                            ArrayAdapter(
+                                requireContext(),
+                                android.R.layout.simple_dropdown_item_1line,
+                                sugerencias
+                            )
+                        )
+                    }
+                }
+                launch {
+                    vm.notificationsEnabled.collectLatest { enabled ->
+                        if (b.switchNotifications.isChecked != enabled) {
+                            b.switchNotifications.setOnCheckedChangeListener(null)
+                            b.switchNotifications.isChecked = enabled
+                            b.switchNotifications.setOnCheckedChangeListener(notificationSwitchListener)
+                        }
+                        val alpha = if (enabled) 1f else 0.6f
+                        b.tilNotificationAgency.alpha = alpha
+                        b.tvNotificationFilterTitle.alpha = alpha
+                        b.tvNotificationSwitchHelper.alpha = alpha
+                        renderNotificationChips(vm.notificationAgencies.value, enabled)
+                    }
+                }
+                launch {
+                    vm.notificationAgencies.collectLatest { agencias ->
+                        renderNotificationChips(agencias, vm.notificationsEnabled.value)
+                    }
+                }
+            }
+        }
+
         // Observa estado UI y mensajes
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -184,6 +247,24 @@ class AveriasFragment : Fragment() {
 
     private fun showDetalle(item: AveriaUI) {
         AveriaDetalleBottomSheet.newInstance(item).show(childFragmentManager, "detalle_averia")
+    }
+
+    private fun renderNotificationChips(agencias: List<String>, notificationsEnabled: Boolean) {
+        val group = b.chipGroupNotificationAgencies
+        group.removeAllViews()
+        agencias.forEach { nombre ->
+            val chip = Chip(requireContext()).apply {
+                text = nombre
+                isCheckable = false
+                isCloseIconVisible = true
+                alpha = if (notificationsEnabled) 1f else 0.6f
+                setOnCloseIconClickListener { vm.removeNotificationAgency(nombre) }
+            }
+            group.addView(chip)
+        }
+        b.tvNotificationFiltersEmpty.visibility = if (agencias.isEmpty()) View.VISIBLE else View.GONE
+        b.tvNotificationFiltersEmpty.alpha = if (notificationsEnabled) 1f else 0.6f
+        b.chipGroupNotificationAgencies.alpha = if (notificationsEnabled) 1f else 0.6f
     }
 
     override fun onDestroyView() {
