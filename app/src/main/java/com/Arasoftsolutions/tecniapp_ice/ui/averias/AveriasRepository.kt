@@ -183,8 +183,6 @@ class AveriasRepository(private val db: AppDatabase) {
     // Estado (no “bajar” estado) + utilitarios
     // ---------------------------------------------------------------------------------------------
 
-    private enum class EstadoRank { PENDIENTE, ASIGNADA, EN_ATENCION, RESUELTA }
-
     private fun normalizeEstadoLabel(raw: String?): String {
         if (raw.isNullOrBlank()) return "Pendiente"
         val v = raw.trim().lowercase(Locale.getDefault())
@@ -197,17 +195,14 @@ class AveriasRepository(private val db: AppDatabase) {
         }
     }
 
-    private fun rankOfEstado(label: String?): EstadoRank = when (normalizeEstadoLabel(label)) {
-        "Resuelta" -> EstadoRank.RESUELTA
-        "En atención" -> EstadoRank.EN_ATENCION
-        "Asignada" -> EstadoRank.ASIGNADA
-        else -> EstadoRank.PENDIENTE
-    }
-
     private fun pickEstadoPreferAdvanced(local: String?, remote: String?): String {
-        val l = normalizeEstadoLabel(local)
-        val r = normalizeEstadoLabel(remote)
-        return if (rankOfEstado(l) >= rankOfEstado(r)) l else r
+        val localNormalized = normalizeEstadoLabel(local)
+        val remoteNormalized = normalizeEstadoLabel(remote)
+        return when {
+            local.isNullOrBlank() -> remoteNormalized
+            remoteNormalized == "Resuelta" && localNormalized != "Resuelta" -> "Resuelta"
+            else -> localNormalized
+        }
     }
 
     private fun idEstadoFromLabel(label: String?): Int = when (normalizeEstadoLabel(label)) {
