@@ -4,8 +4,10 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.CompoundButton
+import android.widget.TextView
 import androidx.core.widget.addTextChangedListener
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -287,14 +289,14 @@ class AveriasFragment : Fragment() {
         )
         sheetBinding.actvNotificationAgency.setAdapter(suggestionsAdapter)
 
-        sheetBinding.actvNotificationAgency.setOnItemClickListener { parent, _, position, _ ->
+        sheetBinding.actvNotificationAgency.setOnItemClickListener { parent: AdapterView<*>, _, position, _ ->
             val value = parent.getItemAtPosition(position)?.toString()?.trim().orEmpty()
             if (value.isNotEmpty()) {
                 vm.addNotificationAgency(value)
                 sheetBinding.actvNotificationAgency.setText("", false)
             }
         }
-        sheetBinding.actvNotificationAgency.setOnEditorActionListener { textView, actionId, _ ->
+        sheetBinding.actvNotificationAgency.setOnEditorActionListener { textView: TextView, actionId, _ ->
             if (actionId == EditorInfo.IME_ACTION_DONE) {
                 val value = textView.text?.toString()?.trim().orEmpty()
                 if (value.isNotEmpty()) {
