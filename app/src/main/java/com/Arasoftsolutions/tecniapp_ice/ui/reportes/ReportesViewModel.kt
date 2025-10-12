@@ -2,6 +2,7 @@ package com.Arasoftsolutions.tecniapp_ice.ui.reportes
 
 import android.app.Application
 import android.util.Log
+import androidx.annotation.StringRes
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.AveriaEntity
@@ -20,7 +21,6 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -38,6 +38,12 @@ private data class MaterialAcumulado(
     var total: Int,
     val averias: MutableSet<String>
 )
+
+enum class ReportType(@StringRes val titleRes: Int, val fileNameKey: String) {
+    AVERIAS(R.string.reportes_tipo_averias, "averias"),
+    MATERIALES_POR_AVERIA(R.string.reportes_tipo_material_por_averia, "material_por_averia"),
+    MATERIALES_TOTALES(R.string.reportes_tipo_material_total, "material_total")
+}
 
 data class AveriaReportItem(
     val caseId: String,
@@ -67,26 +73,40 @@ data class MaterialTotalItem(
     val averias: Int
 )
 
+data class ReportSectionState<T>(
+    val isLoading: Boolean = false,
+    val items: List<T> = emptyList(),
+    val hasContent: Boolean = false
+)
+
+data class ResumenTotales(
+    val totalAverias: Int,
+    val totalMateriales: Int,
+    val totalMaterialesDistintos: Int
+)
+
+sealed class ReportExportData {
+    data class Averias(val items: List<AveriaReportItem>) : ReportExportData()
+    data class MaterialesPorAveria(val items: List<MaterialPorAveriaReportItem>) : ReportExportData()
+    data class MaterialesTotales(val items: List<MaterialTotalItem>) : ReportExportData()
+}
+
 data class ReportesUiState(
     val fechaInicio: LocalDate,
     val fechaFin: LocalDate,
     val rangoTexto: String,
-    val averias: List<AveriaReportItem> = emptyList(),
-    val materialesPorAveria: List<MaterialPorAveriaReportItem> = emptyList(),
-    val materialesTotales: List<MaterialTotalItem> = emptyList(),
-    val totalAverias: Int = 0,
-    val totalMateriales: Int = 0,
-    val totalMaterialesDistintos: Int = 0,
-    val isLoading: Boolean = false
+    val reporteSeleccionado: ReportType = ReportType.AVERIAS,
+    val resumen: ResumenTotales? = null,
+    val isGlobalLoading: Boolean = false,
+    val averiasState: ReportSectionState<AveriaReportItem> = ReportSectionState(),
+    val materialesPorAveriaState: ReportSectionState<MaterialPorAveriaReportItem> = ReportSectionState(),
+    val materialesTotalesState: ReportSectionState<MaterialTotalItem> = ReportSectionState()
 )
 
-private data class ReportesResultado(
-    val averias: List<AveriaReportItem>,
-    val materialesPorAveria: List<MaterialPorAveriaReportItem>,
+private data class DatosBase(
+    val averias: List<AveriaReporteInterno>,
     val materialesTotales: List<MaterialTotalItem>,
-    val totalAverias: Int,
-    val totalMateriales: Int,
-    val totalMaterialesDistintos: Int
+    val totalMateriales: Int
 )
 
 class ReportesViewModel(app: Application) : AndroidViewModel(app) {
@@ -105,95 +125,129 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
 
     private val initialRange: Pair<LocalDate, LocalDate> = LocalDate.now().minusDays(6) to LocalDate.now()
 
-    private val rangoFechas = MutableStateFlow(initialRange)
-
     private val _uiState = MutableStateFlow(
         ReportesUiState(
             fechaInicio = initialRange.first,
             fechaFin = initialRange.second,
-            rangoTexto = buildRangeText(initialRange.first, initialRange.second),
-            isLoading = true
+            rangoTexto = buildRangeText(initialRange.first, initialRange.second)
         )
     )
     val uiState = _uiState.asStateFlow()
 
     private val _messages = MutableSharedFlow<String>(extraBufferCapacity = 1)
     val messages = _messages.asSharedFlow()
-
-    init {
-        viewModelScope.launch {
-            rangoFechas.collectLatest { (inicio, fin) ->
-                generarReportes(inicio, fin)
-            }
-        }
-    }
+    private var cachedBase: DatosBase? = null
+    private var cachedRange: Pair<LocalDate, LocalDate>? = null
 
     fun actualizarRangoFechas(inicio: LocalDate, fin: LocalDate) {
-        val nuevoInicio: LocalDate
-        val nuevoFin: LocalDate
-        if (inicio.isAfter(fin)) {
-            nuevoInicio = fin
-            nuevoFin = inicio
+        val (nuevoInicio, nuevoFin) = if (inicio.isAfter(fin)) {
+            fin to inicio
         } else {
-            nuevoInicio = inicio
-            nuevoFin = fin
+            inicio to fin
         }
-        if (rangoFechas.value.first == nuevoInicio && rangoFechas.value.second == nuevoFin) return
-        rangoFechas.value = nuevoInicio to nuevoFin
-    }
 
-    private suspend fun generarReportes(inicio: LocalDate, fin: LocalDate) {
+        val current = uiState.value
+        if (current.fechaInicio == nuevoInicio && current.fechaFin == nuevoFin) return
+
+        cachedBase = null
+        cachedRange = null
+
         _uiState.update {
-            it.copy(
-                fechaInicio = inicio,
-                fechaFin = fin,
-                rangoTexto = buildRangeText(inicio, fin),
-                isLoading = true
+            ReportesUiState(
+                fechaInicio = nuevoInicio,
+                fechaFin = nuevoFin,
+                rangoTexto = buildRangeText(nuevoInicio, nuevoFin),
+                reporteSeleccionado = it.reporteSeleccionado
             )
         }
+    }
 
-        try {
-            val resultado = withContext(Dispatchers.IO) {
-                val averias = database.averiaDao().all()
-                val materialesCatalogo = database.materialDao().observarMateriales().first()
-                procesarDatos(averias, materialesCatalogo, inicio, fin)
-            }
+    fun seleccionarTipo(tipo: ReportType) {
+        if (uiState.value.reporteSeleccionado == tipo) return
+        _uiState.update { it.copy(reporteSeleccionado = tipo) }
+    }
 
-            _uiState.update {
-                it.copy(
-                    fechaInicio = inicio,
-                    fechaFin = fin,
-                    rangoTexto = buildRangeText(inicio, fin),
-                    averias = resultado.averias,
-                    materialesPorAveria = resultado.materialesPorAveria,
-                    materialesTotales = resultado.materialesTotales,
-                    totalAverias = resultado.totalAverias,
-                    totalMateriales = resultado.totalMateriales,
-                    totalMaterialesDistintos = resultado.totalMaterialesDistintos,
-                    isLoading = false
+    fun generarReporteSeleccionado() {
+        generarReporte(uiState.value.reporteSeleccionado)
+    }
+
+    fun generarReporte(tipo: ReportType) {
+        val state = uiState.value
+        setSectionLoading(tipo)
+        viewModelScope.launch {
+            try {
+                val base = obtenerDatosBase(state.fechaInicio, state.fechaFin)
+                val resumen = ResumenTotales(
+                    totalAverias = base.averias.size,
+                    totalMateriales = base.totalMateriales,
+                    totalMaterialesDistintos = base.materialesTotales.size
                 )
+
+                when (tipo) {
+                    ReportType.AVERIAS -> {
+                        val items = mapAverias(base)
+                        setAveriasSuccess(items, resumen)
+                    }
+                    ReportType.MATERIALES_POR_AVERIA -> {
+                        val items = mapMaterialesPorAveria(base)
+                        setMaterialesPorAveriaSuccess(items, resumen)
+                    }
+                    ReportType.MATERIALES_TOTALES -> {
+                        val items = base.materialesTotales
+                        setMaterialesTotalesSuccess(items, resumen)
+                    }
+                }
+            } catch (t: Throwable) {
+                Log.e(TAG, "Error generando reporte", t)
+                setSectionFailure(tipo)
+                val mensaje = getApplication<Application>().getString(R.string.reportes_error_carga)
+                _messages.tryEmit(mensaje)
             }
-        } catch (t: Throwable) {
-            Log.e(TAG, "Error generando reportes", t)
-            _uiState.update {
-                it.copy(
-                    fechaInicio = inicio,
-                    fechaFin = fin,
-                    rangoTexto = buildRangeText(inicio, fin),
-                    isLoading = false
-                )
-            }
-            val mensaje = getApplication<Application>().getString(R.string.reportes_error_carga)
-            _messages.tryEmit(mensaje)
         }
     }
 
-    private fun procesarDatos(
+    fun obtenerDatosParaExportar(tipo: ReportType): ReportExportData? {
+        val state = uiState.value
+        return when (tipo) {
+            ReportType.AVERIAS -> {
+                if (!state.averiasState.hasContent) return null
+                ReportExportData.Averias(state.averiasState.items)
+            }
+            ReportType.MATERIALES_POR_AVERIA -> {
+                if (!state.materialesPorAveriaState.hasContent) return null
+                ReportExportData.MaterialesPorAveria(state.materialesPorAveriaState.items)
+            }
+            ReportType.MATERIALES_TOTALES -> {
+                if (!state.materialesTotalesState.hasContent) return null
+                ReportExportData.MaterialesTotales(state.materialesTotalesState.items)
+            }
+        }
+    }
+
+    private suspend fun obtenerDatosBase(inicio: LocalDate, fin: LocalDate): DatosBase {
+        val cached = cachedBase
+        val range = cachedRange
+        if (cached != null && range?.first == inicio && range.second == fin) {
+            return cached
+        }
+
+        val resultado = withContext(Dispatchers.IO) {
+            val averias = database.averiaDao().all()
+            val materialesCatalogo = database.materialDao().observarMateriales().first()
+            construirDatosBase(averias, materialesCatalogo, inicio, fin)
+        }
+
+        cachedBase = resultado
+        cachedRange = inicio to fin
+        return resultado
+    }
+
+    private fun construirDatosBase(
         averias: List<AveriaEntity>,
         catalogo: List<MaterialEntity>,
         inicio: LocalDate,
         fin: LocalDate
-    ): ReportesResultado {
+    ): DatosBase {
         val zona = ZoneId.systemDefault()
         val inicioMillis = inicio.atStartOfDay(zona).toInstant().toEpochMilli()
         val finExclusiveMillis = fin.plusDays(1).atStartOfDay(zona).toInstant().toEpochMilli()
@@ -207,36 +261,6 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
             val materiales = obtenerMateriales(entity, catalogoPorCodigo, catalogoPorDescripcion)
             AveriaReporteInterno(entity, finalMillis, materiales)
         }.sortedByDescending { it.finalMillis }
-
-        val averiaItems = atendidas.map { raw ->
-            val entidad = raw.entity
-            val resumen = MaterialesSerializer.toSummary(raw.materiales)
-            val totalMateriales = raw.materiales.sumOf { it.cantidad }
-            AveriaReportItem(
-                caseId = entidad.caseId,
-                fechaTexto = formatDateTime(raw.finalMillis),
-                agencia = obtenerAgencia(entidad),
-                estado = entidad.estado.trim(),
-                atendidoPor = obtenerAtendido(entidad),
-                vehiculo = entidad.vehiculoAsignado?.trim()?.takeIf { it.isNotEmpty() },
-                materialesResumen = resumen,
-                materialesCantidad = totalMateriales,
-                tieneMateriales = raw.materiales.isNotEmpty()
-            )
-        }
-
-        val materialesPorAveriaItems = atendidas.map { raw ->
-            val entidad = raw.entity
-            val resumen = MaterialesSerializer.toSummary(raw.materiales)
-            MaterialPorAveriaReportItem(
-                caseId = entidad.caseId,
-                fechaTexto = formatDateTime(raw.finalMillis),
-                agencia = obtenerAgencia(entidad),
-                materiales = raw.materiales,
-                resumen = resumen,
-                tieneMateriales = raw.materiales.isNotEmpty()
-            )
-        }
 
         val acumulados = mutableMapOf<String, MaterialAcumulado>()
         var totalMateriales = 0
@@ -284,14 +308,131 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
                     .thenBy { it.descripcion.lowercase(locale) }
             )
 
-        return ReportesResultado(
-            averias = averiaItems,
-            materialesPorAveria = materialesPorAveriaItems,
+        return DatosBase(
+            averias = atendidas,
             materialesTotales = materialesTotales,
-            totalAverias = atendidas.size,
-            totalMateriales = totalMateriales,
-            totalMaterialesDistintos = materialesTotales.size
+            totalMateriales = totalMateriales
         )
+    }
+
+    private fun mapAverias(base: DatosBase): List<AveriaReportItem> {
+        return base.averias.map { raw ->
+            val entidad = raw.entity
+            val resumen = MaterialesSerializer.toSummary(raw.materiales)
+            val totalMateriales = raw.materiales.sumOf { it.cantidad }
+            AveriaReportItem(
+                caseId = entidad.caseId,
+                fechaTexto = formatDateTime(raw.finalMillis),
+                agencia = obtenerAgencia(entidad),
+                estado = entidad.estado.trim(),
+                atendidoPor = obtenerAtendido(entidad),
+                vehiculo = entidad.vehiculoAsignado?.trim()?.takeIf { it.isNotEmpty() },
+                materialesResumen = resumen,
+                materialesCantidad = totalMateriales,
+                tieneMateriales = raw.materiales.isNotEmpty()
+            )
+        }
+    }
+
+    private fun mapMaterialesPorAveria(base: DatosBase): List<MaterialPorAveriaReportItem> {
+        return base.averias.map { raw ->
+            val entidad = raw.entity
+            val resumen = MaterialesSerializer.toSummary(raw.materiales)
+            MaterialPorAveriaReportItem(
+                caseId = entidad.caseId,
+                fechaTexto = formatDateTime(raw.finalMillis),
+                agencia = obtenerAgencia(entidad),
+                materiales = raw.materiales,
+                resumen = resumen,
+                tieneMateriales = raw.materiales.isNotEmpty()
+            )
+        }
+    }
+
+    private fun setSectionLoading(tipo: ReportType) {
+        _uiState.update { current ->
+            when (tipo) {
+                ReportType.AVERIAS -> current.copy(
+                    isGlobalLoading = true,
+                    averiasState = current.averiasState.copy(isLoading = true),
+                    materialesPorAveriaState = current.materialesPorAveriaState.copy(isLoading = false),
+                    materialesTotalesState = current.materialesTotalesState.copy(isLoading = false)
+                )
+                ReportType.MATERIALES_POR_AVERIA -> current.copy(
+                    isGlobalLoading = true,
+                    materialesPorAveriaState = current.materialesPorAveriaState.copy(isLoading = true),
+                    averiasState = current.averiasState.copy(isLoading = false),
+                    materialesTotalesState = current.materialesTotalesState.copy(isLoading = false)
+                )
+                ReportType.MATERIALES_TOTALES -> current.copy(
+                    isGlobalLoading = true,
+                    materialesTotalesState = current.materialesTotalesState.copy(isLoading = true),
+                    averiasState = current.averiasState.copy(isLoading = false),
+                    materialesPorAveriaState = current.materialesPorAveriaState.copy(isLoading = false)
+                )
+            }
+        }
+    }
+
+    private fun setAveriasSuccess(items: List<AveriaReportItem>, resumen: ResumenTotales) {
+        _uiState.update { current ->
+            current.copy(
+                isGlobalLoading = false,
+                resumen = resumen,
+                averiasState = ReportSectionState(isLoading = false, items = items, hasContent = true),
+                materialesPorAveriaState = current.materialesPorAveriaState.copy(isLoading = false),
+                materialesTotalesState = current.materialesTotalesState.copy(isLoading = false)
+            )
+        }
+    }
+
+    private fun setMaterialesPorAveriaSuccess(
+        items: List<MaterialPorAveriaReportItem>,
+        resumen: ResumenTotales
+    ) {
+        _uiState.update { current ->
+            current.copy(
+                isGlobalLoading = false,
+                resumen = resumen,
+                materialesPorAveriaState = ReportSectionState(isLoading = false, items = items, hasContent = true),
+                averiasState = current.averiasState.copy(isLoading = false),
+                materialesTotalesState = current.materialesTotalesState.copy(isLoading = false)
+            )
+        }
+    }
+
+    private fun setMaterialesTotalesSuccess(
+        items: List<MaterialTotalItem>,
+        resumen: ResumenTotales
+    ) {
+        _uiState.update { current ->
+            current.copy(
+                isGlobalLoading = false,
+                resumen = resumen,
+                materialesTotalesState = ReportSectionState(isLoading = false, items = items, hasContent = true),
+                averiasState = current.averiasState.copy(isLoading = false),
+                materialesPorAveriaState = current.materialesPorAveriaState.copy(isLoading = false)
+            )
+        }
+    }
+
+    private fun setSectionFailure(tipo: ReportType) {
+        _uiState.update { current ->
+            when (tipo) {
+                ReportType.AVERIAS -> current.copy(
+                    isGlobalLoading = false,
+                    averiasState = current.averiasState.copy(isLoading = false)
+                )
+                ReportType.MATERIALES_POR_AVERIA -> current.copy(
+                    isGlobalLoading = false,
+                    materialesPorAveriaState = current.materialesPorAveriaState.copy(isLoading = false)
+                )
+                ReportType.MATERIALES_TOTALES -> current.copy(
+                    isGlobalLoading = false,
+                    materialesTotalesState = current.materialesTotalesState.copy(isLoading = false)
+                )
+            }
+        }
     }
 
     private fun obtenerFechaAtencion(entity: AveriaEntity): Long? {
