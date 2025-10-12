@@ -6,7 +6,6 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ArrayAdapter
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.util.Pair
@@ -22,12 +21,14 @@ import com.Arasoftsolutions.tecniapp_ice.R
 import com.Arasoftsolutions.tecniapp_ice.databinding.FragmentReportesBinding
 import com.Arasoftsolutions.tecniapp_ice.ui.reportes.ExcelReportExporter.ExportPayload
 import com.Arasoftsolutions.tecniapp_ice.ui.reportes.ExcelReportExporter.MIME_TYPE_XLSX
+import com.Arasoftsolutions.tecniapp_ice.ui.reportes.ReportesUiState
 import com.google.android.material.datepicker.MaterialDatePicker
 import com.google.android.material.snackbar.Snackbar
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -43,7 +44,12 @@ class ReportesFragment : Fragment() {
     private lateinit var materialesPorAveriaAdapter: MaterialesPorAveriaAdapter
     private lateinit var materialTotalAdapter: MaterialTotalAdapter
 
-    private val reportTypes = ReportType.values()
+    private val chipTypeMap = mapOf(
+        R.id.chipTipoAverias to ReportType.AVERIAS,
+        R.id.chipTipoMaterialPorAveria to ReportType.MATERIALES_POR_AVERIA,
+        R.id.chipTipoMaterialTotal to ReportType.MATERIALES_TOTALES
+    )
+    private val locale = Locale.getDefault()
     private val fileNameFormatter = DateTimeFormatter.ofPattern("yyyyMMdd")
 
     private var pendingExport: ExportPayload? = null
@@ -106,20 +112,13 @@ class ReportesFragment : Fragment() {
         binding.btnGenerarReporte.setOnClickListener { viewModel.generarReporteSeleccionado() }
         binding.btnExportarExcel.setOnClickListener { prepararExportacion() }
 
-        val adapter = ArrayAdapter(
-            requireContext(),
-            android.R.layout.simple_list_item_1,
-            reportTypes.map { getString(it.titleRes) }
-        )
-        binding.inputTipoReporte.setAdapter(adapter)
-        binding.inputTipoReporte.setText(
-            getString(viewModel.uiState.value.reporteSeleccionado.titleRes),
-            false
-        )
-        binding.inputTipoReporte.setOnItemClickListener { _, _, position, _ ->
-            val tipo = reportTypes.getOrNull(position) ?: return@setOnItemClickListener
+        binding.chipGroupTipoReporte.setOnCheckedStateChangeListener { _, checkedIds ->
+            val checkedId = checkedIds.firstOrNull() ?: return@setOnCheckedStateChangeListener
+            val tipo = chipTypeMap[checkedId] ?: return@setOnCheckedStateChangeListener
             viewModel.seleccionarTipo(tipo)
         }
+
+        marcarChipSeleccionado(viewModel.uiState.value.reporteSeleccionado)
     }
 
     private fun observeState() {
@@ -138,14 +137,18 @@ class ReportesFragment : Fragment() {
                             resumen.totalMaterialesDistintos
                         )
                     } else {
-                        binding.tvResumenTotales.text = getString(R.string.reportes_totales_resumen_pendiente)
+                    binding.tvResumenTotales.text = getString(R.string.reportes_totales_resumen_pendiente)
                     }
 
                     val seleccionado = state.reporteSeleccionado
-                    val tipoTexto = getString(seleccionado.titleRes)
-                    if (binding.inputTipoReporte.text.toString() != tipoTexto) {
-                        binding.inputTipoReporte.setText(tipoTexto, false)
-                    }
+                    actualizarTextoChips(state)
+                    marcarChipSeleccionado(seleccionado)
+                    binding.btnGenerarReporte.text = getString(
+                        R.string.reportes_btn_generar_tipo,
+                        getString(seleccionado.titleRes).replaceFirstChar { char ->
+                            char.lowercase(locale)
+                        }
+                    )
 
                     binding.btnGenerarReporte.isEnabled = !state.isGlobalLoading
 
@@ -216,6 +219,39 @@ class ReportesFragment : Fragment() {
                 if (!isAdded) return@collect
                 Snackbar.make(binding.root, message, Snackbar.LENGTH_LONG).show()
             }
+        }
+    }
+
+    private fun marcarChipSeleccionado(tipo: ReportType) {
+        val targetId = chipTypeMap.entries.firstOrNull { it.value == tipo }?.key ?: return
+        if (binding.chipGroupTipoReporte.checkedChipId != targetId) {
+            binding.chipGroupTipoReporte.check(targetId)
+        }
+    }
+
+    private fun actualizarTextoChips(state: ReportesUiState) {
+        binding.chipTipoAverias.text = if (state.averiasState.hasContent) {
+            getString(R.string.reportes_chip_averias_conteo, state.averiasState.items.size)
+        } else {
+            getString(R.string.reportes_chip_averias)
+        }
+
+        binding.chipTipoMaterialPorAveria.text = if (state.materialesPorAveriaState.hasContent) {
+            getString(
+                R.string.reportes_chip_material_por_averia_conteo,
+                state.materialesPorAveriaState.items.size
+            )
+        } else {
+            getString(R.string.reportes_chip_material_por_averia)
+        }
+
+        binding.chipTipoMaterialTotal.text = if (state.materialesTotalesState.hasContent) {
+            getString(
+                R.string.reportes_chip_material_total_conteo,
+                state.materialesTotalesState.items.size
+            )
+        } else {
+            getString(R.string.reportes_chip_material_total)
         }
     }
 

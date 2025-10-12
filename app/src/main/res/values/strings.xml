@@ -329,11 +329,15 @@ Cliente: %4$s</string>
     <!-- Reportes -->
     <string name="reportes_filtro_rango">Rango de fechas</string>
     <string name="reportes_btn_rango">Cambiar rango</string>
-    <string name="reportes_tipo_hint">Selecciona el tipo de reporte</string>
-    <string name="reportes_tipo_averias">Averías atendidas</string>
-    <string name="reportes_tipo_material_por_averia">Material por avería</string>
-    <string name="reportes_tipo_material_total">Consumo total de material</string>
+    <string name="reportes_selector_titulo">¿Qué reporte necesitas revisar?</string>
+    <string name="reportes_chip_averias">Averías atendidas</string>
+    <string name="reportes_chip_averias_conteo">Averías atendidas (%1$d)</string>
+    <string name="reportes_chip_material_por_averia">Material por avería</string>
+    <string name="reportes_chip_material_por_averia_conteo">Material por avería (%1$d)</string>
+    <string name="reportes_chip_material_total">Consumo total</string>
+    <string name="reportes_chip_material_total_conteo">Consumo total (%1$d)</string>
     <string name="reportes_btn_generar">Generar reporte</string>
+    <string name="reportes_btn_generar_tipo">Generar %1$s</string>
     <string name="reportes_btn_exportar">Exportar a Excel</string>
     <string name="reportes_totales_resumen">Averías atendidas: %1$d&#10;Materiales registrados: %2$d unidades en %3$d códigos.</string>
     <string name="reportes_totales_resumen_pendiente">Selecciona un rango y genera un reporte para ver el resumen de totales.</string>
