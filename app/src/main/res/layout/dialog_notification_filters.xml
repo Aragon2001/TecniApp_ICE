@@ -70,4 +70,15 @@
         android:layout_marginTop="12dp"
         app:chipSpacingHorizontal="8dp"
         app:chipSpacingVertical="8dp" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnGuardarNotificaciones"
+        style="@style/Widget.Material3.Button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:text="Guardar preferencias"
+        app:icon="@drawable/ic_check"
+        app:iconGravity="textStart"
+        app:iconPadding="8dp" />
 </LinearLayout>

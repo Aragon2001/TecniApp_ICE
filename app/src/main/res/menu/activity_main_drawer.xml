@@ -34,7 +34,7 @@
             android:id="@+id/nav_reportes"
             android:icon="@drawable/ic_menu_reportes"
             android:title="@string/menu_reportes"
-            android:visible="false"/>
+           />
         <item
             android:id="@+id/nav_programacion"
             android:icon="@drawable/ic_menu_programacion"

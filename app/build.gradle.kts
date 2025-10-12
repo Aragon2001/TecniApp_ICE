@@ -22,7 +22,7 @@ android {
         buildConfigField("String", "ICE_BASE_URL", "\"https://agenciaelectricidad.cn.ice.go.cr/api/\"")
         buildConfigField("String", "ICE_BEARER", "\"\"")
 
-        minSdk = 24
+        minSdk = 26
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"

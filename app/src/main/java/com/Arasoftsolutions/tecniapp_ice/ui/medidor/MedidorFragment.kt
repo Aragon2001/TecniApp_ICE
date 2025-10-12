@@ -112,7 +112,7 @@ class MedidorFragment : Fragment() {
                     } else {
                         getString(R.string.medidor_estado_chip_preparando)
                     }
-                    binding.chipEstado.text = chipTexto
+
 
                     estado.notFoundNumero?.let { numero ->
                         binding.textNoEncontradoDescription.text = getString(

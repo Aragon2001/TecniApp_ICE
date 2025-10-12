@@ -22,6 +22,7 @@ import com.Arasoftsolutions.tecniapp_ice.databinding.DialogNotificationFiltersBi
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.chip.Chip
 import android.view.inputmethod.EditorInfo
+import android.widget.Toast
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -46,6 +47,10 @@ class AveriasFragment : Fragment() {
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        b.fabFilters.setOnClickListener {
+    showNotificationFiltersSheet()
+}
+
         b.toolbar.title = getString(R.string.averias_title)
         b.toolbar.inflateMenu(R.menu.menu_averias)
         b.toolbar.setOnMenuItemClickListener { item ->
@@ -268,97 +273,68 @@ class AveriasFragment : Fragment() {
     }
 
     private fun showNotificationFiltersSheet() {
-        if (notificationSheet?.isShowing == true) return
-
-        notificationSheet?.setOnDismissListener(null)
-        notificationSheet?.dismiss()
-        notificationSheetScope?.cancel()
-
         val sheetBinding = DialogNotificationFiltersBinding.inflate(layoutInflater)
         val dialog = BottomSheetDialog(requireContext())
         dialog.setContentView(sheetBinding.root)
 
-        val sheetScope = CoroutineScope(Dispatchers.Main.immediate + SupervisorJob())
-        notificationSheetScope = sheetScope
-        notificationSheet = dialog
+        // 🔹 Lista de agencias disponibles
+        val agencies = listOf("Guápiles", "Guácimo", "Siquirres", "Limón", "Talamanca")
 
-        val suggestionsAdapter = ArrayAdapter(
-            requireContext(),
-            android.R.layout.simple_dropdown_item_1line,
-            vm.notificationSuggestions.value.toMutableList()
-        )
-        sheetBinding.actvNotificationAgency.setAdapter(suggestionsAdapter)
+        // 🔹 Configurar adapter para el AutoCompleteTextView
+        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_list_item_1, agencies)
+        sheetBinding.actvNotificationAgency.setAdapter(adapter)
 
-        sheetBinding.actvNotificationAgency.setOnItemClickListener { parent: AdapterView<*>, _, position, _ ->
-            val value = parent.getItemAtPosition(position)?.toString()?.trim().orEmpty()
-            if (value.isNotEmpty()) {
-                vm.addNotificationAgency(value)
-                sheetBinding.actvNotificationAgency.setText("", false)
-            }
+        // 🔹 Inicialización visual
+        sheetBinding.switchNotifications.isChecked = false
+        sheetBinding.tilNotificationAgency.alpha = 0.5f
+        sheetBinding.actvNotificationAgency.isEnabled = false
+        sheetBinding.tvNotificationSwitchHelper.text = "Las notificaciones están desactivadas."
+
+        // 🔹 Listener del Switch
+        sheetBinding.switchNotifications.setOnCheckedChangeListener { _, isChecked ->
+            sheetBinding.tilNotificationAgency.alpha = if (isChecked) 1f else 0.5f
+            sheetBinding.actvNotificationAgency.isEnabled = isChecked
+            sheetBinding.tvNotificationSwitchHelper.text =
+                if (isChecked)
+                    "Selecciona una agencia para recibir notificaciones."
+                else
+                    "Las notificaciones están desactivadas."
         }
-        sheetBinding.actvNotificationAgency.setOnEditorActionListener { textView: TextView, actionId, _ ->
-            if (actionId == EditorInfo.IME_ACTION_DONE) {
-                val value = textView.text?.toString()?.trim().orEmpty()
-                if (value.isNotEmpty()) {
-                    vm.addNotificationAgency(value)
-                    textView.text = null
-                }
-                true
+
+        // 🔹 Listener para seleccionar agencia
+        sheetBinding.actvNotificationAgency.setOnItemClickListener { parent, _, position, _ ->
+            val selectedAgency = parent.getItemAtPosition(position).toString()
+            Toast.makeText(requireContext(), "Agencia seleccionada: $selectedAgency", Toast.LENGTH_SHORT).show()
+        }
+
+        // 🔹 Botón de guardar
+        sheetBinding.btnGuardarNotificaciones.setOnClickListener {
+            val selectedAgency = sheetBinding.actvNotificationAgency.text.toString()
+            val enabled = sheetBinding.switchNotifications.isChecked
+
+            if (enabled && selectedAgency.isNotBlank()) {
+                Toast.makeText(requireContext(), "Notificaciones activadas para $selectedAgency", Toast.LENGTH_SHORT).show()
+                // 🔸 Aquí podrías guardar en SharedPreferences o tu ViewModel
+            } else if (!enabled) {
+                Toast.makeText(requireContext(), "Notificaciones desactivadas.", Toast.LENGTH_SHORT).show()
             } else {
-                false
+                Toast.makeText(requireContext(), "Selecciona una agencia antes de guardar.", Toast.LENGTH_SHORT).show()
             }
-        }
 
-        val switchListener = CompoundButton.OnCheckedChangeListener { _, isChecked ->
-            vm.setNotificationsEnabled(isChecked)
-        }
-
-        var currentEnabled = vm.notificationsEnabled.value
-        sheetBinding.switchNotifications.setOnCheckedChangeListener(null)
-        sheetBinding.switchNotifications.isChecked = currentEnabled
-        sheetBinding.switchNotifications.setOnCheckedChangeListener(switchListener)
-
-        applyNotificationEnabledState(sheetBinding, currentEnabled)
-        renderNotificationChips(sheetBinding, vm.notificationAgencies.value, currentEnabled)
-
-        sheetScope.launch {
-            vm.notificationSuggestions.collectLatest { sugerencias ->
-                suggestionsAdapter.clear()
-                suggestionsAdapter.addAll(sugerencias)
-                suggestionsAdapter.notifyDataSetChanged()
-            }
-        }
-        sheetScope.launch {
-            vm.notificationsEnabled.collectLatest { enabled ->
-                currentEnabled = enabled
-                if (sheetBinding.switchNotifications.isChecked != enabled) {
-                    sheetBinding.switchNotifications.setOnCheckedChangeListener(null)
-                    sheetBinding.switchNotifications.isChecked = enabled
-                    sheetBinding.switchNotifications.setOnCheckedChangeListener(switchListener)
-                }
-                applyNotificationEnabledState(sheetBinding, enabled)
-                renderNotificationChips(sheetBinding, vm.notificationAgencies.value, enabled)
-            }
-        }
-        sheetScope.launch {
-            vm.notificationAgencies.collectLatest { agencias ->
-                renderNotificationChips(sheetBinding, agencias, currentEnabled)
-            }
-        }
-
-        dialog.setOnDismissListener {
-            notificationSheetScope?.cancel()
-            notificationSheetScope = null
-            notificationSheet = null
+            dialog.dismiss()
         }
 
         dialog.show()
     }
 
+
     private fun showDetalle(item: AveriaUI) {
         AveriaDetalleBottomSheet.newInstance(item).show(childFragmentManager, "detalle_averia")
     }
 
+    /**
+     * Renderiza los chips dentro del diálogo (BottomSheet)
+     */
     private fun renderNotificationChips(
         sheetBinding: DialogNotificationFiltersBinding,
         agencias: List<String>,
@@ -379,9 +355,38 @@ class AveriasFragment : Fragment() {
         sheetBinding.tvNotificationFiltersEmpty.visibility =
             if (agencias.isEmpty()) View.VISIBLE else View.GONE
         sheetBinding.tvNotificationFiltersEmpty.alpha = if (notificationsEnabled) 1f else 0.6f
-        sheetBinding.chipGroupNotificationAgencies.alpha = if (notificationsEnabled) 1f else 0.6f
+        group.alpha = if (notificationsEnabled) 1f else 0.6f
     }
 
+    /**
+     * Renderiza los chips visibles en el fragment principal
+     */
+    private fun renderNotificationChips(
+        agencias: List<String>,
+        notificationsEnabled: Boolean
+    ) {
+        val group = b.chipGroupNotificationAgencies
+        group.removeAllViews()
+        agencias.forEach { nombre ->
+            val chip = Chip(requireContext()).apply {
+                text = nombre
+                isCheckable = false
+                isCloseIconVisible = true
+                alpha = if (notificationsEnabled) 1f else 0.6f
+                setOnCloseIconClickListener { vm.removeNotificationAgency(nombre) }
+            }
+            group.addView(chip)
+        }
+        b.tvNotificationFiltersEmpty.visibility =
+            if (agencias.isEmpty()) View.VISIBLE else View.GONE
+        b.tvNotificationFiltersEmpty.alpha = if (notificationsEnabled) 1f else 0.6f
+        group.alpha = if (notificationsEnabled) 1f else 0.6f
+    }
+
+    /**
+     * Aplica el estado visual de "notificaciones activadas/desactivadas"
+     * tanto para el diálogo como para la vista principal.
+     */
     private fun applyNotificationEnabledState(
         sheetBinding: DialogNotificationFiltersBinding,
         enabled: Boolean
@@ -393,6 +398,7 @@ class AveriasFragment : Fragment() {
         sheetBinding.chipGroupNotificationAgencies.alpha = alpha
         sheetBinding.tvNotificationFiltersEmpty.alpha = alpha
     }
+
 
     override fun onDestroyView() {
         notificationSheet?.setOnDismissListener(null)
