@@ -13,7 +13,7 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:visibility="gone"
-        app:indeterminate="true"
+        android:indeterminate="true"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
@@ -50,6 +50,8 @@
                     <TextView
                         android:id="@+id/tvTituloFiltro"
                         style="@style/TextAppearance.MaterialComponents.Body1"
+                        android:layout_width="match_parent"
+            android:layout_height="wrap_content"
                         android:text="@string/reportes_filtro_rango"
                         android:textStyle="bold" />
 
@@ -57,6 +59,8 @@
                         android:id="@+id/tvRangoFechas"
                         style="@style/TextAppearance.MaterialComponents.Body1"
                         android:layout_marginTop="4dp"
+                        android:layout_width="match_parent"
+            android:layout_height="wrap_content"
                         tools:text="01 may 2024 – 07 may 2024" />
 
                     <com.google.android.material.button.MaterialButton
@@ -68,61 +72,12 @@
                         android:text="@string/reportes_btn_rango" />
 
                     <TextView
-                        android:id="@+id/tvSelectorTitulo"
-                        style="@style/TextAppearance.MaterialComponents.Body2"
-                        android:layout_marginTop="16dp"
-                        android:text="@string/reportes_selector_titulo"
-                        android:textAllCaps="false" />
-
-                    <com.google.android.material.chip.ChipGroup
-                        android:id="@+id/chipGroupTipoReporte"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        app:selectionRequired="true"
-                        app:singleLine="false"
-                        app:singleSelection="true">
-
-                        <com.google.android.material.chip.Chip
-                            android:id="@+id/chipTipoAverias"
-                            style="@style/Widget.MaterialComponents.Chip.Filter"
-                            android:layout_marginEnd="8dp"
-                            android:checked="true"
-                            android:text="@string/reportes_chip_averias" />
-
-                        <com.google.android.material.chip.Chip
-                            android:id="@+id/chipTipoMaterialPorAveria"
-                            style="@style/Widget.MaterialComponents.Chip.Filter"
-                            android:layout_marginEnd="8dp"
-                            android:text="@string/reportes_chip_material_por_averia" />
-
-                        <com.google.android.material.chip.Chip
-                            android:id="@+id/chipTipoMaterialTotal"
-                            style="@style/Widget.MaterialComponents.Chip.Filter"
-                            android:text="@string/reportes_chip_material_total" />
-                    </com.google.android.material.chip.ChipGroup>
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnGenerarReporte"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:text="@string/reportes_btn_generar" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnExportarExcel"
-                        style="?attr/materialButtonOutlinedStyle"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:text="@string/reportes_btn_exportar"
-                        android:visibility="gone" />
-
-                    <TextView
                         android:id="@+id/tvResumenTotales"
                         style="@style/TextAppearance.MaterialComponents.Body2"
                         android:layout_marginTop="12dp"
-                        tools:text="Selecciona un tipo de reporte y rango para ver totales." />
+                        android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+                        tools:text="Averías atendidas: 5&#10;Materiales registrados: 12 unidades en 4 códigos." />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
@@ -130,8 +85,7 @@
                 android:id="@+id/cardAverias"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                tools:visibility="visible">
+                android:layout_marginBottom="16dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -143,6 +97,8 @@
                         android:id="@+id/tvTituloAverias"
                         style="@style/TextAppearance.MaterialComponents.Subtitle1"
                         android:text="@string/reportes_averias_titulo"
+                        android:layout_width="match_parent"
+            android:layout_height="wrap_content"
                         android:textStyle="bold" />
 
                     <androidx.recyclerview.widget.RecyclerView
@@ -151,8 +107,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="12dp"
                         android:overScrollMode="never"
-                        tools:listitem="@layout/item_reporte_averia"
-                        tools:visibility="gone" />
+                        tools:listitem="@layout/item_reporte_averia" />
 
                     <TextView
                         android:id="@+id/tvAveriasVacio"
@@ -161,7 +116,8 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="12dp"
                         android:gravity="center"
-                        android:text="@string/reportes_estado_pendiente"
+                        android:text="@string/reportes_averias_vacio"
+                        android:visibility="gone"
                         tools:visibility="visible" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
@@ -170,8 +126,7 @@
                 android:id="@+id/cardMaterialPorAveria"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                android:visibility="gone">
+                android:layout_marginBottom="16dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -182,6 +137,8 @@
                     <TextView
                         android:id="@+id/tvTituloMaterialPorAveria"
                         style="@style/TextAppearance.MaterialComponents.Subtitle1"
+                        android:layout_width="match_parent"
+            android:layout_height="wrap_content"
                         android:text="@string/reportes_material_por_averia_titulo"
                         android:textStyle="bold" />
 
@@ -191,8 +148,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="12dp"
                         android:overScrollMode="never"
-                        tools:listitem="@layout/item_reporte_material_por_averia"
-                        tools:visibility="gone" />
+                        tools:listitem="@layout/item_reporte_material_por_averia" />
 
                     <TextView
                         android:id="@+id/tvMaterialPorAveriaVacio"
@@ -201,7 +157,8 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="12dp"
                         android:gravity="center"
-                        android:text="@string/reportes_estado_pendiente"
+                        android:text="@string/reportes_material_por_averia_vacio"
+                        android:visibility="gone"
                         tools:visibility="visible" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
@@ -210,8 +167,7 @@
                 android:id="@+id/cardMaterialTotal"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                android:visibility="gone">
+                android:layout_marginBottom="16dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -222,6 +178,8 @@
                     <TextView
                         android:id="@+id/tvTituloMaterialTotal"
                         style="@style/TextAppearance.MaterialComponents.Subtitle1"
+                        android:layout_width="match_parent"
+            android:layout_height="wrap_content"
                         android:text="@string/reportes_material_total_titulo"
                         android:textStyle="bold" />
 
@@ -231,8 +189,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="12dp"
                         android:overScrollMode="never"
-                        tools:listitem="@layout/item_reporte_material_total"
-                        tools:visibility="gone" />
+                        tools:listitem="@layout/item_reporte_material_total" />
 
                     <TextView
                         android:id="@+id/tvMaterialTotalVacio"
@@ -241,7 +198,8 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="12dp"
                         android:gravity="center"
-                        android:text="@string/reportes_estado_pendiente"
+                        android:text="@string/reportes_material_total_vacio"
+                        android:visibility="gone"
                         tools:visibility="visible" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>

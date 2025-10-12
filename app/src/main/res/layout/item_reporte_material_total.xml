@@ -11,18 +11,24 @@
 
     <TextView
         android:id="@+id/tvMaterial"
+         android:layout_width="match_parent"
+    android:layout_height="wrap_content"
         style="@style/TextAppearance.MaterialComponents.Body1"
         android:textStyle="bold"
         tools:text="Cable #6" />
 
     <TextView
         android:id="@+id/tvCodigo"
+         android:layout_width="match_parent"
+    android:layout_height="wrap_content"
         style="@style/TextAppearance.MaterialComponents.Body2"
         android:layout_marginTop="2dp"
         tools:text="Código: CAB-001" />
 
     <TextView
         android:id="@+id/tvDetalle"
+         android:layout_width="match_parent"
+    android:layout_height="wrap_content"
         style="@style/TextAppearance.MaterialComponents.Body2"
         android:layout_marginTop="6dp"
         tools:text="6 unidades · 3 averías" />

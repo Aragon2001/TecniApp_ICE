@@ -18,87 +18,16 @@
             android:orientation="vertical"
             android:showDividers="none">
 
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/cardHero"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="20dp"
-                app:cardBackgroundColor="@android:color/transparent"
-                app:cardCornerRadius="28dp"
-                app:cardElevation="0dp"
-                app:cardUseCompatPadding="false"
-                app:strokeColor="@android:color/transparent">
 
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:background="@drawable/bg_medidor_header"
-                    android:gravity="center_vertical"
-                    android:minHeight="120dp"
-                    android:orientation="horizontal"
-                    android:padding="24dp">
 
-                    <FrameLayout
-                        android:layout_width="64dp"
-                        android:layout_height="64dp"
-                        android:background="@drawable/rounded_bg_f0f2f4"
-                        android:foregroundGravity="center"
-                        android:padding="12dp">
 
-                        <ImageView
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:contentDescription="@string/menu_medidor"
-                            android:scaleType="centerInside"
-                            android:src="@drawable/ic_menu_medidor"
-                            app:tint="@color/ice_blue_dark" />
-                    </FrameLayout>
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="20dp"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:id="@+id/textTitle"
-                            style="@style/TextAppearance.Material3.HeadlineSmall"
-                            android:layout_width="match_parent"
-                            android:text="@string/menu_medidor"
-                            android:textColor="@android:color/white" />
-
-                        <TextView
-                            android:id="@+id/textSubtitle"
-                            style="@style/TextAppearance.Material3.BodyLarge"
-                            android:layout_width="match_parent"
-                            android:layout_marginTop="6dp"
-                            android:text="@string/medidor_header_subtitle"
-                            android:textColor="@android:color/white" />
-
-                        <com.google.android.material.chip.Chip
-                            android:id="@+id/chipEstado"
-                            style="@style/Widget.Material3.Chip.Assist"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="14dp"
-                            android:text="@string/medidor_estado_chip_preparando"
-                            android:textColor="?attr/colorOnPrimaryContainer"
-                            app:chipBackgroundColor="@color/surface_variant_light"
-                            app:chipIcon="@drawable/ic_check"
-                            app:chipIconTint="?attr/colorPrimary"
-                            app:checkedIconVisible="false"
-                            app:closeIconVisible="false" />
-                    </LinearLayout>
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
 
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardConsulta"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="20dp"
-                app:cardBackgroundColor="@android:color/transparent"
+                app:cardBackgroundColor="@color/transparent"
                 app:cardCornerRadius="24dp"
                 app:cardElevation="0dp">
 
@@ -112,12 +41,14 @@
                     <TextView
                         style="@style/TextAppearance.Material3.TitleMedium"
                         android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
                         android:text="@string/medidor_consulta_title"
                         android:textColor="@color/ice_blue_dark" />
 
                     <TextView
                         style="@style/TextAppearance.Material3.BodyMedium"
                         android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
                         android:text="@string/medidor_consulta_descripcion"
                         android:textColor="?attr/colorOnSurfaceVariant" />
@@ -158,7 +89,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="20dp"
-                app:cardBackgroundColor="@android:color/transparent"
+                app:cardBackgroundColor="@color/transparent"
                 app:cardCornerRadius="24dp"
                 app:cardElevation="0dp">
 
@@ -209,7 +140,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="20dp"
                 android:visibility="gone"
-                app:cardBackgroundColor="@android:color/transparent"
+                app:cardBackgroundColor="@color/transparent"
                 app:cardCornerRadius="26dp"
                 app:cardElevation="0dp">
 
@@ -223,6 +154,7 @@
                     <TextView
                         style="@style/TextAppearance.Material3.TitleMedium"
                         android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
                         android:text="@string/medidor_result_title"
                         android:textColor="@color/ice_blue_dark" />
 
@@ -254,12 +186,14 @@
                             <TextView
                                 style="@style/TextAppearance.Material3.LabelSmall"
                                 android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
                                 android:text="@string/medidor_numero_label" />
 
                             <TextView
                                 android:id="@+id/valueNumero"
                                 style="@style/TextAppearance.Material3.BodyLarge"
                                 android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
                                 android:layout_marginTop="2dp"
                                 android:textColor="?attr/colorOnSurface"
                                 tools:text="714" />
@@ -274,12 +208,14 @@
                             <TextView
                                 style="@style/TextAppearance.Material3.LabelSmall"
                                 android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
                                 android:text="@string/medidor_cliente_label" />
 
                             <TextView
                                 android:id="@+id/valueCliente"
                                 style="@style/TextAppearance.Material3.BodyLarge"
                                 android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
                                 android:layout_marginTop="2dp"
                                 android:textColor="?attr/colorOnSurface"
                                 tools:text="GAS NACIONAL ZETA S.A." />
@@ -294,12 +230,14 @@
                             <TextView
                                 style="@style/TextAppearance.Material3.LabelSmall"
                                 android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
                                 android:text="@string/medidor_localizacion_label" />
 
                             <TextView
                                 android:id="@+id/valueLocalizacion"
                                 style="@style/TextAppearance.Material3.BodyLarge"
                                 android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
                                 android:layout_marginTop="2dp"
                                 android:textColor="?attr/colorOnSurface"
                                 tools:text="34095000114" />
@@ -314,12 +252,14 @@
                             <TextView
                                 style="@style/TextAppearance.Material3.LabelSmall"
                                 android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
                                 android:text="@string/medidor_calle_label" />
 
                             <TextView
                                 android:id="@+id/valueCalle"
                                 style="@style/TextAppearance.Material3.BodyLarge"
                                 android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
                                 android:layout_marginTop="2dp"
                                 android:textColor="?attr/colorOnSurface"
                                 tools:text="950" />
@@ -334,12 +274,14 @@
                             <TextView
                                 style="@style/TextAppearance.Material3.LabelSmall"
                                 android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
                                 android:text="@string/medidor_poste_label" />
 
                             <TextView
                                 android:id="@+id/valuePoste"
                                 style="@style/TextAppearance.Material3.BodyLarge"
                                 android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
                                 android:layout_marginTop="2dp"
                                 android:textColor="?attr/colorOnSurface"
                                 tools:text="001" />
@@ -354,12 +296,14 @@
                             <TextView
                                 style="@style/TextAppearance.Material3.LabelSmall"
                                 android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
                                 android:text="@string/medidor_metros_label" />
 
                             <TextView
                                 android:id="@+id/valueMetros"
                                 style="@style/TextAppearance.Material3.BodyLarge"
                                 android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
                                 android:layout_marginTop="2dp"
                                 android:textColor="?attr/colorOnSurface"
                                 tools:text="14" />
@@ -374,12 +318,14 @@
                             <TextView
                                 style="@style/TextAppearance.Material3.LabelSmall"
                                 android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
                                 android:text="@string/medidor_pueblo_label" />
 
                             <TextView
                                 android:id="@+id/valuePueblo"
                                 style="@style/TextAppearance.Material3.BodyLarge"
                                 android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
                                 android:layout_marginTop="2dp"
                                 android:textColor="?attr/colorOnSurface"
                                 tools:text="La Argentina" />
@@ -389,41 +335,41 @@
             </com.google.android.material.card.MaterialCardView>
 
             <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="20dp"
-                android:background="@drawable/rounded_bg_f0f2f4"
-                android:gravity="center"
-                android:orientation="horizontal"
-                android:padding="16dp"
-                android:visibility="gone">
+    android:id="@+id/layoutAcciones"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="16dp"
+    android:gravity="center"
+    android:orientation="horizontal"
+    android:visibility="gone">
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnCopiar"
-                    style="@style/Widget.Material3.Button.TonalButton"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="@string/medidor_copiar"
-                    app:icon="@drawable/ic_copy"
-                    app:iconGravity="textStart"
-                    app:iconPadding="8dp" />
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnCopiar"
+        style="@style/Widget.Material3.Button.TonalButton"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="@string/medidor_copiar"
+        app:icon="@drawable/ic_copy"
+        app:iconGravity="textStart"
+        app:iconPadding="8dp" />
 
-                <Space
-                    android:layout_width="12dp"
-                    android:layout_height="0dp" />
+    <Space
+        android:layout_width="12dp"
+        android:layout_height="wrap_content" />
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnCompartir"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="@string/medidor_compartir"
-                    app:icon="@drawable/ic_share"
-                    app:iconGravity="textStart"
-                    app:iconPadding="8dp" />
-            </LinearLayout>
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnCompartir"
+        style="@style/Widget.Material3.Button.OutlinedButton"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:text="@string/medidor_compartir"
+        app:icon="@drawable/ic_share"
+        app:iconGravity="textStart"
+        app:iconPadding="8dp" />
+</LinearLayout>
+
 
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardNoEncontrado"
@@ -431,7 +377,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="20dp"
                 android:visibility="gone"
-                app:cardBackgroundColor="@android:color/transparent"
+                app:cardBackgroundColor="@color/transparent"
                 app:cardCornerRadius="26dp"
                 app:cardElevation="0dp">
 
@@ -446,6 +392,7 @@
                         android:id="@+id/textNoEncontradoTitle"
                         style="@style/TextAppearance.Material3.TitleMedium"
                         android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
                         android:text="@string/medidor_no_encontrado_titulo"
                         android:textColor="@color/ice_blue_dark" />
 
@@ -453,6 +400,7 @@
                         android:id="@+id/textNoEncontradoDescription"
                         style="@style/TextAppearance.Material3.BodyMedium"
                         android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
                         android:textColor="?attr/colorOnSurfaceVariant"
                         tools:text="No encontramos el medidor 714. Puedes registrarlo manualmente." />
@@ -476,7 +424,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="24dp"
                 android:visibility="gone"
-                app:cardBackgroundColor="@android:color/transparent"
+                app:cardBackgroundColor="@color/transparent"
                 app:cardCornerRadius="26dp"
                 app:cardElevation="0dp">
 
@@ -491,6 +439,7 @@
                         android:id="@+id/textRegistroTitulo"
                         style="@style/TextAppearance.Material3.TitleMedium"
                         android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
                         android:text="@string/medidor_registro_manual_titulo"
                         android:textColor="@color/ice_blue_dark" />
 
@@ -498,6 +447,7 @@
                         android:id="@+id/textRegistroDescripcion"
                         style="@style/TextAppearance.Material3.BodyMedium"
                         android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
                         android:layout_marginTop="6dp"
                         android:text="@string/medidor_registro_manual_subtitulo"
                         android:textColor="?attr/colorOnSurfaceVariant" />
