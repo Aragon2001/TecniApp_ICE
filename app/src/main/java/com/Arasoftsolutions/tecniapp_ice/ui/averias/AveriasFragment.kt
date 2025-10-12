@@ -2,11 +2,16 @@ package com.Arasoftsolutions.tecniapp_ice.ui.averias
 
 import android.os.Bundle
 import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.CompoundButton
 import android.widget.TextView
+import androidx.core.view.MenuHost
+import androidx.core.view.MenuProvider
 import androidx.core.widget.addTextChangedListener
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -54,17 +59,23 @@ class AveriasFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        b.toolbar.title = getString(R.string.averias_title)
-        b.toolbar.inflateMenu(R.menu.menu_averias)
-        b.toolbar.setOnMenuItemClickListener { item ->
-            when (item.itemId) {
-                R.id.action_notification_filters -> {
-                    showNotificationFiltersSheet()
-                    true
-                }
-                else -> false
+        val menuHost: MenuHost = requireActivity()
+        menuHost.addMenuProvider(object : MenuProvider {
+            override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
+                menuInflater.inflate(R.menu.menu_averias, menu)
             }
-        }
+
+            override fun onMenuItemSelected(item: MenuItem): Boolean {
+                return when (item.itemId) {
+                    R.id.action_notification_filters -> {
+                        showNotificationFiltersSheet()
+                        true
+                    }
+
+                    else -> false
+                }
+            }
+        }, viewLifecycleOwner, Lifecycle.State.STARTED)
 
         b.fabFilters.setOnClickListener {
             b.appBarLayout.setExpanded(true, true)
