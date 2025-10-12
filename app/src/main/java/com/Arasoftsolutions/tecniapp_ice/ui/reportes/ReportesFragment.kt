@@ -1,9 +1,14 @@
 package com.Arasoftsolutions.tecniapp_ice.ui.reportes
 
+import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ArrayAdapter
+import android.widget.TextView
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.util.Pair
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
@@ -12,14 +17,20 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.Arasoftsolutions.tecniapp_ice.R
 import com.Arasoftsolutions.tecniapp_ice.databinding.FragmentReportesBinding
+import com.Arasoftsolutions.tecniapp_ice.ui.reportes.ExcelReportExporter.ExportPayload
+import com.Arasoftsolutions.tecniapp_ice.ui.reportes.ExcelReportExporter.MIME_TYPE_XLSX
 import com.google.android.material.datepicker.MaterialDatePicker
 import com.google.android.material.snackbar.Snackbar
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class ReportesFragment : Fragment() {
 
@@ -31,6 +42,21 @@ class ReportesFragment : Fragment() {
     private lateinit var averiasAdapter: AveriasReportAdapter
     private lateinit var materialesPorAveriaAdapter: MaterialesPorAveriaAdapter
     private lateinit var materialTotalAdapter: MaterialTotalAdapter
+
+    private val reportTypes = ReportType.values()
+    private val fileNameFormatter = DateTimeFormatter.ofPattern("yyyyMMdd")
+
+    private var pendingExport: ExportPayload? = null
+
+    private val exportLauncher =
+        registerForActivityResult(ActivityResultContracts.CreateDocument(MIME_TYPE_XLSX)) { uri ->
+            val payload = pendingExport
+            pendingExport = null
+            if (payload == null || uri == null) {
+                return@registerForActivityResult
+            }
+            exportToUri(uri, payload)
+        }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -77,32 +103,110 @@ class ReportesFragment : Fragment() {
 
     private fun setupListeners() {
         binding.btnCambiarFechas.setOnClickListener { mostrarSelectorRango() }
+        binding.btnGenerarReporte.setOnClickListener { viewModel.generarReporteSeleccionado() }
+        binding.btnExportarExcel.setOnClickListener { prepararExportacion() }
+
+        val adapter = ArrayAdapter(
+            requireContext(),
+            android.R.layout.simple_list_item_1,
+            reportTypes.map { getString(it.titleRes) }
+        )
+        binding.inputTipoReporte.setAdapter(adapter)
+        binding.inputTipoReporte.setText(
+            getString(viewModel.uiState.value.reporteSeleccionado.titleRes),
+            false
+        )
+        binding.inputTipoReporte.setOnItemClickListener { _, _, position, _ ->
+            val tipo = reportTypes.getOrNull(position) ?: return@setOnItemClickListener
+            viewModel.seleccionarTipo(tipo)
+        }
     }
 
     private fun observeState() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.uiState.collect { state ->
-                    binding.progressIndicator.isVisible = state.isLoading
+                    binding.progressIndicator.isVisible = state.isGlobalLoading
                     binding.tvRangoFechas.text = state.rangoTexto
-                    binding.tvResumenTotales.text = getString(
-                        R.string.reportes_totales_resumen,
-                        state.totalAverias,
-                        state.totalMateriales,
-                        state.totalMaterialesDistintos
-                    )
 
-                    averiasAdapter.submitList(state.averias)
-                    binding.recyclerAverias.isVisible = state.averias.isNotEmpty()
-                    binding.tvAveriasVacio.isVisible = state.averias.isEmpty()
+                    val resumen = state.resumen
+                    if (resumen != null) {
+                        binding.tvResumenTotales.text = getString(
+                            R.string.reportes_totales_resumen,
+                            resumen.totalAverias,
+                            resumen.totalMateriales,
+                            resumen.totalMaterialesDistintos
+                        )
+                    } else {
+                        binding.tvResumenTotales.text = getString(R.string.reportes_totales_resumen_pendiente)
+                    }
 
-                    materialesPorAveriaAdapter.submitList(state.materialesPorAveria)
-                    binding.recyclerMaterialPorAveria.isVisible = state.materialesPorAveria.isNotEmpty()
-                    binding.tvMaterialPorAveriaVacio.isVisible = state.materialesPorAveria.isEmpty()
+                    val seleccionado = state.reporteSeleccionado
+                    val tipoTexto = getString(seleccionado.titleRes)
+                    if (binding.inputTipoReporte.text.toString() != tipoTexto) {
+                        binding.inputTipoReporte.setText(tipoTexto, false)
+                    }
 
-                    materialTotalAdapter.submitList(state.materialesTotales)
-                    binding.recyclerMaterialTotal.isVisible = state.materialesTotales.isNotEmpty()
-                    binding.tvMaterialTotalVacio.isVisible = state.materialesTotales.isEmpty()
+                    binding.btnGenerarReporte.isEnabled = !state.isGlobalLoading
+
+                    val section: ReportSectionState<*>
+                    val recycler: RecyclerView
+                    val emptyView: TextView
+                    val emptyRes: Int
+
+                    when (seleccionado) {
+                        ReportType.AVERIAS -> {
+                            binding.cardAverias.isVisible = true
+                            binding.cardMaterialPorAveria.isVisible = false
+                            binding.cardMaterialTotal.isVisible = false
+                            averiasAdapter.submitList(state.averiasState.items)
+                            section = state.averiasState
+                            recycler = binding.recyclerAverias
+                            emptyView = binding.tvAveriasVacio
+                            emptyRes = R.string.reportes_averias_vacio
+                        }
+                        ReportType.MATERIALES_POR_AVERIA -> {
+                            binding.cardAverias.isVisible = false
+                            binding.cardMaterialPorAveria.isVisible = true
+                            binding.cardMaterialTotal.isVisible = false
+                            materialesPorAveriaAdapter.submitList(state.materialesPorAveriaState.items)
+                            section = state.materialesPorAveriaState
+                            recycler = binding.recyclerMaterialPorAveria
+                            emptyView = binding.tvMaterialPorAveriaVacio
+                            emptyRes = R.string.reportes_material_por_averia_vacio
+                        }
+                        ReportType.MATERIALES_TOTALES -> {
+                            binding.cardAverias.isVisible = false
+                            binding.cardMaterialPorAveria.isVisible = false
+                            binding.cardMaterialTotal.isVisible = true
+                            materialTotalAdapter.submitList(state.materialesTotalesState.items)
+                            section = state.materialesTotalesState
+                            recycler = binding.recyclerMaterialTotal
+                            emptyView = binding.tvMaterialTotalVacio
+                            emptyRes = R.string.reportes_material_total_vacio
+                        }
+                    }
+
+                    when {
+                        section.isLoading -> {
+                            recycler.isVisible = false
+                            emptyView.isVisible = true
+                            emptyView.setText(R.string.reportes_estado_cargando)
+                        }
+                        section.hasContent -> {
+                            recycler.isVisible = section.items.isNotEmpty()
+                            emptyView.isVisible = section.items.isEmpty()
+                            emptyView.setText(emptyRes)
+                        }
+                        else -> {
+                            recycler.isVisible = false
+                            emptyView.isVisible = true
+                            emptyView.setText(R.string.reportes_estado_pendiente)
+                        }
+                    }
+
+                    binding.btnExportarExcel.isVisible = section.hasContent
+                    binding.btnExportarExcel.isEnabled = section.hasContent && !state.isGlobalLoading
                 }
             }
         }
@@ -141,6 +245,56 @@ class ReportesFragment : Fragment() {
         }
 
         picker.show(childFragmentManager, tag)
+    }
+
+    private fun prepararExportacion() {
+        val state = viewModel.uiState.value
+        val tipo = state.reporteSeleccionado
+        val datos = viewModel.obtenerDatosParaExportar(tipo)
+        if (datos == null) {
+            Snackbar.make(binding.root, R.string.reportes_export_no_data, Snackbar.LENGTH_SHORT).show()
+            return
+        }
+        val payload = ExportPayload(
+            tipo = tipo,
+            data = datos,
+            resumen = state.resumen,
+            rango = state.rangoTexto
+        )
+        pendingExport = payload
+        val nombre = generarNombreArchivo(tipo, state.fechaInicio, state.fechaFin)
+        exportLauncher.launch(nombre)
+    }
+
+    private fun generarNombreArchivo(tipo: ReportType, inicio: LocalDate, fin: LocalDate): String {
+        val inicioTexto = inicio.format(fileNameFormatter)
+        val finTexto = fin.format(fileNameFormatter)
+        return "Reporte_${tipo.fileNameKey}_${inicioTexto}_${finTexto}.xlsx"
+    }
+
+    private fun exportToUri(uri: Uri, payload: ExportPayload) {
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val workbook = withContext(Dispatchers.Default) {
+                    ExcelReportExporter.buildWorkbook(
+                        context = requireContext(),
+                        payload = payload
+                    )
+                }
+                withContext(Dispatchers.IO) {
+                    requireContext().contentResolver.openOutputStream(uri)?.use { output ->
+                        workbook.use { wb ->
+                            wb.write(output)
+                            output.flush()
+                        }
+                    } ?: throw IllegalStateException("Output stream is null")
+                }
+                Snackbar.make(binding.root, R.string.reportes_export_success, Snackbar.LENGTH_LONG).show()
+            } catch (t: Throwable) {
+                Log.e("ReportesFragment", "Error exportando Excel", t)
+                Snackbar.make(binding.root, R.string.reportes_export_error, Snackbar.LENGTH_LONG).show()
+            }
+        }
     }
 
     private fun LocalDate.toStartOfDayUtcMillis(): Long =
