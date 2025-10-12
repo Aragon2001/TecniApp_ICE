@@ -259,8 +259,7 @@ class LocalizacionViewModel(app: Application) : AndroidViewModel(app) {
                             append("-00")
                         }
                         append(codigo)
-                        append("
-")
+                        append("")
                         val postes = if (entidad.alPoste != 0 && entidad.alPoste != entidad.delPoste) {
                             getApplication<Application>().getString(
                                 R.string.localizacion_marker_rango_postes,
