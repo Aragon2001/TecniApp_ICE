@@ -35,6 +35,10 @@ class MaterialesPorAveriaAdapter :
             val agencia = item.agencia.ifBlank { emptyValue }
             binding.tvAgencia.text = context.getString(R.string.reportes_item_agencia, agencia)
 
+            val vehiculo = item.vehiculo?.takeIf { it.isNotBlank() }
+                ?: context.getString(R.string.reportes_item_vehiculo_desconocido)
+            binding.tvVehiculo.text = context.getString(R.string.reportes_item_vehiculo, vehiculo)
+
             val materialesTexto = if (item.tieneMateriales && item.materiales.isNotEmpty()) {
                 item.materiales.joinToString(separator = "\n") { uso ->
                     formatMaterialLine(context.getString(R.string.reportes_material_desconocido), uso)

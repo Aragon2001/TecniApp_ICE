@@ -28,6 +28,9 @@ import com.Arasoftsolutions.tecniapp_ice.Database.sync.FirebaseSyncManager
 import com.Arasoftsolutions.tecniapp_ice.R
 import com.google.firebase.auth.FirebaseAuth
 import java.text.Normalizer
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.Dispatchers
@@ -133,21 +136,29 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
     private var catalogosSyncAttempted = false
     private var tecnicosSyncAttempted = false
 
+    data class FechaFiltro(val inicioMillis: Long, val finExclusiveMillis: Long)
+
     private data class FilterConfig(
         val query: String,
         val estado: Estado?,
         val region: RegionUI,
-        val agencia: AgenciaUI
+        val agencia: AgenciaUI,
+        val fecha: FechaFiltro?
     )
+
+    private val fechaFiltro = MutableStateFlow<FechaFiltro?>(null)
+    val fechaFiltroState: StateFlow<FechaFiltro?> = fechaFiltro.asStateFlow()
+    private val zoneId: ZoneId = ZoneId.systemDefault()
 
     val uiState: StateFlow<AveriasUiState> =
         combine(
             q.debounce(250).map { it.trim() }.distinctUntilChanged(),
             estado,
             _regionSeleccionada,
-            _agenciaSeleccionada
-        ) { qv, est, regionSel, agenciaSel ->
-            FilterConfig(qv, est, regionSel, agenciaSel)
+            _agenciaSeleccionada,
+            fechaFiltro
+        ) { qv, est, regionSel, agenciaSel, fechaSel ->
+            FilterConfig(qv, est, regionSel, agenciaSel, fechaSel)
         }
             .flatMapLatest { config ->
                 repo.observe(emptyList(), "", config.query)
@@ -155,7 +166,8 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
                         list.filter { entity ->
                             matchesEstado(entity, config.estado) &&
                                     matchesRegion(entity, config.region) &&
-                                    matchesAgencia(entity, config.agencia)
+                                    matchesAgencia(entity, config.agencia) &&
+                                    matchesFecha(entity, config.fecha)
                         }
                     }
             }
@@ -254,6 +266,18 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
 
     fun setQuery(value: String) = viewModelScope.launch { q.emit(value) }
     fun setEstado(value: Estado?) = viewModelScope.launch { estado.emit(value) }
+
+    fun setFechaFiltro(inicioMillis: Long, finMillis: Long) {
+        val start = inicioMillis.coerceAtMost(finMillis)
+        val end = finMillis.coerceAtLeast(inicioMillis)
+        val startOfDay = toStartOfDay(start)
+        val endExclusive = toEndExclusive(end)
+        fechaFiltro.value = FechaFiltro(startOfDay, endExclusive)
+    }
+
+    fun clearFechaFiltro() {
+        fechaFiltro.value = null
+    }
 
     fun setNotificationsEnabled(enabled: Boolean) {
         if (_notificationsEnabled.value == enabled) return
@@ -383,6 +407,25 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
 
         val normalizedId = agencia.id.normalize()
         return normalizedId.isNotBlank() && haystack.contains(normalizedId)
+    }
+
+    private fun matchesFecha(entity: AveriaEntity, filtro: FechaFiltro?): Boolean {
+        filtro ?: return true
+        val fecha = entity.fechaInicioMillis
+        if (fecha <= 0L) return false
+        if (fecha < filtro.inicioMillis) return false
+        if (fecha >= filtro.finExclusiveMillis) return false
+        return true
+    }
+
+    private fun toStartOfDay(millis: Long): Long {
+        return Instant.ofEpochMilli(millis).atZone(zoneId).toLocalDate()
+            .atStartOfDay(zoneId).toInstant().toEpochMilli()
+    }
+
+    private fun toEndExclusive(millis: Long): Long {
+        val date: LocalDate = Instant.ofEpochMilli(millis).atZone(zoneId).toLocalDate()
+        return date.plusDays(1).atStartOfDay(zoneId).toInstant().toEpochMilli()
     }
 
     private suspend fun loadUsuarioActual() {

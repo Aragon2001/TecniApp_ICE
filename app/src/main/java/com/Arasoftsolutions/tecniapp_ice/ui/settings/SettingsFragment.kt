@@ -34,6 +34,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.text.DateFormat
 import java.util.Date
+import java.util.Locale
 
 class SettingsFragment : Fragment(R.layout.fragment_settings) {
 
@@ -43,6 +44,8 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
     private var notificationDialog: BottomSheetDialog? = null
     private val auth by lazy { FirebaseAuth.getInstance() }
     private val dataStore by lazy { DataStoreManager.getInstance(requireContext()) }
+    private val roomRepository by lazy { RoomRepository.getInstance(requireContext()) }
+    private var availableNotificationAgencies: List<String> = emptyList()
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -82,6 +85,18 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
                     if (binding.switchNotificaciones.isChecked != value) {
                         binding.switchNotificaciones.isChecked = value
                     }
+                }
+            }
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                roomRepository.observarAgenciasCatalogo().collect { agencias ->
+                    availableNotificationAgencies = agencias.mapNotNull { it.nombre?.takeIf { nombre ->
+                        nombre.isNotBlank()
+                    }?.trim() }
+                        .distinctBy { it.lowercase(Locale.getDefault()) }
+                        .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it })
                 }
             }
         }
@@ -237,7 +252,12 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
                 }
                 dialogBinding.chipGroupNotificationAgencies.addView(chip)
             }
-            val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, agencies)
+            val suggestions = (availableNotificationAgencies + agencies)
+                .map { it.trim() }
+                .filter { it.isNotEmpty() }
+                .distinctBy { it.lowercase(Locale.getDefault()) }
+                .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it })
+            val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, suggestions)
             dialogBinding.actvNotificationAgency.setAdapter(adapter)
         }
 
