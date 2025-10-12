@@ -4,7 +4,6 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
-import android.content.Intent
 import android.media.AudioAttributes
 import android.net.Uri
 import android.os.Build
@@ -58,16 +57,8 @@ object AveriaNotifications {
         if (lat == 0.0 && lng == 0.0) return null
         val safeLabel = label?.takeIf { it.isNotBlank() }
             ?: context.getString(R.string.averia_notificacion_map_label_default)
-        val geoUri = Uri.parse("geo:$lat,$lng?q=${Uri.encode(safeLabel)}")
-        val mapIntent = Intent(Intent.ACTION_VIEW, geoUri).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-        }
-        val pendingIntent = PendingIntent.getActivity(
-            context,
-            requestCode,
-            mapIntent,
-            PendingIntent.FLAG_IMMUTABLE
-        )
+        val pendingIntent = FieldMapsIntents.pendingIntent(context, lat, lng, safeLabel, requestCode)
+            ?: return null
         return NotificationCompat.Action.Builder(
             R.drawable.ic_map_placeholder,
             context.getString(R.string.averia_notificacion_map_action),
