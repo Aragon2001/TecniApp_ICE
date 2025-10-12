@@ -80,6 +80,12 @@
 Lugar: %2$s
 Hora: %3$s
 Cliente: %4$s</string>
+    <string name="averia_notificacion_detalle_agencia">Agencia: %1$s</string>
+    <string name="averia_notificacion_detalle_lugar">Lugar: %1$s</string>
+    <string name="averia_notificacion_detalle_hora">Hora: %1$s</string>
+    <string name="averia_notificacion_detalle_cliente">Cliente: %1$s</string>
+    <string name="averia_notificacion_detalle_tipo">Afectación: %1$s</string>
+    <string name="averia_notificacion_detalle_afectados">Clientes afectados: %1$s</string>
     <string name="averia_notificacion_sin_hora">Sin hora registrada</string>
     <string name="averia_notificacion_sin_lugar">Ubicación no disponible</string>
     <string name="averia_notificacion_sin_agencia">Agencia no registrada</string>
@@ -90,6 +96,13 @@ Cliente: %4$s</string>
     <string name="averia_channel_description">Alertas sobre nuevas averías y cambios de estado.</string>
     <string name="averia_notification_permission_granted">Notificaciones activadas.</string>
     <string name="averia_notification_permission_denied">Las notificaciones están desactivadas. Actívalas en Ajustes para recibir alertas de averías.</string>
+    <string name="averia_notificacion_switch_label">Recibir notificaciones</string>
+    <string name="averia_notificacion_switch_helper">Desactiva esta opción cuando no necesites alertas (por ejemplo, cuando otra cuadrilla está de turno).</string>
+    <string name="averia_notificacion_filtro_titulo">Filtrar notificaciones por agencia</string>
+    <string name="averia_notificacion_filtro_hint">Agencia (Guácimo, Guápiles, etc.)</string>
+    <string name="averia_notificacion_filtro_vacio">Sin filtros: recibirás avisos de todas las agencias.</string>
+    <string name="averia_notificacion_menu">Notificaciones</string>
+    <string name="averia_notificacion_sheet_title">Preferencias de notificaciones</string>
     <string name="averia_error_usuario_no_autenticado">Inicia sesión para gestionar averías.</string>
     <string name="averia_error_causa_requerida">Ingresa la causa de la avería.</string>
     <string name="averia_error_no_autorizado">No puedes gestionar una avería asignada a otro técnico.</string>
