@@ -27,6 +27,7 @@ import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
 import com.Arasoftsolutions.tecniapp_ice.databinding.ActivityMainBinding
 import com.Arasoftsolutions.tecniapp_ice.databinding.NavHeaderMainBinding
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriaNotifications
+import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasRealtimeNotifications
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasSyncWorker
 import com.bumptech.glide.Glide
 import com.google.android.material.navigation.NavigationView
@@ -77,6 +78,7 @@ class ActivityMain : AppCompatActivity() {
         requestNotificationPermissionIfNeeded()
         AveriasSyncWorker.schedule(applicationContext)
         AveriasSyncWorker.triggerNow(applicationContext)
+        AveriasRealtimeNotifications.start(applicationContext)
 
         // Drawer + Navigation
         val drawerLayout: DrawerLayout = binding.drawerLayout
