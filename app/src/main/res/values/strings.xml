@@ -28,8 +28,13 @@
     <string name="averias_filtrar">Filtrar</string>
     <string name="averias_filtrar_region">Región</string>
     <string name="averias_filtrar_agencia">Agencia</string>
+    <string name="averias_filtrar_fecha">Fechas</string>
     <string name="averias_filtro_region_todas">Todas las regiones</string>
     <string name="averias_filtro_agencia_todas">Todas las agencias</string>
+    <string name="averias_filtro_fecha_todas">Todas las fechas</string>
+    <string name="averias_filtro_fecha_rango">%1$s - %2$s</string>
+    <string name="averias_filtro_fecha_limpiar_hint">Mantén presionado para limpiar el filtro de fechas.</string>
+    <string name="averias_filtro_fecha_limpio">Filtro de fechas eliminado.</string>
     <string name="averia_sin_asignar">Sin asignar</string>
     <string name="averia_asignar">Asignar</string>
     <string name="averia_atender">Atender</string>
@@ -102,6 +107,7 @@ Cliente: %4$s</string>
     <string name="averia_notificacion_filtro_titulo">Filtrar notificaciones por agencia</string>
     <string name="averia_notificacion_filtro_hint">Agencia (Guácimo, Guápiles, etc.)</string>
     <string name="averia_notificacion_filtro_vacio">Sin filtros: recibirás avisos de todas las agencias.</string>
+    <string name="averia_notificacion_filtro_desactivado">Activa las notificaciones para elegir las agencias.</string>
     <string name="averia_notificacion_menu">Notificaciones</string>
     <string name="averia_notificacion_sheet_title">Preferencias de notificaciones</string>
     <string name="averia_error_usuario_no_autenticado">Inicia sesión para gestionar averías.</string>
@@ -390,6 +396,7 @@ Cliente: %4$s</string>
     <string name="reportes_item_estado">Estado: %1$s</string>
     <string name="reportes_item_atendido">Atendido por: %1$s</string>
     <string name="reportes_item_vehiculo">Vehículo: %1$s</string>
+    <string name="reportes_item_vehiculo_desconocido">Sin vehículo asignado</string>
     <string name="reportes_item_materiales">%1$d unidades · %2$s</string>
     <string name="reportes_item_materiales_sin">Sin materiales registrados</string>
     <string name="reportes_material_codigo">Código: %1$s</string>
@@ -414,6 +421,8 @@ Cliente: %4$s</string>
     <string name="reportes_excel_resumen_sin_datos">No se ha generado información para este rango.</string>
     <string name="reportes_excel_averias_sheet">Averías atendidas</string>
     <string name="reportes_excel_materiales_por_averia_sheet">Material por avería</string>
+    <string name="reportes_excel_materiales_por_averia_sheet_vehicle">Material · %1$s</string>
+    <string name="reportes_excel_materiales_por_averia_sheet_sin_vehiculo">Material · Sin vehículo</string>
     <string name="reportes_excel_materiales_totales_sheet">Consumo total</string>
     <string name="reportes_excel_col_case">Caso</string>
     <string name="reportes_excel_col_fecha">Fecha</string>

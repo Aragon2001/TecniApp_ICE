@@ -28,6 +28,12 @@
         tools:text="Agencia: Guápiles" />
 
     <TextView
+        android:id="@+id/tvVehiculo"
+        style="@style/TextAppearance.MaterialComponents.Body2"
+        android:layout_marginTop="2dp"
+        tools:text="Vehículo: SIN-123" />
+
+    <TextView
         android:id="@+id/tvMateriales"
         style="@style/TextAppearance.MaterialComponents.Body2"
         android:layout_marginTop="6dp"
