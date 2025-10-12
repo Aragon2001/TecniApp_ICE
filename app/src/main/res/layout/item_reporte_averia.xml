@@ -12,48 +12,36 @@
     <TextView
         android:id="@+id/tvCaso"
         style="@style/TextAppearance.MaterialComponents.Body1"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
         android:textStyle="bold"
         tools:text="Caso 12345" />
 
     <TextView
         android:id="@+id/tvFecha"
         style="@style/TextAppearance.MaterialComponents.Body2"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
         android:layout_marginTop="2dp"
         tools:text="Atendida: 07/05/2024 14:30" />
 
     <TextView
         android:id="@+id/tvAgencia"
         style="@style/TextAppearance.MaterialComponents.Body2"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
         android:layout_marginTop="2dp"
         tools:text="Agencia: Guápiles" />
 
     <TextView
         android:id="@+id/tvEstado"
         style="@style/TextAppearance.MaterialComponents.Body2"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
         android:layout_marginTop="2dp"
         tools:text="Estado: Resuelta" />
 
     <TextView
         android:id="@+id/tvAtendido"
         style="@style/TextAppearance.MaterialComponents.Body2"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
         android:layout_marginTop="2dp"
         tools:text="Atendido por: Juan Pérez" />
 
     <TextView
         android:id="@+id/tvVehiculo"
         style="@style/TextAppearance.MaterialComponents.Body2"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
         android:layout_marginTop="2dp"
         android:visibility="gone"
         tools:text="Vehículo: ICE-123"
@@ -62,8 +50,6 @@
     <TextView
         android:id="@+id/tvMateriales"
         style="@style/TextAppearance.MaterialComponents.Body2"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
         android:layout_marginTop="6dp"
         tools:text="Materiales: 5 unidades · 2x Cable #6, 3x Aislador" />
 
