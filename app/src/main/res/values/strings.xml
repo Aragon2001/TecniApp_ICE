@@ -313,4 +313,71 @@ Cliente: %4$s</string>
     <string name="localizacion_estado_calles_sin_coordenadas">No hay coordenadas disponibles para las calles seleccionadas.</string>
     <string name="localizacion_marker_rango_postes">Postes %1$d – %2$d</string>
     <string name="localizacion_marker_poste_unico">Poste %1$d</string>
+    <!-- Reportes -->
+    <string name="reportes_filtro_rango">Rango de fechas</string>
+    <string name="reportes_btn_rango">Cambiar rango</string>
+    <string name="reportes_tipo_hint">Selecciona el tipo de reporte</string>
+    <string name="reportes_tipo_averias">Averías atendidas</string>
+    <string name="reportes_tipo_material_por_averia">Material por avería</string>
+    <string name="reportes_tipo_material_total">Consumo total de material</string>
+    <string name="reportes_btn_generar">Generar reporte</string>
+    <string name="reportes_btn_exportar">Exportar a Excel</string>
+    <string name="reportes_totales_resumen">Averías atendidas: %1$d&#10;Materiales registrados: %2$d unidades en %3$d códigos.</string>
+    <string name="reportes_totales_resumen_pendiente">Selecciona un rango y genera un reporte para ver el resumen de totales.</string>
+    <string name="reportes_averias_titulo">Averías atendidas</string>
+    <string name="reportes_averias_vacio">No hay averías atendidas en el rango seleccionado.</string>
+    <string name="reportes_material_por_averia_titulo">Material gastado por avería</string>
+    <string name="reportes_material_por_averia_vacio">No hay materiales registrados en las averías atendidas.</string>
+    <string name="reportes_material_total_titulo">Material gastado total</string>
+    <string name="reportes_material_total_vacio">No hay consumo de material registrado en este rango.</string>
+    <string name="reportes_estado_pendiente">Selecciona el reporte y toca "Generar" para ver los datos.</string>
+    <string name="reportes_estado_cargando">Generando reporte…</string>
+    <string name="reportes_dialog_rango_titulo">Selecciona el rango de fechas</string>
+    <string name="reportes_material_sin_detalle">Sin materiales registrados.</string>
+    <string name="reportes_error_carga">No se pudo generar el reporte.</string>
+    <string name="reportes_material_desconocido">Material sin descripción</string>
+    <string name="reportes_item_caso">Caso %1$s</string>
+    <string name="reportes_item_fecha">Atendida: %1$s</string>
+    <string name="reportes_item_agencia">Agencia: %1$s</string>
+    <string name="reportes_item_estado">Estado: %1$s</string>
+    <string name="reportes_item_atendido">Atendido por: %1$s</string>
+    <string name="reportes_item_vehiculo">Vehículo: %1$s</string>
+    <string name="reportes_item_materiales">%1$d unidades · %2$s</string>
+    <string name="reportes_item_materiales_sin">Sin materiales registrados</string>
+    <string name="reportes_material_codigo">Código: %1$s</string>
+    <string name="reportes_material_total_detalle">%1$s · %2$s</string>
+    <plurals name="reportes_material_total_unidades">
+        <item quantity="one">%d unidad</item>
+        <item quantity="other">%d unidades</item>
+    </plurals>
+    <plurals name="reportes_material_total_averias">
+        <item quantity="one">%d avería</item>
+        <item quantity="other">%d averías</item>
+    </plurals>
+    <string name="reportes_export_no_data">Genera el reporte antes de exportarlo.</string>
+    <string name="reportes_export_success">Reporte exportado correctamente.</string>
+    <string name="reportes_export_error">No se pudo exportar el archivo de Excel.</string>
+
+    <string name="reportes_excel_resumen_sheet">Resumen</string>
+    <string name="reportes_excel_resumen_rango">Rango seleccionado</string>
+    <string name="reportes_excel_resumen_total_averias">Total de averías</string>
+    <string name="reportes_excel_resumen_total_materiales">Unidades de material</string>
+    <string name="reportes_excel_resumen_total_codigos">Códigos de material</string>
+    <string name="reportes_excel_resumen_sin_datos">No se ha generado información para este rango.</string>
+    <string name="reportes_excel_averias_sheet">Averías atendidas</string>
+    <string name="reportes_excel_materiales_por_averia_sheet">Material por avería</string>
+    <string name="reportes_excel_materiales_totales_sheet">Consumo total</string>
+    <string name="reportes_excel_col_case">Caso</string>
+    <string name="reportes_excel_col_fecha">Fecha</string>
+    <string name="reportes_excel_col_agencia">Agencia</string>
+    <string name="reportes_excel_col_estado">Estado</string>
+    <string name="reportes_excel_col_atendido">Atendido por</string>
+    <string name="reportes_excel_col_vehiculo">Vehículo</string>
+    <string name="reportes_excel_col_material_resumen">Materiales resumen</string>
+    <string name="reportes_excel_col_material_total">Unidades</string>
+    <string name="reportes_excel_col_codigo">Código</string>
+    <string name="reportes_excel_col_descripcion">Descripción</string>
+    <string name="reportes_excel_col_cantidad">Cantidad</string>
+    <string name="reportes_excel_col_averias">Averías</string>
+
 </resources>
