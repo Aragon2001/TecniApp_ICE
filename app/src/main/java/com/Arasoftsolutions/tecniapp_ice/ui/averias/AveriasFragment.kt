@@ -73,6 +73,31 @@ class AveriasFragment : Fragment() {
             vm.setQuery(text?.toString().orEmpty())
         }
 
+        val notificationSwitchListener = CompoundButton.OnCheckedChangeListener { _, isChecked ->
+            vm.setNotificationsEnabled(isChecked)
+        }
+        b.switchNotifications.setOnCheckedChangeListener(notificationSwitchListener)
+
+        b.actvNotificationAgency.setOnItemClickListener { parent, _, position, _ ->
+            val value = parent.getItemAtPosition(position)?.toString()?.trim().orEmpty()
+            if (value.isNotEmpty()) {
+                vm.addNotificationAgency(value)
+                b.actvNotificationAgency.setText("", false)
+            }
+        }
+        b.actvNotificationAgency.setOnEditorActionListener { textView, actionId, _ ->
+            if (actionId == EditorInfo.IME_ACTION_DONE) {
+                val value = textView.text?.toString()?.trim().orEmpty()
+                if (value.isNotEmpty()) {
+                    vm.addNotificationAgency(value)
+                    textView.text = null
+                }
+                true
+            } else {
+                false
+            }
+        }
+
         // Recycler
         adapter = AveriasAdapter(
             onVerDetalle = { showDetalle(it) },
@@ -166,6 +191,41 @@ class AveriasFragment : Fragment() {
 
         b.actvAgencia.setOnItemClickListener { _, _, position, _ ->
             vm.setAgenciaIndex(position)
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    vm.notificationSuggestions.collectLatest { sugerencias ->
+                        b.actvNotificationAgency.setAdapter(
+                            ArrayAdapter(
+                                requireContext(),
+                                android.R.layout.simple_dropdown_item_1line,
+                                sugerencias
+                            )
+                        )
+                    }
+                }
+                launch {
+                    vm.notificationsEnabled.collectLatest { enabled ->
+                        if (b.switchNotifications.isChecked != enabled) {
+                            b.switchNotifications.setOnCheckedChangeListener(null)
+                            b.switchNotifications.isChecked = enabled
+                            b.switchNotifications.setOnCheckedChangeListener(notificationSwitchListener)
+                        }
+                        val alpha = if (enabled) 1f else 0.6f
+                        b.tilNotificationAgency.alpha = alpha
+                        b.tvNotificationFilterTitle.alpha = alpha
+                        b.tvNotificationSwitchHelper.alpha = alpha
+                        renderNotificationChips(vm.notificationAgencies.value, enabled)
+                    }
+                }
+                launch {
+                    vm.notificationAgencies.collectLatest { agencias ->
+                        renderNotificationChips(agencias, vm.notificationsEnabled.value)
+                    }
+                }
+            }
         }
 
         // Observa estado UI y mensajes
