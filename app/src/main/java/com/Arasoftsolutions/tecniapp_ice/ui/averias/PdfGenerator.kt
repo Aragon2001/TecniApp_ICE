@@ -112,6 +112,8 @@ object PdfGenerator {
     suspend fun exportAveria(context: Context, item: AveriaUI) = withContext(Dispatchers.IO) {
         document = PdfDocument()
         try {
+            // 🔹 Inicia primera página
+            startPage(context)
             val formatter = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
             fun formatMillis(millis: Long?) =
                 millis?.takeIf { it > 0 }?.let { formatter.format(Date(it)) }
@@ -123,9 +125,6 @@ object PdfGenerator {
 
             val margin = 40f
             val contentWidth = PAGE_WIDTH - (margin * 2)
-
-            // 🔹 Inicia primera página
-            startPage(context)
 
             val titlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
