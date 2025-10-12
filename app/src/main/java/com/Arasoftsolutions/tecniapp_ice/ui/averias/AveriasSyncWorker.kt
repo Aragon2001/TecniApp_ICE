@@ -6,9 +6,9 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
-import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import androidx.work.CoroutineWorker
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.ExistingWorkPolicy
@@ -19,13 +19,13 @@ import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import com.Arasoftsolutions.tecniapp_ice.BuildConfig
 import com.Arasoftsolutions.tecniapp_ice.R
+import com.Arasoftsolutions.tecniapp_ice.Database.entities.AveriaEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.text.Normalizer
 import java.util.concurrent.TimeUnit
-import com.Arasoftsolutions.tecniapp_ice.Database.entities.AveriaEntity
+import kotlin.collections.buildList
 
 class AveriasSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx, params) {
 
@@ -46,22 +46,29 @@ class AveriasSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorke
 
         val regionObjetivo = usuario?.regionNombre?.takeIf { !it.isNullOrBlank() }
             ?: usuario?.region?.takeIf { !it.isNullOrBlank() }
-        val regionNormalizada = regionObjetivo?.let { normalize(it) }
+        val regionNormalizada = regionObjetivo?.let { normalizeAveriaText(it) }
+
+        val filters = AveriaNotificationPreferences.normalizedAgencies(applicationContext)
+        val notificationsEnabled = AveriaNotificationPreferences.areNotificationsEnabled(applicationContext)
 
         val porRegion = if (regionNormalizada.isNullOrBlank()) {
             nuevos
         } else {
             nuevos.filter { averia ->
-                val regionAveria = normalize(averia.region)
+                val regionAveria = normalizeAveriaText(averia.region)
                 regionAveria.contains(regionNormalizada)
             }
         }
 
+        val filtradas = porRegion.filter { averia ->
+            filters.isEmpty() || shouldNotifyForAgency(averia, filters)
+        }
+
         // 3. Notifica si hay nuevos casos
-        if (porRegion.isNotEmpty()) {
+        if (notificationsEnabled && filtradas.isNotEmpty()) {
             AveriaNotifications.ensureChannel(applicationContext)
             val nm = NotificationManagerCompat.from(applicationContext)
-            porRegion.forEach { averia ->
+            filtradas.forEach { averia ->
                 if (!hasNotificationPermission()) return@forEach
                 nm.notify(
                     averia.caseId.hashCode(),
@@ -72,11 +79,17 @@ class AveriasSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorke
         Result.success()
     }
 
-    private fun normalize(value: String?): String {
-        if (value.isNullOrBlank()) return ""
-        val normalized = Normalizer.normalize(value, Normalizer.Form.NFD)
-        return normalized.replace("\\p{InCombiningDiacriticalMarks}+".toRegex(), "")
-            .lowercase()
+    private fun shouldNotifyForAgency(averia: AveriaEntity, filters: Set<String>): Boolean {
+        if (filters.isEmpty()) return true
+        val candidatos = listOfNotNull(
+            averia.agencia,
+            averia.nombreAgencia,
+            averia.agenciaTag
+        ).map { normalizeAveriaText(it) }
+        if (candidatos.isEmpty()) return false
+        return candidatos.any { agency ->
+            filters.any { filter -> agency.contains(filter) || filter.contains(agency) }
+        }
     }
 
     private fun hasNotificationPermission(): Boolean {
@@ -99,6 +112,26 @@ class AveriasSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorke
         val agencia = resolveAgencia(averia)
         val cliente = averia.cliente?.takeIf { it.isNotBlank() }
             ?: applicationContext.getString(R.string.averia_notificacion_sin_cliente)
+        val tipo = averia.tipoAfectacion?.let { raw ->
+            when (TipoAfectacion.fromRaw(raw)) {
+                TipoAfectacion.CLIENTE -> applicationContext.getString(R.string.averia_tipo_cliente)
+                TipoAfectacion.SECTOR -> applicationContext.getString(R.string.averia_tipo_sector)
+            }
+        }
+        val clientesAfectados = averia.clientesAfectados?.takeIf { it.isNotBlank() }
+
+        val detalles = buildList {
+            add(applicationContext.getString(R.string.averia_notificacion_detalle_agencia, agencia))
+            add(applicationContext.getString(R.string.averia_notificacion_detalle_lugar, lugar))
+            add(applicationContext.getString(R.string.averia_notificacion_detalle_hora, hora))
+            add(applicationContext.getString(R.string.averia_notificacion_detalle_cliente, cliente))
+            tipo?.let {
+                add(applicationContext.getString(R.string.averia_notificacion_detalle_tipo, it))
+            }
+            clientesAfectados?.let {
+                add(applicationContext.getString(R.string.averia_notificacion_detalle_afectados, it))
+            }
+        }.joinToString(separator = "\n")
 
         return NotificationCompat.Builder(applicationContext, AveriaNotifications.CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
@@ -116,15 +149,8 @@ class AveriasSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorke
                 )
             )
             .setStyle(
-                NotificationCompat.BigTextStyle().bigText(
-                    applicationContext.getString(
-                        R.string.averia_notificacion_nueva_bigtext,
-                        agencia,
-                        lugar,
-                        hora,
-                        cliente
-                    )
-                ).setSummaryText(averia.caseId)
+                NotificationCompat.BigTextStyle().bigText(detalles)
+                    .setSummaryText(averia.caseId)
             )
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_EVENT)
