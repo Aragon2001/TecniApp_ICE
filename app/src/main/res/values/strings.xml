@@ -98,6 +98,7 @@ Cliente: %4$s</string>
     <string name="averia_notificacion_sin_cliente">Cliente no registrado</string>
     <string name="averia_notificacion_map_action">Ver en mapa</string>
     <string name="averia_notificacion_map_label_default">Avería reportada</string>
+    <string name="averia_field_maps_required">Instala Field Maps para abrir la ubicación.</string>
     <string name="averia_channel_name">Averías</string>
     <string name="averia_channel_description">Alertas sobre nuevas averías y cambios de estado.</string>
     <string name="averia_notification_permission_granted">Notificaciones activadas.</string>

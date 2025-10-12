@@ -35,6 +35,9 @@ class AveriasRepository(private val db: AppDatabase) {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var realtimeListener: ValueEventListener? = null
+    private var realtimeCallback: ((List<AveriaEntity>) -> Unit)? = null
+    private var suppressInitialNotification = false
+    private var realtimeEmittedOnce = false
 
     fun observe(agencias: List<String>, estado: String, q: String): Flow<List<AveriaEntity>> =
         dao.observe(agencias, agencias.size, estado, q)
@@ -617,13 +620,20 @@ class AveriasRepository(private val db: AppDatabase) {
         }
     }
 
-    fun startRealtimeListener() {
+    fun startRealtimeListener(
+        onNewAverias: ((List<AveriaEntity>) -> Unit)? = null,
+        suppressInitialNotification: Boolean = onNewAverias != null
+    ) {
         if (realtimeListener != null) return
+        realtimeCallback = onNewAverias
+        this.suppressInitialNotification = suppressInitialNotification
+        realtimeEmittedOnce = false
         realtimeListener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 scope.launch {
                     val current = dao.all().associateBy { it.caseId }
                     val toUpsert = mutableListOf<AveriaEntity>()
+                    val newlyCreated = mutableListOf<AveriaEntity>()
                     snapshot.children.forEach { child ->
                         val remote0 = child.getValue(AveriaEntity::class.java) ?: return@forEach
                         val normalizedEstado = normalizeEstadoLabel(remote0.estado)
@@ -632,7 +642,10 @@ class AveriasRepository(private val db: AppDatabase) {
 
                         val existing = current[remote.caseId]
                         when {
-                            existing == null -> toUpsert += remote
+                            existing == null -> {
+                                toUpsert += remote
+                                newlyCreated += remote
+                            }
                             !existing.isSynced -> if (remote.lastUpdated > existing.lastUpdated) {
                                 toUpsert += remote
                             }
@@ -692,6 +705,11 @@ class AveriasRepository(private val db: AppDatabase) {
                     if (toUpsert.isNotEmpty()) {
                         dao.upsertAll(toUpsert)
                     }
+                    val shouldNotify = realtimeEmittedOnce || !this@AveriasRepository.suppressInitialNotification
+                    if (shouldNotify && newlyCreated.isNotEmpty()) {
+                        realtimeCallback?.invoke(newlyCreated)
+                    }
+                    realtimeEmittedOnce = true
                 }
             }
 
@@ -706,6 +724,9 @@ class AveriasRepository(private val db: AppDatabase) {
         realtimeListener?.let { firebaseRef.removeEventListener(it) }
         realtimeListener = null
         scope.coroutineContext.cancelChildren()
+        realtimeCallback = null
+        suppressInitialNotification = false
+        realtimeEmittedOnce = false
     }
 
     companion object {
