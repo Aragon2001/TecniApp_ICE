@@ -26,6 +26,9 @@ interface LocalizacionDao {
     @Query("SELECT * FROM localizaciones WHERE pueblo = :puebloId")
     suspend fun obtenerPorPueblo(puebloId: Int): List<LocalizacionesEntity>
 
+    @Query("SELECT * FROM localizaciones")
+    fun observarTodas(): Flow<List<LocalizacionesEntity>>
+
     @Query("SELECT * FROM localizaciones WHERE pueblo = :puebloId AND calle = :calleId")
     suspend fun buscarPorCalle(
         puebloId: Int,
@@ -37,4 +40,7 @@ interface LocalizacionDao {
 
     @Query("DELETE FROM localizaciones")
     suspend fun limpiarTodo()
+
+    @Query("DELETE FROM localizaciones WHERE id = :id")
+    suspend fun eliminarPorId(id: Int)
 }
