@@ -7,6 +7,7 @@ import org.apache.poi.ss.usermodel.FillPatternType
 import org.apache.poi.ss.usermodel.IndexedColors
 import org.apache.poi.ss.usermodel.Sheet
 import org.apache.poi.ss.usermodel.Workbook
+import org.apache.poi.ss.util.WorkbookUtil
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
 
 object ExcelReportExporter {
@@ -120,7 +121,6 @@ object ExcelReportExporter {
         headerStyle: CellStyle,
         items: List<MaterialPorAveriaReportItem>
     ) {
-        val sheet = workbook.createSheet(context.getString(R.string.reportes_excel_materiales_por_averia_sheet))
         val headers = listOf(
             context.getString(R.string.reportes_excel_col_case),
             context.getString(R.string.reportes_excel_col_fecha),
@@ -129,29 +129,66 @@ object ExcelReportExporter {
             context.getString(R.string.reportes_excel_col_descripcion),
             context.getString(R.string.reportes_excel_col_cantidad)
         )
-        var rowIndex = createHeader(sheet, headerStyle, headers)
-        items.forEach { item ->
-            if (item.materiales.isEmpty()) {
-                val row = sheet.createRow(rowIndex++)
-                row.createCell(0).setCellValue(item.caseId)
-                row.createCell(1).setCellValue(item.fechaTexto)
-                row.createCell(2).setCellValue(item.agencia)
-                row.createCell(3).setCellValue("")
-                row.createCell(4).setCellValue("")
-                row.createCell(5).setCellValue(0.0)
+
+        if (items.isEmpty()) {
+            val sheet = createUniqueSheet(
+                workbook,
+                context.getString(R.string.reportes_excel_materiales_por_averia_sheet)
+            )
+            createHeader(sheet, headerStyle, headers)
+            autosize(sheet, headers.size)
+            return
+        }
+
+        val sinVehiculo = context.getString(R.string.reportes_excel_materiales_por_averia_sheet_sin_vehiculo)
+        val grupos = items.groupBy { item ->
+            item.vehiculo?.takeIf { it.isNotBlank() } ?: sinVehiculo
+        }.toSortedMap(String.CASE_INSENSITIVE_ORDER)
+
+        grupos.forEach { (vehiculo, lista) ->
+            val titulo = if (vehiculo == sinVehiculo) {
+                sinVehiculo
             } else {
-                item.materiales.forEach { material ->
+                context.getString(R.string.reportes_excel_materiales_por_averia_sheet_vehicle, vehiculo)
+            }
+            val sheet = createUniqueSheet(workbook, titulo)
+            var rowIndex = createHeader(sheet, headerStyle, headers)
+            lista.forEach { item ->
+                if (item.materiales.isEmpty()) {
                     val row = sheet.createRow(rowIndex++)
                     row.createCell(0).setCellValue(item.caseId)
                     row.createCell(1).setCellValue(item.fechaTexto)
                     row.createCell(2).setCellValue(item.agencia)
-                    row.createCell(3).setCellValue(material.codigo)
-                    row.createCell(4).setCellValue(material.descripcion)
-                    row.createCell(5).setCellValue(material.cantidad.toDouble())
+                    row.createCell(3).setCellValue("")
+                    row.createCell(4).setCellValue("")
+                    row.createCell(5).setCellValue(0.0)
+                } else {
+                    item.materiales.forEach { material ->
+                        val row = sheet.createRow(rowIndex++)
+                        row.createCell(0).setCellValue(item.caseId)
+                        row.createCell(1).setCellValue(item.fechaTexto)
+                        row.createCell(2).setCellValue(item.agencia)
+                        row.createCell(3).setCellValue(material.codigo)
+                        row.createCell(4).setCellValue(material.descripcion)
+                        row.createCell(5).setCellValue(material.cantidad.toDouble())
+                    }
                 }
             }
+            autosize(sheet, headers.size)
         }
-        autosize(sheet, headers.size)
+    }
+
+    private fun createUniqueSheet(workbook: Workbook, desiredName: String): Sheet {
+        var attempt = 0
+        while (true) {
+            val suffix = if (attempt == 0) "" else " (${attempt + 1})"
+            val rawName = desiredName + suffix
+            val safeName = WorkbookUtil.createSafeSheetName(rawName).take(31)
+            if (workbook.getSheet(safeName) == null) {
+                return workbook.createSheet(safeName)
+            }
+            attempt++
+        }
     }
 
     private fun addMaterialesTotalesSheet(

@@ -26,8 +26,6 @@ object PdfGenerator {
     private lateinit var canvas: Canvas
     private var pageNumber = 0
     private var currentY = 0f
-    val pageInfo = PdfDocument.PageInfo.Builder(PAGE_WIDTH, PAGE_HEIGHT, pageNumber).create()
-val currentPage = document.startPage(pageInfo)
 
 
 
@@ -216,7 +214,9 @@ val currentPage = document.startPage(pageInfo)
             currentY += 100f
 
             // 🔹 Finaliza última página
-         document.finishPage(currentPage)
+            if (this::page.isInitialized) {
+                document.finishPage(page)
+            }
 
 
             // Guardar
