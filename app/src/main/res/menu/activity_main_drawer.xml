@@ -36,6 +36,10 @@
             android:title="@string/menu_reportes"
            />
         <item
+            android:id="@+id/nav_admin"
+            android:icon="@drawable/ic_menu_admin"
+            android:title="@string/menu_admin" />
+        <item
             android:id="@+id/nav_programacion"
             android:icon="@drawable/ic_menu_programacion"
             android:title="@string/menu_programacion"

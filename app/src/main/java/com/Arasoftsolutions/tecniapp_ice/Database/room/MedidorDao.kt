@@ -17,6 +17,9 @@ interface MedidorDao {
     @Query("SELECT * FROM medidores")
     suspend fun getAll(): List<MedidorEntity>
 
+    @Query("SELECT * FROM medidores")
+    fun observarTodos(): Flow<List<MedidorEntity>>
+
     // Observa medidores por subregión
     @Query("SELECT * FROM medidores WHERE subregion = :subregionId")
     fun observarPorSubregion(subregionId: String): Flow<List<MedidorEntity>>
@@ -26,4 +29,7 @@ interface MedidorDao {
 
     @Query("SELECT COUNT(*) FROM medidores WHERE subregion = :subregionId")
     suspend fun contarPorSubregion(subregionId: String): Int
+
+    @Query("DELETE FROM medidores WHERE medidorNumber = :numero")
+    suspend fun eliminarPorNumero(numero: String)
 }
