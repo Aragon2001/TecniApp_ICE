@@ -40,9 +40,9 @@ private data class MaterialAcumulado(
 )
 
 enum class ReportType(@StringRes val titleRes: Int, val fileNameKey: String) {
-    AVERIAS(R.string.reportes_tipo_averias, "averias"),
-    MATERIALES_POR_AVERIA(R.string.reportes_tipo_material_por_averia, "material_por_averia"),
-    MATERIALES_TOTALES(R.string.reportes_tipo_material_total, "material_total")
+    AVERIAS(R.string.reportes_chip_averias, "averias"),
+    MATERIALES_POR_AVERIA(R.string.reportes_chip_material_por_averia, "material_por_averia"),
+    MATERIALES_TOTALES(R.string.reportes_chip_material_total, "material_total")
 }
 
 data class AveriaReportItem(
