@@ -68,4 +68,11 @@
         android:label="@string/action_accounts"
         tools:layout="@layout/fragment_user" />
 
+    <!-- Fragmento de ajustes -->
+    <fragment
+        android:id="@+id/nav_settings"
+        android:name="com.Arasoftsolutions.tecniapp_ice.ui.settings.SettingsFragment"
+        android:label="@string/menu_settings"
+        tools:layout="@layout/fragment_settings" />
+
 </navigation>

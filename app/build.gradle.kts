@@ -59,6 +59,7 @@ dependencies {
     implementation(libs.material)
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.swiperefreshlayout)
+    implementation(libs.androidx.datastore.preferences)
 
     // Lifecycle / Navigation
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
