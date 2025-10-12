@@ -40,11 +40,16 @@ class RoomRepository(context: Context) {
     fun observarMedidores(subregionId: String): Flow<List<MedidorEntity>> =
         db.medidorDao().observarPorSubregion(subregionId)
 
+    fun observarTodosLosMedidores(): Flow<List<MedidorEntity>> = db.medidorDao().observarTodos()
+
     fun observarPueblos(subregionId: String): Flow<List<PueblosEntity>> =
         db.puebloDao().observarPorSubregion(subregionId)
 
     fun observarLocalizacionesPorPueblo(puebloId: Int): Flow<List<LocalizacionesEntity>> =
         db.localizacionDao().observarPorPueblo(puebloId)
+
+    fun observarTodasLasLocalizaciones(): Flow<List<LocalizacionesEntity>> =
+        db.localizacionDao().observarTodas()
 
     fun observarLocalizacionesDePueblos(puebloIds: List<Int>): Flow<List<LocalizacionesEntity>> =
         if (puebloIds.isEmpty()) flowOf(emptyList()) else db.localizacionDao().observarPorPueblos(puebloIds)
@@ -60,6 +65,8 @@ class RoomRepository(context: Context) {
 
     fun observarVehiculosCatalogo(): Flow<List<VehiculosEntity>> =
         db.vehiculoDao().observarTodos()
+
+    fun observarTodosLosPueblos(): Flow<List<PueblosEntity>> = db.puebloDao().observarTodos()
 
     fun observarMateriales(): Flow<List<MaterialEntity>> =
         db.materialDao().observarMateriales()
@@ -88,6 +95,15 @@ class RoomRepository(context: Context) {
         db.medidorDao().insertAll(listOf(entity))
     }
 
+    suspend fun guardarMedidor(
+        subregionId: String,
+        subregionNombre: String?,
+        medidor: MedidorEntity,
+    ) = withContext(Dispatchers.IO) {
+        firebase.registrarMedidorManual(subregionId, subregionNombre, medidor)
+        db.medidorDao().insertAll(listOf(medidor))
+    }
+
     suspend fun insertarMedidores(medidores: List<MedidorEntity>) {
         if (medidores.isNotEmpty()) {
             db.medidorDao().insertAll(medidores)
@@ -110,6 +126,14 @@ class RoomRepository(context: Context) {
     suspend fun obtenerCallesPorPueblo(puebloId: Int): List<LocalizacionesEntity> =
         db.localizacionDao().obtenerPorPueblo(puebloId)
 
+    suspend fun obtenerLocalizacionPorId(id: Long): LocalizacionesEntity? =
+        db.localizacionDao().buscarPorId(id)
+
+    suspend fun obtenerVehiculoPorId(id: Int): VehiculosEntity? = db.vehiculoDao().buscarPorId(id)
+
+    suspend fun obtenerVehiculoPorPlaca(placa: Long): VehiculosEntity? =
+        db.vehiculoDao().buscarPorPlaca(placa)
+
     suspend fun buscarLocalizacion(
         puebloId: Int,
         calleId: Int,
@@ -130,6 +154,35 @@ class RoomRepository(context: Context) {
             val dir = loc.direccion.trim().lowercase()
             direccionNormalizada?.let { dir == it } ?: true
         } ?: coincidencias.first()
+    }
+
+    suspend fun guardarVehiculo(vehiculo: VehiculosEntity) = withContext(Dispatchers.IO) {
+        firebase.guardarVehiculo(vehiculo)
+        db.vehiculoDao().insertAll(listOf(vehiculo))
+    }
+
+    suspend fun eliminarVehiculo(id: Int) = withContext(Dispatchers.IO) {
+        firebase.eliminarVehiculo(id)
+        db.vehiculoDao().eliminarPorId(id)
+    }
+
+    suspend fun guardarLocalizacion(localizacion: LocalizacionesEntity) = withContext(Dispatchers.IO) {
+        firebase.guardarLocalizacion(localizacion)
+        db.localizacionDao().insertAll(listOf(localizacion))
+    }
+
+    suspend fun eliminarLocalizacion(id: Int) = withContext(Dispatchers.IO) {
+        firebase.eliminarLocalizacion(id)
+        db.localizacionDao().eliminarPorId(id)
+    }
+
+    suspend fun eliminarMedidor(
+        subregionId: String,
+        subregionNombre: String?,
+        numero: String,
+    ) = withContext(Dispatchers.IO) {
+        firebase.eliminarMedidor(subregionId, subregionNombre, numero)
+        db.medidorDao().eliminarPorNumero(numero)
     }
 
     // ----- Sincronización -----

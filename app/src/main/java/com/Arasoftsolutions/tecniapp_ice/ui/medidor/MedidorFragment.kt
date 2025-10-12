@@ -18,6 +18,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.Arasoftsolutions.tecniapp_ice.R
 import com.Arasoftsolutions.tecniapp_ice.databinding.FragmentMedidorBinding
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.launch
 
 class MedidorFragment : Fragment() {
@@ -244,15 +245,22 @@ class MedidorFragment : Fragment() {
         }
         binding.tilRegistroLocalizacion.error = null
 
-        viewModel.registrarMedidorManual(
-            numero = numero,
-            cliente = cliente,
-            localizacion = localizacion,
-            calle = calle,
-            poste = poste,
-            metros = metros,
-            pueblo = pueblo
-        )
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.medidor_registro_confirm_title)
+            .setMessage(R.string.medidor_registro_confirm_message)
+            .setPositiveButton(R.string.medidor_registro_confirm_positive) { _, _ ->
+                viewModel.registrarMedidorManual(
+                    numero = numero,
+                    cliente = cliente,
+                    localizacion = localizacion,
+                    calle = calle,
+                    poste = poste,
+                    metros = metros,
+                    pueblo = pueblo
+                )
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
     }
 
     private fun limpiarFormularioManual() {
