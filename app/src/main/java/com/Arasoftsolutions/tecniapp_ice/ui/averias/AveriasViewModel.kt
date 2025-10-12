@@ -90,6 +90,13 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
     private val allRegionsLabel = app.getString(R.string.averias_filtro_region_todas)
     private val allAgenciesLabel = app.getString(R.string.averias_filtro_agencia_todas)
 
+    private val _notificationsEnabled = MutableStateFlow(AveriaNotificationPreferences.areNotificationsEnabled(app))
+    val notificationsEnabled: StateFlow<Boolean> = _notificationsEnabled.asStateFlow()
+    private val _notificationAgencies = MutableStateFlow(AveriaNotificationPreferences.getSelectedAgencies(app))
+    val notificationAgencies: StateFlow<List<String>> = _notificationAgencies.asStateFlow()
+    private val _notificationSuggestions = MutableStateFlow<List<String>>(emptyList())
+    val notificationSuggestions: StateFlow<List<String>> = _notificationSuggestions.asStateFlow()
+
     private val _regiones = MutableStateFlow(listOf(RegionUI(null, allRegionsLabel)))
     val regiones: StateFlow<List<RegionUI>> = _regiones.asStateFlow()
     private val _regionSeleccionada = MutableStateFlow(RegionUI(null, allRegionsLabel))
@@ -247,6 +254,24 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
 
     fun setQuery(value: String) = viewModelScope.launch { q.emit(value) }
     fun setEstado(value: Estado?) = viewModelScope.launch { estado.emit(value) }
+
+    fun setNotificationsEnabled(enabled: Boolean) {
+        if (_notificationsEnabled.value == enabled) return
+        _notificationsEnabled.value = enabled
+        AveriaNotificationPreferences.setNotificationsEnabled(getApplication(), enabled)
+    }
+
+    fun addNotificationAgency(nombre: String) {
+        val trimmed = nombre.trim()
+        if (trimmed.isEmpty()) return
+        AveriaNotificationPreferences.addAgency(getApplication(), trimmed)
+        _notificationAgencies.value = AveriaNotificationPreferences.getSelectedAgencies(getApplication())
+    }
+
+    fun removeNotificationAgency(nombre: String) {
+        AveriaNotificationPreferences.removeAgency(getApplication(), nombre)
+        _notificationAgencies.value = AveriaNotificationPreferences.getSelectedAgencies(getApplication())
+    }
 
 
     fun setRegionIndex(idx: Int) = viewModelScope.launch {
@@ -669,6 +694,12 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
                         .distinctBy { it.id }
                         .map { RegionUI(it.id, it.nombre) }
                 _regiones.emit(regionItems)
+
+                val sugerencias = buildAgencias(null)
+                    .drop(1)
+                    .map { it.nombreVisible }
+                    .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it })
+                _notificationSuggestions.value = sugerencias
 
                 val applied = applyPendingSelectionsIfPossible(regionItems)
                 if (!applied) {
