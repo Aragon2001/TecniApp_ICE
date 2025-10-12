@@ -81,6 +81,19 @@
                         android:singleLine="true" />
                 </com.google.android.material.textfield.TextInputLayout>
 
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnDateFilter"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/averias_filtro_fecha_todas"
+                    android:tooltipText="@string/averias_filtro_fecha_limpiar_hint"
+                    android:contentDescription="@string/averias_filtrar_fecha"
+                    app:icon="@drawable/ic_calendar"
+                    app:iconGravity="textStart"
+                    app:iconPadding="8dp" />
+
                 <!-- Filtros en scroll horizontal -->
                 <HorizontalScrollView
                     android:layout_width="match_parent"
@@ -221,61 +234,5 @@
         android:src="@drawable/ic_filter_list"
         android:tint="@android:color/white"
         app:backgroundTint="@color/ice_blue" />
-
-    <com.google.android.material.card.MaterialCardView
-    android:id="@+id/cardNotificationFilters"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:layout_margin="16dp"
-    app:cardCornerRadius="16dp"
-    app:cardElevation="2dp"
-    app:strokeColor="?attr/colorOutline">
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="16dp">
-
-        <TextView
-            android:id="@+id/tvNotificationFilterTitle"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Notificaciones de Averías"
-            android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
-            android:textColor="?attr/colorOnSurface" />
-
-        <TextView
-            android:id="@+id/tvNotificationSwitchHelper"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:text="Activa las notificaciones y elige una agencia para recibir alertas."
-            android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
-            android:textColor="?attr/colorOnSurfaceVariant" />
-
-        <com.google.android.material.materialswitch.MaterialSwitch
-            android:id="@+id/switchNotifications"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:text="Activar notificaciones" />
-
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/tilNotificationAgency"
-            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:hint="Selecciona la agencia">
-
-            <AutoCompleteTextView
-                android:id="@+id/actvNotificationAgency"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="text" />
-        </com.google.android.material.textfield.TextInputLayout>
-    </LinearLayout>
-</com.google.android.material.card.MaterialCardView>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

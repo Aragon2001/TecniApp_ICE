@@ -11,6 +11,7 @@ import com.Arasoftsolutions.tecniapp_ice.Database.room.AppDatabase
 import com.Arasoftsolutions.tecniapp_ice.R
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.MaterialUso
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.MaterialesSerializer
+import com.google.firebase.auth.FirebaseAuth
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -61,6 +62,7 @@ data class MaterialPorAveriaReportItem(
     val caseId: String,
     val fechaTexto: String,
     val agencia: String,
+    val vehiculo: String?,
     val materiales: List<MaterialUso>,
     val resumen: String,
     val tieneMateriales: Boolean
@@ -117,6 +119,7 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private val database = AppDatabase.getInstance(app)
+    private val auth: FirebaseAuth = FirebaseAuth.getInstance()
     private val locale: Locale = Locale.getDefault()
     private val rangeFormatter = DateTimeFormatter.ofPattern("dd MMM yyyy", locale)
     private val dateTimeFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm", locale)
@@ -251,6 +254,8 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
         val zona = ZoneId.systemDefault()
         val inicioMillis = inicio.atStartOfDay(zona).toInstant().toEpochMilli()
         val finExclusiveMillis = fin.plusDays(1).atStartOfDay(zona).toInstant().toEpochMilli()
+        val currentUid = auth.currentUser?.uid?.takeIf { it.isNotBlank() }
+        val currentNombre = auth.currentUser?.displayName?.trim()?.lowercase(locale)
 
         val catalogoPorCodigo = catalogo.associateBy { it.codigo }
         val catalogoPorDescripcion = catalogo.associateBy { it.descripcion.trim().lowercase(locale) }
@@ -258,6 +263,13 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
         val atendidas = averias.mapNotNull { entity ->
             val finalMillis = obtenerFechaAtencion(entity) ?: return@mapNotNull null
             if (finalMillis < inicioMillis || finalMillis >= finExclusiveMillis) return@mapNotNull null
+            if (currentUid != null || currentNombre != null) {
+                val uid = entity.atendidoPorUid
+                val nombre = entity.atendidoPorNombre?.trim()?.lowercase(locale)
+                val matchesUid = currentUid != null && uid != null && uid.equals(currentUid, ignoreCase = true)
+                val matchesNombre = currentNombre != null && nombre != null && nombre == currentNombre
+                if (!matchesUid && !matchesNombre) return@mapNotNull null
+            }
             val materiales = obtenerMateriales(entity, catalogoPorCodigo, catalogoPorDescripcion)
             AveriaReporteInterno(entity, finalMillis, materiales)
         }.sortedByDescending { it.finalMillis }
@@ -342,6 +354,7 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
                 caseId = entidad.caseId,
                 fechaTexto = formatDateTime(raw.finalMillis),
                 agencia = obtenerAgencia(entidad),
+                vehiculo = entidad.vehiculoAsignado?.trim()?.takeIf { it.isNotEmpty() },
                 materiales = raw.materiales,
                 resumen = resumen,
                 tieneMateriales = raw.materiales.isNotEmpty()
