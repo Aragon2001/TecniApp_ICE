@@ -19,6 +19,7 @@
     <string name="menu_inventario">Inventario</string>
     <string name="menu_reportes">Reportes</string>
     <string name="menu_programacion">Programación</string>
+    <string name="menu_settings">Ajustes</string>
     <string name="action_accounts">Perfil</string>
     <string name="google_maps_key">AIzaSyBxgf6oA-rRK1-OlNft4oDgzF3gokLl1FU</string>
 
@@ -198,6 +199,36 @@ Cliente: %4$s</string>
     <string name="averia_pdf_table_label_affectation">Tipo de afectación</string>
     <string name="averia_pdf_table_label_zone">Zona / Tag</string>
     <string name="averia_pdf_table_label_medidor">Medidor</string>
+    
+    <!-- Ajustes -->
+    <string name="settings_section_notifications">Notificaciones</string>
+    <string name="settings_notifications_toggle">Alertas de averías</string>
+    <string name="settings_notifications_summary_all">Recibirás avisos de todas las agencias.</string>
+    <string name="settings_notifications_summary_filtered">Notificar solo agencias: %1$s</string>
+    <string name="settings_notifications_manage_agencies">Gestionar agencias favoritas</string>
+    <string name="settings_section_sync">Sincronización</string>
+    <string name="settings_auto_sync_toggle">Sincronización automática al iniciar sesión</string>
+    <string name="settings_auto_sync_summary">Si está activo se agenda un proceso en segundo plano cada 15 minutos.</string>
+    <string name="settings_sync_now">Sincronizar ahora</string>
+    <string name="settings_last_sync_never">Última sincronización manual: nunca</string>
+    <string name="settings_last_sync_format">Última sincronización manual: %1$s</string>
+    <string name="settings_sync_triggered">Sincronización solicitada</string>
+    <string name="settings_section_location">Localización y mapas</string>
+    <string name="settings_gps_toggle">Activar soporte GPS desde TecniApp</string>
+    <string name="settings_gps_summary">Guarda una preferencia local para habilitar el uso de ubicación en los módulos que la necesiten.</string>
+    <string name="settings_section_appearance">Apariencia</string>
+    <string name="settings_dark_theme_toggle">Usar tema oscuro</string>
+    <string name="settings_dark_theme_summary">Activa el modo oscuro para reducir el brillo en condiciones nocturnas.</string>
+    <string name="settings_section_account">Cuenta</string>
+    <string name="settings_account_name_placeholder">Nombre del técnico</string>
+    <string name="settings_account_email_placeholder">Correo electrónico del técnico</string>
+    <string name="settings_account_agency_placeholder">Agencia asignada</string>
+    <string name="settings_sign_out">Cerrar sesión</string>
+    <string name="settings_sign_out_title">¿Cerrar sesión?</string>
+    <string name="settings_sign_out_message">Se limpiarán los datos locales y deberás iniciar sesión nuevamente.</string>
+    <string name="settings_sign_out_confirm">Cerrar sesión</string>
+    <string name="settings_section_advanced">Avanzado</string>
+    <string name="settings_version_placeholder">Versión: %1$s</string>
     <string name="averia_pdf_table_label_street">Calle del medidor</string>
     <string name="averia_pdf_table_label_town">Pueblo del medidor</string>
     <string name="averia_pdf_table_label_meters">Metros</string>

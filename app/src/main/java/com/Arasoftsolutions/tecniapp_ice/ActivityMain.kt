@@ -99,7 +99,8 @@ class ActivityMain : AppCompatActivity() {
                 R.id.nav_inventario,
                 R.id.nav_reportes,
                 R.id.nav_programacion,
-                R.id.nav_account
+                R.id.nav_account,
+                R.id.nav_settings
             ),
             drawerLayout
         )
