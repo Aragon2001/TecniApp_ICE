@@ -219,6 +219,9 @@ Cliente: %4$s</string>
     <string name="settings_last_sync_never">Última sincronización manual: nunca</string>
     <string name="settings_last_sync_format">Última sincronización manual: %1$s</string>
     <string name="settings_sync_triggered">Sincronización solicitada</string>
+    <string name="settings_sync_in_progress_title">Sincronizando datos</string>
+    <string name="settings_sync_in_progress_message">Sincronizando con la base global. Esto puede tardar unos segundos…</string>
+    <string name="settings_sync_in_progress_button">Sincronizando…</string>
     <string name="settings_section_location">Localización y mapas</string>
     <string name="settings_gps_toggle">Activar soporte GPS desde TecniApp</string>
     <string name="settings_gps_summary">Guarda una preferencia local para habilitar el uso de ubicación en los módulos que la necesiten.</string>
@@ -344,6 +347,9 @@ Cliente: %4$s</string>
     <string name="medidor_registro_cancelar">Cancelar</string>
     <string name="medidor_registro_requerido_numero">El número de medidor es obligatorio.</string>
     <string name="medidor_registro_localizacion_error">La localización debe ser numérica.</string>
+    <string name="medidor_registro_confirm_title">Confirmar registro</string>
+    <string name="medidor_registro_confirm_message">¿Estás seguro de registrar este medidor? Los datos se guardarán en la base global y solo un administrador del sistema podrá eliminarlos.</string>
+    <string name="medidor_registro_confirm_positive">Registrar medidor</string>
 
     <!-- Localización -->
     <string name="localizacion_estado_sin_subregion">No se pudo determinar la subregión del usuario.</string>
@@ -436,5 +442,72 @@ Cliente: %4$s</string>
     <string name="reportes_excel_col_descripcion">Descripción</string>
     <string name="reportes_excel_col_cantidad">Cantidad</string>
     <string name="reportes_excel_col_averias">Averías</string>
+
+    <!-- Administración -->
+    <string name="menu_admin">Administración</string>
+    <string name="admin_title">Panel de administración</string>
+    <string name="admin_description">Gestiona catálogos globales. Los cambios se sincronizan para todos los técnicos.</string>
+    <string name="admin_tab_medidores">Medidores</string>
+    <string name="admin_tab_vehiculos">Vehículos</string>
+    <string name="admin_tab_localizaciones">Localizaciones</string>
+    <string name="admin_section_medidores_title">Gestión de medidores</string>
+    <string name="admin_field_medidor_buscar_hint">Buscar por número</string>
+    <string name="admin_field_medidor_numero">Número de medidor</string>
+    <string name="admin_field_medidor_cliente">Nombre del cliente</string>
+    <string name="admin_field_medidor_localizacion">Localización (opcional)</string>
+    <string name="admin_field_medidor_calle">Calle (opcional)</string>
+    <string name="admin_field_medidor_poste">Coordenada del poste</string>
+    <string name="admin_field_medidor_metros">Metros (opcional)</string>
+    <string name="admin_field_medidor_pueblo">Pueblo</string>
+    <string name="admin_field_medidor_subregion">Subregión</string>
+    <string name="admin_section_vehiculos_title">Gestión de vehículos</string>
+    <string name="admin_field_vehiculo_buscar_hint">Buscar por ID o placa</string>
+    <string name="admin_field_vehiculo_id">Identificador del vehículo</string>
+    <string name="admin_field_vehiculo_placa">Placa</string>
+    <string name="admin_field_vehiculo_agencia">Agencia</string>
+    <string name="admin_field_vehiculo_tipo">Tipo (opcional)</string>
+    <string name="admin_field_vehiculo_subregion">Subregión (opcional)</string>
+    <string name="admin_section_localizaciones_title">Gestión de localizaciones</string>
+    <string name="admin_field_localizacion_buscar_hint">Buscar por ID</string>
+    <string name="admin_field_localizacion_id">Identificador de la localización</string>
+    <string name="admin_field_localizacion_pueblo">Pueblo</string>
+    <string name="admin_field_localizacion_calle">Calle</string>
+    <string name="admin_field_localizacion_direccion">Dirección detallada</string>
+    <string name="admin_field_localizacion_latitud">Latitud</string>
+    <string name="admin_field_localizacion_longitud">Longitud</string>
+    <string name="admin_field_localizacion_del_poste">Coordenada del poste (del poste)</string>
+    <string name="admin_field_localizacion_al_poste">Coordenada del poste (al poste)</string>
+    <string name="admin_field_localizacion_subregion">Subregión (opcional)</string>
+    <string name="admin_action_cargar">Cargar</string>
+    <string name="admin_action_limpiar">Limpiar</string>
+    <string name="admin_action_guardar">Guardar cambios</string>
+    <string name="admin_action_eliminar">Eliminar registro</string>
+    <string name="admin_medidor_error_numero">Ingresa el número del medidor.</string>
+    <string name="admin_medidor_error_subregion">Selecciona una subregión válida.</string>
+    <string name="admin_medidor_error_pueblo">Selecciona un pueblo existente.</string>
+    <string name="admin_medidor_error_localizacion">La localización debe ser numérica.</string>
+    <string name="admin_medidor_guardar_exito">Medidor %1$s guardado correctamente.</string>
+    <string name="admin_medidor_eliminar_exito">Medidor %1$s eliminado correctamente.</string>
+    <string name="admin_medidor_no_encontrado">No se encontró el medidor indicado.</string>
+    <string name="admin_vehiculo_error_id">Ingresa el identificador del vehículo.</string>
+    <string name="admin_vehiculo_error_placa">Ingresa la placa numérica del vehículo.</string>
+    <string name="admin_vehiculo_error_agencia">Ingresa la agencia del vehículo.</string>
+    <string name="admin_vehiculo_guardar_exito">Vehículo %1$s guardado correctamente.</string>
+    <string name="admin_vehiculo_eliminar_exito">Vehículo %1$s eliminado correctamente.</string>
+    <string name="admin_vehiculo_no_encontrado">No se encontró el vehículo indicado.</string>
+    <string name="admin_localizacion_error_id">Ingresa el identificador de la localización.</string>
+    <string name="admin_localizacion_error_pueblo">Selecciona un pueblo válido.</string>
+    <string name="admin_localizacion_error_calle">Ingresa el código de calle.</string>
+    <string name="admin_localizacion_error_direccion">Ingresa la dirección de la localización.</string>
+    <string name="admin_localizacion_error_del_poste">Ingresa la coordenada "del poste".</string>
+    <string name="admin_localizacion_error_al_poste">Ingresa la coordenada "al poste".</string>
+    <string name="admin_localizacion_error_latitud">Ingresa una latitud válida.</string>
+    <string name="admin_localizacion_error_longitud">Ingresa una longitud válida.</string>
+    <string name="admin_localizacion_guardar_exito">Localización %1$s guardada correctamente.</string>
+    <string name="admin_localizacion_eliminar_exito">Localización %1$s eliminada correctamente.</string>
+    <string name="admin_localizacion_no_encontrada">No se encontró la localización indicada.</string>
+    <string name="admin_accion_error_general">Ocurrió un error al completar la operación: %1$s.</string>
+    <string name="admin_error_desconocido">error desconocido</string>
+    <string name="admin_validacion_subregion_inexistente">La subregión seleccionada no existe en el catálogo.</string>
 
 </resources>

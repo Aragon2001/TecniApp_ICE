@@ -7,12 +7,14 @@ import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.widget.ArrayAdapter
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import com.Arasoftsolutions.tecniapp_ice.ActivityMain
 import com.Arasoftsolutions.tecniapp_ice.LoginActivity
@@ -42,6 +44,7 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
     private val binding get() = _binding!!
 
     private var notificationDialog: BottomSheetDialog? = null
+    private var syncDialog: AlertDialog? = null
     private val auth by lazy { FirebaseAuth.getInstance() }
     private val dataStore by lazy { DataStoreManager.getInstance(requireContext()) }
     private val roomRepository by lazy { RoomRepository.getInstance(requireContext()) }
@@ -103,6 +106,8 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
     }
 
     private fun setupSyncPreferences() {
+        setManualSyncInProgress(false)
+
         binding.switchAutoSync.setOnCheckedChangeListener { _, isChecked ->
             viewLifecycleOwner.lifecycleScope.launch {
                 dataStore.setAutoSyncEnabled(isChecked)
@@ -119,8 +124,31 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
             viewLifecycleOwner.lifecycleScope.launch {
                 dataStore.markManualSyncNow()
             }
+            setManualSyncInProgress(true)
+            showSyncDialog()
             Toast.makeText(requireContext(), R.string.settings_sync_triggered, Toast.LENGTH_SHORT).show()
         }
+
+        WorkManager.getInstance(requireContext())
+            .getWorkInfosForUniqueWorkLiveData("averias_sync_now")
+            .observe(viewLifecycleOwner) { infos ->
+                val info = infos.firstOrNull()
+                if (info == null) {
+                    dismissSyncDialog()
+                    return@observe
+                }
+
+                when {
+                    info.state == WorkInfo.State.RUNNING ||
+                        info.state == WorkInfo.State.ENQUEUED ||
+                        info.state == WorkInfo.State.BLOCKED -> {
+                        showSyncDialog()
+                        setManualSyncInProgress(true)
+                    }
+
+                    info.state.isFinished -> dismissSyncDialog()
+                }
+            }
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -330,7 +358,36 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         super.onDestroyView()
         notificationDialog?.dismiss()
         notificationDialog = null
+        dismissSyncDialog()
         _binding = null
+    }
+
+    private fun showSyncDialog() {
+        if (syncDialog?.isShowing == true) return
+        val dialogView = layoutInflater.inflate(R.layout.dialog_progress, null)
+        syncDialog = MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.settings_sync_in_progress_title)
+            .setView(dialogView)
+            .setCancelable(false)
+            .create()
+        syncDialog?.show()
+    }
+
+    private fun dismissSyncDialog() {
+        syncDialog?.dismiss()
+        syncDialog = null
+        setManualSyncInProgress(false)
+    }
+
+    private fun setManualSyncInProgress(inProgress: Boolean) {
+        if (_binding == null) return
+        binding.btnSincronizarAhora.isEnabled = !inProgress
+        binding.btnSincronizarAhora.alpha = if (inProgress) 0.6f else 1f
+        binding.btnSincronizarAhora.text = if (inProgress) {
+            getString(R.string.settings_sync_in_progress_button)
+        } else {
+            getString(R.string.settings_sync_now)
+        }
     }
 }
 
