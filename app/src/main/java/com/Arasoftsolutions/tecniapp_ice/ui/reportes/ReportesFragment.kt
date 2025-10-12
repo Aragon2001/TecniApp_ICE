@@ -8,7 +8,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.core.util.Pair
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -21,8 +20,9 @@ import com.Arasoftsolutions.tecniapp_ice.R
 import com.Arasoftsolutions.tecniapp_ice.databinding.FragmentReportesBinding
 import com.Arasoftsolutions.tecniapp_ice.ui.reportes.ExcelReportExporter.ExportPayload
 import com.Arasoftsolutions.tecniapp_ice.ui.reportes.ExcelReportExporter.MIME_TYPE_XLSX
-import com.Arasoftsolutions.tecniapp_ice.ui.reportes.ReportesUiState
 import com.google.android.material.datepicker.MaterialDatePicker
+import androidx.core.util.Pair
+import com.google.android.material.chip.ChipGroup
 import com.google.android.material.snackbar.Snackbar
 import java.time.Instant
 import java.time.LocalDate
@@ -44,7 +44,7 @@ class ReportesFragment : Fragment() {
     private lateinit var materialesPorAveriaAdapter: MaterialesPorAveriaAdapter
     private lateinit var materialTotalAdapter: MaterialTotalAdapter
 
-    private val chipTypeMap = mapOf(
+    private val chipTypeMap: Map<Int, ReportType> = mapOf(
         R.id.chipTipoAverias to ReportType.AVERIAS,
         R.id.chipTipoMaterialPorAveria to ReportType.MATERIALES_POR_AVERIA,
         R.id.chipTipoMaterialTotal to ReportType.MATERIALES_TOTALES
@@ -112,7 +112,10 @@ class ReportesFragment : Fragment() {
         binding.btnGenerarReporte.setOnClickListener { viewModel.generarReporteSeleccionado() }
         binding.btnExportarExcel.setOnClickListener { prepararExportacion() }
 
-        binding.chipGroupTipoReporte.setOnCheckedStateChangeListener { _, checkedIds ->
+        binding.chipGroupTipoReporte.setOnCheckedStateChangeListener {
+                _: ChipGroup,
+                checkedIds: MutableList<Int>
+            ->
             val checkedId = checkedIds.firstOrNull() ?: return@setOnCheckedStateChangeListener
             val tipo = chipTypeMap[checkedId] ?: return@setOnCheckedStateChangeListener
             viewModel.seleccionarTipo(tipo)
