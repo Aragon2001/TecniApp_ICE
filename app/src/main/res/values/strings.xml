@@ -195,6 +195,7 @@ Cliente: %4$s</string>
     <string name="averia_pdf_table_label_attended_by">Atendido por</string>
     <string name="averia_pdf_table_label_vehicle">Vehículo asignado</string>
     <string name="averia_pdf_table_label_description">Descripción</string>
+    <string name="averia_pdf_table_label_observations">Observaciones</string>
     <string name="averia_pdf_table_label_event_date">Fecha del evento</string>
     <string name="averia_pdf_table_label_start_time">Inicio de atención</string>
     <string name="averia_pdf_table_label_end_time">Fin de atención</string>
