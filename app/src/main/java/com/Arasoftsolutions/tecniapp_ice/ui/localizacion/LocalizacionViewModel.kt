@@ -123,7 +123,7 @@ class LocalizacionViewModel(app: Application) : AndroidViewModel(app) {
                 } else {
                     intentoSyncRealizado = false
                     val pueblosOrdenados = lista
-                        .sortedBy { it.nombre }
+                        .sortedBy { it.id }
                         .map { entidad -> "${entidad.id} - ${entidad.nombre}" }
                     _pueblos.postValue(listOf(puebloPlaceholder) + pueblosOrdenados)
                     _estado.postValue(Estado.Exito)

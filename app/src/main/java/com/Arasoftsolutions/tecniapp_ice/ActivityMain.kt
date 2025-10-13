@@ -10,6 +10,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.text.method.LinkMovementMethod
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
@@ -90,7 +91,6 @@ class ActivityMain : AppCompatActivity() {
         AveriaNotifications.ensureChannel(this)
         requestNotificationPermissionIfNeeded()
         AveriasSyncWorker.schedule(applicationContext)
-        AveriasSyncWorker.triggerNow(applicationContext)
         AveriasRealtimeNotifications.start(applicationContext)
 
         // Drawer + Navigation
@@ -99,8 +99,8 @@ class ActivityMain : AppCompatActivity() {
         val navController = findNavController(R.id.nav_host_fragment_content_main)
 
         headerBinding = NavHeaderMainBinding.bind(navView.getHeaderView(0)).also { header ->
-            header.chipVehicle.isVisible = false
-            header.chipVehicle.text = getString(R.string.nav_header_vehicle_placeholder)
+            header.textViewVehicle.isVisible = false
+            header.textViewVehicle.text = getString(R.string.nav_header_vehicle_placeholder)
             header.root.setOnClickListener { openUserFragment() }
         }
 
@@ -171,10 +171,10 @@ class ActivityMain : AppCompatActivity() {
 
         val vehiculo = usuario.placaVehiculo?.takeUnless { it.isBlank() }
         if (vehiculo.isNullOrBlank()) {
-            headerBinding.chipVehicle.isVisible = false
+            headerBinding.textViewVehicle.isVisible = false
         } else {
-            headerBinding.chipVehicle.isVisible = true
-            headerBinding.chipVehicle.text = getString(R.string.nav_header_vehicle_format, vehiculo)
+            headerBinding.textViewVehicle.isVisible = true
+            headerBinding.textViewVehicle.text = getString(R.string.nav_header_vehicle_format, vehiculo)
         }
 
         Glide.with(this)

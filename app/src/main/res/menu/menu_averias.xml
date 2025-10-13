@@ -6,6 +6,6 @@
         android:id="@+id/action_notification_filters"
         android:icon="@drawable/ic_notification"
         android:title="@string/averia_notificacion_menu"
-        app:iconTint="@color/ice_blue"
+        app:iconTint="@color/white"
         app:showAsAction="always" />
 </menu>
