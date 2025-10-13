@@ -18,7 +18,6 @@ import androidx.core.content.FileProvider
 import com.Arasoftsolutions.tecniapp_ice.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import kotlin.math.max
 import java.io.File
 import java.io.FileOutputStream
 import java.text.SimpleDateFormat
@@ -153,26 +152,24 @@ object PdfGenerator {
                 document = document,
                 bottomMargin = bottomSpace,
                 onPageStarted = { canvas, pageNumber ->
-                    drawHeader(
-                        context = context,
-                        canvas = canvas,
-                        style = style,
-                        logos = headerLogos,
-                        item = item,
-                        pageNumber = pageNumber,
-                        generatedAt = generatedAt
-                    )
+                    if (pageNumber == 1) {
+                        drawHeader(
+                            context = context,
+                            canvas = canvas,
+                            logos = headerLogos,
+                            item = item,
+                            generatedAt = generatedAt
+                        )
+                    } else {
+                        PAGE_MARGIN
+                    }
                 },
                 onPageFinished = { canvas, pageNumber ->
                     drawFooter(context, canvas, style, pageNumber, currentYear)
                 }
             )
 
-            // region Summary chips
             state.startPage()
-            drawSummaryChips(state, style, item)
-            state.currentY += 12f
-            // endregion
 
             val emptyValue = context.getString(R.string.averia_pdf_empty_value)
             val assigned = item.tecnico.ifBlank { context.getString(R.string.averia_sin_asignar) }
@@ -201,10 +198,6 @@ object PdfGenerator {
                 TipoAfectacion.SECTOR -> context.getString(R.string.averia_tipo_sector)
             }
             val medidorNumero = item.numeroMedidor?.takeIf { it.isNotBlank() } ?: emptyValue
-            val medidorCalle = item.medidorCalle?.takeIf { it.isNotBlank() } ?: emptyValue
-            val medidorPueblo = item.medidorPueblo?.takeIf { it.isNotBlank() } ?: emptyValue
-            val medidorMetros = item.medidorMetros?.takeIf { it.isNotBlank() } ?: emptyValue
-            val medidorPoste = item.medidorPoste?.takeIf { it.isNotBlank() } ?: emptyValue
             val location = if (item.lat == 0.0 && item.lng == 0.0) {
                 context.getString(R.string.averia_pdf_location_no_data)
             } else {
@@ -230,11 +223,7 @@ object PdfGenerator {
                 InfoRow(context.getString(R.string.averia_pdf_table_label_kilometers), kilometraje),
                 InfoRow(context.getString(R.string.averia_pdf_table_label_location), location),
                 InfoRow(context.getString(R.string.averia_pdf_table_label_generated), generatedAt),
-                InfoRow(context.getString(R.string.averia_pdf_table_label_medidor), medidorNumero),
-                InfoRow(context.getString(R.string.averia_pdf_table_label_street), medidorCalle),
-                InfoRow(context.getString(R.string.averia_pdf_table_label_town), medidorPueblo),
-                InfoRow(context.getString(R.string.averia_pdf_table_label_meters), medidorMetros),
-                InfoRow(context.getString(R.string.averia_pdf_table_label_post), medidorPoste)
+                InfoRow(context.getString(R.string.averia_pdf_table_label_medidor), medidorNumero)
             )
 
             drawInfoGrid(state, style, infoRows)
@@ -285,37 +274,6 @@ object PdfGenerator {
             cards.forEach { card ->
                 drawDetailCard(context, state, style, card)
             }
-
-            val medidorLines = buildList {
-                if (item.numeroMedidor?.isNotBlank() == true) {
-                    add(context.getString(R.string.averia_medidor_label, item.numeroMedidor))
-                }
-                if (item.medidorCalle?.isNotBlank() == true) {
-                    add(context.getString(R.string.averia_medidor_calle, item.medidorCalle))
-                }
-                if (item.medidorPueblo?.isNotBlank() == true) {
-                    add(context.getString(R.string.averia_medidor_pueblo, item.medidorPueblo))
-                }
-                if (item.medidorMetros?.isNotBlank() == true) {
-                    add(context.getString(R.string.averia_medidor_metros, item.medidorMetros))
-                }
-                if (item.medidorPoste?.isNotBlank() == true) {
-                    add(context.getString(R.string.averia_medidor_poste, item.medidorPoste))
-                }
-            }.ifEmpty {
-                listOf(context.getString(R.string.averia_pdf_no_meter_details))
-            }
-
-            drawDetailCard(
-                context,
-                state,
-                style,
-                DetailCard(
-                    title = context.getString(R.string.averia_pdf_section_medidor),
-                    content = medidorLines,
-                    bullet = true
-                )
-            )
 
             val materialLines = when {
                 item.materialesDetalle.any { it.cantidad > 0 } -> item.materialesDetalle
@@ -419,7 +377,7 @@ object PdfGenerator {
     }
 
     private fun loadLogos(context: Context): List<Bitmap> {
-        val desiredSize = 120
+        val desiredSize = 96
         val resIds = listOfNotNull(
             R.drawable.logo,
             R.drawable.ice
@@ -438,9 +396,6 @@ object PdfGenerator {
         val titlePaint: Paint,
         val bodyPaint: Paint,
         val labelPaint: Paint,
-        val chipTextPaint: Paint,
-        val chipBackgroundPaint: Paint,
-        val chipAccentPaint: Paint,
         val cardBackgroundPaint: Paint,
         val cardBorderPaint: Paint,
         val timelinePaint: Paint,
@@ -451,35 +406,24 @@ object PdfGenerator {
     private fun PdfStyle(context: Context): PdfStyle {
         val titlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-            textSize = 16f
+            textSize = 15f
             color = Color.parseColor("#1D2A44")
         }
         val bodyPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            textSize = 12f
+            textSize = 11.5f
             color = Color.parseColor("#1D2A44")
         }
         val labelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-            textSize = 10.5f
-            color = Color.parseColor("#536DFE")
-        }
-        val chipText = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-            textSize = 11.5f
-            color = Color.WHITE
-        }
-        val chipBackground = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.parseColor("#5C6CFF")
-        }
-        val chipAccent = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.parseColor("#36D1DC")
+            textSize = 10f
+            color = Color.parseColor("#24447A")
         }
         val cardBackground = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Color.WHITE
         }
         val cardBorder = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = Color.parseColor("#E0E7FF")
-            strokeWidth = 2.5f
+            color = Color.parseColor("#D4DEFF")
+            strokeWidth = 1.6f
             style = Paint.Style.STROKE
         }
         val timeline = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -487,20 +431,17 @@ object PdfGenerator {
             strokeWidth = 3f
         }
         val timelineLabel = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            textSize = 11f
+            textSize = 10.5f
             color = Color.parseColor("#1D2A44")
         }
         val footerText = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            textSize = 10f
+            textSize = 9.5f
             color = Color.WHITE
         }
         return PdfStyle(
             titlePaint = titlePaint,
             bodyPaint = bodyPaint,
             labelPaint = labelPaint,
-            chipTextPaint = chipText,
-            chipBackgroundPaint = chipBackground,
-            chipAccentPaint = chipAccent,
             cardBackgroundPaint = cardBackground,
             cardBorderPaint = cardBorder,
             timelinePaint = timeline,
@@ -563,85 +504,67 @@ object PdfGenerator {
     private fun drawHeader(
         context: Context,
         canvas: Canvas,
-        style: PdfStyle,
         logos: List<Bitmap>,
         item: AveriaUI,
-        pageNumber: Int,
         generatedAt: String
     ): Float {
-        val headerHeight = 150f
-        val rect = RectF(
-            PAGE_MARGIN,
-            PAGE_MARGIN,
-            PAGE_WIDTH - PAGE_MARGIN,
-            PAGE_MARGIN + headerHeight
-        )
-        val gradientPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            shader = LinearGradient(
-                rect.left,
-                rect.top,
-                rect.right,
-                rect.bottom,
-                Color.parseColor("#2E3192"),
-                Color.parseColor("#36D1DC"),
-                Shader.TileMode.CLAMP
-            )
-        }
-        canvas.drawRoundRect(rect, 24f, 24f, gradientPaint)
-
-        val headerTitlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        val titlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD)
-            textSize = 30f
-            color = Color.WHITE
+            textSize = 24f
+            color = Color.parseColor("#1D2A44")
         }
-        val headerSubtitlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        val subtitlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             textSize = 14f
-            color = Color.WHITE
-        }
-        val headerMetaPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            textSize = 11f
-            color = Color.WHITE
+            color = Color.parseColor("#1D2A44")
             alpha = 220
         }
+        val metaPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            textSize = 11f
+            color = Color.parseColor("#1D2A44")
+            alpha = 200
+        }
 
-        val headerTitle = context.getString(R.string.averia_pdf_header_title)
-        val headerSubtitle = context.getString(R.string.averia_pdf_header_subtitle)
-        val headerTagline = context.getString(R.string.averia_pdf_header_tagline)
+        val top = PAGE_MARGIN
+        val left = PAGE_MARGIN
+        val availableWidth = PAGE_WIDTH - PAGE_MARGIN * 2
+        val logoSize = 68f
+        val logoSpacing = 10f
+        val logosWidth = if (logos.isNotEmpty()) {
+            logos.size * logoSize + (logos.size - 1) * logoSpacing
+        } else {
+            0f
+        }
+        val textWidth = (availableWidth - logosWidth - if (logosWidth > 0) 24f else 0f).coerceAtLeast(0f)
+        val textX = left
+        var textY = top + titlePaint.textSize
 
-        var textY = rect.top + 42f
-        val textX = rect.left + 32f
-        canvas.drawText(headerTitle, textX, textY, headerTitlePaint)
-        textY += 30f
-        canvas.drawText(headerSubtitle, textX, textY, headerSubtitlePaint)
-        textY += 22f
-        canvas.drawText(headerTagline, textX, textY, headerMetaPaint)
-        textY += 18f
+        val title = context.getString(R.string.averia_pdf_header_title)
+        val subtitle = context.getString(R.string.averia_pdf_header_subtitle)
+        canvas.drawText(title, textX, textY, titlePaint)
+        textY += subtitlePaint.textSize + 4f
+        canvas.drawText(subtitle, textX, textY, subtitlePaint)
+        textY += metaPaint.textSize + 6f
         val caseLabel = context.getString(R.string.averia_pdf_table_label_case)
-        canvas.drawText("$caseLabel: ${item.id}", textX, textY, headerMetaPaint)
-        textY += 16f
+        canvas.drawText("$caseLabel: ${item.id}", textX, textY, metaPaint)
+        textY += metaPaint.textSize + 4f
         canvas.drawText(
             context.getString(R.string.averia_pdf_table_label_generated) + ": " + generatedAt,
             textX,
             textY,
-            headerMetaPaint
+            metaPaint
         )
 
         if (logos.isNotEmpty()) {
-            val logoSize = 84f
-            val spacing = 12f
-            val totalWidth = (logoSize * logos.size) + spacing * (logos.size - 1)
-            var left = rect.right - 32f - totalWidth
-            val top = rect.top + 32f
+            var currentLeft = left + textWidth + 24f
+            val topLogo = top
             logos.forEach { bitmap ->
-                val dest = RectF(left, top, left + logoSize, top + logoSize)
+                val dest = RectF(currentLeft, topLogo, currentLeft + logoSize, topLogo + logoSize)
                 canvas.drawBitmap(bitmap, null, dest, null)
-                left += logoSize + spacing
+                currentLeft += logoSize + logoSpacing
             }
         }
 
-        canvas.drawText("Página $pageNumber", rect.right - 120f, rect.bottom - 18f, headerMetaPaint)
-
-        return rect.bottom + 28f
+        return max(textY + 16f, top + logoSize + 12f)
     }
 
     private fun drawFooter(
@@ -696,57 +619,21 @@ object PdfGenerator {
         canvas.drawText(metaText, footerRect.right - metaPaint.measureText(metaText) - 24f, footerRect.bottom - 14f, metaPaint)
     }
 
-    private fun drawSummaryChips(state: PageState, style: PdfStyle, item: AveriaUI) {
-        val chips = listOf(
-            Chip(text = "${item.estado}", isPrimary = true),
-            Chip(text = item.zonaTag.ifBlank { "—" }),
-            Chip(text = item.region.ifBlank { "—" }),
-            Chip(text = item.agencia.ifBlank { "—" }),
-            Chip(text = item.numeroMedidor?.takeIf { it.isNotBlank() } ?: "Medidor —")
-        )
-        val chipHeight = 28f
-        val horizontalSpacing = 12f
-        val verticalSpacing = 10f
-        val maxWidth = PAGE_WIDTH - PAGE_MARGIN * 2
-        var x = PAGE_MARGIN
-        var y = state.currentY
-
-        chips.forEach { chip ->
-            val textPaint = style.chipTextPaint
-            val textWidth = textPaint.measureText(chip.text)
-            val chipWidth = textWidth + 34f
-            if (x + chipWidth > PAGE_MARGIN + maxWidth) {
-                x = PAGE_MARGIN
-                y += chipHeight + verticalSpacing
-            }
-            val rect = RectF(x, y, x + chipWidth, y + chipHeight)
-            val paint = if (chip.isPrimary) style.chipBackgroundPaint else style.chipAccentPaint
-            state.canvas.drawRoundRect(rect, chipHeight / 2f, chipHeight / 2f, paint)
-            val textY = rect.centerY() - (textPaint.descent() + textPaint.ascent()) / 2
-            state.canvas.drawText(chip.text, rect.left + 17f, textY, textPaint)
-            x += chipWidth + horizontalSpacing
-        }
-
-        state.currentY = y + chipHeight + verticalSpacing
-    }
-
-    private data class Chip(val text: String, val isPrimary: Boolean = false)
-
     private data class InfoRow(val label: String, val value: String)
 
     private fun drawInfoGrid(state: PageState, style: PdfStyle, rows: List<InfoRow>) {
         val columns = 2
-        val horizontalGap = 16f
-        val verticalGap = 12f
-        val cardRadius = 18f
+        val horizontalGap = 12f
+        val verticalGap = 8f
+        val cardRadius = 14f
         val columnWidth = (PAGE_WIDTH - PAGE_MARGIN * 2 - horizontalGap) / columns
-        val labelGap = 8f
-        val basePadding = 18f
+        val labelGap = 6f
+        val basePadding = 14f
 
         rows.chunked(columns).forEach { chunk ->
             val rowHeight = chunk.maxOf { row ->
                 val lines = wrapText(style.bodyPaint, row.value, columnWidth - basePadding * 2)
-                basePadding * 2 + style.labelPaint.textSize + labelGap + lines.size * (style.bodyPaint.textSize + 6f)
+                basePadding * 2 + style.labelPaint.textSize + labelGap + lines.size * (style.bodyPaint.textSize + 4f)
             }
             state.ensureSpace(rowHeight + verticalGap)
 
@@ -762,7 +649,7 @@ object PdfGenerator {
                 var lineY = labelBaseline + labelGap + style.bodyPaint.textSize
                 bodyLines.forEach { line ->
                     state.canvas.drawText(line, rect.left + basePadding, lineY, style.bodyPaint)
-                    lineY += style.bodyPaint.textSize + 6f
+                    lineY += style.bodyPaint.textSize + 4f
                 }
             }
             state.currentY += rowHeight + verticalGap
@@ -773,8 +660,8 @@ object PdfGenerator {
 
     private fun drawTimeline(context: Context, state: PageState, style: PdfStyle, items: List<TimelineEntry>) {
         if (items.isEmpty()) return
-        val cardPadding = 20f
-        val cardHeight = 120f
+        val cardPadding = 16f
+        val cardHeight = 108f
         val requiredHeight = cardHeight
         state.ensureSpace(requiredHeight + 16f)
 
@@ -811,11 +698,11 @@ object PdfGenerator {
 
         items.forEachIndexed { index, entry ->
             val centerX = centers[index]
-            val circleRadius = 8f
+            val circleRadius = 7f
             state.canvas.drawCircle(centerX, lineY, circleRadius, style.timelinePaint)
-            val titleY = lineY - 18f
-            val dateY = lineY + 24f
-            val timeY = dateY + 14f
+            val titleY = lineY - 16f
+            val dateY = lineY + 20f
+            val timeY = dateY + 12f
             val titlePaint = style.labelPaint
             val datePaint = style.timelineLabelPaint
             val timePaint = Paint(style.timelineLabelPaint).apply { alpha = 180 }
@@ -825,7 +712,7 @@ object PdfGenerator {
             drawCenteredText(state.canvas, entry.time.ifBlank { "--" }, centerX, timeY, timePaint)
         }
 
-        state.currentY = rect.bottom + 16f
+        state.currentY = rect.bottom + 12f
     }
 
     private fun drawCenteredText(canvas: Canvas, text: String, centerX: Float, baseline: Float, paint: Paint) {
@@ -840,9 +727,9 @@ object PdfGenerator {
     )
 
     private fun drawDetailCard(context: Context, state: PageState, style: PdfStyle, card: DetailCard) {
-        val innerPadding = 22f
-        val lineSpacing = style.bodyPaint.textSize + 8f
-        val titleGap = 16f
+        val innerPadding = 18f
+        val lineSpacing = style.bodyPaint.textSize + 6f
+        val titleGap = 12f
         val bulletPrefix = "• "
         val indentWidth = style.bodyPaint.measureText(bulletPrefix)
         val availableWidth = PAGE_WIDTH - PAGE_MARGIN * 2 - innerPadding * 2
@@ -897,8 +784,8 @@ object PdfGenerator {
                 PAGE_WIDTH - PAGE_MARGIN,
                 state.currentY + cardHeight
             )
-            state.canvas.drawRoundRect(rect, 22f, 22f, style.cardBackgroundPaint)
-            state.canvas.drawRoundRect(rect, 22f, 22f, style.cardBorderPaint)
+            state.canvas.drawRoundRect(rect, 18f, 18f, style.cardBackgroundPaint)
+            state.canvas.drawRoundRect(rect, 18f, 18f, style.cardBorderPaint)
             val titleBaseline = rect.top + innerPadding + style.titlePaint.textSize
             val displayTitle = if (segment == 0) {
                 card.title
@@ -911,7 +798,7 @@ object PdfGenerator {
                 state.canvas.drawText(line, rect.left + innerPadding, lineY, style.bodyPaint)
                 lineY += lineSpacing
             }
-            state.currentY += cardHeight + 12f
+            state.currentY += cardHeight + 10f
             startIndex = endIndex
             if (startIndex < lines.size) {
                 segment++
