@@ -3,12 +3,13 @@
    See https://developer.android.com/about/versions/12/backup-restore#xml-changes
    for details.
 -->
-<data-extraction-rules>
+<data-extraction-rules xmlns:tools="http://schemas.android.com/tools">
     <cloud-backup>
         <!-- Incluir la base de datos local para conservar la información
              sincronizada de Firebase y excluir las preferencias de sesión. -->
         <include domain="database" path="TecniAppDB.db" />
-        <exclude domain="sharedpref" path="TecniAppPrefs.xml" />
+        <exclude domain="sharedpref" path="TecniAppPrefs.xml"
+            tools:ignore="FullBackupContent" />
     </cloud-backup>
     <!--
     <device-transfer>

@@ -193,25 +193,7 @@ class AveriasFragment : Fragment() {
             vm.setAgenciaIndex(position)
         }
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                launch {
-                    vm.notificationsEnabled.collectLatest { enabled ->
-                        renderNotificationChips(vm.notificationAgencies.value, enabled)
-                    }
-                }
-                launch {
-                    vm.notificationAgencies.collectLatest { agencias ->
-                        renderNotificationChips(agencias, vm.notificationsEnabled.value)
-                    }
-                }
-                launch {
-                    vm.fechaFiltroState.collectLatest { range ->
-                        updateDateFilter(range)
-                    }
-                }
-            }
-        }
+
 
         // Observa estado UI y mensajes
         viewLifecycleOwner.lifecycleScope.launch {
@@ -423,32 +405,6 @@ class AveriasFragment : Fragment() {
     /**
      * Renderiza los chips visibles en el fragment principal
      */
-    private fun renderNotificationChips(
-        agencias: List<String>,
-        notificationsEnabled: Boolean
-    ) {
-        val group = b.chipGroupNotificationAgencies
-        group.removeAllViews()
-        agencias.forEach { nombre ->
-            val chip = Chip(requireContext()).apply {
-                text = nombre
-                isCheckable = false
-                isCloseIconVisible = true
-                alpha = if (notificationsEnabled) 1f else 0.6f
-                setOnCloseIconClickListener { vm.removeNotificationAgency(nombre) }
-            }
-            group.addView(chip)
-        }
-        b.tvNotificationFiltersEmpty.visibility =
-            if (agencias.isEmpty()) View.VISIBLE else View.GONE
-        b.tvNotificationFiltersEmpty.alpha = if (notificationsEnabled) 1f else 0.6f
-        b.tvNotificationFiltersEmpty.text = if (notificationsEnabled) {
-            getString(R.string.averia_notificacion_filtro_vacio)
-        } else {
-            getString(R.string.averia_notificacion_filtro_desactivado)
-        }
-        group.alpha = if (notificationsEnabled) 1f else 0.6f
-    }
 
     /**
      * Aplica el estado visual de "notificaciones activadas/desactivadas"

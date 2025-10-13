@@ -3,6 +3,7 @@ package com.Arasoftsolutions.tecniapp_ice.ui.localizacion
 // ViewModel en su package correcto
 
 import android.Manifest
+import android.app.AlertDialog
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
@@ -528,9 +529,6 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
         })
     }
 
-    // ---------------------------------------------------------------------------------------------
-    // Acciones (Navegar / Compartir)
-    // ---------------------------------------------------------------------------------------------
     private fun mostrarOpcionesDeNavegacion() {
         val lat = viewModel.localizacion.value?.latitud
         val lng = viewModel.localizacion.value?.longitud
@@ -539,45 +537,57 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
             return
         }
 
+        val context = requireContext()
         val centerParam = String.format(Locale.US, "%f,%f", lat, lng)
-        val fieldMapsIntent = Intent(
-            Intent.ACTION_VIEW,
-            Uri.parse("https://fieldmaps.arcgis.app?center=$centerParam")
-        ).apply {
+
+        // URIs corregidas
+        val fieldMapsUri = Uri.parse("arcgis-fieldmaps://?referenceContext=center&itemID=&center=$centerParam")
+        val googleMapsUri = Uri.parse("google.navigation:q=$centerParam")
+        val browserUri = Uri.parse("https://maps.google.com/?q=$centerParam")
+
+        // Intents
+        val fieldMapsIntent = Intent(Intent.ACTION_VIEW, fieldMapsUri).apply {
             setPackage("com.esri.fieldmaps")
         }
 
-        val googleMapsIntent = Intent(
-            Intent.ACTION_VIEW,
-            Uri.parse("google.navigation:q=$centerParam")
-        ).apply {
+        val googleMapsIntent = Intent(Intent.ACTION_VIEW, googleMapsUri).apply {
             setPackage("com.google.android.apps.maps")
         }
 
-        val browserIntent = Intent(
-            Intent.ACTION_VIEW,
-            Uri.parse("https://maps.google.com/?q=$centerParam")
-        )
+        val browserIntent = Intent(Intent.ACTION_VIEW, browserUri)
 
-        try {
-            startActivity(fieldMapsIntent)
-        } catch (fieldMapsMissing: ActivityNotFoundException) {
-            Toast.makeText(
-                requireContext(),
-                getString(R.string.localizacion_fieldmaps_no_disponible),
-                Toast.LENGTH_SHORT
-            ).show()
-            try {
-                startActivity(googleMapsIntent)
-            } catch (mapsMissing: ActivityNotFoundException) {
-                startActivity(
-                    Intent.createChooser(
-                        browserIntent,
-                        getString(R.string.localizacion_navegacion_chooser)
-                    )
-                )
+        // Mostrar selector manual
+        val opciones = arrayOf("Field Maps", "Google Maps", "Navegador web")
+
+        AlertDialog.Builder(context)
+            .setTitle("Abrir ubicación con...")
+            .setItems(opciones) { _, which ->
+                when (which) {
+                    0 -> { // Field Maps
+                        try {
+                            startActivity(fieldMapsIntent)
+                        } catch (e: Exception) {
+                            Toast.makeText(context, "Field Maps no está instalado o el vínculo es inválido.", Toast.LENGTH_LONG).show()
+                        }
+                    }
+                    1 -> { // Google Maps
+                        try {
+                            startActivity(googleMapsIntent)
+                        } catch (e: Exception) {
+                            Toast.makeText(context, "Google Maps no está disponible.", Toast.LENGTH_LONG).show()
+                        }
+                    }
+                    2 -> { // Navegador
+                        try {
+                            startActivity(browserIntent)
+                        } catch (e: Exception) {
+                            Toast.makeText(context, "No se pudo abrir en el navegador.", Toast.LENGTH_LONG).show()
+                        }
+                    }
+                }
             }
-        }
+            .setNegativeButton("Cancelar", null)
+            .show()
     }
 
     private fun compartirUbicacion() {
