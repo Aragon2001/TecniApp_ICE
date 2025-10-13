@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  TecniApp ICE © 2025 Arasoft Solutions
+  Todos los derechos reservados.
+  Desarrollado para el Instituto Costarricense de Electricidad (ICE).
+-->
+<legalDocument>
+    <intro>
+        TecniApp ICE es una herramienta institucional del Instituto Costarricense de Electricidad (ICE) para coordinar
+        la operación técnica en campo. Al continuar confirmas que revisarás y respetarás estas condiciones.
+    </intro>
+
+    <section title="Uso autorizado">
+        <paragraph>
+            TecniApp ICE está destinada exclusivamente al personal técnico autorizado por el ICE para gestionar averías,
+            luminarias, inventarios y demás tareas operativas.
+        </paragraph>
+        <paragraph>
+            Cualquier uso fuera del ámbito institucional, con cuentas no oficiales o para fines personales queda
+            estrictamente prohibido.
+        </paragraph>
+    </section>
+
+    <section title="Datos personales y autenticación">
+        <paragraph>
+            El usuario acepta que su nombre, cédula, correo @ice.go.cr, subregión, agencia y credenciales de acceso se
+            empleen para identificar y auditar las actividades realizadas.
+        </paragraph>
+        <paragraph>
+            La autenticación se gestiona con Firebase Authentication y el almacenamiento operativo en Firebase Realtime
+            Database, alineado con las políticas de seguridad vigentes del ICE y de Google.
+        </paragraph>
+    </section>
+
+    <section title="Sincronización y almacenamiento local">
+        <paragraph>
+            La aplicación mantiene una base de datos local cifrada (Room/SQLite) para garantizar continuidad en zonas sin
+            conectividad y sincroniza los cambios automáticamente cuando la red está disponible.
+        </paragraph>
+        <paragraph>
+            La información almacenada en el dispositivo es temporal y se purga al completar el envío institucional.
+        </paragraph>
+    </section>
+
+    <section title="Propiedad intelectual">
+        <paragraph>
+            El diseño, la estructura de información y el código fuente de TecniApp ICE son propiedad conjunta del ICE y
+            de Arasoft Solutions. No está permitido copiar, modificar, distribuir ni descompilar la aplicación sin
+            autorización escrita.
+        </paragraph>
+    </section>
+
+    <section title="Responsabilidad del usuario">
+        <paragraph>
+            Cada colaborador se compromete a ingresar información veraz, proteger las credenciales institucionales y
+            resguardar el dispositivo asignado siguiendo los lineamientos de seguridad del ICE.
+        </paragraph>
+        <paragraph>
+            Arasoft Solutions y el ICE no serán responsables por daños o pérdidas derivados de un uso incorrecto o no
+            autorizado de la aplicación.
+        </paragraph>
+    </section>
+
+    <footer>
+        <paragraph>Última actualización: {{year}}</paragraph>
+    </footer>
+</legalDocument>

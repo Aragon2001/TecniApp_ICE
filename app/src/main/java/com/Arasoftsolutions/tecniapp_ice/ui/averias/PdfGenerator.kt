@@ -92,15 +92,23 @@ object PdfGenerator {
             textSize = 16f
             color = Color.WHITE
         }
+        val taglinePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            textSize = 12f
+            color = Color.WHITE
+        }
 
         val title = context.getString(R.string.averia_pdf_header_title)
         val subtitle = context.getString(R.string.averia_pdf_header_subtitle)
+        val currentYear = Calendar.getInstance().get(Calendar.YEAR)
+        val tagline = context.getString(R.string.averia_pdf_header_tagline, currentYear)
 
         val textX = headerRect.left + 32f
         var textY = headerRect.top + 48f
         canvas.drawText(title, textX, textY, titlePaint)
         textY += 28f
         canvas.drawText(subtitle, textX, textY, subtitlePaint)
+        textY += 22f
+        canvas.drawText(tagline, textX, textY, taglinePaint)
 
         val logoDrawable = ContextCompat.getDrawable(context, R.drawable.logo)
         logoDrawable?.let { drawable ->

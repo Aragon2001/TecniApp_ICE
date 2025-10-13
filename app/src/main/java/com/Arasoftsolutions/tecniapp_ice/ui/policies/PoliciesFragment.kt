@@ -8,15 +8,18 @@ package com.Arasoftsolutions.tecniapp_ice.ui.policies
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
-import android.text.method.LinkMovementMethod
+import android.util.Log
 import android.view.View
 import android.widget.TextView
 import android.widget.Toast
-import androidx.core.text.HtmlCompat
 import androidx.fragment.app.Fragment
 import com.Arasoftsolutions.tecniapp_ice.R
 import com.Arasoftsolutions.tecniapp_ice.databinding.FragmentPoliciesBinding
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.Arasoftsolutions.tecniapp_ice.ui.legal.StructuredTextFormatter
+import com.Arasoftsolutions.tecniapp_ice.ui.legal.StructuredTextParser
+import com.Arasoftsolutions.tecniapp_ice.ui.legal.renderStructuredContent
+import java.util.Calendar
 
 class PoliciesFragment : Fragment(R.layout.fragment_policies) {
 
@@ -27,31 +30,62 @@ class PoliciesFragment : Fragment(R.layout.fragment_policies) {
         super.onViewCreated(view, savedInstanceState)
         _binding = FragmentPoliciesBinding.bind(view)
 
-        binding.textPoliciesSubtitle.text = getString(R.string.privacy_policy_intro)
-
-        binding.textPoliciesBody.apply {
-            text = HtmlCompat.fromHtml(
-                getString(R.string.privacy_policy_body_html),
-                HtmlCompat.FROM_HTML_MODE_LEGACY
-            )
-            movementMethod = LinkMovementMethod.getInstance()
-        }
-
-        binding.textPoliciesFooter.text = HtmlCompat.fromHtml(
-            getString(R.string.privacy_policy_footer_html),
-            HtmlCompat.FROM_HTML_MODE_LEGACY
+        val currentYear = Calendar.getInstance().get(Calendar.YEAR).toString()
+        val replacements = mapOf(
+            "year" to currentYear,
+            "supportEmail" to getString(R.string.privacy_policy_contact_email)
         )
-        binding.textPoliciesFooter.movementMethod = LinkMovementMethod.getInstance()
+        val privacyDocument = runCatching {
+            StructuredTextParser.parse(
+                requireContext(),
+                R.xml.privacy_policy,
+                replacements
+            )
+        }.onFailure { error ->
+            Log.e("PoliciesFragment", "Error al cargar la política de privacidad", error)
+        }.getOrNull()
+
+        if (privacyDocument != null) {
+            binding.textPoliciesSubtitle.text = privacyDocument.intro
+            binding.textPoliciesBody.renderStructuredContent(
+                StructuredTextFormatter.buildDocument(
+                    requireContext(),
+                    privacyDocument,
+                    includeIntro = false,
+                    includeFooter = false
+                )
+            )
+            binding.textPoliciesFooter.renderStructuredContent(
+                StructuredTextFormatter.buildBlocks(
+                    requireContext(),
+                    privacyDocument.footer
+                )
+            )
+        } else {
+            val fallback = getString(R.string.structured_text_parse_error)
+            binding.textPoliciesSubtitle.text = fallback
+            binding.textPoliciesBody.renderStructuredContent(fallback)
+            binding.textPoliciesFooter.renderStructuredContent(null)
+        }
 
         binding.buttonViewTerms.setOnClickListener {
             val consentView = layoutInflater.inflate(R.layout.dialog_terms, null)
-            consentView.findViewById<TextView>(R.id.textTermsContent).apply {
-                text = HtmlCompat.fromHtml(
-                    getString(R.string.terms_body_html),
-                    HtmlCompat.FROM_HTML_MODE_LEGACY
+            val termsContent = runCatching {
+                val termsDocument = StructuredTextParser.parse(
+                    requireContext(),
+                    R.xml.terms_of_use,
+                    replacements
                 )
-                movementMethod = LinkMovementMethod.getInstance()
+                StructuredTextFormatter.buildDocument(
+                    requireContext(),
+                    termsDocument
+                )
+            }.getOrElse { error ->
+                Log.e("PoliciesFragment", "Error al cargar los términos desde políticas", error)
+                getString(R.string.structured_text_parse_error)
             }
+            consentView.findViewById<TextView>(R.id.textTermsContent)
+                .renderStructuredContent(termsContent)
 
             MaterialAlertDialogBuilder(requireContext())
                 .setTitle(R.string.terms_title)
