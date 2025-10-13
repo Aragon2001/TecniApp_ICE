@@ -10,6 +10,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.text.method.LinkMovementMethod
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
@@ -35,6 +36,8 @@ import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriaNotifications
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasRealtimeNotifications
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasSyncWorker
 import com.bumptech.glide.Glide
+import android.widget.TextView
+import androidx.core.text.HtmlCompat
 import com.google.android.material.navigation.NavigationView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.firebase.auth.FirebaseAuth
@@ -262,9 +265,18 @@ class ActivityMain : AppCompatActivity() {
             return
         }
 
+        val consentView = layoutInflater.inflate(R.layout.dialog_terms, null)
+        consentView.findViewById<TextView>(R.id.textTermsContent).apply {
+            text = HtmlCompat.fromHtml(
+                getString(R.string.terms_body_html),
+                HtmlCompat.FROM_HTML_MODE_LEGACY
+            )
+            movementMethod = LinkMovementMethod.getInstance()
+        }
+
         MaterialAlertDialogBuilder(this)
             .setTitle(R.string.terms_title)
-            .setMessage(R.string.terms_and_conditions)
+            .setView(consentView)
             .setCancelable(false)
             .setPositiveButton(R.string.terms_accept) { dialog, _ ->
                 prefs.edit().putBoolean("termsAccepted", true).apply()
