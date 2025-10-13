@@ -85,7 +85,6 @@ class ActivityMain : AppCompatActivity() {
         AveriaNotifications.ensureChannel(this)
         requestNotificationPermissionIfNeeded()
         AveriasSyncWorker.schedule(applicationContext)
-        AveriasSyncWorker.triggerNow(applicationContext)
         AveriasRealtimeNotifications.start(applicationContext)
 
         // Drawer + Navigation
