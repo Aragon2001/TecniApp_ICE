@@ -261,6 +261,9 @@ Cliente: %4$s</string>
     <string name="averia_pdf_no_technicians">No se registraron técnicos adicionales.</string>
     <string name="averia_pdf_footer_title">TecniApp ICE</string>
     <string name="averia_pdf_footer_content">Sistema TecniApp ICE • Arasoft Solutions • Derechos reservados</string>
+    <string name="averia_pdf_footer_copyright">© %1$s Arasoft Solutions y ICE. Todos los derechos reservados.</string>
+    <string name="averia_pdf_no_meter_details">No se registró información del medidor.</string>
+    <string name="averia_pdf_card_continuation_title">%1$s (continuación)</string>
 
     <string name="averia_detalle_causa_title">Causa identificada</string>
     <string name="averia_detalle_observaciones_title">Observaciones registradas</string>
