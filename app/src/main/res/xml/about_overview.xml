@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  TecniApp ICE © 2025 Arasoft Solutions
+  Todos los derechos reservados.
+  Desarrollado para el Instituto Costarricense de Electricidad (ICE).
+-->
+<legalDocument>
+    <intro>
+        TecniApp ICE es la plataforma operativa que acompaña a las cuadrillas del ICE en la atención de averías, luminarias e
+        inventarios con trazabilidad completa incluso en zonas sin cobertura.
+    </intro>
+
+    <section title="Objetivo institucional">
+        <paragraph>
+            Unifica la planificación, asignación y documentación de las intervenciones técnicas bajo los estándares de
+            seguridad y calidad de datos del ICE.
+        </paragraph>
+        <paragraph>
+            Integra autenticación institucional, seguimiento de cuadrillas y reportes estratégicos para la toma de decisiones.
+        </paragraph>
+    </section>
+
+    <section title="Beneficios clave para el equipo">
+        <bulletList>
+            <item>Panel de casos priorizados por región y agencia con estados en tiempo real.</item>
+            <item>Modo offline cifrado que preserva el trabajo realizado y sincroniza cuando regresa la conectividad.</item>
+            <item>Registro multimedia, georreferenciado y con sellos de tiempo para cada intervención.</item>
+            <item>Integración con inventarios y reportes institucionales que respaldan auditorías.</item>
+        </bulletList>
+    </section>
+
+    <section title="Acompañamiento y soporte">
+        <paragraph>
+            Arasoft Solutions ofrece mantenimiento evolutivo, monitoreo preventivo y soporte directo al personal del ICE
+            para asegurar la continuidad operativa de TecniApp ICE.
+        </paragraph>
+        <paragraph>
+            Escríbenos a {{supportEmail}} para coordinar capacitaciones, reportar incidencias o proponer mejoras.
+        </paragraph>
+    </section>
+
+    <footer>
+        <paragraph>TecniApp ICE © {{year}} Arasoft Solutions · Todos los derechos reservados.</paragraph>
+    </footer>
+</legalDocument>

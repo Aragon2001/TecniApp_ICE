@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  TecniApp ICE © 2025 Arasoft Solutions
+  Todos los derechos reservados.
+  Desarrollado para el Instituto Costarricense de Electricidad (ICE).
+-->
+<legalDocument>
+    <intro>
+        Así protegemos la información operativa que registran las cuadrillas técnicas del ICE al utilizar TecniApp ICE.
+    </intro>
+
+    <section title="Datos que recopilamos">
+        <bulletList>
+            <item>Identificadores institucionales: nombre, cédula, correo @ice.go.cr, subregión, agencia y vehículo asignado.</item>
+            <item>Registros operativos: averías, luminarias, inventario, fotografías y bitácoras asociadas a cada intervención.</item>
+            <item>Ubicación GPS y sellos de tiempo necesarios para la trazabilidad y auditoría de las actividades.</item>
+        </bulletList>
+    </section>
+
+    <section title="Base tecnológica y almacenamiento">
+        <paragraph>
+            La autenticación se realiza mediante Firebase Authentication y la información operativa se procesa en Firebase
+            Realtime Database, infraestructuras alineadas con las políticas de seguridad del ICE.
+        </paragraph>
+        <paragraph>
+            El modo offline utiliza una base de datos cifrada (Room/SQLite) en el dispositivo. Los datos se sincronizan
+            automáticamente cuando la conectividad está disponible.
+        </paragraph>
+    </section>
+
+    <section title="Uso y compartición de los datos">
+        <paragraph>
+            Los registros se emplean únicamente para coordinar asignaciones, documentar la atención de averías y generar
+            indicadores institucionales. La sincronización se realiza exclusivamente con servidores oficiales del ICE.
+        </paragraph>
+        <paragraph>
+            No se comercializa ni comparte información con terceros ajenos al ICE sin autorización formal.</paragraph>
+    </section>
+
+    <section title="Derechos de las personas usuarias">
+        <bulletList>
+            <item>Puedes solicitar acceso, rectificación o eliminación de tus datos personales institucionales.</item>
+            <item>Es posible ajustar los permisos de geolocalización y notificaciones desde Ajustes &gt; Preferencias.</item>
+            <item>En caso de retiro laboral o reasignación, el ICE podrá desactivar la cuenta y eliminar la información local.</item>
+        </bulletList>
+    </section>
+
+    <footer>
+        <paragraph>Responsable del tratamiento: Arasoft Solutions.</paragraph>
+        <paragraph>Contacto directo: {{supportEmail}}</paragraph>
+    </footer>
+</legalDocument>

@@ -37,11 +37,14 @@ import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasRealtimeNotifications
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasSyncWorker
 import com.bumptech.glide.Glide
 import android.widget.TextView
-import androidx.core.text.HtmlCompat
 import com.google.android.material.navigation.NavigationView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
+import com.Arasoftsolutions.tecniapp_ice.ui.legal.StructuredTextFormatter
+import com.Arasoftsolutions.tecniapp_ice.ui.legal.StructuredTextParser
+import com.Arasoftsolutions.tecniapp_ice.ui.legal.renderStructuredContent
+import java.util.Calendar
 
 class ActivityMain : AppCompatActivity() {
 
@@ -266,13 +269,28 @@ class ActivityMain : AppCompatActivity() {
         }
 
         val consentView = layoutInflater.inflate(R.layout.dialog_terms, null)
-        consentView.findViewById<TextView>(R.id.textTermsContent).apply {
-            text = HtmlCompat.fromHtml(
-                getString(R.string.terms_body_html),
-                HtmlCompat.FROM_HTML_MODE_LEGACY
+        val replacements = mapOf(
+            "year" to Calendar.getInstance().get(Calendar.YEAR).toString(),
+            "supportEmail" to getString(R.string.privacy_policy_contact_email)
+        )
+        val termsContent = runCatching {
+            val termsDocument = StructuredTextParser.parse(
+                context = this,
+                xmlRes = R.xml.terms_of_use,
+                replacements = replacements
             )
-            movementMethod = LinkMovementMethod.getInstance()
+            StructuredTextFormatter.buildDocument(
+                context = this,
+                document = termsDocument,
+                includeIntro = true,
+                includeFooter = true
+            )
+        }.getOrElse { error ->
+            Log.e("ActivityMain", "Error al cargar los términos", error)
+            getString(R.string.structured_text_parse_error)
         }
+        consentView.findViewById<TextView>(R.id.textTermsContent)
+            .renderStructuredContent(termsContent)
 
         MaterialAlertDialogBuilder(this)
             .setTitle(R.string.terms_title)
