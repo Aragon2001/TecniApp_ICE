@@ -362,12 +362,7 @@ object PdfGenerator {
                     bullet = true
                 )
             )
-            canvas.drawText(
-                context.getString(R.string.averia_pdf_footer_copyright, currentYear),
-                footerRect.left + 24f,
-                footerRect.top + 60f,
-                footerTextPaint
-            )
+
 
             state.finish()
 

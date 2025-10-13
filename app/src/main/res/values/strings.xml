@@ -525,45 +525,10 @@ Cliente: %4$s</string>
     <string name="terms_title">Términos de uso de TecniApp ICE</string>
     <string name="terms_accept">Aceptar</string>
     <string name="terms_decline">Salir</string>
-    <string name="terms_body_html"><![CDATA[
-        <h3>1. Uso autorizado</h3>
-        <p>TecniApp ICE es una solución interna creada para el personal técnico del Instituto Costarricense de Electricidad (ICE). Cualquier uso fuera de labores institucionales o sin autorización está estrictamente prohibido.</p>
 
-        <h3>2. Datos personales y autenticación</h3>
-        <p>La aplicación utiliza credenciales institucionales (@ice.go.cr) con Firebase Authentication. Se registran nombre, cédula, subregión, agencia asignada y ubicación operativa para garantizar trazabilidad y seguridad. Toda autenticación sigue las políticas vigentes de Google y del ICE.</p>
-
-        <h3>3. Continuidad operativa</h3>
-        <p>Para permitir trabajo en zonas sin cobertura, TecniApp ICE almacena temporalmente información cifrada en el dispositivo mediante Room/SQLite y sincroniza automáticamente con la nube oficial en cuanto se restablece la conexión.</p>
-
-        <h3>4. Propiedad intelectual</h3>
-        <p>El diseño, código fuente y procesos derivados pertenecen a Arasoft Solutions y al ICE. Se prohíbe copiar, modificar, distribuir o descompilar la aplicación sin consentimiento escrito.</p>
-
-        <h3>5. Responsabilidad del usuario</h3>
-        <p>El personal técnico se compromete a ingresar información verídica y a resguardar el dispositivo con las medidas de seguridad institucionales. Arasoft Solutions no se responsabiliza por daños ocasionados por un uso indebido o fuera de las políticas del ICE.</p>
-    ]]></string>
     <string name="privacy_policy_title">Política de privacidad</string>
     <string name="privacy_policy_intro">Así protegemos la información operativa que registran las cuadrillas del ICE.</string>
-    <string name="privacy_policy_body_html"><![CDATA[
-        <h4>Datos que recopilamos</h4>
-        <ul>
-            <li>Identificadores institucionales: nombre, cédula, correo @ice.go.cr, subregión, agencia y vehículo asignado.</li>
-            <li>Registros operativos: averías, luminarias, inventario, fotografías y bitácoras de visitas.</li>
-            <li>Ubicación y sellos de tiempo que respaldan la trazabilidad de cada intervención técnica.</li>
-        </ul>
 
-        <h4>Finalidad</h4>
-        <ul>
-            <li>Coordinar asignaciones, priorizar averías y documentar la atención brindada.</li>
-            <li>Construir reportes e indicadores oficiales para la toma de decisiones del ICE.</li>
-            <li>Conservar un historial auditado de las actividades de campo por cada colaborador.</li>
-        </ul>
-
-        <h4>Seguridad y almacenamiento</h4>
-        <p>La información se procesa en Firebase Authentication y Realtime Database (Google Cloud) configurados con las políticas de seguridad institucionales. El modo offline utiliza bases de datos cifradas en el dispositivo para garantizar continuidad operativa.</p>
-
-        <h4>Compartición</h4>
-        <p>Los datos se sincronizan únicamente con infraestructura oficial del ICE. No se comercializa ni comparte información con terceros.</p>
-    ]]></string>
     <string name="privacy_policy_footer_html"><![CDATA[
         <p><strong>Derechos de los usuarios:</strong> puedes solicitar acceso, rectificación o eliminación de tus datos personales, así como ajustar permisos de geolocalización desde Ajustes &gt; Preferencias.</p>
         <p>Para consultas o incidentes de seguridad escribe a <a href="mailto:soporte@arasoftsolutions.com">soporte@arasoftsolutions.com</a>.</p>
@@ -574,9 +539,7 @@ Cliente: %4$s</string>
     <string name="privacy_policy_contact_error">No se encontró una aplicación de correo para completar la acción.</string>
     <string name="dialog_close">Cerrar</string>
     <string name="about_screen_title">Acerca de TecniApp ICE</string>
-    <string name="about_screen_intro_html"><![CDATA[
-        <p>TecniApp ICE es la plataforma móvil que agiliza la gestión de averías, luminarias e inventario en campo. Está diseñada para cuadrillas del ICE que requieren información confiable incluso sin conectividad.</p>
-    ]]></string>
+
     <string name="about_card_mission_title">Objetivo institucional</string>
     <string name="about_card_mission_body_html"><![CDATA[
         <p>Centralizar en un solo lugar el ciclo completo de atención técnica: desde la asignación de cuadrillas hasta la documentación en sitio, respetando los lineamientos de seguridad, trazabilidad y calidad de datos del ICE.</p>
