@@ -148,6 +148,7 @@
     <string name="averia_pdf_header_subtitle">Plataforma integral de intervención técnica</string>
     <string name="averia_pdf_header_tagline">Arasoft Solutions © 2024 · Todos los derechos reservados</string>
     <string name="averia_pdf_section_title">Detalle de la Averia</string>
+    <string name="averia_pdf_section_title_continuation">Detalle de la Averia (continuación)</string>
     <string name="averia_pdf_table_label_case">ID del caso</string>
     <string name="averia_pdf_table_label_nise">Código NISE</string>
     <string name="averia_pdf_table_label_status">Estado</string>
@@ -188,6 +189,9 @@
     <string name="averia_pdf_no_technicians">No se registraron técnicos adicionales.</string>
     <string name="averia_pdf_footer_title">TecniApp ICE</string>
     <string name="averia_pdf_footer_content">Sistema TecniApp ICE • Arasoft Solutions • Derechos reservados</string>
+    <string name="averia_pdf_footer_copyright">© %1$s Arasoft Solutions y ICE. Todos los derechos reservados.</string>
+    <string name="averia_pdf_no_meter_details">No se registró información del medidor.</string>
+    <string name="averia_pdf_card_continuation_title">%1$s (continuación)</string>
 
     <string name="averia_detalle_causa_title">Causa identificada</string>
     <string name="averia_detalle_observaciones_title">Observaciones registradas</string>

@@ -17,6 +17,7 @@ import androidx.core.content.ContextCompat
 import com.Arasoftsolutions.tecniapp_ice.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlin.math.max
 import java.io.File
 import java.io.FileOutputStream
 import java.text.SimpleDateFormat
@@ -30,84 +31,28 @@ object PdfGenerator {
     suspend fun exportAveria(context: Context, item: AveriaUI) = withContext(Dispatchers.IO) {
         val document = PdfDocument()
         try {
-            val pageInfo = PdfDocument.PageInfo.Builder(PAGE_WIDTH, PAGE_HEIGHT, 1).create()
-            val page = document.startPage(pageInfo)
-            val canvas = page.canvas
-
+            val now = Date()
             val formatter = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+            val yearFormatter = SimpleDateFormat("yyyy", Locale.getDefault())
             fun formatMillis(millis: Long?): String? =
                 millis?.takeIf { it > 0 }?.let { formatter.format(Date(it)) }
 
-            val reporteGenerado = formatter.format(Date())
+            val reporteGenerado = formatter.format(now)
+            val currentYear = yearFormatter.format(now)
             val fechaEvento = formatMillis(item.fechaMillis)
             val inicioAtencion = formatMillis(item.horaAtencionInicio)
             val finAtencion = formatMillis(item.horaAtencionFinal)
 
             val headerPadding = 32f
             val margin = 40f
+            val bottomMargin = margin
             val contentWidth = PAGE_WIDTH - (margin * 2)
-
-            // Encabezado con degradado
-            val headerHeight = 150f
-            val headerRect = RectF(margin, margin, PAGE_WIDTH - margin, margin + headerHeight)
-            val headerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                shader = LinearGradient(
-                    headerRect.left,
-                    headerRect.top,
-                    headerRect.right,
-                    headerRect.bottom,
-                    Color.parseColor("#2E3192"),
-                    Color.parseColor("#1BFFFF"),
-                    Shader.TileMode.CLAMP
-                )
-            }
-            canvas.drawRoundRect(headerRect, 28f, 28f, headerPaint)
-
-            val headerTitlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-                textSize = 32f
-                color = Color.WHITE
-            }
-            val headerSubtitlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                textSize = 16f
-                color = Color.WHITE
-            }
-            val headerTagPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                textSize = 14f
-                color = Color.WHITE
-                alpha = 220
-            }
+            val innerWidth = contentWidth - 40f
 
             val headerTitle = context.getString(R.string.averia_pdf_header_title)
             val headerSubtitle = context.getString(R.string.averia_pdf_header_subtitle)
             val headerTagline = context.getString(R.string.averia_pdf_header_tagline)
 
-            val logoDrawable = ContextCompat.getDrawable(context, R.drawable.logo)
-            logoDrawable?.let { drawable ->
-                val logoBitmapSize = 256
-                val logoBitmap = Bitmap.createBitmap(logoBitmapSize, logoBitmapSize, Bitmap.Config.ARGB_8888)
-                val logoCanvas = android.graphics.Canvas(logoBitmap)
-                drawable.setBounds(0, 0, logoBitmapSize, logoBitmapSize)
-                drawable.draw(logoCanvas)
-                val logoSize = 88f
-                val logoRect = RectF(
-                    headerRect.right - headerPadding - logoSize,
-                    headerRect.top + headerPadding / 2f,
-                    headerRect.right - headerPadding,
-                    headerRect.top + headerPadding / 2f + logoSize
-                )
-                canvas.drawBitmap(logoBitmap, null, logoRect, null)
-            }
-
-            var textY = headerRect.top + headerPadding
-            val textX = headerRect.left + headerPadding
-            canvas.drawText(headerTitle, textX, textY, headerTitlePaint)
-            textY += 36f
-            canvas.drawText(headerSubtitle, textX, textY, headerSubtitlePaint)
-            textY += 26f
-            canvas.drawText(headerTagline, textX, textY, headerTagPaint)
-
-            // Sección tabla principal
             val titlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
                 textSize = 18f
@@ -122,20 +67,130 @@ object PdfGenerator {
                 textSize = 13f
                 color = Color.parseColor("#233041")
             }
+            val rowEvenPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.parseColor("#FFFFFF") }
+            val rowOddPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.parseColor("#EEF2FF") }
+            val tableBorderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                style = Paint.Style.STROKE
+                strokeWidth = 2f
+                color = Color.parseColor("#D0D8FF")
+            }
+            val dividerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.parseColor("#D0D8FF")
+                strokeWidth = 1.5f
+            }
+            val cardTitlePaint = Paint(labelPaint).apply {
+                textSize = 14f
+            }
 
-            val sectionTitleY = headerRect.bottom + 36f
-            canvas.drawText(
-                context.getString(R.string.averia_pdf_section_title),
-                margin,
-                sectionTitleY,
-                titlePaint
-            )
+            var pageNumber = 0
+            lateinit var page: PdfDocument.Page
+            lateinit var canvas: android.graphics.Canvas
+            var currentY = 0f
+
+            fun drawHeader(): Float {
+                val headerHeight = 150f
+                val headerRect = RectF(margin, margin, PAGE_WIDTH - margin, margin + headerHeight)
+                val headerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    shader = LinearGradient(
+                        headerRect.left,
+                        headerRect.top,
+                        headerRect.right,
+                        headerRect.bottom,
+                        Color.parseColor("#2E3192"),
+                        Color.parseColor("#1BFFFF"),
+                        Shader.TileMode.CLAMP
+                    )
+                }
+                canvas.drawRoundRect(headerRect, 28f, 28f, headerPaint)
+
+                val headerTitlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                    textSize = 32f
+                    color = Color.WHITE
+                }
+                val headerSubtitlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    textSize = 16f
+                    color = Color.WHITE
+                }
+                val headerTagPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    textSize = 14f
+                    color = Color.WHITE
+                    alpha = 220
+                }
+
+                val logos = listOfNotNull(
+                    ContextCompat.getDrawable(context, R.drawable.logo),
+                    ContextCompat.getDrawable(context, R.drawable.ice)
+                )
+                if (logos.isNotEmpty()) {
+                    val logoSize = 88f
+                    val logoSpacing = 12f
+                    val totalWidth = logos.size * logoSize + (logos.size - 1) * logoSpacing
+                    var logoLeft = headerRect.right - headerPadding - totalWidth
+                    val logoTop = headerRect.top + headerPadding / 2f
+                    logos.forEach { drawable ->
+                        val logoBitmapSize = 256
+                        val logoBitmap = Bitmap.createBitmap(logoBitmapSize, logoBitmapSize, Bitmap.Config.ARGB_8888)
+                        val logoCanvas = android.graphics.Canvas(logoBitmap)
+                        drawable.setBounds(0, 0, logoBitmapSize, logoBitmapSize)
+                        drawable.draw(logoCanvas)
+                        val logoRect = RectF(
+                            logoLeft,
+                            logoTop,
+                            logoLeft + logoSize,
+                            logoTop + logoSize
+                        )
+                        canvas.drawBitmap(logoBitmap, null, logoRect, null)
+                        logoLeft += logoSize + logoSpacing
+                    }
+                }
+
+                var textY = headerRect.top + headerPadding
+                val textX = headerRect.left + headerPadding
+                canvas.drawText(headerTitle, textX, textY, headerTitlePaint)
+                textY += 36f
+                canvas.drawText(headerSubtitle, textX, textY, headerSubtitlePaint)
+                textY += 26f
+                canvas.drawText(headerTagline, textX, textY, headerTagPaint)
+                return headerRect.bottom + 36f
+            }
+
+            fun drawSectionTitle(title: String) {
+                canvas.drawText(title, margin, currentY, titlePaint)
+                currentY += 18f
+            }
+
+            fun startPage(afterHeader: (() -> Unit)? = null) {
+                if (::page.isInitialized) {
+                    document.finishPage(page)
+                }
+                pageNumber++
+                val pageInfo = PdfDocument.PageInfo.Builder(PAGE_WIDTH, PAGE_HEIGHT, pageNumber).create()
+                page = document.startPage(pageInfo)
+                canvas = page.canvas
+                currentY = drawHeader()
+                afterHeader?.invoke()
+            }
+
+            fun ensureSpace(neededHeight: Float, onPageBreak: (() -> Unit)? = null) {
+                val maxContentHeight = PAGE_HEIGHT - margin - bottomMargin
+                if (neededHeight > maxContentHeight) {
+                    if (currentY > margin) {
+                        startPage(onPageBreak)
+                    }
+                    return
+                }
+                while (currentY + neededHeight + bottomMargin > PAGE_HEIGHT) {
+                    startPage(onPageBreak)
+                }
+            }
 
             val emptyValue = context.getString(R.string.averia_pdf_empty_value)
             val assigned = item.tecnico.ifBlank { context.getString(R.string.averia_sin_asignar) }
             val attended = item.resolvedAtendidoDisplay(emptyValue)
             val vehicle = item.vehiculo ?: emptyValue
             val nise = item.nise.ifBlank { emptyValue }
+            val description = item.descripcion.ifBlank { emptyValue }
             val observaciones = item.observaciones.ifBlank { emptyValue }
             val client = item.cliente?.takeIf { it.isNotBlank() } ?: emptyValue
             val textualLocation = item.localizacion?.takeIf { it.isNotBlank() } ?: emptyValue
@@ -153,6 +208,7 @@ object PdfGenerator {
             }
             val region = item.region.ifBlank { emptyValue }
             val agency = item.agencia.ifBlank { emptyValue }
+            val zoneTag = item.zonaTag.ifBlank { emptyValue }
             val affectation = when (item.tipoAfectacion) {
                 TipoAfectacion.CLIENTE -> context.getString(R.string.averia_tipo_cliente)
                 TipoAfectacion.SECTOR -> context.getString(R.string.averia_tipo_sector)
@@ -160,10 +216,9 @@ object PdfGenerator {
 
             val medidorNumero = item.numeroMedidor?.takeIf { it.isNotBlank() } ?: emptyValue
 
-
             val tableData = listOf(
                 context.getString(R.string.averia_pdf_table_label_case) to item.id,
-                context.getString(R.string.averia_pdf_table_label_description) to observaciones,
+                context.getString(R.string.averia_pdf_table_label_description) to description,
                 context.getString(R.string.averia_pdf_table_label_nise) to nise,
                 context.getString(R.string.averia_pdf_table_label_status) to item.estado,
                 context.getString(R.string.averia_pdf_table_label_assigned) to assigned,
@@ -177,79 +232,12 @@ object PdfGenerator {
                 context.getString(R.string.averia_pdf_table_label_kilometers) to kilometraje,
                 context.getString(R.string.averia_pdf_table_label_region) to region,
                 context.getString(R.string.averia_pdf_table_label_agency) to agency,
+                context.getString(R.string.averia_pdf_table_label_zone) to zoneTag,
                 context.getString(R.string.averia_pdf_table_label_affectation) to affectation,
-
                 context.getString(R.string.averia_pdf_table_label_medidor) to medidorNumero,
-
                 context.getString(R.string.averia_pdf_table_label_location) to location,
                 context.getString(R.string.averia_pdf_table_label_generated) to reporteGenerado
             )
-
-            val tableRows = tableData.chunked(2)
-            val tableTop = sectionTitleY + 18f
-            val tableLeft = margin
-            val tableRight = margin + contentWidth
-            val tableRowHeight = 52f
-            val tableHeight = tableRowHeight * tableRows.size
-            val tableRect = RectF(tableLeft, tableTop, tableRight, tableTop + tableHeight)
-
-            val tableBackgroundPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = Color.parseColor("#F6F7FB")
-            }
-            val tableBorderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                style = Paint.Style.STROKE
-                strokeWidth = 2f
-                color = Color.parseColor("#D0D8FF")
-            }
-            val rowEvenPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.parseColor("#FFFFFF") }
-            val rowOddPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.parseColor("#EEF2FF") }
-            val dividerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = Color.parseColor("#D0D8FF")
-                strokeWidth = 1.5f
-            }
-
-            canvas.drawRoundRect(tableRect, 24f, 24f, tableBackgroundPaint)
-            canvas.drawRoundRect(tableRect, 24f, 24f, tableBorderPaint)
-
-            val columnDivider = tableLeft + (contentWidth / 2f)
-            var rowTop = tableTop
-            tableRows.forEachIndexed { index, rowItems ->
-                val rowBottom = rowTop + tableRowHeight
-                val rowRect = RectF(
-                    tableLeft + 4f,
-                    rowTop + if (index == 0) 4f else 0f,
-                    tableRight - 4f,
-                    rowBottom - if (index == tableRows.lastIndex) 4f else 0f
-                )
-                val rowPaint = if (index % 2 == 0) rowEvenPaint else rowOddPaint
-                canvas.drawRoundRect(rowRect, 18f, 18f, rowPaint)
-
-                rowItems.forEachIndexed { columnIndex, (label, value) ->
-                    val cellLeft = if (columnIndex == 0) tableLeft else columnDivider
-                    val labelY = rowTop + 22f
-                    val valueY = labelY + 20f
-                    canvas.drawText(
-                        label.uppercase(Locale.getDefault()),
-                        cellLeft + 14f,
-                        labelY,
-                        labelPaint
-                    )
-                    canvas.drawText(
-                        value,
-                        cellLeft + 14f,
-                        valueY,
-                        valuePaint
-                    )
-                }
-
-                canvas.drawLine(tableLeft, rowBottom, tableRight, rowBottom, dividerPaint)
-                rowTop = rowBottom
-            }
-
-            canvas.drawLine(columnDivider, tableTop, columnDivider, tableTop + tableHeight, dividerPaint)
-
-            var currentY = tableTop + tableHeight + 28f
-            val innerWidth = contentWidth - 40f
 
             fun wrapParagraphs(text: String, availableWidth: Float): List<String> {
                 if (text.isBlank()) return listOf("")
@@ -271,13 +259,87 @@ object PdfGenerator {
                                 }
                             }
                             val segment = remaining.substring(0, count).trim()
-                            result += segment
+                            result += segment.ifEmpty { "" }
                             remaining = remaining.substring(count).trimStart()
                         }
                     }
                 }
                 return result.ifEmpty { listOf("") }
             }
+
+            val tableRows = tableData.chunked(2)
+            val rowSpacing = 12f
+            val tableLeft = margin
+            val tableRight = margin + contentWidth
+            val columnWidth = contentWidth / 2f
+            val columnPadding = 14f
+            val columnContentWidth = columnWidth - (columnPadding * 2)
+            val labelValueGap = 10f
+            val valueLineHeight = valuePaint.textSize + 6f
+            val minRowHeight = 60f
+
+            startPage {
+                drawSectionTitle(context.getString(R.string.averia_pdf_section_title))
+            }
+
+            tableRows.forEachIndexed { index, rowItems ->
+                val cellData = rowItems.map { (label, value) ->
+                    val lines = wrapParagraphs(value, columnContentWidth)
+                    label.uppercase(Locale.getDefault()) to lines
+                }
+
+                val rowHeight = max(
+                    minRowHeight,
+                    cellData.maxOf { (_, lines) ->
+                        columnPadding * 2 + labelPaint.textSize + labelValueGap + (lines.size * valueLineHeight)
+                    }
+                )
+
+                ensureSpace(rowHeight + rowSpacing) {
+                    drawSectionTitle(context.getString(R.string.averia_pdf_section_title_continuation))
+                }
+
+                val rowTop = currentY
+                val rowBottom = rowTop + rowHeight
+                val rowRect = RectF(
+                    tableLeft + 4f,
+                    rowTop,
+                    tableRight - 4f,
+                    rowBottom
+                )
+                val rowPaint = if (index % 2 == 0) rowEvenPaint else rowOddPaint
+                canvas.drawRoundRect(rowRect, 18f, 18f, rowPaint)
+                canvas.drawRoundRect(rowRect, 18f, 18f, tableBorderPaint)
+
+                if (rowItems.size > 1) {
+                    val dividerX = tableLeft + columnWidth
+                    canvas.drawLine(
+                        dividerX,
+                        rowRect.top + 12f,
+                        dividerX,
+                        rowRect.bottom - 12f,
+                        dividerPaint
+                    )
+                }
+
+                rowItems.forEachIndexed { columnIndex, _ ->
+                    val (displayLabel, valueLines) = cellData[columnIndex]
+                    val cellLeft = tableLeft + columnWidth * columnIndex
+                    val textStartX = cellLeft + columnPadding
+                    val labelBaseline = rowTop + columnPadding + labelPaint.textSize
+                    canvas.drawText(displayLabel, textStartX, labelBaseline, labelPaint)
+
+                    var valueBaseline = labelBaseline + labelValueGap + valuePaint.textSize
+                    valueLines.forEach { line ->
+                        canvas.drawText(line, textStartX, valueBaseline, valuePaint)
+                        valueBaseline += valueLineHeight
+                    }
+                }
+
+                currentY = rowBottom + rowSpacing
+            }
+
+            currentY += 16f
 
             fun buildCardLines(entries: List<String>, bullet: Boolean = false): List<String> {
                 if (entries.isEmpty()) return if (bullet) listOf("• $emptyValue") else listOf(emptyValue)
@@ -312,41 +374,60 @@ object PdfGenerator {
                 return lines
             }
 
-            val cardTitlePaint = Paint(labelPaint).apply {
-                textSize = 14f
-            }
-
             fun drawCard(title: String, entries: List<String>, bullet: Boolean = false) {
                 val lines = buildCardLines(entries, bullet)
                 val boxPadding = 20f
                 val lineSpacing = valuePaint.textSize + 8f
                 val gapAfterTitle = 16f
-                val boxHeight = boxPadding * 2 + cardTitlePaint.textSize + gapAfterTitle + (lines.size * lineSpacing)
-                val boxRect = RectF(margin, currentY, margin + contentWidth, currentY + boxHeight)
-                val boxPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.parseColor("#FFFFFF") }
-                val boxShadowPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                    color = Color.parseColor("#E3E7FF")
-                    strokeWidth = 3f
-                    style = Paint.Style.STROKE
+                val baseHeight = boxPadding * 2 + cardTitlePaint.textSize + gapAfterTitle
+                val maxContentHeight = PAGE_HEIGHT - margin - bottomMargin
+                val maxLinesPerPage = ((maxContentHeight - baseHeight) / lineSpacing).toInt().coerceAtLeast(1)
+
+                var index = 0
+                var segment = 0
+                while (index < lines.size) {
+                    val linesRemaining = lines.size - index
+                    val linesThisPage = linesRemaining.coerceAtMost(maxLinesPerPage)
+                    val segmentLines = lines.subList(index, index + linesThisPage)
+                    val boxHeight = baseHeight + (segmentLines.size * lineSpacing)
+
+                    ensureSpace(boxHeight + 16f) {
+                        drawSectionTitle(context.getString(R.string.averia_pdf_section_title_continuation))
+                    }
+
+                    val boxRect = RectF(margin, currentY, margin + contentWidth, currentY + boxHeight)
+                    val boxPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.parseColor("#FFFFFF") }
+                    val boxShadowPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                        color = Color.parseColor("#E3E7FF")
+                        strokeWidth = 3f
+                        style = Paint.Style.STROKE
+                    }
+
+                    canvas.drawRoundRect(boxRect, 26f, 26f, boxPaint)
+                    canvas.drawRoundRect(boxRect, 26f, 26f, boxShadowPaint)
+
+                    val titleBaseline = boxRect.top + boxPadding + cardTitlePaint.textSize
+                    val titleText = if (segment == 0) {
+                        title
+                    } else {
+                        context.getString(R.string.averia_pdf_card_continuation_title, title)
+                    }
+                    canvas.drawText(titleText, boxRect.left + boxPadding, titleBaseline, cardTitlePaint)
+
+                    var lineY = titleBaseline + gapAfterTitle
+                    segmentLines.forEach { line ->
+                        canvas.drawText(line, boxRect.left + boxPadding, lineY, valuePaint)
+                        lineY += lineSpacing
+                    }
+                    currentY += boxHeight + 16f
+                    index += linesThisPage
+                    segment++
                 }
-
-                canvas.drawRoundRect(boxRect, 26f, 26f, boxPaint)
-                canvas.drawRoundRect(boxRect, 26f, 26f, boxShadowPaint)
-
-                val titleBaseline = boxRect.top + boxPadding + cardTitlePaint.textSize
-                canvas.drawText(title, boxRect.left + boxPadding, titleBaseline, cardTitlePaint)
-
-                var lineY = titleBaseline + gapAfterTitle
-                lines.forEach { line ->
-                    canvas.drawText(line, boxRect.left + boxPadding, lineY, valuePaint)
-                    lineY += lineSpacing
-                }
-                currentY += boxHeight + 16f
             }
 
             drawCard(
                 context.getString(R.string.averia_pdf_section_description),
-                listOf(observaciones)
+                listOf(description)
             )
             drawCard(
                 context.getString(R.string.averia_pdf_section_cause),
@@ -354,17 +435,30 @@ object PdfGenerator {
             )
             drawCard(
                 context.getString(R.string.averia_pdf_section_notes),
-                listOf(item.observaciones.ifBlank { emptyValue })
+                listOf(observaciones)
             )
             val medidorDetalle = buildList {
                 if (item.numeroMedidor?.isNotBlank() == true) {
                     add(context.getString(R.string.averia_medidor_label, item.numeroMedidor))
                 }
-
+                if (item.medidorCalle?.isNotBlank() == true) {
+                    add(context.getString(R.string.averia_medidor_calle, item.medidorCalle))
+                }
+                if (item.medidorPueblo?.isNotBlank() == true) {
+                    add(context.getString(R.string.averia_medidor_pueblo, item.medidorPueblo))
+                }
+                if (item.medidorMetros?.isNotBlank() == true) {
+                    add(context.getString(R.string.averia_medidor_metros, item.medidorMetros))
+                }
+                if (item.medidorPoste?.isNotBlank() == true) {
+                    add(context.getString(R.string.averia_medidor_poste, item.medidorPoste))
+                }
             }
             drawCard(
                 context.getString(R.string.averia_pdf_section_medidor),
-                medidorDetalle,
+                if (medidorDetalle.isNotEmpty()) medidorDetalle else listOf(
+                    context.getString(R.string.averia_pdf_no_meter_details)
+                ),
                 bullet = true
             )
 
@@ -418,7 +512,9 @@ object PdfGenerator {
                 bullet = true
             )
 
-            val footerRect = RectF(margin, currentY, margin + contentWidth, currentY + 62f)
+            val footerHeight = 86f
+            ensureSpace(footerHeight + 24f)
+            val footerRect = RectF(margin, currentY, margin + contentWidth, currentY + footerHeight)
             val footerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.parseColor("#2E3192") }
             canvas.drawRoundRect(footerRect, 24f, 24f, footerPaint)
 
@@ -444,6 +540,14 @@ object PdfGenerator {
                 footerRect.top + 42f,
                 footerTextPaint
             )
+            canvas.drawText(
+                context.getString(R.string.averia_pdf_footer_copyright, currentYear),
+                footerRect.left + 24f,
+                footerRect.top + 60f,
+                footerTextPaint
+            )
+
+            currentY = footerRect.bottom + 16f
 
             document.finishPage(page)
 
