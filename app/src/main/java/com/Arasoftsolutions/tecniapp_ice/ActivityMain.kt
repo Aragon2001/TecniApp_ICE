@@ -1,3 +1,8 @@
+/**
+ * TecniApp ICE © 2025 Arasoft Solutions
+ * Todos los derechos reservados.
+ * Desarrollado para el Instituto Costarricense de Electricidad (ICE).
+ */
 package com.Arasoftsolutions.tecniapp_ice
 
 import android.Manifest
@@ -30,9 +35,15 @@ import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriaNotifications
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasRealtimeNotifications
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasSyncWorker
 import com.bumptech.glide.Glide
+import android.widget.TextView
 import com.google.android.material.navigation.NavigationView
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
+import com.Arasoftsolutions.tecniapp_ice.ui.legal.StructuredTextFormatter
+import com.Arasoftsolutions.tecniapp_ice.ui.legal.StructuredTextParser
+import com.Arasoftsolutions.tecniapp_ice.ui.legal.renderStructuredContent
+import java.util.Calendar
 
 class ActivityMain : AppCompatActivity() {
 
@@ -59,6 +70,8 @@ class ActivityMain : AppCompatActivity() {
         // ViewBinding
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        ensureTermsAccepted()
 
         // Toolbar
         setSupportActionBar(binding.appBarMain.toolbar)
@@ -102,7 +115,9 @@ class ActivityMain : AppCompatActivity() {
                 R.id.nav_reportes,
                 R.id.nav_programacion,
                 R.id.nav_account,
-                R.id.nav_settings
+                R.id.nav_settings,
+                R.id.nav_help,
+                R.id.nav_privacy
             ),
             drawerLayout
         )
@@ -245,5 +260,50 @@ class ActivityMain : AppCompatActivity() {
 
     fun refreshNavHeader() {
         lifecycleScope.launch { loadUserDataFromDatabase() }
+    }
+
+    private fun ensureTermsAccepted() {
+        val prefs = getSharedPreferences("TecniAppPrefs", MODE_PRIVATE)
+        if (prefs.getBoolean("termsAccepted", false)) {
+            return
+        }
+
+        val consentView = layoutInflater.inflate(R.layout.dialog_terms, null)
+        val replacements = mapOf(
+            "year" to Calendar.getInstance().get(Calendar.YEAR).toString(),
+            "supportEmail" to getString(R.string.privacy_policy_contact_email)
+        )
+        val termsContent = runCatching {
+            val termsDocument = StructuredTextParser.parse(
+                context = this,
+                xmlRes = R.xml.terms_of_use,
+                replacements = replacements
+            )
+            StructuredTextFormatter.buildDocument(
+                context = this,
+                document = termsDocument,
+                includeIntro = true,
+                includeFooter = true
+            )
+        }.getOrElse { error ->
+            Log.e("ActivityMain", "Error al cargar los términos", error)
+            getString(R.string.structured_text_parse_error)
+        }
+        consentView.findViewById<TextView>(R.id.textTermsContent)
+            .renderStructuredContent(termsContent)
+
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.terms_title)
+            .setView(consentView)
+            .setCancelable(false)
+            .setPositiveButton(R.string.terms_accept) { dialog, _ ->
+                prefs.edit().putBoolean("termsAccepted", true).apply()
+                dialog.dismiss()
+            }
+            .setNegativeButton(R.string.terms_decline) { _, _ ->
+                prefs.edit().putBoolean("termsAccepted", false).apply()
+                finishAffinity()
+            }
+            .show()
     }
 }
