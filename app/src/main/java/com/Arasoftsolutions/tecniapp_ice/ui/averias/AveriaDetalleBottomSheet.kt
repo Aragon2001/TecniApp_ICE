@@ -1,10 +1,8 @@
 package com.Arasoftsolutions.tecniapp_ice.ui.averias
 
 import android.app.TimePickerDialog
-import android.content.Intent
 import android.content.res.ColorStateList
 import android.graphics.Color
-import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -22,8 +20,6 @@ import com.Arasoftsolutions.tecniapp_ice.Database.entities.MedidorEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.TecnicoEntity
 import com.Arasoftsolutions.tecniapp_ice.R
 import com.Arasoftsolutions.tecniapp_ice.databinding.BottomsheetAveriaDetalleBinding
-import com.Arasoftsolutions.tecniapp_ice.ui.averias.MedidorLookupState
-import com.Arasoftsolutions.tecniapp_ice.ui.averias.TipoAfectacion
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.chip.Chip
@@ -657,8 +653,7 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
             val lat = item.lat
             val lng = item.lng
             if (lat != 0.0 && lng != 0.0) {
-                val uri = Uri.parse("geo:$lat,$lng?q=$lat,$lng")
-                startActivity(Intent(Intent.ACTION_VIEW, uri))
+                FieldMapsIntents.launch(requireContext(), lat, lng, item.localizacion)
             }
         }
     }

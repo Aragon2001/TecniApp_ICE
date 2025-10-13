@@ -260,10 +260,9 @@ class MedidorViewModel(app: Application) : AndroidViewModel(app) {
     fun obtenerMedidorActual(): MedidorEntity? = _uiState.value.medidor
 
     suspend fun obtenerDescripcionPueblo(codigo: String?): String? {
-        val subregion = subregionStorageKey ?: return codigo?.takeIf { it.isNotBlank() }
         val id = codigo?.trim()?.toIntOrNull() ?: return codigo?.takeIf { it.isNotBlank() }
         return withContext(Dispatchers.IO) {
-            repository.obtenerPuebloPorId(subregion, id)?.let { pueblo ->
+            repository.obtenerPuebloPorId(id)?.let { pueblo ->
                 "${pueblo.id} - ${pueblo.nombre}"
             }
         }

@@ -5,6 +5,12 @@
     android:id="@+id/mobile_navigation"
     app:startDestination="@+id/nav_home">
 
+    <!--
+        TecniApp ICE © 2025 Arasoft Solutions
+        Todos los derechos reservados.
+        Desarrollado para el Instituto Costarricense de Electricidad (ICE).
+    -->
+
     <!-- Fragmento de inicio (Home) -->
     <fragment
         android:id="@+id/nav_home"
@@ -54,6 +60,13 @@
         android:label="@string/menu_reportes"
         tools:layout="@layout/fragment_reportes" />
 
+    <!-- Fragmento de administración -->
+    <fragment
+        android:id="@+id/nav_admin"
+        android:name="com.Arasoftsolutions.tecniapp_ice.ui.admin.AdminManagementFragment"
+        android:label="@string/menu_admin"
+        tools:layout="@layout/fragment_admin_management" />
+
     <!-- Fragmento de programación -->
     <fragment
         android:id="@+id/nav_programacion"
@@ -67,5 +80,26 @@
         android:name="com.Arasoftsolutions.tecniapp_ice.User.UserFragment"
         android:label="@string/action_accounts"
         tools:layout="@layout/fragment_user" />
+
+    <!-- Fragmento de ajustes -->
+    <fragment
+        android:id="@+id/nav_settings"
+        android:name="com.Arasoftsolutions.tecniapp_ice.ui.settings.SettingsFragment"
+        android:label="@string/menu_settings"
+        tools:layout="@layout/fragment_settings" />
+
+    <!-- Fragmento de ayuda -->
+    <fragment
+        android:id="@+id/nav_help"
+        android:name="com.Arasoftsolutions.tecniapp_ice.ui.help.HelpFragment"
+        android:label="@string/menu_help"
+        tools:layout="@layout/fragment_help" />
+
+    <!-- Fragmento de políticas -->
+    <fragment
+        android:id="@+id/nav_privacy"
+        android:name="com.Arasoftsolutions.tecniapp_ice.ui.policies.PoliciesFragment"
+        android:label="@string/menu_privacy"
+        tools:layout="@layout/fragment_policies" />
 
 </navigation>
