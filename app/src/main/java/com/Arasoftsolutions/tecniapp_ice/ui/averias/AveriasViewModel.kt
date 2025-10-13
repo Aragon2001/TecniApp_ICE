@@ -2,13 +2,10 @@ package com.Arasoftsolutions.tecniapp_ice.ui.averias
 
 import android.Manifest
 import android.app.Application
-import android.app.NotificationChannel
-import android.app.NotificationManager
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import android.util.Log
-import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
@@ -31,6 +28,9 @@ import com.Arasoftsolutions.tecniapp_ice.Database.sync.FirebaseSyncManager
 import com.Arasoftsolutions.tecniapp_ice.R
 import com.google.firebase.auth.FirebaseAuth
 import java.text.Normalizer
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.Dispatchers
@@ -93,6 +93,13 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
     private val allRegionsLabel = app.getString(R.string.averias_filtro_region_todas)
     private val allAgenciesLabel = app.getString(R.string.averias_filtro_agencia_todas)
 
+    private val _notificationsEnabled = MutableStateFlow(AveriaNotificationPreferences.areNotificationsEnabled(app))
+    val notificationsEnabled: StateFlow<Boolean> = _notificationsEnabled.asStateFlow()
+    private val _notificationAgencies = MutableStateFlow(AveriaNotificationPreferences.getSelectedAgencies(app))
+    val notificationAgencies: StateFlow<List<String>> = _notificationAgencies.asStateFlow()
+    private val _notificationSuggestions = MutableStateFlow<List<String>>(emptyList())
+    val notificationSuggestions: StateFlow<List<String>> = _notificationSuggestions.asStateFlow()
+
     private val _regiones = MutableStateFlow(listOf(RegionUI(null, allRegionsLabel)))
     val regiones: StateFlow<List<RegionUI>> = _regiones.asStateFlow()
     private val _regionSeleccionada = MutableStateFlow(RegionUI(null, allRegionsLabel))
@@ -129,21 +136,29 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
     private var catalogosSyncAttempted = false
     private var tecnicosSyncAttempted = false
 
+    data class FechaFiltro(val inicioMillis: Long, val finExclusiveMillis: Long)
+
     private data class FilterConfig(
         val query: String,
         val estado: Estado?,
         val region: RegionUI,
-        val agencia: AgenciaUI
+        val agencia: AgenciaUI,
+        val fecha: FechaFiltro?
     )
+
+    private val fechaFiltro = MutableStateFlow<FechaFiltro?>(null)
+    val fechaFiltroState: StateFlow<FechaFiltro?> = fechaFiltro.asStateFlow()
+    private val zoneId: ZoneId = ZoneId.systemDefault()
 
     val uiState: StateFlow<AveriasUiState> =
         combine(
             q.debounce(250).map { it.trim() }.distinctUntilChanged(),
             estado,
             _regionSeleccionada,
-            _agenciaSeleccionada
-        ) { qv, est, regionSel, agenciaSel ->
-            FilterConfig(qv, est, regionSel, agenciaSel)
+            _agenciaSeleccionada,
+            fechaFiltro
+        ) { qv, est, regionSel, agenciaSel, fechaSel ->
+            FilterConfig(qv, est, regionSel, agenciaSel, fechaSel)
         }
             .flatMapLatest { config ->
                 repo.observe(emptyList(), "", config.query)
@@ -151,7 +166,8 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
                         list.filter { entity ->
                             matchesEstado(entity, config.estado) &&
                                     matchesRegion(entity, config.region) &&
-                                    matchesAgencia(entity, config.agencia)
+                                    matchesAgencia(entity, config.agencia) &&
+                                    matchesFecha(entity, config.fecha)
                         }
                     }
             }
@@ -206,7 +222,7 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
 
     init {
         repo.startRealtimeListener()
-        createNotificationChannel()
+        AveriaNotifications.ensureChannel(app)
         observeCatalogos()
         viewModelScope.launch { loadUsuarioActual() }
         viewModelScope.launch { syncCatalogosGenerales() }
@@ -250,6 +266,36 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
 
     fun setQuery(value: String) = viewModelScope.launch { q.emit(value) }
     fun setEstado(value: Estado?) = viewModelScope.launch { estado.emit(value) }
+
+    fun setFechaFiltro(inicioMillis: Long, finMillis: Long) {
+        val start = inicioMillis.coerceAtMost(finMillis)
+        val end = finMillis.coerceAtLeast(inicioMillis)
+        val startOfDay = toStartOfDay(start)
+        val endExclusive = toEndExclusive(end)
+        fechaFiltro.value = FechaFiltro(startOfDay, endExclusive)
+    }
+
+    fun clearFechaFiltro() {
+        fechaFiltro.value = null
+    }
+
+    fun setNotificationsEnabled(enabled: Boolean) {
+        if (_notificationsEnabled.value == enabled) return
+        _notificationsEnabled.value = enabled
+        AveriaNotificationPreferences.setNotificationsEnabled(getApplication(), enabled)
+    }
+
+    fun addNotificationAgency(nombre: String) {
+        val trimmed = nombre.trim()
+        if (trimmed.isEmpty()) return
+        AveriaNotificationPreferences.addAgency(getApplication(), trimmed)
+        _notificationAgencies.value = AveriaNotificationPreferences.getSelectedAgencies(getApplication())
+    }
+
+    fun removeNotificationAgency(nombre: String) {
+        AveriaNotificationPreferences.removeAgency(getApplication(), nombre)
+        _notificationAgencies.value = AveriaNotificationPreferences.getSelectedAgencies(getApplication())
+    }
 
 
     fun setRegionIndex(idx: Int) = viewModelScope.launch {
@@ -363,6 +409,25 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
         return normalizedId.isNotBlank() && haystack.contains(normalizedId)
     }
 
+    private fun matchesFecha(entity: AveriaEntity, filtro: FechaFiltro?): Boolean {
+        filtro ?: return true
+        val fecha = entity.fechaInicioMillis
+        if (fecha <= 0L) return false
+        if (fecha < filtro.inicioMillis) return false
+        if (fecha >= filtro.finExclusiveMillis) return false
+        return true
+    }
+
+    private fun toStartOfDay(millis: Long): Long {
+        return Instant.ofEpochMilli(millis).atZone(zoneId).toLocalDate()
+            .atStartOfDay(zoneId).toInstant().toEpochMilli()
+    }
+
+    private fun toEndExclusive(millis: Long): Long {
+        val date: LocalDate = Instant.ofEpochMilli(millis).atZone(zoneId).toLocalDate()
+        return date.plusDays(1).atStartOfDay(zoneId).toInstant().toEpochMilli()
+    }
+
     private suspend fun loadUsuarioActual() {
         val uid = auth.currentUser?.uid ?: return
         val local = roomRepo.obtenerUsuario(uid)
@@ -471,20 +536,17 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
             caseId,
             tecnico ?: context.getString(R.string.averia_sin_asignar)
         )
-        val notification = NotificationCompat.Builder(context, "averias_channel")
+        val notification = NotificationCompat.Builder(context, AveriaNotifications.CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(title)
             .setContentText(body)
             .setStyle(NotificationCompat.BigTextStyle().bigText(body))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_STATUS)
+            .setAutoCancel(true)
+            .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
+            .setContentIntent(AveriaNotifications.averiasPendingIntent(context))
             .build()
-        if (ActivityCompat.checkSelfPermission(
-        context,
-        Manifest.permission.POST_NOTIFICATIONS
-    ) != PackageManager.PERMISSION_GRANTED
-) {
-    return
-}
 
         notificationManager.notify(caseId.hashCode(), notification)
     }
@@ -498,20 +560,17 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
             caseId,
             tecnico ?: context.getString(R.string.averia_sin_asignar)
         )
-        val notification = NotificationCompat.Builder(context, "averias_channel")
+        val notification = NotificationCompat.Builder(context, AveriaNotifications.CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(title)
             .setContentText(body)
             .setStyle(NotificationCompat.BigTextStyle().bigText(body))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_STATUS)
+            .setAutoCancel(true)
+            .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
+            .setContentIntent(AveriaNotifications.averiasPendingIntent(context))
             .build()
-        if (ActivityCompat.checkSelfPermission(
-        context,
-        Manifest.permission.POST_NOTIFICATIONS
-    ) != PackageManager.PERMISSION_GRANTED
-) {
-    return
-}
 
         notificationManager.notify((caseId.hashCode() shl 1), notification)
     }
@@ -521,20 +580,17 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
         val context = getApplication<Application>()
         val title = context.getString(R.string.averia_notificacion_resuelta_title)
         val body = context.getString(R.string.averia_notificacion_resuelta_body, caseId)
-        val notification = NotificationCompat.Builder(context, "averias_channel")
+        val notification = NotificationCompat.Builder(context, AveriaNotifications.CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(title)
             .setContentText(body)
             .setStyle(NotificationCompat.BigTextStyle().bigText(body))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_STATUS)
+            .setAutoCancel(true)
+            .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
+            .setContentIntent(AveriaNotifications.averiasPendingIntent(context))
             .build()
-        if (ActivityCompat.checkSelfPermission(
-        context,
-        Manifest.permission.POST_NOTIFICATIONS
-    ) != PackageManager.PERMISSION_GRANTED
-) {
-    return
-}
 
         notificationManager.notify((caseId.hashCode() shl 2), notification)
     }
@@ -682,6 +738,12 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
                         .map { RegionUI(it.id, it.nombre) }
                 _regiones.emit(regionItems)
 
+                val sugerencias = buildAgencias(null)
+                    .drop(1)
+                    .map { it.nombreVisible }
+                    .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it })
+                _notificationSuggestions.value = sugerencias
+
                 val applied = applyPendingSelectionsIfPossible(regionItems)
                 if (!applied) {
                     val selectedRegion = regionItems.firstOrNull { it.id == _regionSeleccionada.value.id }
@@ -818,15 +880,6 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
             subregionesPorRegion[region.id]?.forEach { keywords += it.nombre.normalize() }
             agenciasPorRegion[region.id]?.forEach { keywords += it.nombre.normalize() }
             region.id to keywords.toList()
-        }
-    }
-
-    private fun createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val mgr = getApplication<Application>().getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            mgr.createNotificationChannel(
-                NotificationChannel("averias_channel", "Averías", NotificationManager.IMPORTANCE_HIGH)
-            )
         }
     }
 

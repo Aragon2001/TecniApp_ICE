@@ -3,6 +3,8 @@ package com.Arasoftsolutions.tecniapp_ice.ui.localizacion
 // ViewModel en su package correcto
 
 import android.Manifest
+import android.app.AlertDialog
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -24,6 +26,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
+import android.widget.CompoundButton
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -50,6 +53,7 @@ import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
 import java.lang.Math.toDegrees
 import kotlin.math.abs
+import java.util.Locale
 
 /**
  * LocalizacionFragment
@@ -107,6 +111,10 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
 
     // --- Handler para pequeñas demoras (re-activar autorrotación tras gestos, etc.) ---
     private val handler = Handler(Looper.getMainLooper())
+
+    private val switchListener = CompoundButton.OnCheckedChangeListener { _, isChecked ->
+        viewModel.actualizarPreferenciaMostrarCalles(isChecked)
+    }
 
     // --- Requests de ubicación ---
     private val locationRequest = com.google.android.gms.location.LocationRequest.Builder(
@@ -220,10 +228,14 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
         viewModel.marcadoresCalles.observe(viewLifecycleOwner) { marcadores ->
             val lista = marcadores.orEmpty()
             actualizarMarcadoresDeCalles(lista)
-            binding.buttonAll.text = if (lista.isEmpty()) {
-                getString(R.string.localizacion_calles_show)
-            } else {
-                getString(R.string.localizacion_calles_hide)
+        }
+
+        viewModel.mostrarTodasCalles.observe(viewLifecycleOwner) { mostrar ->
+            val switch = binding.switchMostrarCalles
+            if (switch.isChecked != mostrar) {
+                switch.setOnCheckedChangeListener(null)
+                switch.isChecked = mostrar
+                switch.setOnCheckedChangeListener(switchListener)
             }
         }
 
@@ -248,7 +260,6 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
                 try {
                     val codigoPueblo = puebloSeleccionado.split(" - ")[0].toInt()
                     limpiarCamposDeTexto()
-                    viewModel.limpiarMarcadoresDeCalles()
                     viewModel.cargarCallesParaPueblo(codigoPueblo)
                 } catch (e: Exception) {
                     Log.e("Localizacion", "Error parseando pueblo seleccionado: ${e.message}", e)
@@ -261,23 +272,7 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
     private fun configurarBotones() {
         binding.buttonNavegar.setOnClickListener { mostrarOpcionesDeNavegacion() }
         binding.buttonShare.setOnClickListener { compartirUbicacion() }
-        binding.buttonAll.setOnClickListener {
-            val puebloSeleccionado = binding.spinnerPueblos.selectedItem?.toString().orEmpty()
-            if (puebloSeleccionado.isBlank() || puebloSeleccionado == getString(R.string.localizacion_select_pueblo)) {
-                Toast.makeText(
-                    requireContext(),
-                    getString(R.string.localizacion_calles_toast_sin_pueblo),
-                    Toast.LENGTH_SHORT
-                ).show()
-                return@setOnClickListener
-            }
-
-            if (viewModel.marcadoresCalles.value.isNullOrEmpty()) {
-                viewModel.mostrarMarcadoresDeCalles()
-            } else {
-                viewModel.limpiarMarcadoresDeCalles()
-            }
-        }
+        binding.switchMostrarCalles.setOnCheckedChangeListener(switchListener)
     }
 
     // Reset de textos y cámara a vista país
@@ -534,9 +529,6 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
         })
     }
 
-    // ---------------------------------------------------------------------------------------------
-    // Acciones (Navegar / Compartir)
-    // ---------------------------------------------------------------------------------------------
     private fun mostrarOpcionesDeNavegacion() {
         val lat = viewModel.localizacion.value?.latitud
         val lng = viewModel.localizacion.value?.longitud
@@ -545,16 +537,57 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
             return
         }
 
-        val maps = Intent(Intent.ACTION_VIEW, Uri.parse("google.navigation:q=$lat,$lng")).apply {
+        val context = requireContext()
+        val centerParam = String.format(Locale.US, "%f,%f", lat, lng)
+
+        // URIs corregidas
+        val fieldMapsUri = Uri.parse("arcgis-fieldmaps://?referenceContext=center&itemID=&center=$centerParam")
+        val googleMapsUri = Uri.parse("google.navigation:q=$centerParam")
+        val browserUri = Uri.parse("https://maps.google.com/?q=$centerParam")
+
+        // Intents
+        val fieldMapsIntent = Intent(Intent.ACTION_VIEW, fieldMapsUri).apply {
+            setPackage("com.esri.fieldmaps")
+        }
+
+        val googleMapsIntent = Intent(Intent.ACTION_VIEW, googleMapsUri).apply {
             setPackage("com.google.android.apps.maps")
         }
-        val waze = Intent(Intent.ACTION_VIEW, Uri.parse("waze://?ll=$lat,$lng&navigate=yes")).apply {
-            setPackage("com.waze")
-        }
-        val chooser = Intent.createChooser(maps, "Selecciona tu aplicación de navegación").apply {
-            putExtra(Intent.EXTRA_INITIAL_INTENTS, arrayOf(waze))
-        }
-        startActivity(chooser)
+
+        val browserIntent = Intent(Intent.ACTION_VIEW, browserUri)
+
+        // Mostrar selector manual
+        val opciones = arrayOf("Field Maps", "Google Maps", "Navegador web")
+
+        AlertDialog.Builder(context)
+            .setTitle("Abrir ubicación con...")
+            .setItems(opciones) { _, which ->
+                when (which) {
+                    0 -> { // Field Maps
+                        try {
+                            startActivity(fieldMapsIntent)
+                        } catch (e: Exception) {
+                            Toast.makeText(context, "Field Maps no está instalado o el vínculo es inválido.", Toast.LENGTH_LONG).show()
+                        }
+                    }
+                    1 -> { // Google Maps
+                        try {
+                            startActivity(googleMapsIntent)
+                        } catch (e: Exception) {
+                            Toast.makeText(context, "Google Maps no está disponible.", Toast.LENGTH_LONG).show()
+                        }
+                    }
+                    2 -> { // Navegador
+                        try {
+                            startActivity(browserIntent)
+                        } catch (e: Exception) {
+                            Toast.makeText(context, "No se pudo abrir en el navegador.", Toast.LENGTH_LONG).show()
+                        }
+                    }
+                }
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
     }
 
     private fun compartirUbicacion() {
@@ -668,6 +701,7 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
     override fun onDestroyView() {
         super.onDestroyView()
         binding.mapView.onDestroy()
+        binding.switchMostrarCalles.setOnCheckedChangeListener(null)
         _binding = null
         mapaGoogle = null
         marcadoresCalles.forEach { it.remove() }

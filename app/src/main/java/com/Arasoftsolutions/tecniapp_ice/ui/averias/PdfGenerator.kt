@@ -18,11 +18,13 @@ import androidx.core.content.FileProvider
 import com.Arasoftsolutions.tecniapp_ice.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlin.math.max
 import java.io.File
 import java.io.FileOutputStream
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlin.math.max
 
 object PdfGenerator {
     private const val PAGE_WIDTH = 595 // A4
@@ -30,8 +32,97 @@ object PdfGenerator {
     private const val PAGE_MARGIN = 36f
     private const val FOOTER_HEIGHT = 64f
 
+    // 🔹 Variables globales (para multipágina)
+    private lateinit var document: PdfDocument
+    private lateinit var page: PdfDocument.Page
+    private lateinit var canvas: Canvas
+    private var pageNumber = 0
+    private var currentY = 0f
+
+
+
+
+    // -------------------------------------------------------------
+    //  🔧 Helper: Crear nueva página con encabezado
+    // -------------------------------------------------------------
+    private fun startPage(context: Context) {
+        if (this::page.isInitialized) document.finishPage(page)
+
+        pageNumber++
+        val pageInfo = PdfDocument.PageInfo.Builder(PAGE_WIDTH, PAGE_HEIGHT, pageNumber).create()
+        page = document.startPage(pageInfo)
+        canvas = page.canvas
+        currentY = drawHeader(context, canvas, 40f)
+    }
+
+    // -------------------------------------------------------------
+    //  🔧 Helper: Asegurar espacio disponible
+    // -------------------------------------------------------------
+    private fun ensureSpace(context: Context, neededHeight: Float) {
+        val bottomMargin = 80f
+        val maxY = PAGE_HEIGHT - bottomMargin - 60f
+        if (currentY + neededHeight > maxY) {
+            startPage(context)
+        }
+    }
+
+    // -------------------------------------------------------------
+    //  🧾 Dibujar encabezado
+    // -------------------------------------------------------------
+    private fun drawHeader(context: Context, canvas: Canvas, margin: Float): Float {
+        val headerHeight = 150f
+        val headerRect = RectF(margin, margin, PAGE_WIDTH - margin, margin + headerHeight)
+        val headerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            shader = LinearGradient(
+                headerRect.left, headerRect.top,
+                headerRect.right, headerRect.bottom,
+                Color.parseColor("#2E3192"),
+                Color.parseColor("#1BFFFF"),
+                Shader.TileMode.CLAMP
+            )
+        }
+        canvas.drawRoundRect(headerRect, 28f, 28f, headerPaint)
+
+        val titlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+            textSize = 32f
+            color = Color.WHITE
+        }
+        val subtitlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            textSize = 16f
+            color = Color.WHITE
+        }
+
+        val title = context.getString(R.string.averia_pdf_header_title)
+        val subtitle = context.getString(R.string.averia_pdf_header_subtitle)
+
+        val textX = headerRect.left + 32f
+        var textY = headerRect.top + 48f
+        canvas.drawText(title, textX, textY, titlePaint)
+        textY += 28f
+        canvas.drawText(subtitle, textX, textY, subtitlePaint)
+
+        val logoDrawable = ContextCompat.getDrawable(context, R.drawable.logo)
+        logoDrawable?.let { drawable ->
+            val logoBitmapSize = 256
+            val logoBitmap = Bitmap.createBitmap(logoBitmapSize, logoBitmapSize, Bitmap.Config.ARGB_8888)
+            val logoCanvas = Canvas(logoBitmap)
+            drawable.setBounds(0, 0, logoBitmapSize, logoBitmapSize)
+            drawable.draw(logoCanvas)
+            val logoSize = 88f
+            val logoRect = RectF(
+                headerRect.right - 32f - logoSize,
+                headerRect.top + 16f,
+                headerRect.right - 32f,
+                headerRect.top + 16f + logoSize
+            )
+            canvas.drawBitmap(logoBitmap, null, logoRect, null)
+        }
+
+        return headerRect.bottom + 40f
+    }
     suspend fun exportAveria(context: Context, item: AveriaUI) = withContext(Dispatchers.IO) {
-        val document = PdfDocument()
+        document = PdfDocument()
         try {
             val now = Date()
             val dateTimeFormatter = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
@@ -221,20 +312,16 @@ object PdfGenerator {
             val materialLines = when {
                 item.materialesDetalle.any { it.cantidad > 0 } -> item.materialesDetalle
                     .filter { it.cantidad > 0 }
-                    .map { uso ->
-                        val descripcionMaterial = uso.descripcion.ifBlank { uso.codigo }
+                    .map { m ->
                         context.getString(
                             R.string.averia_pdf_material_line,
-                            descripcionMaterial,
-                            uso.cantidad,
-                            uso.codigo
+                            m.descripcion.ifBlank { m.codigo },
+                            m.cantidad,
+                            m.codigo
                         )
                     }
-                item.materialesResumen.isNotBlank() -> item.materialesResumen
-                    .split("[\\n;,]".toRegex())
-                    .map { it.trim() }
-                    .filter { it.isNotEmpty() }
-                    .ifEmpty { listOf(item.materialesResumen.trim()) }
+                item.materialesResumen.isNotBlank() -> item.materialesResumen.split("[\\n;,]".toRegex())
+                    .map { it.trim() }.filter { it.isNotEmpty() }
                 else -> listOf(context.getString(R.string.averia_pdf_no_materials))
             }
 
@@ -254,7 +341,7 @@ object PdfGenerator {
                 val cedula = tecnico.cedula.trim()
                 when {
                     nombre.isNotBlank() && cedula.isNotBlank() ->
-                        context.getString(R.string.averia_pdf_technician_line, nombre, cedula)
+                        "${nombre} - ${cedula}"
                     nombre.isNotBlank() -> nombre
                     cedula.isNotBlank() -> cedula
                     else -> null
@@ -275,6 +362,12 @@ object PdfGenerator {
                     bullet = true
                 )
             )
+            canvas.drawText(
+                context.getString(R.string.averia_pdf_footer_copyright, currentYear),
+                footerRect.left + 24f,
+                footerRect.top + 60f,
+                footerTextPaint
+            )
 
             state.finish()
 
@@ -284,9 +377,7 @@ object PdfGenerator {
             val fileNameFormatter = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault())
             val fileName = "averia_${item.id}_${fileNameFormatter.format(now)}.pdf"
             val file = File(reportsDir, fileName)
-            FileOutputStream(file).use { output ->
-                document.writeTo(output)
-            }
+            FileOutputStream(file).use { output -> document.writeTo(output) }
 
             withContext(Dispatchers.Main) {
                 Toast.makeText(

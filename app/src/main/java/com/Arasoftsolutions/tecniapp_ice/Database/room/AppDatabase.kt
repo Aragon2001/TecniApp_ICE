@@ -22,7 +22,7 @@ import com.Arasoftsolutions.tecniapp_ice.Database.entities.*
         AveriaEntity::class             // Averías
     ],
 
-    version = 10,                        // ✅ mantener la versión más alta
+    version = 11,                        // ✅ mantener la versión más alta
 
     exportSchema = true
 )
