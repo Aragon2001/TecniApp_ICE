@@ -3,6 +3,7 @@ package com.Arasoftsolutions.tecniapp_ice.ui.admin
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.Arasoftsolutions.tecniapp_ice.Database.entities.AgenciaEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.LocalizacionesEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.MedidorEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.SubregionesEntity
@@ -35,6 +36,9 @@ class AdminManagementViewModel(application: Application) : AndroidViewModel(appl
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     val subregiones: StateFlow<List<SubregionesEntity>> = repository.observarSubregiones()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val agencias: StateFlow<List<AgenciaEntity>> = repository.observarAgenciasCatalogo()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     private val _medidorSeleccionado = MutableStateFlow<MedidorEntity?>(null)
@@ -70,13 +74,13 @@ class AdminManagementViewModel(application: Application) : AndroidViewModel(appl
 
     fun guardarMedidor(
         numero: String,
-        cliente: String?,
-        localizacion: Long?,
-        calle: String?,
-        poste: String?,
-        metros: String?,
-        puebloCodigo: String?,
-        subregionId: String?,
+        cliente: String,
+        localizacion: Long,
+        calle: String,
+        poste: String,
+        metros: String,
+        puebloCodigo: String,
+        subregionId: String,
     ) {
         viewModelScope.launch {
             val numeroLimpio = numero.trim()
@@ -85,7 +89,7 @@ class AdminManagementViewModel(application: Application) : AndroidViewModel(appl
                 return@launch
             }
 
-            val subregionLimpia = subregionId?.trim()?.takeIf { it.isNotEmpty() }
+            val subregionLimpia = subregionId.trim().takeIf { it.isNotEmpty() }
                 ?: run {
                     _eventos.emit(AdminEvent.Error(texto(R.string.admin_medidor_error_subregion)))
                     return@launch
@@ -98,7 +102,7 @@ class AdminManagementViewModel(application: Application) : AndroidViewModel(appl
                 return@launch
             }
 
-            val puebloLimpio = puebloCodigo?.trim()?.takeIf { it.isNotEmpty() }
+            val puebloLimpio = puebloCodigo.trim().takeIf { it.isNotEmpty() }
                 ?: run {
                     _eventos.emit(AdminEvent.Error(texto(R.string.admin_medidor_error_pueblo)))
                     return@launch
@@ -112,11 +116,11 @@ class AdminManagementViewModel(application: Application) : AndroidViewModel(appl
 
             val medidor = MedidorEntity(
                 medidorNumber = numeroLimpio,
-                cliente = cliente?.trim()?.takeIf { it.isNotEmpty() },
+                cliente = cliente.trim(),
                 localizacion = localizacion,
-                calle = calle?.trim()?.takeIf { it.isNotEmpty() },
-                poste = poste?.trim()?.takeIf { it.isNotEmpty() },
-                metros = metros?.trim()?.takeIf { it.isNotEmpty() },
+                calle = calle.trim(),
+                poste = poste.trim(),
+                metros = metros.trim(),
                 pueblo = puebloLimpio,
                 subregion = subregionLimpia
             )
@@ -177,48 +181,62 @@ class AdminManagementViewModel(application: Application) : AndroidViewModel(appl
         }
     }
 
+    fun seleccionarVehiculoPorPlaca(placa: Long?) {
+        viewModelScope.launch {
+            if (placa == null) {
+                _vehiculoSeleccionado.value = null
+                return@launch
+            }
+            val vehiculo = repository.obtenerVehiculoPorPlaca(placa)
+            if (vehiculo == null) {
+                _vehiculoSeleccionado.value = null
+                _eventos.emit(AdminEvent.Error(texto(R.string.admin_vehiculo_no_encontrado)))
+            } else {
+                _vehiculoSeleccionado.value = vehiculo
+            }
+        }
+    }
+
     fun limpiarVehiculo() {
         _vehiculoSeleccionado.value = null
     }
 
     fun guardarVehiculo(
-        id: Int?,
-        placa: Long?,
-        agencia: String?,
-        tipo: String?,
-        subregionId: String?,
+        id: Int,
+        placa: Long,
+        agencia: String,
+        tipo: String,
+        subregionId: String,
     ) {
         viewModelScope.launch {
-            val idVal = id ?: run {
-                _eventos.emit(AdminEvent.Error(texto(R.string.admin_vehiculo_error_id)))
-                return@launch
-            }
-            val placaVal = placa ?: run {
-                _eventos.emit(AdminEvent.Error(texto(R.string.admin_vehiculo_error_placa)))
-                return@launch
-            }
-            val agenciaVal = agencia?.trim()?.takeIf { it.isNotEmpty() } ?: run {
-                _eventos.emit(AdminEvent.Error(texto(R.string.admin_vehiculo_error_agencia)))
-                return@launch
-            }
-            val subregionLimpia = subregionId?.trim()?.takeIf { it.isNotEmpty() }
-            if (subregionLimpia != null && subregiones.value.none { it.id.equals(subregionLimpia, ignoreCase = true) }) {
+            val subregionLimpia = subregionId.trim().takeIf { it.isNotEmpty() }
+                ?: run {
+                    _eventos.emit(AdminEvent.Error(texto(R.string.admin_vehiculo_error_subregion)))
+                    return@launch
+                }
+            if (subregiones.value.none { it.id.equals(subregionLimpia, ignoreCase = true) }) {
                 _eventos.emit(AdminEvent.Error(texto(R.string.admin_validacion_subregion_inexistente)))
                 return@launch
             }
 
+            val agenciaLimpia = agencia.trim()
+            if (agenciaLimpia.isEmpty()) {
+                _eventos.emit(AdminEvent.Error(texto(R.string.admin_vehiculo_error_agencia)))
+                return@launch
+            }
+
             val vehiculo = VehiculosEntity(
-                id = idVal,
-                agencia = agenciaVal,
-                placa = placaVal,
-                tipo = tipo?.trim().orEmpty(),
+                id = id,
+                agencia = agenciaLimpia,
+                placa = placa,
+                tipo = tipo.trim(),
                 subregion = subregionLimpia
             )
 
             try {
                 repository.guardarVehiculo(vehiculo)
                 _vehiculoSeleccionado.value = vehiculo
-                _eventos.emit(AdminEvent.Success(texto(R.string.admin_vehiculo_guardar_exito, placaVal.toString())))
+                _eventos.emit(AdminEvent.Success(texto(R.string.admin_vehiculo_guardar_exito, placa.toString())))
             } catch (t: Throwable) {
                 _eventos.emit(AdminEvent.Error(errorMensaje(t)))
             }
@@ -264,70 +282,59 @@ class AdminManagementViewModel(application: Application) : AndroidViewModel(appl
     }
 
     fun guardarLocalizacion(
-        id: Int?,
-        puebloId: Int?,
-        calleId: Int?,
-        direccion: String?,
-        latitud: Double?,
-        longitud: Double?,
-        delPoste: Int?,
-        alPoste: Int?,
-        subregionId: String?,
+        id: Int,
+        puebloId: Int,
+        calleId: Int,
+        direccion: String,
+        latitud: Double,
+        longitud: Double,
+        delPoste: Int,
+        alPoste: Int,
+        subregionId: String,
     ) {
         viewModelScope.launch {
-            val idVal = id ?: run {
-                _eventos.emit(AdminEvent.Error(texto(R.string.admin_localizacion_error_id)))
-                return@launch
-            }
-            val puebloVal = puebloId ?: run {
-                _eventos.emit(AdminEvent.Error(texto(R.string.admin_localizacion_error_pueblo)))
-                return@launch
-            }
-            val calleVal = calleId ?: run {
-                _eventos.emit(AdminEvent.Error(texto(R.string.admin_localizacion_error_calle)))
-                return@launch
-            }
-            val direccionVal = direccion?.trim()?.takeIf { it.isNotEmpty() } ?: run {
-                _eventos.emit(AdminEvent.Error(texto(R.string.admin_localizacion_error_direccion)))
-                return@launch
-            }
-            val delPosteVal = delPoste ?: run {
-                _eventos.emit(AdminEvent.Error(texto(R.string.admin_localizacion_error_del_poste)))
-                return@launch
-            }
-            val alPosteVal = alPoste ?: run {
-                _eventos.emit(AdminEvent.Error(texto(R.string.admin_localizacion_error_al_poste)))
-                return@launch
-            }
-
-            val puebloExiste = pueblos.value.any { it.id == puebloVal }
-            if (!puebloExiste) {
-                _eventos.emit(AdminEvent.Error(texto(R.string.admin_localizacion_error_pueblo)))
-                return@launch
-            }
-
-            val subregionLimpia = subregionId?.trim()?.takeIf { it.isNotEmpty() }
-            if (subregionLimpia != null && subregiones.value.none { it.id.equals(subregionLimpia, ignoreCase = true) }) {
+            val subregionLimpia = subregionId.trim().takeIf { it.isNotEmpty() }
+                ?: run {
+                    _eventos.emit(AdminEvent.Error(texto(R.string.admin_localizacion_error_subregion)))
+                    return@launch
+                }
+            if (subregiones.value.none { it.id.equals(subregionLimpia, ignoreCase = true) }) {
                 _eventos.emit(AdminEvent.Error(texto(R.string.admin_validacion_subregion_inexistente)))
                 return@launch
             }
 
+            val puebloEntidad = pueblos.value.firstOrNull { it.id == puebloId }
+                ?: run {
+                    _eventos.emit(AdminEvent.Error(texto(R.string.admin_localizacion_error_pueblo)))
+                    return@launch
+                }
+            if (!puebloEntidad.subregion_id_normalizado.equals(subregionLimpia, ignoreCase = true)) {
+                _eventos.emit(AdminEvent.Error(texto(R.string.admin_localizacion_error_relacion)))
+                return@launch
+            }
+
+            val direccionVal = direccion.trim()
+            if (direccionVal.isEmpty()) {
+                _eventos.emit(AdminEvent.Error(texto(R.string.admin_localizacion_error_direccion)))
+                return@launch
+            }
+
             val entity = LocalizacionesEntity(
-                id = idVal,
-                pueblo = puebloVal,
-                calle = calleVal,
+                id = id,
+                pueblo = puebloId,
+                calle = calleId,
                 direccion = direccionVal,
-                latitud = latitud ?: 0.0,
-                longitud = longitud ?: 0.0,
-                delPoste = delPosteVal,
-                alPoste = alPosteVal,
+                latitud = latitud,
+                longitud = longitud,
+                delPoste = delPoste,
+                alPoste = alPoste,
                 subregion = subregionLimpia
             )
 
             try {
                 repository.guardarLocalizacion(entity)
                 _localizacionSeleccionada.value = entity
-                _eventos.emit(AdminEvent.Success(texto(R.string.admin_localizacion_guardar_exito, idVal.toString())))
+                _eventos.emit(AdminEvent.Success(texto(R.string.admin_localizacion_guardar_exito, id.toString())))
             } catch (t: Throwable) {
                 _eventos.emit(AdminEvent.Error(errorMensaje(t)))
             }
