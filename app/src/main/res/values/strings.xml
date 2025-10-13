@@ -199,6 +199,7 @@ Cliente: %4$s</string>
     <string name="averia_pdf_table_label_attended_by">Atendido por</string>
     <string name="averia_pdf_table_label_vehicle">Vehículo asignado</string>
     <string name="averia_pdf_table_label_description">Descripción</string>
+    <string name="averia_pdf_table_label_observations">Observaciones</string>
     <string name="averia_pdf_table_label_event_date">Fecha del evento</string>
     <string name="averia_pdf_table_label_start_time">Inicio de atención</string>
     <string name="averia_pdf_table_label_end_time">Fin de atención</string>
@@ -265,6 +266,9 @@ Cliente: %4$s</string>
     <string name="averia_pdf_no_technicians">No se registraron técnicos adicionales.</string>
     <string name="averia_pdf_footer_title">TecniApp ICE</string>
     <string name="averia_pdf_footer_content">Sistema TecniApp ICE • Arasoft Solutions • Derechos reservados</string>
+    <string name="averia_pdf_footer_copyright">© %1$s Arasoft Solutions y ICE. Todos los derechos reservados.</string>
+    <string name="averia_pdf_no_meter_details">No se registró información del medidor.</string>
+    <string name="averia_pdf_card_continuation_title">%1$s (continuación)</string>
 
     <string name="averia_detalle_causa_title">Causa identificada</string>
     <string name="averia_detalle_observaciones_title">Observaciones registradas</string>
@@ -301,7 +305,7 @@ Cliente: %4$s</string>
     <string name="nav_header_cedula_format">Cédula: %1$s</string>
     <string name="nav_header_subregion_format">Subregión: %1$s</string>
     <string name="nav_header_agency_format">Agencia: %1$s</string>
-    <string name="nav_header_vehicle_format">Vehículo • %1$s</string>
+    <string name="nav_header_vehicle_format">Vehículo: %1$s</string>
     <string name="nav_header_vehicle_placeholder">Sin vehículo asignado</string>
 
     <!-- Medidores -->

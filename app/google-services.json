@@ -3,7 +3,7 @@
     "project_number": "1097214229632",
     "firebase_url": "https://tecniapp-ice-default-rtdb.firebaseio.com",
     "project_id": "tecniapp-ice",
-    "storage_bucket": "tecniapp-ice.appspot.com"
+    "storage_bucket": "tecniapp-ice.firebasestorage.app"
   },
   "client": [
     {
@@ -38,6 +38,49 @@
             {
               "client_id": "1097214229632-3cn6j1e92c3k22fm14gm9mudks8e0o28.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "1097214229632-od8o0ncvl4pfk68dmcjbqqv23l2loq5d.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.tecniappflutter"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1097214229632:android:ca7046af2773cbb097fa65",
+        "android_client_info": {
+          "package_name": "com.example.tecniappflutter"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1097214229632-3cn6j1e92c3k22fm14gm9mudks8e0o28.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBQt2RjGc8kG8PYN3m1bLa8QJUuVw9MYNc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1097214229632-3cn6j1e92c3k22fm14gm9mudks8e0o28.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1097214229632-od8o0ncvl4pfk68dmcjbqqv23l2loq5d.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.tecniappflutter"
+              }
             }
           ]
         }
