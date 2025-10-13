@@ -300,7 +300,7 @@ Cliente: %4$s</string>
     <string name="nav_header_cedula_format">Cédula: %1$s</string>
     <string name="nav_header_subregion_format">Subregión: %1$s</string>
     <string name="nav_header_agency_format">Agencia: %1$s</string>
-    <string name="nav_header_vehicle_format">Vehículo • %1$s</string>
+    <string name="nav_header_vehicle_format">Vehículo: %1$s</string>
     <string name="nav_header_vehicle_placeholder">Sin vehículo asignado</string>
 
     <!-- Medidores -->

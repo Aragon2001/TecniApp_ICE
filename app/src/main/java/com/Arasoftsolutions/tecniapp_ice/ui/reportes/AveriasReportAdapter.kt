@@ -8,6 +8,7 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.Arasoftsolutions.tecniapp_ice.R
 import com.Arasoftsolutions.tecniapp_ice.databinding.ItemReporteAveriaBinding
+import org.apache.xmlbeans.impl.store.CharUtil.getString
 
 class AveriasReportAdapter : ListAdapter<AveriaReportItem, AveriasReportAdapter.ViewHolder>(DiffCallback) {
 
@@ -37,7 +38,8 @@ class AveriasReportAdapter : ListAdapter<AveriaReportItem, AveriasReportAdapter.
             binding.tvEstado.text = context.getString(R.string.reportes_item_estado, estado)
 
             val atendido = item.atendidoPor.ifBlank { emptyValue }
-            binding.tvAtendido.text = context.getString(R.string.reportes_item_atendido, atendido)
+            binding.tvAtendido.text = context.getString(R.string.reportes_item_atendido, atendido
+        )
 
             val vehiculo = item.vehiculo?.takeIf { it.isNotBlank() }
             binding.tvVehiculo.isVisible = !vehiculo.isNullOrEmpty()

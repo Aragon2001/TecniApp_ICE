@@ -96,8 +96,8 @@ class ActivityMain : AppCompatActivity() {
         val navController = findNavController(R.id.nav_host_fragment_content_main)
 
         headerBinding = NavHeaderMainBinding.bind(navView.getHeaderView(0)).also { header ->
-            header.chipVehicle.isVisible = false
-            header.chipVehicle.text = getString(R.string.nav_header_vehicle_placeholder)
+            header.textViewVehicle.isVisible = false
+            header.textViewVehicle.text = getString(R.string.nav_header_vehicle_placeholder)
             header.root.setOnClickListener { openUserFragment() }
         }
 
@@ -168,10 +168,10 @@ class ActivityMain : AppCompatActivity() {
 
         val vehiculo = usuario.placaVehiculo?.takeUnless { it.isBlank() }
         if (vehiculo.isNullOrBlank()) {
-            headerBinding.chipVehicle.isVisible = false
+            headerBinding.textViewVehicle.isVisible = false
         } else {
-            headerBinding.chipVehicle.isVisible = true
-            headerBinding.chipVehicle.text = getString(R.string.nav_header_vehicle_format, vehiculo)
+            headerBinding.textViewVehicle.isVisible = true
+            headerBinding.textViewVehicle.text = getString(R.string.nav_header_vehicle_format, vehiculo)
         }
 
         Glide.with(this)

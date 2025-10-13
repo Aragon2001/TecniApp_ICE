@@ -13,7 +13,7 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:visibility="gone"
-        app:indeterminate="true"
+        android:indeterminate="true"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
@@ -51,12 +51,16 @@
                         android:id="@+id/tvTituloFiltro"
                         style="@style/TextAppearance.MaterialComponents.Body1"
                         android:text="@string/reportes_filtro_rango"
+                         android:layout_width="match_parent"
+                android:layout_height="wrap_content"
                         android:textStyle="bold" />
 
                     <TextView
                         android:id="@+id/tvRangoFechas"
                         style="@style/TextAppearance.MaterialComponents.Body1"
                         android:layout_marginTop="4dp"
+                         android:layout_width="match_parent"
+                android:layout_height="wrap_content"
                         tools:text="01 may 2024 – 07 may 2024" />
 
                     <com.google.android.material.button.MaterialButton
@@ -71,6 +75,8 @@
                         android:id="@+id/tvSelectorTitulo"
                         style="@style/TextAppearance.MaterialComponents.Body2"
                         android:layout_marginTop="16dp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
                         android:text="@string/reportes_selector_titulo"
                         android:textAllCaps="false" />
 
@@ -87,6 +93,8 @@
                             android:id="@+id/chipTipoAverias"
                             style="@style/Widget.MaterialComponents.Chip.Filter"
                             android:layout_marginEnd="8dp"
+                            android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
                             android:checked="true"
                             android:text="@string/reportes_chip_averias" />
 
@@ -94,16 +102,22 @@
                             android:id="@+id/chipTipoMaterialPorAveria"
                             style="@style/Widget.MaterialComponents.Chip.Filter"
                             android:layout_marginEnd="8dp"
+                             android:layout_width="match_parent"
+
+                android:layout_height="wrap_content"
                             android:text="@string/reportes_chip_material_por_averia" />
 
                         <com.google.android.material.chip.Chip
                             android:id="@+id/chipTipoMaterialTotal"
                             style="@style/Widget.MaterialComponents.Chip.Filter"
+                             android:layout_width="match_parent"
+                android:layout_height="wrap_content"
                             android:text="@string/reportes_chip_material_total" />
                     </com.google.android.material.chip.ChipGroup>
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnGenerarReporte"
+                         style="@style/Widget.Material3.Button"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="12dp"
@@ -122,6 +136,8 @@
                         android:id="@+id/tvResumenTotales"
                         style="@style/TextAppearance.MaterialComponents.Body2"
                         android:layout_marginTop="12dp"
+                         android:layout_width="match_parent"
+                android:layout_height="wrap_content"
                         tools:text="Selecciona un tipo de reporte y rango para ver totales." />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
@@ -142,6 +158,8 @@
                     <TextView
                         android:id="@+id/tvTituloAverias"
                         style="@style/TextAppearance.MaterialComponents.Subtitle1"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
                         android:text="@string/reportes_averias_titulo"
                         android:textStyle="bold" />
 
@@ -182,6 +200,8 @@
                     <TextView
                         android:id="@+id/tvTituloMaterialPorAveria"
                         style="@style/TextAppearance.MaterialComponents.Subtitle1"
+                         android:layout_width="match_parent"
+                android:layout_height="wrap_content"
                         android:text="@string/reportes_material_por_averia_titulo"
                         android:textStyle="bold" />
 
@@ -222,6 +242,8 @@
                     <TextView
                         android:id="@+id/tvTituloMaterialTotal"
                         style="@style/TextAppearance.MaterialComponents.Subtitle1"
+                         android:layout_width="match_parent"
+                android:layout_height="wrap_content"
                         android:text="@string/reportes_material_total_titulo"
                         android:textStyle="bold" />
 
