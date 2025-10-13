@@ -1,6 +1,7 @@
 package com.Arasoftsolutions.tecniapp_ice.ui.localizacion
 
 import android.app.Application
+import android.content.Context
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
@@ -8,6 +9,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.LocalizacionesEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
+import com.Arasoftsolutions.tecniapp_ice.Database.sync.SubregionNormalizer
 import com.Arasoftsolutions.tecniapp_ice.R
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.Dispatchers
@@ -39,6 +41,9 @@ class LocalizacionViewModel(app: Application) : AndroidViewModel(app) {
     private val _marcadoresCalles = MutableLiveData<List<MarcadorCalle>>(emptyList())
     val marcadoresCalles: LiveData<List<MarcadorCalle>> = _marcadoresCalles
 
+    private val _mostrarTodasCalles = MutableLiveData(false)
+    val mostrarTodasCalles: LiveData<Boolean> = _mostrarTodasCalles
+
     private var subregionActual: String? = null
     private var initialized = false
     private var pueblosJob: Job? = null
@@ -46,7 +51,8 @@ class LocalizacionViewModel(app: Application) : AndroidViewModel(app) {
     private var intentoSyncRealizado = false
     private var cacheCallesActuales: List<LocalizacionesEntity> = emptyList()
     private var puebloSeleccionadoActual: Int? = null
-    private var usandoCatalogoGlobal = false
+    private val preferencias = app.getSharedPreferences("localizacion_prefs", Context.MODE_PRIVATE)
+    private var preferenciaMostrarCallesClave: String? = null
 
     fun prepararDatos() {
         if (initialized) return
@@ -64,7 +70,7 @@ class LocalizacionViewModel(app: Application) : AndroidViewModel(app) {
         }
 
         try {
-            val subregion = withContext(Dispatchers.IO) {
+            val subregionCanonica = withContext(Dispatchers.IO) {
                 val local = repository.obtenerUsuario(uid)
                 val ensured = local ?: runCatching { repository.upsertUserFromFirebase(uid) }
                     .onFailure { throwable ->
@@ -72,45 +78,40 @@ class LocalizacionViewModel(app: Application) : AndroidViewModel(app) {
                     }
                     .getOrNull()
                 ensured?.subregion?.trim()?.takeIf { it.isNotEmpty() }
+            }?.let { SubregionNormalizer.canonicalIdOrSelf(it) }
+
+            if (subregionCanonica.isNullOrBlank()) {
+                subregionActual = null
+                _pueblos.postValue(listOf(puebloPlaceholder))
+                _estado.postValue(
+                    Estado.Error(
+                        context.getString(R.string.localizacion_estado_sin_subregion)
+                    )
+                )
+                return
             }
 
-            if (subregion.isNullOrBlank()) {
-                subregionActual = null
-                usandoCatalogoGlobal = true
-                _estado.postValue(Estado.Cargando)
-                observarPueblos(null)
-            } else {
-                subregionActual = subregion
-                usandoCatalogoGlobal = false
-                _estado.postValue(Estado.Cargando)
-                observarPueblos(subregion)
-            }
+            subregionActual = subregionCanonica
+            preferenciaMostrarCallesClave = "mostrar_todas_calles_" + uid
+            val preferencia = preferencias.getBoolean(preferenciaMostrarCallesClave, false)
+            _mostrarTodasCalles.postValue(preferencia)
+
+            _estado.postValue(Estado.Cargando)
+            observarPueblos(subregionCanonica)
         } catch (t: Throwable) {
             _estado.postValue(Estado.Error(context.getString(R.string.localizacion_estado_error_generico)))
         }
     }
 
-    private fun observarPueblos(subregion: String?) {
+    private fun observarPueblos(subregion: String) {
         pueblosJob?.cancel()
         intentoSyncRealizado = false
         pueblosJob = viewModelScope.launch {
-            val flujo = subregion?.let {
-                usandoCatalogoGlobal = false
-                repository.observarPueblos(it)
-            } ?: run {
-                usandoCatalogoGlobal = true
-                repository.observarTodosLosPueblos()
-            }
-
-            flujo.collectLatest { lista ->
+            repository.observarPueblos(subregion).collectLatest { lista ->
                 if (lista.isEmpty()) {
-                    if (!usandoCatalogoGlobal && subregion != null) {
-                        if (!intentoSyncRealizado) {
-                            intentoSyncRealizado = true
-                            sincronizarSubregion(subregion)
-                            return@collectLatest
-                        }
-                        observarPueblos(null)
+                    if (!intentoSyncRealizado) {
+                        intentoSyncRealizado = true
+                        sincronizarSubregion(subregion)
                         return@collectLatest
                     }
                     _pueblos.postValue(listOf(puebloPlaceholder))
@@ -123,10 +124,7 @@ class LocalizacionViewModel(app: Application) : AndroidViewModel(app) {
                     intentoSyncRealizado = false
                     val pueblosOrdenados = lista
                         .sortedBy { it.nombre }
-                        .map { entidad ->
-                            val base = "${entidad.id} - ${entidad.nombre}"
-                            if (usandoCatalogoGlobal) "$base (${entidad.subregion})" else base
-                        }
+                        .map { entidad -> "${entidad.id} - ${entidad.nombre}" }
                     _pueblos.postValue(listOf(puebloPlaceholder) + pueblosOrdenados)
                     _estado.postValue(Estado.Exito)
                 }
@@ -136,34 +134,29 @@ class LocalizacionViewModel(app: Application) : AndroidViewModel(app) {
 
     fun cargarCallesParaPueblo(pueblo: Int) {
         val subregion = subregionActual
-        val preferirGlobal = usandoCatalogoGlobal || subregion.isNullOrBlank()
+        if (subregion.isNullOrBlank()) {
+            _estado.value = Estado.Error(
+                getApplication<Application>().getString(R.string.localizacion_estado_error_generico)
+            )
+            return
+        }
 
         viewModelScope.launch {
             _estado.value = Estado.Cargando
             puebloSeleccionadoActual = pueblo
             var calles = withContext(Dispatchers.IO) {
-                if (!preferirGlobal && subregion != null) {
-                    repository.obtenerCallesPorPueblo(subregion, pueblo)
-                } else {
-                    repository.obtenerCallesPorPuebloGlobal(pueblo)
-                }
-            }
-
-            if (calles.isEmpty() && !preferirGlobal && subregion != null) {
-                sincronizarSubregion(subregion)
-                calles = withContext(Dispatchers.IO) {
-                    repository.obtenerCallesPorPueblo(subregion, pueblo)
-                }
+                repository.obtenerCallesPorPueblo(pueblo)
             }
 
             if (calles.isEmpty()) {
+                sincronizarSubregion(subregion)
                 calles = withContext(Dispatchers.IO) {
-                    repository.obtenerCallesPorPuebloGlobal(pueblo)
+                    repository.obtenerCallesPorPueblo(pueblo)
                 }
             }
 
             cacheCallesActuales = calles
-            _marcadoresCalles.value = emptyList()
+            actualizarMarcadoresParaSeleccion()
 
             if (calles.isEmpty()) {
                 _calles.value = listOf(callePlaceholder)
@@ -183,27 +176,27 @@ class LocalizacionViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun cargarLocalizacionParaCalle(calle: Int, codigoPueblo: Int, direccion: String?) {
-        val subregion = subregionActual
-        val preferirGlobal = usandoCatalogoGlobal || subregion.isNullOrBlank()
-
         viewModelScope.launch {
             _estado.value = Estado.Cargando
-            val entidadPreferida = withContext(Dispatchers.IO) {
-                if (!preferirGlobal && subregion != null) {
-                    repository.buscarLocalizacion(subregion, codigoPueblo, calle, direccion)
-                } else {
-                    repository.buscarLocalizacionGlobal(codigoPueblo, calle, direccion)
+            var entidad = withContext(Dispatchers.IO) {
+                repository.buscarLocalizacion(codigoPueblo, calle, direccion)
+            }
+
+            if (entidad == null) {
+                val subregion = subregionActual
+                if (!subregion.isNullOrBlank()) {
+                    sincronizarSubregion(subregion)
+                    entidad = withContext(Dispatchers.IO) {
+                        repository.buscarLocalizacion(codigoPueblo, calle, direccion)
+                    }
                 }
             }
-            val entidad = entidadPreferida ?: if (!preferirGlobal && subregion != null) {
-                withContext(Dispatchers.IO) {
-                    repository.buscarLocalizacionGlobal(codigoPueblo, calle, direccion)
-                }
-            } else null
 
             if (entidad == null) {
                 _localizacion.value = null
-                _estado.value = Estado.Error(getApplication<Application>().getString(R.string.localizacion_estado_sin_localizacion))
+                _estado.value = Estado.Error(
+                    getApplication<Application>().getString(R.string.localizacion_estado_sin_localizacion)
+                )
             } else {
                 _localizacion.value = Localizacion(
                     direccion = entidad.direccion.ifBlank {
@@ -219,8 +212,28 @@ class LocalizacionViewModel(app: Application) : AndroidViewModel(app) {
             }
         }
     }
-    fun mostrarMarcadoresDeCalles() {
+
+    fun actualizarPreferenciaMostrarCalles(mostrar: Boolean) {
+        _mostrarTodasCalles.value = mostrar
+        preferenciaMostrarCallesClave?.let { clave ->
+            preferencias.edit().putBoolean(clave, mostrar).apply()
+        }
+
+        if (mostrar) {
+            actualizarMarcadoresParaSeleccion()
+        } else {
+            _marcadoresCalles.value = emptyList()
+        }
+    }
+
+    private fun actualizarMarcadoresParaSeleccion() {
+        if (_mostrarTodasCalles.value != true) {
+            _marcadoresCalles.value = emptyList()
+            return
+        }
+
         val seleccion = puebloSeleccionadoActual ?: run {
+            _marcadoresCalles.value = emptyList()
             _estado.value = Estado.Error(
                 getApplication<Application>().getString(R.string.localizacion_calles_toast_sin_pueblo)
             )
@@ -246,7 +259,7 @@ class LocalizacionViewModel(app: Application) : AndroidViewModel(app) {
                             append("-00")
                         }
                         append(codigo)
-                        append("\n")
+                        append("")
                         val postes = if (entidad.alPoste != 0 && entidad.alPoste != entidad.delPoste) {
                             getApplication<Application>().getString(
                                 R.string.localizacion_marker_rango_postes,
@@ -268,14 +281,9 @@ class LocalizacionViewModel(app: Application) : AndroidViewModel(app) {
             _estado.value = Estado.Error(
                 getApplication<Application>().getString(R.string.localizacion_estado_calles_sin_coordenadas)
             )
-            return
         }
 
         _marcadoresCalles.value = marcadores
-    }
-
-    fun limpiarMarcadoresDeCalles() {
-        _marcadoresCalles.value = emptyList()
     }
 
     private suspend fun sincronizarSubregion(subregion: String) {

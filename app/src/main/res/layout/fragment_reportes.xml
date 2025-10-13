@@ -1,33 +1,251 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".ui.reportes.ReportesFragment">
 
-    <!-- Imagen destacada -->
-    <ImageView
-        android:id="@+id/image_header"
+    <com.google.android.material.progressindicator.LinearProgressIndicator
+        android:id="@+id/progressIndicator"
+        style="@style/Widget.MaterialComponents.LinearProgressIndicator"
         android:layout_width="0dp"
-        android:layout_height="200dp"
-        android:src="@drawable/logo"
-        app:layout_constraintBottom_toTopOf="@+id/text_under_construction"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        app:indeterminate="true"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <!-- Texto indicando que la página está en construcción -->
-    <TextView
-        android:id="@+id/text_under_construction"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Esta página está en construcción."
-        android:textSize="20sp"
-
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/scrollContainer"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:fillViewport="true"
+        android:padding="16dp"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/image_header" />
+        app:layout_constraintTop_toBottomOf="@id/progressIndicator">
 
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
 
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardFiltro"
+                style="@style/Widget.MaterialComponents.CardView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:id="@+id/tvTituloFiltro"
+                        style="@style/TextAppearance.MaterialComponents.Body1"
+                        android:text="@string/reportes_filtro_rango"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvRangoFechas"
+                        style="@style/TextAppearance.MaterialComponents.Body1"
+                        android:layout_marginTop="4dp"
+                        tools:text="01 may 2024 – 07 may 2024" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnCambiarFechas"
+                        style="?attr/materialButtonOutlinedStyle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:text="@string/reportes_btn_rango" />
+
+                    <TextView
+                        android:id="@+id/tvSelectorTitulo"
+                        style="@style/TextAppearance.MaterialComponents.Body2"
+                        android:layout_marginTop="16dp"
+                        android:text="@string/reportes_selector_titulo"
+                        android:textAllCaps="false" />
+
+                    <com.google.android.material.chip.ChipGroup
+                        android:id="@+id/chipGroupTipoReporte"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        app:selectionRequired="true"
+                        app:singleLine="false"
+                        app:singleSelection="true">
+
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/chipTipoAverias"
+                            style="@style/Widget.MaterialComponents.Chip.Filter"
+                            android:layout_marginEnd="8dp"
+                            android:checked="true"
+                            android:text="@string/reportes_chip_averias" />
+
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/chipTipoMaterialPorAveria"
+                            style="@style/Widget.MaterialComponents.Chip.Filter"
+                            android:layout_marginEnd="8dp"
+                            android:text="@string/reportes_chip_material_por_averia" />
+
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/chipTipoMaterialTotal"
+                            style="@style/Widget.MaterialComponents.Chip.Filter"
+                            android:text="@string/reportes_chip_material_total" />
+                    </com.google.android.material.chip.ChipGroup>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnGenerarReporte"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:text="@string/reportes_btn_generar" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnExportarExcel"
+                        style="?attr/materialButtonOutlinedStyle"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="@string/reportes_btn_exportar"
+                        android:visibility="gone" />
+
+                    <TextView
+                        android:id="@+id/tvResumenTotales"
+                        style="@style/TextAppearance.MaterialComponents.Body2"
+                        android:layout_marginTop="12dp"
+                        tools:text="Selecciona un tipo de reporte y rango para ver totales." />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardAverias"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                tools:visibility="visible">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:id="@+id/tvTituloAverias"
+                        style="@style/TextAppearance.MaterialComponents.Subtitle1"
+                        android:text="@string/reportes_averias_titulo"
+                        android:textStyle="bold" />
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/recyclerAverias"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:overScrollMode="never"
+                        tools:listitem="@layout/item_reporte_averia"
+                        tools:visibility="gone" />
+
+                    <TextView
+                        android:id="@+id/tvAveriasVacio"
+                        style="@style/TextAppearance.MaterialComponents.Body2"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:gravity="center"
+                        android:text="@string/reportes_estado_pendiente"
+                        tools:visibility="visible" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardMaterialPorAveria"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:id="@+id/tvTituloMaterialPorAveria"
+                        style="@style/TextAppearance.MaterialComponents.Subtitle1"
+                        android:text="@string/reportes_material_por_averia_titulo"
+                        android:textStyle="bold" />
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/recyclerMaterialPorAveria"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:overScrollMode="never"
+                        tools:listitem="@layout/item_reporte_material_por_averia"
+                        tools:visibility="gone" />
+
+                    <TextView
+                        android:id="@+id/tvMaterialPorAveriaVacio"
+                        style="@style/TextAppearance.MaterialComponents.Body2"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:gravity="center"
+                        android:text="@string/reportes_estado_pendiente"
+                        tools:visibility="visible" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardMaterialTotal"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:id="@+id/tvTituloMaterialTotal"
+                        style="@style/TextAppearance.MaterialComponents.Subtitle1"
+                        android:text="@string/reportes_material_total_titulo"
+                        android:textStyle="bold" />
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/recyclerMaterialTotal"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:overScrollMode="never"
+                        tools:listitem="@layout/item_reporte_material_total"
+                        tools:visibility="gone" />
+
+                    <TextView
+                        android:id="@+id/tvMaterialTotalVacio"
+                        style="@style/TextAppearance.MaterialComponents.Body2"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:gravity="center"
+                        android:text="@string/reportes_estado_pendiente"
+                        tools:visibility="visible" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
 </androidx.constraintlayout.widget.ConstraintLayout>
