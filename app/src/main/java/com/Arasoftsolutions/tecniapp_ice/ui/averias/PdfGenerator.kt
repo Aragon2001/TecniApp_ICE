@@ -2,7 +2,14 @@ package com.Arasoftsolutions.tecniapp_ice.ui.averias
 
 import android.content.Context
 import android.content.Intent
-import android.graphics.*
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.LinearGradient
+import android.graphics.Paint
+import android.graphics.RectF
+import android.graphics.Shader
+import android.graphics.Typeface
 import android.graphics.pdf.PdfDocument
 import android.net.Uri
 import android.widget.Toast
@@ -15,7 +22,9 @@ import kotlin.math.max
 import java.io.File
 import java.io.FileOutputStream
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Date
+import java.util.Locale
+import kotlin.math.max
 
 object PdfGenerator {
     private const val PAGE_WIDTH = 595   // A4
@@ -114,12 +123,13 @@ object PdfGenerator {
         document = PdfDocument()
         try {
             val now = Date()
-            val formatter = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+            val dateTimeFormatter = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
             val yearFormatter = SimpleDateFormat("yyyy", Locale.getDefault())
-            fun formatMillis(millis: Long?): String? =
-                millis?.takeIf { it > 0 }?.let { formatter.format(Date(it)) }
 
-            val reporteGenerado = formatter.format(now)
+            fun formatMillis(millis: Long?): String? =
+                millis?.takeIf { it > 0 }?.let { dateTimeFormatter.format(Date(it)) }
+
+            val reporteGenerado = dateTimeFormatter.format(now)
             val currentYear = yearFormatter.format(now)
             val fechaEvento = formatMillis(item.fechaMillis)
             val inicioAtencion = formatMillis(item.horaAtencionInicio)
@@ -128,11 +138,14 @@ object PdfGenerator {
             val margin = 40f
             val bottomMargin = margin
             val contentWidth = PAGE_WIDTH - (margin * 2)
-            val innerWidth = contentWidth - 40f
+            val cardInnerPadding = 20f
+            val innerWidth = contentWidth - (cardInnerPadding * 2)
 
             val headerTitle = context.getString(R.string.averia_pdf_header_title)
             val headerSubtitle = context.getString(R.string.averia_pdf_header_subtitle)
             val headerTagline = context.getString(R.string.averia_pdf_header_tagline)
+            val sectionTitle = context.getString(R.string.averia_pdf_section_title)
+            val continuationTitle = context.getString(R.string.averia_pdf_section_title_continuation)
 
             val titlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
@@ -148,8 +161,15 @@ object PdfGenerator {
                 textSize = 13f
                 color = Color.parseColor("#233041")
             }
-            val rowEvenPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.parseColor("#FFFFFF") }
-            val rowOddPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.parseColor("#EEF2FF") }
+            val cardTitlePaint = Paint(labelPaint).apply {
+                textSize = 14f
+            }
+            val rowEvenPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.parseColor("#FFFFFF")
+            }
+            val rowOddPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.parseColor("#EEF2FF")
+            }
             val tableBorderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 style = Paint.Style.STROKE
                 strokeWidth = 2f
@@ -159,16 +179,22 @@ object PdfGenerator {
                 color = Color.parseColor("#D0D8FF")
                 strokeWidth = 1.5f
             }
-            val cardTitlePaint = Paint(labelPaint).apply {
-                textSize = 14f
+            val cardBackgroundPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.parseColor("#FFFFFF")
+            }
+            val cardBorderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.parseColor("#E3E7FF")
+                strokeWidth = 3f
+                style = Paint.Style.STROKE
             }
 
             var pageNumber = 0
             lateinit var page: PdfDocument.Page
-            lateinit var canvas: android.graphics.Canvas
+            lateinit var canvas: Canvas
             var currentY = 0f
 
             fun drawHeader(): Float {
+                val headerPadding = 32f
                 val headerHeight = 150f
                 val headerRect = RectF(margin, margin, PAGE_WIDTH - margin, margin + headerHeight)
                 val headerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -206,13 +232,13 @@ object PdfGenerator {
                 if (logos.isNotEmpty()) {
                     val logoSize = 88f
                     val logoSpacing = 12f
-                    val totalWidth = logos.size * logoSize + (logos.size - 1) * logoSpacing
+                    val totalWidth = (logos.size * logoSize) + ((logos.size - 1) * logoSpacing)
                     var logoLeft = headerRect.right - headerPadding - totalWidth
                     val logoTop = headerRect.top + headerPadding / 2f
                     logos.forEach { drawable ->
                         val logoBitmapSize = 256
                         val logoBitmap = Bitmap.createBitmap(logoBitmapSize, logoBitmapSize, Bitmap.Config.ARGB_8888)
-                        val logoCanvas = android.graphics.Canvas(logoBitmap)
+                        val logoCanvas = Canvas(logoBitmap)
                         drawable.setBounds(0, 0, logoBitmapSize, logoBitmapSize)
                         drawable.draw(logoCanvas)
                         val logoRect = RectF(
@@ -236,34 +262,63 @@ object PdfGenerator {
                 return headerRect.bottom + 36f
             }
 
-            fun drawSectionTitle(title: String) {
-                canvas.drawText(title, margin, currentY, titlePaint)
-                currentY += 18f
-            }
-
-            fun startPage(afterHeader: (() -> Unit)? = null) {
+            fun finishCurrentPage() {
                 if (::page.isInitialized) {
                     document.finishPage(page)
                 }
+            }
+
+            fun startPage() {
+                finishCurrentPage()
                 pageNumber++
                 val pageInfo = PdfDocument.PageInfo.Builder(PAGE_WIDTH, PAGE_HEIGHT, pageNumber).create()
                 page = document.startPage(pageInfo)
                 canvas = page.canvas
                 currentY = drawHeader()
-                afterHeader?.invoke()
             }
 
-            fun ensureSpace(neededHeight: Float, onPageBreak: (() -> Unit)? = null) {
-                val maxContentHeight = PAGE_HEIGHT - margin - bottomMargin
-                if (neededHeight > maxContentHeight) {
-                    if (currentY > margin) {
-                        startPage(onPageBreak)
+            fun ensureSpace(requiredHeight: Float, onPageBreak: (() -> Unit)? = null) {
+                val usableBottom = PAGE_HEIGHT - bottomMargin
+                if (!::page.isInitialized) {
+                    startPage()
+                }
+                if (currentY + requiredHeight > usableBottom) {
+                    startPage()
+                    onPageBreak?.invoke()
+                }
+            }
+
+            fun drawSectionTitle(text: String) {
+                ensureSpace(titlePaint.textSize + 18f)
+                canvas.drawText(text, margin, currentY, titlePaint)
+                currentY += titlePaint.textSize + 12f
+            }
+
+            fun wrapParagraphs(text: String, availableWidth: Float): List<String> {
+                val paragraphs = text.split('\n')
+                val lines = mutableListOf<String>()
+                paragraphs.forEach { paragraph ->
+                    val trimmed = paragraph.trim()
+                    if (trimmed.isEmpty()) {
+                        lines += ""
+                    } else {
+                        var remaining = trimmed
+                        while (remaining.isNotEmpty()) {
+                            var count = valuePaint.breakText(remaining, true, availableWidth, null)
+                            if (count <= 0) break
+                            if (count < remaining.length) {
+                                val lastSpace = remaining.substring(0, count).lastIndexOf(' ')
+                                if (lastSpace > 0) {
+                                    count = lastSpace + 1
+                                }
+                            }
+                            val segment = remaining.substring(0, count).trimEnd()
+                            lines += segment
+                            remaining = remaining.substring(count).trimStart()
+                        }
                     }
-                    return
                 }
-                while (currentY + neededHeight + bottomMargin > PAGE_HEIGHT) {
-                    startPage(onPageBreak)
-                }
+                return if (lines.isEmpty()) listOf("") else lines
             }
 
             val emptyValue = context.getString(R.string.averia_pdf_empty_value)
@@ -288,12 +343,16 @@ object PdfGenerator {
                 TipoAfectacion.CLIENTE -> context.getString(R.string.averia_tipo_cliente)
                 TipoAfectacion.SECTOR -> context.getString(R.string.averia_tipo_sector)
             }
-
             val medidorNumero = item.numeroMedidor?.takeIf { it.isNotBlank() } ?: emptyValue
+            val medidorCalle = item.medidorCalle?.takeIf { it.isNotBlank() } ?: emptyValue
+            val medidorPueblo = item.medidorPueblo?.takeIf { it.isNotBlank() } ?: emptyValue
+            val medidorMetros = item.medidorMetros?.takeIf { it.isNotBlank() } ?: emptyValue
+            val medidorPoste = item.medidorPoste?.takeIf { it.isNotBlank() } ?: emptyValue
 
             val tableData = listOf(
                 context.getString(R.string.averia_pdf_table_label_case) to item.id,
                 context.getString(R.string.averia_pdf_table_label_description) to description,
+                context.getString(R.string.averia_pdf_table_label_observations) to observaciones,
                 context.getString(R.string.averia_pdf_table_label_nise) to nise,
                 context.getString(R.string.averia_pdf_table_label_status) to item.estado,
                 context.getString(R.string.averia_pdf_table_label_assigned) to assigned,
@@ -310,43 +369,17 @@ object PdfGenerator {
                 context.getString(R.string.averia_pdf_table_label_zone) to zoneTag,
                 context.getString(R.string.averia_pdf_table_label_affectation) to affectation,
                 context.getString(R.string.averia_pdf_table_label_medidor) to medidorNumero,
+                context.getString(R.string.averia_pdf_table_label_street) to medidorCalle,
+                context.getString(R.string.averia_pdf_table_label_town) to medidorPueblo,
+                context.getString(R.string.averia_pdf_table_label_meters) to medidorMetros,
+                context.getString(R.string.averia_pdf_table_label_post) to medidorPoste,
                 context.getString(R.string.averia_pdf_table_label_location) to location,
                 context.getString(R.string.averia_pdf_table_label_attended_by) to attended,
                 context.getString(R.string.averia_pdf_table_label_generated) to reporteGenerado
             )
 
-            fun wrapParagraphs(text: String, availableWidth: Float): List<String> {
-                if (text.isBlank()) return listOf("")
-                val result = mutableListOf<String>()
-                val paragraphs = text.split('\n')
-                paragraphs.forEach { paragraph ->
-                    val trimmed = paragraph.trim()
-                    if (trimmed.isEmpty()) {
-                        result += ""
-                    } else {
-                        var remaining = trimmed
-                        while (remaining.isNotEmpty()) {
-                            var count = valuePaint.breakText(remaining, true, availableWidth, null)
-                            if (count <= 0) break
-                            if (count < remaining.length) {
-                                val lastSpace = remaining.substring(0, count).lastIndexOf(' ')
-                                if (lastSpace > 0) {
-                                    count = lastSpace + 1
-                                }
-                            }
-                            val segment = remaining.substring(0, count).trim()
-                            result += segment.ifEmpty { "" }
-                            remaining = remaining.substring(count).trimStart()
-                        }
-                    }
-                }
-                return result.ifEmpty { listOf("") }
-            }
-
             val tableRows = tableData.chunked(2)
             val rowSpacing = 12f
-            val tableLeft = margin
-            val tableRight = margin + contentWidth
             val columnWidth = contentWidth / 2f
             val columnPadding = 14f
             val columnContentWidth = columnWidth - (columnPadding * 2)
@@ -354,9 +387,8 @@ object PdfGenerator {
             val valueLineHeight = valuePaint.textSize + 6f
             val minRowHeight = 60f
 
-            startPage {
-                drawSectionTitle(context.getString(R.string.averia_pdf_section_title))
-            }
+            startPage()
+            drawSectionTitle(sectionTitle)
 
             tableRows.forEachIndexed { index, rowItems ->
                 val cellData = rowItems.map { (label, value) ->
@@ -372,15 +404,15 @@ object PdfGenerator {
                 )
 
                 ensureSpace(rowHeight + rowSpacing) {
-                    drawSectionTitle(context.getString(R.string.averia_pdf_section_title_continuation))
+                    drawSectionTitle(continuationTitle)
                 }
 
                 val rowTop = currentY
                 val rowBottom = rowTop + rowHeight
                 val rowRect = RectF(
-                    tableLeft + 4f,
+                    margin + 4f,
                     rowTop,
-                    tableRight - 4f,
+                    margin + contentWidth - 4f,
                     rowBottom
                 )
                 val rowPaint = if (index % 2 == 0) rowEvenPaint else rowOddPaint
@@ -388,7 +420,7 @@ object PdfGenerator {
                 canvas.drawRoundRect(rowRect, 18f, 18f, tableBorderPaint)
 
                 if (rowItems.size > 1) {
-                    val dividerX = tableLeft + columnWidth
+                    val dividerX = margin + columnWidth
                     canvas.drawLine(
                         dividerX,
                         rowRect.top + 12f,
@@ -400,14 +432,15 @@ object PdfGenerator {
 
                 rowItems.forEachIndexed { columnIndex, _ ->
                     val (displayLabel, valueLines) = cellData[columnIndex]
-                    val cellLeft = tableLeft + columnWidth * columnIndex
+                    val cellLeft = margin + columnWidth * columnIndex
                     val textStartX = cellLeft + columnPadding
                     val labelBaseline = rowTop + columnPadding + labelPaint.textSize
                     canvas.drawText(displayLabel, textStartX, labelBaseline, labelPaint)
 
                     var valueBaseline = labelBaseline + labelValueGap + valuePaint.textSize
                     valueLines.forEach { line ->
-                        canvas.drawText(line, textStartX, valueBaseline, valuePaint)
+                        val text = if (line.isBlank()) emptyValue else line
+                        canvas.drawText(text, textStartX, valueBaseline, valuePaint)
                         valueBaseline += valueLineHeight
                     }
                 }
@@ -415,95 +448,94 @@ object PdfGenerator {
                 currentY = rowBottom + rowSpacing
             }
 
-            currentY += 16f
+            currentY += 8f
 
             fun buildCardLines(entries: List<String>, bullet: Boolean = false): List<String> {
-                if (entries.isEmpty()) return if (bullet) listOf("• $emptyValue") else listOf(emptyValue)
+                if (entries.isEmpty()) {
+                    return if (bullet) listOf("• $emptyValue") else listOf(emptyValue)
+                }
                 val bulletPrefix = "• "
-                val indentPrefix = "  "
+                val indentPrefix = "   "
                 val indentWidth = valuePaint.measureText(bulletPrefix)
                 val lines = mutableListOf<String>()
-                var hasContent = false
-                entries.forEach { entry ->
-                    val paragraphs = wrapParagraphs(entry, if (bullet) innerWidth - indentWidth else innerWidth)
-                    if (paragraphs.size == 1 && paragraphs.first().isBlank()) {
-                        val placeholder = if (bullet) "$bulletPrefix$emptyValue" else emptyValue
-                        lines += placeholder
-                    } else {
-                        paragraphs.forEachIndexed { index, paragraph ->
-                            val display = paragraph.ifBlank { emptyValue }
-                            if (bullet) {
-                                val prefix = if (index == 0) bulletPrefix else indentPrefix
-                                lines += prefix + display
-                            } else {
-                                lines += display
-                            }
-                            if (paragraph.isNotBlank()) {
-                                hasContent = true
-                            }
+                entries.forEach { rawEntry ->
+                    val entry = rawEntry.ifBlank { emptyValue }
+                    val available = if (bullet) innerWidth - indentWidth else innerWidth
+                    val paragraphs = wrapParagraphs(entry, available)
+                    paragraphs.forEachIndexed { index, paragraph ->
+                        val cleaned = if (paragraph.isBlank()) emptyValue else paragraph
+                        if (bullet) {
+                            val prefix = if (index == 0) bulletPrefix else indentPrefix
+                            lines += prefix + cleaned
+                        } else {
+                            lines += cleaned
                         }
                     }
                 }
-                if (!hasContent && lines.isEmpty()) {
-                    return if (bullet) listOf("$bulletPrefix$emptyValue") else listOf(emptyValue)
+                if (lines.isEmpty()) {
+                    return if (bullet) listOf("• $emptyValue") else listOf(emptyValue)
                 }
                 return lines
             }
 
             fun drawCard(title: String, entries: List<String>, bullet: Boolean = false) {
                 val lines = buildCardLines(entries, bullet)
-                val boxPadding = 20f
                 val lineSpacing = valuePaint.textSize + 8f
                 val gapAfterTitle = 16f
-                val baseHeight = boxPadding * 2 + cardTitlePaint.textSize + gapAfterTitle
-                val maxContentHeight = PAGE_HEIGHT - margin - bottomMargin
-                val maxLinesPerPage = ((maxContentHeight - baseHeight) / lineSpacing).toInt().coerceAtLeast(1)
+                val baseHeight = (cardInnerPadding * 2) + cardTitlePaint.textSize + gapAfterTitle
 
-                var index = 0
+                var startIndex = 0
                 var segment = 0
-                while (index < lines.size) {
-                    val linesRemaining = lines.size - index
-                    val linesThisPage = linesRemaining.coerceAtMost(maxLinesPerPage)
-                    val segmentLines = lines.subList(index, index + linesThisPage)
-                    val boxHeight = baseHeight + (segmentLines.size * lineSpacing)
-
-                    ensureSpace(boxHeight + 16f) {
-                        drawSectionTitle(context.getString(R.string.averia_pdf_section_title_continuation))
+                while (startIndex < lines.size) {
+                    ensureSpace(baseHeight + lineSpacing) {
+                        drawSectionTitle(continuationTitle)
                     }
 
-                    val boxRect = RectF(margin, currentY, margin + contentWidth, currentY + boxHeight)
-                    val boxPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.parseColor("#FFFFFF") }
-                    val boxShadowPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                        color = Color.parseColor("#E3E7FF")
-                        strokeWidth = 3f
-                        style = Paint.Style.STROKE
+                    val usableBottom = PAGE_HEIGHT - bottomMargin
+                    val availableHeight = usableBottom - currentY
+                    val maxLinesHere = ((availableHeight - baseHeight) / lineSpacing).toInt().coerceAtLeast(1)
+                    val endIndex = (startIndex + maxLinesHere).coerceAtMost(lines.size)
+                    val linesThisPage = lines.subList(startIndex, endIndex)
+                    val cardHeight = baseHeight + (linesThisPage.size * lineSpacing)
+
+                    if (currentY + cardHeight > usableBottom) {
+                        startPage()
+                        drawSectionTitle(continuationTitle)
+                        continue
                     }
 
-                    canvas.drawRoundRect(boxRect, 26f, 26f, boxPaint)
-                    canvas.drawRoundRect(boxRect, 26f, 26f, boxShadowPaint)
+                    val cardRect = RectF(
+                        margin,
+                        currentY,
+                        margin + contentWidth,
+                        currentY + cardHeight
+                    )
+                    canvas.drawRoundRect(cardRect, 26f, 26f, cardBackgroundPaint)
+                    canvas.drawRoundRect(cardRect, 26f, 26f, cardBorderPaint)
 
-                    val titleBaseline = boxRect.top + boxPadding + cardTitlePaint.textSize
-                    val titleText = if (segment == 0) {
+                    val titleBaseline = cardRect.top + cardInnerPadding + cardTitlePaint.textSize
+                    val displayTitle = if (segment == 0) {
                         title
                     } else {
                         context.getString(R.string.averia_pdf_card_continuation_title, title)
                     }
-                    canvas.drawText(titleText, boxRect.left + boxPadding, titleBaseline, cardTitlePaint)
+                    canvas.drawText(displayTitle, cardRect.left + cardInnerPadding, titleBaseline, cardTitlePaint)
 
                     var lineY = titleBaseline + gapAfterTitle
-                    segmentLines.forEach { line ->
-                        canvas.drawText(line, boxRect.left + boxPadding, lineY, valuePaint)
+                    linesThisPage.forEach { line ->
+                        canvas.drawText(line, cardRect.left + cardInnerPadding, lineY, valuePaint)
                         lineY += lineSpacing
                     }
-                    currentY += boxHeight + 16f
-                    index += linesThisPage
+
+                    currentY += cardHeight + 16f
+                    startIndex = endIndex
                     segment++
                 }
             }
 
             drawCard(
                 context.getString(R.string.averia_pdf_section_description),
-                listOf(description)
+                listOf(item.descripcion.ifBlank { emptyValue })
             )
             drawCard(
                 context.getString(R.string.averia_pdf_section_cause),
@@ -513,23 +545,24 @@ object PdfGenerator {
                 context.getString(R.string.averia_pdf_section_notes),
                 listOf(observaciones)
             )
-            val medidorDetalle = buildList {
-                if (item.numeroMedidor?.isNotBlank() == true) {
-                    add(context.getString(R.string.averia_medidor_label, item.numeroMedidor))
-                }
-                if (item.medidorCalle?.isNotBlank() == true) {
-                    add(context.getString(R.string.averia_medidor_calle, item.medidorCalle))
-                }
-                if (item.medidorPueblo?.isNotBlank() == true) {
-                    add(context.getString(R.string.averia_medidor_pueblo, item.medidorPueblo))
-                }
-                if (item.medidorMetros?.isNotBlank() == true) {
-                    add(context.getString(R.string.averia_medidor_metros, item.medidorMetros))
-                }
-                if (item.medidorPoste?.isNotBlank() == true) {
-                    add(context.getString(R.string.averia_medidor_poste, item.medidorPoste))
-                }
+
+            val medidorDetalle = mutableListOf<String>()
+            if (item.numeroMedidor?.isNotBlank() == true) {
+                medidorDetalle += context.getString(R.string.averia_medidor_label, item.numeroMedidor)
             }
+            if (item.medidorCalle?.isNotBlank() == true) {
+                medidorDetalle += context.getString(R.string.averia_medidor_calle, item.medidorCalle)
+            }
+            if (item.medidorPueblo?.isNotBlank() == true) {
+                medidorDetalle += context.getString(R.string.averia_medidor_pueblo, item.medidorPueblo)
+            }
+            if (item.medidorMetros?.isNotBlank() == true) {
+                medidorDetalle += context.getString(R.string.averia_medidor_metros, item.medidorMetros)
+            }
+            if (item.medidorPoste?.isNotBlank() == true) {
+                medidorDetalle += context.getString(R.string.averia_medidor_poste, item.medidorPoste)
+            }
+
             drawCard(
                 context.getString(R.string.averia_pdf_section_medidor),
                 if (medidorDetalle.isNotEmpty()) medidorDetalle else listOf(
@@ -556,6 +589,12 @@ object PdfGenerator {
                 else -> listOf(context.getString(R.string.averia_pdf_no_materials))
             }
 
+            drawCard(
+                context.getString(R.string.averia_pdf_section_materials),
+                materialesLines,
+                bullet = true
+            )
+
             drawCard(context, canvas, "Materiales usados", materialesLines, margin, contentWidth, valuePaint)
 
             // ---------- Sección técnicos ----------
@@ -573,11 +612,27 @@ object PdfGenerator {
             }.ifEmpty {
                 listOf(context.getString(R.string.averia_pdf_no_technicians))
             }
+            val tecnicosLines = if (tecnicosLinesFromList.isNotEmpty()) {
+                tecnicosLinesFromList
+            } else {
+                val attendedFallback = item.resolvedAtendidoLines(emptyValue)
+                    .filter { it.isNotBlank() && it != emptyValue }
+                if (attendedFallback.isNotEmpty()) attendedFallback
+                else listOf(context.getString(R.string.averia_pdf_no_technicians))
+            }
+
+            drawCard(
+                context.getString(R.string.averia_pdf_section_technicians),
+                tecnicosLines,
+                bullet = true
+            )
 
             val footerHeight = 86f
             ensureSpace(footerHeight + 24f)
             val footerRect = RectF(margin, currentY, margin + contentWidth, currentY + footerHeight)
-            val footerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.parseColor("#2E3192") }
+            val footerPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.parseColor("#2E3192")
+            }
             canvas.drawRoundRect(footerRect, 24f, 24f, footerPaint)
 
             // ---------- Footer ----------
@@ -606,29 +661,46 @@ object PdfGenerator {
 
             currentY = footerRect.bottom + 16f
 
+            finishCurrentPage()
 
-            // Guardar
-            val reportsDir = File(context.getExternalFilesDir(null), "TecniApp/Reportes")
+            val parentDir = context.getExternalFilesDir(null) ?: context.filesDir
+            val reportsDir = File(parentDir, "TecniApp/Reportes")
             if (!reportsDir.exists()) reportsDir.mkdirs()
             val fileNameFormatter = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault())
             val fileName = "averia_${item.id}_${fileNameFormatter.format(Date())}.pdf"
             val file = File(reportsDir, fileName)
             FileOutputStream(file).use { output -> document.writeTo(output) }
 
-            // Compartir
             withContext(Dispatchers.Main) {
-                Toast.makeText(context, "PDF generado correctamente: $fileName", Toast.LENGTH_LONG).show()
-                val uri: Uri = FileProvider.getUriForFile(context, context.packageName + ".fileprovider", file)
+                Toast.makeText(
+                    context,
+                    context.getString(R.string.averia_export_success, fileName),
+                    Toast.LENGTH_LONG
+                ).show()
+                val uri: Uri = FileProvider.getUriForFile(
+                    context,
+                    context.packageName + ".fileprovider",
+                    file
+                )
                 val shareIntent = Intent(Intent.ACTION_SEND).apply {
                     type = "application/pdf"
                     putExtra(Intent.EXTRA_STREAM, uri)
                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 }
-                context.startActivity(Intent.createChooser(shareIntent, "Compartir PDF"))
+                context.startActivity(
+                    Intent.createChooser(
+                        shareIntent,
+                        context.getString(R.string.averia_export_share_title)
+                    )
+                )
             }
         } catch (t: Throwable) {
             withContext(Dispatchers.Main) {
-                Toast.makeText(context, context.getString(R.string.averia_export_error), Toast.LENGTH_LONG).show()
+                Toast.makeText(
+                    context,
+                    context.getString(R.string.averia_export_error),
+                    Toast.LENGTH_LONG
+                ).show()
             }
         } finally {
             document.close()
