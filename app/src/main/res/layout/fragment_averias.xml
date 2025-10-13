@@ -29,13 +29,32 @@
                 android:padding="12dp"
                 app:layout_collapseMode="parallax">
 
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/chipGroupNotificationAgencies"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    app:singleLine="false"
+                    app:singleSelection="false" />
+
+                <TextView
+                    android:id="@+id/tvNotificationFiltersEmpty"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Sin agencias de notificación configuradas."
+                    android:gravity="center"
+                    android:padding="8dp"
+                    android:visibility="gone"
+                    android:textColor="?attr/colorOnSurfaceVariant" />
+
+
                 <!-- Barra de búsqueda -->
                 <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/tilBuscar"
                     style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:background="@color/glass_light"
+
                     android:hint="@string/averias_buscar"
                     app:boxStrokeColor="@color/ice_blue"
                     app:endIconMode="clear_text"
@@ -48,6 +67,19 @@
                         android:imeOptions="actionSearch"
                         android:singleLine="true" />
                 </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnDateFilter"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/averias_filtro_fecha_todas"
+                    android:tooltipText="@string/averias_filtro_fecha_limpiar_hint"
+                    android:contentDescription="@string/averias_filtrar_fecha"
+                    app:icon="@drawable/ic_calendar"
+                    app:iconGravity="textStart"
+                    app:iconPadding="8dp" />
 
                 <!-- Filtros en scroll horizontal -->
                 <HorizontalScrollView
@@ -142,6 +174,7 @@
                             android:inputType="none" />
                     </com.google.android.material.textfield.TextInputLayout>
                 </LinearLayout>
+
             </LinearLayout>
         </com.google.android.material.appbar.CollapsingToolbarLayout>
     </com.google.android.material.appbar.AppBarLayout>
@@ -188,4 +221,5 @@
         android:src="@drawable/ic_filter_list"
         android:tint="@android:color/white"
         app:backgroundTint="@color/ice_blue" />
+
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

@@ -161,6 +161,19 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/direccionTextView" />
+
+        <com.google.android.material.switchmaterial.SwitchMaterial
+            android:id="@+id/switchMostrarCalles"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="12dp"
+            android:layout_marginEnd="16dp"
+            android:text="@string/localizacion_calles_toggle_label"
+            android:textColor="?android:attr/textColorPrimary"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/infoTextView" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 
     <!-- Contenedor del MapView -->
@@ -219,15 +232,6 @@
             android:textColor="@color/white"
             app:cornerRadius="32dp" />
 
-        <!-- Botón Cargar Calles -->
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/buttonAll"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:backgroundTint="?attr/colorPrimary"
-            android:text="@string/localizacion_calles_show"
-            android:textColor="@color/white"
-            app:cornerRadius="32dp" />
     </LinearLayout>
     <!-- Barra de progreso centrada y sobre todo el contenido -->
     <ProgressBar

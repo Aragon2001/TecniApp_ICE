@@ -22,7 +22,7 @@ android {
         buildConfigField("String", "ICE_BASE_URL", "\"https://agenciaelectricidad.cn.ice.go.cr/api/\"")
         buildConfigField("String", "ICE_BEARER", "\"\"")
 
-        minSdk = 24
+        minSdk = 26
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
@@ -59,6 +59,7 @@ dependencies {
     implementation(libs.material)
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.swiperefreshlayout)
+    implementation(libs.androidx.datastore.preferences)
 
     // Lifecycle / Navigation
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
@@ -105,6 +106,9 @@ dependencies {
     implementation("com.jakewharton.retrofit:retrofit2-kotlinx-serialization-converter:1.0.0")
     implementation("com.github.bumptech.glide:glide:4.16.0")
     ksp("com.github.bumptech.glide:compiler:4.16.0")
+
+    // Exportación a Excel
+    implementation("org.apache.poi:poi-ooxml:5.2.3")
 
     // Testing
     testImplementation(libs.junit)
