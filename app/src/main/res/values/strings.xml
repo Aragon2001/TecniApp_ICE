@@ -20,6 +20,8 @@
     <string name="menu_reportes">Reportes</string>
     <string name="menu_programacion">Programación</string>
     <string name="menu_settings">Ajustes</string>
+    <string name="menu_help">Ayuda</string>
+    <string name="menu_privacy">Políticas</string>
     <string name="action_accounts">Perfil</string>
     <string name="google_maps_key">AIzaSyBxgf6oA-rRK1-OlNft4oDgzF3gokLl1FU</string>
 
@@ -511,4 +513,66 @@ Cliente: %4$s</string>
     <string name="admin_error_desconocido">error desconocido</string>
     <string name="admin_validacion_subregion_inexistente">La subregión seleccionada no existe en el catálogo.</string>
 
+    <!--
+        TecniApp ICE © 2025 Arasoft Solutions
+        Todos los derechos reservados.
+        Desarrollado para el Instituto Costarricense de Electricidad (ICE).
+    -->
+    <string name="terms_title">Términos de uso de TecniApp ICE</string>
+    <string name="terms_accept">Aceptar</string>
+    <string name="terms_decline">Salir</string>
+    <string name="terms_and_conditions">1. Uso autorizado:
+TecniApp ICE es una aplicación destinada exclusivamente al personal técnico del Instituto Costarricense de Electricidad (ICE) para la gestión de averías, luminarias, inventarios y demás tareas operativas. El uso indebido o fuera del ámbito institucional está prohibido.
+
+2. Datos personales y autenticación:
+El usuario consiente que su información institucional (nombre, cédula, correo @ice.go.cr, agencia, subregión y ubicación GPS) sea utilizada únicamente para coordinar actividades técnicas. La autenticación y almacenamiento se realiza mediante Firebase Authentication y Realtime Database conforme a las políticas de seguridad de Google.
+
+3. Sincronización y almacenamiento local:
+TecniApp ICE mantiene datos disponibles offline mediante una base de datos local cifrada (Room/SQLite) y sincroniza automáticamente con los servidores oficiales de Firebase. La información almacenada en el dispositivo es temporal y se elimina al cerrar sesión o finalizar la sincronización.
+
+4. Propiedad intelectual:
+El diseño, estructura y código fuente de TecniApp ICE son propiedad de Arasoft Solutions y del Instituto Costarricense de Electricidad. Está prohibida la copia, distribución o modificación no autorizada.
+
+5. Responsabilidad:
+El usuario se compromete a ingresar información veraz y actualizada. Arasoft Solutions no se hace responsable por daños derivados del uso incorrecto de la aplicación o del incumplimiento de estos términos.</string>
+    <string name="privacy_policy_title">Política de privacidad</string>
+    <string name="privacy_policy_intro">Transparencia en el manejo de datos para el personal técnico del ICE.</string>
+    <string name="privacy_policy_content">Datos que recopilamos:
+• Identificadores institucionales (nombre, cédula, correo @ice.go.cr, subregión, agencia, vehículo asignado).
+• Registros operativos (averías, luminarias, inventario, fotografías de campo y bitácoras de actividades).
+• Geolocalización y hora de captura para garantizar trazabilidad de las cuadrillas.
+
+Finalidad del tratamiento:
+• Coordinar asignaciones técnicas, seguimiento de averías y gestión de recursos.
+• Generar reportes de atención y alimentar los tableros institucionales del ICE.
+• Mantener un historial auditado de las intervenciones realizadas por cada técnico.
+
+Almacenamiento y seguridad:
+• Los datos se resguardan en Firebase Authentication y Realtime Database, infraestructura administrada por Google Cloud y configurada con las políticas de seguridad del ICE.
+• El modo offline utiliza Room/SQLite cifrado para asegurar la continuidad operativa en zonas sin conexión.
+
+Compartición de datos:
+La información se sincroniza únicamente con los servidores oficiales del ICE y no se comparte con terceros ajenos a la institución.
+
+Derechos del usuario:
+• Solicitar acceso, actualización o eliminación de su información personal.
+• Revocar el consentimiento de geolocalización desde Ajustes &gt; Preferencias.
+• Reportar incidentes de seguridad para su análisis inmediato.
+
+Contacto del responsable del tratamiento:
+Arasoft Solutions
+Correo: soporte@arasoftsolutions.com</string>
+    <string name="privacy_policy_view_terms">Ver términos de uso</string>
+    <string name="help_title">Guía de uso</string>
+    <string name="help_subtitle">Consulta los pasos esenciales para aprovechar TecniApp ICE durante tus giras técnicas.</string>
+    <string name="help_card_tour_title">Tour interactivo</string>
+    <string name="help_card_tour_description">Activa el recorrido guiado desde Ajustes &gt; Tour inicial para resaltar los botones clave (TapTargetView/MaterialShowcase) al ingresar por primera vez.</string>
+    <string name="help_card_cases_title">Registrar y atender averías</string>
+    <string name="help_card_cases_description">1) Abre Averías y pulsa "Asignar" para tomar un caso.
+2) Completa materiales, fotografías y ubicación.
+3) Sincroniza para actualizar el tablero regional en tiempo real.</string>
+    <string name="help_card_sync_title">Sincronización inteligente</string>
+    <string name="help_card_sync_description">Usa el botón "Sincronizar ahora" cuando regreses a zona con señal. El modo offline guarda todo localmente y replica en Firebase en cuanto recuperes conexión.</string>
+    <string name="help_video_hint">Consejo: genera tu video explicativo con IA (ej. herramientas de voz sintética sobre capturas de pantalla) para la presentación institucional.</string>
+    <string name="help_contact">¿Necesitas soporte adicional? Escríbenos a soporte@arasoftsolutions.com</string>
 </resources>
