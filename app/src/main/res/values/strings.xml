@@ -19,6 +19,9 @@
     <string name="menu_inventario">Inventario</string>
     <string name="menu_reportes">Reportes</string>
     <string name="menu_programacion">Programación</string>
+    <string name="menu_settings">Ajustes</string>
+    <string name="menu_help">Acerca de TecniApp</string>
+    <string name="menu_privacy">Políticas</string>
     <string name="action_accounts">Perfil</string>
     <string name="google_maps_key">AIzaSyBxgf6oA-rRK1-OlNft4oDgzF3gokLl1FU</string>
 
@@ -27,8 +30,13 @@
     <string name="averias_filtrar">Filtrar</string>
     <string name="averias_filtrar_region">Región</string>
     <string name="averias_filtrar_agencia">Agencia</string>
+    <string name="averias_filtrar_fecha">Fechas</string>
     <string name="averias_filtro_region_todas">Todas las regiones</string>
     <string name="averias_filtro_agencia_todas">Todas las agencias</string>
+    <string name="averias_filtro_fecha_todas">Todas las fechas</string>
+    <string name="averias_filtro_fecha_rango">%1$s - %2$s</string>
+    <string name="averias_filtro_fecha_limpiar_hint">Mantén presionado para limpiar el filtro de fechas.</string>
+    <string name="averias_filtro_fecha_limpio">Filtro de fechas eliminado.</string>
     <string name="averia_sin_asignar">Sin asignar</string>
     <string name="averia_asignar">Asignar</string>
     <string name="averia_atender">Atender</string>
@@ -74,6 +82,37 @@
     <string name="averia_notificacion_resuelta_body">Caso %1$s resuelto.</string>
     <string name="averia_notificacion_nueva_title">Nueva avería</string>
     <string name="averia_notificacion_nueva_body">Caso %1$s • %2$s</string>
+    <string name="averia_notificacion_nueva_title_case">Nueva avería #%1$s</string>
+    <string name="averia_notificacion_nueva_summary">Hora: %1$s • Lugar: %2$s</string>
+    <string name="averia_notificacion_nueva_bigtext">Agencia: %1$s
+Lugar: %2$s
+Hora: %3$s
+Cliente: %4$s</string>
+    <string name="averia_notificacion_detalle_agencia">Agencia: %1$s</string>
+    <string name="averia_notificacion_detalle_lugar">Lugar: %1$s</string>
+    <string name="averia_notificacion_detalle_hora">Hora: %1$s</string>
+    <string name="averia_notificacion_detalle_cliente">Cliente: %1$s</string>
+    <string name="averia_notificacion_detalle_tipo">Afectación: %1$s</string>
+    <string name="averia_notificacion_detalle_afectados">Clientes afectados: %1$s</string>
+    <string name="averia_notificacion_sin_hora">Sin hora registrada</string>
+    <string name="averia_notificacion_sin_lugar">Ubicación no disponible</string>
+    <string name="averia_notificacion_sin_agencia">Agencia no registrada</string>
+    <string name="averia_notificacion_sin_cliente">Cliente no registrado</string>
+    <string name="averia_notificacion_map_action">Ver en mapa</string>
+    <string name="averia_notificacion_map_label_default">Avería reportada</string>
+    <string name="averia_field_maps_required">Instala Field Maps para abrir la ubicación.</string>
+    <string name="averia_channel_name">Averías</string>
+    <string name="averia_channel_description">Alertas sobre nuevas averías y cambios de estado.</string>
+    <string name="averia_notification_permission_granted">Notificaciones activadas.</string>
+    <string name="averia_notification_permission_denied">Las notificaciones están desactivadas. Actívalas en Ajustes para recibir alertas de averías.</string>
+    <string name="averia_notificacion_switch_label">Recibir notificaciones</string>
+    <string name="averia_notificacion_switch_helper">Desactiva esta opción cuando no necesites alertas (por ejemplo, cuando otra cuadrilla está de turno).</string>
+    <string name="averia_notificacion_filtro_titulo">Filtrar notificaciones por agencia</string>
+    <string name="averia_notificacion_filtro_hint">Agencia (Guácimo, Guápiles, etc.)</string>
+    <string name="averia_notificacion_filtro_vacio">Sin filtros: recibirás avisos de todas las agencias.</string>
+    <string name="averia_notificacion_filtro_desactivado">Activa las notificaciones para elegir las agencias.</string>
+    <string name="averia_notificacion_menu">Notificaciones</string>
+    <string name="averia_notificacion_sheet_title">Preferencias de notificaciones</string>
     <string name="averia_error_usuario_no_autenticado">Inicia sesión para gestionar averías.</string>
     <string name="averia_error_causa_requerida">Ingresa la causa de la avería.</string>
     <string name="averia_error_no_autorizado">No puedes gestionar una avería asignada a otro técnico.</string>
@@ -170,6 +209,39 @@
     <string name="averia_pdf_table_label_affectation">Tipo de afectación</string>
     <string name="averia_pdf_table_label_zone">Zona / Tag</string>
     <string name="averia_pdf_table_label_medidor">Medidor</string>
+    
+    <!-- Ajustes -->
+    <string name="settings_section_notifications">Notificaciones</string>
+    <string name="settings_notifications_toggle">Alertas de averías</string>
+    <string name="settings_notifications_summary_all">Recibirás avisos de todas las agencias.</string>
+    <string name="settings_notifications_summary_filtered">Notificar solo agencias: %1$s</string>
+    <string name="settings_notifications_manage_agencies">Gestionar agencias favoritas</string>
+    <string name="settings_section_sync">Sincronización</string>
+    <string name="settings_auto_sync_toggle">Sincronización automática al iniciar sesión</string>
+    <string name="settings_auto_sync_summary">Si está activo se agenda un proceso en segundo plano cada 15 minutos.</string>
+    <string name="settings_sync_now">Sincronizar ahora</string>
+    <string name="settings_last_sync_never">Última sincronización manual: nunca</string>
+    <string name="settings_last_sync_format">Última sincronización manual: %1$s</string>
+    <string name="settings_sync_triggered">Sincronización solicitada</string>
+    <string name="settings_sync_in_progress_title">Sincronizando datos</string>
+    <string name="settings_sync_in_progress_message">Sincronizando con la base global. Esto puede tardar unos segundos…</string>
+    <string name="settings_sync_in_progress_button">Sincronizando…</string>
+    <string name="settings_section_location">Localización y mapas</string>
+    <string name="settings_gps_toggle">Activar soporte GPS desde TecniApp</string>
+    <string name="settings_gps_summary">Guarda una preferencia local para habilitar el uso de ubicación en los módulos que la necesiten.</string>
+    <string name="settings_section_appearance">Apariencia</string>
+    <string name="settings_dark_theme_toggle">Usar tema oscuro</string>
+    <string name="settings_dark_theme_summary">Activa el modo oscuro para reducir el brillo en condiciones nocturnas.</string>
+    <string name="settings_section_account">Cuenta</string>
+    <string name="settings_account_name_placeholder">Nombre del técnico</string>
+    <string name="settings_account_email_placeholder">Correo electrónico del técnico</string>
+    <string name="settings_account_agency_placeholder">Agencia asignada</string>
+    <string name="settings_sign_out">Cerrar sesión</string>
+    <string name="settings_sign_out_title">¿Cerrar sesión?</string>
+    <string name="settings_sign_out_message">Se limpiarán los datos locales y deberás iniciar sesión nuevamente.</string>
+    <string name="settings_sign_out_confirm">Cerrar sesión</string>
+    <string name="settings_section_advanced">Avanzado</string>
+    <string name="settings_version_placeholder">Versión: %1$s</string>
     <string name="averia_pdf_table_label_street">Calle del medidor</string>
     <string name="averia_pdf_table_label_town">Pueblo del medidor</string>
     <string name="averia_pdf_table_label_meters">Metros</string>
@@ -229,12 +301,13 @@
     <string name="nav_header_cedula_format">Cédula: %1$s</string>
     <string name="nav_header_subregion_format">Subregión: %1$s</string>
     <string name="nav_header_agency_format">Agencia: %1$s</string>
-    <string name="nav_header_vehicle_format">Vehículo • %1$s</string>
+    <string name="nav_header_vehicle_format">Vehículo: %1$s</string>
     <string name="nav_header_vehicle_placeholder">Sin vehículo asignado</string>
 
     <!-- Medidores -->
     <string name="medidor_numero_hint">Número de medidor</string>
     <string name="medidor_header_subtitle">Gestiona y consulta medidores incluso sin conexión.</string>
+    <string name="medidor_consulta_title">Consulta de medidores</string>
     <string name="medidor_consulta_descripcion">Ingresa el número del medidor para obtener la información disponible.</string>
     <string name="medidor_consultar">Consultar</string>
     <string name="medidor_copiar">Copiar</string>
@@ -281,9 +354,12 @@
     <string name="medidor_registro_cancelar">Cancelar</string>
     <string name="medidor_registro_requerido_numero">El número de medidor es obligatorio.</string>
     <string name="medidor_registro_localizacion_error">La localización debe ser numérica.</string>
+    <string name="medidor_registro_confirm_title">Confirmar registro</string>
+    <string name="medidor_registro_confirm_message">¿Estás seguro de registrar este medidor? Los datos se guardarán en la base global y solo un administrador del sistema podrá eliminarlos.</string>
+    <string name="medidor_registro_confirm_positive">Registrar medidor</string>
 
     <!-- Localización -->
-    <string name="localizacion_estado_sin_subregion">No se pudo cargar la subregión del usuario.</string>
+    <string name="localizacion_estado_sin_subregion">No se pudo determinar la subregión del usuario.</string>
     <string name="localizacion_estado_sin_pueblos">No hay pueblos disponibles para esta subregión.</string>
     <string name="localizacion_estado_sin_calles">No hay calles disponibles para el pueblo seleccionado.</string>
     <string name="localizacion_estado_sin_localizacion">No se encontró la localización para la calle seleccionada.</string>
@@ -293,8 +369,230 @@
     <string name="localizacion_calles_show">Cargar calles</string>
     <string name="localizacion_calles_hide">Desmarcar calles</string>
     <string name="localizacion_calles_toast_sin_pueblo">Selecciona un pueblo antes de cargar las calles.</string>
+    <string name="localizacion_calles_toggle_label">Mostrar todas las calles del pueblo</string>
+    <string name="localizacion_fieldmaps_no_disponible">Field Maps no está instalado. Abriendo Google Maps.</string>
+    <string name="localizacion_navegacion_chooser">Selecciona una aplicación para navegar</string>
     <string name="localizacion_estado_sync_error">No se pudo sincronizar la información. Intenta nuevamente.</string>
     <string name="localizacion_estado_calles_sin_coordenadas">No hay coordenadas disponibles para las calles seleccionadas.</string>
     <string name="localizacion_marker_rango_postes">Postes %1$d – %2$d</string>
     <string name="localizacion_marker_poste_unico">Poste %1$d</string>
+    <!-- Reportes -->
+    <string name="reportes_filtro_rango">Rango de fechas</string>
+    <string name="reportes_btn_rango">Cambiar rango</string>
+    <string name="reportes_selector_titulo">¿Qué reporte necesitas revisar?</string>
+    <string name="reportes_chip_averias">Averías atendidas</string>
+    <string name="reportes_chip_averias_conteo">Averías atendidas (%1$d)</string>
+    <string name="reportes_chip_material_por_averia">Material por avería</string>
+    <string name="reportes_chip_material_por_averia_conteo">Material por avería (%1$d)</string>
+    <string name="reportes_chip_material_total">Consumo total</string>
+    <string name="reportes_chip_material_total_conteo">Consumo total (%1$d)</string>
+    <string name="reportes_btn_generar">Generar reporte</string>
+    <string name="reportes_btn_generar_tipo">Generar %1$s</string>
+    <string name="reportes_btn_exportar">Exportar a Excel</string>
+    <string name="reportes_totales_resumen">Averías atendidas: %1$d&#10;Materiales registrados: %2$d unidades en %3$d códigos.</string>
+    <string name="reportes_totales_resumen_pendiente">Selecciona un rango y genera un reporte para ver el resumen de totales.</string>
+    <string name="reportes_averias_titulo">Averías atendidas</string>
+    <string name="reportes_averias_vacio">No hay averías atendidas en el rango seleccionado.</string>
+    <string name="reportes_material_por_averia_titulo">Material gastado por avería</string>
+    <string name="reportes_material_por_averia_vacio">No hay materiales registrados en las averías atendidas.</string>
+    <string name="reportes_material_total_titulo">Material gastado total</string>
+    <string name="reportes_material_total_vacio">No hay consumo de material registrado en este rango.</string>
+    <string name="reportes_estado_pendiente">Selecciona el reporte y toca "Generar" para ver los datos.</string>
+    <string name="reportes_estado_cargando">Generando reporte…</string>
+    <string name="reportes_dialog_rango_titulo">Selecciona el rango de fechas</string>
+    <string name="reportes_material_sin_detalle">Sin materiales registrados.</string>
+    <string name="reportes_error_carga">No se pudo generar el reporte.</string>
+    <string name="reportes_material_desconocido">Material sin descripción</string>
+    <string name="reportes_item_caso">Caso %1$s</string>
+    <string name="reportes_item_fecha">Atendida: %1$s</string>
+    <string name="reportes_item_agencia">Agencia: %1$s</string>
+    <string name="reportes_item_estado">Estado: %1$s</string>
+    <string name="reportes_item_atendido">Atendido por: %1$s</string>
+    <string name="reportes_item_vehiculo">Vehículo: %1$s</string>
+    <string name="reportes_item_vehiculo_desconocido">Sin vehículo asignado</string>
+    <string name="reportes_item_materiales">%1$d unidades · %2$s</string>
+    <string name="reportes_item_materiales_sin">Sin materiales registrados</string>
+    <string name="reportes_material_codigo">Código: %1$s</string>
+    <string name="reportes_material_total_detalle">%1$s · %2$s</string>
+    <plurals name="reportes_material_total_unidades">
+        <item quantity="one">%d unidad</item>
+        <item quantity="other">%d unidades</item>
+    </plurals>
+    <plurals name="reportes_material_total_averias">
+        <item quantity="one">%d avería</item>
+        <item quantity="other">%d averías</item>
+    </plurals>
+    <string name="reportes_export_no_data">Genera el reporte antes de exportarlo.</string>
+    <string name="reportes_export_success">Reporte exportado correctamente.</string>
+    <string name="reportes_export_error">No se pudo exportar el archivo de Excel.</string>
+
+    <string name="reportes_excel_resumen_sheet">Resumen</string>
+    <string name="reportes_excel_resumen_rango">Rango seleccionado</string>
+    <string name="reportes_excel_resumen_total_averias">Total de averías</string>
+    <string name="reportes_excel_resumen_total_materiales">Unidades de material</string>
+    <string name="reportes_excel_resumen_total_codigos">Códigos de material</string>
+    <string name="reportes_excel_resumen_sin_datos">No se ha generado información para este rango.</string>
+    <string name="reportes_excel_averias_sheet">Averías atendidas</string>
+    <string name="reportes_excel_materiales_por_averia_sheet">Material por avería</string>
+    <string name="reportes_excel_materiales_por_averia_sheet_vehicle">Material · %1$s</string>
+    <string name="reportes_excel_materiales_por_averia_sheet_sin_vehiculo">Material · Sin vehículo</string>
+    <string name="reportes_excel_materiales_totales_sheet">Consumo total</string>
+    <string name="reportes_excel_col_case">Caso</string>
+    <string name="reportes_excel_col_fecha">Fecha</string>
+    <string name="reportes_excel_col_agencia">Agencia</string>
+    <string name="reportes_excel_col_estado">Estado</string>
+    <string name="reportes_excel_col_atendido">Atendido por</string>
+    <string name="reportes_excel_col_vehiculo">Vehículo</string>
+    <string name="reportes_excel_col_material_resumen">Materiales resumen</string>
+    <string name="reportes_excel_col_material_total">Unidades</string>
+    <string name="reportes_excel_col_codigo">Código</string>
+    <string name="reportes_excel_col_descripcion">Descripción</string>
+    <string name="reportes_excel_col_cantidad">Cantidad</string>
+    <string name="reportes_excel_col_averias">Averías</string>
+
+    <!-- Administración -->
+    <string name="menu_admin">Administración</string>
+    <string name="admin_title">Panel de administración</string>
+    <string name="admin_description">Gestiona catálogos globales. Los cambios se sincronizan para todos los técnicos.</string>
+    <string name="admin_tab_medidores">Medidores</string>
+    <string name="admin_tab_vehiculos">Vehículos</string>
+    <string name="admin_tab_localizaciones">Localizaciones</string>
+    <string name="admin_section_medidores_title">Gestión de medidores</string>
+    <string name="admin_field_medidor_buscar_hint">Buscar por número</string>
+    <string name="admin_field_medidor_numero">Número de medidor</string>
+    <string name="admin_field_medidor_cliente">Nombre del cliente</string>
+    <string name="admin_field_medidor_localizacion">Localización (opcional)</string>
+    <string name="admin_field_medidor_calle">Calle (opcional)</string>
+    <string name="admin_field_medidor_poste">Coordenada del poste</string>
+    <string name="admin_field_medidor_metros">Metros (opcional)</string>
+    <string name="admin_field_medidor_pueblo">Pueblo</string>
+    <string name="admin_field_medidor_subregion">Subregión</string>
+    <string name="admin_section_vehiculos_title">Gestión de vehículos</string>
+    <string name="admin_field_vehiculo_buscar_hint">Buscar por ID o placa</string>
+    <string name="admin_field_vehiculo_id">Identificador del vehículo</string>
+    <string name="admin_field_vehiculo_placa">Placa</string>
+    <string name="admin_field_vehiculo_agencia">Agencia</string>
+    <string name="admin_field_vehiculo_tipo">Tipo (opcional)</string>
+    <string name="admin_field_vehiculo_subregion">Subregión (opcional)</string>
+    <string name="admin_section_localizaciones_title">Gestión de localizaciones</string>
+    <string name="admin_field_localizacion_buscar_hint">Buscar por ID</string>
+    <string name="admin_field_localizacion_id">Identificador de la localización</string>
+    <string name="admin_field_localizacion_pueblo">Pueblo</string>
+    <string name="admin_field_localizacion_calle">Calle</string>
+    <string name="admin_field_localizacion_direccion">Dirección detallada</string>
+    <string name="admin_field_localizacion_latitud">Latitud</string>
+    <string name="admin_field_localizacion_longitud">Longitud</string>
+    <string name="admin_field_localizacion_del_poste">Coordenada del poste (del poste)</string>
+    <string name="admin_field_localizacion_al_poste">Coordenada del poste (al poste)</string>
+    <string name="admin_field_localizacion_subregion">Subregión (opcional)</string>
+    <string name="admin_action_cargar">Cargar</string>
+    <string name="admin_action_limpiar">Limpiar</string>
+    <string name="admin_action_guardar">Guardar cambios</string>
+    <string name="admin_action_eliminar">Eliminar registro</string>
+    <string name="admin_medidor_error_numero">Ingresa el número del medidor.</string>
+    <string name="admin_medidor_error_subregion">Selecciona una subregión válida.</string>
+    <string name="admin_medidor_error_pueblo">Selecciona un pueblo existente.</string>
+    <string name="admin_medidor_error_localizacion">La localización debe ser numérica.</string>
+    <string name="admin_medidor_guardar_exito">Medidor %1$s guardado correctamente.</string>
+    <string name="admin_medidor_eliminar_exito">Medidor %1$s eliminado correctamente.</string>
+    <string name="admin_medidor_no_encontrado">No se encontró el medidor indicado.</string>
+    <string name="admin_vehiculo_error_id">Ingresa el identificador del vehículo.</string>
+    <string name="admin_vehiculo_error_placa">Ingresa la placa numérica del vehículo.</string>
+    <string name="admin_vehiculo_error_agencia">Ingresa la agencia del vehículo.</string>
+    <string name="admin_vehiculo_guardar_exito">Vehículo %1$s guardado correctamente.</string>
+    <string name="admin_vehiculo_eliminar_exito">Vehículo %1$s eliminado correctamente.</string>
+    <string name="admin_vehiculo_no_encontrado">No se encontró el vehículo indicado.</string>
+    <string name="admin_localizacion_error_id">Ingresa el identificador de la localización.</string>
+    <string name="admin_localizacion_error_pueblo">Selecciona un pueblo válido.</string>
+    <string name="admin_localizacion_error_calle">Ingresa el código de calle.</string>
+    <string name="admin_localizacion_error_direccion">Ingresa la dirección de la localización.</string>
+    <string name="admin_localizacion_error_del_poste">Ingresa la coordenada "del poste".</string>
+    <string name="admin_localizacion_error_al_poste">Ingresa la coordenada "al poste".</string>
+    <string name="admin_localizacion_error_latitud">Ingresa una latitud válida.</string>
+    <string name="admin_localizacion_error_longitud">Ingresa una longitud válida.</string>
+    <string name="admin_localizacion_guardar_exito">Localización %1$s guardada correctamente.</string>
+    <string name="admin_localizacion_eliminar_exito">Localización %1$s eliminada correctamente.</string>
+    <string name="admin_localizacion_no_encontrada">No se encontró la localización indicada.</string>
+    <string name="admin_accion_error_general">Ocurrió un error al completar la operación: %1$s.</string>
+    <string name="admin_error_desconocido">error desconocido</string>
+    <string name="admin_validacion_subregion_inexistente">La subregión seleccionada no existe en el catálogo.</string>
+
+    <!--
+        TecniApp ICE © 2025 Arasoft Solutions
+        Todos los derechos reservados.
+        Desarrollado para el Instituto Costarricense de Electricidad (ICE).
+    -->
+    <string name="terms_title">Términos de uso de TecniApp ICE</string>
+    <string name="terms_accept">Aceptar</string>
+    <string name="terms_decline">Salir</string>
+    <string name="terms_body_html"><![CDATA[
+        <h3>1. Uso autorizado</h3>
+        <p>TecniApp ICE es una solución interna creada para el personal técnico del Instituto Costarricense de Electricidad (ICE). Cualquier uso fuera de labores institucionales o sin autorización está estrictamente prohibido.</p>
+
+        <h3>2. Datos personales y autenticación</h3>
+        <p>La aplicación utiliza credenciales institucionales (@ice.go.cr) con Firebase Authentication. Se registran nombre, cédula, subregión, agencia asignada y ubicación operativa para garantizar trazabilidad y seguridad. Toda autenticación sigue las políticas vigentes de Google y del ICE.</p>
+
+        <h3>3. Continuidad operativa</h3>
+        <p>Para permitir trabajo en zonas sin cobertura, TecniApp ICE almacena temporalmente información cifrada en el dispositivo mediante Room/SQLite y sincroniza automáticamente con la nube oficial en cuanto se restablece la conexión.</p>
+
+        <h3>4. Propiedad intelectual</h3>
+        <p>El diseño, código fuente y procesos derivados pertenecen a Arasoft Solutions y al ICE. Se prohíbe copiar, modificar, distribuir o descompilar la aplicación sin consentimiento escrito.</p>
+
+        <h3>5. Responsabilidad del usuario</h3>
+        <p>El personal técnico se compromete a ingresar información verídica y a resguardar el dispositivo con las medidas de seguridad institucionales. Arasoft Solutions no se responsabiliza por daños ocasionados por un uso indebido o fuera de las políticas del ICE.</p>
+    ]]></string>
+    <string name="privacy_policy_title">Política de privacidad</string>
+    <string name="privacy_policy_intro">Así protegemos la información operativa que registran las cuadrillas del ICE.</string>
+    <string name="privacy_policy_body_html"><![CDATA[
+        <h4>Datos que recopilamos</h4>
+        <ul>
+            <li>Identificadores institucionales: nombre, cédula, correo @ice.go.cr, subregión, agencia y vehículo asignado.</li>
+            <li>Registros operativos: averías, luminarias, inventario, fotografías y bitácoras de visitas.</li>
+            <li>Ubicación y sellos de tiempo que respaldan la trazabilidad de cada intervención técnica.</li>
+        </ul>
+
+        <h4>Finalidad</h4>
+        <ul>
+            <li>Coordinar asignaciones, priorizar averías y documentar la atención brindada.</li>
+            <li>Construir reportes e indicadores oficiales para la toma de decisiones del ICE.</li>
+            <li>Conservar un historial auditado de las actividades de campo por cada colaborador.</li>
+        </ul>
+
+        <h4>Seguridad y almacenamiento</h4>
+        <p>La información se procesa en Firebase Authentication y Realtime Database (Google Cloud) configurados con las políticas de seguridad institucionales. El modo offline utiliza bases de datos cifradas en el dispositivo para garantizar continuidad operativa.</p>
+
+        <h4>Compartición</h4>
+        <p>Los datos se sincronizan únicamente con infraestructura oficial del ICE. No se comercializa ni comparte información con terceros.</p>
+    ]]></string>
+    <string name="privacy_policy_footer_html"><![CDATA[
+        <p><strong>Derechos de los usuarios:</strong> puedes solicitar acceso, rectificación o eliminación de tus datos personales, así como ajustar permisos de geolocalización desde Ajustes &gt; Preferencias.</p>
+        <p>Para consultas o incidentes de seguridad escribe a <a href="mailto:soporte@arasoftsolutions.com">soporte@arasoftsolutions.com</a>.</p>
+    ]]></string>
+    <string name="privacy_policy_view_terms">Revisar términos completos</string>
+    <string name="privacy_policy_contact_support">Contactar a soporte</string>
+    <string name="privacy_policy_contact_email">soporte@arasoftsolutions.com</string>
+    <string name="privacy_policy_contact_error">No se encontró una aplicación de correo para completar la acción.</string>
+    <string name="dialog_close">Cerrar</string>
+    <string name="about_screen_title">Acerca de TecniApp ICE</string>
+    <string name="about_screen_intro_html"><![CDATA[
+        <p>TecniApp ICE es la plataforma móvil que agiliza la gestión de averías, luminarias e inventario en campo. Está diseñada para cuadrillas del ICE que requieren información confiable incluso sin conectividad.</p>
+    ]]></string>
+    <string name="about_card_mission_title">Objetivo institucional</string>
+    <string name="about_card_mission_body_html"><![CDATA[
+        <p>Centralizar en un solo lugar el ciclo completo de atención técnica: desde la asignación de cuadrillas hasta la documentación en sitio, respetando los lineamientos de seguridad, trazabilidad y calidad de datos del ICE.</p>
+    ]]></string>
+    <string name="about_card_highlights_title">Experiencia para el equipo</string>
+    <string name="about_card_highlights_body_html"><![CDATA[
+        <ul>
+            <li>Panel de tareas priorizadas por región y agencia.</li>
+            <li>Modo offline que resguarda la información y la sincroniza automáticamente.</li>
+            <li>Registro multimedia y georreferenciado de cada intervención.</li>
+            <li>Atajos a reportes y dashboards institucionales.</li>
+        </ul>
+    ]]></string>
+    <string name="about_card_support_title">Soporte y evolución</string>
+    <string name="about_card_support_body_html"><![CDATA[
+        <p>Arasoft Solutions acompaña al ICE con mantenimiento continuo, mejoras solicitadas por las gerencias regionales y soporte directo al personal técnico.</p>
+        <p>¿Tienes sugerencias? Escríbenos a <a href="mailto:soporte@arasoftsolutions.com">soporte@arasoftsolutions.com</a>.</p>
+    ]]></string>
 </resources>
