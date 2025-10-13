@@ -2,12 +2,18 @@ package com.Arasoftsolutions.tecniapp_ice.Database.entities
 
 import androidx.annotation.Keep
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.google.firebase.database.IgnoreExtraProperties
 
 @Keep
 @IgnoreExtraProperties
-@Entity(tableName = "localizaciones")
+@Entity(
+    tableName = "localizaciones",
+    indices = [
+        Index(value = ["pueblo"])
+    ]
+)
 data class LocalizacionesEntity(
     @PrimaryKey val id: Int = 0,
     val calle: Int = 0,

@@ -47,9 +47,11 @@ class UserFragment : Fragment() {
     private val usersRef by lazy {
         FirebaseDatabase.getInstance(USERS_DB_URL).reference.child("usuarios")
     }
-    private val storageRef by lazy {
-        FirebaseStorage.getInstance().reference.child("profilePictures")
-    }
+ private val storageRef by lazy {
+    FirebaseStorage.getInstance("gs://tecniapp-ice.firebasestorage.app")
+        .reference.child("profilePictures")
+}
+
 
     private var currentUser: UserEntity? = null
     private var regionItems: List<RegionEntity> = emptyList()

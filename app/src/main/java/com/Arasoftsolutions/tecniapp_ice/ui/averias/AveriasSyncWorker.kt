@@ -1,107 +1,88 @@
 // ui/averias/AveriasSyncWorker.kt
 package com.Arasoftsolutions.tecniapp_ice.ui.averias
 
-import android.Manifest
 import android.content.Context
-import android.content.pm.PackageManager
-import android.net.Uri
-import androidx.core.app.ActivityCompat
-import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
 import androidx.work.CoroutineWorker
 import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.ExistingWorkPolicy
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.OutOfQuotaPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
+import androidx.work.workDataOf
 import com.Arasoftsolutions.tecniapp_ice.BuildConfig
-import com.Arasoftsolutions.tecniapp_ice.R
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.text.Normalizer
 import java.util.concurrent.TimeUnit
+import com.Arasoftsolutions.tecniapp_ice.Database.room.AppDatabase
+
 
 class AveriasSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx, params) {
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
-        val db = com.Arasoftsolutions.tecniapp_ice.Database.room.AppDatabase.getInstance(applicationContext)
+        val db = AppDatabase.getInstance(applicationContext)
         val repo = AveriasRepository(db)
         val roomRepo = RoomRepository.getInstance(applicationContext)
 
         // 1. Sube los pendientes a Firebase
         repo.syncPendientesConFirebase()
 
-        // 2. Descarga averías nuevas desde ICE
-        val nuevos = repo.syncFromIce(BuildConfig.ICE_BEARER)
+        val shouldDownload = inputData.getBoolean(KEY_INCLUDE_DOWNLOAD, false)
 
-        val usuario = FirebaseAuth.getInstance().currentUser?.uid?.let { uid ->
-            runCatching { roomRepo.obtenerUsuario(uid) }.getOrNull()
-        }
+        if (shouldDownload) {
+            // 2. Descarga averías nuevas desde ICE cuando se solicita manualmente
+            val nuevos = repo.syncFromIce(BuildConfig.ICE_BEARER)
 
-        val regionObjetivo = usuario?.regionNombre?.takeIf { !it.isNullOrBlank() }
-            ?: usuario?.region?.takeIf { !it.isNullOrBlank() }
-        val regionNormalizada = regionObjetivo?.let { normalize(it) }
-
-        val porRegion = if (regionNormalizada.isNullOrBlank()) {
-            nuevos
-        } else {
-            nuevos.filter { averia ->
-                val regionAveria = normalize(averia.region)
-                regionAveria.contains(regionNormalizada)
+            val usuario = FirebaseAuth.getInstance().currentUser?.uid?.let { uid ->
+                runCatching { roomRepo.obtenerUsuario(uid) }.getOrNull()
             }
-        }
 
-        // 3. Notifica si hay nuevos casos
-        if (porRegion.isNotEmpty()) {
-            val nm = NotificationManagerCompat.from(applicationContext)
-            porRegion.forEach forEachId@{ averia ->
-                val id = averia.caseId
-                if (
-                    ActivityCompat.checkSelfPermission(
-                        applicationContext,
-                        Manifest.permission.POST_NOTIFICATIONS
-                    ) != PackageManager.PERMISSION_GRANTED
-                ) return@forEachId
-                nm.notify(
-                    id.hashCode(),
-                    NotificationCompat.Builder(applicationContext, "averias_channel")
-                        .setSmallIcon(R.drawable.ic_notification)
-                        .setContentTitle(applicationContext.getString(R.string.averia_notificacion_nueva_title))
-                        .setContentText(
-                            applicationContext.getString(
-                                R.string.averia_notificacion_nueva_body,
-                                id,
-                                averia.nombreAgencia ?: averia.agencia ?: ""
-                            )
-                        )
-                        .setPriority(NotificationCompat.PRIORITY_HIGH)
-                        .setSound(
-                            Uri.parse(
-                                "android.resource://${applicationContext.packageName}/${R.raw.beep}"
-                            )
-                        )
-                        .build()
-                )
+            val regionObjetivo = usuario?.regionNombre?.takeIf { !it.isNullOrBlank() }
+                ?: usuario?.region?.takeIf { !it.isNullOrBlank() }
+            val regionNormalizada = regionObjetivo?.let { normalizeAveriaText(it) }
+
+            val filters = AveriaNotificationPreferences.normalizedAgencies(applicationContext)
+            val notificationsEnabled = AveriaNotificationPreferences.areNotificationsEnabled(applicationContext)
+
+            val porRegion = filterAveriasByRegion(nuevos, regionNormalizada)
+            val filtradas = filterAveriasByAgencies(porRegion, filters)
+
+            // 3. Notifica si hay nuevos casos
+            if (notificationsEnabled && filtradas.isNotEmpty()) {
+                AveriaNotificationDispatcher.notifyNewCases(applicationContext, filtradas)
             }
         }
         Result.success()
     }
 
-    private fun normalize(value: String?): String {
-        if (value.isNullOrBlank()) return ""
-        val normalized = Normalizer.normalize(value, Normalizer.Form.NFD)
-        return normalized.replace("\\p{InCombiningDiacriticalMarks}+".toRegex(), "")
-            .lowercase()
-    }
-
     companion object {
+        private const val KEY_INCLUDE_DOWNLOAD = "include_download"
+        private const val UNIQUE_PERIODIC_WORK = "averias_sync"
+        private const val UNIQUE_MANUAL_WORK = "averias_sync_now"
+
         fun schedule(ctx: Context) {
-            val req = PeriodicWorkRequestBuilder<AveriasSyncWorker>(15, TimeUnit.MINUTES).build()
+            val req = PeriodicWorkRequestBuilder<AveriasSyncWorker>(15, TimeUnit.MINUTES)
+                .setInputData(workDataOf(KEY_INCLUDE_DOWNLOAD to false))
+                .build()
             WorkManager.getInstance(ctx).enqueueUniquePeriodicWork(
-                "averias_sync",
+                UNIQUE_PERIODIC_WORK,
                 ExistingPeriodicWorkPolicy.KEEP,
                 req
+            )
+        }
+
+        fun triggerNow(ctx: Context) {
+            val request = OneTimeWorkRequestBuilder<AveriasSyncWorker>()
+                .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+                .setInputData(workDataOf(KEY_INCLUDE_DOWNLOAD to true))
+                .build()
+            WorkManager.getInstance(ctx).enqueueUniqueWork(
+                UNIQUE_MANUAL_WORK,
+                ExistingWorkPolicy.REPLACE,
+                request
             )
         }
     }

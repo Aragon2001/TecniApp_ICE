@@ -1,12 +1,23 @@
+/**
+ * TecniApp ICE © 2025 Arasoft Solutions
+ * Todos los derechos reservados.
+ * Desarrollado para el Instituto Costarricense de Electricidad (ICE).
+ */
 package com.Arasoftsolutions.tecniapp_ice
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
+import android.text.method.LinkMovementMethod
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.core.view.GravityCompat
 import androidx.core.view.isVisible
@@ -21,8 +32,14 @@ import com.Arasoftsolutions.tecniapp_ice.Database.entities.apellidosCompletos
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
 import com.Arasoftsolutions.tecniapp_ice.databinding.ActivityMainBinding
 import com.Arasoftsolutions.tecniapp_ice.databinding.NavHeaderMainBinding
+import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriaNotifications
+import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasRealtimeNotifications
+import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasSyncWorker
 import com.bumptech.glide.Glide
+import android.widget.TextView
+import androidx.core.text.HtmlCompat
 import com.google.android.material.navigation.NavigationView
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
 
@@ -34,6 +51,16 @@ class ActivityMain : AppCompatActivity() {
     private lateinit var repository: RoomRepository
     private lateinit var headerBinding: NavHeaderMainBinding
 
+    private val requestNotificationPermission =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            val messageRes = if (granted) {
+                R.string.averia_notification_permission_granted
+            } else {
+                R.string.averia_notification_permission_denied
+            }
+            Toast.makeText(this, messageRes, Toast.LENGTH_LONG).show()
+        }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -41,6 +68,8 @@ class ActivityMain : AppCompatActivity() {
         // ViewBinding
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        ensureTermsAccepted()
 
         // Toolbar
         setSupportActionBar(binding.appBarMain.toolbar)
@@ -56,14 +85,19 @@ class ActivityMain : AppCompatActivity() {
             loadUserDataFromDatabase()
         }
 
+        AveriaNotifications.ensureChannel(this)
+        requestNotificationPermissionIfNeeded()
+        AveriasSyncWorker.schedule(applicationContext)
+        AveriasRealtimeNotifications.start(applicationContext)
+
         // Drawer + Navigation
         val drawerLayout: DrawerLayout = binding.drawerLayout
         val navView: NavigationView = binding.navView
         val navController = findNavController(R.id.nav_host_fragment_content_main)
 
         headerBinding = NavHeaderMainBinding.bind(navView.getHeaderView(0)).also { header ->
-            header.chipVehicle.isVisible = false
-            header.chipVehicle.text = getString(R.string.nav_header_vehicle_placeholder)
+            header.textViewVehicle.isVisible = false
+            header.textViewVehicle.text = getString(R.string.nav_header_vehicle_placeholder)
             header.root.setOnClickListener { openUserFragment() }
         }
 
@@ -77,7 +111,10 @@ class ActivityMain : AppCompatActivity() {
                 R.id.nav_inventario,
                 R.id.nav_reportes,
                 R.id.nav_programacion,
-                R.id.nav_account
+                R.id.nav_account,
+                R.id.nav_settings,
+                R.id.nav_help,
+                R.id.nav_privacy
             ),
             drawerLayout
         )
@@ -131,10 +168,10 @@ class ActivityMain : AppCompatActivity() {
 
         val vehiculo = usuario.placaVehiculo?.takeUnless { it.isBlank() }
         if (vehiculo.isNullOrBlank()) {
-            headerBinding.chipVehicle.isVisible = false
+            headerBinding.textViewVehicle.isVisible = false
         } else {
-            headerBinding.chipVehicle.isVisible = true
-            headerBinding.chipVehicle.text = getString(R.string.nav_header_vehicle_format, vehiculo)
+            headerBinding.textViewVehicle.isVisible = true
+            headerBinding.textViewVehicle.text = getString(R.string.nav_header_vehicle_format, vehiculo)
         }
 
         Glide.with(this)
@@ -198,6 +235,16 @@ class ActivityMain : AppCompatActivity() {
         finish()
     }
 
+    private fun requestNotificationPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
+        val granted = ContextCompat.checkSelfPermission(
+            this,
+            Manifest.permission.POST_NOTIFICATIONS
+        ) == PackageManager.PERMISSION_GRANTED
+        if (granted) return
+        requestNotificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+    }
+
     override fun onSupportNavigateUp(): Boolean {
         val navController = findNavController(R.id.nav_host_fragment_content_main)
         return navController.navigateUp(appBarConfiguration) || super.onSupportNavigateUp()
@@ -210,5 +257,35 @@ class ActivityMain : AppCompatActivity() {
 
     fun refreshNavHeader() {
         lifecycleScope.launch { loadUserDataFromDatabase() }
+    }
+
+    private fun ensureTermsAccepted() {
+        val prefs = getSharedPreferences("TecniAppPrefs", MODE_PRIVATE)
+        if (prefs.getBoolean("termsAccepted", false)) {
+            return
+        }
+
+        val consentView = layoutInflater.inflate(R.layout.dialog_terms, null)
+        consentView.findViewById<TextView>(R.id.textTermsContent).apply {
+            text = HtmlCompat.fromHtml(
+                getString(R.string.terms_body_html),
+                HtmlCompat.FROM_HTML_MODE_LEGACY
+            )
+            movementMethod = LinkMovementMethod.getInstance()
+        }
+
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.terms_title)
+            .setView(consentView)
+            .setCancelable(false)
+            .setPositiveButton(R.string.terms_accept) { dialog, _ ->
+                prefs.edit().putBoolean("termsAccepted", true).apply()
+                dialog.dismiss()
+            }
+            .setNegativeButton(R.string.terms_decline) { _, _ ->
+                prefs.edit().putBoolean("termsAccepted", false).apply()
+                finishAffinity()
+            }
+            .show()
     }
 }
