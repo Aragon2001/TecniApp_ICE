@@ -12,14 +12,17 @@ import android.util.Log
 import android.view.View
 import android.widget.TextView
 import android.widget.Toast
+import androidx.core.view.isVisible
+import androidx.core.widget.TextViewCompat
 import androidx.fragment.app.Fragment
 import com.Arasoftsolutions.tecniapp_ice.R
 import com.Arasoftsolutions.tecniapp_ice.databinding.FragmentPoliciesBinding
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.Arasoftsolutions.tecniapp_ice.ui.legal.StructuredTextFormatter
 import com.Arasoftsolutions.tecniapp_ice.ui.legal.StructuredTextParser
 import com.Arasoftsolutions.tecniapp_ice.ui.legal.renderStructuredContent
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import java.util.Calendar
+import kotlin.math.roundToInt
 
 class PoliciesFragment : Fragment(R.layout.fragment_policies) {
 
@@ -46,26 +49,47 @@ class PoliciesFragment : Fragment(R.layout.fragment_policies) {
         }.getOrNull()
 
         if (privacyDocument != null) {
-            binding.textPoliciesSubtitle.text = privacyDocument.intro
-            binding.textPoliciesBody.renderStructuredContent(
-                StructuredTextFormatter.buildDocument(
-                    requireContext(),
-                    privacyDocument,
-                    includeIntro = false,
-                    includeFooter = false
+            binding.textPoliciesSubtitle.renderStructuredContent(privacyDocument.intro)
+
+            val container = binding.containerPoliciesSections
+            container.removeAllViews()
+            privacyDocument.sections.forEach { section ->
+                val sectionView = layoutInflater.inflate(R.layout.item_structured_section, container, false)
+                val titleView = sectionView.findViewById<TextView>(R.id.textSectionTitle)
+                if (section.title.isBlank()) {
+                    titleView.isVisible = false
+                } else {
+                    titleView.text = section.title
+                    titleView.isVisible = true
+                }
+                val bodyView = sectionView.findViewById<TextView>(R.id.textSectionBody)
+                bodyView.renderStructuredContent(
+                    StructuredTextFormatter.buildSectionBody(requireContext(), section)
                 )
+                container.addView(sectionView)
+            }
+
+            val footerContent = StructuredTextFormatter.buildBlocks(
+                requireContext(),
+                privacyDocument.footer
             )
-            binding.textPoliciesFooter.renderStructuredContent(
-                StructuredTextFormatter.buildBlocks(
-                    requireContext(),
-                    privacyDocument.footer
-                )
-            )
+            val hasFooter = footerContent.isNotEmpty()
+            binding.policiesFooterDivider.isVisible = hasFooter
+            binding.textPoliciesFooter.isVisible = hasFooter
+            binding.textPoliciesFooter.renderStructuredContent(if (hasFooter) footerContent else null)
         } else {
             val fallback = getString(R.string.structured_text_parse_error)
-            binding.textPoliciesSubtitle.text = fallback
-            binding.textPoliciesBody.renderStructuredContent(fallback)
-            binding.textPoliciesFooter.renderStructuredContent(null)
+            binding.textPoliciesSubtitle.renderStructuredContent(fallback)
+            binding.containerPoliciesSections.removeAllViews()
+            val padding = (16 * resources.displayMetrics.density).roundToInt()
+            val fallbackView = TextView(requireContext()).apply {
+                TextViewCompat.setTextAppearance(this, R.style.TextAppearance_Material3_BodyLarge)
+                text = fallback
+                setPadding(0, padding, 0, padding)
+            }
+            binding.containerPoliciesSections.addView(fallbackView)
+            binding.policiesFooterDivider.isVisible = false
+            binding.textPoliciesFooter.isVisible = false
         }
 
         binding.buttonViewTerms.setOnClickListener {

@@ -10,14 +10,15 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fillViewport="true"
-    android:padding="20dp"
+    android:paddingHorizontal="20dp"
+    android:paddingTop="20dp"
+    android:paddingBottom="32dp"
     tools:context=".ui.policies.PoliciesFragment">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:paddingBottom="32dp">
+        android:orientation="vertical">
 
         <TextView
             android:id="@+id/textPoliciesTitle"
@@ -33,55 +34,37 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
+            android:textIsSelectable="true"
             android:lineSpacingExtra="4dp"
             android:justificationMode="inter_word"
             tools:targetApi="o"
-            tools:text="Transparencia en el manejo de datos" />
+            tools:text="Resumen de privacidad" />
 
-        <com.google.android.material.card.MaterialCardView
+        <LinearLayout
+            android:id="@+id/containerPoliciesSections"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
-            app:cardCornerRadius="18dp"
-            app:cardElevation="1dp"
-            app:strokeColor="?attr/colorPrimaryContainer"
-            app:strokeWidth="1dp">
+            android:orientation="vertical" />
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="20dp">
+        <com.google.android.material.divider.MaterialDivider
+            android:id="@+id/policiesFooterDivider"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:layout_marginBottom="16dp" />
 
-                <TextView
-                    android:id="@+id/textPoliciesBody"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
-                    android:textIsSelectable="true"
-                    android:lineSpacingExtra="6dp"
-                    android:justificationMode="inter_word"
-                    tools:targetApi="o"
-                    tools:text="Datos que recopilamos" />
-
-                <com.google.android.material.divider.MaterialDivider
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
-                    android:layout_marginBottom="16dp" />
-
-                <TextView
-                    android:id="@+id/textPoliciesFooter"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:textAppearance="@style/TextAppearance.Material3.LabelMedium"
-                    android:textColor="?attr/colorOnSurfaceVariant"
-                    android:lineSpacingExtra="4dp"
-                    android:justificationMode="inter_word"
-                    tools:targetApi="o"
-                    tools:text="Contacto" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
+        <TextView
+            android:id="@+id/textPoliciesFooter"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textAppearance="@style/TextAppearance.Material3.LabelLarge"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:textIsSelectable="true"
+            android:lineSpacingExtra="4dp"
+            android:justificationMode="inter_word"
+            tools:targetApi="o"
+            tools:text="Contacto" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/buttonViewTerms"
@@ -105,5 +88,6 @@
             app:iconGravity="textStart"
             app:iconTint="?attr/colorPrimary"
             app:iconPadding="8dp" />
+
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>

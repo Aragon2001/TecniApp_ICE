@@ -571,19 +571,21 @@ Cliente: %4$s</string>
         Todos los derechos reservados.
         Desarrollado para el Instituto Costarricense de Electricidad (ICE).
     -->
-    <!-- Legal & about -->
+    <!-- Legal: Terms dialog -->
     <string name="terms_title">Términos de uso de TecniApp ICE</string>
     <string name="terms_accept">Aceptar</string>
     <string name="terms_decline">Salir</string>
+    <string name="dialog_close">Cerrar</string>
+
+    <!-- Legal: Privacy policy -->
     <string name="privacy_policy_title">Política de privacidad</string>
     <string name="privacy_policy_view_terms">Revisar términos completos</string>
     <string name="privacy_policy_contact_support">Contactar a soporte</string>
     <string name="privacy_policy_contact_email">soporte@arasoftsolutions.com</string>
     <string name="privacy_policy_contact_error">No se encontró una aplicación de correo para completar la acción.</string>
-    <string name="dialog_close">Cerrar</string>
+
+    <!-- Legal: About TecniApp -->
     <string name="about_screen_title">Acerca de TecniApp ICE</string>
-    <string name="about_card_mission_title">Objetivo institucional</string>
-    <string name="about_card_highlights_title">Beneficios clave</string>
-    <string name="about_card_support_title">Acompañamiento y soporte</string>
+    <string name="about_contact_support">Escribir a soporte</string>
     <string name="structured_text_parse_error">No se pudo cargar el contenido informativo.</string>
 </resources>
