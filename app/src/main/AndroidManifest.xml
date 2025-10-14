@@ -55,6 +55,12 @@
             </intent-filter>
         </activity>
 
+        <!-- Onboarding Activity -->
+        <activity
+            android:name=".ui.onboarding.OnboardingActivity"
+            android:exported="false"
+            android:theme="@style/Theme.TecniAppICE" />
+
         <!-- Login Activity -->
         <activity
             android:name=".LoginActivity"

@@ -147,5 +147,16 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonShowOnboarding"
+            style="?attr/materialButtonStyle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="@string/onboarding_action_view_again"
+            app:icon="@drawable/ic_menu_help"
+            app:iconGravity="textStart"
+            app:iconPadding="12dp" />
+
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>
