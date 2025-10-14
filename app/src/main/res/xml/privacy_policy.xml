@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  TecniApp ICE © 2025 Arasoft Solutions
+  Todos los derechos reservados.
+  Desarrollado para el Instituto Costarricense de Electricidad (ICE).
+-->
+<legalDocument>
+    <intro>
+        Esta política describe cómo TecniApp ICE gestiona la información operativa registrada por el personal técnico del
+        Instituto Costarricense de Electricidad (ICE) y las salvaguardas aplicadas por Arasoft Solutions.
+    </intro>
+
+    <section title="1. Responsable del tratamiento">
+        <paragraph>
+            Arasoft Solutions es la empresa desarrolladora y administradora tecnológica de TecniApp ICE. La información se
+            aloja en servidores Firebase (Google Cloud Platform) bajo políticas de confidencialidad y control de acceso
+            coordinadas con el ICE.
+        </paragraph>
+    </section>
+
+    <section title="2. Datos que se recopilan">
+        <bulletList>
+            <item>Identificadores personales: nombre, cédula, correo institucional (@ice.go.cr).</item>
+            <item>Información operativa: subregión, agencia, vehículo, asignaciones, registros de averías, materiales,
+                luminarias y localizaciones GPS.</item>
+            <item>Datos técnicos: dirección IP, marca y modelo del dispositivo, horas de sincronización.</item>
+            <item>Fotografías o archivos adjuntos vinculados a reportes de campo.</item>
+        </bulletList>
+    </section>
+
+    <section title="3. Finalidad del tratamiento">
+        <paragraph>
+            Los datos se procesan para autenticar usuarios, registrar y gestionar averías, luminarias e inventarios,
+            sincronizar información técnica con los sistemas institucionales del ICE, generar reportes de desempeño y
+            mantener trazabilidad histórica de las labores en campo.
+        </paragraph>
+    </section>
+
+    <section title="4. Base legal y consentimiento">
+        <paragraph>
+            El tratamiento se fundamenta en el consentimiento informado al aceptar los términos de uso, en el interés
+            legítimo de garantizar la continuidad del servicio eléctrico del ICE y en el cumplimiento de obligaciones
+            institucionales y legales.
+        </paragraph>
+    </section>
+
+    <section title="5. Seguridad y almacenamiento">
+        <paragraph>
+            Los datos se almacenan en Firebase Realtime Database con cifrado TLS/SSL y autenticación OAuth 2.0. El modo
+            offline conserva la información de forma temporal en bases cifradas mediante Room, sin acceso de terceros.
+        </paragraph>
+        <paragraph>
+            La información se mantiene únicamente el tiempo necesario para fines técnicos o administrativos autorizados por
+            el ICE.
+        </paragraph>
+    </section>
+
+    <section title="6. Comunicación y acceso a los datos">
+        <paragraph>
+            La información no se vende ni transfiere a terceros ajenos al ICE. El acceso está limitado al personal técnico
+            autorizado del ICE y al equipo de soporte de Arasoft Solutions bajo acuerdo de confidencialidad.
+        </paragraph>
+    </section>
+
+    <section title="7. Derechos del usuario">
+        <paragraph>
+            Puedes solicitar acceso a los datos almacenados, correcciones, eliminación o revocación de consentimiento para el
+            uso de ubicación o datos personales escribiendo a {{supportEmail}}.
+        </paragraph>
+    </section>
+
+    <section title="8. Vigencia y modificaciones">
+        <paragraph>
+            La política tiene vigencia indefinida y puede actualizarse sin previo aviso para reflejar cambios tecnológicos,
+            legales o institucionales. Cualquier actualización se comunicará dentro de la aplicación o mediante medios
+            oficiales del ICE.
+        </paragraph>
+    </section>
+
+    <section title="9. Jurisdicción y ley aplicable">
+        <paragraph>
+            Esta política se rige por las leyes de la República de Costa Rica. Cualquier conflicto será resuelto por los
+            tribunales competentes de San José.
+        </paragraph>
+    </section>
+
+    <section title="10. Versión legal para registro">
+        <paragraph>Software: TecniApp ICE.</paragraph>
+        <paragraph>Titular: Arasoft Solutions — Representante legal: Jostin Aragón Barboza.</paragraph>
+        <paragraph>Entidad usuaria: Instituto Costarricense de Electricidad (ICE) bajo licencia institucional de uso.</paragraph>
+        <paragraph>Propiedad: 100% Arasoft Solutions. Uso exclusivamente institucional y no comercial.</paragraph>
+    </section>
+
+    <footer>
+        <paragraph>Contacto oficial de privacidad: {{supportEmail}}.</paragraph>
+    </footer>
+</legalDocument>

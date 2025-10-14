@@ -1,11 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Application -->
     <string name="app_name">TecniApp ICE</string>
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
+
+    <!-- Navigation header -->
     <string name="nav_header_title">TecniApp ICE</string>
     <string name="nav_header_subtitle">Soluciones Integrales ICE</string>
     <string name="nav_header_desc">Navigation header</string>
+    <!-- Drawer menu -->
     <string name="action_logout">Cerrar Sesión</string>
     <string name="welcome_message">Bienvenido a TecniApp</string>
     <string name="menu_home">Home</string>
@@ -20,6 +24,8 @@
     <string name="menu_reportes">Reportes</string>
     <string name="menu_programacion">Programación</string>
     <string name="menu_settings">Ajustes</string>
+    <string name="menu_help">Acerca de TecniApp</string>
+    <string name="menu_privacy">Políticas</string>
     <string name="action_accounts">Perfil</string>
     <string name="google_maps_key">AIzaSyBxgf6oA-rRK1-OlNft4oDgzF3gokLl1FU</string>
 
@@ -183,7 +189,7 @@ Cliente: %4$s</string>
     <string name="averia_reporte_generado">Reporte generado: %1$s</string>
     <string name="averia_pdf_header_title">TecniApp ICE</string>
     <string name="averia_pdf_header_subtitle">Plataforma integral de intervención técnica</string>
-    <string name="averia_pdf_header_tagline">Arasoft Solutions © 2024 · Todos los derechos reservados</string>
+    <string name="averia_pdf_header_tagline">Arasoft Solutions © %1$d · Todos los derechos reservados</string>
     <string name="averia_pdf_section_title">Detalle de la Averia</string>
     <string name="averia_pdf_section_title_continuation">Detalle de la Averia (continuación)</string>
     <string name="averia_pdf_table_label_case">ID del caso</string>
@@ -511,4 +517,26 @@ Cliente: %4$s</string>
     <string name="admin_error_desconocido">error desconocido</string>
     <string name="admin_validacion_subregion_inexistente">La subregión seleccionada no existe en el catálogo.</string>
 
+    <!--
+        TecniApp ICE © 2025 Arasoft Solutions
+        Todos los derechos reservados.
+        Desarrollado para el Instituto Costarricense de Electricidad (ICE).
+    -->
+    <!-- Legal: Terms dialog -->
+    <string name="terms_title">Términos de uso de TecniApp ICE</string>
+    <string name="terms_accept">Aceptar</string>
+    <string name="terms_decline">Salir</string>
+    <string name="dialog_close">Cerrar</string>
+
+    <!-- Legal: Privacy policy -->
+    <string name="privacy_policy_title">Política de privacidad</string>
+    <string name="privacy_policy_view_terms">Revisar términos completos</string>
+    <string name="privacy_policy_contact_support">Contactar a soporte</string>
+    <string name="privacy_policy_contact_email">soporte@arasoftsolutions.com</string>
+    <string name="privacy_policy_contact_error">No se encontró una aplicación de correo para completar la acción.</string>
+
+    <!-- Legal: About TecniApp -->
+    <string name="about_screen_title">Acerca de TecniApp ICE</string>
+    <string name="about_contact_support">Escribir a soporte</string>
+    <string name="structured_text_parse_error">No se pudo cargar el contenido informativo.</string>
 </resources>
