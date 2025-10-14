@@ -60,6 +60,7 @@ dependencies {
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.swiperefreshlayout)
     implementation(libs.androidx.datastore.preferences)
+    implementation("androidx.viewpager2:viewpager2:1.0.0")
 
     // Lifecycle / Navigation
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
@@ -83,6 +84,7 @@ dependencies {
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     implementation(libs.androidx.gridlayout)
+    implementation(libs.androidx.datastore.preferences.core.android)
     ksp(libs.androidx.room.compiler)
 
     // Coroutines / WorkManager
@@ -108,7 +110,8 @@ dependencies {
     ksp("com.github.bumptech.glide:compiler:4.16.0")
 
     // Exportación a Excel
-    implementation("org.apache.poi:poi-ooxml:5.2.3")
+    implementation("org.apache.poi:poi-ooxml:5.2.5")
+
 
     // Testing
     testImplementation(libs.junit)

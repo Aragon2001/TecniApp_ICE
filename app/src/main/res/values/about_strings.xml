@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+<!-- ====================== -->
+<!-- ACERCA DE TECNIAPP ICE -->
+<!-- ====================== -->
+<string name="about_title">Acerca de TecniApp ICE</string>
+
+<string name="about_body_html"><![CDATA[
+<h2>TecniApp ICE — Plataforma móvil de gestión técnica</h2>
+
+<p><strong>TecniApp ICE</strong> es una aplicación desarrollada por <strong>Arasoft Solutions</strong> para el <strong>Instituto Costarricense de Electricidad (ICE)</strong>,
+diseñada para transformar digitalmente las labores de campo de los técnicos eléctricos.
+Su misión es optimizar la atención de averías, el control de inventarios, el mantenimiento de luminarias y la trazabilidad de actividades operativas.</p>
+
+<h3>Características principales</h3>
+<ul>
+<li><strong>Gestión de averías:</strong> recibe, asigna y actualiza averías en tiempo real con estados visuales y registro de materiales.</li>
+<li><strong>Modo offline inteligente:</strong> permite trabajar sin conexión y sincroniza automáticamente al recuperar señal.</li>
+<li><strong>Geolocalización GPS:</strong> muestra la ubicación exacta de medidores, luminarias y averías, compatible con Google Maps y Field Maps.</li>
+<li><strong>Inventarios:</strong> control total de materiales utilizados y su sincronización con la nube.</li>
+<li><strong>Vehículos y kilometraje:</strong> registro de uso de flota institucional por técnico o cuadrilla.</li>
+<li><strong>Catálogos sincronizados:</strong> subregiones, agencias, localizaciones y medidores actualizados desde Firebase.</li>
+<li><strong>Reportes técnicos:</strong> estadísticas y exportación de informes en PDF o Excel con trazabilidad completa.</li>
+<li><strong>Seguridad avanzada:</strong> autenticación por Firebase, cifrado TLS y acceso controlado por roles.</li>
+</ul>
+
+<h3>Beneficios operativos</h3>
+<ul>
+<li>Reducción significativa en los tiempos de atención de averías.</li>
+<li>Optimización del consumo de materiales y recursos institucionales.</li>
+<li>Mayor trazabilidad en la gestión técnica y administrativa.</li>
+<li>Conectividad segura y sincronización automática entre dispositivos.</li>
+<li>Interfaz intuitiva, moderna y adaptada al entorno operativo del ICE.</li>
+</ul>
+
+<h3>Modo institucional</h3>
+<p>TecniApp ICE está destinada exclusivamente al uso institucional.
+Toda información registrada pertenece al ICE en cuanto a su contenido operativo,
+pero el código, la infraestructura y la tecnología son propiedad exclusiva de Arasoft Solutions.</p>
+
+<h3>Soporte y mantenimiento</h3>
+<p>Arasoft Solutions brinda mantenimiento continuo, actualizaciones de seguridad,
+y soporte técnico especializado mediante los siguientes canales:</p>
+
+<ul>
+<li><strong>Correo:</strong> <a href="mailto:soporte@arasoftsolutions.com">soporte@arasoftsolutions.com</a></li>
+<li><strong>Teléfono:</strong> +506 6040 7517</li>
+<li><strong>Desarrollador responsable:</strong> Jostin Aragón Barboza</li>
+</ul>
+
+<h3>Licencia y derechos</h3>
+<p>© 2025 Arasoft Solutions — Todos los derechos reservados.<br>
+Desarrollado para uso institucional del <strong>Instituto Costarricense de Electricidad (ICE)</strong> bajo licencia exclusiva de Arasoft Solutions.</p>
+]]></string>
+
+</resources>

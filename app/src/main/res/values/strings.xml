@@ -29,6 +29,24 @@
     <string name="action_accounts">Perfil</string>
     <string name="google_maps_key">AIzaSyBxgf6oA-rRK1-OlNft4oDgzF3gokLl1FU</string>
 
+    <!-- Onboarding -->
+    <string name="onboarding_toolbar_title">Recorrido de bienvenida</string>
+    <string name="onboarding_action_skip">Saltar</string>
+    <string name="onboarding_action_next">Siguiente</string>
+    <string name="onboarding_action_start">Empezar</string>
+    <string name="onboarding_action_view_again">Ver recorrido de bienvenida</string>
+    <string name="onboarding_title_welcome">Bienvenido a TecniApp ICE</string>
+    <string name="onboarding_desc_welcome">Centraliza tus operaciones de campo con autenticación segura y accesos rápidos a los módulos clave.</string>
+    <string name="onboarding_title_location">Mapas y localización en segundos</string>
+    <string name="onboarding_desc_location">Ubica postes, cuadrillas y clientes en el mapa, comparte direcciones y navega con precisión en territorio.</string>
+    <string name="onboarding_title_field_ops">Gestión integral en campo</string>
+    <string name="onboarding_desc_field_ops">Consulta medidores, actualiza luminarias y controla inventario incluso sin conexión; todo sincronizado con Room y Firebase.</string>
+    <string name="onboarding_title_incidents">Averías bajo control</string>
+    <string name="onboarding_desc_incidents">Recibe notificaciones en tiempo real, atiende incidencias y genera reportes listos para compartir con tu equipo.</string>
+    <string name="onboarding_title_planning">Planificación y seguimiento</string>
+    <string name="onboarding_desc_planning">Organiza tu programación, monitorea tareas y mantén la trazabilidad de cada intervención técnica.</string>
+    <string name="onboarding_illustration_content_description">Ilustración del recorrido de bienvenida</string>
+
     <!-- Averías -->
     <string name="averias_buscar">Buscar</string>
     <string name="averias_filtrar">Filtrar</string>
@@ -199,6 +217,7 @@ Cliente: %4$s</string>
     <string name="averia_pdf_table_label_attended_by">Atendido por</string>
     <string name="averia_pdf_table_label_vehicle">Vehículo asignado</string>
     <string name="averia_pdf_table_label_description">Descripción</string>
+    <string name="averia_pdf_table_label_observations">Observaciones</string>
     <string name="averia_pdf_table_label_event_date">Fecha del evento</string>
     <string name="averia_pdf_table_label_start_time">Inicio de atención</string>
     <string name="averia_pdf_table_label_end_time">Fin de atención</string>
@@ -265,6 +284,9 @@ Cliente: %4$s</string>
     <string name="averia_pdf_no_technicians">No se registraron técnicos adicionales.</string>
     <string name="averia_pdf_footer_title">TecniApp ICE</string>
     <string name="averia_pdf_footer_content">Sistema TecniApp ICE • Arasoft Solutions • Derechos reservados</string>
+    <string name="averia_pdf_footer_copyright">© %1$s Arasoft Solutions y ICE. Todos los derechos reservados.</string>
+    <string name="averia_pdf_no_meter_details">No se registró información del medidor.</string>
+    <string name="averia_pdf_card_continuation_title">%1$s (continuación)</string>
 
     <string name="averia_detalle_causa_title">Causa identificada</string>
     <string name="averia_detalle_observaciones_title">Observaciones registradas</string>
@@ -301,7 +323,7 @@ Cliente: %4$s</string>
     <string name="nav_header_cedula_format">Cédula: %1$s</string>
     <string name="nav_header_subregion_format">Subregión: %1$s</string>
     <string name="nav_header_agency_format">Agencia: %1$s</string>
-    <string name="nav_header_vehicle_format">Vehículo • %1$s</string>
+    <string name="nav_header_vehicle_format">Vehículo: %1$s</string>
     <string name="nav_header_vehicle_placeholder">Sin vehículo asignado</string>
 
     <!-- Medidores -->
@@ -461,30 +483,30 @@ Cliente: %4$s</string>
     <string name="admin_field_medidor_buscar_hint">Buscar por número</string>
     <string name="admin_field_medidor_numero">Número de medidor</string>
     <string name="admin_field_medidor_cliente">Nombre del cliente</string>
-    <string name="admin_field_medidor_localizacion">Localización (opcional)</string>
-    <string name="admin_field_medidor_calle">Calle (opcional)</string>
-    <string name="admin_field_medidor_poste">Coordenada del poste</string>
-    <string name="admin_field_medidor_metros">Metros (opcional)</string>
+    <string name="admin_field_medidor_localizacion">Localización generada</string>
+    <string name="admin_field_medidor_calle">Calle</string>
+    <string name="admin_field_medidor_poste">Poste</string>
+    <string name="admin_field_medidor_metros">Metros</string>
     <string name="admin_field_medidor_pueblo">Pueblo</string>
     <string name="admin_field_medidor_subregion">Subregión</string>
     <string name="admin_section_vehiculos_title">Gestión de vehículos</string>
-    <string name="admin_field_vehiculo_buscar_hint">Buscar por ID o placa</string>
+    <string name="admin_field_vehiculo_buscar_hint">Buscar por placa</string>
     <string name="admin_field_vehiculo_id">Identificador del vehículo</string>
     <string name="admin_field_vehiculo_placa">Placa</string>
     <string name="admin_field_vehiculo_agencia">Agencia</string>
-    <string name="admin_field_vehiculo_tipo">Tipo (opcional)</string>
-    <string name="admin_field_vehiculo_subregion">Subregión (opcional)</string>
+    <string name="admin_field_vehiculo_tipo">Tipo</string>
+    <string name="admin_field_vehiculo_subregion">Subregión</string>
     <string name="admin_section_localizaciones_title">Gestión de localizaciones</string>
-    <string name="admin_field_localizacion_buscar_hint">Buscar por ID</string>
     <string name="admin_field_localizacion_id">Identificador de la localización</string>
     <string name="admin_field_localizacion_pueblo">Pueblo</string>
     <string name="admin_field_localizacion_calle">Calle</string>
     <string name="admin_field_localizacion_direccion">Dirección detallada</string>
     <string name="admin_field_localizacion_latitud">Latitud</string>
     <string name="admin_field_localizacion_longitud">Longitud</string>
-    <string name="admin_field_localizacion_del_poste">Coordenada del poste (del poste)</string>
-    <string name="admin_field_localizacion_al_poste">Coordenada del poste (al poste)</string>
-    <string name="admin_field_localizacion_subregion">Subregión (opcional)</string>
+    <string name="admin_field_localizacion_del_poste">Del poste</string>
+    <string name="admin_field_localizacion_al_poste">Al poste</string>
+    <string name="admin_field_localizacion_subregion">Subregión</string>
+    <string name="admin_action_seleccionar_mapa">Seleccionar ubicación en el mapa</string>
     <string name="admin_action_cargar">Cargar</string>
     <string name="admin_action_limpiar">Limpiar</string>
     <string name="admin_action_guardar">Guardar cambios</string>
@@ -492,13 +514,19 @@ Cliente: %4$s</string>
     <string name="admin_medidor_error_numero">Ingresa el número del medidor.</string>
     <string name="admin_medidor_error_subregion">Selecciona una subregión válida.</string>
     <string name="admin_medidor_error_pueblo">Selecciona un pueblo existente.</string>
-    <string name="admin_medidor_error_localizacion">La localización debe ser numérica.</string>
+    <string name="admin_medidor_error_cliente">Ingresa el nombre del cliente.</string>
+    <string name="admin_medidor_error_calle">Ingresa la calle del medidor.</string>
+    <string name="admin_medidor_error_poste">Ingresa el poste asociado.</string>
+    <string name="admin_medidor_error_metros">Ingresa los metros del medidor.</string>
+    <string name="admin_medidor_error_localizacion">No se pudo generar la localización automática. Verifica los datos.</string>
     <string name="admin_medidor_guardar_exito">Medidor %1$s guardado correctamente.</string>
     <string name="admin_medidor_eliminar_exito">Medidor %1$s eliminado correctamente.</string>
     <string name="admin_medidor_no_encontrado">No se encontró el medidor indicado.</string>
     <string name="admin_vehiculo_error_id">Ingresa el identificador del vehículo.</string>
     <string name="admin_vehiculo_error_placa">Ingresa la placa numérica del vehículo.</string>
-    <string name="admin_vehiculo_error_agencia">Ingresa la agencia del vehículo.</string>
+    <string name="admin_vehiculo_error_agencia">Selecciona una agencia válida.</string>
+    <string name="admin_vehiculo_error_tipo">Ingresa el tipo del vehículo.</string>
+    <string name="admin_vehiculo_error_subregion">Selecciona una subregión válida.</string>
     <string name="admin_vehiculo_guardar_exito">Vehículo %1$s guardado correctamente.</string>
     <string name="admin_vehiculo_eliminar_exito">Vehículo %1$s eliminado correctamente.</string>
     <string name="admin_vehiculo_no_encontrado">No se encontró el vehículo indicado.</string>
@@ -508,8 +536,29 @@ Cliente: %4$s</string>
     <string name="admin_localizacion_error_direccion">Ingresa la dirección de la localización.</string>
     <string name="admin_localizacion_error_del_poste">Ingresa la coordenada "del poste".</string>
     <string name="admin_localizacion_error_al_poste">Ingresa la coordenada "al poste".</string>
-    <string name="admin_localizacion_error_latitud">Ingresa una latitud válida.</string>
-    <string name="admin_localizacion_error_longitud">Ingresa una longitud válida.</string>
+    <string name="admin_localizacion_error_subregion">Selecciona una subregión válida.</string>
+    <string name="admin_localizacion_error_latitud">Selecciona una latitud válida desde el mapa.</string>
+    <string name="admin_localizacion_error_longitud">Selecciona una longitud válida desde el mapa.</string>
+    <string name="admin_localizacion_error_relacion">El pueblo seleccionado no pertenece a la subregión.</string>
+    <string name="admin_localizacion_error_mapa">Selecciona la ubicación en el mapa antes de continuar.</string>
+    <string name="admin_confirm_accept">Confirmar</string>
+    <string name="admin_confirm_cancel">Cancelar</string>
+    <string name="admin_confirm_guardar_medidor_title">Guardar medidor</string>
+    <string name="admin_confirm_guardar_medidor_message">¿Deseas guardar los cambios del medidor %1$s?</string>
+    <string name="admin_confirm_eliminar_medidor_title">Eliminar medidor</string>
+    <string name="admin_confirm_eliminar_medidor_message">¿Deseas eliminar el medidor %1$s? Esta acción no se puede deshacer.</string>
+    <string name="admin_confirm_guardar_vehiculo_title">Guardar vehículo</string>
+    <string name="admin_confirm_guardar_vehiculo_message">¿Deseas guardar los cambios del vehículo con placa %1$s?</string>
+    <string name="admin_confirm_eliminar_vehiculo_title">Eliminar vehículo</string>
+    <string name="admin_confirm_eliminar_vehiculo_message">¿Deseas eliminar el vehículo con placa %1$s? Esta acción no se puede deshacer.</string>
+    <string name="admin_confirm_guardar_localizacion_title">Guardar localización</string>
+    <string name="admin_confirm_guardar_localizacion_message">¿Deseas guardar los cambios de la localización %1$s?</string>
+    <string name="admin_confirm_eliminar_localizacion_title">Eliminar localización</string>
+    <string name="admin_confirm_eliminar_localizacion_message">¿Deseas eliminar la localización %1$s? Esta acción no se puede deshacer.</string>
+    <string name="map_picker_title">Selecciona la ubicación</string>
+    <string name="map_picker_instruction">Toca el mapa para fijar la localización exacta.</string>
+    <string name="map_picker_selected">Lat: %1$.6f, Lng: %2$.6f</string>
+    <string name="map_picker_pending">Aún no se ha seleccionado un punto.</string>
     <string name="admin_localizacion_guardar_exito">Localización %1$s guardada correctamente.</string>
     <string name="admin_localizacion_eliminar_exito">Localización %1$s eliminada correctamente.</string>
     <string name="admin_localizacion_no_encontrada">No se encontró la localización indicada.</string>
