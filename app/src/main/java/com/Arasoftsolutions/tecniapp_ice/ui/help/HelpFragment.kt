@@ -5,6 +5,7 @@
  */
 package com.Arasoftsolutions.tecniapp_ice.ui.help
 
+import android.content.Intent
 import android.os.Bundle
 import android.text.SpannableStringBuilder
 import android.util.Log
@@ -15,6 +16,7 @@ import com.Arasoftsolutions.tecniapp_ice.databinding.FragmentHelpBinding
 import com.Arasoftsolutions.tecniapp_ice.ui.legal.StructuredTextFormatter
 import com.Arasoftsolutions.tecniapp_ice.ui.legal.StructuredTextParser
 import com.Arasoftsolutions.tecniapp_ice.ui.legal.renderStructuredContent
+import com.Arasoftsolutions.tecniapp_ice.ui.onboarding.OnboardingActivity
 import java.util.Calendar
 
 class HelpFragment : Fragment(R.layout.fragment_help) {
@@ -77,6 +79,14 @@ class HelpFragment : Fragment(R.layout.fragment_help) {
             binding.textAboutMissionBody.renderStructuredContent(fallback)
             binding.textAboutHighlightsBody.renderStructuredContent(fallback)
             binding.textAboutSupportBody.renderStructuredContent(fallback)
+        }
+
+        binding.buttonShowOnboarding.setOnClickListener {
+            val context = requireContext()
+            val intent = Intent(context, OnboardingActivity::class.java).apply {
+                putExtra(OnboardingActivity.EXTRA_RETURN_TO_CALLER, true)
+            }
+            startActivity(intent)
         }
     }
 

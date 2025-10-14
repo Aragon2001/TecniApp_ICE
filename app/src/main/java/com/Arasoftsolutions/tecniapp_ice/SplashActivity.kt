@@ -3,15 +3,20 @@ package com.Arasoftsolutions.tecniapp_ice
 import android.animation.ObjectAnimator
 import android.content.Intent
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.widget.ImageView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import com.google.firebase.auth.FirebaseAuth
+import com.Arasoftsolutions.tecniapp_ice.preferences.DataStoreManager
+import com.Arasoftsolutions.tecniapp_ice.ui.onboarding.OnboardingActivity
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 
 class SplashActivity : AppCompatActivity() {
 
     private lateinit var auth: FirebaseAuth
+    private val dataStore by lazy { DataStoreManager.getInstance(applicationContext) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -27,22 +32,29 @@ class SplashActivity : AppCompatActivity() {
         fadeIn.duration = 1500
         fadeIn.start()
 
-        // Retrasar la transición a la siguiente actividad
-        Handler(Looper.getMainLooper()).postDelayed({
-            checkAuthentication()
-        }, 2000) // 2 segundos de pausa para mostrar la animación
+        lifecycleScope.launch {
+            delay(2000) // 2 segundos de pausa para mostrar la animación
+            routeFromSplash()
+        }
     }
 
-    // Método para verificar la autenticación del usuario
-    private fun checkAuthentication() {
-        val currentUser = auth.currentUser
-        if (currentUser == null) {
-            // Si no está autenticado, redirigir al LoginActivity
-            startActivity(Intent(this, LoginActivity::class.java))
+    private suspend fun routeFromSplash() {
+        val onboardingCompleted = dataStore.onboardingCompleted.first()
+        if (onboardingCompleted) {
+            navigateAfterSplash()
         } else {
-            // Si ya está autenticado, redirigir a la actividad principal
-            startActivity(Intent(this, ActivityMain::class.java))
+            startActivity(Intent(this, OnboardingActivity::class.java))
+            finish()
         }
-        finish() // Finaliza SplashActivity
+    }
+
+    private fun navigateAfterSplash() {
+        val nextActivity = if (auth.currentUser == null) {
+            Intent(this, LoginActivity::class.java)
+        } else {
+            Intent(this, ActivityMain::class.java)
+        }
+        startActivity(nextActivity)
+        finish()
     }
 }
