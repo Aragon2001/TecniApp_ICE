@@ -28,15 +28,14 @@
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="20dp"
                 app:cardBackgroundColor="@color/transparent"
-                app:cardCornerRadius="24dp"
+
                 app:cardElevation="0dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:background="@drawable/rounded_bg_f0f2f4"
-                    android:orientation="vertical"
-                    android:padding="24dp">
+
+                    android:orientation="vertical">
 
                     <TextView
                         style="@style/TextAppearance.Material3.TitleMedium"
@@ -96,7 +95,7 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:background="@drawable/rounded_bg_f0f2f4"
+
                     android:orientation="vertical"
                     android:padding="24dp">
 
@@ -147,7 +146,7 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:background="@drawable/rounded_bg_f0f2f4"
+
                     android:orientation="vertical"
                     android:padding="24dp">
 
@@ -345,7 +344,7 @@
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnCopiar"
-        style="@style/Widget.Material3.Button.TonalButton"
+        style="@style/Widget.Material3.Button"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
@@ -384,7 +383,7 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:background="@drawable/rounded_bg_f0f2f4"
+
                     android:orientation="vertical"
                     android:padding="24dp">
 
@@ -431,7 +430,7 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:background="@drawable/rounded_bg_f0f2f4"
+
                     android:orientation="vertical"
                     android:padding="24dp">
 

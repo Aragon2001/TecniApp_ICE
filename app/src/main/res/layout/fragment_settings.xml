@@ -70,7 +70,7 @@
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnSincronizarAhora"
-            style="@style/Widget.Material3.Button.FilledTonalButton"
+            style="@style/Widget.Material3.Button.OutlinedButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
@@ -178,13 +178,21 @@
             android:text="@string/settings_account_agency_placeholder" />
 
         <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnCerrarSesion"
-            style="@style/Widget.Material3.Button.OutlinedButton"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="@string/settings_sign_out"
-            android:textColor="?attr/colorError" />
+    android:id="@+id/btnCerrarSesion"
+    style="@style/Widget.Material3.Button.TonalButton"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="16dp"
+    android:text="@string/settings_sign_out"
+    android:textAllCaps="false"
+    android:textColor="@android:color/white"
+    android:backgroundTint="@color/red"
+    app:cornerRadius="20dp"
+    app:icon="@drawable/ic_logout"
+    app:iconGravity="textStart"
+    app:iconPadding="8dp"
+    app:iconTint="@color/white" />
+
 
         <com.google.android.material.divider.MaterialDivider
             android:layout_width="match_parent"
