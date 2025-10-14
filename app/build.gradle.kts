@@ -60,6 +60,7 @@ dependencies {
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.swiperefreshlayout)
     implementation(libs.androidx.datastore.preferences)
+    implementation("androidx.viewpager2:viewpager2:1.0.0")
 
     // Lifecycle / Navigation
     implementation(libs.androidx.lifecycle.viewmodel.ktx)

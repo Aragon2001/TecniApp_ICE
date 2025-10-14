@@ -27,6 +27,8 @@ class DataStoreManager private constructor(private val appContext: Context) {
 
     val darkThemeEnabled: Flow<Boolean> = booleanFlow(Keys.DARK_THEME_ENABLED, default = false)
 
+    val onboardingCompleted: Flow<Boolean> = booleanFlow(Keys.ONBOARDING_COMPLETED, default = false)
+
     val lastManualSyncMillis: Flow<Long?> = dataStore.data.map { preferences ->
         preferences[Keys.LAST_MANUAL_SYNC]
     }
@@ -47,6 +49,10 @@ class DataStoreManager private constructor(private val appContext: Context) {
         dataStore.edit { prefs -> prefs[Keys.DARK_THEME_ENABLED] = value }
     }
 
+    suspend fun setOnboardingCompleted(value: Boolean) {
+        dataStore.edit { prefs -> prefs[Keys.ONBOARDING_COMPLETED] = value }
+    }
+
     suspend fun markManualSyncNow(timestampMillis: Long = System.currentTimeMillis()) {
         dataStore.edit { prefs -> prefs[Keys.LAST_MANUAL_SYNC] = timestampMillis }
     }
@@ -60,6 +66,7 @@ class DataStoreManager private constructor(private val appContext: Context) {
         val GPS_ENABLED = booleanPreferencesKey("gps_enabled")
         val DARK_THEME_ENABLED = booleanPreferencesKey("dark_theme_enabled")
         val LAST_MANUAL_SYNC = longPreferencesKey("last_manual_sync")
+        val ONBOARDING_COMPLETED = booleanPreferencesKey("onboarding_completed")
     }
 
     companion object {

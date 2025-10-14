@@ -29,6 +29,24 @@
     <string name="action_accounts">Perfil</string>
     <string name="google_maps_key">AIzaSyBxgf6oA-rRK1-OlNft4oDgzF3gokLl1FU</string>
 
+    <!-- Onboarding -->
+    <string name="onboarding_toolbar_title">Recorrido de bienvenida</string>
+    <string name="onboarding_action_skip">Saltar</string>
+    <string name="onboarding_action_next">Siguiente</string>
+    <string name="onboarding_action_start">Empezar</string>
+    <string name="onboarding_action_view_again">Ver recorrido de bienvenida</string>
+    <string name="onboarding_title_welcome">Bienvenido a TecniApp ICE</string>
+    <string name="onboarding_desc_welcome">Centraliza tus operaciones de campo con autenticación segura y accesos rápidos a los módulos clave.</string>
+    <string name="onboarding_title_location">Mapas y localización en segundos</string>
+    <string name="onboarding_desc_location">Ubica postes, cuadrillas y clientes en el mapa, comparte direcciones y navega con precisión en territorio.</string>
+    <string name="onboarding_title_field_ops">Gestión integral en campo</string>
+    <string name="onboarding_desc_field_ops">Consulta medidores, actualiza luminarias y controla inventario incluso sin conexión; todo sincronizado con Room y Firebase.</string>
+    <string name="onboarding_title_incidents">Averías bajo control</string>
+    <string name="onboarding_desc_incidents">Recibe notificaciones en tiempo real, atiende incidencias y genera reportes listos para compartir con tu equipo.</string>
+    <string name="onboarding_title_planning">Planificación y seguimiento</string>
+    <string name="onboarding_desc_planning">Organiza tu programación, monitorea tareas y mantén la trazabilidad de cada intervención técnica.</string>
+    <string name="onboarding_illustration_content_description">Ilustración del recorrido de bienvenida</string>
+
     <!-- Averías -->
     <string name="averias_buscar">Buscar</string>
     <string name="averias_filtrar">Filtrar</string>
