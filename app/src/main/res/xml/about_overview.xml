@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  TecniApp ICE © 2025 Arasoft Solutions
+  Todos los derechos reservados.
+  Desarrollado para el Instituto Costarricense de Electricidad (ICE).
+-->
+<legalDocument>
+    <intro>
+        TecniApp ICE es una plataforma móvil desarrollada por Arasoft Solutions para modernizar y digitalizar el trabajo
+        técnico en campo del Instituto Costarricense de Electricidad (ICE). Su objetivo es mejorar la eficiencia en la
+        atención de averías, el control de materiales, la geolocalización de activos eléctricos y la trazabilidad de las
+        labores realizadas por las cuadrillas de mantenimiento, incluso cuando operan sin conexión a internet.
+    </intro>
+
+    <section title="⚙️ Principales características">
+        <paragraph>
+            Esta es la visión integral de TecniApp ICE y cómo cada módulo respalda la operación técnica institucional.
+        </paragraph>
+    </section>
+
+    <section title="🔧 1. Gestión de Averías">
+        <paragraph>
+            Permite recibir notificaciones en tiempo real sobre nuevas averías asignadas, consultar la ubicación,
+            visualizar el detalle del cliente, registrar materiales utilizados, horas de atención y cerrar la avería
+            como resuelta.
+        </paragraph>
+        <paragraph>
+            Toda la información se guarda localmente cuando no hay conexión y se sincroniza automáticamente con Firebase al
+            restablecer la red. Incluye chips de estado (Pendiente, Asignada, En atención, Resuelta) con colores para un
+            control claro y rápido.
+        </paragraph>
+    </section>
+
+    <section title="🗺️ 2. Localización y mapas">
+        <paragraph>
+            Muestra coordenadas GPS exactas de medidores, luminarias o averías y permite abrir la navegación con Google
+            Maps o Field Maps (modo corporativo del ICE).
+        </paragraph>
+        <paragraph>
+            Cada registro integra las coordenadas Del Poste y Al Poste para documentar el rango físico de la red y asegurar
+            el trabajo preciso de las cuadrillas en campo.
+        </paragraph>
+    </section>
+
+    <section title="💡 3. Control de Luminarias">
+        <paragraph>
+            Registra el estado de cada luminaria reportada (dañada, revisada, reemplazada o en mantenimiento) y permite
+            documentar fotográficamente cada intervención, guardando la ubicación exacta.
+        </paragraph>
+        <paragraph>
+            El ICE obtiene trazabilidad completa de los mantenimientos preventivos y correctivos en alumbrado público.
+        </paragraph>
+    </section>
+
+    <section title="🚚 4. Gestión de Vehículos">
+        <paragraph>
+            Administra el catálogo de vehículos institucionales asignados a técnicos o cuadrillas y vincula cada avería con
+            el vehículo utilizado, registrando kilometraje inicial y final para seguimiento operativo.
+        </paragraph>
+        <paragraph>
+            Incluye validaciones para evitar duplicidades y mantener control de recursos por agencia y subregión.
+        </paragraph>
+    </section>
+
+    <section title="📍 5. Catálogo de Localizaciones">
+        <paragraph>
+            Centraliza todas las ubicaciones eléctricas registradas en la red (pueblos, calles, postes y coordenadas) y
+            permite agregar, editar o eliminar registros desde el módulo de administración.
+        </paragraph>
+        <paragraph>
+            Este catálogo funciona como base para vincular medidores, averías y luminarias.
+        </paragraph>
+    </section>
+
+    <section title="⚡ 6. Catálogo de Medidores">
+        <paragraph>
+            Facilita consultar y registrar medidores, clientes, postes, metros y localizaciones asociadas con búsqueda
+            rápida, validación de datos y soporte offline.
+        </paragraph>
+        <paragraph>
+            Los registros se actualizan automáticamente para que todos los técnicos trabajen con catálogos sincronizados.
+        </paragraph>
+    </section>
+
+    <section title="🧰 7. Gestión de Inventario y Materiales">
+        <paragraph>
+            Permite registrar los materiales utilizados en una avería y generar resúmenes de consumo totales por técnico,
+            avería o período, facilitando el control de existencias y uso racional de materiales institucionales.
+        </paragraph>
+    </section>
+
+    <section title="📅 8. Programación y asignación de tareas">
+        <paragraph>
+            Los supervisores asignan tareas y programaciones desde la base global; los técnicos reciben notificaciones
+            automáticas, visualizan su agenda diaria y actualizan el estado de cada actividad con observaciones.
+        </paragraph>
+    </section>
+
+    <section title="🛰️ 9. Modo Offline Inteligente">
+        <paragraph>
+            Utiliza una base de datos local con Room para guardar temporalmente información y permitir registrar, editar o
+            cerrar averías sin conexión.
+        </paragraph>
+        <paragraph>
+            Al reconectarse, sincroniza con Firebase en segundo plano mediante SyncWorker y FirebaseSyncManager, evitando
+            pérdidas de datos y garantizando continuidad en áreas sin cobertura.
+        </paragraph>
+    </section>
+
+    <section title="🔄 10. Sincronización Automática con Firebase">
+        <paragraph>
+            Conecta usuarios, averías, medidores, materiales, localizaciones y vehículos con Firebase Realtime Database
+            para mantener catálogos actualizados sin interrumpir el trabajo en campo.
+        </paragraph>
+    </section>
+
+    <section title="👤 11. Gestión de Usuarios">
+        <paragraph>
+            El inicio de sesión se realiza mediante Firebase Authentication con correo institucional @ice.go.cr, guardando
+            datos del técnico como nombre, cédula, subregión, agencia y vehículo asignado.
+        </paragraph>
+        <paragraph>
+            Permite actualizar perfil, foto y contraseña e incluye la opción de recordar usuario para un acceso rápido.
+        </paragraph>
+    </section>
+
+    <section title="🧭 12. Panel de Administración">
+        <paragraph>
+            Acceso exclusivo para administradores que gestiona catálogos principales de medidores, vehículos y
+            localizaciones con sincronización global inmediata.
+        </paragraph>
+    </section>
+
+    <section title="📊 13. Módulo de Reportes">
+        <paragraph>
+            Genera informes estadísticos sobre averías atendidas, materiales usados y consumo por técnico o vehículo, con
+            exportación a Excel o PDF y encabezados corporativos de Arasoft Solutions e ICE.
+        </paragraph>
+        <paragraph>
+            Los reportes incluyen pie de página automático con derechos reservados institucionales.
+        </paragraph>
+    </section>
+
+    <section title="🌐 14. Seguridad y privacidad">
+        <paragraph>
+            Cada registro se asocia al técnico autenticado; toda comunicación con Firebase está cifrada mediante HTTPS/TLS y
+            la app cumple con la Ley 8968 de Protección de Datos Personales de Costa Rica.
+        </paragraph>
+        <paragraph>
+            La política de privacidad se mantiene disponible desde el menú principal para consulta permanente.
+        </paragraph>
+    </section>
+
+    <section title="💬 15. Soporte y mantenimiento">
+        <paragraph>
+            Arasoft Solutions brinda soporte técnico, mantenimiento continuo y actualizaciones evolutivas para el ICE.
+        </paragraph>
+        <paragraph>
+            Canales oficiales de contacto: correo {{supportEmail}}, desarrollador Jostin Aragón Barboza e Institución
+            usuaria Instituto Costarricense de Electricidad (ICE).
+        </paragraph>
+    </section>
+
+    <section title="🎯 Objetivo general">
+        <paragraph>
+            TecniApp ICE busca optimizar procesos técnicos y administrativos del ICE, reducir tiempos de atención,
+            mejorar la trazabilidad y ofrecer una herramienta moderna, intuitiva y confiable para el personal de campo.
+        </paragraph>
+    </section>
+
+    <section title="🏗️ Desarrollado por">
+        <paragraph>Arasoft Solutions.</paragraph>
+        <paragraph>Desarrollador: Jostin Aragón Barboza.</paragraph>
+        <paragraph>Uso institucional exclusivo del Instituto Costarricense de Electricidad (ICE) bajo licencia de Arasoft Solutions.</paragraph>
+    </section>
+
+    <footer>
+        <paragraph>TecniApp ICE © {{year}} Arasoft Solutions · Todos los derechos reservados.</paragraph>
+    </footer>
+</legalDocument>
