@@ -11,7 +11,7 @@
 
     <TextView
         android:id="@+id/tvTitulo"
-        style="@style/TextAppearance.MaterialComponents.Body1"
+        style="@style/TextAppearance.Material3.BodyLarge"
         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
         android:textStyle="bold"
@@ -19,7 +19,7 @@
 
     <TextView
         android:id="@+id/tvSubtitulo"
-        style="@style/TextAppearance.MaterialComponents.Body2"
+        style="@style/TextAppearance.Material3.BodyMedium"
         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
         android:layout_marginTop="2dp"
@@ -27,7 +27,7 @@
 
     <TextView
         android:id="@+id/tvAgencia"
-        style="@style/TextAppearance.MaterialComponents.Body2"
+        style="@style/TextAppearance.Material3.BodyMedium"
         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
         android:layout_marginTop="2dp"
@@ -35,7 +35,7 @@
 
     <TextView
         android:id="@+id/tvVehiculo"
-        style="@style/TextAppearance.MaterialComponents.Body2"
+        style="@style/TextAppearance.Material3.BodyMedium"
         android:layout_marginTop="2dp"
         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -43,7 +43,7 @@
 
     <TextView
         android:id="@+id/tvMateriales"
-        style="@style/TextAppearance.MaterialComponents.Body2"
+        style="@style/TextAppearance.Material3.BodyMedium"
         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
         android:layout_marginTop="6dp"
