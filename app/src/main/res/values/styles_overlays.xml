@@ -1,13 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- ================================================================== -->
+    <!-- Overlays y componentes Material 3 reutilizables                     -->
+    <!-- Mantener cada sección documentada para facilitar el mantenimiento. -->
+    <!-- ================================================================== -->
 
-    <!-- Toolbar (menús emergentes legibles) -->
+    <!-- Toolbars y menús desplegados -->
     <style name="ThemeOverlay.Tecni.Toolbar" parent="ThemeOverlay.Material3.ActionBar">
         <item name="colorOnSurface">@color/on_light</item>
         <item name="android:textColor">@color/on_light</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
     </style>
 
-    <!-- SearchBar/SearchView (look glass) -->
+    <!-- SearchBar/SearchView (look & feel glass) -->
     <style name="ThemeOverlay.Tecni.Search" parent="ThemeOverlay.Material3">
         <item name="colorSurface">@color/glass_light</item>
         <item name="colorOnSurface">@color/on_light</item>
@@ -20,8 +25,38 @@
         <item name="colorSurfaceVariant">@color/surface_variant_dark</item>
     </style>
 
-    <!-- Base chips (SIN multilínea) -->
-    <!-- Usa Filter (selección) o Assist (acción). Para filtros de estado, Filter es más apropiado -->
+    <!-- TextInputLayout densos adaptados a Material 3 -->
+    <style name="Tecni.TextInput.Outlined" parent="Widget.Material3.TextInputLayout.OutlinedBox">
+        <item name="boxStrokeColor">@color/ice_blue</item>
+        <item name="hintTextColor">@color/light_gray</item>
+    </style>
+
+    <style name="Tecni.TextInput.Outlined.Dense" parent="Tecni.TextInput.Outlined">
+        <item name="android:paddingTop">0dp</item>
+        <item name="android:paddingBottom">0dp</item>
+        <item name="boxCollapsedPaddingTop">8dp</item>
+        <item name="boxCollapsedPaddingBottom">8dp</item>
+        <item name="boxCollapsedPaddingStart">12dp</item>
+        <item name="boxCollapsedPaddingEnd">12dp</item>
+        <item name="boxExpandedPaddingTop">8dp</item>
+        <item name="boxExpandedPaddingBottom">8dp</item>
+    </style>
+
+    <style name="Tecni.TextInput.Outlined.Dropdown" parent="Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
+        <item name="boxStrokeColor">@color/ice_blue</item>
+        <item name="hintTextColor">@color/light_gray</item>
+    </style>
+
+    <style name="Tecni.TextInput.Outlined.Dense.Dropdown" parent="Tecni.TextInput.Outlined.Dropdown">
+        <item name="boxCollapsedPaddingTop">8dp</item>
+        <item name="boxCollapsedPaddingBottom">8dp</item>
+        <item name="boxCollapsedPaddingStart">12dp</item>
+        <item name="boxCollapsedPaddingEnd">12dp</item>
+        <item name="boxExpandedPaddingTop">8dp</item>
+        <item name="boxExpandedPaddingBottom">8dp</item>
+    </style>
+
+    <!-- Chips base (sin multilínea). Para filtros de estado, Filter es el más apropiado -->
     <style name="Tecni.Chip.Base" parent="Widget.Material3.Chip.Filter">
         <item name="android:minHeight">32dp</item>
         <item name="android:minWidth">0dp</item>
@@ -34,6 +69,13 @@
         <item name="android:textStyle">bold</item>
         <item name="android:textAllCaps">true</item>
         <item name="chipMinTouchTargetSize">0dp</item>
+    </style>
+
+    <style name="Tecni.Chip.Status" parent="Widget.Material3.Chip.Assist">
+        <item name="android:minHeight">32dp</item>
+        <item name="chipCornerRadius">16dp</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="chipStrokeWidth">0dp</item>
     </style>
 
     <!-- Chips por estado -->
@@ -96,7 +138,7 @@
         <item name="iconSize">16dp</item>
     </style>
 
-    <!-- Botones originales (para otros usos) -->
+    <!-- Botones originales (para otros usos heredados) -->
     <style name="Tecni.Button.Primary.Original" parent="Widget.Material3.Button.TonalButton">
         <item name="android:minHeight">40dp</item>
         <item name="android:ellipsize">end</item>
@@ -113,5 +155,4 @@
         <item name="android:paddingHorizontal">16dp</item>
         <item name="shapeAppearance">@style/ShapeAppearance.Material3.Corner.Large</item>
     </style>
-
 </resources>
