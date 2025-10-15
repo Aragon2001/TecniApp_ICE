@@ -29,7 +29,7 @@
 
             <com.google.android.material.chip.Chip
                 android:id="@+id/chipEstado"
-                style="@style/Widget.MaterialComponents.Chip.Entry"
+                style="@style/Tecni.Chip.Status"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:clickable="false"
@@ -217,7 +217,7 @@
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilTecnicoBuscar"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+            style="@style/Tecni.TextInput.Outlined.Dropdown"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
@@ -252,7 +252,7 @@
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilMaterialBuscar"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+            style="@style/Tecni.TextInput.Outlined.Dropdown"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
@@ -285,7 +285,7 @@
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnTipoSector"
-                style="@style/Widget.Material3.Button.OutlinedButton"
+                style="@style/Tecni.Button.Outlined"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -294,7 +294,7 @@
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnTipoCliente"
-                style="@style/Widget.Material3.Button.OutlinedButton"
+                style="@style/Tecni.Button.Outlined"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -304,7 +304,7 @@
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilMedidor"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            style="@style/Tecni.TextInput.Outlined"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
@@ -345,7 +345,7 @@
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilLocalizacion"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            style="@style/Tecni.TextInput.Outlined"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
@@ -361,7 +361,7 @@
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilCausa"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            style="@style/Tecni.TextInput.Outlined"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
@@ -377,7 +377,7 @@
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilObs"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            style="@style/Tecni.TextInput.Outlined"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
@@ -393,7 +393,7 @@
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilAtendido"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            style="@style/Tecni.TextInput.Outlined"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
@@ -408,7 +408,7 @@
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilVehiculo"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+            style="@style/Tecni.TextInput.Outlined.Dropdown"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
@@ -423,7 +423,7 @@
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilHoraInicio"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            style="@style/Tecni.TextInput.Outlined"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
@@ -438,7 +438,7 @@
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilHoraFinal"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            style="@style/Tecni.TextInput.Outlined"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
@@ -453,7 +453,7 @@
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilKmInicio"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            style="@style/Tecni.TextInput.Outlined"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
@@ -468,7 +468,7 @@
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilKmFinal"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            style="@style/Tecni.TextInput.Outlined"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
@@ -490,7 +490,7 @@
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnAsignar"
-                style="@style/Widget.Material3.Button"
+                style="@style/Tecni.Button.Primary"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="@string/averia_asignar"
@@ -498,7 +498,7 @@
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnAtender"
-                style="@style/Widget.Material3.Button"
+                style="@style/Tecni.Button.Primary"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
@@ -507,7 +507,7 @@
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnResolver"
-                style="@style/Widget.Material3.Button"
+                style="@style/Tecni.Button.Primary"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
@@ -517,7 +517,7 @@
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnExportar"
-                style="@style/Widget.Material3.Button"
+                style="@style/Tecni.Button.Primary"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
@@ -527,7 +527,7 @@
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnVerMapa"
-                style="@style/Widget.Material3.Button.OutlinedButton"
+                style="@style/Tecni.Button.Outlined"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"

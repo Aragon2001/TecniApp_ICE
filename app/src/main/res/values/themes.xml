@@ -10,8 +10,11 @@
 
         <!-- Superficies (día) -->
         <item name="colorSurface">@color/surface_light</item>
-        <item name="colorOnSurface">@color/on_light</item>
         <item name="colorSurfaceVariant">@color/surface_variant_light</item>
+        <item name="colorOnSurface">@color/on_light</item>
+        <item name="colorBackground">@color/bg_light</item>
+        <item name="colorOnBackground">@color/on_light</item>
+        <item name="colorOutline">@color/outline_soft</item>
 
         <!-- Estados -->
         <item name="colorError">@color/error_500</item>
@@ -23,6 +26,7 @@
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
 
         <!-- Estética -->
         <item name="materialCardViewStyle">@style/Tecni.Card</item>
