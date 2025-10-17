@@ -46,10 +46,10 @@
     <color name="glass_dark">#4D1C1F26</color>
 
     <!-- Chips por estado (día) -->
-    <color name="chip_asignada">#FFE082</color>
-    <color name="chip_en_atencion">#80D8FF</color>
-    <color name="chip_pendiente">#FFAB91</color>
-    <color name="chip_resuelta">#A5D6A7</color>
+    <color name="chip_asignada">#debb10</color>
+    <color name="chip_en_atencion">#3b7fff</color>
+    <color name="chip_pendiente">#d10a2f</color>
+    <color name="chip_resuelta">#1bd10a</color>
 
     <!-- Outline suave -->
     <color name="outline_soft">#1F000000</color>

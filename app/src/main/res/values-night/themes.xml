@@ -7,8 +7,8 @@
         <item name="colorOnSecondary">@color/on_dark</item>
 
         <!-- Superficies/fondos (noche) -->
-        <item name="android:colorBackground">@color/bg_dark</item>
         <item name="colorBackground">@color/bg_dark</item>
+
         <item name="colorOnBackground">@color/on_dark</item>
         <item name="colorSurface">@color/surface_dark</item>
         <item name="colorSurfaceVariant">@color/surface_variant_dark</item>
@@ -20,11 +20,11 @@
         <item name="colorTertiary">@color/success_500</item>
 
         <!-- Window -->
-        <item name="android:windowBackground">@color/bg_dark</item>
-        <item name="android:statusBarColor">@android:color/transparent</item>
-        <item name="android:navigationBarColor">@android:color/transparent</item>
-        <item name="android:windowLightStatusBar">false</item>
-        <item name="android:windowLightNavigationBar">false</item>
+        <item name="windowBackground">@color/bg_dark</item>
+        <item name="statusBarColor">@android:color/transparent</item>
+        <item name="navigationBarColor">@android:color/transparent</item>
+        <item name="windowLightStatusBar">false</item>
+        <item name="windowLightNavigationBar">false</item>
 
         <!-- Estética -->
         <item name="materialCardViewStyle">@style/Tecni.Card.Dark</item>
@@ -41,14 +41,14 @@
 
     <style name="Tecni.Button.Dark" parent="Widget.Material3.Button.TonalButton">
         <item name="cornerRadius">16dp</item>
-        <item name="android:minHeight">44dp</item>
+        <item name="minHeight">44dp</item>
     </style>
 
     <style name="Tecni.Chip.Dark" parent="Widget.Material3.Chip.Filter">
-        <item name="android:minHeight">36dp</item>
+        <item name="minHeight">36dp</item>
     </style>
 
     <style name="Tecni.Toolbar.Dark" parent="Widget.Material3.Toolbar">
-        <item name="android:elevation">1dp</item>
+        <item name="elevation">1dp</item>
     </style>
 </resources>

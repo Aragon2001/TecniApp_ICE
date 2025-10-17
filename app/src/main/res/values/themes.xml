@@ -12,7 +12,7 @@
         <item name="colorSurface">@color/surface_light</item>
         <item name="colorSurfaceVariant">@color/surface_variant_light</item>
         <item name="colorOnSurface">@color/on_light</item>
-        <item name="colorBackground">@color/bg_light</item>
+        <item name="android:background">@color/bg_light</item>
         <item name="colorOnBackground">@color/on_light</item>
         <item name="colorOutline">@color/outline_soft</item>
 
@@ -22,11 +22,11 @@
 
         <!-- Window / barras -->
         <item name="android:windowBackground">@color/bg_light</item>
-        <item name="android:colorBackground">@color/bg_light</item>
-        <item name="android:statusBarColor">@android:color/transparent</item>
-        <item name="android:navigationBarColor">@android:color/transparent</item>
-        <item name="android:windowLightStatusBar">true</item>
-        <item name="android:windowLightNavigationBar">true</item>
+        <item name="colorBackground">@color/bg_light</item>
+        <item name="statusBarColor">@android:color/transparent</item>
+        <item name="navigationBarColor">@android:color/transparent</item>
+        <item name="windowLightStatusBar">true</item>
+        <item name="windowLightNavigationBar">true</item>
 
         <!-- Estética -->
         <item name="materialCardViewStyle">@style/Tecni.Card</item>
@@ -42,14 +42,14 @@
     </style>
 
     <style name="Tecni.Button" parent="Widget.Material3.Button.TonalButton">
-        <item name="android:minHeight">44dp</item>
+        <item name="minHeight">44dp</item>
     </style>
 
     <style name="Tecni.Chip" parent="Widget.Material3.Chip.Filter">
-        <item name="android:minHeight">36dp</item>
+        <item name="minHeight">36dp</item>
     </style>
 
     <style name="Tecni.Toolbar" parent="Widget.Material3.Toolbar">
-        <item name="android:elevation">2dp</item>
+        <item name="elevation">2dp</item>
     </style>
 </resources>
