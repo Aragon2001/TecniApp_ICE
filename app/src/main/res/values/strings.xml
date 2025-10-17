@@ -572,13 +572,13 @@ Cliente: %4$s</string>
         Desarrollado para el Instituto Costarricense de Electricidad (ICE).
     -->
     <!-- Legal: Terms dialog -->
-    <string name="terms_title">Términos de uso de TecniApp ICE</string>
-    <string name="terms_accept">Aceptar</string>
-    <string name="terms_decline">Salir</string>
+
+
+
     <string name="dialog_close">Cerrar</string>
 
     <!-- Legal: Privacy policy -->
-    <string name="privacy_policy_title">Política de privacidad</string>
+
     <string name="privacy_policy_view_terms">Revisar términos completos</string>
     <string name="privacy_policy_contact_support">Contactar a soporte</string>
     <string name="privacy_policy_contact_email">soporte@arasoftsolutions.com</string>
