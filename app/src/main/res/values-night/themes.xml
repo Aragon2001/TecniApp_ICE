@@ -7,7 +7,7 @@
         <item name="colorOnSecondary">@color/on_dark</item>
 
         <!-- Superficies/fondos (noche) -->
-        <item name="colorBackground">@color/bg_dark</item>
+        <item name="android:colorBackground">@color/bg_dark</item>
 
         <item name="colorOnBackground">@color/on_dark</item>
         <item name="colorSurface">@color/surface_dark</item>
@@ -20,11 +20,11 @@
         <item name="colorTertiary">@color/success_500</item>
 
         <!-- Window -->
-        <item name="windowBackground">@color/bg_dark</item>
-        <item name="statusBarColor">@android:color/transparent</item>
-        <item name="navigationBarColor">@android:color/transparent</item>
-        <item name="windowLightStatusBar">false</item>
-        <item name="windowLightNavigationBar">false</item>
+        <item name="android:windowBackground">@color/bg_dark</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
 
         <!-- Estética -->
         <item name="materialCardViewStyle">@style/Tecni.Card.Dark</item>
