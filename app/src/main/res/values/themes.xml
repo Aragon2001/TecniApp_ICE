@@ -22,11 +22,11 @@
 
         <!-- Window / barras -->
         <item name="android:windowBackground">@color/bg_light</item>
-        <item name="colorBackground">@color/bg_light</item>
-        <item name="statusBarColor">@android:color/transparent</item>
-        <item name="navigationBarColor">@android:color/transparent</item>
-        <item name="windowLightStatusBar">true</item>
-        <item name="windowLightNavigationBar">true</item>
+        <item name="android:colorBackground">@color/bg_light</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
 
         <!-- Estética -->
         <item name="materialCardViewStyle">@style/Tecni.Card</item>
