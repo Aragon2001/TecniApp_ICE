@@ -13,7 +13,6 @@ import android.view.View
 import android.widget.TextView
 import android.widget.Toast
 import androidx.core.view.isVisible
-import androidx.core.widget.TextViewCompat
 import androidx.fragment.app.Fragment
 import com.Arasoftsolutions.tecniapp_ice.R
 import com.Arasoftsolutions.tecniapp_ice.databinding.FragmentPoliciesBinding
@@ -22,7 +21,6 @@ import com.Arasoftsolutions.tecniapp_ice.ui.legal.StructuredTextParser
 import com.Arasoftsolutions.tecniapp_ice.ui.legal.renderStructuredContent
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import java.util.Calendar
-import kotlin.math.roundToInt
 
 class PoliciesFragment : Fragment(R.layout.fragment_policies) {
 
@@ -80,14 +78,12 @@ class PoliciesFragment : Fragment(R.layout.fragment_policies) {
         } else {
             val fallback = getString(R.string.structured_text_parse_error)
             binding.textPoliciesSubtitle.renderStructuredContent(fallback)
-            binding.containerPoliciesSections.removeAllViews()
-            val padding = (16 * resources.displayMetrics.density).roundToInt()
-            val fallbackView = TextView(requireContext()).apply {
-                TextViewCompat.setTextAppearance(this, R.style.TextAppearance_Material3_BodyLarge)
-                text = fallback
-                setPadding(0, padding, 0, padding)
-            }
-            binding.containerPoliciesSections.addView(fallbackView)
+            val container = binding.containerPoliciesSections
+            container.removeAllViews()
+            val fallbackView = layoutInflater.inflate(R.layout.item_structured_section, container, false)
+            fallbackView.findViewById<TextView>(R.id.textSectionTitle).isVisible = false
+            fallbackView.findViewById<TextView>(R.id.textSectionBody).renderStructuredContent(fallback)
+            container.addView(fallbackView)
             binding.policiesFooterDivider.isVisible = false
             binding.textPoliciesFooter.isVisible = false
         }
