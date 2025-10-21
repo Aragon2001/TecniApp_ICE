@@ -82,6 +82,7 @@
     <string name="averia_cliente_label">Cliente: %1$s</string>
     <string name="averia_localizacion_label">Localización: %1$s</string>
     <string name="averia_localizacion_label_hint">Localización (opcional)</string>
+    <string name="averia_direccion_label">Dirección: %1$s</string>
     <string name="averia_tecnicos_atendieron">Técnicos que atendieron</string>
     <string name="averia_tecnico_autocomplete_hint">Buscar técnico</string>
     <string name="averia_agregar_tecnico">Agregar +</string>
@@ -123,6 +124,14 @@ Cliente: %4$s</string>
     <string name="averia_notificacion_map_action">Ver en mapa</string>
     <string name="averia_notificacion_map_label_default">Avería reportada</string>
     <string name="averia_field_maps_required">Instala Field Maps para abrir la ubicación.</string>
+    <string name="averia_map_dialog_title">Abrir ubicación con…</string>
+    <string name="averia_map_option_field_maps">Field Maps</string>
+    <string name="averia_map_option_google_maps">Google Maps</string>
+    <string name="averia_map_option_browser">Navegador web</string>
+    <string name="averia_map_error_no_location">La ubicación no está disponible.</string>
+    <string name="averia_map_error_field_maps">Field Maps no está instalado o el vínculo es inválido.</string>
+    <string name="averia_map_error_google_maps">Google Maps no está disponible.</string>
+    <string name="averia_map_error_browser">No se pudo abrir en el navegador.</string>
     <string name="averia_channel_name">Averías</string>
     <string name="averia_channel_description">Alertas sobre nuevas averías y cambios de estado.</string>
     <string name="averia_notification_permission_granted">Notificaciones activadas.</string>
@@ -225,6 +234,7 @@ Cliente: %4$s</string>
     <string name="averia_pdf_table_label_region">Región</string>
     <string name="averia_pdf_table_label_agency">Agencia</string>
     <string name="averia_pdf_table_label_client">Cliente</string>
+    <string name="averia_pdf_table_label_address">Dirección (GPS)</string>
     <string name="averia_pdf_table_label_location_text">Localización</string>
     <string name="averia_pdf_table_label_location">Coordenadas</string>
     <string name="averia_pdf_table_label_generated">Generado el</string>
