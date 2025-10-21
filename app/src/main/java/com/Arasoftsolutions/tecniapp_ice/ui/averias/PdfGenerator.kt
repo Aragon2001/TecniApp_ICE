@@ -181,6 +181,7 @@ object PdfGenerator {
             val observations = item.observaciones.ifBlank { emptyValue }
             val client = item.cliente?.takeIf { it.isNotBlank() } ?: emptyValue
             val textualLocation = item.localizacion?.takeIf { it.isNotBlank() } ?: emptyValue
+            val geocodedAddress = item.direccion?.takeIf { it.isNotBlank() } ?: emptyValue
             val kilometraje = if (item.kilometrajeInicio != null || item.kilometrajeFinal != null) {
                 val inicio = item.kilometrajeInicio?.toString() ?: emptyValue
                 val fin = item.kilometrajeFinal?.toString() ?: emptyValue
@@ -217,6 +218,7 @@ object PdfGenerator {
                 InfoRow(context.getString(R.string.averia_pdf_table_label_region), region),
                 InfoRow(context.getString(R.string.averia_pdf_table_label_agency), agency),
                 InfoRow(context.getString(R.string.averia_pdf_table_label_location_text), textualLocation),
+                InfoRow(context.getString(R.string.averia_pdf_table_label_address), geocodedAddress),
                 InfoRow(context.getString(R.string.averia_pdf_table_label_affectation), affectation),
                 InfoRow(context.getString(R.string.averia_pdf_table_label_event_date), eventDate),
                 InfoRow(context.getString(R.string.averia_pdf_table_label_start_time), startAttention),
