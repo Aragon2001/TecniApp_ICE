@@ -98,6 +98,15 @@
             android:textAppearance="?attr/textAppearanceBodySmall" />
 
         <TextView
+            android:id="@+id/tvDireccionGps"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:textAppearance="?attr/textAppearanceBodySmall"
+            android:textIsSelectable="true"
+            android:visibility="gone" />
+
+        <TextView
     android:id="@+id/tvAsignado"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
