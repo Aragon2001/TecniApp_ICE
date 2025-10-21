@@ -4,34 +4,47 @@
   Todos los derechos reservados.
   Desarrollado para el Instituto Costarricense de Electricidad (ICE).
 -->
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:background="?attr/colorSurfaceVariant"
-    android:padding="20dp"
-    android:layout_marginBottom="12dp"
-    android:clipToPadding="false">
+    android:layout_marginTop="16dp"
+    android:layout_marginBottom="16dp"
+    app:cardElevation="0dp"
+    app:cardUseCompatPadding="false"
+    app:strokeColor="?attr/colorOutlineVariant"
+    app:strokeWidth="1dp">
 
-    <TextView
-        android:id="@+id/textSectionTitle"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
-        android:textStyle="bold"
-        android:textColor="?attr/colorOnSurface" />
+        android:orientation="vertical"
+        android:padding="20dp"
+        android:clipToPadding="false">
 
-    <TextView
-        android:id="@+id/textSectionBody"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
-        android:textIsSelectable="true"
-        android:lineSpacingExtra="6dp"
-        android:justificationMode="inter_word"
-        android:textColor="?attr/colorOnSurface"
-        tools:targetApi="o" />
+        <TextView
+            android:id="@+id/textSectionTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+            android:textColor="?attr/colorOnSurface"
+            android:textStyle="bold"
+            android:textAlignment="viewStart" />
 
-</LinearLayout>
+        <TextView
+            android:id="@+id/textSectionBody"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:lineSpacingExtra="6dp"
+            android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
+            android:textColor="?attr/colorOnSurface"
+            android:textIsSelectable="true"
+            android:textAlignment="viewStart"
+            android:justificationMode="inter_word"
+            tools:targetApi="o" />
+
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>
