@@ -50,6 +50,8 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
     private var tecnicosCatalogo: List<TecnicoEntity> = emptyList()
     private val tecnicosSeleccionados = linkedMapOf<String, TecnicoAtencion>()
     private val horaFormatter = SimpleDateFormat("HH:mm", Locale.getDefault()).apply { isLenient = false }
+    private var inputsEditable = true
+    private var finalInputsEnabled = false
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _b = BottomsheetAveriaDetalleBinding.inflate(inflater, container, false)
@@ -64,12 +66,18 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
         tipoSeleccionado = item.tipoAfectacion
         clienteSeleccionado = item.cliente
 
-        b.etHoraInicio.setOnClickListener { openTimePicker { h, m ->
-            b.etHoraInicio.setText(String.format(Locale.getDefault(), "%02d:%02d", h, m))
-        } }
-        b.etHoraFin.setOnClickListener { openTimePicker { h, m ->
-            b.etHoraFin.setText(String.format(Locale.getDefault(), "%02d:%02d", h, m))
-        } }
+        b.etHoraInicio.setOnClickListener {
+            if (!finalInputsEnabled) return@setOnClickListener
+            openTimePicker { h, m ->
+                b.etHoraInicio.setText(String.format(Locale.getDefault(), "%02d:%02d", h, m))
+            }
+        }
+        b.etHoraFin.setOnClickListener {
+            if (!finalInputsEnabled) return@setOnClickListener
+            openTimePicker { h, m ->
+                b.etHoraFin.setText(String.format(Locale.getDefault(), "%02d:%02d", h, m))
+            }
+        }
 
         bindHeader(estadoInicial)
         bindResumenes()
@@ -89,6 +97,7 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
         }
         ensureTecnicoActual()
         renderTecnicos()
+        applyInputState(estadoInicial)
 
         // Vehículos (simple)
         viewLifecycleOwner.lifecycleScope.launch {
@@ -315,6 +324,11 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
             getString(R.string.averia_reporte_coordenadas_sin_datos)
         }
         b.tvCoordenadas.text = coordsText
+        val direccionGps = item.direccion?.takeIf { it.isNotBlank() }
+        b.tvDireccionGps.apply {
+            isVisible = !direccionGps.isNullOrBlank()
+            text = direccionGps?.let { getString(R.string.averia_direccion_label, it) }.orEmpty()
+        }
 
         val fechaEvento = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(item.fechaMillis)
         b.tvFechaDetalle.text = getString(R.string.averia_fecha_evento_label, fechaEvento)
@@ -401,6 +415,7 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
 
     private fun setupMedidorBusqueda() {
         b.tilMedidor.setEndIconOnClickListener {
+            if (!inputsEditable) return@setEndIconOnClickListener
             if (tipoSeleccionado == TipoAfectacion.CLIENTE) {
                 vm.buscarMedidor(b.etMedidor.text?.toString().orEmpty())
             }
@@ -421,7 +436,7 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
             vm.medidorEstado.collectLatest { state ->
                 when (state) {
                     MedidorLookupState.Idle -> {
-                        b.tilMedidor.isEndIconVisible = true
+                        b.tilMedidor.isEndIconVisible = inputsEditable && tipoSeleccionado == TipoAfectacion.CLIENTE
                         if (tipoSeleccionado == TipoAfectacion.CLIENTE) {
                             b.tilMedidor.error = null
                             b.tilMedidor.helperText = null
@@ -436,7 +451,7 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
                         medidorSeleccionado = state.medidor
                         clienteSeleccionado = state.medidor.cliente?.trim().takeIf { !it.isNullOrBlank() }
                             ?: clienteSeleccionado
-                        b.tilMedidor.isEndIconVisible = true
+                        b.tilMedidor.isEndIconVisible = inputsEditable && tipoSeleccionado == TipoAfectacion.CLIENTE
                         b.tilMedidor.error = null
                         b.tilMedidor.helperText = getString(
                             R.string.averia_medidor_encontrado,
@@ -463,12 +478,12 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
                     }
                     is MedidorLookupState.NotFound -> {
                         medidorSeleccionado = null
-                        b.tilMedidor.isEndIconVisible = true
+                        b.tilMedidor.isEndIconVisible = inputsEditable && tipoSeleccionado == TipoAfectacion.CLIENTE
                         b.tilMedidor.helperText = null
                         b.tilMedidor.error = getString(R.string.averia_medidor_no_encontrado, state.numero)
                     }
                     is MedidorLookupState.Error -> {
-                        b.tilMedidor.isEndIconVisible = true
+                        b.tilMedidor.isEndIconVisible = inputsEditable && tipoSeleccionado == TipoAfectacion.CLIENTE
                         b.tilMedidor.helperText = null
                         b.tilMedidor.error = state.message.ifBlank {
                             getString(R.string.medidor_estado_error_generico)
@@ -490,6 +505,7 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
         suppressTipoListener = false
         val esCliente = tipoSeleccionado == TipoAfectacion.CLIENTE
         b.tilMedidor.isVisible = esCliente
+        b.tilMedidor.isEndIconVisible = esCliente && inputsEditable
         if (!esCliente) {
             b.tilMedidor.error = null
             b.tilMedidor.helperText = null
@@ -550,6 +566,68 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
             text = detalleParts.joinToString(" • ")
             isVisible = esCliente && detalleParts.isNotEmpty()
         }
+    }
+
+    private fun applyInputState(estado: Estado) {
+        val editable = estado != Estado.PENDIENTE
+        val finalEditable = estado == Estado.EN_ATENCION || estado == Estado.RESUELTA
+        inputsEditable = editable
+        finalInputsEnabled = finalEditable
+
+        b.toggleTipoAfectacion.isEnabled = editable
+        b.btnTipoCliente.isEnabled = editable
+        b.btnTipoSector.isEnabled = editable
+
+        b.tilTecnicoBuscar.isEnabled = editable
+        b.tilMaterialBuscar.isEnabled = editable
+        b.tilMedidor.isEnabled = editable
+        b.tilLocalizacion.isEnabled = editable
+        b.tilCausa.isEnabled = editable
+        b.tilObs.isEnabled = editable
+        b.tilAtendido.isEnabled = editable
+        b.tilVehiculo.isEnabled = editable
+        b.tilHoraInicio.isEnabled = finalEditable
+        b.tilHoraFinal.isEnabled = finalEditable
+        b.tilKmInicio.isEnabled = editable
+        b.tilKmFinal.isEnabled = finalEditable
+
+        val editableViews = listOf(
+            b.etLocalizacion,
+            b.etCausa,
+            b.etObs,
+            b.etAtendido,
+            b.etMedidor,
+            b.etKmInicio
+        )
+        editableViews.forEach { view ->
+            view.isEnabled = editable
+            view.isFocusable = editable
+            view.isFocusableInTouchMode = editable
+        }
+
+        b.actvTecnico.isEnabled = editable
+        b.actvTecnico.isClickable = editable
+        b.actvMaterial.isEnabled = editable
+        b.actvMaterial.isClickable = editable
+        b.actvVehiculo.isEnabled = editable
+        b.actvVehiculo.isClickable = editable
+
+        b.etHoraInicio.isEnabled = finalEditable
+        b.etHoraInicio.isFocusable = finalEditable
+        b.etHoraInicio.isFocusableInTouchMode = finalEditable
+        b.etHoraFin.isEnabled = finalEditable
+        b.etHoraFin.isFocusable = finalEditable
+        b.etHoraFin.isFocusableInTouchMode = finalEditable
+        b.etKmFinal.isEnabled = finalEditable
+        b.etKmFinal.isFocusable = finalEditable
+        b.etKmFinal.isFocusableInTouchMode = finalEditable
+
+        b.tilMedidor.isEndIconVisible = editable && tipoSeleccionado == TipoAfectacion.CLIENTE
+        b.chipGroupTecnicos.isEnabled = editable
+        b.chipGroupMateriales.isEnabled = editable
+
+        renderTecnicos()
+        renderMateriales()
     }
 
     private fun configureButtons(initialEstado: Estado) {
@@ -650,11 +728,7 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
         }
 
         b.btnVerMapa.setOnClickListener {
-            val lat = item.lat
-            val lng = item.lng
-            if (lat != 0.0 && lng != 0.0) {
-                FieldMapsIntents.launch(requireContext(), lat, lng, item.localizacion)
-            }
+            MapNavigation.open(requireContext(), item.lat, item.lng, item.localizacion ?: item.direccion)
         }
     }
 
@@ -750,13 +824,19 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
     private fun renderTecnicos() {
         if (_b == null) return
         b.chipGroupTecnicos.removeAllViews()
+        val editable = inputsEditable
         tecnicosSeleccionados.forEach { (key, tecnico) ->
             val chip = Chip(requireContext()).apply {
                 text = tecnico.nombre.ifBlank { tecnico.cedula }
-                isCloseIconVisible = true
-                setOnCloseIconClickListener {
-                    tecnicosSeleccionados.remove(key)
-                    renderTecnicos()
+                isCloseIconVisible = editable
+                isEnabled = editable
+                if (editable) {
+                    setOnCloseIconClickListener {
+                        tecnicosSeleccionados.remove(key)
+                        renderTecnicos()
+                    }
+                } else {
+                    setOnCloseIconClickListener(null)
                 }
             }
             b.chipGroupTecnicos.addView(chip)
@@ -791,6 +871,7 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
             text = content
         }
         b.chipGroupMateriales.removeAllViews()
+        val editable = inputsEditable
         materiales.forEach { uso ->
             val chip = Chip(requireContext()).apply {
                 text = getString(
@@ -798,18 +879,24 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
                     uso.descripcion.ifBlank { uso.codigo },
                     uso.cantidad
                 )
-                isCloseIconVisible = true
-                setOnCloseIconClickListener {
-                    materialesSeleccionados.remove(uso.codigo)
-                    materialesModificados = true
-                    renderMateriales()
-                }
-                setOnClickListener {
-                    val materialBase = materialesCatalogo.firstOrNull { it.codigo == uso.codigo }
-                        ?: MaterialEntity(codigo = uso.codigo, descripcion = uso.descripcion)
-                    mostrarDialogoCantidadMaterial(materialBase, uso.cantidad) { cantidadActualizada ->
-                        actualizarMaterial(materialBase, cantidadActualizada)
+                isCloseIconVisible = editable
+                isEnabled = editable
+                if (editable) {
+                    setOnCloseIconClickListener {
+                        materialesSeleccionados.remove(uso.codigo)
+                        materialesModificados = true
+                        renderMateriales()
                     }
+                    setOnClickListener {
+                        val materialBase = materialesCatalogo.firstOrNull { it.codigo == uso.codigo }
+                            ?: MaterialEntity(codigo = uso.codigo, descripcion = uso.descripcion)
+                        mostrarDialogoCantidadMaterial(materialBase, uso.cantidad) { cantidadActualizada ->
+                            actualizarMaterial(materialBase, cantidadActualizada)
+                        }
+                    }
+                } else {
+                    setOnCloseIconClickListener(null)
+                    setOnClickListener(null)
                 }
             }
             b.chipGroupMateriales.addView(chip)
