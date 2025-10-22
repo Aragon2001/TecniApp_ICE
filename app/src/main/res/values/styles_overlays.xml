@@ -35,12 +35,8 @@
     <style name="Tecni.TextInput.Outlined.Dense" parent="Tecni.TextInput.Outlined">
         <item name="android:paddingTop">0dp</item>
         <item name="android:paddingBottom">0dp</item>
-        <item name="boxCollapsedPaddingTop">8dp</item>
-        <item name="boxCollapsedPaddingBottom">8dp</item>
-        <item name="boxCollapsedPaddingStart">12dp</item>
-        <item name="boxCollapsedPaddingEnd">12dp</item>
-        <item name="boxExpandedPaddingTop">8dp</item>
-        <item name="boxExpandedPaddingBottom">8dp</item>
+        <item name="android:paddingStart">12dp</item>
+        <item name="android:paddingEnd">12dp</item>
     </style>
 
     <style name="Tecni.TextInput.Outlined.Dropdown" parent="Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
@@ -50,12 +46,8 @@
     </style>
 
     <style name="Tecni.TextInput.Outlined.Dense.Dropdown" parent="Tecni.TextInput.Outlined.Dropdown">
-        <item name="boxCollapsedPaddingTop">8dp</item>
-        <item name="boxCollapsedPaddingBottom">8dp</item>
-        <item name="boxCollapsedPaddingStart">12dp</item>
-        <item name="boxCollapsedPaddingEnd">12dp</item>
-        <item name="boxExpandedPaddingTop">8dp</item>
-        <item name="boxExpandedPaddingBottom">8dp</item>
+        <item name="android:paddingStart">12dp</item>
+        <item name="android:paddingEnd">12dp</item>
     </style>
 
     <style name="Tecni.TextInput.Filled" parent="Widget.Material3.TextInputLayout.FilledBox">
