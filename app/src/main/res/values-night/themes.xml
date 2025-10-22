@@ -13,11 +13,9 @@
         <item name="colorOnTertiary">@color/on_dark</item>
         <item name="colorTertiaryContainer">@color/tertiary_container_dark</item>
         <item name="colorOnTertiaryContainer">@color/on_tertiary_container_dark</item>
-        <item name="colorSurfaceTint">@color/ice_blue</item>
 
         <!-- Superficies/fondos (noche) -->
         <item name="android:colorBackground">@color/bg_dark</item>
-        <item name="colorBackground">@color/bg_dark</item>
         <item name="colorOnBackground">@color/on_dark</item>
         <item name="colorSurface">@color/surface_dark</item>
         <item name="colorSurfaceVariant">@color/surface_variant_dark</item>

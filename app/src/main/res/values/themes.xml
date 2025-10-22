@@ -14,7 +14,6 @@
         <item name="colorOnTertiary">@color/white</item>
         <item name="colorTertiaryContainer">@color/tertiary_container_light</item>
         <item name="colorOnTertiaryContainer">@color/on_tertiary_container_light</item>
-        <item name="colorSurfaceTint">@color/ice_blue</item>
 
         <!-- Superficies / fondos claros -->
         <item name="android:colorBackground">@color/bg_light</item>
@@ -23,7 +22,6 @@
         <item name="colorSurfaceVariant">@color/surface_variant_light</item>
         <item name="colorOnSurface">@color/on_light</item>
         <item name="colorOnSurfaceVariant">@color/on_surface_variant_light</item>
-        <item name="colorBackground">@color/bg_light</item>
         <item name="colorOnBackground">@color/on_light</item>
         <item name="colorOutline">@color/outline_soft</item>
         <item name="colorOutlineVariant">@color/outline_variant_light</item>
