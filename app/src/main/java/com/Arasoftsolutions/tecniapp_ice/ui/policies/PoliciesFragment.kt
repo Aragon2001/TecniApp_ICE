@@ -47,7 +47,9 @@ class PoliciesFragment : Fragment(R.layout.fragment_policies) {
         }.getOrNull()
 
         if (privacyDocument != null) {
-            binding.textPoliciesSubtitle.renderStructuredContent(privacyDocument.intro)
+            binding.textPoliciesSubtitle.renderStructuredContent(
+                StructuredTextFormatter.buildParagraphHtml(privacyDocument.intro)
+            )
 
             val container = binding.containerPoliciesSections
             container.removeAllViews()
@@ -62,27 +64,28 @@ class PoliciesFragment : Fragment(R.layout.fragment_policies) {
                 }
                 val bodyView = sectionView.findViewById<TextView>(R.id.textSectionBody)
                 bodyView.renderStructuredContent(
-                    StructuredTextFormatter.buildSectionBody(requireContext(), section)
+                    StructuredTextFormatter.buildSectionBodyHtml(section)
                 )
                 container.addView(sectionView)
             }
 
-            val footerContent = StructuredTextFormatter.buildBlocks(
-                requireContext(),
-                privacyDocument.footer
-            )
+            val footerContent = StructuredTextFormatter.buildBlocksHtml(privacyDocument.footer)
             val hasFooter = footerContent.isNotEmpty()
             binding.policiesFooterDivider.isVisible = hasFooter
             binding.textPoliciesFooter.isVisible = hasFooter
             binding.textPoliciesFooter.renderStructuredContent(if (hasFooter) footerContent else null)
         } else {
             val fallback = getString(R.string.structured_text_parse_error)
-            binding.textPoliciesSubtitle.renderStructuredContent(fallback)
+            binding.textPoliciesSubtitle.renderStructuredContent(
+                StructuredTextFormatter.buildParagraphHtml(fallback)
+            )
             val container = binding.containerPoliciesSections
             container.removeAllViews()
             val fallbackView = layoutInflater.inflate(R.layout.item_structured_section, container, false)
             fallbackView.findViewById<TextView>(R.id.textSectionTitle).isVisible = false
-            fallbackView.findViewById<TextView>(R.id.textSectionBody).renderStructuredContent(fallback)
+            fallbackView.findViewById<TextView>(R.id.textSectionBody).renderStructuredContent(
+                StructuredTextFormatter.buildParagraphHtml(fallback)
+            )
             container.addView(fallbackView)
             binding.policiesFooterDivider.isVisible = false
             binding.textPoliciesFooter.isVisible = false
@@ -90,19 +93,20 @@ class PoliciesFragment : Fragment(R.layout.fragment_policies) {
 
         binding.buttonViewTerms.setOnClickListener {
             val consentView = layoutInflater.inflate(R.layout.dialog_terms, null)
-            val termsContent = runCatching {
+            val termsContent: CharSequence = runCatching {
                 val termsDocument = StructuredTextParser.parse(
                     requireContext(),
                     R.xml.terms_of_use,
                     replacements
                 )
-                StructuredTextFormatter.buildDocument(
-                    requireContext(),
+                StructuredTextFormatter.buildDocumentHtml(
                     termsDocument
                 )
             }.getOrElse { error ->
                 Log.e("PoliciesFragment", "Error al cargar los términos desde políticas", error)
-                getString(R.string.structured_text_parse_error)
+                StructuredTextFormatter.buildParagraphHtml(
+                    getString(R.string.structured_text_parse_error)
+                ) ?: getString(R.string.structured_text_parse_error)
             }
             consentView.findViewById<TextView>(R.id.textTermsContent)
                 .renderStructuredContent(termsContent)

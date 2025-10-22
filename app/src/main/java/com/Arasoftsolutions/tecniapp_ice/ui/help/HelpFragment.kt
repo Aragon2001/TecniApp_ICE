@@ -61,7 +61,9 @@ class HelpFragment : Fragment(R.layout.fragment_help) {
         }.getOrNull()
 
         if (aboutDocument != null) {
-            binding.textHelpSubtitle.renderStructuredContent(aboutDocument.intro)
+            binding.textHelpSubtitle.renderStructuredContent(
+                StructuredTextFormatter.buildParagraphHtml(aboutDocument.intro)
+            )
 
             val container = binding.containerAboutSections
             container.removeAllViews()
@@ -76,15 +78,12 @@ class HelpFragment : Fragment(R.layout.fragment_help) {
                 }
                 val bodyView = sectionView.findViewById<TextView>(R.id.textSectionBody)
                 bodyView.renderStructuredContent(
-                    StructuredTextFormatter.buildSectionBody(requireContext(), section)
+                    StructuredTextFormatter.buildSectionBodyHtml(section)
                 )
                 container.addView(sectionView)
             }
 
-            val footerContent = StructuredTextFormatter.buildBlocks(
-                requireContext(),
-                aboutDocument.footer
-            )
+            val footerContent = StructuredTextFormatter.buildBlocksHtml(aboutDocument.footer)
             val hasFooter = footerContent.isNotEmpty()
             binding.aboutFooterDivider.isVisible = hasFooter
             binding.textHelpFooter.isVisible = hasFooter
@@ -93,12 +92,16 @@ class HelpFragment : Fragment(R.layout.fragment_help) {
             )
         } else {
             val fallback = getString(R.string.structured_text_parse_error)
-            binding.textHelpSubtitle.renderStructuredContent(fallback)
+            binding.textHelpSubtitle.renderStructuredContent(
+                StructuredTextFormatter.buildParagraphHtml(fallback)
+            )
             val container = binding.containerAboutSections
             container.removeAllViews()
             val fallbackView = layoutInflater.inflate(R.layout.item_structured_section, container, false)
             fallbackView.findViewById<TextView>(R.id.textSectionTitle).isVisible = false
-            fallbackView.findViewById<TextView>(R.id.textSectionBody).renderStructuredContent(fallback)
+            fallbackView.findViewById<TextView>(R.id.textSectionBody).renderStructuredContent(
+                StructuredTextFormatter.buildParagraphHtml(fallback)
+            )
             container.addView(fallbackView)
             binding.aboutFooterDivider.isVisible = false
             binding.textHelpFooter.isVisible = false
