@@ -108,6 +108,8 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
     private val isLoading = MutableStateFlow(false)
     private val _messages = MutableSharedFlow<String>(extraBufferCapacity = 1)
     val messages = _messages.asSharedFlow()
+    private val _shareRequests = MutableSharedFlow<AveriaUI>(extraBufferCapacity = 1)
+    val shareRequests = _shareRequests.asSharedFlow()
     private val _usuario = MutableStateFlow<UserEntity?>(null)
     val usuarioActual: StateFlow<UserEntity?> = _usuario.asStateFlow()
     private val _vehiculos = MutableStateFlow<List<VehiculoUI>>(emptyList())
@@ -247,6 +249,13 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
         val startOfDay = first.atStartOfDay(zoneId).toInstant().toEpochMilli()
         val endExclusive = last.plusDays(1).atStartOfDay(zoneId).toInstant().toEpochMilli()
         fechaFiltro.value = FechaFiltro(startOfDay, endExclusive)
+    }
+
+    private fun pickerUtcToLocalDate(millis: Long): LocalDate {
+        return Instant.ofEpochMilli(millis)
+            .atZone(ZoneOffset.UTC)
+            .withZoneSameInstant(zoneId)
+            .toLocalDate()
     }
 
     fun clearFechaFiltro() {
@@ -563,6 +572,40 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
             medidorPueblo = entity.medidorPueblo?.trim(),
             medidorMetros = entity.medidorMetros?.trim(),
             medidorPoste = entity.medidorPoste?.trim()
+        )
+    }
+
+    private fun buildResolvedUi(base: AveriaUI, data: AveriaActionData): AveriaUI {
+        val materialesResumen = MaterialesSerializer.toSummary(data.materiales)
+            .ifBlank { base.materialesResumen }
+        val observaciones = data.observaciones?.trim().orEmpty()
+        val atendido = data.atendidoPorNombre?.trim().orEmpty()
+        val horaInicio = data.horaInicioMillis ?: base.horaInicio
+        val horaFinal = data.horaFinalMillis ?: base.horaFinal
+        return base.copy(
+            causa = data.causa,
+            estado = "Resuelta",
+            atendidoPor = atendido,
+            atendidoPorUid = data.atendidoPorUid,
+            observaciones = observaciones,
+            vehiculo = data.vehiculo ?: base.vehiculo,
+            materialesResumen = materialesResumen,
+            materialesDetalle = data.materiales,
+            horaAtencionInicio = data.horaInicioMillis ?: base.horaAtencionInicio,
+            horaAtencionFinal = data.horaFinalMillis ?: base.horaAtencionFinal,
+            kilometrajeInicio = data.kilometrajeInicio ?: base.kilometrajeInicio,
+            kilometrajeFinal = data.kilometrajeFinal ?: base.kilometrajeFinal,
+            horaInicio = horaInicio,
+            horaFinal = horaFinal,
+            cliente = data.cliente ?: base.cliente,
+            localizacion = data.localizacion ?: base.localizacion,
+            tecnicosAtendieron = data.tecnicos,
+            tipoAfectacion = data.tipoAfectacion,
+            numeroMedidor = data.numeroMedidor,
+            medidorCalle = data.medidorCalle,
+            medidorPueblo = data.medidorPueblo,
+            medidorMetros = data.medidorMetros,
+            medidorPoste = data.medidorPoste
         )
     }
 

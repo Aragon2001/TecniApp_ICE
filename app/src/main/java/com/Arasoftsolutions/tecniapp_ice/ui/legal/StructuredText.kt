@@ -9,6 +9,7 @@ import android.content.Context
 import android.graphics.Typeface
 import android.text.SpannableStringBuilder
 import android.text.Spanned
+import android.text.TextUtils
 import android.text.method.LinkMovementMethod
 import android.text.style.BulletSpan
 import android.text.style.RelativeSizeSpan
@@ -256,7 +257,7 @@ object StructuredTextFormatter {
                 html.append(
                     "<p style=\"text-align:justify; font-weight:600; margin:0 0 8px 0;\">"
                 )
-                html.append(HtmlCompat.escapeHtml(section.title.trim()))
+                html.append(TextUtils.htmlEncode(section.title.trim()))
                 html.append("</p>")
             }
             html.appendBlocksHtml(section.blocks)
@@ -364,7 +365,7 @@ object StructuredTextFormatter {
         val content = text?.trim().orEmpty()
         if (content.isEmpty()) return
         append("<p style=\"text-align:justify; margin:0 0 12px 0;\">")
-        append(HtmlCompat.escapeHtml(content))
+        append(TextUtils.htmlEncode(content))
         append("</p>")
     }
 
@@ -374,7 +375,7 @@ object StructuredTextFormatter {
         append("<ul style=\"margin:0 0 12px 20px; padding-left:12px;\">")
         sanitized.forEach { item ->
             append("<li style=\"text-align:justify; margin-bottom:8px;\">")
-            append(HtmlCompat.escapeHtml(item))
+            append(TextUtils.htmlEncode(item))
             append("</li>")
         }
         append("</ul>")
