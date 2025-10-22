@@ -7,10 +7,16 @@ import java.io.Serializable
 /**
  * Representa un material utilizado en la atención de una avería.
  */
+data class MedidorInstalacion(
+    val numero: String?,
+    val lectura: String?
+) : Serializable
+
 data class MaterialUso(
     val codigo: String,
     val descripcion: String,
-    val cantidad: Int
+    val cantidad: Int,
+    val medidorInstalado: MedidorInstalacion? = null
 ) : Serializable
 
 data class TecnicoAtencion(
@@ -66,8 +72,19 @@ object MaterialesSerializer {
         materiales.filter { it.cantidad > 0 }
             .joinToString(separator = ", ") { uso ->
                 val cantidad = uso.cantidad
-                val desc = uso.descripcion.ifBlank { uso.codigo }
-                if (cantidad <= 1) desc else "${cantidad}x $desc"
+                val base = uso.descripcion.ifBlank { uso.codigo }
+                val detalles = uso.medidorInstalado?.let { meta ->
+                    buildList {
+                        meta.numero?.takeIf { it.isNotBlank() }?.let { add("N° $it") }
+                        meta.lectura?.takeIf { it.isNotBlank() }?.let { add("Lectura $it") }
+                    }.takeIf { it.isNotEmpty() }
+                }
+                val etiqueta = if (!detalles.isNullOrEmpty()) {
+                    "$base (${detalles.joinToString(" • ")})"
+                } else {
+                    base
+                }
+                if (cantidad <= 1) etiqueta else "${cantidad}x $etiqueta"
             }
 
     fun toJson(materiales: List<MaterialUso>): String? {
@@ -79,6 +96,13 @@ object MaterialesSerializer {
                 put("codigo", uso.codigo)
                 put("descripcion", uso.descripcion)
                 put("cantidad", uso.cantidad)
+                uso.medidorInstalado?.let { meta ->
+                    val metaObj = JSONObject().apply {
+                        put("numero", meta.numero)
+                        put("lectura", meta.lectura)
+                    }
+                    put("medidorInstalado", metaObj)
+                }
             }
             array.put(obj)
         }
@@ -95,8 +119,17 @@ object MaterialesSerializer {
                     val codigo = obj.optString("codigo")
                     val descripcion = obj.optString("descripcion")
                     val cantidad = obj.optInt("cantidad", 0)
+                    val meta = obj.optJSONObject("medidorInstalado")?.let { metaObj ->
+                        val numero = metaObj.optString("numero").takeIf { it.isNotBlank() }
+                        val lectura = metaObj.optString("lectura").takeIf { it.isNotBlank() }
+                        if (numero != null || lectura != null) {
+                            MedidorInstalacion(numero, lectura)
+                        } else {
+                            null
+                        }
+                    }
                     if (codigo.isBlank() || cantidad <= 0) continue
-                    add(MaterialUso(codigo, descripcion, cantidad))
+                    add(MaterialUso(codigo, descripcion, cantidad, meta))
                 }
             }
         } catch (_: Throwable) {
