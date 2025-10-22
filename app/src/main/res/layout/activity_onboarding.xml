@@ -60,7 +60,7 @@
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/buttonSkip"
-        style="@style/Widget.Material3.Button.TextButton"
+        style="@style/Tecni.Button.Text"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="24dp"
@@ -71,12 +71,15 @@
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/buttonNext"
-        style="?attr/materialButtonStyle"
+        style="@style/Tecni.Button.Primary"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginEnd="24dp"
         android:layout_marginBottom="24dp"
         android:text="@string/onboarding_action_next"
+        app:icon="@drawable/ic_play_arrow"
+        app:iconGravity="textStart"
+        app:iconPadding="8dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 

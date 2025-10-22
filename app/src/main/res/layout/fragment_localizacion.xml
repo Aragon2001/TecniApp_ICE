@@ -213,24 +213,26 @@
         <!-- Botón Navegar -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/buttonNavegar"
+            style="@style/Tecni.Button.Primary"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginEnd="8dp"
-            android:backgroundTint="?attr/colorPrimary"
             android:text="Navegar"
-            android:textColor="@color/white"
-            app:cornerRadius="32dp" />
+            app:icon="@drawable/ic_share_location24"
+            app:iconGravity="textStart"
+            app:iconPadding="8dp" />
 
         <!-- Botón Compartir -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/buttonShare"
+            style="@style/Tecni.Button.Primary"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginEnd="8dp"
-            android:backgroundTint="?attr/colorPrimary"
             android:text="Compartir"
-            android:textColor="@color/white"
-            app:cornerRadius="32dp" />
+            app:icon="@drawable/ic_share"
+            app:iconGravity="textStart"
+            app:iconPadding="8dp" />
 
     </LinearLayout>
     <!-- Barra de progreso centrada y sobre todo el contenido -->
