@@ -1,15 +1,9 @@
 package com.Arasoftsolutions.tecniapp_ice.ui.averias
 
-import android.Manifest
 import android.app.Application
 import android.content.Context
-import android.content.pm.PackageManager
-import android.os.Build
 import android.util.Log
 import android.location.Geocoder
-import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.Arasoftsolutions.tecniapp_ice.BuildConfig
@@ -87,7 +81,6 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
     private val roomRepo = RoomRepository.getInstance(app)
     private val firebaseSync = FirebaseSyncManager(app)
     private val auth = FirebaseAuth.getInstance()
-    private val notificationManager = NotificationManagerCompat.from(app)
     private val prefs = app.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
     private val q = MutableStateFlow("")
@@ -190,7 +183,11 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), AveriasUiState())
 
     init {
-        repo.startRealtimeListener()
+        repo.startRealtimeListener { nuevas ->
+            viewModelScope.launch(Dispatchers.Default) {
+                handleRealtimeNewAverias(nuevas)
+            }
+        }
         AveriaNotifications.ensureChannel(app)
         observeCatalogos()
         viewModelScope.launch { loadUsuarioActual() }
@@ -355,6 +352,32 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
     fun nombreTecnicoActual(): String? = _usuario.value?.let { nombreCompleto(it) }
     fun vehiculoPreferido(): String? = _usuario.value?.placaVehiculo
 
+    private suspend fun handleRealtimeNewAverias(nuevas: List<AveriaEntity>) {
+        if (nuevas.isEmpty()) return
+        if (!_notificationsEnabled.value) return
+
+        val context = getApplication<Application>()
+        val estadoSeleccionado = estado.value
+        val regionSeleccionada = _regionSeleccionada.value
+        val agenciaSeleccionada = _agenciaSeleccionada.value
+        val fechaSeleccionada = fechaFiltro.value
+        val consulta = q.value
+        val filtrosAgencias = AveriaNotificationPreferences.normalizedAgencies(context)
+
+        val filtradas = nuevas.filter { averia ->
+            matchesEstado(averia, estadoSeleccionado) &&
+                matchesRegion(averia, regionSeleccionada) &&
+                matchesAgencia(averia, agenciaSeleccionada) &&
+                matchesFecha(averia, fechaSeleccionada) &&
+                matchesQuery(averia, consulta) &&
+                shouldNotifyForAgency(averia, filtrosAgencias)
+        }
+
+        if (filtradas.isEmpty()) return
+
+        AveriaNotificationDispatcher.notifyNewCases(context, filtradas)
+    }
+
     private fun matchesEstado(entity: AveriaEntity, estadoSeleccionado: Estado?): Boolean {
         if (estadoSeleccionado == null) return true
         val estadoEntity = Estado.fromLabel(entity.estado)
@@ -395,8 +418,30 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
         return true
     }
 
-    private fun pickerUtcToLocalDate(millis: Long): LocalDate =
-        Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate()
+    private fun matchesQuery(entity: AveriaEntity, query: String): Boolean {
+        val trimmed = query.trim()
+        if (trimmed.isEmpty()) return true
+        val objetivo = trimmed.lowercase(Locale.getDefault())
+        return listOfNotNull(
+            entity.caseId,
+            entity.nombreAgencia,
+            entity.causa,
+            entity.observaciones,
+            entity.clientesAfectados
+        ).any { campo ->
+            campo.lowercase(Locale.getDefault()).contains(objetivo)
+        }
+    }
+
+    private fun toStartOfDay(millis: Long): Long {
+        return Instant.ofEpochMilli(millis).atZone(zoneId).toLocalDate()
+            .atStartOfDay(zoneId).toInstant().toEpochMilli()
+    }
+
+    private fun toEndExclusive(millis: Long): Long {
+        val date: LocalDate = Instant.ofEpochMilli(millis).atZone(zoneId).toLocalDate()
+        return date.plusDays(1).atStartOfDay(zoneId).toInstant().toEpochMilli()
+    }
 
     private suspend fun loadUsuarioActual() {
         val uid = auth.currentUser?.uid ?: return
@@ -599,83 +644,6 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
         return user
     }
 
-    private fun canSendNotifications(): Boolean {
-        val context = getApplication<Application>()
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
-        } else {
-            notificationManager.areNotificationsEnabled()
-        }
-    }
-
-    private fun notifyAsignada(caseId: String, tecnico: String?) {
-        if (!canSendNotifications()) return
-        val context = getApplication<Application>()
-        val title = context.getString(R.string.averia_notificacion_asignada_title)
-        val body = context.getString(
-            R.string.averia_notificacion_asignada_body,
-            caseId,
-            tecnico ?: context.getString(R.string.averia_sin_asignar)
-        )
-        val notification = NotificationCompat.Builder(context, AveriaNotifications.CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle(title)
-            .setContentText(body)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(body))
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setCategory(NotificationCompat.CATEGORY_STATUS)
-            .setAutoCancel(true)
-            .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
-            .setContentIntent(AveriaNotifications.averiasPendingIntent(context))
-            .build()
-
-        notificationManager.notify(caseId.hashCode(), notification)
-    }
-
-    private fun notifyEnAtencion(caseId: String, tecnico: String?) {
-        if (!canSendNotifications()) return
-        val context = getApplication<Application>()
-        val title = context.getString(R.string.averia_notificacion_atencion_title)
-        val body = context.getString(
-            R.string.averia_notificacion_atencion_body,
-            caseId,
-            tecnico ?: context.getString(R.string.averia_sin_asignar)
-        )
-        val notification = NotificationCompat.Builder(context, AveriaNotifications.CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle(title)
-            .setContentText(body)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(body))
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setCategory(NotificationCompat.CATEGORY_STATUS)
-            .setAutoCancel(true)
-            .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
-            .setContentIntent(AveriaNotifications.averiasPendingIntent(context))
-            .build()
-
-        notificationManager.notify((caseId.hashCode() shl 1), notification)
-    }
-
-    private fun notifyResuelta(caseId: String) {
-        if (!canSendNotifications()) return
-        val context = getApplication<Application>()
-        val title = context.getString(R.string.averia_notificacion_resuelta_title)
-        val body = context.getString(R.string.averia_notificacion_resuelta_body, caseId)
-        val notification = NotificationCompat.Builder(context, AveriaNotifications.CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle(title)
-            .setContentText(body)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(body))
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setCategory(NotificationCompat.CATEGORY_STATUS)
-            .setAutoCancel(true)
-            .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
-            .setContentIntent(AveriaNotifications.averiasPendingIntent(context))
-            .build()
-
-        notificationManager.notify((caseId.hashCode() shl 2), notification)
-    }
-
     fun syncNow() {
         if (syncJob?.isActive == true) return
         syncJob = viewModelScope.launch {
@@ -700,7 +668,6 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
                     val nombreTecnico = nombreCompleto(user)
                     val vehiculo = user.placaVehiculo?.takeIf { !it.isNullOrBlank() }
                     repo.asignar(ui.id, user.uid, nombreTecnico, vehiculo)
-                    notifyAsignada(ui.id, nombreTecnico)
                     _messages.tryEmit(getApplication<Application>().getString(R.string.averia_exito_asignada))
                 }
                 Estado.ASIGNADA -> {
@@ -722,7 +689,6 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
             val nombreTecnico = nombreCompleto(user)
             val vehiculo = user.placaVehiculo?.takeIf { !it.isNullOrBlank() }
             repo.asignar(ui.id, user.uid, nombreTecnico, vehiculo)
-            notifyAsignada(ui.id, nombreTecnico)
             _messages.tryEmit(getApplication<Application>().getString(R.string.averia_exito_asignada))
             syncNow()
         }
@@ -738,7 +704,6 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
             val user = ensurePropietario(ui) ?: return@launch
             val resolved = resolveData(ui, data, user)
             repo.enAtencion(ui.id, resolved)
-            notifyEnAtencion(ui.id, resolved.atendidoPorNombre ?: user?.let { nombreCompleto(it) })
             _messages.tryEmit(getApplication<Application>().getString(R.string.averia_exito_en_atencion))
             syncNow()
         }
@@ -768,7 +733,6 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
             val baseUi = if (!address.isNullOrBlank()) ui.copy(direccion = address) else ui
             val shareItem = buildResolvedUi(baseUi, resolved)
             _shareRequests.tryEmit(shareItem)
-            notifyResuelta(ui.id)
             _messages.tryEmit(getApplication<Application>().getString(R.string.averia_exito_resuelta))
             syncNow()
         }
