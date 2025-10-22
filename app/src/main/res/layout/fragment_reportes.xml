@@ -63,13 +63,16 @@
                 android:layout_height="wrap_content"
                         tools:text="01 may 2024 – 07 may 2024" />
 
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnCambiarFechas"
-                        style="@style/Tecni.Button.Outlined"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:text="@string/reportes_btn_rango" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnCambiarFechas"
+                    style="@style/Tecni.Button.Outlined"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="@string/reportes_btn_rango"
+                    app:icon="@drawable/ic_calendar"
+                    app:iconGravity="textStart"
+                    app:iconPadding="8dp" />
 
                     <TextView
                         android:id="@+id/tvSelectorTitulo"
@@ -115,22 +118,28 @@
                             android:text="@string/reportes_chip_material_total" />
                     </com.google.android.material.chip.ChipGroup>
 
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnGenerarReporte"
-                        style="@style/Tecni.Button.Primary"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:text="@string/reportes_btn_generar" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnGenerarReporte"
+                    style="@style/Tecni.Button.Primary"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="@string/reportes_btn_generar"
+                    app:icon="@drawable/ic_play_arrow"
+                    app:iconGravity="textStart"
+                    app:iconPadding="8dp" />
 
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnExportarExcel"
-                        style="@style/Tecni.Button.Outlined"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:text="@string/reportes_btn_exportar"
-                        android:visibility="gone" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnExportarExcel"
+                    style="@style/Tecni.Button.Outlined"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/reportes_btn_exportar"
+                    app:icon="@drawable/ic_share"
+                    app:iconGravity="textStart"
+                    app:iconPadding="8dp"
+                    android:visibility="gone" />
 
                     <TextView
                         android:id="@+id/tvResumenTotales"

@@ -165,7 +165,7 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
             FilterConfig(qv, est, regionSel, agenciaSel, fechaSel)
         }
             .flatMapLatest { config ->
-                repo.observe(emptyList(), "", config.query)
+                repo.observe(emptyList(), "", config.query, "")
                     .map { list ->
                         list.filter { entity ->
                             matchesEstado(entity, config.estado) &&
@@ -764,6 +764,10 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
             val user = ensurePropietario(ui) ?: return@launch
             val resolved = resolveData(ui, data, user)
             repo.cerrar(ui.id, resolved)
+            val address = _addresses.value[ui.id] ?: ui.direccion
+            val baseUi = if (!address.isNullOrBlank()) ui.copy(direccion = address) else ui
+            val shareItem = buildResolvedUi(baseUi, resolved)
+            _shareRequests.tryEmit(shareItem)
             notifyResuelta(ui.id)
             _messages.tryEmit(getApplication<Application>().getString(R.string.averia_exito_resuelta))
             syncNow()

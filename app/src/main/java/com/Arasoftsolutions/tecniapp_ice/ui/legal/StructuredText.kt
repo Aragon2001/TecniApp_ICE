@@ -16,6 +16,7 @@ import android.text.style.StyleSpan
 import android.text.util.Linkify
 import android.widget.TextView
 import androidx.annotation.XmlRes
+import androidx.core.text.HtmlCompat
 import androidx.core.text.util.LinkifyCompat
 import com.Arasoftsolutions.tecniapp_ice.R
 import java.io.IOException
@@ -236,6 +237,58 @@ object StructuredTextFormatter {
         return buildBlocks(context, section.blocks)
     }
 
+    fun buildDocumentHtml(
+        document: StructuredDocument,
+        includeIntro: Boolean = true,
+        includeFooter: Boolean = true
+    ): CharSequence {
+        val html = StringBuilder()
+
+        if (includeIntro) {
+            html.appendParagraphHtml(document.intro)
+        }
+
+        document.sections.forEach { section ->
+            val hasContent = section.title.isNotBlank() || section.blocks.isNotEmpty()
+            if (!hasContent) return@forEach
+            html.append("<div style=\"margin:0 0 20px 0;\">")
+            if (section.title.isNotBlank()) {
+                html.append(
+                    "<p style=\"text-align:justify; font-weight:600; margin:0 0 8px 0;\">"
+                )
+                html.append(HtmlCompat.escapeHtml(section.title.trim()))
+                html.append("</p>")
+            }
+            html.appendBlocksHtml(section.blocks)
+            html.append("</div>")
+        }
+
+        if (includeFooter) {
+            html.appendBlocksHtml(document.footer)
+        }
+
+        return html.toStyledText()
+    }
+
+    fun buildBlocksHtml(blocks: List<ContentBlock>): CharSequence {
+        val html = StringBuilder()
+        html.appendBlocksHtml(blocks)
+        return html.toStyledText()
+    }
+
+    fun buildSectionBodyHtml(section: StructuredSection): CharSequence {
+        return buildBlocksHtml(section.blocks)
+    }
+
+    fun buildParagraphHtml(text: String?): CharSequence? {
+        val trimmed = text?.trim() ?: return null
+        if (trimmed.isEmpty()) return null
+        val html = StringBuilder()
+        html.appendParagraphHtml(trimmed)
+        val result = html.toStyledText()
+        return if (result.isNotEmpty()) result else null
+    }
+
     private fun appendBlocks(
         context: Context,
         builder: SpannableStringBuilder,
@@ -305,6 +358,42 @@ object StructuredTextFormatter {
 
     private fun SpannableStringBuilder.endsWithNewLine(): Boolean {
         return isNotEmpty() && this[length - 1] == '\n'
+    }
+
+    private fun StringBuilder.appendParagraphHtml(text: String?) {
+        val content = text?.trim().orEmpty()
+        if (content.isEmpty()) return
+        append("<p style=\"text-align:justify; margin:0 0 12px 0;\">")
+        append(HtmlCompat.escapeHtml(content))
+        append("</p>")
+    }
+
+    private fun StringBuilder.appendBulletListHtml(items: List<String>) {
+        val sanitized = items.map { it.trim() }.filter { it.isNotEmpty() }
+        if (sanitized.isEmpty()) return
+        append("<ul style=\"margin:0 0 12px 20px; padding-left:12px;\">")
+        sanitized.forEach { item ->
+            append("<li style=\"text-align:justify; margin-bottom:8px;\">")
+            append(HtmlCompat.escapeHtml(item))
+            append("</li>")
+        }
+        append("</ul>")
+    }
+
+    private fun StringBuilder.appendBlocksHtml(blocks: List<ContentBlock>) {
+        blocks.forEach { block ->
+            when (block) {
+                is ContentBlock.Paragraph -> appendParagraphHtml(block.text)
+                is ContentBlock.BulletList -> appendBulletListHtml(block.items)
+            }
+        }
+    }
+
+    private fun StringBuilder.toStyledText(): CharSequence {
+        if (isEmpty()) {
+            return ""
+        }
+        return HtmlCompat.fromHtml(toString(), HtmlCompat.FROM_HTML_MODE_COMPACT)
     }
 }
 

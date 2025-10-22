@@ -39,7 +39,7 @@ class AveriasRepository(private val db: AppDatabase) {
     private var suppressInitialNotification = false
     private var realtimeEmittedOnce = false
 
-    fun observe(agencias: List<String>, estado: String, q: String): Flow<List<AveriaEntity>> =
+    fun observe(agencias: List<String>, estado: String, q: String, s: String): Flow<List<AveriaEntity>> =
         dao.observe(agencias, agencias.size, estado, q)
 
     // ---------------------------------------------------------------------------------------------
