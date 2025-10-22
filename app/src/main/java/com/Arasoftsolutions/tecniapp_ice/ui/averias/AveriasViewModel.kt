@@ -32,6 +32,7 @@ import java.text.Normalizer
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import java.time.ZoneOffset
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.Dispatchers
@@ -59,6 +60,7 @@ enum class Estado {
 data class RegionUI(val id: String?, val nombreVisible: String)
 data class AgenciaUI(val id: String?, val nombreVisible: String)
 data class AveriasUiState(val loading: Boolean = false, val items: List<AveriaUI> = emptyList())
+data class VehiculoUI(val placa: String, val agencia: String)
 
 sealed class MedidorLookupState {
     object Idle : MedidorLookupState()
@@ -115,8 +117,8 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
     val messages = _messages.asSharedFlow()
     private val _usuario = MutableStateFlow<UserEntity?>(null)
     val usuarioActual: StateFlow<UserEntity?> = _usuario.asStateFlow()
-    private val _vehiculos = MutableStateFlow<List<String>>(emptyList())
-    val vehiculosDisponibles: StateFlow<List<String>> = _vehiculos.asStateFlow()
+    private val _vehiculos = MutableStateFlow<List<VehiculoUI>>(emptyList())
+    val vehiculosDisponibles: StateFlow<List<VehiculoUI>> = _vehiculos.asStateFlow()
     private val _materiales = MutableStateFlow<List<MaterialEntity>>(emptyList())
     val materialesDisponibles: StateFlow<List<MaterialEntity>> = _materiales.asStateFlow()
     private val _tecnicos = MutableStateFlow<List<TecnicoEntity>>(emptyList())
@@ -125,9 +127,6 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
     val medidorEstado: StateFlow<MedidorLookupState> = _medidorEstado.asStateFlow()
     private val _addresses = MutableStateFlow<Map<String, String>>(emptyMap())
     private val pendingAddressLookups = mutableSetOf<String>()
-    private val _shareRequests = MutableSharedFlow<AveriaUI>(extraBufferCapacity = 1)
-    val shareRequests = _shareRequests.asSharedFlow()
-
     private var syncJob: Job? = null
     private var cachedRegiones: List<RegionEntity> = emptyList()
     private var cachedSubregiones: List<SubregionesEntity> = emptyList()
@@ -205,11 +204,18 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
                     else roomRepo.observarVehiculos(subregion)
                 }
                 .collectLatest { vehiculos ->
-                    val preferido = _usuario.value?.placaVehiculo?.takeIf { !it.isNullOrBlank() }?.trim()
+                    val preferidoPlaca = _usuario.value?.placaVehiculo?.takeIf { !it.isNullOrBlank() }?.trim()
+                    val preferidoAgencia = _usuario.value?.subregionNombre?.trim().orEmpty()
                     val lista = buildList {
-                        if (!preferido.isNullOrBlank()) add(preferido)
-                        vehiculos.forEach { add(it.placa.toString()) }
-                    }.distinct()
+                        if (!preferidoPlaca.isNullOrBlank()) {
+                            add(VehiculoUI(preferidoPlaca, preferidoAgencia))
+                        }
+                        vehiculos.forEach { entity ->
+                            val placaTexto = entity.placa.toString()
+                            add(VehiculoUI(placaTexto, entity.agencia))
+                        }
+                    }
+                        .distinctBy { it.placa.uppercase(Locale.getDefault()) }
                     _vehiculos.value = lista
                 }
         }
@@ -238,10 +244,11 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
     fun setEstado(value: Estado?) = viewModelScope.launch { estado.emit(value) }
 
     fun setFechaFiltro(inicioMillis: Long, finMillis: Long) {
-        val start = inicioMillis.coerceAtMost(finMillis)
-        val end = finMillis.coerceAtLeast(inicioMillis)
-        val startOfDay = toStartOfDay(start)
-        val endExclusive = toEndExclusive(end)
+        val startDate = pickerUtcToLocalDate(inicioMillis)
+        val endDate = pickerUtcToLocalDate(finMillis)
+        val (first, last) = if (startDate <= endDate) startDate to endDate else endDate to startDate
+        val startOfDay = first.atStartOfDay(zoneId).toInstant().toEpochMilli()
+        val endExclusive = last.plusDays(1).atStartOfDay(zoneId).toInstant().toEpochMilli()
         fechaFiltro.value = FechaFiltro(startOfDay, endExclusive)
     }
 
@@ -388,15 +395,8 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
         return true
     }
 
-    private fun toStartOfDay(millis: Long): Long {
-        return Instant.ofEpochMilli(millis).atZone(zoneId).toLocalDate()
-            .atStartOfDay(zoneId).toInstant().toEpochMilli()
-    }
-
-    private fun toEndExclusive(millis: Long): Long {
-        val date: LocalDate = Instant.ofEpochMilli(millis).atZone(zoneId).toLocalDate()
-        return date.plusDays(1).atStartOfDay(zoneId).toInstant().toEpochMilli()
-    }
+    private fun pickerUtcToLocalDate(millis: Long): LocalDate =
+        Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate()
 
     private suspend fun loadUsuarioActual() {
         val uid = auth.currentUser?.uid ?: return
@@ -452,7 +452,6 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
         val horaInicio = data.horaInicioMillis
             ?: ui.horaAtencionInicio
             ?: ui.horaInicio
-            ?: System.currentTimeMillis()
         val horaFinal = data.horaFinalMillis ?: ui.horaAtencionFinal ?: ui.horaFinal
         val kmInicio = data.kilometrajeInicio ?: ui.kilometrajeInicio
         val kmFinal = data.kilometrajeFinal ?: ui.kilometrajeFinal
@@ -522,41 +521,6 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
         )
     }
 
-    private fun buildResolvedUi(base: AveriaUI, resolved: AveriaActionData): AveriaUI {
-        val materiales = if (resolved.materiales.isNotEmpty()) resolved.materiales else base.materialesDetalle
-        val materialesResumen = if (materiales.isNotEmpty()) {
-            MaterialesSerializer.toSummary(materiales)
-        } else {
-            base.materialesResumen
-        }
-        val tecnicos = if (resolved.tecnicos.isNotEmpty()) resolved.tecnicos else base.tecnicosAtendieron
-        val observaciones = resolved.observaciones?.takeIf { it.isNotBlank() } ?: base.observaciones
-        return base.copy(
-            causa = resolved.causa.ifBlank { base.causa },
-            observaciones = observaciones,
-            vehiculo = resolved.vehiculo ?: base.vehiculo,
-            materialesDetalle = materiales,
-            materialesResumen = materialesResumen,
-            atendidoPor = resolved.atendidoPorNombre ?: base.atendidoPor,
-            atendidoPorUid = resolved.atendidoPorUid ?: base.atendidoPorUid,
-            horaAtencionInicio = resolved.horaInicioMillis ?: base.horaAtencionInicio,
-            horaAtencionFinal = resolved.horaFinalMillis ?: base.horaAtencionFinal,
-            kilometrajeInicio = resolved.kilometrajeInicio ?: base.kilometrajeInicio,
-            kilometrajeFinal = resolved.kilometrajeFinal ?: base.kilometrajeFinal,
-            cliente = resolved.cliente ?: base.cliente,
-            localizacion = resolved.localizacion ?: base.localizacion,
-            tipoAfectacion = resolved.tipoAfectacion,
-            numeroMedidor = resolved.numeroMedidor ?: base.numeroMedidor,
-            medidorCalle = resolved.medidorCalle ?: base.medidorCalle,
-            medidorPueblo = resolved.medidorPueblo ?: base.medidorPueblo,
-            medidorMetros = resolved.medidorMetros ?: base.medidorMetros,
-            medidorPoste = resolved.medidorPoste ?: base.medidorPoste,
-            horaInicio = resolved.horaInicioMillis ?: base.horaInicio,
-            horaFinal = resolved.horaFinalMillis ?: base.horaFinal,
-            tecnicosAtendieron = tecnicos
-        )
-    }
-
     private fun queueAddressLookup(entity: AveriaEntity) {
         val lat = entity.lat ?: return
         val lng = entity.lng ?: return
@@ -586,22 +550,43 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
             @Suppress("DEPRECATION")
             val results = geocoder.getFromLocation(lat, lng, 1)
             val address = results?.firstOrNull() ?: return null
-            val line = address.getAddressLine(0)
-            if (!line.isNullOrBlank()) {
-                line
-            } else {
-                buildList {
-                    address.thoroughfare?.takeIf { it.isNotBlank() }?.let { add(it) }
-                    address.subThoroughfare?.takeIf { it.isNotBlank() }?.let { add(it) }
-                    address.locality?.takeIf { it.isNotBlank() }?.let { add(it) }
-                    address.subAdminArea?.takeIf { it.isNotBlank() }?.let { add(it) }
-                    address.adminArea?.takeIf { it.isNotBlank() }?.let { add(it) }
-                }.joinToString(", ").takeIf { it.isNotBlank() }
+
+            val localityParts = buildList {
+                address.subLocality?.takeIf { it.isNotBlank() }?.let { add(it) }
+                address.locality?.takeIf { it.isNotBlank() }?.let { add(it) }
+                address.subAdminArea?.takeIf { it.isNotBlank() && !contains(it) }?.let { add(it) }
+                address.adminArea?.takeIf { it.isNotBlank() && !contains(it) }?.let { add(it) }
             }
+
+            val locality = localityParts.joinToString(", ")
+
+            val street = buildList {
+                address.thoroughfare?.takeIf { it.isNotBlank() && !isPlusCode(it) }?.let { add(it) }
+                address.subThoroughfare?.takeIf { it.isNotBlank() && !isPlusCode(it) }?.let { add(it) }
+            }.joinToString(" ").trim()
+
+            val feature = address.featureName?.takeIf { it.isNotBlank() && !isPlusCode(it) }
+
+            val composed = buildList {
+                if (street.isNotBlank()) add(street)
+                feature?.takeIf { it.isNotBlank() && !contains(it) }?.let { add(it) }
+                if (locality.isNotBlank()) add(locality)
+            }.joinToString(", ").ifBlank {
+                locality.ifBlank { feature }
+            }
+
+            composed?.takeIf { it.isNotBlank() }
         } catch (t: Throwable) {
             Log.w(TAG, "No se pudo obtener la dirección para ($lat,$lng)", t)
             null
         }
+    }
+
+    private fun isPlusCode(value: String?): Boolean {
+        if (value.isNullOrBlank()) return false
+        val trimmed = value.trim()
+        if (!trimmed.contains('+')) return false
+        return trimmed.any { it.isLetterOrDigit() }
     }
 
     private suspend fun ensurePropietario(ui: AveriaUI): UserEntity? {
@@ -786,6 +771,38 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
             notifyResuelta(ui.id)
             _messages.tryEmit(getApplication<Application>().getString(R.string.averia_exito_resuelta))
             syncNow()
+        }
+    }
+
+    fun onEliminarResuelta(ui: AveriaUI) {
+        viewModelScope.launch {
+            if (Estado.fromLabel(ui.estado) != Estado.RESUELTA) return@launch
+            ensurePropietario(ui) ?: return@launch
+            runCatching { repo.eliminarAveria(ui.id) }
+                .onSuccess {
+                    _messages.tryEmit(getApplication<Application>().getString(R.string.averia_exito_eliminada))
+                    syncNow()
+                }
+                .onFailure {
+                    Log.e(TAG, "No se pudo eliminar la avería ${ui.id}", it)
+                    _messages.tryEmit(getApplication<Application>().getString(R.string.averia_error_eliminar))
+                }
+        }
+    }
+
+    fun onAnularPendiente(ui: AveriaUI) {
+        viewModelScope.launch {
+            if (Estado.fromLabel(ui.estado) != Estado.PENDIENTE) return@launch
+            ensurePropietario(ui) ?: return@launch
+            runCatching { repo.eliminarAveria(ui.id) }
+                .onSuccess {
+                    _messages.tryEmit(getApplication<Application>().getString(R.string.averia_exito_anulada))
+                    syncNow()
+                }
+                .onFailure {
+                    Log.e(TAG, "No se pudo anular la avería ${ui.id}", it)
+                    _messages.tryEmit(getApplication<Application>().getString(R.string.averia_error_eliminar))
+                }
         }
     }
 

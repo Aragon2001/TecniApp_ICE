@@ -278,9 +278,25 @@ object PdfGenerator {
                 item.materialesDetalle.any { it.cantidad > 0 } -> item.materialesDetalle
                     .filter { it.cantidad > 0 }
                     .map { m ->
+                        val base = m.descripcion.ifBlank { m.codigo }
+                        val detalle = m.medidorInstalado?.let { meta ->
+                            buildList {
+                                meta.numero?.takeIf { it.isNotBlank() }?.let {
+                                    add(context.getString(R.string.averia_medidor_detalle_numero, it))
+                                }
+                                meta.lectura?.takeIf { it.isNotBlank() }?.let {
+                                    add(context.getString(R.string.averia_medidor_detalle_lectura, it))
+                                }
+                            }.takeIf { it.isNotEmpty() }
+                        }
+                        val nombre = if (!detalle.isNullOrEmpty()) {
+                            "$base (${detalle.joinToString(" • ")})"
+                        } else {
+                            base
+                        }
                         context.getString(
                             R.string.averia_pdf_material_line,
-                            m.descripcion.ifBlank { m.codigo },
+                            nombre,
                             m.cantidad,
                             m.codigo
                         )

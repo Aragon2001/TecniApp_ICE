@@ -20,7 +20,6 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.core.util.Pair
 import com.Arasoftsolutions.tecniapp_ice.R
 import com.Arasoftsolutions.tecniapp_ice.databinding.FragmentAveriasBinding
 import com.Arasoftsolutions.tecniapp_ice.databinding.DialogNotificationFiltersBinding
@@ -38,6 +37,10 @@ import kotlinx.coroutines.cancel
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.time.Instant
+import java.time.ZoneId
+import java.time.ZoneOffset
+import androidx.core.util.Pair
 import kotlin.math.abs
 
 class AveriasFragment : Fragment() {
@@ -356,9 +359,13 @@ class AveriasFragment : Fragment() {
             .setTitleText(getString(R.string.averias_filtrar_fecha))
 
         vm.fechaFiltroState.value?.let { current ->
-            val start = current.inicioMillis
-            val endInclusive = (current.finExclusiveMillis - 1).coerceAtLeast(start)
-            builder.setSelection(Pair(start, endInclusive))
+            val zone = ZoneId.systemDefault()
+            val startDate = Instant.ofEpochMilli(current.inicioMillis).atZone(zone).toLocalDate()
+            val endInclusiveMillis = (current.finExclusiveMillis - 1).coerceAtLeast(current.inicioMillis)
+            val endDate = Instant.ofEpochMilli(endInclusiveMillis).atZone(zone).toLocalDate()
+            val selectionStart = startDate.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+            val selectionEnd = endDate.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+            builder.setSelection(Pair(selectionStart, selectionEnd))
         }
 
         val picker = builder.build()

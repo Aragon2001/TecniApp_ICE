@@ -376,9 +376,20 @@ class AveriasRepository(private val db: AppDatabase) {
         syncSingle(caseId)
     }
 
+    suspend fun eliminarAveria(caseId: String) = withContext(Dispatchers.IO) {
+        firebaseRef.child(caseId).removeValue().await()
+        dao.eliminarPorCaseId(caseId)
+    }
+
     suspend fun enAtencion(caseId: String, data: AveriaActionData) = withContext(Dispatchers.IO) {
         val now = System.currentTimeMillis()
-        val horaInicio = data.horaInicioMillis ?: now
+        val base = dao.getByCaseId(caseId)
+        val horaInicio = data.horaInicioMillis
+            ?: base?.atencionHoraInicioMillis
+            ?: base?.horaInicioMillis
+        val horaFinal = data.horaFinalMillis
+            ?: base?.atencionHoraFinalMillis
+            ?: base?.horaFinalMillis
         val resumen = MaterialesSerializer.toSummary(data.materiales).ifBlank { null }
         val detalle = MaterialesSerializer.toJson(data.materiales)
         val tecnicosJson = TecnicosSerializer.toJson(data.tecnicos)
@@ -390,7 +401,7 @@ class AveriasRepository(private val db: AppDatabase) {
             causa = data.causa,
             obs = data.observaciones,
             horaInicio = horaInicio,
-            horaFinal = data.horaFinalMillis,
+            horaFinal = horaFinal,
             kmInicio = data.kilometrajeInicio,
             kmFinal = data.kilometrajeFinal,
             atendidoPorUid = data.atendidoPorUid,
@@ -417,8 +428,13 @@ class AveriasRepository(private val db: AppDatabase) {
 
     suspend fun cerrar(caseId: String, data: AveriaActionData) = withContext(Dispatchers.IO) {
         val now = System.currentTimeMillis()
-        val horaInicio = data.horaInicioMillis ?: now
-        val horaFinal = data.horaFinalMillis ?: now
+        val base = dao.getByCaseId(caseId)
+        val horaInicio = data.horaInicioMillis
+            ?: base?.atencionHoraInicioMillis
+            ?: base?.horaInicioMillis
+        val horaFinal = data.horaFinalMillis
+            ?: base?.atencionHoraFinalMillis
+            ?: base?.horaFinalMillis
         val resumen = MaterialesSerializer.toSummary(data.materiales).ifBlank { null }
         val detalle = MaterialesSerializer.toJson(data.materiales)
         val tecnicosJson = TecnicosSerializer.toJson(data.tecnicos)
