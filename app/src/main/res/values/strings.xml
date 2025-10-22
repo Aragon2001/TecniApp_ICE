@@ -36,9 +36,9 @@
     <string name="home_status_offline">Sin conexión</string>
     <string name="home_header_assignment_placeholder">Actualiza tu perfil para ver la asignación.</string>
     <string name="home_header_date_format">%1$s · %2$s</string>
-    <string name="home_card_pending_title">Averías Pendientes</string>
+    <string name="home_card_pending_title">Averías asignadas</string>
     <string name="home_card_attended_title">Averías atendidas hoy</string>
-    <string name="home_card_kilometraje_title">Kilometraje recorrido</string>
+    <string name="home_card_kilometraje_title">Kilometraje inicial</string>
     <string name="home_card_last_sync_title">Última sincronización</string>
     <string name="home_card_kilometraje_value">%1$.1f km</string>
     <string name="home_sync_now">Sincronizar ahora</string>
@@ -53,6 +53,7 @@
     <string name="home_sync_status_error">Ocurrió un error: %1$s</string>
     <string name="home_sync_unknown_error">Error desconocido</string>
     <string name="home_sync_progress_format">Paso %1$d de %2$d • %3$s</string>
+    <string name="home_sync_dialog_title">Sincronizando…</string>
     <string name="home_last_sync_never">Nunca</string>
     <string name="home_last_sync_just_now">Hace un momento</string>
     <string name="home_last_sync_minutes">Hace %1$d min</string>
