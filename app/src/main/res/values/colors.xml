@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+
     <!-- Marca ICE -->
     <color name="ice_blue">#0071CE</color>
     <color name="ice_blue_dark">#004C8C</color>
@@ -15,17 +16,37 @@
     <color name="bg_light">#F5F7FB</color>
     <color name="surface_light">#FDFEFF</color>
     <color name="surface_variant_light">#E6EEF9</color>
+    <color name="on_surface_variant_light">#3C4758</color>
+    <color name="outline_variant_light">#C2CDD9</color>
 
     <!-- Superficies oscuras (Material 3 night suavizado) -->
     <color name="bg_dark">#1C1F26</color>
     <color name="surface_dark">#262B35</color>
     <color name="surface_variant_dark">#323845</color>
+    <color name="on_surface_variant_dark">#C6CBD7</color>
+    <color name="outline_variant_dark">#444A56</color>
 
     <!-- Texto / estados -->
     <color name="on_light">#0A0A0A</color>
     <color name="on_dark">#F1F3F8</color>
     <color name="success_500">#4CAF50</color>
     <color name="error_500">#D32F2F</color>
+
+    <!-- Contenedores Material 3 (light) -->
+    <color name="primary_container_light">#D6E8FF</color>
+    <color name="on_primary_container_light">#001C38</color>
+    <color name="secondary_container_light">#FFF3B5</color>
+    <color name="on_secondary_container_light">#2F2600</color>
+    <color name="tertiary_container_light">#CBEFDB</color>
+    <color name="on_tertiary_container_light">#062717</color>
+
+    <!-- Contenedores Material 3 (dark) -->
+    <color name="primary_container_dark">#004C8C</color>
+    <color name="on_primary_container_dark">#B4DAFF</color>
+    <color name="secondary_container_dark">#4C3C00</color>
+    <color name="on_secondary_container_dark">#FFE46B</color>
+    <color name="tertiary_container_dark">#0F3A1B</color>
+    <color name="on_tertiary_container_dark">#B1F0BF</color>
 
     <!-- Login -->
     <color name="login_background">#0071CE</color>
@@ -45,16 +66,16 @@
     <color name="glass_light">#E6FFFFFF</color>
     <color name="glass_dark">#4D1C1F26</color>
 
-    <!-- Chips por estado (día) -->
-    <color name="chip_asignada">#debb10</color>
-    <color name="chip_en_atencion">#3b7fff</color>
-    <color name="chip_pendiente">#d10a2f</color>
-    <color name="chip_resuelta">#1bd10a</color>
+    <!-- Chips -->
+    <color name="chip_asignada">#FBC02D</color>
+    <color name="chip_en_atencion">#1E88E5</color>
+    <color name="chip_pendiente">#E53935</color>
+    <color name="chip_resuelta">#43A047</color>
 
-    <!-- Outline suave -->
+    <!-- Outline -->
     <color name="outline_soft">#1F000000</color>
 
-    <!-- Colores utilitarios -->
+    <!-- Utilitarios extra -->
     <color name="light_gray">#B3B3B3</color>
     <color name="dark_gray">#616161</color>
     <color name="red">#D32F2F</color>

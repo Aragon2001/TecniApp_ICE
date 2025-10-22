@@ -172,4 +172,28 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
         }
         return canonical.ifBlank { null }
     }
+
+    private fun canonicalAgencyTag(nombre: String?): String? {
+        val raw = nombre?.trim()
+        if (raw.isNullOrEmpty()) return null
+        val normalized = Normalizer.normalize(raw, Normalizer.Form.NFD)
+            .replace("\\p{InCombiningDiacriticalMarks}+".toRegex(), "")
+            .lowercase(Locale.getDefault())
+            .replace("[^a-z0-9 ]".toRegex(), " ")
+            .replace("\\s+".toRegex(), " ")
+            .trim()
+        if (normalized.isEmpty()) return null
+        val cleaned = normalized
+            .removePrefix("s ")
+            .removePrefix("sub ")
+            .removePrefix("agencia ")
+            .trim()
+        if (cleaned.isEmpty()) return null
+        val parts = cleaned.split(" ")
+        val canonical = parts.joinToString("") { part ->
+            if (part.length == 1) part.uppercase(Locale.getDefault())
+            else part.substring(0, 1).uppercase(Locale.getDefault()) + part.substring(1)
+        }
+        return canonical.ifBlank { null }
+    }
 }

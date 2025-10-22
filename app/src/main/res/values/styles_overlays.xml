@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources xmlns:android="http://schemas.android.com/apk/res/android">
+<resources>
     <!-- ================================================================== -->
     <!-- Overlays y componentes Material 3 reutilizables                     -->
     <!-- Mantener cada sección documentada para facilitar el mantenimiento. -->
@@ -27,27 +27,41 @@
 
     <!-- TextInputLayout densos adaptados a Material 3 -->
     <style name="Tecni.TextInput.Outlined" parent="Widget.Material3.TextInputLayout.OutlinedBox">
-        <item name="boxStrokeColor">@color/ice_blue</item>
-        <item name="hintTextColor">@color/light_gray</item>
+        <item name="boxStrokeColor">?attr/colorPrimary</item>
+        <item name="hintTextColor">?attr/colorOnSurfaceVariant</item>
+        <item name="android:textColorHint">?attr/colorOnSurfaceVariant</item>
     </style>
 
     <style name="Tecni.TextInput.Outlined.Dense" parent="Tecni.TextInput.Outlined">
         <item name="android:paddingTop">0dp</item>
         <item name="android:paddingBottom">0dp</item>
-        <item name="android:paddingStart">12dp</item>
-        <item name="android:paddingEnd">12dp</item>
+        <item name="boxCollapsedPaddingTop">8dp</item>
+        <item name="boxCollapsedPaddingBottom">8dp</item>
+        <item name="boxCollapsedPaddingStart">12dp</item>
+        <item name="boxCollapsedPaddingEnd">12dp</item>
+        <item name="boxExpandedPaddingTop">8dp</item>
+        <item name="boxExpandedPaddingBottom">8dp</item>
     </style>
 
     <style name="Tecni.TextInput.Outlined.Dropdown" parent="Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
-        <item name="boxStrokeColor">@color/ice_blue</item>
-        <item name="hintTextColor">@color/light_gray</item>
+        <item name="boxStrokeColor">?attr/colorPrimary</item>
+        <item name="hintTextColor">?attr/colorOnSurfaceVariant</item>
+        <item name="android:textColorHint">?attr/colorOnSurfaceVariant</item>
     </style>
 
     <style name="Tecni.TextInput.Outlined.Dense.Dropdown" parent="Tecni.TextInput.Outlined.Dropdown">
-        <item name="android:paddingTop">0dp</item>
-        <item name="android:paddingBottom">0dp</item>
-        <item name="android:paddingStart">12dp</item>
-        <item name="android:paddingEnd">12dp</item>
+        <item name="boxCollapsedPaddingTop">8dp</item>
+        <item name="boxCollapsedPaddingBottom">8dp</item>
+        <item name="boxCollapsedPaddingStart">12dp</item>
+        <item name="boxCollapsedPaddingEnd">12dp</item>
+        <item name="boxExpandedPaddingTop">8dp</item>
+        <item name="boxExpandedPaddingBottom">8dp</item>
+    </style>
+
+    <style name="Tecni.TextInput.Filled" parent="Widget.Material3.TextInputLayout.FilledBox">
+        <item name="boxStrokeColor">?attr/colorPrimary</item>
+        <item name="hintTextColor">?attr/colorOnSurfaceVariant</item>
+        <item name="android:textColorHint">?attr/colorOnSurfaceVariant</item>
     </style>
 
     <!-- Chips base (sin multilínea). Para filtros de estado, Filter es el más apropiado -->
@@ -100,12 +114,13 @@
         <item name="android:paddingStart">12dp</item>
         <item name="android:paddingEnd">12dp</item>
         <item name="android:textSize">12sp</item>
-        <item name="backgroundTint">@color/ice_blue</item>
+        <item name="backgroundTint">?attr/colorPrimary</item>
         <item name="android:textColor">@android:color/white</item>
-        <item name="rippleColor">@color/ice_yellow</item>
+        <item name="rippleColor">?attr/colorSecondaryContainer</item>
         <item name="shapeAppearance">@style/ShapeAppearance.Material3.Corner.Full</item>
         <item name="iconPadding">0dp</item>
         <item name="iconSize">16dp</item>
+        <item name="iconTint">@android:color/white</item>
     </style>
 
     <style name="Tecni.Button.Outlined" parent="Widget.Material3.Button.OutlinedButton">
@@ -117,8 +132,10 @@
         <item name="shapeAppearance">@style/ShapeAppearance.Material3.Corner.Full</item>
         <item name="iconPadding">0dp</item>
         <item name="iconSize">16dp</item>
-        <item name="strokeColor">@color/outline_soft</item>
+        <item name="strokeColor">?attr/colorOutline</item>
         <item name="strokeWidth">1dp</item>
+        <item name="android:textColor">?attr/colorPrimary</item>
+        <item name="iconTint">?attr/colorPrimary</item>
     </style>
 
     <style name="Tecni.Button.Text" parent="Widget.Material3.Button.TextButton">
@@ -130,6 +147,18 @@
         <item name="shapeAppearance">@style/ShapeAppearance.Material3.Corner.Full</item>
         <item name="iconPadding">0dp</item>
         <item name="iconSize">16dp</item>
+        <item name="android:textColor">?attr/colorPrimary</item>
+        <item name="iconTint">?attr/colorPrimary</item>
+    </style>
+
+    <style name="Tecni.Button.Elevated" parent="Widget.Material3.Button.ElevatedButton">
+        <item name="android:minHeight">36dp</item>
+        <item name="android:paddingStart">16dp</item>
+        <item name="android:paddingEnd">16dp</item>
+        <item name="shapeAppearance">@style/ShapeAppearance.Material3.Corner.Full</item>
+        <item name="android:textColor">@android:color/white</item>
+        <item name="backgroundTint">?attr/colorPrimary</item>
+        <item name="iconTint">@android:color/white</item>
     </style>
 
     <!-- Botones originales (para otros usos heredados) -->
