@@ -353,13 +353,6 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                         syncDialog = null
                     }
                 }
-                syncButton?.isEnabled = true
-                syncStatusText?.text = getString(
-                    R.string.home_sync_status_error,
-                    message
-                )
-                syncProgressIndicator?.visibility = View.GONE
-                syncProgressLabel?.visibility = View.GONE
             }
     }
 
