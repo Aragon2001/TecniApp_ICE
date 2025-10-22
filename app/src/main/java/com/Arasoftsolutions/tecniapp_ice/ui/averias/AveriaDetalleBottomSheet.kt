@@ -818,6 +818,20 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
         }
     }
 
+    private fun solicitarMedidorMaterial(
+        material: MaterialEntity,
+        existente: MaterialUso?
+    ) {
+        val cantidadInicial = existente?.cantidad?.takeIf { it > 0 } ?: 1
+        val metadataInicial = existente?.medidorInstalado
+        mostrarDialogoMedidor(material, cantidadInicial, metadataInicial) { cantidad, metadata ->
+            actualizarMaterial(material, cantidad, metadata)
+            if (cantidad > 0 && metadata != null) {
+                solicitarAbrirPanelAdminMedidor(metadata)
+            }
+        }
+    }
+
     private fun actualizarMaterial(
         material: MaterialEntity,
         cantidad: Int,
