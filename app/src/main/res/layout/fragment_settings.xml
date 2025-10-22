@@ -34,11 +34,14 @@
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnNotificationAgencies"
-            style="@style/Widget.Material3.Button.TextButton"
+            style="@style/Tecni.Button.Text"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="@string/settings_notifications_manage_agencies" />
+            android:text="@string/settings_notifications_manage_agencies"
+            app:icon="@drawable/ic_accounts"
+            app:iconGravity="textStart"
+            app:iconPadding="8dp" />
 
         <com.google.android.material.divider.MaterialDivider
             android:layout_width="match_parent"
@@ -70,11 +73,14 @@
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnSincronizarAhora"
-            style="@style/Widget.Material3.Button.OutlinedButton"
+            style="@style/Tecni.Button.Outlined"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:text="@string/settings_sync_now" />
+            android:text="@string/settings_sync_now"
+            app:icon="@drawable/ic_refresh"
+            app:iconGravity="textStart"
+            app:iconPadding="8dp" />
 
         <TextView
             android:id="@+id/textLastSync"
@@ -179,7 +185,7 @@
 
         <com.google.android.material.button.MaterialButton
     android:id="@+id/btnCerrarSesion"
-    style="@style/Widget.Material3.Button.TonalButton"
+    style="@style/Tecni.Button.Primary"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginTop="16dp"

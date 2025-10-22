@@ -7,26 +7,46 @@
     <color name="ice_yellow">#FFDD00</color>
     <color name="ice_yellow_dark">#CCAA00</color>
 
-    <!-- Neutrales -->
+    <!-- Neutrales base -->
     <color name="white">#FFFFFFFF</color>
     <color name="black">#FF000000</color>
     <color name="transparent">#00000000</color>
 
-    <!-- Superficies claras -->
+    <!-- Superficies claras (Material 3 light) -->
     <color name="bg_light">#F5F7FB</color>
     <color name="surface_light">#FDFEFF</color>
     <color name="surface_variant_light">#E6EEF9</color>
+    <color name="on_surface_variant_light">#3C4758</color>
+    <color name="outline_variant_light">#C2CDD9</color>
 
-    <!-- Superficies oscuras -->
+    <!-- Superficies oscuras (Material 3 night suavizado) -->
     <color name="bg_dark">#1C1F26</color>
     <color name="surface_dark">#262B35</color>
     <color name="surface_variant_dark">#323845</color>
+    <color name="on_surface_variant_dark">#C6CBD7</color>
+    <color name="outline_variant_dark">#444A56</color>
 
     <!-- Texto / estados -->
     <color name="on_light">#0A0A0A</color>
     <color name="on_dark">#F1F3F8</color>
     <color name="success_500">#4CAF50</color>
     <color name="error_500">#D32F2F</color>
+
+    <!-- Contenedores Material 3 (light) -->
+    <color name="primary_container_light">#D6E8FF</color>
+    <color name="on_primary_container_light">#001C38</color>
+    <color name="secondary_container_light">#FFF3B5</color>
+    <color name="on_secondary_container_light">#2F2600</color>
+    <color name="tertiary_container_light">#CBEFDB</color>
+    <color name="on_tertiary_container_light">#062717</color>
+
+    <!-- Contenedores Material 3 (dark) -->
+    <color name="primary_container_dark">#004C8C</color>
+    <color name="on_primary_container_dark">#B4DAFF</color>
+    <color name="secondary_container_dark">#4C3C00</color>
+    <color name="on_secondary_container_dark">#FFE46B</color>
+    <color name="tertiary_container_dark">#0F3A1B</color>
+    <color name="on_tertiary_container_dark">#B1F0BF</color>
 
     <!-- Login -->
     <color name="login_background">#0071CE</color>
@@ -62,5 +82,4 @@
     <color name="white_translucent">#80FFFFFF</color>
     <color name="primary_dark">#1A237E</color>
     <color name="medidor_warning_background">#FFF3E0</color>
-
 </resources>
