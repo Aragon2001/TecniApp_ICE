@@ -54,7 +54,7 @@
 
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/layoutMedidor"
-                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                        style="@style/Tecni.TextInput.Outlined"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="20dp"
@@ -72,7 +72,7 @@
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnConsultar"
-                        style="@style/Widget.Material3.Button"
+                        style="@style/Tecni.Button.Primary"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="20dp"
@@ -344,7 +344,7 @@
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnCopiar"
-        style="@style/Widget.Material3.Button"
+        style="@style/Tecni.Button.Primary"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
@@ -359,7 +359,7 @@
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnCompartir"
-        style="@style/Widget.Material3.Button.OutlinedButton"
+        style="@style/Tecni.Button.Outlined"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
@@ -406,7 +406,7 @@
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnMostrarRegistro"
-                        style="@style/Widget.Material3.Button"
+                        style="@style/Tecni.Button.Primary"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="20dp"
@@ -453,7 +453,7 @@
 
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/tilRegistroNumero"
-                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                        style="@style/Tecni.TextInput.Outlined"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="20dp"
@@ -470,7 +470,7 @@
 
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/tilRegistroCliente"
-                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                        style="@style/Tecni.TextInput.Outlined"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="14dp"
@@ -485,7 +485,7 @@
 
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/tilRegistroLocalizacion"
-                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                        style="@style/Tecni.TextInput.Outlined"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="14dp"
@@ -500,7 +500,7 @@
 
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/tilRegistroCalle"
-                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                        style="@style/Tecni.TextInput.Outlined"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="14dp"
@@ -515,7 +515,7 @@
 
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/tilRegistroPoste"
-                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                        style="@style/Tecni.TextInput.Outlined"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="14dp"
@@ -530,7 +530,7 @@
 
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/tilRegistroMetros"
-                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                        style="@style/Tecni.TextInput.Outlined"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="14dp"
@@ -545,7 +545,7 @@
 
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/tilRegistroPueblo"
-                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                        style="@style/Tecni.TextInput.Outlined"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="14dp"
@@ -567,14 +567,14 @@
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnCancelarRegistro"
-                            style="@style/Widget.Material3.Button.TextButton"
+                            style="@style/Tecni.Button.Text"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="@string/medidor_registro_cancelar" />
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnGuardarManual"
-                            style="@style/Widget.Material3.Button"
+                            style="@style/Tecni.Button.Primary"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginStart="12dp"

@@ -13,7 +13,7 @@
         android:layout_height="wrap_content"
         android:paddingBottom="12dp"
         android:text="@string/averia_notificacion_sheet_title"
-        android:textAppearance="@style/TextAppearance.MaterialComponents.Headline6" />
+        android:textAppearance="@style/TextAppearance.Material3.HeadlineSmall" />
 
     <com.google.android.material.switchmaterial.SwitchMaterial
         android:id="@+id/switchNotifications"
@@ -27,7 +27,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
         android:text="@string/averia_notificacion_switch_helper"
-        android:textAppearance="@style/TextAppearance.MaterialComponents.Body2" />
+        android:textAppearance="@style/TextAppearance.Material3.BodyMedium" />
 
     <TextView
         android:id="@+id/tvNotificationFilterTitle"
@@ -35,11 +35,11 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
         android:text="@string/averia_notificacion_filtro_titulo"
-        android:textAppearance="@style/TextAppearance.MaterialComponents.Subtitle2" />
+        android:textAppearance="@style/TextAppearance.Material3.TitleSmall" />
 
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/tilNotificationAgency"
-        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense.ExposedDropdownMenu"
+        style="@style/Tecni.TextInput.Outlined.Dense.Dropdown"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
@@ -60,7 +60,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="12dp"
         android:text="@string/averia_notificacion_filtro_vacio"
-        android:textAppearance="@style/TextAppearance.MaterialComponents.Body2"
+        android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
         android:textColor="?attr/colorOnBackground" />
 
     <com.google.android.material.chip.ChipGroup
@@ -73,7 +73,7 @@
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnGuardarNotificaciones"
-        style="@style/Widget.Material3.Button"
+        style="@style/Tecni.Button.Primary"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="20dp"

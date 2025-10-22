@@ -35,18 +35,24 @@
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnCancelar"
-            style="@style/Widget.Material3.Button.TextButton"
+            style="@style/Tecni.Button.Text"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/admin_confirm_cancel" />
+            android:text="@string/admin_confirm_cancel"
+            app:icon="@drawable/ic_delete"
+            app:iconGravity="textStart"
+            app:iconPadding="8dp" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnConfirmar"
-            style="@style/Widget.Material3.Button"
+            style="@style/Tecni.Button.Primary"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="12dp"
-            android:text="@string/admin_confirm_accept" />
+            android:text="@string/admin_confirm_accept"
+            app:icon="@drawable/ic_check"
+            app:iconGravity="textStart"
+            app:iconPadding="8dp" />
     </LinearLayout>
 
 </LinearLayout>
