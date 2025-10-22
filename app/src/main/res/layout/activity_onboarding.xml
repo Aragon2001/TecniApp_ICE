@@ -55,7 +55,7 @@
         app:tabIndicatorFullWidth="false"
         app:tabIndicatorGravity="center"
         app:tabIndicatorHeight="4dp"
-        app:tabRippleColor="@android:color/transparent"
+        app:tabRippleColor="@color/transparent"
         tools:ignore="SpeakableTextPresentCheck" />
 
     <com.google.android.material.button.MaterialButton

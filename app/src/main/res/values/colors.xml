@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+
     <!-- Marca ICE -->
     <color name="ice_blue">#0071CE</color>
     <color name="ice_blue_dark">#004C8C</color>
@@ -65,16 +66,16 @@
     <color name="glass_light">#E6FFFFFF</color>
     <color name="glass_dark">#4D1C1F26</color>
 
-    <!-- Chips por estado (día) -->
-    <color name="chip_asignada">#FFE082</color>
-    <color name="chip_en_atencion">#80D8FF</color>
-    <color name="chip_pendiente">#FFAB91</color>
-    <color name="chip_resuelta">#A5D6A7</color>
+    <!-- Chips -->
+    <color name="chip_asignada">#FBC02D</color>
+    <color name="chip_en_atencion">#1E88E5</color>
+    <color name="chip_pendiente">#E53935</color>
+    <color name="chip_resuelta">#43A047</color>
 
-    <!-- Outline suave -->
+    <!-- Outline -->
     <color name="outline_soft">#1F000000</color>
 
-    <!-- Colores utilitarios -->
+    <!-- Utilitarios extra -->
     <color name="light_gray">#B3B3B3</color>
     <color name="dark_gray">#616161</color>
     <color name="red">#D32F2F</color>

@@ -65,11 +65,11 @@ class AveriasSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorke
 
         fun schedule(ctx: Context) {
             val req = PeriodicWorkRequestBuilder<AveriasSyncWorker>(15, TimeUnit.MINUTES)
-                .setInputData(workDataOf(KEY_INCLUDE_DOWNLOAD to false))
+                .setInputData(workDataOf(KEY_INCLUDE_DOWNLOAD to true))
                 .build()
             WorkManager.getInstance(ctx).enqueueUniquePeriodicWork(
                 UNIQUE_PERIODIC_WORK,
-                ExistingPeriodicWorkPolicy.KEEP,
+                ExistingPeriodicWorkPolicy.UPDATE,
                 req
             )
         }
