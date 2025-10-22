@@ -162,4 +162,7 @@ fun observe(
 
     @Query("UPDATE averias SET isSynced = 1 WHERE caseId = :caseId")
     suspend fun marcarSincronizado(caseId: String)
+
+    @Query("DELETE FROM averias WHERE caseId = :caseId")
+    suspend fun eliminarPorCaseId(caseId: String)
 }

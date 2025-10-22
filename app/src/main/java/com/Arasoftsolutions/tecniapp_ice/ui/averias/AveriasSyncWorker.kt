@@ -61,7 +61,7 @@ class AveriasSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorke
     companion object {
         private const val KEY_INCLUDE_DOWNLOAD = "include_download"
         private const val UNIQUE_PERIODIC_WORK = "averias_sync"
-        private const val UNIQUE_MANUAL_WORK = "averias_sync_now"
+        const val UNIQUE_MANUAL_WORK = "averias_sync_now"
 
         fun schedule(ctx: Context) {
             val req = PeriodicWorkRequestBuilder<AveriasSyncWorker>(15, TimeUnit.MINUTES)

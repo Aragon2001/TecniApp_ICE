@@ -18,11 +18,13 @@ object MapNavigation {
             return
         }
         val centerParam = String.format(Locale.US, "%f,%f", lat, lng)
-        val encodedLabel = Uri.encode(label?.takeIf { it.isNotBlank() } ?: centerParam)
+        val labelText = label?.takeIf { it.isNotBlank() }
+        val queryLabel = if (labelText != null) "$centerParam(${labelText})" else centerParam
+        val encodedQuery = Uri.encode(queryLabel)
 
         val fieldMapsUri = Uri.parse("arcgis-fieldmaps://?referenceContext=center&itemID=&center=$centerParam")
-        val googleMapsUri = Uri.parse("geo:$centerParam?q=$encodedLabel")
-        val browserUri = Uri.parse("https://maps.google.com/?q=$centerParam")
+        val googleMapsUri = Uri.parse("geo:$centerParam?q=$encodedQuery")
+        val browserUri = Uri.parse("https://www.google.com/maps/search/?api=1&query=$centerParam")
 
         val fieldMapsIntent = Intent(Intent.ACTION_VIEW, fieldMapsUri).apply {
             setPackage(FIELD_MAPS_PACKAGE)

@@ -10,6 +10,7 @@ import com.Arasoftsolutions.tecniapp_ice.Database.room.AppDatabase
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
 import com.Arasoftsolutions.tecniapp_ice.preferences.DataStoreManager
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasRepository
+import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasSyncWorker
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -57,21 +58,35 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     private val averias: StateFlow<List<AveriaEntity>> =
         _agenciasFiltro
             .flatMapLatest { agencias ->
-                averiasRepository.observe(agencias, agencias.size.toString(), "", "")
+                averiasRepository.observe(agencias, agencias.size, "", "")
             }
             .stateIn(viewModelScope, sharing, emptyList())
 
-    val averiasPendientesCount: StateFlow<Int> =
-        averias
-            .map { lista -> lista.count { it.estado.equals("Pendiente", ignoreCase = true) } }
-            .stateIn(viewModelScope, sharing, 0)
+    private val usuarioUid: StateFlow<String?> =
+        usuario
+            .map { it?.uid }
+            .stateIn(viewModelScope, sharing, null)
+
+    val averiasAsignadasCount: StateFlow<Int> =
+        combine(averias, usuarioUid) { lista, uid ->
+            if (uid.isNullOrBlank()) {
+                0
+            } else {
+                lista.count { averia ->
+                    averia.tecnicoAsignadoUid.equals(uid, ignoreCase = true) &&
+                        !averia.estado.equals("Resuelta", ignoreCase = true)
+                }
+            }
+        }.stateIn(viewModelScope, sharing, 0)
 
     val averiasResueltasHoyCount: StateFlow<Int> =
-        averias
-            .map { lista ->
+        combine(averias, usuarioUid) { lista, uid ->
+            if (uid.isNullOrBlank()) {
+                0
+            } else {
                 val hoy = LocalDate.now()
                 lista.count { averia ->
-                    averia.estado.equals("Resuelta", ignoreCase = true) &&
+                    averia.atendidoPorUid.equals(uid, ignoreCase = true) &&
                         averia.atencionHoraFinalMillis?.let { millis ->
                             Instant.ofEpochMilli(millis)
                                 .atZone(ZoneId.systemDefault())
@@ -79,22 +94,28 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
                         } == true
                 }
             }
-            .stateIn(viewModelScope, sharing, 0)
+        }.stateIn(viewModelScope, sharing, 0)
 
-    val kilometrosRecorridosHoy: StateFlow<Double> =
-        averias
-            .map { lista ->
+    val kilometrosInicialesHoy: StateFlow<Double> =
+        combine(averias, usuarioUid) { lista, uid ->
+            if (uid.isNullOrBlank()) {
+                0.0
+            } else {
                 val hoy = LocalDate.now()
                 lista.sumOf { averia ->
-                    val inicio = averia.kilometrajeInicio
-                    val fin = averia.kilometrajeFinal
-                    val fechaFin = averia.atencionHoraFinalMillis ?: averia.horaFinalMillis
-                    if (inicio != null && fin != null && fechaFin != null) {
-                        val fecha = Instant.ofEpochMilli(fechaFin)
+                    val kilometrajeInicio = averia.kilometrajeInicio
+                    val fechaInicio = averia.atencionHoraInicioMillis
+                        ?: averia.horaInicioMillis
+                    if (kilometrajeInicio != null && fechaInicio != null) {
+                        val fecha = Instant.ofEpochMilli(fechaInicio)
                             .atZone(ZoneId.systemDefault())
                             .toLocalDate()
-                        if (fecha == hoy) {
-                            max(fin - inicio, 0.0)
+                        if (
+                            fecha == hoy &&
+                            (averia.tecnicoAsignadoUid.equals(uid, ignoreCase = true) ||
+                                averia.atendidoPorUid.equals(uid, ignoreCase = true))
+                        ) {
+                            max(kilometrajeInicio, 0.0)
                         } else {
                             0.0
                         }
@@ -103,7 +124,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
                     }
                 }
             }
-            .stateIn(viewModelScope, sharing, 0.0)
+        }.stateIn(viewModelScope, sharing, 0.0)
 
     val lastManualSync: StateFlow<Long?> =
         dataStore.lastManualSyncMillis
@@ -121,28 +142,35 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    /**
-     * Dispara la sincronización de la subregión y reporta progreso al caller.
-     * Mantiene Room-first: descarga de Firebase → guarda en Room → UI observa Room.
-     */
-  fun refresh(
-    onStart: (String) -> Unit = {},
-    onProgress: (Int, Int, String?) -> Unit = { _, _, _ -> },
-    onSuccess: () -> Unit = {},
-    onError: (Throwable) -> Unit = {}
-)
-{
+    fun triggerManualSync() {
+        AveriasSyncWorker.triggerNow(getApplication())
         viewModelScope.launch {
-            try {
-                val id = _subregion.value ?: return@launch
-                onStart("Sincronizando…")
-                repo.syncSubregion(id) { done, total, msg -> onProgress(done, total, msg) }
-                dataStore.markManualSyncNow()
-                onSuccess()
-            } catch (t: Throwable) {
-                onError(t)
-            }
+            dataStore.markManualSyncNow()
         }
+    }
+
+    private fun canonicalAgencyTag(nombre: String?): String? {
+        val raw = nombre?.trim()
+        if (raw.isNullOrEmpty()) return null
+        val normalized = Normalizer.normalize(raw, Normalizer.Form.NFD)
+            .replace("\\p{InCombiningDiacriticalMarks}+".toRegex(), "")
+            .lowercase(Locale.getDefault())
+            .replace("[^a-z0-9 ]".toRegex(), " ")
+            .replace("\\s+".toRegex(), " ")
+            .trim()
+        if (normalized.isEmpty()) return null
+        val cleaned = normalized
+            .removePrefix("s ")
+            .removePrefix("sub ")
+            .removePrefix("agencia ")
+            .trim()
+        if (cleaned.isEmpty()) return null
+        val parts = cleaned.split(" ")
+        val canonical = parts.joinToString("") { part ->
+            if (part.length == 1) part.uppercase(Locale.getDefault())
+            else part.substring(0, 1).uppercase(Locale.getDefault()) + part.substring(1)
+        }
+        return canonical.ifBlank { null }
     }
 
     private fun canonicalAgencyTag(nombre: String?): String? {
