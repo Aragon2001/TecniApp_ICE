@@ -194,17 +194,13 @@ object PdfGenerator {
             val endAttention = formatMillis(item.horaAtencionFinal, emptyValue)
             val region = item.region.ifBlank { emptyValue }
             val agency = item.agencia.ifBlank { emptyValue }
-            val zoneTag = item.zonaTag.ifBlank { emptyValue }
+
             val affectation = when (item.tipoAfectacion) {
                 TipoAfectacion.CLIENTE -> context.getString(R.string.averia_tipo_cliente)
                 TipoAfectacion.SECTOR -> context.getString(R.string.averia_tipo_sector)
             }
             val medidorNumero = item.numeroMedidor?.takeIf { it.isNotBlank() } ?: emptyValue
-            val location = if (item.lat == 0.0 && item.lng == 0.0) {
-                context.getString(R.string.averia_pdf_location_no_data)
-            } else {
-                context.getString(R.string.averia_pdf_location_value, item.lat, item.lng)
-            }
+
 
             val infoRows = listOf(
                 InfoRow(context.getString(R.string.averia_pdf_table_label_case), item.id),
@@ -214,7 +210,7 @@ object PdfGenerator {
                 InfoRow(context.getString(R.string.averia_pdf_table_label_vehicle), vehicle),
                 InfoRow(context.getString(R.string.averia_pdf_table_label_client), client),
                 InfoRow(context.getString(R.string.averia_pdf_table_label_nise), nise),
-                InfoRow(context.getString(R.string.averia_pdf_table_label_zone), zoneTag),
+
                 InfoRow(context.getString(R.string.averia_pdf_table_label_region), region),
                 InfoRow(context.getString(R.string.averia_pdf_table_label_agency), agency),
                 InfoRow(context.getString(R.string.averia_pdf_table_label_location_text), textualLocation),
@@ -224,8 +220,8 @@ object PdfGenerator {
                 InfoRow(context.getString(R.string.averia_pdf_table_label_start_time), startAttention),
                 InfoRow(context.getString(R.string.averia_pdf_table_label_end_time), endAttention),
                 InfoRow(context.getString(R.string.averia_pdf_table_label_kilometers), kilometraje),
-                InfoRow(context.getString(R.string.averia_pdf_table_label_location), location),
-                InfoRow(context.getString(R.string.averia_pdf_table_label_generated), generatedAt),
+
+
                 InfoRow(context.getString(R.string.averia_pdf_table_label_medidor), medidorNumero)
             )
 

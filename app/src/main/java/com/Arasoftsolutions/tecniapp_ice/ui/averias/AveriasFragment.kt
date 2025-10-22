@@ -213,6 +213,11 @@ class AveriasFragment : Fragment() {
                         Snackbar.make(b.root, message, Snackbar.LENGTH_LONG).show()
                     }
                 }
+                launch {
+                    vm.shareRequests.collectLatest { item ->
+                        PdfGenerator.exportAveria(requireContext(), item)
+                    }
+                }
             }
         }
 

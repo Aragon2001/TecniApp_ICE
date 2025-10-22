@@ -226,7 +226,7 @@
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilTecnicoBuscar"
-            style="@style/Tecni.TextInput.Outlined.Dropdown"
+            style="@style/Tecni.TextInput.Outlined"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
@@ -261,7 +261,7 @@
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilMaterialBuscar"
-            style="@style/Tecni.TextInput.Outlined.Dropdown"
+            style="@style/Tecni.TextInput.Outlined"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
@@ -402,7 +402,7 @@
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilVehiculo"
-            style="@style/Tecni.TextInput.Outlined.Dropdown"
+            style="@style/Tecni.TextInput.Outlined"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
@@ -492,7 +492,10 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="@string/averia_asignar"
-                android:textAllCaps="false" />
+                android:textAllCaps="false"
+                app:icon="@drawable/ic_accounts"
+                app:iconGravity="textStart"
+                app:iconPadding="8dp" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnAtender"
@@ -501,7 +504,10 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:text="@string/averia_guardar_en_atencion"
-                android:textAllCaps="false" />
+                android:textAllCaps="false"
+                app:icon="@drawable/ic_refresh"
+                app:iconGravity="textStart"
+                app:iconPadding="8dp" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnResolver"
@@ -511,7 +517,10 @@
                 android:layout_marginTop="8dp"
                 android:text="@string/averia_guardar_resolucion"
                 android:textAllCaps="false"
-                android:visibility="gone" />
+                android:visibility="gone"
+                app:icon="@drawable/ic_check"
+                app:iconGravity="textStart"
+                app:iconPadding="8dp" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnExportar"
@@ -521,7 +530,10 @@
                 android:layout_marginTop="8dp"
                 android:text="@string/averia_exportar_pdf_button"
                 android:textAllCaps="false"
-                android:visibility="gone" />
+                android:visibility="gone"
+                app:icon="@drawable/ic_share"
+                app:iconGravity="textStart"
+                app:iconPadding="8dp" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnAnular"
@@ -550,7 +562,10 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:text="@string/averia_ver_mapa"
-                android:textAllCaps="false" />
+                android:textAllCaps="false"
+                app:icon="@drawable/ic_share_location24"
+                app:iconGravity="textStart"
+                app:iconPadding="8dp" />
         </LinearLayout>
 
     </LinearLayout>
