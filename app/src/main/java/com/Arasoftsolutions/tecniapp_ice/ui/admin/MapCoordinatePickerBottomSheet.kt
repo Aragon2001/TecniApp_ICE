@@ -11,6 +11,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.os.bundleOf
 import com.Arasoftsolutions.tecniapp_ice.R
@@ -20,10 +21,11 @@ import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
-import com.google.android.gms.maps.MapStyleOptions
+
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.MapStyleOptions
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
@@ -143,8 +145,8 @@ class MapCoordinatePickerBottomSheet : BottomSheetDialogFragment(), OnMapReadyCa
         binding.mapView.onCreate(mapViewBundle)
         binding.mapView.getMapAsync(this)
 
-        binding.buttonCancel.setOnClickListener { dismiss() }
-        binding.buttonConfirm.setOnClickListener {
+        binding.btnCancelar.setOnClickListener { dismiss() }
+        binding.btnConfirmar.setOnClickListener {
             val result = selectedLatLng
             parentFragmentManager.setFragmentResult(
                 REQUEST_KEY,
@@ -324,6 +326,27 @@ class MapCoordinatePickerBottomSheet : BottomSheetDialogFragment(), OnMapReadyCa
     private fun moveToMyLocation() {
         if (!hasLocationPermission()) return
         showLocationLoading(true)
+        if (context?.let {
+                ActivityCompat.checkSelfPermission(
+                    it,
+                    Manifest.permission.ACCESS_FINE_LOCATION
+                )
+            } != PackageManager.PERMISSION_GRANTED && context?.let {
+                ActivityCompat.checkSelfPermission(
+                    it,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                )
+            } != PackageManager.PERMISSION_GRANTED
+        ) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+            return
+        }
         fusedLocationClient.lastLocation
             .addOnSuccessListener { location ->
                 if (location != null) {
