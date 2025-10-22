@@ -181,6 +181,7 @@ object PdfGenerator {
             val observations = item.observaciones.ifBlank { emptyValue }
             val client = item.cliente?.takeIf { it.isNotBlank() } ?: emptyValue
             val textualLocation = item.localizacion?.takeIf { it.isNotBlank() } ?: emptyValue
+            val geocodedAddress = item.direccion?.takeIf { it.isNotBlank() } ?: emptyValue
             val kilometraje = if (item.kilometrajeInicio != null || item.kilometrajeFinal != null) {
                 val inicio = item.kilometrajeInicio?.toString() ?: emptyValue
                 val fin = item.kilometrajeFinal?.toString() ?: emptyValue
@@ -217,6 +218,7 @@ object PdfGenerator {
                 InfoRow(context.getString(R.string.averia_pdf_table_label_region), region),
                 InfoRow(context.getString(R.string.averia_pdf_table_label_agency), agency),
                 InfoRow(context.getString(R.string.averia_pdf_table_label_location_text), textualLocation),
+                InfoRow(context.getString(R.string.averia_pdf_table_label_address), geocodedAddress),
                 InfoRow(context.getString(R.string.averia_pdf_table_label_affectation), affectation),
                 InfoRow(context.getString(R.string.averia_pdf_table_label_event_date), eventDate),
                 InfoRow(context.getString(R.string.averia_pdf_table_label_start_time), startAttention),
@@ -280,9 +282,25 @@ object PdfGenerator {
                 item.materialesDetalle.any { it.cantidad > 0 } -> item.materialesDetalle
                     .filter { it.cantidad > 0 }
                     .map { m ->
+                        val base = m.descripcion.ifBlank { m.codigo }
+                        val detalle = m.medidorInstalado?.let { meta ->
+                            buildList {
+                                meta.numero?.takeIf { it.isNotBlank() }?.let {
+                                    add(context.getString(R.string.averia_medidor_detalle_numero, it))
+                                }
+                                meta.lectura?.takeIf { it.isNotBlank() }?.let {
+                                    add(context.getString(R.string.averia_medidor_detalle_lectura, it))
+                                }
+                            }.takeIf { it.isNotEmpty() }
+                        }
+                        val nombre = if (!detalle.isNullOrEmpty()) {
+                            "$base (${detalle.joinToString(" • ")})"
+                        } else {
+                            base
+                        }
                         context.getString(
                             R.string.averia_pdf_material_line,
-                            m.descripcion.ifBlank { m.codigo },
+                            nombre,
                             m.cantidad,
                             m.codigo
                         )

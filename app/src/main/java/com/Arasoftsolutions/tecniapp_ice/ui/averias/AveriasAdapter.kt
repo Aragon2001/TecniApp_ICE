@@ -46,6 +46,7 @@ data class AveriaUI(
     val horaFinal: Long?,
     val cliente: String?,
     val localizacion: String?,
+    val direccion: String?,
     val tecnicosAtendieron: List<TecnicoAtencion>,
     val tipoAfectacion: TipoAfectacion,
     val numeroMedidor: String?,
@@ -112,6 +113,7 @@ class AveriasAdapter(
         private val tvKilometraje: TextView = view.findViewById(R.id.tvKilometraje)
         private val tvCliente: TextView? = view.findViewById(R.id.tvCliente)
         private val tvLocalizacion: TextView? = view.findViewById(R.id.tvLocalizacion)
+        private val tvDireccion: TextView? = view.findViewById(R.id.tvDireccion)
 
         private val tvFecha: TextView = view.findViewById(R.id.tvFecha)
 
@@ -120,6 +122,7 @@ class AveriasAdapter(
         private val btnResolver: MaterialButton = view.findViewById(R.id.btnResolver)
         private val btnVer: MaterialButton = view.findViewById(R.id.btnVer)
 
+        private val mapContainer: View = view.findViewById(R.id.mapContainer)
         private val imgMapa: ImageView = view.findViewById(R.id.imgMapa)
 
         fun bind(item: AveriaUI) {
@@ -226,6 +229,13 @@ class AveriasAdapter(
                     context.getString(R.string.averia_localizacion_label, loc)
                 }
             }
+            tvDireccion?.let { label ->
+                val direccion = item.direccion?.takeIf { it.isNotBlank() }
+                label.visibility = if (direccion != null) View.VISIBLE else View.GONE
+                if (direccion != null) {
+                    label.text = itemView.context.getString(R.string.averia_direccion_label, direccion)
+                }
+            }
             val finAtencion = item.horaAtencionFinal?.let {
                 DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(Date(it))
             }
@@ -257,7 +267,17 @@ class AveriasAdapter(
             btnAsignar.setOnClickListener { onAsignar(item) }
             btnAtender.setOnClickListener { onAtender(item) }
             btnResolver.setOnClickListener { onResolver(item) }
-            btnVer.setOnClickListener { onVerDetalle(item) }
+            val mapClickListener = View.OnClickListener {
+                MapNavigation.open(
+                    context = itemView.context,
+                    lat = item.lat,
+                    lng = item.lng,
+                    label = item.localizacion ?: item.direccion
+                )
+            }
+            btnVer.setOnClickListener(mapClickListener)
+            mapContainer.setOnClickListener(mapClickListener)
+            imgMapa.setOnClickListener(mapClickListener)
 
             val currentUid = currentUserUid
             val pertenece = currentUid != null && item.tecnicoUid == currentUid

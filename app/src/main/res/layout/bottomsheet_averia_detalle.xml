@@ -98,6 +98,15 @@
             android:textAppearance="?attr/textAppearanceBodySmall" />
 
         <TextView
+            android:id="@+id/tvDireccionGps"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:textAppearance="?attr/textAppearanceBodySmall"
+            android:textIsSelectable="true"
+            android:visibility="gone" />
+
+        <TextView
     android:id="@+id/tvAsignado"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -392,21 +401,6 @@
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/tilAtendido"
-            style="@style/Tecni.TextInput.Outlined"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:hint="@string/averia_atendido_hint">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/etAtendido"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="textCapWords" />
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilVehiculo"
             style="@style/Tecni.TextInput.Outlined.Dropdown"
             android:layout_width="match_parent"
@@ -418,7 +412,7 @@
                 android:id="@+id/actvVehiculo"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="number" />
+                android:inputType="textCapCharacters" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
@@ -433,7 +427,9 @@
                 android:id="@+id/etHoraInicio"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="time" />
+                android:focusable="false"
+                android:clickable="true"
+                android:inputType="none" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
@@ -448,7 +444,9 @@
                 android:id="@+id/etHoraFin"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="time" />
+                android:focusable="false"
+                android:clickable="true"
+                android:inputType="none" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
@@ -522,6 +520,26 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:text="@string/averia_exportar_pdf_button"
+                android:textAllCaps="false"
+                android:visibility="gone" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnAnular"
+                style="@style/Tecni.Button.Outlined"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/averia_anular"
+                android:textAllCaps="false"
+                android:visibility="gone" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnEliminar"
+                style="@style/Tecni.Button.Outlined"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/averia_eliminar"
                 android:textAllCaps="false"
                 android:visibility="gone" />
 
