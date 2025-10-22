@@ -289,6 +289,8 @@
                 android:layout_height="wrap_content"
                 android:layout_marginHorizontal="16dp"
                 android:layout_marginTop="24dp"
+                android:clickable="true"
+                android:focusable="true"
                 app:cardBackgroundColor="@color/white"
                 app:cardCornerRadius="24dp"
                 app:cardElevation="4dp">
@@ -412,11 +414,14 @@
                 android:weightSum="4">
 
                 <LinearLayout
+                    android:id="@+id/action_averias"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginEnd="8dp"
                     android:layout_weight="1"
                     android:background="@drawable/bg_home_quick_action"
+                    android:clickable="true"
+                    android:focusable="true"
                     android:gravity="center"
                     android:orientation="vertical"
                     android:paddingVertical="16dp"
@@ -442,11 +447,14 @@
                 </LinearLayout>
 
                 <LinearLayout
+                    android:id="@+id/action_medidor"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginHorizontal="8dp"
                     android:layout_weight="1"
                     android:background="@drawable/bg_home_quick_action"
+                    android:clickable="true"
+                    android:focusable="true"
                     android:gravity="center"
                     android:orientation="vertical"
                     android:paddingVertical="16dp"
@@ -472,11 +480,14 @@
                 </LinearLayout>
 
                 <LinearLayout
+                    android:id="@+id/action_reportes"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginHorizontal="8dp"
                     android:layout_weight="1"
                     android:background="@drawable/bg_home_quick_action"
+                    android:clickable="true"
+                    android:focusable="true"
                     android:gravity="center"
                     android:orientation="vertical"
                     android:paddingVertical="16dp"
@@ -502,11 +513,14 @@
                 </LinearLayout>
 
                 <LinearLayout
+                    android:id="@+id/action_settings"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="8dp"
                     android:layout_weight="1"
                     android:background="@drawable/bg_home_quick_action"
+                    android:clickable="true"
+                    android:focusable="true"
                     android:gravity="center"
                     android:orientation="vertical"
                     android:paddingVertical="16dp"
