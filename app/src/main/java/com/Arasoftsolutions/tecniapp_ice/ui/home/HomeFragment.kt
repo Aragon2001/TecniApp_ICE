@@ -146,6 +146,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                 }
             }
         }
+    }
 
         observeManualSync()
     }
@@ -352,7 +353,96 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                         syncDialog = null
                     }
                 }
+                syncButton?.isEnabled = true
+                syncStatusText?.text = getString(
+                    R.string.home_sync_status_error,
+                    message
+                )
+                syncProgressIndicator?.visibility = View.GONE
+                syncProgressLabel?.visibility = View.GONE
             }
+    }
+
+    private fun formatRelativeSync(timestamp: Long?): String {
+        if (timestamp == null || timestamp <= 0) {
+            return getString(R.string.home_last_sync_never)
+        }
+        val duration = Duration.between(Instant.ofEpochMilli(timestamp), Instant.now())
+        val minutes = duration.toMinutes()
+        return when {
+            minutes < 1 -> getString(R.string.home_last_sync_just_now)
+            minutes < 60 -> getString(R.string.home_last_sync_minutes, minutes.toInt())
+            minutes < 60 * 24 -> getString(
+                R.string.home_last_sync_hours,
+                duration.toHours().toInt()
+            )
+            else -> getString(R.string.home_last_sync_days, duration.toDays().toInt())
+        }
+    }
+
+    private fun updateSyncProgress(done: Int, total: Int, message: String?) {
+        val indicator = syncProgressIndicator ?: return
+        val label = syncProgressLabel ?: return
+        if (total <= 0) {
+            indicator.isIndeterminate = true
+            indicator.setProgressCompat(0, false)
+            label.text = message ?: getString(R.string.home_sync_status_running)
+            return
+        }
+        indicator.isIndeterminate = false
+        val clampedDone = done.coerceIn(0, total)
+        val progress = (clampedDone * 100f / total).toInt()
+        indicator.setProgressCompat(progress, true)
+        label.text = getString(
+            R.string.home_sync_progress_format,
+            clampedDone,
+            total,
+            message ?: getString(R.string.home_sync_status_running)
+        )
+    }
+
+    private fun resolveErrorMessage(throwable: Throwable?): String {
+        val detail = throwable?.localizedMessage?.takeIf { !it.isNullOrBlank() }
+            ?: throwable?.javaClass?.simpleName
+            ?: getString(R.string.home_sync_unknown_error)
+        return detail
+    }
+
+    private fun formatDisplayName(user: UserEntity?): String {
+        if (user == null) return getString(R.string.home_header_default_user)
+        val full = listOfNotNull(user.nombre, user.apellidosCompletos)
+            .joinToString(" ")
+            .trim()
+        if (full.isNotBlank()) return full
+        val email = user.email?.takeIf { it.isNotBlank() }
+        return email ?: user.uid.ifBlank { getString(R.string.home_header_default_user) }
+    }
+
+    private fun formatAssignment(user: UserEntity?): String {
+        if (user == null) return getString(R.string.home_header_assignment_placeholder)
+        val parts = buildList {
+            val subregion = user.subregionNombre?.takeIf { it.isNotBlank() }
+                ?: user.subregion?.takeIf { it.isNotBlank() }
+            val agency = user.agencia?.takeIf { it.isNotBlank() }
+            val vehicle = user.placaVehiculo?.takeIf { it.isNotBlank() }
+            if (subregion != null) add(subregion)
+            if (agency != null) add(agency)
+            if (vehicle != null) add("ICE $vehicle")
+        }
+        return if (parts.isEmpty()) {
+            getString(R.string.home_header_assignment_placeholder)
+        } else {
+            parts.joinToString(" • ")
+        }
+    }
+
+    private fun formatCurrentDate(): String {
+        val now = ZonedDateTime.now()
+        val date = dateFormatter.format(now).replaceFirstChar { char ->
+            if (char.isLowerCase()) char.titlecase(locale) else char.toString()
+        }
+        val time = timeFormatter.format(now)
+        return getString(R.string.home_header_date_format, date, time)
     }
 
     private fun formatRelativeSync(timestamp: Long?): String {

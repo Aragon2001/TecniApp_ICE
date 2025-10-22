@@ -270,7 +270,7 @@ Cliente: %4$s</string>
     <string name="averia_pdf_table_label_region">Región</string>
     <string name="averia_pdf_table_label_agency">Agencia</string>
     <string name="averia_pdf_table_label_client">Cliente</string>
-    <string name="averia_pdf_table_label_address">Dirección (GPS)</string>
+    <string name="averia_pdf_table_label_address">Dirección</string>
     <string name="averia_pdf_table_label_location_text">Localización</string>
     <string name="averia_pdf_table_label_location">Coordenadas</string>
     <string name="averia_pdf_table_label_generated">Generado el</string>
@@ -601,10 +601,25 @@ Cliente: %4$s</string>
     <string name="admin_confirm_guardar_localizacion_message">¿Deseas guardar los cambios de la localización %1$s?</string>
     <string name="admin_confirm_eliminar_localizacion_title">Eliminar localización</string>
     <string name="admin_confirm_eliminar_localizacion_message">¿Deseas eliminar la localización %1$s? Esta acción no se puede deshacer.</string>
-    <string name="map_picker_title">Selecciona la ubicación</string>
-    <string name="map_picker_instruction">Toca el mapa para fijar la localización exacta.</string>
-    <string name="map_picker_selected">Lat: %1$.6f, Lng: %2$.6f</string>
-    <string name="map_picker_pending">Aún no se ha seleccionado un punto.</string>
+    <string name="map_picker_title">Seleccionar ubicación</string>
+    <string name="map_picker_hint">Mueve el mapa para alinear el marcador fijo con la ubicación deseada.</string>
+    <string name="map_picker_coordinates_title">Coordenadas seleccionadas</string>
+    <string name="map_picker_latitude">Lat: %1$.6f</string>
+    <string name="map_picker_longitude">Lng: %1$.6f</string>
+    <string name="map_picker_cancel">Cancelar</string>
+    <string name="map_picker_confirm">Confirmar ubicación</string>
+    <string name="map_picker_action_my_location">Mi ubicación</string>
+    <string name="map_picker_action_expand">Pantalla completa</string>
+    <string name="map_picker_action_collapse">Contraer</string>
+    <string name="map_picker_action_map_style">Cambiar estilo de mapa</string>
+    <string name="map_picker_map_type_normal">Estilo nocturno</string>
+    <string name="map_picker_map_type_terrain">Terreno</string>
+    <string name="map_picker_map_type_satellite">Satélite</string>
+    <string name="map_picker_map_type_changed">Mapa actualizado: %1$s</string>
+    <string name="map_picker_loading_location">Buscando tu ubicación…</string>
+    <string name="map_picker_location_unavailable">No se pudo obtener tu ubicación actual.</string>
+    <string name="map_picker_permission_denied">Activa el permiso de ubicación para centrar el mapa en tu posición.</string>
+    <string name="map_picker_marker_content_description">Marcador fijo de la ubicación seleccionada</string>
     <string name="admin_localizacion_guardar_exito">Localización %1$s guardada correctamente.</string>
     <string name="admin_localizacion_eliminar_exito">Localización %1$s eliminada correctamente.</string>
     <string name="admin_localizacion_no_encontrada">No se encontró la localización indicada.</string>
@@ -627,7 +642,7 @@ Cliente: %4$s</string>
 
     <string name="privacy_policy_view_terms">Revisar términos completos</string>
     <string name="privacy_policy_contact_support">Contactar a soporte</string>
-    <string name="privacy_policy_contact_email">soporte@arasoftsolutions.com</string>
+    <string name="privacy_policy_contact_email">arasoftsolutions@outlook.com</string>
     <string name="privacy_policy_contact_error">No se encontró una aplicación de correo para completar la acción.</string>
 
     <!-- Legal: About TecniApp -->

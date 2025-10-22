@@ -13,7 +13,6 @@ import android.view.View
 import android.widget.TextView
 import android.widget.Toast
 import androidx.core.view.isVisible
-import androidx.core.widget.TextViewCompat
 import androidx.fragment.app.Fragment
 import com.Arasoftsolutions.tecniapp_ice.R
 import com.Arasoftsolutions.tecniapp_ice.databinding.FragmentHelpBinding
@@ -21,7 +20,6 @@ import com.Arasoftsolutions.tecniapp_ice.ui.legal.StructuredTextFormatter
 import com.Arasoftsolutions.tecniapp_ice.ui.legal.StructuredTextParser
 import com.Arasoftsolutions.tecniapp_ice.ui.legal.renderStructuredContent
 import java.util.Calendar
-import kotlin.math.roundToInt
 
 class HelpFragment : Fragment(R.layout.fragment_help) {
 
@@ -63,7 +61,9 @@ class HelpFragment : Fragment(R.layout.fragment_help) {
         }.getOrNull()
 
         if (aboutDocument != null) {
-            binding.textHelpSubtitle.renderStructuredContent(aboutDocument.intro)
+            binding.textHelpSubtitle.renderStructuredContent(
+                StructuredTextFormatter.buildParagraphHtml(aboutDocument.intro)
+            )
 
             val container = binding.containerAboutSections
             container.removeAllViews()
@@ -78,15 +78,12 @@ class HelpFragment : Fragment(R.layout.fragment_help) {
                 }
                 val bodyView = sectionView.findViewById<TextView>(R.id.textSectionBody)
                 bodyView.renderStructuredContent(
-                    StructuredTextFormatter.buildSectionBody(requireContext(), section)
+                    StructuredTextFormatter.buildSectionBodyHtml(section)
                 )
                 container.addView(sectionView)
             }
 
-            val footerContent = StructuredTextFormatter.buildBlocks(
-                requireContext(),
-                aboutDocument.footer
-            )
+            val footerContent = StructuredTextFormatter.buildBlocksHtml(aboutDocument.footer)
             val hasFooter = footerContent.isNotEmpty()
             binding.aboutFooterDivider.isVisible = hasFooter
             binding.textHelpFooter.isVisible = hasFooter
@@ -95,15 +92,17 @@ class HelpFragment : Fragment(R.layout.fragment_help) {
             )
         } else {
             val fallback = getString(R.string.structured_text_parse_error)
-            binding.textHelpSubtitle.renderStructuredContent(fallback)
-            binding.containerAboutSections.removeAllViews()
-            val padding = (16 * resources.displayMetrics.density).roundToInt()
-            val fallbackView = TextView(requireContext()).apply {
-                TextViewCompat.setTextAppearance(this, R.style.TextAppearance_Material3_BodyLarge)
-                text = fallback
-                setPadding(0, padding, 0, padding)
-            }
-            binding.containerAboutSections.addView(fallbackView)
+            binding.textHelpSubtitle.renderStructuredContent(
+                StructuredTextFormatter.buildParagraphHtml(fallback)
+            )
+            val container = binding.containerAboutSections
+            container.removeAllViews()
+            val fallbackView = layoutInflater.inflate(R.layout.item_structured_section, container, false)
+            fallbackView.findViewById<TextView>(R.id.textSectionTitle).isVisible = false
+            fallbackView.findViewById<TextView>(R.id.textSectionBody).renderStructuredContent(
+                StructuredTextFormatter.buildParagraphHtml(fallback)
+            )
+            container.addView(fallbackView)
             binding.aboutFooterDivider.isVisible = false
             binding.textHelpFooter.isVisible = false
         }
