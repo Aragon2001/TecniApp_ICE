@@ -166,7 +166,7 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
             FilterConfig(qv, est, regionSel, agenciaSel, fechaSel)
         }
             .flatMapLatest { config ->
-                repo.observe(emptyList(), "", config.query)
+                repo.observe(emptyList(), "", config.query, "")
                     .map { list ->
                         list.filter { entity ->
                             matchesEstado(entity, config.estado) &&
