@@ -145,14 +145,23 @@
     tools:text="Cliente:" />
 
                 <TextView
-    android:id="@+id/tvLocalizacion"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:layout_marginTop="2dp"
-    android:textColor="@color/on_light"
-    android:textSize="12sp"
+                    android:id="@+id/tvLocalizacion"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:textColor="@color/on_light"
+                    android:textSize="12sp"
+                    tools:text="Localización:" />
 
-    tools:text="Localización:" />
+                <TextView
+                    android:id="@+id/tvDireccion"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:textColor="@color/on_light"
+                    android:textSize="12sp"
+                    android:visibility="gone"
+                    tools:text="Dirección: Calle 123, Ciudad" />
 
                 <TextView
                     android:id="@+id/tvAtendido"
@@ -274,12 +283,11 @@
                 style="@style/Tecni.Button.Text"
                 android:layout_width="wrap_content"
                 android:layout_height="32dp"
-                android:text="Ver detalle"
+                android:text="@string/averia_ver_mapa"
                 android:textSize="12sp"
                 app:icon="@drawable/ic_visibility"
                 app:iconGravity="textStart"
                 app:iconPadding="0dp"
-
                 app:iconSize="16dp" />
 
             <Space

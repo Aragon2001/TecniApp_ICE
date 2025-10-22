@@ -77,7 +77,7 @@ dependencies {
     implementation(libs.firebase.auth.ktx)
     implementation(libs.firebase.database.ktx)
     implementation(libs.firebase.firestore.ktx)
-    implementation("com.google.firebase:firebase-config-ktx:21.6.0")
+    implementation("com.google.firebase:firebase-config-ktx")
     implementation("com.google.firebase:firebase-storage-ktx")
 
     // Room + KSP
@@ -90,7 +90,7 @@ dependencies {
     // Coroutines / WorkManager
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.8.1")
-    implementation("androidx.work:work-runtime-ktx:2.9.0")
+    implementation("androidx.work:work-runtime-ktx:2.9.1")
 
     // Retrofit + Moshi (codegen)
     implementation("com.squareup.retrofit2:retrofit:2.11.0")

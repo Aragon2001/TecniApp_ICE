@@ -29,6 +29,41 @@
     <string name="action_accounts">Perfil</string>
     <string name="google_maps_key">AIzaSyBxgf6oA-rRK1-OlNft4oDgzF3gokLl1FU</string>
 
+    <!-- Home -->
+    <string name="home_greeting_format">Bienvenido, %1$s</string>
+    <string name="home_header_default_user">técnico</string>
+    <string name="home_status_online">Online</string>
+    <string name="home_status_offline">Sin conexión</string>
+    <string name="home_header_assignment_placeholder">Actualiza tu perfil para ver la asignación.</string>
+    <string name="home_header_date_format">%1$s · %2$s</string>
+    <string name="home_card_pending_title">Averías Pendientes</string>
+    <string name="home_card_attended_title">Averías atendidas hoy</string>
+    <string name="home_card_kilometraje_title">Kilometraje recorrido</string>
+    <string name="home_card_last_sync_title">Última sincronización</string>
+    <string name="home_card_kilometraje_value">%1$.1f km</string>
+    <string name="home_sync_now">Sincronizar ahora</string>
+    <string name="home_map_title">Ubicaciones actualizadas</string>
+    <string name="home_map_description">Sincroniza tus rutas y mapas antes de salir a campo.</string>
+    <string name="home_map_preview_content_description">Vista previa del mapa sincronizado</string>
+    <string name="home_map_last_sync">Última sincronización: %1$s</string>
+    <string name="home_sync_status_title">Sincronización manual</string>
+    <string name="home_sync_status_idle">Sincroniza para obtener los últimos datos.</string>
+    <string name="home_sync_status_running">Sincronizando…</string>
+    <string name="home_sync_status_success">Sincronización completa.</string>
+    <string name="home_sync_status_error">Ocurrió un error: %1$s</string>
+    <string name="home_sync_unknown_error">Error desconocido</string>
+    <string name="home_sync_progress_format">Paso %1$d de %2$d • %3$s</string>
+    <string name="home_last_sync_never">Nunca</string>
+    <string name="home_last_sync_just_now">Hace un momento</string>
+    <string name="home_last_sync_minutes">Hace %1$d min</string>
+    <string name="home_last_sync_hours">Hace %1$d h</string>
+    <string name="home_last_sync_days">Hace %1$d d</string>
+    <string name="home_cards_placeholder">—</string>
+    <string name="home_quick_action_averias">Averías</string>
+    <string name="home_quick_action_medidor">Medidor</string>
+    <string name="home_quick_action_reportes">Reportes</string>
+    <string name="home_quick_action_settings">Ajustes</string>
+
     <!-- Onboarding -->
     <string name="onboarding_toolbar_title">Recorrido de bienvenida</string>
     <string name="onboarding_action_skip">Saltar</string>
@@ -82,6 +117,7 @@
     <string name="averia_cliente_label">Cliente: %1$s</string>
     <string name="averia_localizacion_label">Localización: %1$s</string>
     <string name="averia_localizacion_label_hint">Localización (opcional)</string>
+    <string name="averia_direccion_label">Dirección: %1$s</string>
     <string name="averia_tecnicos_atendieron">Técnicos que atendieron</string>
     <string name="averia_tecnico_autocomplete_hint">Buscar técnico</string>
     <string name="averia_agregar_tecnico">Agregar +</string>
@@ -123,6 +159,14 @@ Cliente: %4$s</string>
     <string name="averia_notificacion_map_action">Ver en mapa</string>
     <string name="averia_notificacion_map_label_default">Avería reportada</string>
     <string name="averia_field_maps_required">Instala Field Maps para abrir la ubicación.</string>
+    <string name="averia_map_dialog_title">Abrir ubicación con…</string>
+    <string name="averia_map_option_field_maps">Field Maps</string>
+    <string name="averia_map_option_google_maps">Google Maps</string>
+    <string name="averia_map_option_browser">Navegador web</string>
+    <string name="averia_map_error_no_location">La ubicación no está disponible.</string>
+    <string name="averia_map_error_field_maps">Field Maps no está instalado o el vínculo es inválido.</string>
+    <string name="averia_map_error_google_maps">Google Maps no está disponible.</string>
+    <string name="averia_map_error_browser">No se pudo abrir en el navegador.</string>
     <string name="averia_channel_name">Averías</string>
     <string name="averia_channel_description">Alertas sobre nuevas averías y cambios de estado.</string>
     <string name="averia_notification_permission_granted">Notificaciones activadas.</string>
@@ -225,6 +269,7 @@ Cliente: %4$s</string>
     <string name="averia_pdf_table_label_region">Región</string>
     <string name="averia_pdf_table_label_agency">Agencia</string>
     <string name="averia_pdf_table_label_client">Cliente</string>
+    <string name="averia_pdf_table_label_address">Dirección</string>
     <string name="averia_pdf_table_label_location_text">Localización</string>
     <string name="averia_pdf_table_label_location">Coordenadas</string>
     <string name="averia_pdf_table_label_generated">Generado el</string>
@@ -555,10 +600,25 @@ Cliente: %4$s</string>
     <string name="admin_confirm_guardar_localizacion_message">¿Deseas guardar los cambios de la localización %1$s?</string>
     <string name="admin_confirm_eliminar_localizacion_title">Eliminar localización</string>
     <string name="admin_confirm_eliminar_localizacion_message">¿Deseas eliminar la localización %1$s? Esta acción no se puede deshacer.</string>
-    <string name="map_picker_title">Selecciona la ubicación</string>
-    <string name="map_picker_instruction">Toca el mapa para fijar la localización exacta.</string>
-    <string name="map_picker_selected">Lat: %1$.6f, Lng: %2$.6f</string>
-    <string name="map_picker_pending">Aún no se ha seleccionado un punto.</string>
+    <string name="map_picker_title">Seleccionar ubicación</string>
+    <string name="map_picker_hint">Mueve el mapa para alinear el marcador fijo con la ubicación deseada.</string>
+    <string name="map_picker_coordinates_title">Coordenadas seleccionadas</string>
+    <string name="map_picker_latitude">Lat: %1$.6f</string>
+    <string name="map_picker_longitude">Lng: %1$.6f</string>
+    <string name="map_picker_cancel">Cancelar</string>
+    <string name="map_picker_confirm">Confirmar ubicación</string>
+    <string name="map_picker_action_my_location">Mi ubicación</string>
+    <string name="map_picker_action_expand">Pantalla completa</string>
+    <string name="map_picker_action_collapse">Contraer</string>
+    <string name="map_picker_action_map_style">Cambiar estilo de mapa</string>
+    <string name="map_picker_map_type_normal">Estilo nocturno</string>
+    <string name="map_picker_map_type_terrain">Terreno</string>
+    <string name="map_picker_map_type_satellite">Satélite</string>
+    <string name="map_picker_map_type_changed">Mapa actualizado: %1$s</string>
+    <string name="map_picker_loading_location">Buscando tu ubicación…</string>
+    <string name="map_picker_location_unavailable">No se pudo obtener tu ubicación actual.</string>
+    <string name="map_picker_permission_denied">Activa el permiso de ubicación para centrar el mapa en tu posición.</string>
+    <string name="map_picker_marker_content_description">Marcador fijo de la ubicación seleccionada</string>
     <string name="admin_localizacion_guardar_exito">Localización %1$s guardada correctamente.</string>
     <string name="admin_localizacion_eliminar_exito">Localización %1$s eliminada correctamente.</string>
     <string name="admin_localizacion_no_encontrada">No se encontró la localización indicada.</string>
@@ -572,16 +632,16 @@ Cliente: %4$s</string>
         Desarrollado para el Instituto Costarricense de Electricidad (ICE).
     -->
     <!-- Legal: Terms dialog -->
-    <string name="terms_title">Términos de uso de TecniApp ICE</string>
-    <string name="terms_accept">Aceptar</string>
-    <string name="terms_decline">Salir</string>
+
+
+
     <string name="dialog_close">Cerrar</string>
 
     <!-- Legal: Privacy policy -->
-    <string name="privacy_policy_title">Política de privacidad</string>
+
     <string name="privacy_policy_view_terms">Revisar términos completos</string>
     <string name="privacy_policy_contact_support">Contactar a soporte</string>
-    <string name="privacy_policy_contact_email">soporte@arasoftsolutions.com</string>
+    <string name="privacy_policy_contact_email">arasoftsolutions@outlook.com</string>
     <string name="privacy_policy_contact_error">No se encontró una aplicación de correo para completar la acción.</string>
 
     <!-- Legal: About TecniApp -->

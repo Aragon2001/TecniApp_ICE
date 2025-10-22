@@ -83,17 +83,17 @@
                     style="@style/Tecni.TextInput.Outlined.Dropdown"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    app:endIconMode="clear_text"
-                    app:hintTextColor="?attr/colorOnSurfaceVariant">
+                    android:layout_marginTop="20dp"
+                    android:hint="@string/medidor_numero_hint"
+                    app:startIconDrawable="@drawable/ic_round_search_24">
 
                     <com.google.android.material.textfield.MaterialAutoCompleteTextView
                         android:id="@+id/actvAdminMedidorBuscar"
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:imeOptions="actionDone"
-                        android:hint="@string/admin_field_medidor_buscar_hint"
-                        android:inputType="text" />
+                            android:layout_height="wrap_content"
+                            android:imeOptions="actionSearch"
+                            android:inputType="number"
+                            android:maxLines="1" />
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <LinearLayout

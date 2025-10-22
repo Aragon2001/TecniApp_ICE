@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import android.util.Log
+import android.location.Geocoder
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
@@ -122,6 +123,10 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
     val tecnicosDisponibles: StateFlow<List<TecnicoEntity>> = _tecnicos.asStateFlow()
     private val _medidorEstado = MutableStateFlow<MedidorLookupState>(MedidorLookupState.Idle)
     val medidorEstado: StateFlow<MedidorLookupState> = _medidorEstado.asStateFlow()
+    private val _addresses = MutableStateFlow<Map<String, String>>(emptyMap())
+    private val pendingAddressLookups = mutableSetOf<String>()
+    private val _shareRequests = MutableSharedFlow<AveriaUI>(extraBufferCapacity = 1)
+    val shareRequests = _shareRequests.asSharedFlow()
 
     private var syncJob: Job? = null
     private var cachedRegiones: List<RegionEntity> = emptyList()
@@ -150,7 +155,7 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
     val fechaFiltroState: StateFlow<FechaFiltro?> = fechaFiltro.asStateFlow()
     private val zoneId: ZoneId = ZoneId.systemDefault()
 
-    val uiState: StateFlow<AveriasUiState> =
+    private val filteredAverias =
         combine(
             q.debounce(250).map { it.trim() }.distinctUntilChanged(),
             estado,
@@ -161,7 +166,7 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
             FilterConfig(qv, est, regionSel, agenciaSel, fechaSel)
         }
             .flatMapLatest { config ->
-                repo.observe(emptyList(), "", config.query)
+                repo.observe(emptyList(), "", config.query, "")
                     .map { list ->
                         list.filter { entity ->
                             matchesEstado(entity, config.estado) &&
@@ -171,53 +176,18 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
                         }
                     }
             }
-            .map { list ->
-                AveriasUiState(
-                    loading = isLoading.value,
-                    items = list.map { e ->
-                        val materialesDetalle = MaterialesSerializer.fromJson(e.materialesDetalleJson)
-                        val materialesResumen = e.materialesTexto
-                            ?: MaterialesSerializer.toSummary(materialesDetalle)
-                        val tecnicosAtendieron = TecnicosSerializer.fromJson(e.tecnicosAtendieronJson)
-                        AveriaUI(
-                            id = e.caseId,
-                            descripcion = "Avería #${e.caseId}",
-                            fechaMillis = e.fechaInicioMillis,
-                            causa = e.causa?.trim().orEmpty(),
-                            estado = e.estado,
-                            tecnico = e.tecnicoAsignadoNombre ?: "",
-                            tecnicoUid = e.tecnicoAsignadoUid,
-                            atendidoPor = e.atendidoPorNombre ?: "",
-                            atendidoPorUid = e.atendidoPorUid,
-                            observaciones = e.observaciones?.trim().orEmpty(),
-                            nise = e.nise ?: "",
-                            agencia = e.nombreAgencia ?: (e.agencia ?: ""),
-                            region = e.region ?: "",
-                            zonaTag = e.agenciaTag,
-                            lat = e.lat ?: 0.0,
-                            lng = e.lng ?: 0.0,
-                            vehiculo = e.vehiculoAsignado,
-                            materialesResumen = materialesResumen,
-                            materialesDetalle = materialesDetalle,
-                            horaAtencionInicio = e.atencionHoraInicioMillis,
-                            horaAtencionFinal = e.atencionHoraFinalMillis,
-                            kilometrajeInicio = e.kilometrajeInicio,
-                            kilometrajeFinal = e.kilometrajeFinal,
-                            horaInicio = e.horaInicioMillis,
-                            horaFinal = e.horaFinalMillis,
-                            cliente = e.cliente?.trim(),
-                            localizacion = e.localizacion?.trim(),
-                            tecnicosAtendieron = tecnicosAtendieron,
-                            tipoAfectacion = TipoAfectacion.fromRaw(e.tipoAfectacion),
-                            numeroMedidor = e.numeroMedidor?.trim(),
-                            medidorCalle = e.medidorCalle?.trim(),
-                            medidorPueblo = e.medidorPueblo?.trim(),
-                            medidorMetros = e.medidorMetros?.trim(),
-                            medidorPoste = e.medidorPoste?.trim()
-                        )
-                    }
-                )
+
+    val uiState: StateFlow<AveriasUiState> =
+        combine(filteredAverias, _addresses, isLoading) { list, addresses, loading ->
+            val items = list.map { entity ->
+                val address = addresses[entity.caseId]
+                if (address == null) {
+                    queueAddressLookup(entity)
+                }
+                buildAveriaUi(entity, address)
             }
+            AveriasUiState(loading = loading, items = items)
+        }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), AveriasUiState())
 
     init {
@@ -508,6 +478,132 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
         )
     }
 
+    private fun buildAveriaUi(entity: AveriaEntity, direccion: String?): AveriaUI {
+        val materialesDetalle = MaterialesSerializer.fromJson(entity.materialesDetalleJson)
+        val materialesResumen = entity.materialesTexto
+            ?: MaterialesSerializer.toSummary(materialesDetalle)
+        val tecnicosAtendieron = TecnicosSerializer.fromJson(entity.tecnicosAtendieronJson)
+        return AveriaUI(
+            id = entity.caseId,
+            descripcion = "Avería #${entity.caseId}",
+            fechaMillis = entity.fechaInicioMillis,
+            causa = entity.causa?.trim().orEmpty(),
+            estado = entity.estado,
+            tecnico = entity.tecnicoAsignadoNombre ?: "",
+            tecnicoUid = entity.tecnicoAsignadoUid,
+            atendidoPor = entity.atendidoPorNombre ?: "",
+            atendidoPorUid = entity.atendidoPorUid,
+            observaciones = entity.observaciones?.trim().orEmpty(),
+            nise = entity.nise ?: "",
+            agencia = entity.nombreAgencia ?: (entity.agencia ?: ""),
+            region = entity.region ?: "",
+            zonaTag = entity.agenciaTag,
+            lat = entity.lat ?: 0.0,
+            lng = entity.lng ?: 0.0,
+            vehiculo = entity.vehiculoAsignado,
+            materialesResumen = materialesResumen,
+            materialesDetalle = materialesDetalle,
+            horaAtencionInicio = entity.atencionHoraInicioMillis,
+            horaAtencionFinal = entity.atencionHoraFinalMillis,
+            kilometrajeInicio = entity.kilometrajeInicio,
+            kilometrajeFinal = entity.kilometrajeFinal,
+            horaInicio = entity.horaInicioMillis,
+            horaFinal = entity.horaFinalMillis,
+            cliente = entity.cliente?.trim(),
+            localizacion = entity.localizacion?.trim(),
+            direccion = direccion,
+            tecnicosAtendieron = tecnicosAtendieron,
+            tipoAfectacion = TipoAfectacion.fromRaw(entity.tipoAfectacion),
+            numeroMedidor = entity.numeroMedidor?.trim(),
+            medidorCalle = entity.medidorCalle?.trim(),
+            medidorPueblo = entity.medidorPueblo?.trim(),
+            medidorMetros = entity.medidorMetros?.trim(),
+            medidorPoste = entity.medidorPoste?.trim()
+        )
+    }
+
+    private fun buildResolvedUi(base: AveriaUI, resolved: AveriaActionData): AveriaUI {
+        val materiales = if (resolved.materiales.isNotEmpty()) resolved.materiales else base.materialesDetalle
+        val materialesResumen = if (materiales.isNotEmpty()) {
+            MaterialesSerializer.toSummary(materiales)
+        } else {
+            base.materialesResumen
+        }
+        val tecnicos = if (resolved.tecnicos.isNotEmpty()) resolved.tecnicos else base.tecnicosAtendieron
+        val observaciones = resolved.observaciones?.takeIf { it.isNotBlank() } ?: base.observaciones
+        return base.copy(
+            causa = resolved.causa.ifBlank { base.causa },
+            observaciones = observaciones,
+            vehiculo = resolved.vehiculo ?: base.vehiculo,
+            materialesDetalle = materiales,
+            materialesResumen = materialesResumen,
+            atendidoPor = resolved.atendidoPorNombre ?: base.atendidoPor,
+            atendidoPorUid = resolved.atendidoPorUid ?: base.atendidoPorUid,
+            horaAtencionInicio = resolved.horaInicioMillis ?: base.horaAtencionInicio,
+            horaAtencionFinal = resolved.horaFinalMillis ?: base.horaAtencionFinal,
+            kilometrajeInicio = resolved.kilometrajeInicio ?: base.kilometrajeInicio,
+            kilometrajeFinal = resolved.kilometrajeFinal ?: base.kilometrajeFinal,
+            cliente = resolved.cliente ?: base.cliente,
+            localizacion = resolved.localizacion ?: base.localizacion,
+            tipoAfectacion = resolved.tipoAfectacion,
+            numeroMedidor = resolved.numeroMedidor ?: base.numeroMedidor,
+            medidorCalle = resolved.medidorCalle ?: base.medidorCalle,
+            medidorPueblo = resolved.medidorPueblo ?: base.medidorPueblo,
+            medidorMetros = resolved.medidorMetros ?: base.medidorMetros,
+            medidorPoste = resolved.medidorPoste ?: base.medidorPoste,
+            horaInicio = resolved.horaInicioMillis ?: base.horaInicio,
+            horaFinal = resolved.horaFinalMillis ?: base.horaFinal,
+            tecnicosAtendieron = tecnicos
+        )
+    }
+
+    private fun queueAddressLookup(entity: AveriaEntity) {
+        val lat = entity.lat ?: return
+        val lng = entity.lng ?: return
+        if (lat == 0.0 && lng == 0.0) return
+        val caseId = entity.caseId
+        synchronized(pendingAddressLookups) {
+            if (_addresses.value.containsKey(caseId) || pendingAddressLookups.contains(caseId)) {
+                return
+            }
+            pendingAddressLookups.add(caseId)
+        }
+        viewModelScope.launch(Dispatchers.IO) {
+            val address = resolveAddress(lat, lng)
+            synchronized(pendingAddressLookups) {
+                pendingAddressLookups.remove(caseId)
+            }
+            if (!address.isNullOrBlank()) {
+                _addresses.update { it + (caseId to address) }
+            }
+        }
+    }
+
+    private fun resolveAddress(lat: Double, lng: Double): String? {
+        if (!Geocoder.isPresent()) return null
+        return try {
+            val geocoder = Geocoder(getApplication(), Locale.getDefault())
+            @Suppress("DEPRECATION")
+            val results = geocoder.getFromLocation(lat, lng, 1)
+            val address = results?.firstOrNull() ?: return null
+            val line = address.getAddressLine(0)
+            if (!line.isNullOrBlank()) {
+                line
+            } else {
+                buildList {
+                    address.thoroughfare?.takeIf { it.isNotBlank() }?.let { add(it) }
+                    address.subThoroughfare?.takeIf { it.isNotBlank() }?.let { add(it) }
+                    address.locality?.takeIf { it.isNotBlank() }?.let { add(it) }
+                    address.subAdminArea?.takeIf { it.isNotBlank() }?.let { add(it) }
+                    address.adminArea?.takeIf { it.isNotBlank() }?.let { add(it) }
+                }.joinToString(", ").takeIf { it.isNotBlank() }
+            }
+        } catch (t: Throwable) {
+            Log.w(TAG, "No se pudo obtener la dirección para ($lat,$lng)", t)
+            null
+        }
+    }
+
     private suspend fun ensurePropietario(ui: AveriaUI): UserEntity? {
         val user = requireUsuario() ?: return null
         val asignadoA = ui.tecnicoUid
@@ -683,6 +779,10 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
             val user = ensurePropietario(ui) ?: return@launch
             val resolved = resolveData(ui, data, user)
             repo.cerrar(ui.id, resolved)
+            val address = _addresses.value[ui.id] ?: ui.direccion
+            val baseUi = if (!address.isNullOrBlank()) ui.copy(direccion = address) else ui
+            val shareItem = buildResolvedUi(baseUi, resolved)
+            _shareRequests.tryEmit(shareItem)
             notifyResuelta(ui.id)
             _messages.tryEmit(getApplication<Application>().getString(R.string.averia_exito_resuelta))
             syncNow()
