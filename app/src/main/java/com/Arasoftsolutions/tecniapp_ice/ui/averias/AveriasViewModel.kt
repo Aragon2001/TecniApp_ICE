@@ -6,7 +6,6 @@ import android.util.Log
 import android.location.Geocoder
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.Arasoftsolutions.tecniapp_ice.BuildConfig
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.AgenciaEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.AveriaEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.MaterialEntity
@@ -22,6 +21,7 @@ import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
 import com.Arasoftsolutions.tecniapp_ice.Database.sync.FirebaseSyncManager
 import com.Arasoftsolutions.tecniapp_ice.R
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.remoteconfiginterop.BuildConfig
 import java.text.Normalizer
 import java.time.Instant
 import java.time.LocalDate
@@ -361,7 +361,7 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
     fun nombreTecnicoActual(): String? = _usuario.value?.let { nombreCompleto(it) }
     fun vehiculoPreferido(): String? = _usuario.value?.placaVehiculo
 
-    private suspend fun handleRealtimeNewAverias(nuevas: List<AveriaEntity>) {
+    private suspend fun handleRealtimeNewAverias(nuevas: Any) {
         if (nuevas.isEmpty()) return
         if (!_notificationsEnabled.value) return
 
