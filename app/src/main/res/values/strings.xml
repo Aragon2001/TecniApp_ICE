@@ -269,7 +269,7 @@ Cliente: %4$s</string>
     <string name="averia_pdf_table_label_region">Región</string>
     <string name="averia_pdf_table_label_agency">Agencia</string>
     <string name="averia_pdf_table_label_client">Cliente</string>
-    <string name="averia_pdf_table_label_address">Dirección (GPS)</string>
+    <string name="averia_pdf_table_label_address">Dirección</string>
     <string name="averia_pdf_table_label_location_text">Localización</string>
     <string name="averia_pdf_table_label_location">Coordenadas</string>
     <string name="averia_pdf_table_label_generated">Generado el</string>
@@ -626,7 +626,7 @@ Cliente: %4$s</string>
 
     <string name="privacy_policy_view_terms">Revisar términos completos</string>
     <string name="privacy_policy_contact_support">Contactar a soporte</string>
-    <string name="privacy_policy_contact_email">soporte@arasoftsolutions.com</string>
+    <string name="privacy_policy_contact_email">arasoftsolutions@outlook.com</string>
     <string name="privacy_policy_contact_error">No se encontró una aplicación de correo para completar la acción.</string>
 
     <!-- Legal: About TecniApp -->

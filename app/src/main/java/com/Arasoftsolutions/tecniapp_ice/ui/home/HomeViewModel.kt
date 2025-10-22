@@ -57,7 +57,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     private val averias: StateFlow<List<AveriaEntity>> =
         _agenciasFiltro
             .flatMapLatest { agencias ->
-                averiasRepository.observe(agencias, agencias.size, "", "")
+                averiasRepository.observe(agencias, agencias.size.toString(), "", "")
             }
             .stateIn(viewModelScope, sharing, emptyList())
 
