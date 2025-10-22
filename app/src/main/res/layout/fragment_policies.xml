@@ -68,7 +68,7 @@
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/buttonViewTerms"
-            style="@style/Widget.Material3.Button.ElevatedButton"
+            style="@style/Tecni.Button.Elevated"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
@@ -79,7 +79,7 @@
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/buttonContactSupport"
-            style="@style/Widget.Material3.Button.TextButton"
+            style="@style/Tecni.Button.Text"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"

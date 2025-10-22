@@ -1,13 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- ================================================================== -->
+    <!-- Overlays y componentes Material 3 reutilizables                     -->
+    <!-- Mantener cada sección documentada para facilitar el mantenimiento. -->
+    <!-- ================================================================== -->
 
-    <!-- Toolbar (menús emergentes legibles) -->
+    <!-- Toolbars y menús desplegados -->
     <style name="ThemeOverlay.Tecni.Toolbar" parent="ThemeOverlay.Material3.ActionBar">
         <item name="colorOnSurface">@color/on_light</item>
         <item name="android:textColor">@color/on_light</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
     </style>
 
-    <!-- SearchBar/SearchView (look glass) -->
+    <!-- SearchBar/SearchView (look & feel glass) -->
     <style name="ThemeOverlay.Tecni.Search" parent="ThemeOverlay.Material3">
         <item name="colorSurface">@color/glass_light</item>
         <item name="colorOnSurface">@color/on_light</item>
@@ -20,8 +25,46 @@
         <item name="colorSurfaceVariant">@color/surface_variant_dark</item>
     </style>
 
-    <!-- Base chips (SIN multilínea) -->
-    <!-- Usa Filter (selección) o Assist (acción). Para filtros de estado, Filter es más apropiado -->
+    <!-- TextInputLayout densos adaptados a Material 3 -->
+    <style name="Tecni.TextInput.Outlined" parent="Widget.Material3.TextInputLayout.OutlinedBox">
+        <item name="boxStrokeColor">?attr/colorPrimary</item>
+        <item name="hintTextColor">?attr/colorOnSurfaceVariant</item>
+        <item name="android:textColorHint">?attr/colorOnSurfaceVariant</item>
+    </style>
+
+    <style name="Tecni.TextInput.Outlined.Dense" parent="Tecni.TextInput.Outlined">
+        <item name="android:paddingTop">0dp</item>
+        <item name="android:paddingBottom">0dp</item>
+        <item name="boxCollapsedPaddingTop">8dp</item>
+        <item name="boxCollapsedPaddingBottom">8dp</item>
+        <item name="boxCollapsedPaddingStart">12dp</item>
+        <item name="boxCollapsedPaddingEnd">12dp</item>
+        <item name="boxExpandedPaddingTop">8dp</item>
+        <item name="boxExpandedPaddingBottom">8dp</item>
+    </style>
+
+    <style name="Tecni.TextInput.Outlined.Dropdown" parent="Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
+        <item name="boxStrokeColor">?attr/colorPrimary</item>
+        <item name="hintTextColor">?attr/colorOnSurfaceVariant</item>
+        <item name="android:textColorHint">?attr/colorOnSurfaceVariant</item>
+    </style>
+
+    <style name="Tecni.TextInput.Outlined.Dense.Dropdown" parent="Tecni.TextInput.Outlined.Dropdown">
+        <item name="boxCollapsedPaddingTop">8dp</item>
+        <item name="boxCollapsedPaddingBottom">8dp</item>
+        <item name="boxCollapsedPaddingStart">12dp</item>
+        <item name="boxCollapsedPaddingEnd">12dp</item>
+        <item name="boxExpandedPaddingTop">8dp</item>
+        <item name="boxExpandedPaddingBottom">8dp</item>
+    </style>
+
+    <style name="Tecni.TextInput.Filled" parent="Widget.Material3.TextInputLayout.FilledBox">
+        <item name="boxStrokeColor">?attr/colorPrimary</item>
+        <item name="hintTextColor">?attr/colorOnSurfaceVariant</item>
+        <item name="android:textColorHint">?attr/colorOnSurfaceVariant</item>
+    </style>
+
+    <!-- Chips base (sin multilínea). Para filtros de estado, Filter es el más apropiado -->
     <style name="Tecni.Chip.Base" parent="Widget.Material3.Chip.Filter">
         <item name="android:minHeight">32dp</item>
         <item name="android:minWidth">0dp</item>
@@ -34,6 +77,13 @@
         <item name="android:textStyle">bold</item>
         <item name="android:textAllCaps">true</item>
         <item name="chipMinTouchTargetSize">0dp</item>
+    </style>
+
+    <style name="Tecni.Chip.Status" parent="Widget.Material3.Chip.Assist">
+        <item name="android:minHeight">32dp</item>
+        <item name="chipCornerRadius">16dp</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="chipStrokeWidth">0dp</item>
     </style>
 
     <!-- Chips por estado -->
@@ -64,12 +114,13 @@
         <item name="android:paddingStart">12dp</item>
         <item name="android:paddingEnd">12dp</item>
         <item name="android:textSize">12sp</item>
-        <item name="backgroundTint">@color/ice_blue</item>
+        <item name="backgroundTint">?attr/colorPrimary</item>
         <item name="android:textColor">@android:color/white</item>
-        <item name="rippleColor">@color/ice_yellow</item>
+        <item name="rippleColor">?attr/colorSecondaryContainer</item>
         <item name="shapeAppearance">@style/ShapeAppearance.Material3.Corner.Full</item>
         <item name="iconPadding">0dp</item>
         <item name="iconSize">16dp</item>
+        <item name="iconTint">@android:color/white</item>
     </style>
 
     <style name="Tecni.Button.Outlined" parent="Widget.Material3.Button.OutlinedButton">
@@ -81,8 +132,10 @@
         <item name="shapeAppearance">@style/ShapeAppearance.Material3.Corner.Full</item>
         <item name="iconPadding">0dp</item>
         <item name="iconSize">16dp</item>
-        <item name="strokeColor">@color/outline_soft</item>
+        <item name="strokeColor">?attr/colorOutline</item>
         <item name="strokeWidth">1dp</item>
+        <item name="android:textColor">?attr/colorPrimary</item>
+        <item name="iconTint">?attr/colorPrimary</item>
     </style>
 
     <style name="Tecni.Button.Text" parent="Widget.Material3.Button.TextButton">
@@ -94,9 +147,21 @@
         <item name="shapeAppearance">@style/ShapeAppearance.Material3.Corner.Full</item>
         <item name="iconPadding">0dp</item>
         <item name="iconSize">16dp</item>
+        <item name="android:textColor">?attr/colorPrimary</item>
+        <item name="iconTint">?attr/colorPrimary</item>
     </style>
 
-    <!-- Botones originales (para otros usos) -->
+    <style name="Tecni.Button.Elevated" parent="Widget.Material3.Button.ElevatedButton">
+        <item name="android:minHeight">36dp</item>
+        <item name="android:paddingStart">16dp</item>
+        <item name="android:paddingEnd">16dp</item>
+        <item name="shapeAppearance">@style/ShapeAppearance.Material3.Corner.Full</item>
+        <item name="android:textColor">@android:color/white</item>
+        <item name="backgroundTint">?attr/colorPrimary</item>
+        <item name="iconTint">@android:color/white</item>
+    </style>
+
+    <!-- Botones originales (para otros usos heredados) -->
     <style name="Tecni.Button.Primary.Original" parent="Widget.Material3.Button.TonalButton">
         <item name="android:minHeight">40dp</item>
         <item name="android:ellipsize">end</item>
@@ -113,5 +178,4 @@
         <item name="android:paddingHorizontal">16dp</item>
         <item name="shapeAppearance">@style/ShapeAppearance.Material3.Corner.Large</item>
     </style>
-
 </resources>
