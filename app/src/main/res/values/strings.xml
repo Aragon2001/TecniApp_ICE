@@ -192,6 +192,9 @@ Cliente: %4$s</string>
     <string name="averia_exito_en_atencion">Avería en atención</string>
     <string name="averia_exito_cancelada">Atención cancelada</string>
     <string name="averia_exito_resuelta">Avería resuelta</string>
+    <string name="averia_exito_eliminada">Avería eliminada</string>
+    <string name="averia_exito_anulada">Avería anulada</string>
+    <string name="averia_error_eliminar">No se pudo eliminar la avería.</string>
     <string name="averia_export_share_title">Compartir reporte</string>
     <string name="averia_export_success">Reporte guardado como %1$s</string>
     <string name="averia_export_error">No se pudo generar el reporte.</string>
@@ -237,6 +240,28 @@ Cliente: %4$s</string>
     <string name="averia_material_cantidad_hint">Cantidad utilizada</string>
     <string name="averia_material_cantidad_error">Ingresa una cantidad válida.</string>
     <string name="averia_material_cantidad_guardar">Guardar</string>
+    <string name="averia_anular">Anular avería</string>
+    <string name="averia_eliminar">Eliminar avería</string>
+    <string name="averia_anular_confirm_title">Anular avería</string>
+    <string name="averia_anular_confirm_message">¿Deseas anular esta avería? No se notificará a los técnicos.</string>
+    <string name="averia_anular_confirm_positive">Anular</string>
+    <string name="averia_eliminar_confirm_title">Eliminar avería</string>
+    <string name="averia_eliminar_confirm_message">¿Deseas eliminar definitivamente esta avería atendida?</string>
+    <string name="averia_eliminar_confirm_positive">Eliminar</string>
+    <string name="averia_medidor_dialog_title">Registrar medidor (%1$s)</string>
+    <string name="averia_medidor_dialog_guardar">Guardar medidor</string>
+    <string name="averia_medidor_dialog_cantidad_hint">Cantidad</string>
+    <string name="averia_medidor_dialog_numero_hint">Número de medidor instalado</string>
+    <string name="averia_medidor_dialog_lectura_hint">Lectura inicial</string>
+    <string name="averia_medidor_error_numero">Ingresa el número del medidor.</string>
+    <string name="averia_medidor_error_lectura">Ingresa la lectura inicial.</string>
+    <string name="averia_medidor_detalle_numero">N° %1$s</string>
+    <string name="averia_medidor_detalle_lectura">Lectura %1$s</string>
+    <string name="averia_medidor_admin_title">Actualizar medidores</string>
+    <string name="averia_medidor_admin_message">Se registró el medidor %1$s con lectura %2$s.
+¿Deseas abrir el panel de administración para actualizar el inventario?</string>
+    <string name="averia_medidor_admin_ir">Abrir panel</string>
+    <string name="averia_medidor_admin_luego">Más tarde</string>
     <string name="averia_reporte_titulo">Reporte de avería</string>
     <string name="averia_estado_pdf">Estado: %1$s</string>
     <string name="averia_reporte_region">Región: %1$s</string>
@@ -270,7 +295,7 @@ Cliente: %4$s</string>
     <string name="averia_pdf_table_label_region">Región</string>
     <string name="averia_pdf_table_label_agency">Agencia</string>
     <string name="averia_pdf_table_label_client">Cliente</string>
-    <string name="averia_pdf_table_label_address">Dirección</string>
+    <string name="averia_pdf_table_label_address">Dirección (GPS)</string>
     <string name="averia_pdf_table_label_location_text">Localización</string>
     <string name="averia_pdf_table_label_location">Coordenadas</string>
     <string name="averia_pdf_table_label_generated">Generado el</string>
