@@ -361,7 +361,7 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
     fun nombreTecnicoActual(): String? = _usuario.value?.let { nombreCompleto(it) }
     fun vehiculoPreferido(): String? = _usuario.value?.placaVehiculo
 
-    private suspend fun handleRealtimeNewAverias(nuevas: Any) {
+    private fun handleRealtimeNewAverias(nuevas: Any) {
         if (nuevas.isEmpty()) return
         if (!_notificationsEnabled.value) return
 
