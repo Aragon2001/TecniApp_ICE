@@ -21,7 +21,7 @@ import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
 import com.Arasoftsolutions.tecniapp_ice.Database.sync.FirebaseSyncManager
 import com.Arasoftsolutions.tecniapp_ice.R
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.remoteconfiginterop.BuildConfig
+import com.Arasoftsolutions.tecniapp_ice.BuildConfig
 import java.text.Normalizer
 import java.time.Instant
 import java.time.LocalDate
@@ -185,11 +185,11 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), AveriasUiState())
 
     init {
-        repo.startRealtimeListener { nuevas ->
+        repo.startRealtimeListener(onNewAverias = { nuevas ->
             viewModelScope.launch(Dispatchers.Default) {
                 handleRealtimeNewAverias(nuevas)
             }
-        }
+        })
         AveriaNotifications.ensureChannel(app)
         observeCatalogos()
         viewModelScope.launch { loadUsuarioActual() }
@@ -361,7 +361,7 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
     fun nombreTecnicoActual(): String? = _usuario.value?.let { nombreCompleto(it) }
     fun vehiculoPreferido(): String? = _usuario.value?.placaVehiculo
 
-    private fun handleRealtimeNewAverias(nuevas: Any) {
+    private fun handleRealtimeNewAverias(nuevas: List<AveriaEntity>) {
         if (nuevas.isEmpty()) return
         if (!_notificationsEnabled.value) return
 
