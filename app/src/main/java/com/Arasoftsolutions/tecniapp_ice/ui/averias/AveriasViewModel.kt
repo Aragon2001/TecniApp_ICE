@@ -185,11 +185,11 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), AveriasUiState())
 
     init {
-        repo.startRealtimeListener { nuevas ->
+        repo.startRealtimeListener(onNewAverias = { nuevas ->
             viewModelScope.launch(Dispatchers.Default) {
                 handleRealtimeNewAverias(nuevas)
             }
-        }
+        })
         AveriaNotifications.ensureChannel(app)
         observeCatalogos()
         viewModelScope.launch { loadUsuarioActual() }
