@@ -140,6 +140,15 @@ class AveriasFragment : Fragment() {
         }
         // TODO(Codex): Escuchar cambios de preferencias de notificaciones para actualizar la UI
 
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                vm.fechaFiltroState.collectLatest { rango ->
+                    updateDateFilter(rango)
+                }
+            }
+        }
+        // TODO(Codex): Sincronizar el texto del filtro de fecha con la selección actual
+
         // Pull to refresh → Sync
         b.swipeRefresh.setOnRefreshListener {
             vm.syncNow()
@@ -236,7 +245,6 @@ class AveriasFragment : Fragment() {
             }
         }
 
-        updateDateFilter(vm.fechaFiltroState.value)
         // Sincronizar datos iniciales
         vm.syncNow()
     }

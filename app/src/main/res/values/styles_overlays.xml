@@ -48,6 +48,8 @@
         <item name="startIconCheckable">false</item>
         <item name="boxCollapsedPaddingTop">6dp</item>
         <item name="boxCollapsedPaddingBottom">6dp</item>
+        <item name="shapeAppearance">@style/ShapeAppearance.Material3.Corner.Full</item>
+        <!-- TODO(Codex): Mantener esquinas redondeadas en dropdowns para consistencia visual -->
         <!-- TODO(Codex): Ajustar estilo para autocompletes con icono de búsqueda y evitar encogimiento -->
     </style>
 
