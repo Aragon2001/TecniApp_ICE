@@ -32,6 +32,15 @@ object PdfGenerator {
     private const val PAGE_MARGIN = 36f
     private const val FOOTER_HEIGHT = 64f
 
+    private fun parseMedidorLecturas(raw: String?): Pair<String?, String?> {
+        if (raw.isNullOrBlank()) return null to null
+        val parts = raw.split("|", limit = 2)
+        val nueva = parts.getOrNull(0)?.takeIf { it.isNotBlank() }
+        val anterior = parts.getOrNull(1)?.takeIf { it.isNotBlank() }
+        return nueva to anterior
+        // TODO(Codex): Compartir formato de lecturas entre exportador y UI
+    }
+
     // 🔹 Variables globales (para multipágina)
     private lateinit var document: PdfDocument
     private lateinit var page: PdfDocument.Page
@@ -284,8 +293,12 @@ object PdfGenerator {
                                 meta.numero?.takeIf { it.isNotBlank() }?.let {
                                     add(context.getString(R.string.averia_medidor_detalle_numero, it))
                                 }
-                                meta.lectura?.takeIf { it.isNotBlank() }?.let {
+                                val (lecturaNuevaPdf, lecturaAnteriorPdf) = parseMedidorLecturas(meta.lectura)
+                                lecturaNuevaPdf?.let {
                                     add(context.getString(R.string.averia_medidor_detalle_lectura, it))
+                                }
+                                lecturaAnteriorPdf?.let {
+                                    add(context.getString(R.string.averia_medidor_detalle_lectura_anterior, it))
                                 }
                             }.takeIf { it.isNotEmpty() }
                         }
@@ -350,8 +363,14 @@ object PdfGenerator {
             val parentDir = context.getExternalFilesDir(null) ?: context.filesDir
             val reportsDir = File(parentDir, "TecniApp/Reportes")
             if (!reportsDir.exists()) reportsDir.mkdirs()
-            val fileNameFormatter = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault())
-            val fileName = "averia_${item.id}_${fileNameFormatter.format(now)}.pdf"
+            val calendar = Calendar.getInstance(Locale.getDefault())
+            val yearComponent = calendar.get(Calendar.YEAR)
+            val monthFormatter = SimpleDateFormat("LLLL", Locale("es", "ES"))
+            val monthComponent = monthFormatter.format(now).lowercase(Locale.getDefault())
+            val dayComponent = String.format(Locale.getDefault(), "%02d", calendar.get(Calendar.DAY_OF_MONTH))
+            val sanitizedId = item.id.replace("[^A-Za-z0-9_-]".toRegex(), "").ifBlank { item.id }
+            val fileName = "Averia_IM_${sanitizedId}_${yearComponent}_${monthComponent}_${dayComponent}.pdf"
+            // TODO(Codex): Ajustar nombre del PDF al formato solicitado por ICE
             val file = File(reportsDir, fileName)
             FileOutputStream(file).use { output -> document.writeTo(output) }
 
