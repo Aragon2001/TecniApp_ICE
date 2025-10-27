@@ -68,6 +68,14 @@ data class AveriaActionData(
  */
 object MaterialesSerializer {
 
+    private fun parseLecturas(raw: String?): Pair<String?, String?> {
+        if (raw.isNullOrBlank()) return null to null
+        val parts = raw.split("|", limit = 2)
+        val nueva = parts.getOrNull(0)?.takeIf { it.isNotBlank() }
+        val anterior = parts.getOrNull(1)?.takeIf { it.isNotBlank() }
+        return nueva to anterior
+    }
+
     fun toSummary(materiales: List<MaterialUso>): String =
         materiales.filter { it.cantidad > 0 }
             .joinToString(separator = ", ") { uso ->
@@ -76,7 +84,9 @@ object MaterialesSerializer {
                 val detalles = uso.medidorInstalado?.let { meta ->
                     buildList {
                         meta.numero?.takeIf { it.isNotBlank() }?.let { add("N° $it") }
-                        meta.lectura?.takeIf { it.isNotBlank() }?.let { add("Lectura $it") }
+                        val (lecturaNueva, lecturaAnterior) = parseLecturas(meta.lectura)
+                        lecturaNueva?.let { add("Lectura $it") }
+                        lecturaAnterior?.let { add("Lectura anterior $it") }
                     }.takeIf { it.isNotEmpty() }
                 }
                 val etiqueta = if (!detalles.isNullOrEmpty()) {

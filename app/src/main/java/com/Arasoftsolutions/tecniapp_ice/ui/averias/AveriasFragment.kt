@@ -53,6 +53,8 @@ class AveriasFragment : Fragment() {
     private var notificationSheet: BottomSheetDialog? = null
     private var notificationSheetScope: CoroutineScope? = null
     private val dateFormatter = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+    private var notificationMenuItem: MenuItem? = null
+    // TODO(Codex): Guardar referencia al ítem de menú para refrescar el icono de notificaciones
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _b = FragmentAveriasBinding.inflate(inflater, container, false)
@@ -66,6 +68,9 @@ class AveriasFragment : Fragment() {
         menuHost.addMenuProvider(object : MenuProvider {
             override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
                 menuInflater.inflate(R.menu.menu_averias, menu)
+                notificationMenuItem = menu.findItem(R.id.action_notification_filters)
+                updateNotificationIcon(vm.notificationsEnabled.value)
+                // TODO(Codex): Refrescar icono de campana según preferencia almacenada
             }
 
             override fun onMenuItemSelected(item: MenuItem): Boolean {
@@ -90,12 +95,13 @@ class AveriasFragment : Fragment() {
         }
 
         b.btnDateFilter.setOnClickListener { showDateRangePicker() }
-        b.btnDateFilter.setOnLongClickListener {
-            if (vm.fechaFiltroState.value == null) return@setOnLongClickListener false
-            vm.clearFechaFiltro()
-            Snackbar.make(b.root, R.string.averias_filtro_fecha_limpio, Snackbar.LENGTH_SHORT).show()
-            true
+        b.btnClearDate.setOnClickListener {
+            if (vm.fechaFiltroState.value != null) {
+                vm.clearFechaFiltro()
+                Snackbar.make(b.root, R.string.averias_filtro_fecha_limpio, Snackbar.LENGTH_SHORT).show()
+            }
         }
+        // TODO(Codex): Proveer acción explícita para limpiar el filtro de fechas
 
         b.etBuscar.addTextChangedListener { text ->
             vm.setQuery(text?.toString().orEmpty())
@@ -124,6 +130,15 @@ class AveriasFragment : Fragment() {
                 }
             }
         }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                vm.notificationsEnabled.collectLatest { enabled ->
+                    updateNotificationIcon(enabled)
+                }
+            }
+        }
+        // TODO(Codex): Escuchar cambios de preferencias de notificaciones para actualizar la UI
 
         // Pull to refresh → Sync
         b.swipeRefresh.setOnRefreshListener {
@@ -352,6 +367,8 @@ class AveriasFragment : Fragment() {
             )
         }
         b.btnDateFilter.text = text
+        b.btnClearDate.visibility = if (range == null) View.GONE else View.VISIBLE
+        // TODO(Codex): Mostrar botón para limpiar el filtro únicamente cuando esté activo
     }
 
     private fun showDateRangePicker() {
@@ -377,6 +394,12 @@ class AveriasFragment : Fragment() {
             }
         }
         picker.show(parentFragmentManager, "averias_date_range")
+    }
+
+    private fun updateNotificationIcon(enabled: Boolean) {
+        val iconRes = if (enabled) R.drawable.ic_notification else R.drawable.ic_notification_off
+        notificationMenuItem?.setIcon(iconRes)
+        // TODO(Codex): Alternar iconografía de notificaciones habilitadas/deshabilitadas
     }
 
     private fun showDetalle(item: AveriaUI) {
