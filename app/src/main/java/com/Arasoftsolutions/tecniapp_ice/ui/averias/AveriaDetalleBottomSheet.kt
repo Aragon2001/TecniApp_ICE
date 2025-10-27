@@ -1,5 +1,6 @@
 package com.Arasoftsolutions.tecniapp_ice.ui.averias
 
+import android.app.Dialog
 import android.app.TimePickerDialog
 import android.content.res.ColorStateList
 import android.graphics.Color
@@ -8,31 +9,39 @@ import android.text.InputType
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.KeyEvent
 import android.widget.ArrayAdapter
 import android.widget.Filter
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
+import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.MaterialEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.MedidorEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.TecnicoEntity
 import com.Arasoftsolutions.tecniapp_ice.R
 import com.Arasoftsolutions.tecniapp_ice.databinding.BottomsheetAveriaDetalleBinding
+import com.Arasoftsolutions.tecniapp_ice.databinding.BottomsheetMedidorMaterialBinding
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.bottomsheet.BottomSheetBehavior
+import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.chip.Chip
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import androidx.navigation.findNavController
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Calendar
+import java.util.Date
 import java.util.Locale
 class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
 
@@ -54,6 +63,44 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
     private val horaFormatter = SimpleDateFormat("HH:mm", Locale.getDefault()).apply { isLenient = false }
     private var inputsEditable = true
     private var finalInputsEnabled = false
+    private var horaInicioEditable = false
+    private var estadoActual: Estado = Estado.PENDIENTE
+
+    private fun parseLecturas(raw: String?): Pair<String?, String?> {
+        if (raw.isNullOrBlank()) return null to null
+        val parts = raw.split("|", limit = 2)
+        val nueva = parts.getOrNull(0)?.takeIf { it.isNotBlank() }
+        val anterior = parts.getOrNull(1)?.takeIf { it.isNotBlank() }
+        return nueva to anterior
+    }
+
+    private fun buildLecturaPayload(nueva: String, anterior: String?): String {
+        return if (anterior.isNullOrBlank()) nueva else "$nueva|$anterior"
+        // TODO(Codex): Empaquetar lectura nueva y anterior en formato compacto
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        isCancelable = false
+        // TODO(Codex): Inhabilitar cancelación por gestos o back del BottomSheet de detalle
+    }
+
+    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
+        val dialog = super.onCreateDialog(savedInstanceState) as BottomSheetDialog
+        dialog.setCanceledOnTouchOutside(false)
+        dialog.behavior.isDraggable = false
+        dialog.behavior.isHideable = false
+        dialog.setOnKeyListener { _, keyCode, _ ->
+            keyCode == KeyEvent.KEYCODE_BACK
+        }
+        dialog.setOnShowListener {
+            dialog.behavior.skipCollapsed = true
+            dialog.behavior.state = BottomSheetBehavior.STATE_EXPANDED
+            // TODO(Codex): Forzar el estado expandido para mostrar controles completos sin gestos
+        }
+        // TODO(Codex): Forzar cierre únicamente mediante el botón de la esquina
+        return dialog
+    }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _b = BottomsheetAveriaDetalleBinding.inflate(inflater, container, false)
@@ -64,12 +111,16 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         val estadoInicial = Estado.fromLabel(item.estado)
+        estadoActual = estadoInicial
         vm.resetMedidorEstado()
         tipoSeleccionado = item.tipoAfectacion
         clienteSeleccionado = item.cliente
 
+        b.btnCerrar.setOnClickListener { dismissAllowingStateLoss() }
+        // TODO(Codex): Cerrar hoja únicamente mediante botón explícito
+
         b.etHoraInicio.setOnClickListener {
-            if (!finalInputsEnabled) return@setOnClickListener
+            if (!horaInicioEditable) return@setOnClickListener
             openTimePicker { h, m ->
                 b.etHoraInicio.setText(String.format(Locale.getDefault(), "%02d:%02d", h, m))
             }
@@ -86,13 +137,14 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
             editText.keyListener = null
             editText.showSoftInputOnFocus = false
             editText.setOnFocusChangeListener { view, hasFocus ->
-                if (hasFocus && finalInputsEnabled) {
+                val canOpen = if (editText == b.etHoraInicio) horaInicioEditable else finalInputsEnabled
+                if (hasFocus && canOpen) {
                     view.performClick()
                 }
             }
         }
         b.etHoraInicio.setOnLongClickListener {
-            if (!finalInputsEnabled) return@setOnLongClickListener false
+            if (!horaInicioEditable) return@setOnLongClickListener false
             b.etHoraInicio.setText("")
             true
         }
@@ -101,6 +153,11 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
             b.etHoraFin.setText("")
             true
         }
+
+        if (estadoInicial == Estado.ASIGNADA && b.etHoraInicio.text.isNullOrBlank()) {
+            b.etHoraInicio.setText(horaFormatter.format(Date()))
+        }
+        // TODO(Codex): Prefijar hora de inicio con la hora actual al asignar
 
         bindHeader(estadoInicial)
         bindResumenes()
@@ -120,24 +177,28 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
         }
         ensureTecnicoActual()
         renderTecnicos()
-        applyInputState(estadoInicial)
 
-        // Vehículos (simple)
+        // Vehículos asociados a la agencia del usuario
         viewLifecycleOwner.lifecycleScope.launch {
-            vm.vehiculosDisponibles.collectLatest { lista ->
-                val agencia = item.agencia.lowercase(Locale.getDefault())
-                val porAgencia = lista.filter { vehiculo ->
-                    if (agencia.isBlank()) return@filter true
-                    vehiculo.agencia.lowercase(Locale.getDefault()).contains(agencia)
+            viewLifecycleOwner.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
+                vm.vehiculosDisponibles.combine(vm.usuarioActual) { vehiculos, usuario ->
+                    vehiculos to usuario
+                }.collectLatest { (lista, usuario) ->
+                    val agenciaUsuario = usuario?.subregionNombre?.lowercase(Locale.getDefault())?.trim().orEmpty()
+                    val opciones = lista.filter { vehiculo ->
+                        if (agenciaUsuario.isBlank()) return@filter true
+                        vehiculo.agencia.lowercase(Locale.getDefault()).contains(agenciaUsuario)
+                    }
+                        .ifEmpty { lista }
+                        .map { it.placa }
+                        .distinct()
+                    b.actvVehiculo.setAdapter(
+                        ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, opciones)
+                    )
                 }
-                val opciones = (if (porAgencia.isNotEmpty()) porAgencia else lista)
-                    .map { it.placa }
-                    .distinct()
-                b.actvVehiculo.setAdapter(
-                    ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, opciones)
-                )
             }
         }
+        // TODO(Codex): Cargar vehículos filtrados por la agencia del usuario autenticado
 
         // Materiales con búsqueda libre y selección precisa
         viewLifecycleOwner.lifecycleScope.launch {
@@ -441,16 +502,28 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
                 vm.resetMedidorEstado()
             }
             updateTipoSection()
+            applyInputState(estadoActual)
         }
         updateTipoSection()
+        applyInputState(estadoActual)
     }
 
     private fun setupMedidorBusqueda() {
         b.tilMedidor.setEndIconOnClickListener {
             if (!inputsEditable) return@setEndIconOnClickListener
-            if (tipoSeleccionado == TipoAfectacion.CLIENTE) {
-                vm.buscarMedidor(b.etMedidor.text?.toString().orEmpty())
+            if (tipoSeleccionado != TipoAfectacion.CLIENTE) {
+                b.tilMedidor.error = getString(R.string.averia_medidor_error_tipo)
+                return@setEndIconOnClickListener
             }
+            val numero = b.etMedidor.text?.toString()?.trim().orEmpty()
+            if (numero.isEmpty()) {
+                b.tilMedidor.error = getString(R.string.averia_medidor_error_requerido)
+                return@setEndIconOnClickListener
+            }
+            b.tilMedidor.error = null
+            b.tilMedidor.helperText = null
+            vm.buscarMedidor(numero)
+            // TODO(Codex): Validar estado del medidor antes de lanzar la búsqueda
         }
         b.etMedidor.doAfterTextChanged {
             if (it.isNullOrBlank()) {
@@ -537,7 +610,7 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
         suppressTipoListener = false
         val esCliente = tipoSeleccionado == TipoAfectacion.CLIENTE
         b.tilMedidor.isVisible = esCliente
-        b.tilMedidor.isEndIconVisible = esCliente && inputsEditable
+        b.tilMedidor.isEndIconVisible = esCliente && b.tilMedidor.isEnabled
         if (!esCliente) {
             b.tilMedidor.error = null
             b.tilMedidor.helperText = null
@@ -601,60 +674,71 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
     }
 
     private fun applyInputState(estado: Estado) {
-        val editable = estado != Estado.PENDIENTE
-        val finalEditable = estado == Estado.EN_ATENCION || estado == Estado.RESUELTA
-        inputsEditable = editable
-        finalInputsEnabled = finalEditable
+        val isPending = estado == Estado.PENDIENTE
+        val isAsignada = estado == Estado.ASIGNADA
+        val isEnAtencion = estado == Estado.EN_ATENCION
+        val isResuelta = estado == Estado.RESUELTA
 
-        b.toggleTipoAfectacion.isEnabled = editable
-        b.btnTipoCliente.isEnabled = editable
-        b.btnTipoSector.isEnabled = editable
+        inputsEditable = !isPending
+        finalInputsEnabled = isEnAtencion || isResuelta
+        horaInicioEditable = isAsignada || finalInputsEnabled
 
-        b.tilTecnicoBuscar.isEnabled = true
-        b.tilMaterialBuscar.isEnabled = editable
-        b.tilMedidor.isEnabled = editable
-        b.tilLocalizacion.isEnabled = editable
-        b.tilCausa.isEnabled = editable
-        b.tilObs.isEnabled = editable
-        b.tilVehiculo.isEnabled = editable
-        b.tilHoraInicio.isEnabled = finalEditable
-        b.tilHoraFinal.isEnabled = finalEditable
-        b.tilKmInicio.isEnabled = editable
-        b.tilKmFinal.isEnabled = finalEditable
+        val allowCauseObs = isEnAtencion || isResuelta
+        val allowMaterials = isEnAtencion || isResuelta
+        val allowLocalizacion = isEnAtencion || isResuelta
+        val allowInitialKm = !isPending
+        val allowMedidor = !isPending && tipoSeleccionado == TipoAfectacion.CLIENTE
+        val allowVehiculo = !isPending
+        val allowTecnicos = !isPending
 
-        val editableViews = listOf(
-            b.etLocalizacion,
-            b.etCausa,
-            b.etObs,
-            b.etMedidor,
-            b.etKmInicio
-        )
-        editableViews.forEach { view ->
-            view.isEnabled = editable
-            view.isFocusable = editable
-            view.isFocusableInTouchMode = editable
+        b.toggleTipoAfectacion.isEnabled = !isPending
+        b.btnTipoCliente.isEnabled = !isPending
+        b.btnTipoSector.isEnabled = !isPending
+
+        b.tilTecnicoBuscar.isEnabled = allowTecnicos
+        b.tilMaterialBuscar.isEnabled = allowMaterials
+        b.tilMedidor.isEnabled = allowMedidor
+        b.tilLocalizacion.isEnabled = allowLocalizacion
+        b.tilCausa.isEnabled = allowCauseObs
+        b.tilObs.isEnabled = allowCauseObs
+        b.tilVehiculo.isEnabled = allowVehiculo
+        b.tilHoraInicio.isEnabled = horaInicioEditable
+        b.tilHoraFinal.isEnabled = finalInputsEnabled
+        b.tilKmInicio.isEnabled = allowInitialKm
+        b.tilKmFinal.isEnabled = finalInputsEnabled
+
+        listOf(
+            b.etLocalizacion to allowLocalizacion,
+            b.etCausa to allowCauseObs,
+            b.etObs to allowCauseObs,
+            b.etMedidor to allowMedidor,
+            b.etKmInicio to allowInitialKm
+        ).forEach { (view, enabled) ->
+            view.isEnabled = enabled
+            view.isFocusable = enabled
+            view.isFocusableInTouchMode = enabled
         }
 
-        b.actvTecnico.isEnabled = true
-        b.actvTecnico.isClickable = true
-        b.actvMaterial.isEnabled = editable
-        b.actvMaterial.isClickable = editable
-        b.actvVehiculo.isEnabled = editable
-        b.actvVehiculo.isClickable = editable
+        b.actvTecnico.isEnabled = allowTecnicos
+        b.actvTecnico.isClickable = allowTecnicos
+        b.actvMaterial.isEnabled = allowMaterials
+        b.actvMaterial.isClickable = allowMaterials
+        b.actvVehiculo.isEnabled = allowVehiculo
+        b.actvVehiculo.isClickable = allowVehiculo
 
-        b.etHoraInicio.isEnabled = finalEditable
-        b.etHoraInicio.isFocusable = finalEditable
-        b.etHoraInicio.isFocusableInTouchMode = finalEditable
-        b.etHoraFin.isEnabled = finalEditable
-        b.etHoraFin.isFocusable = finalEditable
-        b.etHoraFin.isFocusableInTouchMode = finalEditable
-        b.etKmFinal.isEnabled = finalEditable
-        b.etKmFinal.isFocusable = finalEditable
-        b.etKmFinal.isFocusableInTouchMode = finalEditable
+        b.etHoraInicio.isEnabled = horaInicioEditable
+        b.etHoraInicio.isFocusable = horaInicioEditable
+        b.etHoraInicio.isFocusableInTouchMode = horaInicioEditable
+        b.etHoraFin.isEnabled = finalInputsEnabled
+        b.etHoraFin.isFocusable = finalInputsEnabled
+        b.etHoraFin.isFocusableInTouchMode = finalInputsEnabled
+        b.etKmFinal.isEnabled = finalInputsEnabled
+        b.etKmFinal.isFocusable = finalInputsEnabled
+        b.etKmFinal.isFocusableInTouchMode = finalInputsEnabled
 
-        b.tilMedidor.isEndIconVisible = editable && tipoSeleccionado == TipoAfectacion.CLIENTE
-        b.chipGroupTecnicos.isEnabled = true
-        b.chipGroupMateriales.isEnabled = editable
+        b.tilMedidor.isEndIconVisible = allowMedidor
+        b.chipGroupTecnicos.isEnabled = allowTecnicos
+        b.chipGroupMateriales.isEnabled = allowMaterials
 
         renderTecnicos()
         renderMateriales()
@@ -663,6 +747,21 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
     private fun configureButtons(initialEstado: Estado) {
         val usuarioUid = vm.usuarioActual.value?.uid
         val puedeGestionar = item.tecnicoUid.isNullOrBlank() || item.tecnicoUid == usuarioUid
+        val green = ContextCompat.getColor(requireContext(), R.color.success_500)
+        val red = ContextCompat.getColor(requireContext(), R.color.error_500)
+        val blue = ContextCompat.getColor(requireContext(), R.color.ice_blue)
+        fun MaterialButton.applyPalette(background: Int, textColor: Int = Color.WHITE) {
+            backgroundTintList = ColorStateList.valueOf(background)
+            setTextColor(textColor)
+            iconTint = ColorStateList.valueOf(textColor)
+        }
+
+        b.btnVerMapa.applyPalette(blue)
+        b.btnEliminar.applyPalette(red)
+        b.btnResolver.applyPalette(green)
+        b.btnAtender.applyPalette(green)
+        b.btnModificar.applyPalette(green)
+        b.btnModificar.isVisible = false
 
         b.btnAsignar.apply {
             when (initialEstado) {
@@ -696,20 +795,17 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
         b.btnExportar.isVisible = false
         b.btnAnular.isVisible = false
         b.btnEliminar.isVisible = false
+        b.btnModificar.isVisible = false
 
         when (initialEstado) {
             Estado.ASIGNADA -> {
                 b.btnAtender.apply {
                     isVisible = true
-                    text = getString(R.string.averia_guardar_en_atencion)
+                    text = getString(R.string.averia_iniciar_atencion)
                     isEnabled = puedeGestionar
                     setOnClickListener {
                         if (!puedeGestionar) return@setOnClickListener
                         val data = collectFormData() ?: return@setOnClickListener
-                        if (data.causa.isBlank()) {
-                            b.tilCausa.error = getString(R.string.averia_error_causa_requerida)
-                            return@setOnClickListener
-                        }
                         vm.onAtender(item, data)
                         dismissAllowingStateLoss()
                     }
@@ -720,6 +816,7 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
                     isVisible = true
                     text = getString(R.string.averia_cancelar_atencion)
                     isEnabled = puedeGestionar
+                    applyPalette(red)
                     setOnClickListener {
                         if (!puedeGestionar) return@setOnClickListener
                         vm.onCancelarAtencion(item)
@@ -730,6 +827,7 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
                     isVisible = true
                     isEnabled = puedeGestionar
                     text = getString(R.string.averia_guardar_resolucion)
+                    applyPalette(green)
                     setOnClickListener {
                         if (!puedeGestionar) return@setOnClickListener
                         val data = collectFormData() ?: return@setOnClickListener
@@ -753,6 +851,23 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
                         viewLifecycleOwner.lifecycleScope.launch {
                             PdfGenerator.exportAveria(requireContext(), item)
                         }
+                    }
+                }
+                b.btnModificar.apply {
+                    isVisible = true
+                    isEnabled = puedeGestionar
+                    setOnClickListener {
+                        if (!puedeGestionar) return@setOnClickListener
+                        val data = collectFormData() ?: return@setOnClickListener
+                        MaterialAlertDialogBuilder(requireContext())
+                            .setTitle(R.string.averia_modificar_confirm_title)
+                            .setMessage(R.string.averia_modificar_confirm_message)
+                            .setPositiveButton(R.string.averia_modificar_confirm_positive) { _, _ ->
+                                vm.onResolver(item, data)
+                                dismissAllowingStateLoss()
+                            }
+                            .setNegativeButton(android.R.string.cancel, null)
+                            .show()
                     }
                 }
                 b.btnEliminar.apply {
@@ -779,6 +894,7 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
             b.btnAnular.apply {
                 isVisible = true
                 isEnabled = puedeGestionar
+                applyPalette(red)
                 setOnClickListener {
                     if (!puedeGestionar) return@setOnClickListener
                     MaterialAlertDialogBuilder(requireContext())
@@ -822,6 +938,15 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
         material: MaterialEntity,
         existente: MaterialUso?
     ) {
+        if (tipoSeleccionado != TipoAfectacion.CLIENTE) {
+            b.tilMedidor.error = getString(R.string.averia_medidor_error_tipo)
+            return
+        }
+        val numeroActual = b.etMedidor.text?.toString()?.trim().orEmpty().ifBlank { item.numeroMedidor.orEmpty() }
+        if (numeroActual.isBlank()) {
+            b.tilMedidor.error = getString(R.string.averia_medidor_error_requerido)
+            return
+        }
         val cantidadInicial = existente?.cantidad?.takeIf { it > 0 } ?: 1
         val metadataInicial = existente?.medidorInstalado
         mostrarDialogoMedidor(material, cantidadInicial, metadataInicial) { cantidad, metadata ->
@@ -901,71 +1026,87 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
         metadataInicial: MedidorInstalacion?,
         onResultado: (Int, MedidorInstalacion?) -> Unit
     ) {
-        val view = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_material_medidor, null)
-        val tilCantidad = view.findViewById<TextInputLayout>(R.id.tilCantidad)
-        val etCantidad = view.findViewById<TextInputEditText>(R.id.etCantidad)
-        val tilNumero = view.findViewById<TextInputLayout>(R.id.tilNumero)
-        val etNumero = view.findViewById<TextInputEditText>(R.id.etNumero)
-        val tilLectura = view.findViewById<TextInputLayout>(R.id.tilLectura)
-        val etLectura = view.findViewById<TextInputEditText>(R.id.etLectura)
-
-        if (cantidadInicial > 0) {
-            etCantidad.setText(cantidadInicial.toString())
-            etCantidad.setSelection(etCantidad.text?.length ?: 0)
-        }
-        metadataInicial?.numero?.let { etNumero.setText(it) }
-        metadataInicial?.lectura?.let { etLectura.setText(it) }
-
+        val dialog = BottomSheetDialog(requireContext())
+        val binding = BottomsheetMedidorMaterialBinding.inflate(layoutInflater)
+        dialog.setContentView(binding.root)
+        dialog.setCanceledOnTouchOutside(false)
         val descripcion = material.descripcion.ifBlank { material.codigo }
-        val dialog = MaterialAlertDialogBuilder(requireContext())
-            .setTitle(getString(R.string.averia_medidor_dialog_title, descripcion))
-            .setView(view)
-            .setPositiveButton(R.string.averia_medidor_dialog_guardar, null)
-            .setNegativeButton(android.R.string.cancel, null)
-            .create()
+        binding.tvTitulo.text = getString(R.string.averia_medidor_dialog_title, descripcion)
+        if (cantidadInicial > 0) {
+            binding.etCantidad.setText(cantidadInicial.toString())
+            binding.etCantidad.setSelection(binding.etCantidad.text?.length ?: 0)
+        }
+        binding.etNumero.setText(metadataInicial?.numero)
+        val (lecturaNueva, lecturaAnterior) = parseLecturas(metadataInicial?.lectura)
+        binding.etLecturaNueva.setText(lecturaNueva)
+        binding.etLecturaAnterior.setText(lecturaAnterior)
 
-        dialog.setOnShowListener {
-            val positive = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
-            positive.setOnClickListener {
-                tilCantidad.error = null
-                tilNumero.error = null
-                tilLectura.error = null
+        fun buildMetadata(cantidad: Int): Pair<Int, MedidorInstalacion?>? {
+            binding.tilCantidad.error = null
+            binding.tilNumero.error = null
+            binding.tilLecturaNueva.error = null
 
-                val cantidadTexto = etCantidad.text?.toString()?.trim()
-                val cantidad = cantidadTexto?.toIntOrNull()
-                if (cantidad == null) {
-                    tilCantidad.error = getString(R.string.averia_material_cantidad_error)
-                    return@setOnClickListener
-                }
-                if (cantidad < 0) {
-                    tilCantidad.error = getString(R.string.averia_material_cantidad_error)
-                    return@setOnClickListener
-                }
-
-                if (cantidad == 0) {
-                    onResultado(0, null)
-                    dialog.dismiss()
-                    return@setOnClickListener
-                }
-
-                val numero = etNumero.text?.toString()?.trim().orEmpty()
-                val lectura = etLectura.text?.toString()?.trim().orEmpty()
-                if (numero.isBlank()) {
-                    tilNumero.error = getString(R.string.averia_medidor_error_numero)
-                    return@setOnClickListener
-                }
-                if (lectura.isBlank()) {
-                    tilLectura.error = getString(R.string.averia_medidor_error_lectura)
-                    return@setOnClickListener
-                }
-
-                val meta = MedidorInstalacion(numero, lectura)
-                onResultado(cantidad, meta)
-                dialog.dismiss()
+            if (cantidad < 0) {
+                binding.tilCantidad.error = getString(R.string.averia_material_cantidad_error)
+                return null
             }
+            if (cantidad == 0) {
+                return 0 to null
+            }
+
+            val numero = binding.etNumero.text?.toString()?.trim().orEmpty()
+            val lecturaNuevaTexto = binding.etLecturaNueva.text?.toString()?.trim().orEmpty()
+            val lecturaAnteriorTexto = binding.etLecturaAnterior.text?.toString()?.trim().orEmpty()
+            if (numero.isBlank()) {
+                binding.tilNumero.error = getString(R.string.averia_medidor_error_numero)
+                return null
+            }
+            if (lecturaNuevaTexto.isBlank()) {
+                binding.tilLecturaNueva.error = getString(R.string.averia_medidor_error_lectura)
+                return null
+            }
+            val payload = buildLecturaPayload(lecturaNuevaTexto, lecturaAnteriorTexto)
+            val metadata = MedidorInstalacion(numero, payload)
+            return cantidad to metadata
+        }
+
+        binding.btnGuardar.setOnClickListener {
+            val cantidad = binding.etCantidad.text?.toString()?.trim()?.toIntOrNull()
+            if (cantidad == null) {
+                binding.tilCantidad.error = getString(R.string.averia_material_cantidad_error)
+                return@setOnClickListener
+            }
+            val resultado = buildMetadata(cantidad) ?: return@setOnClickListener
+            val (cantidadFinal, metadataFinal) = resultado
+            val mensaje = if (cantidadFinal == 0) {
+                getString(R.string.averia_medidor_confirm_eliminar)
+            } else {
+                getString(R.string.averia_medidor_confirm_guardar, metadataFinal?.numero.orEmpty())
+            }
+            MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.averia_medidor_confirm_title)
+                .setMessage(mensaje)
+                .setPositiveButton(R.string.averia_medidor_confirm_positive) { _, _ ->
+                    onResultado(cantidadFinal, metadataFinal)
+                    dialog.dismiss()
+                }
+                .setNegativeButton(android.R.string.cancel, null)
+                .show()
+        }
+
+        binding.btnCancelar.setOnClickListener {
+            MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.averia_medidor_confirm_cancelar_title)
+                .setMessage(R.string.averia_medidor_confirm_cancelar_message)
+                .setPositiveButton(R.string.averia_medidor_confirm_cancelar_positive) { _, _ ->
+                    dialog.dismiss()
+                }
+                .setNegativeButton(android.R.string.no, null)
+                .show()
         }
 
         dialog.show()
+        // TODO(Codex): Migrar flujo de material medidor a BottomSheet con confirmaciones
     }
 
     private fun esMaterialMedidor(material: MaterialEntity): Boolean {
@@ -979,23 +1120,32 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
             metadata.numero?.takeIf { it.isNotBlank() }?.let {
                 add(getString(R.string.averia_medidor_detalle_numero, it))
             }
-            metadata.lectura?.takeIf { it.isNotBlank() }?.let {
-                add(getString(R.string.averia_medidor_detalle_lectura, it))
-            }
+            val (lecturaNueva, lecturaAnterior) = parseLecturas(metadata.lectura)
+            lecturaNueva?.let { add(getString(R.string.averia_medidor_detalle_lectura, it)) }
+            lecturaAnterior?.let { add(getString(R.string.averia_medidor_detalle_lectura_anterior, it)) }
         }
         return partes.takeIf { it.isNotEmpty() }?.joinToString(" • ")
     }
 
     private fun solicitarAbrirPanelAdminMedidor(metadata: MedidorInstalacion) {
+        val (lecturaNueva, lecturaAnterior) = parseLecturas(metadata.lectura)
+        val mensaje = if (lecturaAnterior.isNullOrBlank()) {
+            getString(
+                R.string.averia_medidor_admin_message,
+                metadata.numero.orEmpty(),
+                lecturaNueva.orEmpty()
+            )
+        } else {
+            getString(
+                R.string.averia_medidor_admin_message_prev,
+                metadata.numero.orEmpty(),
+                lecturaNueva.orEmpty(),
+                lecturaAnterior
+            )
+        }
         MaterialAlertDialogBuilder(requireContext())
             .setTitle(R.string.averia_medidor_admin_title)
-            .setMessage(
-                getString(
-                    R.string.averia_medidor_admin_message,
-                    metadata.numero.orEmpty(),
-                    metadata.lectura.orEmpty()
-                )
-            )
+            .setMessage(mensaje)
             .setPositiveButton(R.string.averia_medidor_admin_ir) { _, _ ->
                 if (!isAdded) return@setPositiveButton
                 dismissAllowingStateLoss()

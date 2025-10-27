@@ -95,6 +95,7 @@
     <string name="averias_filtro_fecha_rango">%1$s - %2$s</string>
     <string name="averias_filtro_fecha_limpiar_hint">Mantén presionado para limpiar el filtro de fechas.</string>
     <string name="averias_filtro_fecha_limpio">Filtro de fechas eliminado.</string>
+    <string name="averias_filtro_fecha_limpiar">Limpiar fecha</string>
     <string name="averia_sin_asignar">Sin asignar</string>
     <string name="averia_asignar">Asignar</string>
     <string name="averia_atender">Atender</string>
@@ -180,6 +181,10 @@ Cliente: %4$s</string>
     <string name="averia_notificacion_filtro_desactivado">Activa las notificaciones para elegir las agencias.</string>
     <string name="averia_notificacion_menu">Notificaciones</string>
     <string name="averia_notificacion_sheet_title">Preferencias de notificaciones</string>
+    <string name="averia_notification_pref_enabled_title">Notificaciones activadas</string>
+    <string name="averia_notification_pref_enabled_body">Recibirás alertas de nuevas averías según tus preferencias.</string>
+    <string name="averia_notification_pref_disabled_title">Notificaciones desactivadas</string>
+    <string name="averia_notification_pref_disabled_body">No recibirás nuevas alertas hasta que reactives las notificaciones.</string>
     <string name="averia_error_usuario_no_autenticado">Inicia sesión para gestionar averías.</string>
     <string name="averia_error_causa_requerida">Ingresa la causa de la avería.</string>
     <string name="averia_error_no_autorizado">No puedes gestionar una avería asignada a otro técnico.</string>
@@ -242,23 +247,42 @@ Cliente: %4$s</string>
     <string name="averia_material_cantidad_guardar">Guardar</string>
     <string name="averia_anular">Anular avería</string>
     <string name="averia_eliminar">Eliminar avería</string>
+    <string name="averia_iniciar_atencion">Iniciar</string>
+    <string name="averia_modificar">Modificar</string>
     <string name="averia_anular_confirm_title">Anular avería</string>
     <string name="averia_anular_confirm_message">¿Deseas anular esta avería? No se notificará a los técnicos.</string>
     <string name="averia_anular_confirm_positive">Anular</string>
     <string name="averia_eliminar_confirm_title">Eliminar avería</string>
     <string name="averia_eliminar_confirm_message">¿Deseas eliminar definitivamente esta avería atendida?</string>
     <string name="averia_eliminar_confirm_positive">Eliminar</string>
+    <string name="averia_modificar_confirm_title">Actualizar avería</string>
+    <string name="averia_modificar_confirm_message">Se guardarán las modificaciones de la avería resuelta.</string>
+    <string name="averia_modificar_confirm_positive">Guardar cambios</string>
     <string name="averia_medidor_dialog_title">Registrar medidor (%1$s)</string>
     <string name="averia_medidor_dialog_guardar">Guardar medidor</string>
     <string name="averia_medidor_dialog_cantidad_hint">Cantidad</string>
     <string name="averia_medidor_dialog_numero_hint">Número de medidor instalado</string>
     <string name="averia_medidor_dialog_lectura_hint">Lectura inicial</string>
-    <string name="averia_medidor_error_numero">Ingresa el número del medidor.</string>
-    <string name="averia_medidor_error_lectura">Ingresa la lectura inicial.</string>
-    <string name="averia_medidor_detalle_numero">N° %1$s</string>
-    <string name="averia_medidor_detalle_lectura">Lectura %1$s</string>
-    <string name="averia_medidor_admin_title">Actualizar medidores</string>
+    <string name="averia_medidor_dialog_lectura_anterior_hint">Lectura anterior (opcional)</string>
+    <string name="averia_medidor_dialog_cancelar">Cancelar</string>
+    <string name="averia_medidor_error_numero">Ingresa el número del medidor instalado.</string>
+    <string name="averia_medidor_error_lectura">Ingresa la lectura inicial del medidor.</string>
+    <string name="averia_medidor_error_tipo">Selecciona "Afectación cliente" para gestionar el medidor.</string>
+    <string name="averia_medidor_error_requerido">Ingresa un número de medidor antes de continuar.</string>
+    <string name="averia_medidor_confirm_title">Confirmar registro</string>
+    <string name="averia_medidor_confirm_positive">Confirmar</string>
+    <string name="averia_medidor_confirm_guardar">Se guardará el medidor %1$s con los valores indicados. ¿Deseas continuar?</string>
+    <string name="averia_medidor_confirm_eliminar">Se eliminará el medidor de la lista de materiales. ¿Deseas continuar?</string>
+    <string name="averia_medidor_confirm_cancelar_title">Descartar cambios</string>
+    <string name="averia_medidor_confirm_cancelar_message">Si sales perderás los cambios del medidor.</string>
+    <string name="averia_medidor_confirm_cancelar_positive">Salir</string>
+    <string name="averia_medidor_detalle_numero">Medidor: %1$s</string>
+    <string name="averia_medidor_detalle_lectura">Lectura: %1$s</string>
+    <string name="averia_medidor_detalle_lectura_anterior">Lectura anterior: %1$s</string>
+    <string name="averia_medidor_admin_title">¿Abrir el administrador de medidores?</string>
     <string name="averia_medidor_admin_message">Se registró el medidor %1$s con lectura %2$s.
+¿Deseas abrir el panel de administración para actualizar el inventario?</string>
+    <string name="averia_medidor_admin_message_prev">Se registró el medidor %1$s con lectura %2$s (anterior %3$s).
 ¿Deseas abrir el panel de administración para actualizar el inventario?</string>
     <string name="averia_medidor_admin_ir">Abrir panel</string>
     <string name="averia_medidor_admin_luego">Más tarde</string>
@@ -361,6 +385,7 @@ Cliente: %4$s</string>
 
     <string name="averia_detalle_causa_title">Causa identificada</string>
     <string name="averia_detalle_observaciones_title">Observaciones registradas</string>
+    <string name="averia_detalle_cerrar">Cerrar detalle</string>
 
     <!-- Material SearchView -->
     <string name="search_view_behavior">com.google.android.material.searchview.SearchView$Behavior</string>
