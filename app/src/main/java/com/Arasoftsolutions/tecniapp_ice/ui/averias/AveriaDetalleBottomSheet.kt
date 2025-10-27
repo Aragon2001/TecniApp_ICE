@@ -27,6 +27,7 @@ import com.Arasoftsolutions.tecniapp_ice.R
 import com.Arasoftsolutions.tecniapp_ice.databinding.BottomsheetAveriaDetalleBinding
 import com.Arasoftsolutions.tecniapp_ice.databinding.BottomsheetMedidorMaterialBinding
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.chip.Chip
@@ -91,6 +92,11 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
         dialog.behavior.isHideable = false
         dialog.setOnKeyListener { _, keyCode, _ ->
             keyCode == KeyEvent.KEYCODE_BACK
+        }
+        dialog.setOnShowListener {
+            dialog.behavior.skipCollapsed = true
+            dialog.behavior.state = BottomSheetBehavior.STATE_EXPANDED
+            // TODO(Codex): Forzar el estado expandido para mostrar controles completos sin gestos
         }
         // TODO(Codex): Forzar cierre únicamente mediante el botón de la esquina
         return dialog

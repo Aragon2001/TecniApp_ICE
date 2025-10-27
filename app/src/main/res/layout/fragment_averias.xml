@@ -158,11 +158,15 @@
                         android:hint="@string/averias_filtrar_region"
                         app:endIconMode="dropdown_menu">
 
-                        <AutoCompleteTextView
+                        <com.google.android.material.textfield.MaterialAutoCompleteTextView
                             android:id="@+id/actvRegion"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:inputType="none" />
+                            android:inputType="none"
+                            android:paddingStart="0dp"
+                            android:paddingEnd="0dp"
+                            android:gravity="center_vertical" />
+                        <!-- TODO(Codex): Utilizar MaterialAutoComplete para respetar estilos Material 3 -->
                     </com.google.android.material.textfield.TextInputLayout>
 
                     <com.google.android.material.textfield.TextInputLayout
@@ -175,11 +179,15 @@
                         android:hint="@string/averias_filtrar_agencia"
                         app:endIconMode="dropdown_menu">
 
-                        <AutoCompleteTextView
+                        <com.google.android.material.textfield.MaterialAutoCompleteTextView
                             android:id="@+id/actvAgencia"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:inputType="none" />
+                            android:inputType="none"
+                            android:paddingStart="0dp"
+                            android:paddingEnd="0dp"
+                            android:gravity="center_vertical" />
+                        <!-- TODO(Codex): Alinear autocompletes de agencia con el estilo densificado -->
                     </com.google.android.material.textfield.TextInputLayout>
                 </LinearLayout>
 
