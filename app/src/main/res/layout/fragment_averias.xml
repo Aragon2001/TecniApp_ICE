@@ -44,7 +44,9 @@
                     android:hint="@string/averias_buscar"
                     app:boxStrokeColor="@color/ice_blue"
                     app:endIconMode="clear_text"
-                    app:startIconDrawable="@android:drawable/ic_menu_search">
+                    app:startIconDrawable="@drawable/ic_search_inline"
+                    app:startIconTint="?attr/colorOnSurfaceVariant">
+                    <!-- TODO(Codex): Consistencia visual del icono de búsqueda en toda la UI -->
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/etBuscar"
@@ -54,18 +56,33 @@
                         android:singleLine="true" />
                 </com.google.android.material.textfield.TextInputLayout>
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnDateFilter"
-                    style="@style/Tecni.Button.Outlined"
+                <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    android:text="@string/averias_filtro_fecha_todas"
-                    android:tooltipText="@string/averias_filtro_fecha_limpiar_hint"
-                    android:contentDescription="@string/averias_filtrar_fecha"
-                    app:icon="@drawable/ic_calendar"
-                    app:iconGravity="textStart"
-                    app:iconPadding="8dp" />
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnDateFilter"
+                        style="@style/Tecni.Button.Outlined"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/averias_filtro_fecha_todas"
+                        android:contentDescription="@string/averias_filtrar_fecha"
+                        app:icon="@drawable/ic_calendar"
+                        app:iconGravity="textStart"
+                        app:iconPadding="8dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnClearDate"
+                        style="@style/Tecni.Button.Text"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:text="@string/averias_filtro_fecha_limpiar"
+                        android:visibility="gone" />
+                        <!-- TODO(Codex): Añadir acción visible para limpiar rango de fechas -->
+                </LinearLayout>
 
                 <!-- Filtros en scroll horizontal -->
                 <HorizontalScrollView
@@ -87,41 +104,46 @@
                             style="@style/Tecni.Chip.Base"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="@string/averia_estado_todos" />
+                            android:text="@string/averia_estado_todos"
+                            app:checkedIconVisible="false" />
 
                         <com.google.android.material.chip.Chip
                             android:id="@+id/chipPendiente"
                             style="@style/Tecni.Chip.Pendiente"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="@string/estado_pendiente" />
+                            android:text="@string/estado_pendiente"
+                            app:checkedIconVisible="false" />
 
                         <com.google.android.material.chip.Chip
                             android:id="@+id/chipAsignada"
                             style="@style/Tecni.Chip.Asignada"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="@string/estado_asignada" />
+                            android:text="@string/estado_asignada"
+                            app:checkedIconVisible="false" />
 
                         <com.google.android.material.chip.Chip
                             android:id="@+id/chipEnAtencion"
                             style="@style/Tecni.Chip.EnAtencion"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="@string/estado_en_atencion" />
+                            android:text="@string/estado_en_atencion"
+                            app:checkedIconVisible="false" />
 
                         <com.google.android.material.chip.Chip
                             android:id="@+id/chipResuelta"
                             style="@style/Tecni.Chip.Resuelta"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="@string/estado_resuelta" />
+                            android:text="@string/estado_resuelta"
+                            app:checkedIconVisible="false" />
                     </com.google.android.material.chip.ChipGroup>
                 </HorizontalScrollView>
 
                 <!-- Filtros Región y Agencia en horizontal -->
                 <LinearLayout
-                    android:layout_width="match_parent"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
                     android:weightSum="2">
@@ -129,35 +151,52 @@
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/tilRegion"
                         style="@style/Tecni.TextInput.Outlined.Dense.Dropdown"
-                        android:layout_width="0dp"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="4dp"
-                        android:layout_weight="1"
+                        android:layout_weight="0"
+                        android:minWidth="140dp"
                         android:hint="@string/averias_filtrar_region"
                         app:endIconMode="dropdown_menu">
+                        <!-- TODO(Codex): Reducir ancho de los dropdowns para respetar feedback de diseño -->
 
-                        <AutoCompleteTextView
+                        <com.google.android.material.textfield.MaterialAutoCompleteTextView
                             android:id="@+id/actvRegion"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:inputType="none" />
+                            android:inputType="none"
+                            android:paddingStart="0dp"
+                            android:paddingEnd="0dp"
+                            android:gravity="center_vertical"
+                            android:maxLines="1"
+                            android:ellipsize="end"
+                            android:scrollHorizontally="true" />
+                        <!-- TODO(Codex): Utilizar MaterialAutoComplete para respetar estilos Material 3 -->
                     </com.google.android.material.textfield.TextInputLayout>
 
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/tilAgencia"
                         style="@style/Tecni.TextInput.Outlined.Dense.Dropdown"
-                        android:layout_width="0dp"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="4dp"
-                        android:layout_weight="1"
+                        android:layout_weight="0"
+                        android:minWidth="140dp"
                         android:hint="@string/averias_filtrar_agencia"
                         app:endIconMode="dropdown_menu">
 
-                        <AutoCompleteTextView
+                        <com.google.android.material.textfield.MaterialAutoCompleteTextView
                             android:id="@+id/actvAgencia"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:inputType="none" />
+                            android:inputType="none"
+                            android:paddingStart="0dp"
+                            android:paddingEnd="0dp"
+                            android:gravity="center_vertical"
+                            android:maxLines="1"
+                            android:ellipsize="end"
+                            android:scrollHorizontally="true" />
+                        <!-- TODO(Codex): Alinear autocompletes de agencia con el estilo densificado -->
                     </com.google.android.material.textfield.TextInputLayout>
                 </LinearLayout>
 
