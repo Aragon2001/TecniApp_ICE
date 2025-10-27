@@ -36,6 +36,18 @@
                 android:checkable="false"
                 android:textColor="@android:color/white"
                 app:chipIconVisible="false" />
+
+            <ImageButton
+                android:id="@+id/btnCerrar"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_marginStart="8dp"
+                android:background="@android:color/transparent"
+                android:contentDescription="@string/averia_detalle_cerrar"
+                android:padding="8dp"
+                android:src="@drawable/ic_close_sheet"
+                android:tint="?attr/colorOnSurface" />
+                <!-- TODO(Codex): Integrar botón de cierre explícito para impedir cierres accidentales -->
         </LinearLayout>
 
         <!-- DATOS PRINCIPALES -->
@@ -521,6 +533,20 @@
                 app:icon="@drawable/ic_check"
                 app:iconGravity="textStart"
                 app:iconPadding="8dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnModificar"
+                style="@style/Tecni.Button.Primary"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/averia_modificar"
+                android:textAllCaps="false"
+                android:visibility="gone"
+                app:icon="@drawable/ic_edit"
+                app:iconGravity="textStart"
+                app:iconPadding="8dp" />
+                <!-- TODO(Codex): Botón específico para modificar avería resuelta -->
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnExportar"
