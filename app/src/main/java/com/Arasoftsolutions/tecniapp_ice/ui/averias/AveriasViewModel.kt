@@ -22,6 +22,7 @@ import com.Arasoftsolutions.tecniapp_ice.Database.sync.FirebaseSyncManager
 import com.Arasoftsolutions.tecniapp_ice.R
 import com.google.firebase.auth.FirebaseAuth
 import com.Arasoftsolutions.tecniapp_ice.BuildConfig
+import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriaNotifications
 import java.text.Normalizer
 import java.time.Instant
 import java.time.LocalDate
@@ -249,13 +250,14 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
         val startOfDay = first.atStartOfDay(zoneId).toInstant().toEpochMilli()
         val endExclusive = last.plusDays(1).atStartOfDay(zoneId).toInstant().toEpochMilli()
         fechaFiltro.value = FechaFiltro(startOfDay, endExclusive)
+        // TODO(Codex): Recalcular rango respetando límites locales sin desfase de zona
     }
 
     private fun pickerUtcToLocalDate(millis: Long): LocalDate {
         return Instant.ofEpochMilli(millis)
             .atZone(ZoneOffset.UTC)
-            .withZoneSameInstant(zoneId)
             .toLocalDate()
+        // TODO(Codex): Interpretar selección del DatePicker en UTC puro para evitar restar un día
     }
 
     fun clearFechaFiltro() {
@@ -266,6 +268,8 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
         if (_notificationsEnabled.value == enabled) return
         _notificationsEnabled.value = enabled
         AveriaNotificationPreferences.setNotificationsEnabled(getApplication(), enabled)
+        AveriaNotifications.notifyPreferenceToggle(getApplication(), enabled)
+        // TODO(Codex): Emitir notificación local al activar/desactivar alertas
     }
 
     fun addNotificationAgency(nombre: String) {
