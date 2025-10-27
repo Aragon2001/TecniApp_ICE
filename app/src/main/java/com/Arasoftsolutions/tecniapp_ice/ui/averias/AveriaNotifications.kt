@@ -46,6 +46,14 @@ object AveriaNotifications {
             .setComponentName(ActivityMain::class.java)
             .createPendingIntent()
 
+    fun notificationPreferencesPendingIntent(context: Context): PendingIntent =
+        NavDeepLinkBuilder(context)
+            .setGraph(R.navigation.mobile_navigation)
+            .setDestination(R.id.nav_settings)
+            .setComponentName(ActivityMain::class.java)
+            .createPendingIntent()
+            // TODO(Codex): Definir intent directo a ajustes de notificaciones
+
     fun mapAction(
         context: Context,
         lat: Double?,
@@ -70,5 +78,31 @@ object AveriaNotifications {
         if (millis == null || millis <= 0) return null
         val formatter = SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault())
         return formatter.format(Date(millis))
+    }
+
+    fun notifyPreferenceToggle(context: Context, enabled: Boolean) {
+        ensureChannel(context)
+        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
+            ?: return
+        val title = if (enabled) {
+            context.getString(R.string.averia_notification_pref_enabled_title)
+        } else {
+            context.getString(R.string.averia_notification_pref_disabled_title)
+        }
+        val body = if (enabled) {
+            context.getString(R.string.averia_notification_pref_enabled_body)
+        } else {
+            context.getString(R.string.averia_notification_pref_disabled_body)
+        }
+        val smallIcon = if (enabled) R.drawable.ic_notification else R.drawable.ic_notification_off
+        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(smallIcon)
+            .setContentTitle(title)
+            .setContentText(body)
+            .setAutoCancel(true)
+            .setContentIntent(notificationPreferencesPendingIntent(context))
+            .build()
+        manager.notify(2001, notification)
+        // TODO(Codex): Emitir notificación informativa al cambiar estado de la campana
     }
 }
