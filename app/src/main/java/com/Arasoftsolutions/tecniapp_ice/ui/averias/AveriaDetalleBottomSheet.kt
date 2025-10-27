@@ -66,6 +66,19 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
     private var horaInicioEditable = false
     private var estadoActual: Estado = Estado.PENDIENTE
 
+    private fun TextInputLayout.applyAvailability(enabled: Boolean) {
+        val hasContent = !editText?.text.isNullOrBlank()
+        isVisible = enabled || hasContent
+        isEnabled = enabled
+        editText?.let { input ->
+            input.isEnabled = enabled
+            input.isFocusable = enabled
+            input.isFocusableInTouchMode = enabled
+            input.isClickable = enabled
+        }
+        // TODO(Codex): Ocultar campos bloqueados manteniendo lectura cuando hay datos previos
+    }
+
     private fun parseLecturas(raw: String?): Pair<String?, String?> {
         if (raw.isNullOrBlank()) return null to null
         val parts = raw.split("|", limit = 2)
@@ -695,29 +708,17 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
         b.btnTipoCliente.isEnabled = !isPending
         b.btnTipoSector.isEnabled = !isPending
 
-        b.tilTecnicoBuscar.isEnabled = allowTecnicos
-        b.tilMaterialBuscar.isEnabled = allowMaterials
-        b.tilMedidor.isEnabled = allowMedidor
-        b.tilLocalizacion.isEnabled = allowLocalizacion
-        b.tilCausa.isEnabled = allowCauseObs
-        b.tilObs.isEnabled = allowCauseObs
-        b.tilVehiculo.isEnabled = allowVehiculo
-        b.tilHoraInicio.isEnabled = horaInicioEditable
-        b.tilHoraFinal.isEnabled = finalInputsEnabled
-        b.tilKmInicio.isEnabled = allowInitialKm
-        b.tilKmFinal.isEnabled = finalInputsEnabled
-
-        listOf(
-            b.etLocalizacion to allowLocalizacion,
-            b.etCausa to allowCauseObs,
-            b.etObs to allowCauseObs,
-            b.etMedidor to allowMedidor,
-            b.etKmInicio to allowInitialKm
-        ).forEach { (view, enabled) ->
-            view.isEnabled = enabled
-            view.isFocusable = enabled
-            view.isFocusableInTouchMode = enabled
-        }
+        b.tilTecnicoBuscar.applyAvailability(allowTecnicos)
+        b.tilMaterialBuscar.applyAvailability(allowMaterials)
+        b.tilMedidor.applyAvailability(allowMedidor)
+        b.tilLocalizacion.applyAvailability(allowLocalizacion)
+        b.tilCausa.applyAvailability(allowCauseObs)
+        b.tilObs.applyAvailability(allowCauseObs)
+        b.tilVehiculo.applyAvailability(allowVehiculo)
+        b.tilHoraInicio.applyAvailability(horaInicioEditable)
+        b.tilHoraFinal.applyAvailability(finalInputsEnabled)
+        b.tilKmInicio.applyAvailability(allowInitialKm)
+        b.tilKmFinal.applyAvailability(finalInputsEnabled)
 
         b.actvTecnico.isEnabled = allowTecnicos
         b.actvTecnico.isClickable = allowTecnicos
@@ -726,19 +727,20 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
         b.actvVehiculo.isEnabled = allowVehiculo
         b.actvVehiculo.isClickable = allowVehiculo
 
-        b.etHoraInicio.isEnabled = horaInicioEditable
-        b.etHoraInicio.isFocusable = horaInicioEditable
-        b.etHoraInicio.isFocusableInTouchMode = horaInicioEditable
-        b.etHoraFin.isEnabled = finalInputsEnabled
-        b.etHoraFin.isFocusable = finalInputsEnabled
-        b.etHoraFin.isFocusableInTouchMode = finalInputsEnabled
-        b.etKmFinal.isEnabled = finalInputsEnabled
-        b.etKmFinal.isFocusable = finalInputsEnabled
-        b.etKmFinal.isFocusableInTouchMode = finalInputsEnabled
+        b.etHoraInicio.isVisible = b.tilHoraInicio.isVisible
+        b.etHoraFin.isVisible = b.tilHoraFinal.isVisible
+        b.etKmInicio.isVisible = b.tilKmInicio.isVisible
+        b.etKmFinal.isVisible = b.tilKmFinal.isVisible
+        // TODO(Codex): Mantener consistencia de visibilidad entre TextInputLayout y editText asociados
 
         b.tilMedidor.isEndIconVisible = allowMedidor
         b.chipGroupTecnicos.isEnabled = allowTecnicos
+        val hasTecnicos = b.chipGroupTecnicos.childCount > 0
+        b.chipGroupTecnicos.isVisible = allowTecnicos || hasTecnicos
         b.chipGroupMateriales.isEnabled = allowMaterials
+        val hasMateriales = b.chipGroupMateriales.childCount > 0
+        b.chipGroupMateriales.isVisible = allowMaterials || hasMateriales
+        // TODO(Codex): Esconder agrupadores cuando no son interactivos y no presentan datos cargados
 
         renderTecnicos()
         renderMateriales()
