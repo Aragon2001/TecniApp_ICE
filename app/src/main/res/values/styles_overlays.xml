@@ -43,11 +43,22 @@
         <item name="boxStrokeColor">?attr/colorPrimary</item>
         <item name="hintTextColor">?attr/colorOnSurfaceVariant</item>
         <item name="android:textColorHint">?attr/colorOnSurfaceVariant</item>
+        <item name="startIconDrawable">@drawable/ic_search_inline</item>
+        <item name="startIconTint">?attr/colorOnSurfaceVariant</item>
+        <item name="startIconCheckable">false</item>
+        <item name="boxCollapsedPaddingTop">6dp</item>
+        <item name="boxCollapsedPaddingBottom">6dp</item>
+        <item name="shapeAppearance">@style/ShapeAppearance.Material3.Corner.Full</item>
+        <!-- TODO(Codex): Mantener esquinas redondeadas en dropdowns para consistencia visual -->
+        <!-- TODO(Codex): Ajustar estilo para autocompletes con icono de búsqueda y evitar encogimiento -->
     </style>
 
     <style name="Tecni.TextInput.Outlined.Dense.Dropdown" parent="Tecni.TextInput.Outlined.Dropdown">
         <item name="android:paddingStart">12dp</item>
         <item name="android:paddingEnd">12dp</item>
+        <item name="boxCollapsedPaddingStart">12dp</item>
+        <item name="boxCollapsedPaddingEnd">12dp</item>
+        <!-- TODO(Codex): Mantener espaciamiento consistente en dropdowns densos -->
     </style>
 
     <style name="Tecni.TextInput.Filled" parent="Widget.Material3.TextInputLayout.FilledBox">

@@ -1,0 +1,10 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- // TODO(Codex): Crear icono de campana deshabilitada -->
+    <path
+        android:fillColor="@android:color/black"
+        android:pathData="M18,16v-5c0,-3.07 -1.63,-5.64 -4.5,-6.32V4c0,-0.83 -0.67,-1.5 -1.5,-1.5S10.5,3.17 10.5,4v0.68c-0.18,0.04 -0.35,0.09 -0.52,0.15l8.19,8.19c0.21,-0.62 0.33,-1.29 0.33,-2.02 0,-3.18 -1.86,-5.87 -4.87,-6.79l-0.47,-0.15v-0.06c0,-0.28 -0.22,-0.5 -0.5,-0.5s-0.5,0.22 -0.5,0.5v0.06c-3.04,0.89 -5.16,3.76 -5.16,7.04v5l-1.7,1.7c-0.14,0.14 -0.3,0.3 -0.3,0.7h11.59l2.71,2.71 1.41,-1.41L4.41,4.41 3,5.82l2.05,2.05C5.02,8.1 5,8.29 5,8.5v5l-1.7,1.7c-0.14,0.14 -0.3,0.3 -0.3,0.7h13L18,16z" />
+</vector>

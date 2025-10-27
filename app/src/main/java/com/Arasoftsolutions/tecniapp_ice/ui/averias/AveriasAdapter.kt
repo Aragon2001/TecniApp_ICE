@@ -129,6 +129,9 @@ class AveriasAdapter(
             // Título y estado
             tvTitulo.text = item.descripcion
             chipEstado.text = item.estado
+            chipEstado.isCheckable = false
+            chipEstado.isClickable = false
+            // TODO(Codex): Evitar íconos de selección en chips dentro de la lista
 
             // Miniatura de mapa
             val lat = item.lat
