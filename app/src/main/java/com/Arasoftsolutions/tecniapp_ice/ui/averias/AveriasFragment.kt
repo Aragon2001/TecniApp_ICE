@@ -132,7 +132,6 @@ class AveriasFragment : Fragment() {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 vm.usuarioActual.collectLatest { user ->
                     adapter.currentUserUid = user?.uid
-                    adapter.notifyDataSetChanged()
                 }
             }
         }
@@ -164,11 +163,11 @@ class AveriasFragment : Fragment() {
         b.chipGroupEstado.setOnCheckedStateChangeListener { _, checkedIds ->
             val state = when (checkedIds.firstOrNull()) {
                 b.chipTodos.id -> null
-                b.chipPendiente.id -> PENDIENTE
-                b.chipAsignada.id -> ASIGNADA
-                b.chipEnAtencion.id -> EN_ATENCION
-                b.chipResuelta.id -> RESUELTA
-                b.chipAnulada.id -> ANULADA
+                b.chipPendiente.id -> Estado.PENDIENTE
+                b.chipAsignada.id -> Estado.ASIGNADA
+                b.chipEnAtencion.id -> Estado.EN_ATENCION
+                b.chipResuelta.id -> Estado.RESUELTA
+                b.chipAnulada.id -> Estado.ANULADA
                 else -> null
             }
             vm.setEstado(state)
