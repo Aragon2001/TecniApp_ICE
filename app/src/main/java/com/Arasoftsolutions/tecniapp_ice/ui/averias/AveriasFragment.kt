@@ -8,6 +8,7 @@ import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
+import android.widget.Toast
 import android.widget.CompoundButton
 import android.widget.TextView
 import androidx.core.view.MenuHost
@@ -340,6 +341,7 @@ class AveriasFragment : Fragment() {
         }
 
         sheetBinding.btnGuardarNotificaciones.setOnClickListener {
+            Toast.makeText(requireContext(), R.string.settings_notifications_saved, Toast.LENGTH_SHORT).show()
             dialog.dismiss()
         }
 
