@@ -28,14 +28,13 @@
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="20dp"
                 app:cardBackgroundColor="@color/transparent"
-
                 app:cardElevation="0dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-
-                    android:orientation="vertical">
+                    android:orientation="vertical"
+                    android:padding="24dp">
 
                     <TextView
                         style="@style/TextAppearance.Material3.TitleMedium"
@@ -469,6 +468,46 @@
                     </com.google.android.material.textfield.TextInputLayout>
 
                     <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tilRegistroSubregion"
+                        style="@style/Tecni.TextInput.Outlined.Dropdown"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp"
+                        android:hint="@string/medidor_registro_subregion_hint"
+                        app:endIconMode="dropdown_menu">
+
+                        <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                            android:id="@+id/inputRegistroSubregion"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:focusable="false"
+                            android:hint="@string/medidor_registro_subregion_hint"
+                            android:inputType="none"
+                            android:importantForAutofill="no"
+                            android:singleLine="true" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tilRegistroPueblo"
+                        style="@style/Tecni.TextInput.Outlined.Dropdown"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp"
+                        android:hint="@string/medidor_registro_pueblo_hint"
+                        app:endIconMode="dropdown_menu">
+
+                        <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                            android:id="@+id/inputRegistroPueblo"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:focusable="false"
+                            android:hint="@string/medidor_registro_pueblo_hint"
+                            android:importantForAutofill="no"
+                            android:inputType="none"
+                            android:singleLine="true" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/tilRegistroCliente"
                         style="@style/Tecni.TextInput.Outlined"
                         android:layout_width="match_parent"
@@ -481,21 +520,6 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:inputType="textCapWords" />
-                    </com.google.android.material.textfield.TextInputLayout>
-
-                    <com.google.android.material.textfield.TextInputLayout
-                        android:id="@+id/tilRegistroLocalizacion"
-                        style="@style/Tecni.TextInput.Outlined"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="14dp"
-                        android:hint="@string/medidor_registro_localizacion_hint">
-
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/inputRegistroLocalizacion"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:inputType="number" />
                     </com.google.android.material.textfield.TextInputLayout>
 
                     <com.google.android.material.textfield.TextInputLayout
@@ -540,22 +564,27 @@
                             android:id="@+id/inputRegistroMetros"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:inputType="text" />
+                            android:inputType="number" />
                     </com.google.android.material.textfield.TextInputLayout>
 
                     <com.google.android.material.textfield.TextInputLayout
-                        android:id="@+id/tilRegistroPueblo"
+                        android:id="@+id/tilRegistroLocalizacion"
                         style="@style/Tecni.TextInput.Outlined"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="14dp"
-                        android:hint="@string/medidor_pueblo_label">
+                        android:hint="@string/medidor_registro_localizacion_hint"
+                        app:helperText="@string/medidor_registro_localizacion_helper">
 
                         <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/inputRegistroPueblo"
+                            android:id="@+id/inputRegistroLocalizacion"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:inputType="text" />
+                            android:focusable="false"
+                            android:focusableInTouchMode="false"
+                            android:inputType="none"
+                            android:longClickable="false"
+                            android:textIsSelectable="false" />
                     </com.google.android.material.textfield.TextInputLayout>
 
                     <LinearLayout

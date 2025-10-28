@@ -3,8 +3,20 @@
     android:height="24dp"
     android:viewportWidth="24"
     android:viewportHeight="24">
-    <!-- // TODO(Codex): Crear icono de campana deshabilitada -->
+
+    <!-- 🔵 Círculo de fondo -->
     <path
-        android:fillColor="@android:color/black"
-        android:pathData="M18,16v-5c0,-3.07 -1.63,-5.64 -4.5,-6.32V4c0,-0.83 -0.67,-1.5 -1.5,-1.5S10.5,3.17 10.5,4v0.68c-0.18,0.04 -0.35,0.09 -0.52,0.15l8.19,8.19c0.21,-0.62 0.33,-1.29 0.33,-2.02 0,-3.18 -1.86,-5.87 -4.87,-6.79l-0.47,-0.15v-0.06c0,-0.28 -0.22,-0.5 -0.5,-0.5s-0.5,0.22 -0.5,0.5v0.06c-3.04,0.89 -5.16,3.76 -5.16,7.04v5l-1.7,1.7c-0.14,0.14 -0.3,0.3 -0.3,0.7h11.59l2.71,2.71 1.41,-1.41L4.41,4.41 3,5.82l2.05,2.05C5.02,8.1 5,8.29 5,8.5v5l-1.7,1.7c-0.14,0.14 -0.3,0.3 -0.3,0.7h13L18,16z" />
+        android:fillColor="?attr/colorSurfaceVariant"
+        android:pathData="M12,2C6.48,2 2,6.48 2,12s4.48,10 10,10 10,-4.48 10,-10S17.52,2 12,2z" />
+
+    <!-- 🔕 Campana (notificación) -->
+    <path
+        android:fillColor="?attr/colorOnSurface"
+        android:pathData="M12,20c1.1,0 2,-0.9 2,-2h-4c0,1.1 0.9,2 2,2zM18,16v-5c0,-3.07 -1.63,-5.64 -4.5,-6.32V4c0,-0.83 -0.67,-1.5 -1.5,-1.5S10.5,3.17 10.5,4v0.68C7.63,5.36 6,7.92 6,11v5l-1.7,1.7c-0.14,0.14 -0.3,0.3 -0.3,0.7h16c0,-0.4 -0.16,-0.56 -0.3,-0.7L18,16z" />
+
+    <!-- ❌ Línea diagonal de bloqueo -->
+    <path
+        android:fillColor="?attr/colorError"
+        android:pathData="M4.3,4.3L19.7,19.7L18.3,21.1L2.9,5.7L4.3,4.3z" />
+
 </vector>
