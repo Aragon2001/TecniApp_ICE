@@ -44,7 +44,7 @@
     <color name="primary_container_dark">#004C8C</color>
     <color name="on_primary_container_dark">#B4DAFF</color>
     <color name="secondary_container_dark">#4C3C00</color>
-    <color name="on_secondary_container_dark">#FFE46B</color>
+    <color name="on_secondary_container_dark">#FFEB3B</color>
     <color name="tertiary_container_dark">#0F3A1B</color>
     <color name="on_tertiary_container_dark">#B1F0BF</color>
 
@@ -71,6 +71,7 @@
     <color name="chip_en_atencion">#1E88E5</color>
     <color name="chip_pendiente">#E53935</color>
     <color name="chip_resuelta">#43A047</color>
+    <color name="chip_anulada">#546E7A</color>
 
     <!-- Outline -->
     <color name="outline_soft">#1F000000</color>

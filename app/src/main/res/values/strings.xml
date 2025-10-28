@@ -10,7 +10,6 @@
     <string name="nav_header_subtitle">Soluciones Integrales ICE</string>
     <string name="nav_header_desc">Navigation header</string>
     <!-- Drawer menu -->
-    <string name="action_logout">Cerrar Sesión</string>
     <string name="welcome_message">Bienvenido a TecniApp</string>
     <string name="menu_home">Home</string>
     <string name="menu_medidor">Consultar Medidor</string>
@@ -26,6 +25,7 @@
     <string name="menu_settings">Ajustes</string>
     <string name="menu_help">Acerca de TecniApp</string>
     <string name="menu_privacy">Políticas</string>
+    <string name="menu_account">Perfil</string>
     <string name="action_accounts">Perfil</string>
     <string name="google_maps_key">AIzaSyBxgf6oA-rRK1-OlNft4oDgzF3gokLl1FU</string>
 
@@ -38,7 +38,7 @@
     <string name="home_header_date_format">%1$s · %2$s</string>
     <string name="home_card_pending_title">Averías asignadas</string>
     <string name="home_card_attended_title">Averías atendidas hoy</string>
-    <string name="home_card_kilometraje_title">Kilometraje inicial</string>
+    <string name="home_card_kilometraje_title">Kilometraje final registrado</string>
     <string name="home_card_last_sync_title">Última sincronización</string>
     <string name="home_card_kilometraje_value">%1$.1f km</string>
     <string name="home_sync_now">Sincronizar ahora</string>
@@ -46,6 +46,7 @@
     <string name="home_map_description">Sincroniza tus rutas y mapas antes de salir a campo.</string>
     <string name="home_map_preview_content_description">Vista previa del mapa sincronizado</string>
     <string name="home_map_last_sync">Última sincronización: %1$s</string>
+    <string name="home_map_permission_missing">Activa los permisos de ubicación para visualizar la cartografía en vivo.</string>
     <string name="home_sync_status_title">Sincronización manual</string>
     <string name="home_sync_status_idle">Sincroniza para obtener los últimos datos.</string>
     <string name="home_sync_status_running">Sincronizando…</string>
@@ -60,6 +61,9 @@
     <string name="home_last_sync_hours">Hace %1$d h</string>
     <string name="home_last_sync_days">Hace %1$d d</string>
     <string name="home_cards_placeholder">—</string>
+    <string name="home_offline_dialog_title">Sin conexión</string>
+    <string name="home_offline_dialog_message">Perdiste la conexión a internet. Continúa en modo offline o reconéctate para sincronizar.</string>
+    <string name="home_offline_dialog_button">Entendido</string>
     <string name="home_quick_action_averias">Averías</string>
     <string name="home_quick_action_medidor">Medidor</string>
     <string name="home_quick_action_reportes">Reportes</string>
@@ -110,6 +114,7 @@
     <string name="estado_asignada">Asignada</string>
     <string name="estado_en_atencion">En atención</string>
     <string name="estado_resuelta">Resuelta</string>
+    <string name="estado_anulada">Anulada</string>
     <string name="averia_eliminar_asignacion">Eliminar</string>
     <string name="averia_cancelar_atencion">Cancelar atención</string>
     <string name="averia_resolver">Resolver</string>
@@ -132,8 +137,8 @@
     <string name="averia_fecha_evento_label">Evento: %1$s</string>
     <string name="averias_title">Averías</string>
     <string name="averia_ver_detalle">Ver detalle</string>
-    <string name="averia_fecha_atencion_inicio">Inicio de atención: %1$s</string>
-    <string name="averia_fecha_atencion_fin">Fin de atención: %1$s</string>
+    <string name="averia_fecha_atencion_inicio">Inicio: %1$s</string>
+    <string name="averia_fecha_atencion_fin">Fin: %1$s</string>
     <string name="averia_notificacion_asignada_title">Avería asignada</string>
     <string name="averia_notificacion_asignada_body">Caso %1$s asignado a %2$s</string>
     <string name="averia_notificacion_atencion_title">Avería en atención</string>
@@ -192,6 +197,12 @@ Cliente: %4$s</string>
     <string name="averia_error_hora_final_menor">La hora final debe ser mayor a la inicial.</string>
     <string name="averia_error_km_invalido">Ingresa un kilometraje válido.</string>
     <string name="averia_error_km_final_menor">El kilometraje final no puede ser menor al inicial.</string>
+    <string name="averia_error_hora_inicio_requerida">Ingresa la hora de inicio.</string>
+    <string name="averia_error_hora_fin_requerida">Ingresa la hora de fin.</string>
+    <string name="averia_error_km_inicio_requerido">Ingresa el kilometraje inicial.</string>
+    <string name="averia_error_km_final_requerido">Ingresa el kilometraje final.</string>
+    <string name="averia_error_vehiculo_requerido">Ingresa el vehículo utilizado.</string>
+    <string name="averia_error_observaciones_requeridas">Ingresa las observaciones.</string>
     <string name="averia_exito_asignada">Avería asignada</string>
     <string name="averia_exito_desasignada">Asignación eliminada</string>
     <string name="averia_exito_en_atencion">Avería en atención</string>
@@ -218,6 +229,21 @@ Cliente: %4$s</string>
     <string name="averia_exportar_pdf_button">Generar PDF</string>
     <string name="averia_estado_todos">Todos</string>
     <string name="averia_caso_format">Caso %1$s</string>
+    <string name="averia_label_asignado">Asignado a:</string>
+    <string name="averia_label_atendido">Atendido por:</string>
+    <string name="averia_label_nise">NISE:</string>
+    <string name="averia_label_region">Región:</string>
+    <string name="averia_label_agencia">Agencia:</string>
+    <string name="averia_label_vehiculo">Vehículo:</string>
+    <string name="averia_label_kilometraje">Kilometraje:</string>
+    <string name="averia_label_cliente">Cliente:</string>
+    <string name="averia_label_localizacion">Localización:</string>
+    <string name="averia_label_direccion">Dirección:</string>
+    <string name="averia_label_causa">Causa:</string>
+    <string name="averia_label_observaciones">Observaciones:</string>
+    <string name="averia_label_evento">Evento:</string>
+    <string name="averia_label_inicio">Inicio:</string>
+    <string name="averia_label_fin">Fin:</string>
     <string name="averia_nise_format">NISE %1$s</string>
     <string name="averia_region_label">Región: %1$s</string>
     <string name="averia_agencia_label">Agencia: %1$s</string>
@@ -333,9 +359,13 @@ Cliente: %4$s</string>
     <string name="settings_notifications_summary_all">Recibirás avisos de todas las agencias.</string>
     <string name="settings_notifications_summary_filtered">Notificar solo agencias: %1$s</string>
     <string name="settings_notifications_manage_agencies">Gestionar agencias favoritas</string>
+    <string name="settings_notifications_saved">Preferencias guardadas. Actualizaremos tus alertas al instante.</string>
     <string name="settings_section_sync">Sincronización</string>
     <string name="settings_auto_sync_toggle">Sincronización automática al iniciar sesión</string>
     <string name="settings_auto_sync_summary">Si está activo se agenda un proceso en segundo plano cada 15 minutos.</string>
+    <string name="settings_auto_sync_summary_enabled">TecniApp buscará nuevas averías cada 15 minutos en segundo plano.</string>
+    <string name="settings_auto_sync_summary_disabled">No se programarán sincronizaciones automáticas hasta que las actives.</string>
+    <string name="settings_auto_sync_summary_running">Sincronizando datos en segundo plano…</string>
     <string name="settings_sync_now">Sincronizar ahora</string>
     <string name="settings_last_sync_never">Última sincronización manual: nunca</string>
     <string name="settings_last_sync_format">Última sincronización manual: %1$s</string>
@@ -346,6 +376,11 @@ Cliente: %4$s</string>
     <string name="settings_section_location">Localización y mapas</string>
     <string name="settings_gps_toggle">Activar soporte GPS desde TecniApp</string>
     <string name="settings_gps_summary">Guarda una preferencia local para habilitar el uso de ubicación en los módulos que la necesiten.</string>
+    <string name="settings_gps_summary_on">TecniApp usará tu ubicación para mostrar rutas y mapas precisos.</string>
+    <string name="settings_gps_summary_off">La aplicación no utilizará la ubicación del dispositivo.</string>
+    <string name="settings_open_map">Abrir módulo de mapas</string>
+    <string name="settings_open_location_settings">Abrir ajustes de ubicación del dispositivo</string>
+    <string name="settings_location_settings_error">No fue posible abrir los ajustes de ubicación.</string>
     <string name="settings_section_appearance">Apariencia</string>
     <string name="settings_dark_theme_toggle">Usar tema oscuro</string>
     <string name="settings_dark_theme_summary">Activa el modo oscuro para reducir el brillo en condiciones nocturnas.</string>
@@ -353,6 +388,7 @@ Cliente: %4$s</string>
     <string name="settings_account_name_placeholder">Nombre del técnico</string>
     <string name="settings_account_email_placeholder">Correo electrónico del técnico</string>
     <string name="settings_account_agency_placeholder">Agencia asignada</string>
+    <string name="settings_open_profile">Administrar perfil</string>
     <string name="settings_sign_out">Cerrar sesión</string>
     <string name="settings_sign_out_title">¿Cerrar sesión?</string>
     <string name="settings_sign_out_message">Se limpiarán los datos locales y deberás iniciar sesión nuevamente.</string>
@@ -395,6 +431,8 @@ Cliente: %4$s</string>
     <string name="profile_summary_placeholder">—</string>
     <string name="profile_user_id_format">Cédula: %1$s</string>
     <string name="profile_change_photo">Cambiar foto</string>
+    <string name="profile_section_assignment">Asignación</string>
+    <string name="profile_region_label">Región</string>
     <string name="profile_subregion_label">Subregión</string>
     <string name="profile_agency_label">Agencia</string>
     <string name="profile_vehicle_label">Vehículo asignado</string>
@@ -402,17 +440,22 @@ Cliente: %4$s</string>
     <string name="profile_password_hint">Nueva contraseña</string>
     <string name="profile_confirm_password_hint">Confirmar contraseña</string>
     <string name="profile_save_changes">Guardar cambios</string>
+    <string name="profile_change_password_toggle">Cambiar contraseña</string>
     <string name="profile_password_too_short">La contraseña debe tener al menos 8 caracteres.</string>
     <string name="profile_password_mismatch">Las contraseñas no coinciden.</string>
+    <string name="profile_password_required">Ingresa la nueva contraseña para continuar.</string>
     <string name="profile_save_success">Perfil actualizado</string>
     <string name="profile_save_error">No se pudo guardar los cambios.%1$s</string>
     <string name="profile_photo_updated">Foto de perfil actualizada</string>
     <string name="profile_photo_update_error">No se pudo actualizar la foto.%1$s</string>
+    <string name="profile_summary_title">Resumen</string>
     <string name="profile_summary_region">Región: %1$s</string>
     <string name="profile_summary_subregion">Subregión: %1$s</string>
     <string name="profile_summary_agency">Agencia: %1$s</string>
     <string name="profile_summary_vehicle">Vehículo: %1$s</string>
     <string name="profile_vehicle_format">%1$s • %2$s</string>
+    <string name="profile_dropdown_subregion_format">%1$s • %2$s</string>
+    <string name="profile_dropdown_agency_format">%1$s • %2$s</string>
     <string name="profile_error_user_not_found">No se encontró la información del usuario.</string>
 
     <!-- Header navegación -->
@@ -464,6 +507,10 @@ Cliente: %4$s</string>
     <string name="medidor_no_encontrado_descripcion">No encontramos el medidor %1$s. Puedes registrarlo manualmente y quedará disponible sin conexión.</string>
     <string name="medidor_no_encontrado_descripcion_vacia">Registra medidores manualmente para mantener tu catálogo actualizado.</string>
     <string name="medidor_no_encontrado_accion">Registrar manualmente</string>
+    <string name="medidor_no_registrado_dialog_title">Medidor no registrado</string>
+    <string name="medidor_no_registrado_dialog_message">Consultamos en la nube y no encontramos el medidor %1$s. ¿Deseas registrarlo manualmente?</string>
+    <string name="medidor_no_registrado_dialog_positive">Registrar</string>
+    <string name="medidor_no_registrado_dialog_negative">Cancelar</string>
     <string name="medidor_registro_manual_titulo">Registrar medidor manualmente</string>
     <string name="medidor_registro_manual_subtitulo">Completa los datos para agregarlo al catálogo y mantenerlos offline.</string>
     <string name="medidor_registro_cliente_hint">Nombre del cliente</string>
@@ -472,6 +519,18 @@ Cliente: %4$s</string>
     <string name="medidor_registro_cancelar">Cancelar</string>
     <string name="medidor_registro_requerido_numero">El número de medidor es obligatorio.</string>
     <string name="medidor_registro_localizacion_error">La localización debe ser numérica.</string>
+    <string name="medidor_registro_localizacion_obligatoria">La localización es obligatoria.</string>
+    <string name="medidor_registro_cliente_requerido">El cliente es obligatorio.</string>
+    <string name="medidor_registro_calle_requerida">La calle es obligatoria.</string>
+    <string name="medidor_registro_poste_requerido">El poste es obligatorio.</string>
+    <string name="medidor_registro_metros_requeridos">Los metros son obligatorios.</string>
+    <string name="medidor_registro_pueblo_requerido">Selecciona un pueblo.</string>
+    <string name="medidor_registro_subregion_requerida">Selecciona una subregión.</string>
+    <string name="medidor_registro_subregion_hint">Subregión</string>
+    <string name="medidor_registro_pueblo_hint">Pueblo</string>
+    <string name="medidor_registro_localizacion_helper">La localización se completa automáticamente con la subregión, el pueblo, la calle, el poste y los metros.</string>
+    <string name="medidor_registro_pueblo_cargando">Cargando pueblos…</string>
+    <string name="medidor_registro_subregion_cargando">Cargando subregiones…</string>
     <string name="medidor_registro_confirm_title">Confirmar registro</string>
     <string name="medidor_registro_confirm_message">¿Estás seguro de registrar este medidor? Los datos se guardarán en la base global y solo un administrador del sistema podrá eliminarlos.</string>
     <string name="medidor_registro_confirm_positive">Registrar medidor</string>
@@ -488,6 +547,10 @@ Cliente: %4$s</string>
     <string name="localizacion_calles_hide">Desmarcar calles</string>
     <string name="localizacion_calles_toast_sin_pueblo">Selecciona un pueblo antes de cargar las calles.</string>
     <string name="localizacion_calles_toggle_label">Mostrar todas las calles del pueblo</string>
+    <string name="localizacion_toggle_autorrotacion">Autorrotar el mapa con la brújula</string>
+    <string name="localizacion_toggle_seguir_ubicacion">Seguir mi ubicación actual</string>
+    <string name="localizacion_toast_sin_ubicacion">No se pudo obtener la ubicación actual.</string>
+    <string name="localizacion_toast_sin_disponibilidad">La ubicación no está disponible en este momento.</string>
     <string name="localizacion_fieldmaps_no_disponible">Field Maps no está instalado. Abriendo Google Maps.</string>
     <string name="localizacion_navegacion_chooser">Selecciona una aplicación para navegar</string>
     <string name="localizacion_estado_sync_error">No se pudo sincronizar la información. Intenta nuevamente.</string>
@@ -498,15 +561,20 @@ Cliente: %4$s</string>
     <string name="reportes_filtro_rango">Rango de fechas</string>
     <string name="reportes_btn_rango">Cambiar rango</string>
     <string name="reportes_selector_titulo">¿Qué reporte necesitas revisar?</string>
+    <string name="reportes_selector_hint">Tipo de reporte</string>
     <string name="reportes_chip_averias">Averías atendidas</string>
     <string name="reportes_chip_averias_conteo">Averías atendidas (%1$d)</string>
     <string name="reportes_chip_material_por_averia">Material por avería</string>
     <string name="reportes_chip_material_por_averia_conteo">Material por avería (%1$d)</string>
     <string name="reportes_chip_material_total">Consumo total</string>
     <string name="reportes_chip_material_total_conteo">Consumo total (%1$d)</string>
+    <string name="reportes_btn_limpiar_filtro">Quitar filtro</string>
     <string name="reportes_btn_generar">Generar reporte</string>
     <string name="reportes_btn_generar_tipo">Generar %1$s</string>
     <string name="reportes_btn_exportar">Exportar a Excel</string>
+    <string name="reportes_fab_exportar">Exportar Excel</string>
+    <string name="reportes_fab_correo">Enviar por correo</string>
+    <string name="reportes_resumen_encabezado">%1$s • %2$s</string>
     <string name="reportes_totales_resumen">Averías atendidas: %1$d&#10;Materiales registrados: %2$d unidades en %3$d códigos.</string>
     <string name="reportes_totales_resumen_pendiente">Selecciona un rango y genera un reporte para ver el resumen de totales.</string>
     <string name="reportes_averias_titulo">Averías atendidas</string>
@@ -567,6 +635,17 @@ Cliente: %4$s</string>
     <string name="reportes_excel_col_descripcion">Descripción</string>
     <string name="reportes_excel_col_cantidad">Cantidad</string>
     <string name="reportes_excel_col_averias">Averías</string>
+    <string name="reportes_correo_asunto">Reporte %1$s · %2$s</string>
+    <string name="reportes_correo_saludo_generico">compañero ICE</string>
+    <string name="reportes_correo_exito">Te enviamos el reporte al correo %1$s.</string>
+    <string name="reportes_correo_error_sin_email">No encontramos un correo asociado a tu usuario.</string>
+    <string name="reportes_correo_error_envio">No se pudo enviar el correo. Inténtalo más tarde.</string>
+    <string name="reportes_correo_error_sin_datos">Genera el reporte antes de enviarlo por correo.</string>
+    <plurals name="reportes_correo_registros">
+        <item quantity="one">Incluye %1$d registro listo para ti.</item>
+        <item quantity="other">Incluye %1$d registros listos para ti.</item>
+    </plurals>
+    <string name="reportes_correo_cierre">Gracias por apoyarte en TecniApp ICE. ¡Seguimos a la orden!</string>
 
     <!-- Administración -->
     <string name="menu_admin">Administración</string>

@@ -7,9 +7,11 @@ import androidx.lifecycle.viewModelScope
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.MedidorEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
 import com.Arasoftsolutions.tecniapp_ice.Database.sync.FirebaseSyncManager
+import com.Arasoftsolutions.tecniapp_ice.Database.sync.SubregionNormalizer
 import com.Arasoftsolutions.tecniapp_ice.R
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -38,6 +40,22 @@ class MedidorViewModel(app: Application) : AndroidViewModel(app) {
     private var subregionNombre: String? = null
     private var subregionStorageKey: String? = null
     private var initialized = false
+    private var pueblosRegistroJob: Job? = null
+    private var pendingRegistroSubregionSelection: String? = null
+
+    init {
+        viewModelScope.launch {
+            repository.observarSubregiones().collect { subregiones ->
+                val opciones = subregiones
+                    .map { SubregionOption(it.id, it.nombre) }
+                    .sortedBy { it.displayName.lowercase() }
+                _uiState.update { estado ->
+                    estado.copy(subregionOptions = opciones)
+                }
+                ensureRegistroSubregionSeleccionada()
+            }
+        }
+    }
 
     fun initialize() {
         if (initialized) return
@@ -98,6 +116,7 @@ class MedidorViewModel(app: Application) : AndroidViewModel(app) {
             subregionId = id
             subregionNombre = nombre
             subregionStorageKey = storageKey
+            pendingRegistroSubregionSelection = storageKey
 
             val medidoresLocales = withContext(Dispatchers.IO) {
                 repository.contarMedidores(storageKey)
@@ -146,6 +165,7 @@ class MedidorViewModel(app: Application) : AndroidViewModel(app) {
                     subregionNombre = nombre ?: id
                 )
             }
+            ensureRegistroSubregionSeleccionada()
         } catch (t: Throwable) {
             Log.e("MedidorViewModel", "Error preparando cache local", t)
             _uiState.update {
@@ -183,7 +203,8 @@ class MedidorViewModel(app: Application) : AndroidViewModel(app) {
                     message = null,
                     isRegistering = false,
                     notFoundNumero = null,
-                    showManualForm = false
+                    showManualForm = false,
+                    showNotFoundDialog = false
                 )
             }
 
@@ -199,7 +220,8 @@ class MedidorViewModel(app: Application) : AndroidViewModel(app) {
                             medidor = local,
                             message = context.getString(R.string.medidor_estado_encontrado, local.medidorNumber),
                             notFoundNumero = null,
-                            showManualForm = false
+                            showManualForm = false,
+                            showNotFoundDialog = false
                         )
                     }
                     return@launch
@@ -218,7 +240,8 @@ class MedidorViewModel(app: Application) : AndroidViewModel(app) {
                             medidor = remoto,
                             message = context.getString(R.string.medidor_estado_encontrado, remoto.medidorNumber),
                             notFoundNumero = null,
-                            showManualForm = false
+                            showManualForm = false,
+                            showNotFoundDialog = false
                         )
                     }
                 } else {
@@ -228,7 +251,8 @@ class MedidorViewModel(app: Application) : AndroidViewModel(app) {
                             medidor = null,
                             message = context.getString(R.string.medidor_estado_no_result_registro, trimmed),
                             notFoundNumero = trimmed,
-                            showManualForm = false
+                            showManualForm = false,
+                            showNotFoundDialog = true
                         )
                     }
                 }
@@ -240,7 +264,8 @@ class MedidorViewModel(app: Application) : AndroidViewModel(app) {
                         medidor = null,
                         message = getApplication<Application>().getString(R.string.medidor_estado_error_generico),
                         notFoundNumero = null,
-                        showManualForm = false
+                        showManualForm = false,
+                        showNotFoundDialog = false
                     )
                 }
             }
@@ -252,7 +277,8 @@ class MedidorViewModel(app: Application) : AndroidViewModel(app) {
             it.copy(
                 medidor = null,
                 notFoundNumero = null,
-                showManualForm = false
+                showManualForm = false,
+                showNotFoundDialog = false
             )
         }
     }
@@ -269,28 +295,98 @@ class MedidorViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun habilitarRegistroManual() {
-        _uiState.update { it.copy(showManualForm = true) }
+        ensureRegistroSubregionSeleccionada()
+        _uiState.update { it.copy(showManualForm = true, showNotFoundDialog = false) }
     }
 
     fun cancelarRegistroManual() {
-        _uiState.update { it.copy(showManualForm = false, isRegistering = false) }
+        _uiState.update {
+            it.copy(showManualForm = false, isRegistering = false, showNotFoundDialog = false)
+        }
+    }
+
+    private fun ensureRegistroSubregionSeleccionada() {
+        val opciones = _uiState.value.subregionOptions
+        if (opciones.isEmpty()) return
+        val estado = _uiState.value
+        if (!estado.selectedSubregionId.isNullOrBlank()) return
+
+        val candidatoRaw = pendingRegistroSubregionSelection
+            ?: subregionId
+            ?: subregionNombre
+
+        val seleccion = opciones.firstOrNull { option ->
+            option.matches(candidatoRaw) || option.matches(SubregionNormalizer.canonicalIdOrSelf(candidatoRaw))
+        } ?: opciones.firstOrNull()
+
+        seleccion?.let { seleccionarSubregionParaRegistro(it) }
+    }
+
+    fun seleccionarSubregionParaRegistro(option: SubregionOption) {
+        val canonical = option.canonicalId
+        if (canonical.isBlank()) return
+        pendingRegistroSubregionSelection = canonical
+        pueblosRegistroJob?.cancel()
+        _uiState.update {
+            it.copy(
+                selectedSubregionId = canonical,
+                selectedSubregionNombre = option.nombre.takeIf { nombre -> nombre.isNotBlank() },
+                selectedSubregionDisplay = option.displayName,
+                puebloOptions = emptyList(),
+                selectedPuebloId = null,
+                selectedPuebloNombre = null,
+                selectedPuebloDisplay = null,
+                isPueblosLoading = true
+            )
+        }
+        pueblosRegistroJob = viewModelScope.launch {
+            repository.observarPueblos(canonical).collect { pueblos ->
+                val opcionesPueblo = pueblos
+                    .map { PuebloOption(it.id, it.nombre) }
+                    .sortedBy { it.displayName.lowercase() }
+                _uiState.update { estado ->
+                    val seleccionadoActual = estado.selectedPuebloId
+                    val matching = opcionesPueblo.firstOrNull { it.id == seleccionadoActual }
+                    estado.copy(
+                        puebloOptions = opcionesPueblo,
+                        isPueblosLoading = false,
+                        selectedPuebloId = matching?.id,
+                        selectedPuebloNombre = matching?.nombre,
+                        selectedPuebloDisplay = matching?.displayName
+                    )
+                }
+            }
+        }
+    }
+
+    fun seleccionarPuebloParaRegistro(option: PuebloOption) {
+        _uiState.update {
+            it.copy(
+                selectedPuebloId = option.id,
+                selectedPuebloNombre = option.nombre.takeIf { nombre -> nombre.isNotBlank() },
+                selectedPuebloDisplay = option.displayName
+            )
+        }
+    }
+
+    fun limpiarSeleccionPueblo() {
+        _uiState.update {
+            it.copy(selectedPuebloId = null, selectedPuebloNombre = null, selectedPuebloDisplay = null)
+        }
+    }
+
+    fun onNotFoundDialogMostrado() {
+        _uiState.update { it.copy(showNotFoundDialog = false) }
     }
 
     fun registrarMedidorManual(
         numero: String,
-        cliente: String?,
-        localizacion: Long?,
-        calle: String?,
-        poste: String?,
-        metros: String?,
-        pueblo: String?
+        cliente: String,
+        localizacion: Long,
+        calle: String,
+        poste: String,
+        metros: String
     ) {
-        val storageKey = subregionStorageKey
-        if (storageKey.isNullOrBlank()) {
-            cancelarRegistroManual()
-            return
-        }
-
         val numeroLimpio = numero.trim()
         if (numeroLimpio.isEmpty()) {
             _uiState.update {
@@ -300,24 +396,113 @@ class MedidorViewModel(app: Application) : AndroidViewModel(app) {
         }
 
         val context = getApplication<Application>()
-        val displayName = subregionNombre ?: subregionId
+        val estadoActual = _uiState.value
+        val subregionSeleccionada = estadoActual.selectedSubregionId
+            ?: pendingRegistroSubregionSelection?.let { SubregionNormalizer.canonicalIdOrSelf(it) }
+        if (subregionSeleccionada.isNullOrBlank()) {
+            _uiState.update {
+                it.copy(message = context.getString(R.string.medidor_registro_subregion_requerida))
+            }
+            return
+        }
+        val subregionNombreSeleccionada = estadoActual.selectedSubregionNombre
+            ?: estadoActual.selectedSubregionDisplay
+            ?: subregionNombre
+            ?: subregionSeleccionada
+
+        val puebloId = estadoActual.selectedPuebloId
+        if (puebloId == null) {
+            _uiState.update {
+                it.copy(message = context.getString(R.string.medidor_registro_pueblo_requerido))
+            }
+            return
+        }
+        val clienteLimpio = cliente.trim()
+        if (clienteLimpio.isEmpty()) {
+            _uiState.update {
+                it.copy(message = context.getString(R.string.medidor_registro_cliente_requerido))
+            }
+            return
+        }
+        val calleLimpia = calle.trim()
+        if (calleLimpia.isEmpty()) {
+            _uiState.update {
+                it.copy(message = context.getString(R.string.medidor_registro_calle_requerida))
+            }
+            return
+        }
+        val posteLimpio = poste.trim()
+        if (posteLimpio.isEmpty()) {
+            _uiState.update {
+                it.copy(message = context.getString(R.string.medidor_registro_poste_requerido))
+            }
+            return
+        }
+        val metrosLimpios = metros.trim()
+        if (metrosLimpios.isEmpty()) {
+            _uiState.update {
+                it.copy(message = context.getString(R.string.medidor_registro_metros_requeridos))
+            }
+            return
+        }
 
         viewModelScope.launch {
-            _uiState.update { it.copy(isRegistering = true) }
+            _uiState.update { it.copy(isRegistering = true, showNotFoundDialog = false) }
             try {
+                val existenteLocal = withContext(Dispatchers.IO) {
+                    repository.buscarMedidorPorNumero(numeroLimpio)
+                }
+                if (existenteLocal != null) {
+                    _uiState.update {
+                        it.copy(
+                            isRegistering = false,
+                            medidor = existenteLocal,
+                            message = context.getString(R.string.medidor_estado_encontrado, existenteLocal.medidorNumber),
+                            notFoundNumero = null,
+                            showManualForm = false,
+                            showNotFoundDialog = false
+                        )
+                    }
+                    return@launch
+                }
+
+                val existenteRemoto = withContext(Dispatchers.IO) {
+                    runCatching {
+                        firebase.buscarMedidorEnFirebase(
+                            subregionSeleccionada,
+                            subregionNombreSeleccionada,
+                            numeroLimpio
+                        )
+                    }.getOrNull()
+                }
+                if (existenteRemoto != null) {
+                    withContext(Dispatchers.IO) { repository.insertarMedidor(existenteRemoto) }
+                    _uiState.update {
+                        it.copy(
+                            isRegistering = false,
+                            medidor = existenteRemoto,
+                            message = context.getString(R.string.medidor_estado_encontrado, existenteRemoto.medidorNumber),
+                            notFoundNumero = null,
+                            showManualForm = false,
+                            showNotFoundDialog = false
+                        )
+                    }
+                    return@launch
+                }
+
                 val entity = MedidorEntity(
                     medidorNumber = numeroLimpio,
-                    cliente = cliente?.trim()?.takeIf { it.isNotEmpty() },
+                    cliente = clienteLimpio,
                     localizacion = localizacion,
-                    metros = metros?.trim()?.takeIf { it.isNotEmpty() },
-                    poste = poste?.trim()?.takeIf { it.isNotEmpty() },
-                    calle = calle?.trim()?.takeIf { it.isNotEmpty() },
-                    pueblo = pueblo?.trim()?.takeIf { it.isNotEmpty() },
-                    subregion = storageKey
+                    metros = metrosLimpios,
+                    poste = posteLimpio,
+                    calle = calleLimpia,
+                    pueblo = puebloId.toString(),
+                    subregion = subregionSeleccionada
                 )
 
                 withContext(Dispatchers.IO) {
-                    firebase.registrarMedidorManual(storageKey, displayName, entity)
+                    firebase.registrarMedidorManual(subregionSeleccionada, subregionNombreSeleccionada, entity)
                     repository.insertarMedidor(entity)
                 }
 
@@ -327,7 +512,8 @@ class MedidorViewModel(app: Application) : AndroidViewModel(app) {
                         medidor = entity,
                         message = context.getString(R.string.medidor_estado_registro_exito, numeroLimpio),
                         notFoundNumero = null,
-                        showManualForm = false
+                        showManualForm = false,
+                        showNotFoundDialog = false
                     )
                 }
             } catch (t: Throwable) {
@@ -353,5 +539,52 @@ data class MedidorUiState(
     val notFoundNumero: String? = null,
     val showManualForm: Boolean = false,
     val isRegistering: Boolean = false,
-    val subregionNombre: String? = null
+    val subregionNombre: String? = null,
+    val showNotFoundDialog: Boolean = false,
+    val subregionOptions: List<SubregionOption> = emptyList(),
+    val selectedSubregionId: String? = null,
+    val selectedSubregionNombre: String? = null,
+    val selectedSubregionDisplay: String? = null,
+    val puebloOptions: List<PuebloOption> = emptyList(),
+    val selectedPuebloId: Int? = null,
+    val selectedPuebloNombre: String? = null,
+    val selectedPuebloDisplay: String? = null,
+    val isPueblosLoading: Boolean = false
 )
+
+data class SubregionOption(
+    val id: String,
+    val nombre: String
+) {
+    private fun resolveCanonical(): String {
+        val idCandidate = SubregionNormalizer.canonicalIdOrSelf(id)
+            ?: id.trim().takeIf { it.isNotEmpty() }
+        val nombreCandidate = SubregionNormalizer.canonicalIdOrSelf(nombre)
+            ?: nombre.trim().takeIf { it.isNotEmpty() }
+        return idCandidate ?: nombreCandidate ?: ""
+    }
+
+    val canonicalId: String = resolveCanonical()
+
+    val displayName: String = nombre.takeIf { it.isNotBlank() } ?: canonicalId
+
+    fun matches(valor: String?): Boolean {
+        val trimmed = valor?.trim().orEmpty()
+        if (trimmed.isEmpty()) return false
+        val canonicalValor = SubregionNormalizer.canonicalIdOrSelf(trimmed) ?: trimmed
+        return trimmed.equals(id, true) ||
+            trimmed.equals(nombre, true) ||
+            canonicalValor.equals(canonicalId, true)
+    }
+}
+
+data class PuebloOption(
+    val id: Int,
+    val nombre: String
+) {
+    val displayName: String = if (nombre.isBlank()) {
+        id.toString()
+    } else {
+        "$id - $nombre"
+    }
+}
