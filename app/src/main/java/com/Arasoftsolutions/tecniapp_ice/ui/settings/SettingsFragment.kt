@@ -1,5 +1,6 @@
 package com.Arasoftsolutions.tecniapp_ice.ui.settings
 
+import android.content.ActivityNotFoundException
 import android.content.Context.MODE_PRIVATE
 import android.content.Intent
 import android.os.Bundle
@@ -7,6 +8,7 @@ import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.widget.ArrayAdapter
 import android.widget.Toast
+import android.provider.Settings
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.view.isVisible
@@ -16,6 +18,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
+import androidx.navigation.fragment.findNavController
 import com.Arasoftsolutions.tecniapp_ice.ActivityMain
 import com.Arasoftsolutions.tecniapp_ice.LoginActivity
 import com.Arasoftsolutions.tecniapp_ice.R
@@ -49,6 +52,7 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
     private val dataStore by lazy { DataStoreManager.getInstance(requireContext()) }
     private val roomRepository by lazy { RoomRepository.getInstance(requireContext()) }
     private var availableNotificationAgencies: List<String> = emptyList()
+    private var latestAutoSyncInfo: WorkInfo? = null
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -88,6 +92,7 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
                     if (binding.switchNotificaciones.isChecked != value) {
                         binding.switchNotificaciones.isChecked = value
                     }
+                    updateNotificationSummary()
                 }
             }
         }
@@ -107,6 +112,7 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
 
     private fun setupSyncPreferences() {
         setManualSyncInProgress(false)
+        updateAutoSyncSummary(binding.switchAutoSync.isChecked, latestAutoSyncInfo)
 
         binding.switchAutoSync.setOnCheckedChangeListener { _, isChecked ->
             viewLifecycleOwner.lifecycleScope.launch {
@@ -114,8 +120,10 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
             }
             if (isChecked) {
                 AveriasSyncWorker.schedule(requireContext())
+                updateAutoSyncSummary(true, latestAutoSyncInfo)
             } else {
                 WorkManager.getInstance(requireContext()).cancelUniqueWork("averias_sync")
+                updateAutoSyncSummary(false, latestAutoSyncInfo)
             }
         }
 
@@ -128,6 +136,13 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
             showSyncDialog()
             Toast.makeText(requireContext(), R.string.settings_sync_triggered, Toast.LENGTH_SHORT).show()
         }
+
+        WorkManager.getInstance(requireContext())
+            .getWorkInfosForUniqueWorkLiveData("averias_sync")
+            .observe(viewLifecycleOwner) { infos ->
+                latestAutoSyncInfo = infos.firstOrNull()
+                updateAutoSyncSummary(binding.switchAutoSync.isChecked, latestAutoSyncInfo)
+            }
 
         WorkManager.getInstance(requireContext())
             .getWorkInfosForUniqueWorkLiveData("averias_sync_now")
@@ -157,6 +172,7 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
                         if (binding.switchAutoSync.isChecked != enabled) {
                             binding.switchAutoSync.isChecked = enabled
                         }
+                        updateAutoSyncSummary(enabled, latestAutoSyncInfo)
                     }
                 }
 
@@ -179,6 +195,19 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
             viewLifecycleOwner.lifecycleScope.launch {
                 dataStore.setGpsEnabled(isChecked)
             }
+            updateGpsSummary(isChecked)
+        }
+
+        binding.btnOpenMap.setOnClickListener {
+            findNavController().navigate(R.id.nav_localizacion)
+        }
+
+        binding.btnOpenLocationSettings.setOnClickListener {
+            try {
+                startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+            } catch (error: ActivityNotFoundException) {
+                Toast.makeText(requireContext(), R.string.settings_location_settings_error, Toast.LENGTH_SHORT).show()
+            }
         }
 
         viewLifecycleOwner.lifecycleScope.launch {
@@ -187,9 +216,11 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
                     if (binding.switchGps.isChecked != enabled) {
                         binding.switchGps.isChecked = enabled
                     }
+                    updateGpsSummary(enabled)
                 }
             }
         }
+        updateGpsSummary(binding.switchGps.isChecked)
     }
 
     private fun setupAppearancePreferences() {
@@ -217,6 +248,13 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
     }
 
     private fun setupAccountSection() {
+        binding.cardAccount.setOnClickListener {
+            findNavController().navigate(R.id.nav_account)
+        }
+        binding.btnOpenProfile.setOnClickListener {
+            findNavController().navigate(R.id.nav_account)
+        }
+
         binding.btnCerrarSesion.setOnClickListener {
             MaterialAlertDialogBuilder(requireContext())
                 .setTitle(R.string.settings_sign_out_title)
@@ -329,6 +367,25 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         notificationDialog = dialog
         updateNotificationList()
         dialog.show()
+    }
+
+    private fun updateAutoSyncSummary(enabled: Boolean, workInfo: WorkInfo?) {
+        binding.textAutoSyncSummary.text = when {
+            !enabled -> getString(R.string.settings_auto_sync_summary_disabled)
+            workInfo?.state == WorkInfo.State.RUNNING -> getString(R.string.settings_auto_sync_summary_running)
+            workInfo?.state == WorkInfo.State.ENQUEUED || workInfo?.state == WorkInfo.State.BLOCKED ->
+                getString(R.string.settings_auto_sync_summary_enabled)
+            workInfo?.state?.isFinished == true -> getString(R.string.settings_auto_sync_summary_enabled)
+            else -> getString(R.string.settings_auto_sync_summary_enabled)
+        }
+    }
+
+    private fun updateGpsSummary(enabled: Boolean) {
+        binding.textGpsSummary.text = if (enabled) {
+            getString(R.string.settings_gps_summary_on)
+        } else {
+            getString(R.string.settings_gps_summary_off)
+        }
     }
 
     private fun signOut() {
