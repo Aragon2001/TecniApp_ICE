@@ -2,6 +2,7 @@ package com.Arasoftsolutions.tecniapp_ice.ui.averias
 
 import android.util.Log
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.AveriaEntity
+import com.Arasoftsolutions.tecniapp_ice.Database.entities.VehiculoKilometrajeEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.room.AppDatabase
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
@@ -23,6 +24,7 @@ import java.util.TimeZone
 class AveriasRepository(private val db: AppDatabase) {
 
     private val dao get() = db.averiaDao()
+    private val kilometrajeDao get() = db.vehiculoKilometrajeDao()
     private val firebaseRef = FirebaseDatabase
         .getInstance("https://averias.firebaseio.com")
         .reference
@@ -190,6 +192,7 @@ class AveriasRepository(private val db: AppDatabase) {
         if (raw.isNullOrBlank()) return "Pendiente"
         val v = raw.trim().lowercase(Locale.getDefault())
         return when {
+            "anul" in v -> "Anulada"
             "resuel" in v -> "Resuelta"
             "en at" in v || "atenci" in v -> "En atención"
             "asign" in v -> "Asignada"
@@ -202,6 +205,7 @@ class AveriasRepository(private val db: AppDatabase) {
         val localNormalized = normalizeEstadoLabel(local)
         val remoteNormalized = normalizeEstadoLabel(remote)
         return when {
+            localNormalized == "Anulada" -> "Anulada"
             local.isNullOrBlank() -> remoteNormalized
             remoteNormalized == "Resuelta" && localNormalized != "Resuelta" -> "Resuelta"
             else -> localNormalized
@@ -213,6 +217,7 @@ class AveriasRepository(private val db: AppDatabase) {
         "Asignada" -> 2
         "En atención" -> 3
         "Resuelta" -> 4
+        "Anulada" -> 5
         else -> 1
     }
 
@@ -251,6 +256,7 @@ class AveriasRepository(private val db: AppDatabase) {
                 2 -> "Asignada"
                 3 -> "En atención"
                 4 -> "Resuelta"
+                5 -> "Anulada"
                 else -> estadoTexto?.ifBlank { "Pendiente" } ?: "Pendiente"
             }
         )
@@ -376,6 +382,12 @@ class AveriasRepository(private val db: AppDatabase) {
         syncSingle(caseId)
     }
 
+    suspend fun anular(caseId: String) = withContext(Dispatchers.IO) {
+        val now = System.currentTimeMillis()
+        dao.marcarAnulada(caseId, lastUpdated = now)
+        syncSingle(caseId)
+    }
+
     suspend fun eliminarAveria(caseId: String) = withContext(Dispatchers.IO) {
         firebaseRef.child(caseId).removeValue().await()
         dao.eliminarPorCaseId(caseId)
@@ -423,6 +435,7 @@ class AveriasRepository(private val db: AppDatabase) {
         )
         syncSingle(caseId)
         registrarMaterialesUsados(data.materiales)
+        registrarKilometrajeFinal(data.vehiculo, data.kilometrajeFinal, data.horaFinalMillis ?: now)
     }
 
 
@@ -468,6 +481,24 @@ class AveriasRepository(private val db: AppDatabase) {
         )
         syncSingle(caseId)
         registrarMaterialesUsados(data.materiales)
+        registrarKilometrajeFinal(data.vehiculo, data.kilometrajeFinal, data.horaFinalMillis ?: now)
+    }
+
+    private suspend fun registrarKilometrajeFinal(vehiculo: String?, kilometraje: Double?, timestamp: Long) {
+        if (kilometraje == null || vehiculo.isNullOrBlank()) return
+        val normalizada = VehiculoKilometrajeEntity.normalizarPlaca(vehiculo)
+            ?: VehiculoKilometrajeEntity.normalizarPlaca(
+                vehiculo.replace("ICE", "", ignoreCase = true)
+            )
+            ?: return
+        kilometrajeDao.insertar(
+            VehiculoKilometrajeEntity(
+                placa = vehiculo.trim(),
+                placaNormalizada = normalizada,
+                kilometrajeFinal = kilometraje,
+                registradoEn = timestamp
+            )
+        )
     }
 
     private suspend fun syncSingle(caseId: String) {

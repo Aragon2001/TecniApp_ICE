@@ -96,35 +96,22 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
             }
         }.stateIn(viewModelScope, sharing, 0)
 
-    val kilometrosInicialesHoy: StateFlow<Double> =
-        combine(averias, usuarioUid) { lista, uid ->
-            if (uid.isNullOrBlank()) {
-                0.0
-            } else {
-                val hoy = LocalDate.now()
-                lista.sumOf { averia ->
-                    val kilometrajeInicio = averia.kilometrajeInicio
-                    val fechaInicio = averia.atencionHoraInicioMillis
-                        ?: averia.horaInicioMillis
-                    if (kilometrajeInicio != null && fechaInicio != null) {
-                        val fecha = Instant.ofEpochMilli(fechaInicio)
-                            .atZone(ZoneId.systemDefault())
-                            .toLocalDate()
-                        if (
-                            fecha == hoy &&
-                            (averia.tecnicoAsignadoUid.equals(uid, ignoreCase = true) ||
-                                averia.atendidoPorUid.equals(uid, ignoreCase = true))
-                        ) {
-                            max(kilometrajeInicio, 0.0)
-                        } else {
-                            0.0
-                        }
-                    } else {
-                        0.0
-                    }
+    private val placaVehiculo: StateFlow<String?> =
+        usuario
+            .map { it?.placaVehiculo?.takeIf { placa -> placa.isNotBlank() } }
+            .stateIn(viewModelScope, sharing, null)
+
+    val kilometrajeFinalReciente: StateFlow<Double?> =
+        placaVehiculo
+            .flatMapLatest { placa ->
+                if (placa.isNullOrBlank()) {
+                    flowOf(null)
+                } else {
+                    repo.observarUltimoKilometraje(placa)
+                        .map { registro -> registro?.kilometrajeFinal }
                 }
             }
-        }.stateIn(viewModelScope, sharing, 0.0)
+            .stateIn(viewModelScope, sharing, null)
 
     val lastManualSync: StateFlow<Long?> =
         dataStore.lastManualSyncMillis

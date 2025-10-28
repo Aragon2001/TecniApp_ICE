@@ -20,6 +20,7 @@ class RoomRepository(context: Context) {
 
     private val db = AppDatabase.getInstance(context.applicationContext)
     private val firebase = FirebaseSyncManager(context.applicationContext)
+    private val kilometrajeDao = db.vehiculoKilometrajeDao()
 
     companion object {
         const val SUBREGION_SYNC_STEPS = 5
@@ -65,6 +66,12 @@ class RoomRepository(context: Context) {
 
     fun observarVehiculosCatalogo(): Flow<List<VehiculosEntity>> =
         db.vehiculoDao().observarTodos()
+
+    fun observarUltimoKilometraje(placa: String): Flow<VehiculoKilometrajeEntity?> {
+        val normalizada = VehiculoKilometrajeEntity.normalizarPlaca(placa)
+            ?: return flowOf(null)
+        return kilometrajeDao.observarUltimo(normalizada)
+    }
 
     fun observarTodosLosPueblos(): Flow<List<PueblosEntity>> = db.puebloDao().observarTodos()
 
@@ -159,6 +166,23 @@ class RoomRepository(context: Context) {
     suspend fun guardarVehiculo(vehiculo: VehiculosEntity) = withContext(Dispatchers.IO) {
         firebase.guardarVehiculo(vehiculo)
         db.vehiculoDao().insertAll(listOf(vehiculo))
+    }
+
+    suspend fun registrarKilometrajeVehicular(
+        placa: String,
+        kilometrajeFinal: Double,
+        timestamp: Long = System.currentTimeMillis()
+    ) = withContext(Dispatchers.IO) {
+        val normalizada = VehiculoKilometrajeEntity.normalizarPlaca(placa)
+            ?: return@withContext
+        kilometrajeDao.insertar(
+            VehiculoKilometrajeEntity(
+                placa = placa.trim(),
+                placaNormalizada = normalizada,
+                kilometrajeFinal = kilometrajeFinal,
+                registradoEn = timestamp
+            )
+        )
     }
 
     suspend fun eliminarVehiculo(id: Int) = withContext(Dispatchers.IO) {

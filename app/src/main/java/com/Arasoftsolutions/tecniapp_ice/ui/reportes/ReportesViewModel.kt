@@ -1,10 +1,13 @@
 package com.Arasoftsolutions.tecniapp_ice.ui.reportes
 
+import MailSender
 import android.app.Application
 import android.util.Log
+import android.text.TextUtils
 import androidx.annotation.StringRes
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.AveriaEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.MaterialEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.room.AppDatabase
@@ -99,7 +102,9 @@ data class ReportesUiState(
     val rangoTexto: String,
     val reporteSeleccionado: ReportType = ReportType.AVERIAS,
     val resumen: ResumenTotales? = null,
+    val isDefaultRange: Boolean = false,
     val isGlobalLoading: Boolean = false,
+    val isEmailSending: Boolean = false,
     val averiasState: ReportSectionState<AveriaReportItem> = ReportSectionState(),
     val materialesPorAveriaState: ReportSectionState<MaterialPorAveriaReportItem> = ReportSectionState(),
     val materialesTotalesState: ReportSectionState<MaterialTotalItem> = ReportSectionState()
@@ -120,6 +125,7 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
 
     private val database = AppDatabase.getInstance(app)
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
+    private val mailSender = MailSender()
     private val locale: Locale = Locale.getDefault()
     private val rangeFormatter = DateTimeFormatter.ofPattern("dd MMM yyyy", locale)
     private val dateTimeFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm", locale)
@@ -132,7 +138,8 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
         ReportesUiState(
             fechaInicio = initialRange.first,
             fechaFin = initialRange.second,
-            rangoTexto = buildRangeText(initialRange.first, initialRange.second)
+            rangoTexto = buildRangeText(initialRange.first, initialRange.second),
+            isDefaultRange = true
         )
     )
     val uiState = _uiState.asStateFlow()
@@ -155,14 +162,21 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
         cachedBase = null
         cachedRange = null
 
+        val esRangoInicial = nuevoInicio == initialRange.first && nuevoFin == initialRange.second
         _uiState.update {
             ReportesUiState(
                 fechaInicio = nuevoInicio,
                 fechaFin = nuevoFin,
                 rangoTexto = buildRangeText(nuevoInicio, nuevoFin),
-                reporteSeleccionado = it.reporteSeleccionado
+                reporteSeleccionado = it.reporteSeleccionado,
+                isDefaultRange = esRangoInicial
             )
         }
+    }
+
+    fun restablecerRango() {
+        val (inicio, fin) = initialRange
+        actualizarRangoFechas(inicio, fin)
     }
 
     fun seleccionarTipo(tipo: ReportType) {
@@ -205,6 +219,57 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
                 setSectionFailure(tipo)
                 val mensaje = getApplication<Application>().getString(R.string.reportes_error_carga)
                 _messages.tryEmit(mensaje)
+            }
+        }
+    }
+
+    fun enviarReportePorCorreo() {
+        val state = uiState.value
+        if (state.isEmailSending || state.isGlobalLoading) return
+
+        val datos = obtenerDatosParaExportar(state.reporteSeleccionado)
+        if (datos == null) {
+            val mensaje = getApplication<Application>().getString(R.string.reportes_correo_error_sin_datos)
+            _messages.tryEmit(mensaje)
+            return
+        }
+
+        val destino = auth.currentUser?.email?.takeIf { it.isNotBlank() }
+        if (destino == null) {
+            val mensaje = getApplication<Application>().getString(R.string.reportes_correo_error_sin_email)
+            _messages.tryEmit(mensaje)
+            return
+        }
+
+        val saludo = auth.currentUser?.displayName?.takeIf { it.isNotBlank() }
+            ?: getApplication<Application>().getString(R.string.reportes_correo_saludo_generico)
+        val nombreReporte = getApplication<Application>().getString(state.reporteSeleccionado.titleRes)
+        val subject = getApplication<Application>().getString(
+            R.string.reportes_correo_asunto,
+            nombreReporte,
+            state.rangoTexto
+        )
+
+        val totalRegistros = contarRegistros(datos)
+        val cuerpo = construirCuerpoCorreo(
+            saludo = saludo,
+            nombreReporte = nombreReporte,
+            rango = state.rangoTexto,
+            resumen = state.resumen,
+            totalRegistros = totalRegistros
+        )
+
+        _uiState.update { it.copy(isEmailSending = true) }
+        mailSender.sendFormattedMail(subject, cuerpo, destino) { success, error ->
+            viewModelScope.launch {
+                _uiState.update { it.copy(isEmailSending = false) }
+                if (success) {
+                    val mensaje = getApplication<Application>().getString(R.string.reportes_correo_exito, destino)
+                    _messages.tryEmit(mensaje)
+                } else {
+                    val fallback = error ?: getApplication<Application>().getString(R.string.reportes_correo_error_envio)
+                    _messages.tryEmit(fallback)
+                }
             }
         }
     }
@@ -541,5 +606,62 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun buildRangeText(inicio: LocalDate, fin: LocalDate): String {
         return "${inicio.format(rangeFormatter)} – ${fin.format(rangeFormatter)}"
+    }
+
+    private fun construirCuerpoCorreo(
+        saludo: String,
+        nombreReporte: String,
+        rango: String,
+        resumen: ResumenTotales?,
+        totalRegistros: Int
+    ): String {
+        val app = getApplication<Application>()
+        val registrosTexto = app.resources.getQuantityString(
+            R.plurals.reportes_correo_registros,
+            totalRegistros,
+            totalRegistros
+        )
+
+        val safeSaludo = TextUtils.htmlEncode(saludo)
+        val safeReporte = TextUtils.htmlEncode(nombreReporte)
+        val safeRango = TextUtils.htmlEncode(rango)
+        val safeRegistros = TextUtils.htmlEncode(registrosTexto)
+        val safeCierre = TextUtils.htmlEncode(app.getString(R.string.reportes_correo_cierre))
+        val resumenHtml = construirResumenCorreo(resumen)
+
+        return """
+            <html>
+            <body style="font-family:'Roboto', Arial, sans-serif; color:#0F172A;">
+                <h2 style="color:#0F9D58; margin-bottom:12px;">¡Hola $safeSaludo!</h2>
+                <p style="margin:0 0 12px;">Te compartimos el reporte <strong>$safeReporte</strong> del periodo <strong>$safeRango</strong>.</p>
+                <p style="margin:0 0 12px;">$safeRegistros</p>
+                $resumenHtml
+                <p style="margin:16px 0 4px;">$safeCierre</p>
+                <p style="margin:0; font-weight:600; color:#004C8C;">Equipo TecniApp ICE</p>
+            </body>
+            </html>
+        """.trimIndent()
+    }
+
+    private fun construirResumenCorreo(resumen: ResumenTotales?): String {
+        if (resumen == null) return ""
+        return """
+            <div style="margin:16px 0; padding:16px; border-radius:12px; background-color:#F1F5F9;">
+                <p style="margin:0 0 8px; font-weight:600; color:#004C8C;">Resumen rápido</p>
+                <ul style="margin:0; padding-left:18px; line-height:1.6;">
+                    <li><strong>Averías atendidas:</strong> ${resumen.totalAverias}</li>
+                    <li><strong>Unidades de material:</strong> ${resumen.totalMateriales}</li>
+                    <li><strong>Códigos distintos:</strong> ${resumen.totalMaterialesDistintos}</li>
+                </ul>
+            </div>
+        """.trimIndent()
+    }
+
+    private fun contarRegistros(data: ReportExportData): Int {
+        return when (data) {
+            is ReportExportData.Averias -> data.items.size
+            is ReportExportData.MaterialesPorAveria -> data.items.size
+            is ReportExportData.MaterialesTotales -> data.items.size
+        }
     }
 }

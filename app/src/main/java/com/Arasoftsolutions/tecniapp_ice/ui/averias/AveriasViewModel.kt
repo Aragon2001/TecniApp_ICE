@@ -14,7 +14,6 @@ import com.Arasoftsolutions.tecniapp_ice.Database.entities.RegionEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.SubregionesEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.TecnicoEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.UserEntity
-import kotlinx.coroutines.flow.collectLatest
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.apellidosCompletos
 import com.Arasoftsolutions.tecniapp_ice.Database.room.AppDatabase
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
@@ -23,6 +22,7 @@ import com.Arasoftsolutions.tecniapp_ice.R
 import com.google.firebase.auth.FirebaseAuth
 import com.Arasoftsolutions.tecniapp_ice.BuildConfig
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriaNotifications
+import com.Arasoftsolutions.tecniapp_ice.preferences.DataStoreManager
 import java.text.Normalizer
 import java.time.Instant
 import java.time.LocalDate
@@ -31,18 +31,34 @@ import java.time.ZoneOffset
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.Locale
 
 enum class Estado {
-    PENDIENTE, ASIGNADA, EN_ATENCION, RESUELTA;
+    PENDIENTE, ASIGNADA, EN_ATENCION, RESUELTA, ANULADA;
 
     companion object {
         fun fromLabel(value: String): Estado {
             val normalized = value.lowercase(Locale.getDefault())
             return when {
+                normalized.contains("anul") -> ANULADA
                 normalized.contains("resuel") -> RESUELTA
                 normalized.contains("en at") -> EN_ATENCION
                 normalized.contains("asign") -> ASIGNADA
@@ -81,6 +97,7 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
     private val repo = AveriasRepository(db)
     private val roomRepo = RoomRepository.getInstance(app)
     private val firebaseSync = FirebaseSyncManager(app)
+    private val dataStore = DataStoreManager.getInstance(app)
     private val auth = FirebaseAuth.getInstance()
     private val prefs = app.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
@@ -196,6 +213,16 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch { loadUsuarioActual() }
         viewModelScope.launch { syncCatalogosGenerales() }
         viewModelScope.launch {
+            dataStore.notificationsEnabled.collectLatest { enabled ->
+                if (_notificationsEnabled.value != enabled) {
+                    _notificationsEnabled.value = enabled
+                }
+                if (AveriaNotificationPreferences.areNotificationsEnabled(getApplication()) != enabled) {
+                    AveriaNotificationPreferences.setNotificationsEnabled(getApplication(), enabled)
+                }
+            }
+        }
+        viewModelScope.launch {
             usuarioActual
                 .filterNotNull()
                 .flatMapLatest { user ->
@@ -269,6 +296,7 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
         _notificationsEnabled.value = enabled
         AveriaNotificationPreferences.setNotificationsEnabled(getApplication(), enabled)
         AveriaNotifications.notifyPreferenceToggle(getApplication(), enabled)
+        viewModelScope.launch { dataStore.setNotificationsEnabled(enabled) }
         // TODO(Codex): Emitir notificación local al activar/desactivar alertas
     }
 
@@ -805,7 +833,7 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             if (Estado.fromLabel(ui.estado) != Estado.PENDIENTE) return@launch
             ensurePropietario(ui) ?: return@launch
-            runCatching { repo.eliminarAveria(ui.id) }
+            runCatching { repo.anular(ui.id) }
                 .onSuccess {
                     _messages.tryEmit(getApplication<Application>().getString(R.string.averia_exito_anulada))
                     syncNow()
