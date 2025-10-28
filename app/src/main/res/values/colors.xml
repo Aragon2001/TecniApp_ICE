@@ -44,7 +44,7 @@
     <color name="primary_container_dark">#004C8C</color>
     <color name="on_primary_container_dark">#B4DAFF</color>
     <color name="secondary_container_dark">#4C3C00</color>
-    <color name="on_secondary_container_dark">#FFE46B</color>
+    <color name="on_secondary_container_dark">#FFEB3B</color>
     <color name="tertiary_container_dark">#0F3A1B</color>
     <color name="on_tertiary_container_dark">#B1F0BF</color>
 

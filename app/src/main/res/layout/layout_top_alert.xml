@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/topAlertContainer"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center"
+    android:padding="12dp"
+    android:backgroundTintMode="src_in"
+    android:elevation="10dp"
+    android:background="@color/red">
+
+    <ImageView
+        android:id="@+id/iconAlert"
+        android:layout_width="20dp"
+        android:layout_height="20dp"
+        android:src="@drawable/ic_signal_wifi_off"
+        android:layout_marginEnd="8dp"
+        app:tint="@color/white" />
+
+    <TextView
+        android:id="@+id/tvMessage"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Sin conexión a Internet"
+        android:textColor="@android:color/white"
+        android:textStyle="bold"
+        android:textSize="15sp" />
+
+</LinearLayout>
