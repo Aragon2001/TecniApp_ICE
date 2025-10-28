@@ -1,5 +1,7 @@
 package com.Arasoftsolutions.tecniapp_ice.ui.averias
 
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.Menu
@@ -116,6 +118,7 @@ class AveriasFragment : Fragment() {
         // Recycler
         adapter = AveriasAdapter(
             onVerDetalle = { showDetalle(it) },
+            onVerMapa = { openMap(it) },
             onAsignar = { vm.onToggleAsignacion(it) },
             onAtender = { handleAtender(it) },
             onResolver = { handleResolver(it) }
@@ -432,6 +435,29 @@ class AveriasFragment : Fragment() {
         val iconRes = if (enabled) R.drawable.ic_notification else R.drawable.ic_notification_off
         notificationMenuItem?.setIcon(iconRes)
         // TODO(Codex): Alternar iconografía de notificaciones habilitadas/deshabilitadas
+    }
+
+    private fun openMap(item: AveriaUI) {
+        val lat = item.lat
+        val lng = item.lng
+        if (lat == 0.0 && lng == 0.0) {
+            Snackbar.make(b.root, R.string.averia_error_sin_coordenadas, Snackbar.LENGTH_SHORT).show()
+            return
+        }
+
+        val encodedLabel = Uri.encode(item.descripcion.takeIf { it.isNotBlank() } ?: item.id)
+        val geoUri = Uri.parse("geo:$lat,$lng?q=$lat,$lng($encodedLabel)")
+
+        val mapsIntent = Intent(Intent.ACTION_VIEW, geoUri).apply {
+            setPackage("com.google.android.apps.maps")
+        }
+        val packageManager = requireContext().packageManager
+        when {
+            mapsIntent.resolveActivity(packageManager) != null -> startActivity(mapsIntent)
+            Intent(Intent.ACTION_VIEW, geoUri).resolveActivity(packageManager) != null ->
+                startActivity(Intent(Intent.ACTION_VIEW, geoUri))
+            else -> Snackbar.make(b.root, R.string.averia_error_app_mapa, Snackbar.LENGTH_SHORT).show()
+        }
     }
 
     private fun showDetalle(item: AveriaUI) {
