@@ -395,6 +395,8 @@ Cliente: %4$s</string>
     <string name="profile_summary_placeholder">—</string>
     <string name="profile_user_id_format">Cédula: %1$s</string>
     <string name="profile_change_photo">Cambiar foto</string>
+    <string name="profile_section_assignment">Asignación</string>
+    <string name="profile_region_label">Región</string>
     <string name="profile_subregion_label">Subregión</string>
     <string name="profile_agency_label">Agencia</string>
     <string name="profile_vehicle_label">Vehículo asignado</string>
@@ -402,17 +404,22 @@ Cliente: %4$s</string>
     <string name="profile_password_hint">Nueva contraseña</string>
     <string name="profile_confirm_password_hint">Confirmar contraseña</string>
     <string name="profile_save_changes">Guardar cambios</string>
+    <string name="profile_change_password_toggle">Cambiar contraseña</string>
     <string name="profile_password_too_short">La contraseña debe tener al menos 8 caracteres.</string>
     <string name="profile_password_mismatch">Las contraseñas no coinciden.</string>
+    <string name="profile_password_required">Ingresa la nueva contraseña para continuar.</string>
     <string name="profile_save_success">Perfil actualizado</string>
     <string name="profile_save_error">No se pudo guardar los cambios.%1$s</string>
     <string name="profile_photo_updated">Foto de perfil actualizada</string>
     <string name="profile_photo_update_error">No se pudo actualizar la foto.%1$s</string>
+    <string name="profile_summary_title">Resumen</string>
     <string name="profile_summary_region">Región: %1$s</string>
     <string name="profile_summary_subregion">Subregión: %1$s</string>
     <string name="profile_summary_agency">Agencia: %1$s</string>
     <string name="profile_summary_vehicle">Vehículo: %1$s</string>
     <string name="profile_vehicle_format">%1$s • %2$s</string>
+    <string name="profile_dropdown_subregion_format">%1$s • %2$s</string>
+    <string name="profile_dropdown_agency_format">%1$s • %2$s</string>
     <string name="profile_error_user_not_found">No se encontró la información del usuario.</string>
 
     <!-- Header navegación -->
