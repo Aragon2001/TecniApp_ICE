@@ -45,6 +45,10 @@ import kotlin.math.abs
 
 class AveriasFragment : Fragment() {
 
+    companion object {
+        const val ARG_INITIAL_ESTADO = "initial_estado"
+    }
+
     private var _b: FragmentAveriasBinding? = null
     private val b get() = _b!!
 
@@ -167,6 +171,22 @@ class AveriasFragment : Fragment() {
             vm.setEstado(state)
         }
         b.chipGroupEstado.check(b.chipTodos.id)
+
+        if (savedInstanceState == null) {
+            val estadoInicial = arguments?.getString(ARG_INITIAL_ESTADO)
+                ?.takeIf { it.isNotBlank() }
+                ?.let { runCatching { Estado.valueOf(it) }.getOrNull() }
+            estadoInicial?.let { estado ->
+                val chipId = when (estado) {
+                    Estado.ASIGNADA -> b.chipAsignada.id
+                    Estado.EN_ATENCION -> b.chipEnAtencion.id
+                    Estado.RESUELTA -> b.chipResuelta.id
+                    Estado.PENDIENTE -> b.chipPendiente.id
+                }
+                b.chipGroupEstado.check(chipId)
+            }
+        }
+        arguments?.remove(ARG_INITIAL_ESTADO)
 
         // Dropdown Regiones
         viewLifecycleOwner.lifecycleScope.launch {
