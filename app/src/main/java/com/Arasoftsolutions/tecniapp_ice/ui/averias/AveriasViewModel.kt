@@ -37,12 +37,13 @@ import kotlinx.coroutines.withContext
 import java.util.Locale
 
 enum class Estado {
-    PENDIENTE, ASIGNADA, EN_ATENCION, RESUELTA;
+    PENDIENTE, ASIGNADA, EN_ATENCION, RESUELTA, ANULADA;
 
     companion object {
         fun fromLabel(value: String): Estado {
             val normalized = value.lowercase(Locale.getDefault())
             return when {
+                normalized.contains("anul") -> ANULADA
                 normalized.contains("resuel") -> RESUELTA
                 normalized.contains("en at") -> EN_ATENCION
                 normalized.contains("asign") -> ASIGNADA
@@ -805,7 +806,7 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             if (Estado.fromLabel(ui.estado) != Estado.PENDIENTE) return@launch
             ensurePropietario(ui) ?: return@launch
-            runCatching { repo.eliminarAveria(ui.id) }
+            runCatching { repo.anular(ui.id) }
                 .onSuccess {
                     _messages.tryEmit(getApplication<Application>().getString(R.string.averia_exito_anulada))
                     syncNow()
