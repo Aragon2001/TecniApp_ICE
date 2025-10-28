@@ -1,54 +1,78 @@
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
-import javax.mail.*
+import java.util.Properties
+import javax.activation.DataHandler
+import javax.mail.Authenticator
+import javax.mail.Message
+import javax.mail.MessagingException
+import javax.mail.PasswordAuthentication
+import javax.mail.Session
+import javax.mail.Transport
 import javax.mail.internet.InternetAddress
+import javax.mail.internet.MimeBodyPart
 import javax.mail.internet.MimeMessage
-import java.util.*
+import javax.mail.internet.MimeMultipart
+import javax.mail.util.ByteArrayDataSource
 
 class MailSender {
 
+    data class MailAttachment(
+        val fileName: String,
+        val mimeType: String,
+        val bytes: ByteArray
+    )
+
     private var email: String = ""
     private var password: String = ""
+    private val mainHandler = Handler(Looper.getMainLooper())
 
-    // Método para enviar correo con credenciales remotas
-  fun sendFormattedMail(
-    subject: String,
-    body: String,
-    to: String,
-    callback: (Boolean, String?) -> Unit
-) {
-    val mailConfig = MailConfig()
+    fun sendFormattedMail(
+        subject: String,
+        body: String,
+        to: String,
+        attachment: MailAttachment? = null,
+        callback: (Boolean, String?) -> Unit
+    ) {
+        val mailConfig = MailConfig()
 
-    // Obtener las credenciales remotas
-    mailConfig.fetchMailCredentials({ remoteEmail, remotePassword ->
-        email = remoteEmail
-        password = remotePassword
+        mailConfig.fetchMailCredentials({ remoteEmail, remotePassword ->
+            email = remoteEmail
+            password = remotePassword
 
-        Log.d("MailSender", "Credenciales obtenidas: Email - $email y Password: $password")
+            Log.d("MailSender", "Credenciales obtenidas: Email - $email")
 
-        // Validar el formato del correo destino
-        if (!isValidEmail(to)) {
-            val errorMessage = "El formato del correo destinatario es inválido: $to"
-            Log.e("MailSender", errorMessage)
-            callback(false, errorMessage)
-            return@fetchMailCredentials
+            if (!isValidEmail(to)) {
+                val errorMessage = "El formato del correo destinatario es inválido: $to"
+                Log.e("MailSender", errorMessage)
+                postCallback(callback, false, errorMessage)
+                return@fetchMailCredentials
+            }
+
+            Thread {
+                val (isSuccess, error) = sendHtmlMail(subject, body, to, attachment)
+                postCallback(callback, isSuccess, error)
+            }.start()
+        }, { errorMessage ->
+            Log.e("MailSender", "Error al obtener las credenciales: $errorMessage")
+            postCallback(callback, false, "Error al obtener las credenciales: $errorMessage")
+        })
+    }
+
+    private fun postCallback(callback: (Boolean, String?) -> Unit, success: Boolean, error: String?) {
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            callback(success, error)
+        } else {
+            mainHandler.post { callback(success, error) }
         }
+    }
 
-        // Ejecutar el envío de correo en un hilo secundario
-        Thread {
-            val (isSuccess, error) = sendHtmlMail(subject, body, to)
-            // Volver al hilo principal para ejecutar el callback
-            callback(isSuccess, error)
-        }.start()
-
-    }, { errorMessage ->
-        Log.e("MailSender", "Error al obtener las credenciales: $errorMessage")
-        callback(false, "Error al obtener las credenciales: $errorMessage")
-    })
-}
-
-
-    // Método para enviar correos en formato HTML
-    private fun sendHtmlMail(subject: String, body: String, to: String): Pair<Boolean, String?> {
+    private fun sendHtmlMail(
+        subject: String,
+        body: String,
+        to: String,
+        attachment: MailAttachment?
+    ): Pair<Boolean, String?> {
         return try {
             val properties = Properties().apply {
                 put("mail.smtp.host", "smtp.gmail.com") // Servidor SMTP de Gmail
@@ -64,12 +88,27 @@ class MailSender {
             })
 
             val message = MimeMessage(session).apply {
-                setFrom(InternetAddress(email)) // Remitente
-                setRecipients(Message.RecipientType.TO, InternetAddress.parse(to)) // Destinatario
+                setFrom(InternetAddress(email))
+                setRecipients(Message.RecipientType.TO, InternetAddress.parse(to))
                 this.subject = subject
-                setContent(body, "text/html; charset=utf-8") // Configura contenido HTML
             }
 
+            val multipart = MimeMultipart()
+
+            val bodyPart = MimeBodyPart().apply {
+                setContent(body, "text/html; charset=utf-8")
+            }
+            multipart.addBodyPart(bodyPart)
+
+            if (attachment != null) {
+                val attachmentPart = MimeBodyPart().apply {
+                    dataHandler = DataHandler(ByteArrayDataSource(attachment.bytes, attachment.mimeType))
+                    fileName = attachment.fileName
+                }
+                multipart.addBodyPart(attachmentPart)
+            }
+
+            message.setContent(multipart)
             Transport.send(message)
             Log.d("MailSender", "Correo enviado con éxito.")
             true to null // Éxito
