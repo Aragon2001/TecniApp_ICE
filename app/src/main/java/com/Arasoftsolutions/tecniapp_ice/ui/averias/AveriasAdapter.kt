@@ -78,6 +78,8 @@ class AveriasAdapter(
         private val tvLocalizacion: TextView? = view.findViewById(R.id.tvLocalizacion)
         private val tvDireccion: TextView? = view.findViewById(R.id.tvDireccion)
         private val tvFecha: TextView = view.findViewById(R.id.tvFecha)
+        private val mapContainer: View = view.findViewById(R.id.mapContainer)
+        private val imgMapa: ImageView = view.findViewById(R.id.imgMapa)
         private val btnAsignar: MaterialButton = view.findViewById(R.id.btnAsignar)
         private val btnAtender: MaterialButton = view.findViewById(R.id.btnAtender)
         private val btnResolver: MaterialButton = view.findViewById(R.id.btnResolver)
@@ -232,6 +234,25 @@ class AveriasAdapter(
             }
             chipEstado.chipBackgroundColor = ColorStateList.valueOf(chipColor)
             chipEstado.setTextColor(ContextCompat.getColor(context, android.R.color.white))
+
+            val hasCoords = item.lat != 0.0 || item.lng != 0.0
+            mapContainer.isVisible = hasCoords
+            if (hasCoords) {
+                val url = "https://maps.googleapis.com/maps/api/staticmap?" +
+                    "center=${item.lat},${item.lng}&zoom=16&size=400x400&maptype=roadmap" +
+                    "&markers=color:red|${item.lat},${item.lng}&key=AIzaSyBxgf6oA-rRK1-OlNft4oDgzF3gokLl1FU"
+
+                Glide.with(context)
+                    .load(url)
+                    .placeholder(R.drawable.ic_map_placeholder)
+                    .error(R.drawable.ic_map_placeholder)
+                    .centerCrop()
+                    .into(imgMapa)
+            } else {
+                imgMapa.setImageResource(R.drawable.ic_map_placeholder)
+            }
+
+            mapContainer.setOnClickListener { onVerDetalle(item) }
 
             itemView.setOnClickListener { onVerDetalle(item) }
             btnAsignar.setOnClickListener { onAsignar(item) }
