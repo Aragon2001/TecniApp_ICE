@@ -543,15 +543,20 @@ Cliente: %4$s</string>
     <string name="reportes_filtro_rango">Rango de fechas</string>
     <string name="reportes_btn_rango">Cambiar rango</string>
     <string name="reportes_selector_titulo">¿Qué reporte necesitas revisar?</string>
+    <string name="reportes_selector_hint">Tipo de reporte</string>
     <string name="reportes_chip_averias">Averías atendidas</string>
     <string name="reportes_chip_averias_conteo">Averías atendidas (%1$d)</string>
     <string name="reportes_chip_material_por_averia">Material por avería</string>
     <string name="reportes_chip_material_por_averia_conteo">Material por avería (%1$d)</string>
     <string name="reportes_chip_material_total">Consumo total</string>
     <string name="reportes_chip_material_total_conteo">Consumo total (%1$d)</string>
+    <string name="reportes_btn_limpiar_filtro">Quitar filtro</string>
     <string name="reportes_btn_generar">Generar reporte</string>
     <string name="reportes_btn_generar_tipo">Generar %1$s</string>
     <string name="reportes_btn_exportar">Exportar a Excel</string>
+    <string name="reportes_fab_exportar">Exportar Excel</string>
+    <string name="reportes_fab_correo">Enviar por correo</string>
+    <string name="reportes_resumen_encabezado">%1$s • %2$s</string>
     <string name="reportes_totales_resumen">Averías atendidas: %1$d&#10;Materiales registrados: %2$d unidades en %3$d códigos.</string>
     <string name="reportes_totales_resumen_pendiente">Selecciona un rango y genera un reporte para ver el resumen de totales.</string>
     <string name="reportes_averias_titulo">Averías atendidas</string>
@@ -612,6 +617,17 @@ Cliente: %4$s</string>
     <string name="reportes_excel_col_descripcion">Descripción</string>
     <string name="reportes_excel_col_cantidad">Cantidad</string>
     <string name="reportes_excel_col_averias">Averías</string>
+    <string name="reportes_correo_asunto">Reporte %1$s · %2$s</string>
+    <string name="reportes_correo_saludo_generico">compañero ICE</string>
+    <string name="reportes_correo_exito">Te enviamos el reporte al correo %1$s.</string>
+    <string name="reportes_correo_error_sin_email">No encontramos un correo asociado a tu usuario.</string>
+    <string name="reportes_correo_error_envio">No se pudo enviar el correo. Inténtalo más tarde.</string>
+    <string name="reportes_correo_error_sin_datos">Genera el reporte antes de enviarlo por correo.</string>
+    <plurals name="reportes_correo_registros">
+        <item quantity="one">Incluye %1$d registro listo para ti.</item>
+        <item quantity="other">Incluye %1$d registros listos para ti.</item>
+    </plurals>
+    <string name="reportes_correo_cierre">Gracias por apoyarte en TecniApp ICE. ¡Seguimos a la orden!</string>
 
     <!-- Administración -->
     <string name="menu_admin">Administración</string>
