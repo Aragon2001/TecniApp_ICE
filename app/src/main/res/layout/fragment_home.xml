@@ -102,10 +102,14 @@
                     android:weightSum="2">
 
                     <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/card_pending"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="8dp"
                         android:layout_weight="1"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:foreground="?attr/selectableItemBackground"
                         app:cardBackgroundColor="@color/white"
                         app:cardCornerRadius="20dp"
                         app:cardElevation="4dp">
@@ -145,10 +149,14 @@
                     </com.google.android.material.card.MaterialCardView>
 
                     <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/card_attended"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="8dp"
                         android:layout_weight="1"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:foreground="?attr/selectableItemBackground"
                         app:cardBackgroundColor="@color/white"
                         app:cardCornerRadius="20dp"
                         app:cardElevation="4dp">
@@ -334,16 +342,6 @@
                             android:textColor="@color/dark_gray"
                             android:textSize="14sp" />
 
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/button_sync_now"
-                            style="@style/Widget.MaterialComponents.Button"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="16dp"
-                            android:text="@string/home_sync_now"
-                            app:cornerRadius="20dp"
-                            app:icon="@drawable/ic_round_filter_list_24"
-                            app:iconTint="@color/white" />
                     </LinearLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
@@ -400,6 +398,17 @@
                         android:textSize="14sp"
                         android:visibility="gone"
                         tools:text="Paso 2 de 5 • Medidores" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/button_sync_now"
+                        style="@style/Widget.MaterialComponents.Button"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="20dp"
+                        android:text="@string/home_sync_now"
+                        app:cornerRadius="20dp"
+                        app:icon="@drawable/ic_round_filter_list_24"
+                        app:iconTint="@color/white" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
@@ -408,7 +417,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginHorizontal="16dp"
                 android:layout_marginTop="24dp"
-                android:layout_marginBottom="32dp"
+                android:layout_marginBottom="16dp"
                 android:gravity="center"
                 android:orientation="horizontal"
                 android:weightSum="4">
