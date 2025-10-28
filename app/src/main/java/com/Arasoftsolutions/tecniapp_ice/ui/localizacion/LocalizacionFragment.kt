@@ -87,7 +87,9 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
 
     // --- Permisos (Activity Result API) ---
     private val locationPermissionLauncher =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { results ->
+            val granted = results[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+                results[Manifest.permission.ACCESS_COARSE_LOCATION] == true
             if (granted) {
                 enableMyLocationAndStartUpdates()
             } else {
@@ -395,7 +397,12 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
         if (fine == PackageManager.PERMISSION_GRANTED || coarse == PackageManager.PERMISSION_GRANTED) {
             enableMyLocationAndStartUpdates()
         } else {
-            locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+            locationPermissionLauncher.launch(
+                arrayOf(
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                )
+            )
         }
     }
 

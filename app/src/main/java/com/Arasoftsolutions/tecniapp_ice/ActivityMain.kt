@@ -6,14 +6,11 @@
 package com.Arasoftsolutions.tecniapp_ice
 
 import android.Manifest
-import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.text.method.LinkMovementMethod
 import android.util.Log
-import android.view.Menu
-import android.view.MenuItem
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -187,55 +184,10 @@ class ActivityMain : AppCompatActivity() {
     private fun displayValue(value: String?): String =
         value?.takeIf { it.isNotBlank() } ?: getString(R.string.profile_summary_placeholder)
 
-    override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        menuInflater.inflate(R.menu.main, menu)
-        return true
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        return when (item.itemId) {
-            R.id.action_logout -> {
-                signOutAndRedirect()
-                true
-            }
-            R.id.action_accounts -> {
-                openUserFragment()
-                true
-            }
-            else -> super.onOptionsItemSelected(item)
-        }
-    }
-
     private fun openUserFragment() {
         val navController = findNavController(R.id.nav_host_fragment_content_main)
         navController.navigate(R.id.nav_account)
         binding.drawerLayout.closeDrawer(GravityCompat.START)
-    }
-
-    private fun signOutAndRedirect() {
-        auth.signOut()
-
-        getSharedPreferences("TecniAppPrefs", MODE_PRIVATE).edit().apply {
-            clear()
-            apply()
-        }
-        getSharedPreferences("app_preferences", MODE_PRIVATE).edit().apply {
-            clear()
-            apply()
-        }
-
-        if (auth.currentUser == null) {
-            Toast.makeText(this, "Sesión cerrada correctamente", Toast.LENGTH_SHORT).show()
-        } else {
-            Toast.makeText(this, "Error al cerrar sesión", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        val intent = Intent(this, LoginActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-        }
-        startActivity(intent)
-        finish()
     }
 
     private fun requestNotificationPermissionIfNeeded() {
