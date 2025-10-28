@@ -488,6 +488,10 @@ Cliente: %4$s</string>
     <string name="localizacion_calles_hide">Desmarcar calles</string>
     <string name="localizacion_calles_toast_sin_pueblo">Selecciona un pueblo antes de cargar las calles.</string>
     <string name="localizacion_calles_toggle_label">Mostrar todas las calles del pueblo</string>
+    <string name="localizacion_toggle_autorrotacion">Autorrotar el mapa con la brújula</string>
+    <string name="localizacion_toggle_seguir_ubicacion">Seguir mi ubicación actual</string>
+    <string name="localizacion_toast_sin_ubicacion">No se pudo obtener la ubicación actual.</string>
+    <string name="localizacion_toast_sin_disponibilidad">La ubicación no está disponible en este momento.</string>
     <string name="localizacion_fieldmaps_no_disponible">Field Maps no está instalado. Abriendo Google Maps.</string>
     <string name="localizacion_navegacion_chooser">Selecciona una aplicación para navegar</string>
     <string name="localizacion_estado_sync_error">No se pudo sincronizar la información. Intenta nuevamente.</string>
