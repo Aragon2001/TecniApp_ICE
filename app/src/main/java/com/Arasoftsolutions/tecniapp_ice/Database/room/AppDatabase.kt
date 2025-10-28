@@ -19,10 +19,11 @@ import com.Arasoftsolutions.tecniapp_ice.Database.entities.*
         VehiculosEntity::class,         // Vehículos asociados
         MaterialEntity::class,          // Catálogo de materiales
         TecnicoEntity::class,           // Personal técnico
-        AveriaEntity::class             // Averías
+        AveriaEntity::class,            // Averías
+        VehiculoKilometrajeEntity::class // Historial de kilometrajes por vehículo
     ],
 
-    version = 11,                        // ✅ mantener la versión más alta
+    version = 12,                        // ✅ mantener la versión más alta
 
     exportSchema = true
 )
@@ -39,6 +40,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun materialDao(): MaterialDao
     abstract fun tecnicoDao(): TecnicoDao
     abstract fun averiaDao(): AveriaDao
+    abstract fun vehiculoKilometrajeDao(): VehiculoKilometrajeDao
 
     companion object {
         @Volatile private var INSTANCE: AppDatabase? = null
