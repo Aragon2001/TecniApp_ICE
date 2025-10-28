@@ -166,6 +166,7 @@ class AveriasFragment : Fragment() {
                 b.chipAsignada.id -> Estado.ASIGNADA
                 b.chipEnAtencion.id -> Estado.EN_ATENCION
                 b.chipResuelta.id -> Estado.RESUELTA
+                b.chipAnulada.id -> Estado.ANULADA
                 else -> null
             }
             vm.setEstado(state)

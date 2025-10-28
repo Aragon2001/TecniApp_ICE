@@ -110,15 +110,6 @@
                 android:orientation="vertical">
 
                 <TextView
-                    android:id="@+id/tvCaso"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:textColor="@color/on_light"
-                    android:textSize="12sp"
-                    android:textStyle="bold"
-                    tools:text="Caso: IM-1253876-3-320502" />
-
-                <TextView
                     android:id="@+id/tvAsignado"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -204,16 +195,6 @@
             </LinearLayout>
 
             <TextView
-                android:id="@+id/tvMateriales"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:textColor="@color/on_light"
-                android:textSize="12sp"
-                android:visibility="gone"
-                tools:text="Materiales: 3 fusibles; 1 cruceta" />
-
-            <TextView
                 android:id="@+id/tvVehiculo"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -258,7 +239,8 @@
             app:layout_constraintTop_toTopOf="@id/contentLayout"
             app:layout_constraintBottom_toBottomOf="@id/contentLayout"
             app:layout_constraintEnd_toEndOf="parent"
-            android:foreground="?attr/selectableItemBackground">
+            android:clickable="false"
+            android:focusable="false">
             <!-- sin background para evitar doble fondo/trasparencia -->
             <ImageView
                 android:id="@+id/imgMapa"
@@ -275,28 +257,11 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
+            android:gravity="end"
             android:orientation="horizontal"
-            android:gravity="center"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/contentLayout">
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnVer"
-                style="@style/Tecni.Button.Outlined"
-                android:layout_width="wrap_content"
-                android:layout_height="32dp"
-                android:text="@string/averia_ver_mapa"
-                android:textSize="12sp"
-                app:icon="@drawable/ic_visibility"
-                app:iconGravity="textStart"
-                app:iconPadding="0dp"
-                app:iconSize="16dp" />
-
-            <Space
-                android:layout_width="0dp"
-                android:layout_height="0dp"
-                android:layout_weight="1" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnAsignar"

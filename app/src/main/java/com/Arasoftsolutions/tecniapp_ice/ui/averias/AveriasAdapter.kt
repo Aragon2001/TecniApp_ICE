@@ -7,6 +7,10 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.core.content.ContextCompat
+import androidx.core.text.bold
+import androidx.core.text.buildSpannedString
+import androidx.core.view.isVisible
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -102,14 +106,12 @@ class AveriasAdapter(
         private val tvCausa: TextView = view.findViewById(R.id.tvCausa)
         private val tvObs: TextView = view.findViewById(R.id.tvObs)
 
-        private val tvCaso: TextView = view.findViewById(R.id.tvCaso)
         private val tvAsignado: TextView = view.findViewById(R.id.tvAsignado)
         private val tvAtendido: TextView = view.findViewById(R.id.tvAtendido)
         private val tvVehiculo: TextView = view.findViewById(R.id.tvVehiculo)
         private val tvNise: TextView = view.findViewById(R.id.tvNise)
         private val tvRegion: TextView = view.findViewById(R.id.tvRegion)
         private val tvAgencia: TextView = view.findViewById(R.id.tvAgencia)
-        private val tvMateriales: TextView = view.findViewById(R.id.tvMateriales)
         private val tvKilometraje: TextView = view.findViewById(R.id.tvKilometraje)
         private val tvCliente: TextView? = view.findViewById(R.id.tvCliente)
         private val tvLocalizacion: TextView? = view.findViewById(R.id.tvLocalizacion)
@@ -120,28 +122,25 @@ class AveriasAdapter(
         private val btnAsignar: MaterialButton = view.findViewById(R.id.btnAsignar)
         private val btnAtender: MaterialButton = view.findViewById(R.id.btnAtender)
         private val btnResolver: MaterialButton = view.findViewById(R.id.btnResolver)
-        private val btnVer: MaterialButton = view.findViewById(R.id.btnVer)
 
-        private val mapContainer: View = view.findViewById(R.id.mapContainer)
         private val imgMapa: ImageView = view.findViewById(R.id.imgMapa)
 
         fun bind(item: AveriaUI) {
-            // Título y estado
+            val context = itemView.context
+
             tvTitulo.text = item.descripcion
             chipEstado.text = item.estado
             chipEstado.isCheckable = false
             chipEstado.isClickable = false
-            // TODO(Codex): Evitar íconos de selección en chips dentro de la lista
 
-            // Miniatura de mapa
             val lat = item.lat
             val lng = item.lng
             if (lat != 0.0 && lng != 0.0) {
                 val url = "https://maps.googleapis.com/maps/api/staticmap?" +
-                        "center=$lat,$lng&zoom=16&size=300x300&maptype=roadmap" +
-                        "&markers=color:red|$lat,$lng&key=AIzaSyBxgf6oA-rRK1-OlNft4oDgzF3gokLl1FU"
+                    "center=$lat,$lng&zoom=16&size=300x300&maptype=roadmap" +
+                    "&markers=color:red|$lat,$lng&key=AIzaSyBxgf6oA-rRK1-OlNft4oDgzF3gokLl1FU"
 
-                Glide.with(itemView.context)
+                Glide.with(context)
                     .load(url)
                     .placeholder(R.drawable.placeholder_mapa)
                     .into(imgMapa)
@@ -149,49 +148,50 @@ class AveriasAdapter(
                 imgMapa.setImageResource(R.drawable.placeholder_mapa)
             }
 
-            // Textos detallados
-            val emptyValue = itemView.context.getString(R.string.averia_pdf_empty_value)
-            tvCausa.text = itemView.context.getString(
-                R.string.averia_causa_resumen,
-                item.causa.ifBlank { emptyValue }
-            )
-            tvObs.text = itemView.context.getString(
-                R.string.averia_observaciones_resumen,
-                item.observaciones.ifBlank { emptyValue }
-            )
-            tvCaso.text = "Caso: ${item.id}"
-            tvAsignado.text = "Asignado a: ${if (item.tecnico.isBlank()) itemView.context.getString(R.string.averia_sin_asignar) else item.tecnico}"
-            val atendidoDisplay = item.resolvedAtendidoDisplay(emptyValue)
-            tvAtendido.text = itemView.context.getString(R.string.averia_atendido_por_format, atendidoDisplay)
-            tvVehiculo.text = "Vehículo: ${item.vehiculo ?: "—"}"
-            tvNise.text = "NISE: ${item.nise}"
-            tvRegion.text = "Región: ${item.region}"
-            tvAgencia.text = "Agencia: ${item.agencia}"
+            val emptyValue = context.getString(R.string.averia_pdf_empty_value)
 
-            // Materiales y kilometrajes
-            val materialesResumen = item.materialesResumen.trim()
-            tvMateriales.visibility = if (materialesResumen.isEmpty()) View.GONE else View.VISIBLE
-            if (materialesResumen.isNotEmpty()) {
-                tvMateriales.text = itemView.context.getString(R.string.averia_materiales_label, materialesResumen)
+            fun TextView.renderLabel(labelRes: Int, raw: CharSequence?, hideWhenEmpty: Boolean = false) {
+                val normalized = raw?.toString()?.takeIf { it.isNotBlank() }
+                if (hideWhenEmpty && normalized == null) {
+                    isVisible = false
+                    return
+                }
+                val value = normalized ?: emptyValue
+                text = buildSpannedString {
+                    bold { append(context.getString(labelRes)) }
+                    append(' ')
+                    append(value)
+                }
+                isVisible = true
             }
-            if (item.kilometrajeInicio != null || item.kilometrajeFinal != null) {
-                tvKilometraje.visibility = View.VISIBLE
-                val inicio = item.kilometrajeInicio?.toString() ?: "—"
-                val fin = item.kilometrajeFinal?.toString() ?: "—"
-                tvKilometraje.text = itemView.context.getString(R.string.averia_kilometraje_label, inicio, fin)
+
+            tvCausa.renderLabel(R.string.averia_label_causa, item.causa)
+            tvObs.renderLabel(R.string.averia_label_observaciones, item.observaciones)
+            val asignado = if (item.tecnico.isBlank()) {
+                context.getString(R.string.averia_sin_asignar)
             } else {
-                tvKilometraje.visibility = View.GONE
+                item.tecnico
+            }
+            tvAsignado.renderLabel(R.string.averia_label_asignado, asignado)
+            val atendidoDisplay = item.resolvedAtendidoDisplay(emptyValue)
+            tvAtendido.renderLabel(R.string.averia_label_atendido, atendidoDisplay)
+            tvVehiculo.renderLabel(R.string.averia_label_vehiculo, item.vehiculo)
+            tvNise.renderLabel(R.string.averia_label_nise, item.nise)
+            tvRegion.renderLabel(R.string.averia_label_region, item.region)
+            tvAgencia.renderLabel(R.string.averia_label_agencia, item.agencia)
+
+            if (item.kilometrajeInicio != null || item.kilometrajeFinal != null) {
+                val inicio = item.kilometrajeInicio?.toString() ?: emptyValue
+                val fin = item.kilometrajeFinal?.toString() ?: emptyValue
+                tvKilometraje.renderLabel(
+                    R.string.averia_label_kilometraje,
+                    "$inicio → $fin"
+                )
+            } else {
+                tvKilometraje.isVisible = false
             }
 
-            // Coordenadas + fecha
-
-            val fechaEvento = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT)
-                .format(Date(item.fechaMillis))
-            val inicioAtencion = item.horaAtencionInicio?.let {
-                DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(Date(it))
-            }
             tvCliente?.let { label ->
-                val context = itemView.context
                 val cliente = item.cliente?.takeIf { it.isNotBlank() } ?: emptyValue
                 val tipo = when (item.tipoAfectacion) {
                     TipoAfectacion.CLIENTE -> context.getString(R.string.averia_tipo_cliente)
@@ -200,17 +200,20 @@ class AveriasAdapter(
                 val medidor = item.numeroMedidor?.takeIf { it.isNotBlank() }
                     ?.let { context.getString(R.string.averia_medidor_label, it) }
                 val extras = buildList {
-                    add(tipo)
+                    if (tipo.isNotBlank()) add(tipo)
                     if (medidor != null) add(medidor)
-                }.joinToString(" • ")
-                val base = context.getString(R.string.averia_cliente_label, cliente)
-                label.visibility = View.VISIBLE
-                label.text = context.getString(R.string.averia_cliente_detalle_format, base, extras)
+                }
+                val content = if (extras.isNotEmpty()) {
+                    buildString {
+                        append(cliente)
+                        append(" • ")
+                        append(extras.joinToString(" • "))
+                    }
+                } else cliente
+                label.renderLabel(R.string.averia_label_cliente, content)
             }
 
             tvLocalizacion?.let { label ->
-                val context = itemView.context
-                val loc = item.localizacion?.takeIf { it.isNotBlank() } ?: emptyValue
                 val detalles = buildList {
                     item.medidorPueblo?.takeIf { it.isNotBlank() }?.let {
                         add(context.getString(R.string.averia_medidor_pueblo, it))
@@ -224,129 +227,138 @@ class AveriasAdapter(
                     item.medidorMetros?.takeIf { it.isNotBlank() }?.let {
                         add(context.getString(R.string.averia_medidor_metros, it))
                     }
-                }.joinToString(" • ")
-                label.visibility = View.VISIBLE
-                label.text = if (detalles.isNotBlank()) {
-                    context.getString(R.string.averia_localizacion_detalle_format, loc, detalles)
-                } else {
-                    context.getString(R.string.averia_localizacion_label, loc)
                 }
+                val base = item.localizacion?.takeIf { it.isNotBlank() }
+                val content = when {
+                    base != null && detalles.isNotEmpty() -> buildString {
+                        append(base)
+                        append(" • ")
+                        append(detalles.joinToString(" • "))
+                    }
+                    base != null -> base
+                    detalles.isNotEmpty() -> detalles.joinToString(" • ")
+                    else -> null
+                }
+                label.renderLabel(R.string.averia_label_localizacion, content)
             }
+
             tvDireccion?.let { label ->
-                val direccion = item.direccion?.takeIf { it.isNotBlank() }
-                label.visibility = if (direccion != null) View.VISIBLE else View.GONE
-                if (direccion != null) {
-                    label.text = itemView.context.getString(R.string.averia_direccion_label, direccion)
-                }
+                label.renderLabel(R.string.averia_label_direccion, item.direccion, hideWhenEmpty = true)
+            }
+
+            val fechaEvento = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT)
+                .format(Date(item.fechaMillis))
+            val inicioAtencion = item.horaAtencionInicio?.let {
+                DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(Date(it))
             }
             val finAtencion = item.horaAtencionFinal?.let {
                 DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(Date(it))
             }
-            tvFecha.text = buildString {
-                append(itemView.context.getString(R.string.averia_fecha_evento_label, fechaEvento))
-                if (inicioAtencion != null) {
-                    append('\n')
-                    append(itemView.context.getString(R.string.averia_fecha_atencion_inicio, inicioAtencion))
+
+            tvFecha.text = buildSpannedString {
+                bold { append(context.getString(R.string.averia_label_evento)) }
+                append(' ')
+                append(fechaEvento)
+                inicioAtencion?.let {
+                    append('
+')
+                    bold { append(context.getString(R.string.averia_label_inicio)) }
+                    append(' ')
+                    append(it)
                 }
-                if (finAtencion != null) {
-                    append('\n')
-                    append(itemView.context.getString(R.string.averia_fecha_atencion_fin, finAtencion))
+                finAtencion?.let {
+                    append('
+')
+                    bold { append(context.getString(R.string.averia_label_fin)) }
+                    append(' ')
+                    append(it)
                 }
             }
 
-            // Colores por estado
             val estadoEnum = Estado.fromLabel(item.estado)
             val chipColor = when (estadoEnum) {
-                Estado.PENDIENTE -> Color.parseColor("#E53935")
-                Estado.ASIGNADA -> Color.parseColor("#FBC02D")
-                Estado.EN_ATENCION -> Color.parseColor("#1E88E5")
-                Estado.RESUELTA -> Color.parseColor("#43A047")
+                Estado.PENDIENTE -> ContextCompat.getColor(context, R.color.chip_pendiente)
+                Estado.ASIGNADA -> ContextCompat.getColor(context, R.color.chip_asignada)
+                Estado.EN_ATENCION -> ContextCompat.getColor(context, R.color.chip_en_atencion)
+                Estado.RESUELTA -> ContextCompat.getColor(context, R.color.chip_resuelta)
+                Estado.ANULADA -> ContextCompat.getColor(context, R.color.chip_anulada)
             }
             chipEstado.chipBackgroundColor = ColorStateList.valueOf(chipColor)
             chipEstado.setTextColor(Color.WHITE)
 
-            // Acciones
             itemView.setOnClickListener { onVerDetalle(item) }
             btnAsignar.setOnClickListener { onAsignar(item) }
             btnAtender.setOnClickListener { onAtender(item) }
             btnResolver.setOnClickListener { onResolver(item) }
-            val mapClickListener = View.OnClickListener {
-                MapNavigation.open(
-                    context = itemView.context,
-                    lat = item.lat,
-                    lng = item.lng,
-                    label = item.localizacion ?: item.direccion
-                )
-            }
-            btnVer.setOnClickListener(mapClickListener)
-            mapContainer.setOnClickListener(mapClickListener)
-            imgMapa.setOnClickListener(mapClickListener)
 
             val currentUid = currentUserUid
             val pertenece = currentUid != null && item.tecnicoUid == currentUid
 
             when (estadoEnum) {
-    Estado.PENDIENTE -> {
-        btnAsignar.apply {
-            text = context.getString(R.string.averia_asignar)
-            isEnabled = true
-            visibility = View.VISIBLE
+                Estado.PENDIENTE -> {
+                    btnAsignar.apply {
+                        text = context.getString(R.string.averia_asignar)
+                        isEnabled = true
+                        isVisible = true
+                    }
+                    btnAtender.apply {
+                        text = context.getString(R.string.averia_atender)
+                        isEnabled = true
+                        isVisible = true
+                    }
+                    btnResolver.isVisible = false
+                }
+                Estado.ASIGNADA -> {
+                    btnAsignar.apply {
+                        text = context.getString(R.string.averia_eliminar_asignacion)
+                        isEnabled = pertenece
+                        isVisible = true
+                    }
+                    btnAtender.apply {
+                        text = context.getString(R.string.averia_atender)
+                        isEnabled = pertenece
+                        isVisible = true
+                    }
+                    btnResolver.isVisible = false
+                }
+                Estado.EN_ATENCION -> {
+                    btnAsignar.apply {
+                        isEnabled = false
+                        isVisible = false
+                    }
+                    btnAtender.apply {
+                        text = context.getString(R.string.averia_cancelar_atencion)
+                        isEnabled = pertenece
+                        isVisible = true
+                    }
+                    btnResolver.apply {
+                        text = context.getString(R.string.averia_resolver)
+                        isEnabled = pertenece
+                        isVisible = true
+                    }
+                }
+                Estado.RESUELTA -> {
+                    btnAsignar.apply {
+                        isEnabled = false
+                        isVisible = false
+                    }
+                    btnAtender.apply {
+                        isEnabled = false
+                        isVisible = false
+                    }
+                    btnResolver.apply {
+                        text = context.getString(R.string.averia_exportar_pdf)
+                        isEnabled = true
+                        isVisible = true
+                    }
+                }
+                Estado.ANULADA -> {
+                    btnAsignar.isVisible = false
+                    btnAtender.isVisible = false
+                    btnResolver.isVisible = false
+                }
+            }
         }
-        btnAtender.apply {
-            text = context.getString(R.string.averia_atender)
-            isEnabled = true
-            visibility = View.VISIBLE
-        }
-        btnResolver.visibility = View.GONE
-    }
-    Estado.ASIGNADA -> {
-        btnAsignar.apply {
-            text = context.getString(R.string.averia_eliminar_asignacion)
-            isEnabled = pertenece
-            visibility = View.VISIBLE
-        }
-        btnAtender.apply {
-            text = context.getString(R.string.averia_atender)
-            isEnabled = pertenece
-            visibility = View.VISIBLE
-        }
-        btnResolver.visibility = View.GONE
-    }
-    Estado.EN_ATENCION -> {
-        btnAsignar.apply {
-            text = context.getString(R.string.averia_eliminar_asignacion)
-            isEnabled = false
-            visibility = View.GONE
-        }
-        btnAtender.apply {
-            text = context.getString(R.string.averia_cancelar_atencion)
-            isEnabled = pertenece
-            visibility = View.VISIBLE
-        }
-        btnResolver.apply {
-            text = context.getString(R.string.averia_resolver)
-            isEnabled = pertenece
-            visibility = View.VISIBLE
-        }
-    }
-    Estado.RESUELTA -> {
-        btnAsignar.apply {
-            text = context.getString(R.string.averia_asignar)
-            isEnabled = false
-            visibility = View.GONE
-        }
-        btnAtender.apply {
-            text = context.getString(R.string.averia_atencion_finalizada)
-            isEnabled = false
-            visibility = View.GONE
-        }
-        btnResolver.apply {
-            text = context.getString(R.string.averia_exportar_pdf)
-            isEnabled = true
-            visibility = View.VISIBLE
-        }
-    }
-}
 
         }
     }
