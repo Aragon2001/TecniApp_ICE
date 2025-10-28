@@ -186,7 +186,7 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), AveriasUiState())
 
     init {
-        repo.startRealtimeListener(onNewAverias = { nuevas ->
+         repo.startRealtimeListener(onNewAverias = { nuevas ->
             viewModelScope.launch(Dispatchers.Default) {
                 handleRealtimeNewAverias(nuevas)
             }

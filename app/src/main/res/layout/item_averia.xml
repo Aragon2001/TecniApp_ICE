@@ -283,7 +283,7 @@
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnVer"
-                style="@style/Tecni.Button.Text"
+                style="@style/Tecni.Button.Outlined"
                 android:layout_width="wrap_content"
                 android:layout_height="32dp"
                 android:text="@string/averia_ver_mapa"

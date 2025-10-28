@@ -150,7 +150,7 @@
 
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/tilRegion"
-                        style="@style/Tecni.TextInput.Outlined.Dense.Dropdown"
+                        style="@style/Tecni.TextInput.Outlined.Dropdown"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginEnd="4dp"

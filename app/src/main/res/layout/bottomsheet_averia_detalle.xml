@@ -46,7 +46,7 @@
                 android:contentDescription="@string/averia_detalle_cerrar"
                 android:padding="8dp"
                 android:src="@drawable/ic_close_sheet"
-                android:tint="?attr/colorOnSurface" />
+                app:tint="?attr/colorOnSurface" />
                 <!-- TODO(Codex): Integrar botón de cierre explícito para impedir cierres accidentales -->
         </LinearLayout>
 
@@ -242,12 +242,14 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:hint="@string/averia_tecnico_autocomplete_hint">
+            android:hint="@string/averia_tecnico_autocomplete_hint"
+            app:endIconDrawable="@drawable/ic_arrow_down"
+            app:endIconMode="custom">
 
             <AutoCompleteTextView
                 android:id="@+id/actvTecnico"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="50dp"
                 android:inputType="text" />
         </com.google.android.material.textfield.TextInputLayout>
 
@@ -277,12 +279,14 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:hint="@string/averia_materiales_autocomplete_hint">
+            android:hint="@string/averia_materiales_autocomplete_hint"
+            app:endIconDrawable="@drawable/ic_arrow_down"
+            app:endIconMode="custom">
 
             <AutoCompleteTextView
                 android:id="@+id/actvMaterial"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="50dp"
                 android:inputType="text" />
         </com.google.android.material.textfield.TextInputLayout>
 
@@ -418,13 +422,15 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:hint="@string/averia_vehiculo">
+            android:hint="@string/averia_vehiculo"
+            app:endIconDrawable="@drawable/ic_arrow_down"
+            app:endIconMode="custom">
 
             <AutoCompleteTextView
                 android:id="@+id/actvVehiculo"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="textCapCharacters" />
+                android:layout_height="60dp"
+                android:inputType="number" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
@@ -517,6 +523,7 @@
                 android:layout_marginTop="8dp"
                 android:text="@string/averia_guardar_en_atencion"
                 android:textAllCaps="false"
+                app:backgroundTint= "@color/success_500"
                 app:icon="@drawable/ic_refresh"
                 app:iconGravity="textStart"
                 app:iconPadding="8dp" />
@@ -530,6 +537,7 @@
                 android:text="@string/averia_guardar_resolucion"
                 android:textAllCaps="false"
                 android:visibility="gone"
+                app:backgroundTint= "@color/success_500"
                 app:icon="@drawable/ic_check"
                 app:iconGravity="textStart"
                 app:iconPadding="8dp" />
@@ -568,6 +576,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:text="@string/averia_anular"
+                app:backgroundTint= "@color/error_500"
                 android:textAllCaps="false"
                 android:visibility="gone" />
 
@@ -578,6 +587,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:text="@string/averia_eliminar"
+                app:backgroundTint= "@color/error_500"
                 android:textAllCaps="false"
                 android:visibility="gone" />
 

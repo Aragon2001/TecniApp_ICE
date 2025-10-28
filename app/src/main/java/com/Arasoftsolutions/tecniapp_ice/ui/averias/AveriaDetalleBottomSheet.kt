@@ -34,6 +34,7 @@ import com.google.android.material.chip.Chip
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import androidx.navigation.findNavController
+import com.google.android.material.button.MaterialButton
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
@@ -1103,7 +1104,7 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
                 .setPositiveButton(R.string.averia_medidor_confirm_cancelar_positive) { _, _ ->
                     dialog.dismiss()
                 }
-                .setNegativeButton(android.R.string.no, null)
+                .setNegativeButton(android.R.string.ok, null)
                 .show()
         }
 
