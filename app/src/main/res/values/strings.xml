@@ -10,7 +10,6 @@
     <string name="nav_header_subtitle">Soluciones Integrales ICE</string>
     <string name="nav_header_desc">Navigation header</string>
     <!-- Drawer menu -->
-    <string name="action_logout">Cerrar Sesión</string>
     <string name="welcome_message">Bienvenido a TecniApp</string>
     <string name="menu_home">Home</string>
     <string name="menu_medidor">Consultar Medidor</string>
@@ -38,7 +37,7 @@
     <string name="home_header_date_format">%1$s · %2$s</string>
     <string name="home_card_pending_title">Averías asignadas</string>
     <string name="home_card_attended_title">Averías atendidas hoy</string>
-    <string name="home_card_kilometraje_title">Kilometraje inicial</string>
+    <string name="home_card_kilometraje_title">Kilometraje final registrado</string>
     <string name="home_card_last_sync_title">Última sincronización</string>
     <string name="home_card_kilometraje_value">%1$.1f km</string>
     <string name="home_sync_now">Sincronizar ahora</string>
@@ -46,6 +45,7 @@
     <string name="home_map_description">Sincroniza tus rutas y mapas antes de salir a campo.</string>
     <string name="home_map_preview_content_description">Vista previa del mapa sincronizado</string>
     <string name="home_map_last_sync">Última sincronización: %1$s</string>
+    <string name="home_map_permission_missing">Activa los permisos de ubicación para visualizar la cartografía en vivo.</string>
     <string name="home_sync_status_title">Sincronización manual</string>
     <string name="home_sync_status_idle">Sincroniza para obtener los últimos datos.</string>
     <string name="home_sync_status_running">Sincronizando…</string>
@@ -60,6 +60,9 @@
     <string name="home_last_sync_hours">Hace %1$d h</string>
     <string name="home_last_sync_days">Hace %1$d d</string>
     <string name="home_cards_placeholder">—</string>
+    <string name="home_offline_dialog_title">Sin conexión</string>
+    <string name="home_offline_dialog_message">Perdiste la conexión a internet. Continúa en modo offline o reconéctate para sincronizar.</string>
+    <string name="home_offline_dialog_button">Entendido</string>
     <string name="home_quick_action_averias">Averías</string>
     <string name="home_quick_action_medidor">Medidor</string>
     <string name="home_quick_action_reportes">Reportes</string>

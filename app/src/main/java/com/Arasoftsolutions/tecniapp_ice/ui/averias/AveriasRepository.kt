@@ -2,6 +2,7 @@ package com.Arasoftsolutions.tecniapp_ice.ui.averias
 
 import android.util.Log
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.AveriaEntity
+import com.Arasoftsolutions.tecniapp_ice.Database.entities.VehiculoKilometrajeEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.room.AppDatabase
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
@@ -23,6 +24,7 @@ import java.util.TimeZone
 class AveriasRepository(private val db: AppDatabase) {
 
     private val dao get() = db.averiaDao()
+    private val kilometrajeDao get() = db.vehiculoKilometrajeDao()
     private val firebaseRef = FirebaseDatabase
         .getInstance("https://averias.firebaseio.com")
         .reference
@@ -423,6 +425,7 @@ class AveriasRepository(private val db: AppDatabase) {
         )
         syncSingle(caseId)
         registrarMaterialesUsados(data.materiales)
+        registrarKilometrajeFinal(data.vehiculo, data.kilometrajeFinal, data.horaFinalMillis ?: now)
     }
 
 
@@ -468,6 +471,24 @@ class AveriasRepository(private val db: AppDatabase) {
         )
         syncSingle(caseId)
         registrarMaterialesUsados(data.materiales)
+        registrarKilometrajeFinal(data.vehiculo, data.kilometrajeFinal, data.horaFinalMillis ?: now)
+    }
+
+    private suspend fun registrarKilometrajeFinal(vehiculo: String?, kilometraje: Double?, timestamp: Long) {
+        if (kilometraje == null || vehiculo.isNullOrBlank()) return
+        val normalizada = VehiculoKilometrajeEntity.normalizarPlaca(vehiculo)
+            ?: VehiculoKilometrajeEntity.normalizarPlaca(
+                vehiculo.replace("ICE", "", ignoreCase = true)
+            )
+            ?: return
+        kilometrajeDao.insertar(
+            VehiculoKilometrajeEntity(
+                placa = vehiculo.trim(),
+                placaNormalizada = normalizada,
+                kilometrajeFinal = kilometraje,
+                registradoEn = timestamp
+            )
+        )
     }
 
     private suspend fun syncSingle(caseId: String) {
