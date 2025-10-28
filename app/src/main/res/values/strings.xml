@@ -25,6 +25,7 @@
     <string name="menu_settings">Ajustes</string>
     <string name="menu_help">Acerca de TecniApp</string>
     <string name="menu_privacy">Políticas</string>
+    <string name="menu_account">Perfil</string>
     <string name="action_accounts">Perfil</string>
     <string name="google_maps_key">AIzaSyBxgf6oA-rRK1-OlNft4oDgzF3gokLl1FU</string>
 
@@ -358,9 +359,13 @@ Cliente: %4$s</string>
     <string name="settings_notifications_summary_all">Recibirás avisos de todas las agencias.</string>
     <string name="settings_notifications_summary_filtered">Notificar solo agencias: %1$s</string>
     <string name="settings_notifications_manage_agencies">Gestionar agencias favoritas</string>
+    <string name="settings_notifications_saved">Preferencias guardadas. Actualizaremos tus alertas al instante.</string>
     <string name="settings_section_sync">Sincronización</string>
     <string name="settings_auto_sync_toggle">Sincronización automática al iniciar sesión</string>
     <string name="settings_auto_sync_summary">Si está activo se agenda un proceso en segundo plano cada 15 minutos.</string>
+    <string name="settings_auto_sync_summary_enabled">TecniApp buscará nuevas averías cada 15 minutos en segundo plano.</string>
+    <string name="settings_auto_sync_summary_disabled">No se programarán sincronizaciones automáticas hasta que las actives.</string>
+    <string name="settings_auto_sync_summary_running">Sincronizando datos en segundo plano…</string>
     <string name="settings_sync_now">Sincronizar ahora</string>
     <string name="settings_last_sync_never">Última sincronización manual: nunca</string>
     <string name="settings_last_sync_format">Última sincronización manual: %1$s</string>
@@ -371,6 +376,11 @@ Cliente: %4$s</string>
     <string name="settings_section_location">Localización y mapas</string>
     <string name="settings_gps_toggle">Activar soporte GPS desde TecniApp</string>
     <string name="settings_gps_summary">Guarda una preferencia local para habilitar el uso de ubicación en los módulos que la necesiten.</string>
+    <string name="settings_gps_summary_on">TecniApp usará tu ubicación para mostrar rutas y mapas precisos.</string>
+    <string name="settings_gps_summary_off">La aplicación no utilizará la ubicación del dispositivo.</string>
+    <string name="settings_open_map">Abrir módulo de mapas</string>
+    <string name="settings_open_location_settings">Abrir ajustes de ubicación del dispositivo</string>
+    <string name="settings_location_settings_error">No fue posible abrir los ajustes de ubicación.</string>
     <string name="settings_section_appearance">Apariencia</string>
     <string name="settings_dark_theme_toggle">Usar tema oscuro</string>
     <string name="settings_dark_theme_summary">Activa el modo oscuro para reducir el brillo en condiciones nocturnas.</string>
@@ -378,6 +388,7 @@ Cliente: %4$s</string>
     <string name="settings_account_name_placeholder">Nombre del técnico</string>
     <string name="settings_account_email_placeholder">Correo electrónico del técnico</string>
     <string name="settings_account_agency_placeholder">Agencia asignada</string>
+    <string name="settings_open_profile">Administrar perfil</string>
     <string name="settings_sign_out">Cerrar sesión</string>
     <string name="settings_sign_out_title">¿Cerrar sesión?</string>
     <string name="settings_sign_out_message">Se limpiarán los datos locales y deberás iniciar sesión nuevamente.</string>
