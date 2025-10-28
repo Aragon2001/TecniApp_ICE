@@ -160,6 +160,21 @@ fun observe(
     )
     suspend fun revertirAPendiente(caseId: String, lastUpdated: Long)
 
+    @Query(
+        """
+        UPDATE averias SET
+          estado = :nuevoEstado,
+          lastUpdated = :lastUpdated,
+          isSynced = 0
+        WHERE caseId = :caseId
+        """
+    )
+    suspend fun marcarAnulada(
+        caseId: String,
+        nuevoEstado: String = "Anulada",
+        lastUpdated: Long
+    )
+
     @Query("UPDATE averias SET isSynced = 1 WHERE caseId = :caseId")
     suspend fun marcarSincronizado(caseId: String)
 
