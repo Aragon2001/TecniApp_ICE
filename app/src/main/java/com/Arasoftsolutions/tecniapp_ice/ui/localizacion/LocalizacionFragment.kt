@@ -6,6 +6,7 @@ import android.Manifest
 import android.app.AlertDialog
 import android.content.ActivityNotFoundException
 import android.content.Context
+import android.content.SharedPreferences
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
@@ -51,8 +52,10 @@ import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
+import com.google.android.gms.tasks.CancellationTokenSource
 import java.lang.Math.toDegrees
 import kotlin.math.abs
+import kotlin.math.max
 import java.util.Locale
 
 /**
@@ -83,11 +86,14 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
     private var marcador: Marker? = null
     private val marcadoresCalles = mutableListOf<Marker>()
     private lateinit var fusedLocationClient: FusedLocationProviderClient
+    private lateinit var uiPreferences: SharedPreferences
     private val CLAVE_MAPA_VISTA_BUNDLE = "ClaveMapaVistaBundle"
 
     // --- Permisos (Activity Result API) ---
     private val locationPermissionLauncher =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { results ->
+            val granted = results[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+                results[Manifest.permission.ACCESS_COARSE_LOCATION] == true
             if (granted) {
                 enableMyLocationAndStartUpdates()
             } else {
@@ -98,7 +104,8 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
     // --- Sensores y rotación ---
     private lateinit var sensorManager: SensorManager
     private var rotationVectorSensor: Sensor? = null
-    private var isAutoRotateEnabled = true  // autorrotación controlada por brújula/sensor
+    private var autoRotatePreference = true
+    private var runtimeAutoRotateEnabled = true  // autorrotación controlada por brújula/sensor
     private var isCompassTouched = false    // true cuando la orientación vuelve ~Norte (bearing≈0)
     private var userIsInteracting = false   // true mientras el usuario mueve la cámara
 
@@ -112,6 +119,15 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
     // --- Handler para pequeñas demoras (re-activar autorrotación tras gestos, etc.) ---
     private val handler = Handler(Looper.getMainLooper())
 
+    // --- Ubicación del usuario ---
+    private var followLocationEnabled = false
+    private var hasCenteredOnUser = false
+    private var lastLocationErrorAt = 0L
+    private var singleLocationToken: CancellationTokenSource? = null
+    private val LOCATION_ERROR_TOAST_INTERVAL_MS = 10_000L
+    private val PREF_AUTO_ROTATE = "pref_auto_rotate_enabled"
+    private val PREF_FOLLOW_LOCATION = "pref_follow_location_enabled"
+
     private val switchListener = CompoundButton.OnCheckedChangeListener { _, isChecked ->
         viewModel.actualizarPreferenciaMostrarCalles(isChecked)
     }
@@ -123,15 +139,17 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
     ).apply {
         setMinUpdateIntervalMillis(1000)
         setMaxUpdateDelayMillis(10_000)
+        setWaitForAccurateLocation(true)
     }.build()
 
     private val locationCallback = object : LocationCallback() {
         override fun onLocationResult(locationResult: LocationResult) {
             val location: Location? = locationResult.lastLocation
             if (location == null) {
-                Toast.makeText(requireContext(), "No se pudo obtener la ubicación actual", Toast.LENGTH_SHORT).show()
+                mostrarToastUbicacionSiNecesario(getString(R.string.localizacion_toast_sin_ubicacion))
                 return
             }
+            manejarUbicacionUsuario(location)
             // Si quisieras seguir al usuario, podrías mover la cámara aquí;
             // se deja sin mover para no interferir con el poste seleccionado.
             // val yo = LatLng(location.latitude, location.longitude)
@@ -139,7 +157,9 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
 
         override fun onLocationAvailability(locationAvailability: LocationAvailability) {
             if (!locationAvailability.isLocationAvailable) {
-                Toast.makeText(requireContext(), "La ubicación no está disponible", Toast.LENGTH_SHORT).show()
+                mostrarToastUbicacionSiNecesario(getString(R.string.localizacion_toast_sin_disponibilidad))
+            } else {
+                lastLocationErrorAt = 0L
             }
         }
     }
@@ -152,6 +172,10 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
 
         // Ubicación
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity())
+        uiPreferences = requireContext().getSharedPreferences("localizacion_prefs", Context.MODE_PRIVATE)
+        autoRotatePreference = uiPreferences.getBoolean(PREF_AUTO_ROTATE, true)
+        runtimeAutoRotateEnabled = autoRotatePreference
+        followLocationEnabled = uiPreferences.getBoolean(PREF_FOLLOW_LOCATION, false)
 
         // Sensores
         sensorManager = requireContext().getSystemService(Context.SENSOR_SERVICE) as SensorManager
@@ -160,7 +184,7 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
         }
 
         configurarObservers()
-        configurarBotones()
+        configurarControles()
         inicializarMapaVista(savedInstanceState)
 
         // Datos iniciales
@@ -269,10 +293,34 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
         }
     }
 
-    private fun configurarBotones() {
+    private fun configurarControles() {
         binding.buttonNavegar.setOnClickListener { mostrarOpcionesDeNavegacion() }
         binding.buttonShare.setOnClickListener { compartirUbicacion() }
         binding.switchMostrarCalles.setOnCheckedChangeListener(switchListener)
+        binding.switchAutoRotacion.apply {
+            isChecked = autoRotatePreference
+            setOnCheckedChangeListener { _, isChecked ->
+                autoRotatePreference = isChecked
+                uiPreferences.edit().putBoolean(PREF_AUTO_ROTATE, isChecked).apply()
+                if (!isChecked) {
+                    runtimeAutoRotateEnabled = false
+                } else {
+                    runtimeAutoRotateEnabled = true
+                    lastCompassBearing = mapaGoogle?.cameraPosition?.bearing?.let { normalizeBearing(it) }
+                }
+            }
+        }
+        binding.switchSeguirUbicacion.apply {
+            isChecked = followLocationEnabled
+            setOnCheckedChangeListener { _, isChecked ->
+                followLocationEnabled = isChecked
+                uiPreferences.edit().putBoolean(PREF_FOLLOW_LOCATION, isChecked).apply()
+                hasCenteredOnUser = false
+                if (isChecked) {
+                    solicitarUbicacionActual(force = true)
+                }
+            }
+        }
     }
 
     // Reset de textos y cámara a vista país
@@ -281,6 +329,7 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
         binding.delposteTextView.text = "Del Poste: 0"
         binding.alposteTextView.text = "Al Poste: 0"
         centrarMapaEnCostaRica()
+        hasCenteredOnUser = false
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -339,7 +388,7 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
         map.setOnCameraMoveStartedListener { reason ->
             if (reason == GoogleMap.OnCameraMoveStartedListener.REASON_GESTURE) {
                 userIsInteracting = true
-                isAutoRotateEnabled = false
+                actualizarAutorrotacionRuntime(false)
                 lastCompassBearing = mapaGoogle?.cameraPosition?.bearing?.let { normalizeBearing(it) }
                 lastBearingUpdateAt = SystemClock.elapsedRealtime()
                 Log.d("Localizacion", "Gesto detectado → autorrotación OFF")
@@ -351,11 +400,11 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
             val bearing = mapaGoogle?.cameraPosition?.bearing ?: return@setOnCameraMoveListener
             // Si el usuario realmente giró el mapa (bearing cambia), permitimos autorrotación posterior
             if (abs(bearing) > 1 && !userIsInteracting) {
-                isAutoRotateEnabled = true
+                actualizarAutorrotacionRuntime(true)
             }
             // Si la orientación es ~Norte durante el movimiento, inferimos toque de brújula
             if (abs(bearing) < 1) {
-                isAutoRotateEnabled = false
+                actualizarAutorrotacionRuntime(false)
                 isCompassTouched = true
             }
         }
@@ -366,7 +415,7 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
 
             // Si quedó en ~Norte y veníamos “tocando brújula”, mantener autorrotación OFF
             if (abs(bearing) < 1 && isCompassTouched) {
-                isAutoRotateEnabled = false
+                actualizarAutorrotacionRuntime(false)
                 isCompassTouched = false
                 Log.d("Localizacion", "Idle ~Norte → autorrotación OFF por brújula")
             }
@@ -376,7 +425,7 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
                 userIsInteracting = false
                 handler.postDelayed({
                     if (!isCompassTouched) {
-                        isAutoRotateEnabled = true
+                        actualizarAutorrotacionRuntime(true)
                         Log.d("Localizacion", "Autorrotación ON tras gesto (delay)")
                     }
                 }, 3000)
@@ -395,7 +444,12 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
         if (fine == PackageManager.PERMISSION_GRANTED || coarse == PackageManager.PERMISSION_GRANTED) {
             enableMyLocationAndStartUpdates()
         } else {
-            locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+            locationPermissionLauncher.launch(
+                arrayOf(
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                )
+            )
         }
     }
 
@@ -406,10 +460,16 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
 
         mapaGoogle?.isMyLocationEnabled = true
         fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper())
+        if (!followLocationEnabled) {
+            hasCenteredOnUser = false
+        }
+        solicitarUbicacionActual(force = true)
     }
 
     private fun stopLocationUpdates() {
         fusedLocationClient.removeLocationUpdates(locationCallback)
+        singleLocationToken?.cancel()
+        singleLocationToken = null
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -630,7 +690,7 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
     override fun onSensorChanged(event: SensorEvent?) {
         val map = mapaGoogle ?: return
         if (event == null || event.sensor.type != Sensor.TYPE_ROTATION_VECTOR) return
-        if (!isAutoRotateEnabled || isCompassTouched || userIsInteracting) return
+        if (!debeAutorrotar() || isCompassTouched || userIsInteracting) return
 
         val rotationMatrix = FloatArray(9)
         SensorManager.getRotationMatrixFromVector(rotationMatrix, event.values)
@@ -702,6 +762,11 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
         super.onDestroyView()
         binding.mapView.onDestroy()
         binding.switchMostrarCalles.setOnCheckedChangeListener(null)
+        binding.switchAutoRotacion.setOnCheckedChangeListener(null)
+        binding.switchSeguirUbicacion.setOnCheckedChangeListener(null)
+        handler.removeCallbacksAndMessages(null)
+        singleLocationToken?.cancel()
+        singleLocationToken = null
         _binding = null
         mapaGoogle = null
         marcadoresCalles.forEach { it.remove() }
@@ -719,5 +784,87 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
         val mapaBundle = outState.getBundle(CLAVE_MAPA_VISTA_BUNDLE) ?: Bundle()
         binding.mapView.onSaveInstanceState(mapaBundle)
         outState.putBundle(CLAVE_MAPA_VISTA_BUNDLE, mapaBundle)
+    }
+
+    private fun actualizarAutorrotacionRuntime(enabled: Boolean) {
+        runtimeAutoRotateEnabled = enabled && autoRotatePreference
+    }
+
+    private fun debeAutorrotar(): Boolean = autoRotatePreference && runtimeAutoRotateEnabled
+
+    private fun solicitarUbicacionActual(force: Boolean = false) {
+        val fine = ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION)
+        val coarse = ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_COARSE_LOCATION)
+        if (fine != PackageManager.PERMISSION_GRANTED && coarse != PackageManager.PERMISSION_GRANTED) return
+
+        try {
+            fusedLocationClient.lastLocation
+                .addOnSuccessListener { location ->
+                    if (location != null) {
+                        manejarUbicacionUsuario(location)
+                    } else if (force) {
+                        solicitarUbicacionPrecisa()
+                    }
+                }
+                .addOnFailureListener { throwable ->
+                    Log.e("Localizacion", "Error obteniendo lastLocation", throwable)
+                    if (force) solicitarUbicacionPrecisa()
+                }
+        } catch (sec: SecurityException) {
+            Log.e("Localizacion", "Permiso de ubicación perdido", sec)
+        }
+    }
+
+    private fun solicitarUbicacionPrecisa() {
+        val fine = ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION)
+        val coarse = ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_COARSE_LOCATION)
+        if (fine != PackageManager.PERMISSION_GRANTED && coarse != PackageManager.PERMISSION_GRANTED) return
+
+        singleLocationToken?.cancel()
+        val tokenSource = CancellationTokenSource().also { singleLocationToken = it }
+        try {
+            fusedLocationClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, tokenSource.token)
+                .addOnSuccessListener { location ->
+                    if (location != null) manejarUbicacionUsuario(location)
+                }
+                .addOnFailureListener { throwable ->
+                    Log.e("Localizacion", "Error en getCurrentLocation", throwable)
+                }
+        } catch (sec: SecurityException) {
+            Log.e("Localizacion", "Permiso de ubicación perdido durante getCurrentLocation", sec)
+        }
+    }
+
+    private fun manejarUbicacionUsuario(location: Location) {
+        lastLocationErrorAt = 0L
+        if (!hasCenteredOnUser || (followLocationEnabled && !userIsInteracting)) {
+            moverCamaraAUbicacion(location, animate = hasCenteredOnUser)
+            hasCenteredOnUser = true
+        }
+    }
+
+    private fun moverCamaraAUbicacion(location: Location, animate: Boolean) {
+        val map = mapaGoogle ?: return
+        val latLng = LatLng(location.latitude, location.longitude)
+        val currentPosition = map.cameraPosition
+        val zoom = max(currentPosition.zoom, 17f)
+        val position = CameraPosition.Builder(currentPosition)
+            .target(latLng)
+            .zoom(zoom)
+            .build()
+        if (animate) {
+            map.animateCamera(CameraUpdateFactory.newCameraPosition(position))
+        } else {
+            map.moveCamera(CameraUpdateFactory.newCameraPosition(position))
+        }
+        lastCompassBearing = normalizeBearing(position.bearing)
+    }
+
+    private fun mostrarToastUbicacionSiNecesario(mensaje: String) {
+        val now = SystemClock.elapsedRealtime()
+        if (now - lastLocationErrorAt >= LOCATION_ERROR_TOAST_INTERVAL_MS) {
+            lastLocationErrorAt = now
+            Toast.makeText(requireContext(), mensaje, Toast.LENGTH_SHORT).show()
+        }
     }
 }
