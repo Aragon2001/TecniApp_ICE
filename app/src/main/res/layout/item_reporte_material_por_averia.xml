@@ -1,60 +1,78 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:paddingStart="8dp"
-    android:paddingTop="12dp"
-    android:paddingEnd="8dp"
-    android:paddingBottom="12dp">
+    android:layout_marginBottom="12dp"
+    app:cardBackgroundColor="@color/white"
+    app:cardCornerRadius="20dp"
+    app:cardElevation="0dp"
+    app:strokeColor="@color/outline_variant_light"
+    app:strokeWidth="1dp">
 
-    <TextView
-        android:id="@+id/tvTitulo"
-        style="@style/TextAppearance.Material3.BodyLarge"
-        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-        android:textStyle="bold"
-        tools:text="Caso 12345" />
-
-    <TextView
-        android:id="@+id/tvSubtitulo"
-        style="@style/TextAppearance.Material3.BodyMedium"
-        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-        android:layout_marginTop="2dp"
-        tools:text="Atendida: 07/05/2024 14:30" />
-
-    <TextView
-        android:id="@+id/tvAgencia"
-        style="@style/TextAppearance.Material3.BodyMedium"
-        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-        android:layout_marginTop="2dp"
-        tools:text="Agencia: Guápiles" />
-
-    <TextView
-        android:id="@+id/tvVehiculo"
-        style="@style/TextAppearance.Material3.BodyMedium"
-        android:layout_marginTop="2dp"
-        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-        tools:text="Vehículo: SIN-123" />
-
-    <TextView
-        android:id="@+id/tvMateriales"
-        style="@style/TextAppearance.Material3.BodyMedium"
-        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-        android:layout_marginTop="6dp"
-        tools:text="• 2x Cable #6\n• 3x Fusible" />
-
-    <View
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:layout_marginTop="12dp"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
 
-        android:background="@android:color/darker_gray"
-        android:alpha="0.12"
-        tools:visibility="visible" />
-</LinearLayout>
+        <TextView
+            android:id="@+id/tvTitulo"
+            style="@style/TextAppearance.Material3.TitleSmall"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="@color/ice_blue_dark"
+            android:textStyle="bold"
+            tools:text="Caso IM-1265909-3-327186" />
+
+        <TextView
+            android:id="@+id/tvSubtitulo"
+            style="@style/TextAppearance.Material3.BodyMedium"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:drawableStart="@drawable/ic_report_clock"
+            android:drawablePadding="10dp"
+            android:textColor="@color/dark_gray"
+            tools:text="27 oct 2025 · 09:53" />
+
+        <TextView
+            android:id="@+id/tvAgencia"
+            style="@style/TextAppearance.Material3.BodyMedium"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:drawableStart="@drawable/ic_report_location"
+            android:drawablePadding="10dp"
+            android:textColor="@color/ice_blue_dark"
+            tools:text="Agencia: Guácimo" />
+
+        <TextView
+            android:id="@+id/tvVehiculo"
+            style="@style/TextAppearance.Material3.BodyMedium"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:drawableStart="@drawable/ic_report_vehicle"
+            android:drawablePadding="10dp"
+            android:textColor="@color/dark_gray"
+            tools:text="Vehículo: 9559" />
+
+        <TextView
+            android:id="@+id/tvMateriales"
+            style="@style/TextAppearance.Material3.BodyMedium"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/bg_report_material_badge"
+            android:drawableStart="@drawable/ic_summary_material"
+            android:drawablePadding="8dp"
+            android:paddingStart="12dp"
+            android:paddingTop="10dp"
+            android:paddingEnd="12dp"
+            android:paddingBottom="10dp"
+            android:textColor="@color/ice_blue_dark"
+            tools:text="• 2x Cable #6\n• 3x Fusible" />
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

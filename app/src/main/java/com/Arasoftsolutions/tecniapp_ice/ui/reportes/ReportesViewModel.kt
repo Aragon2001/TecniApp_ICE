@@ -14,7 +14,11 @@ import com.Arasoftsolutions.tecniapp_ice.Database.room.AppDatabase
 import com.Arasoftsolutions.tecniapp_ice.R
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.MaterialUso
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.MaterialesSerializer
+import com.Arasoftsolutions.tecniapp_ice.ui.reportes.ExcelReportExporter
+import com.Arasoftsolutions.tecniapp_ice.ui.reportes.ExcelReportExporter.ExportPayload
+import com.Arasoftsolutions.tecniapp_ice.ui.reportes.ExcelReportExporter.MIME_TYPE_XLSX
 import com.google.firebase.auth.FirebaseAuth
+import java.io.ByteArrayOutputStream
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -129,6 +133,7 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
     private val locale: Locale = Locale.getDefault()
     private val rangeFormatter = DateTimeFormatter.ofPattern("dd MMM yyyy", locale)
     private val dateTimeFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm", locale)
+    private val fileNameFormatter = DateTimeFormatter.ofPattern("yyyyMMdd")
 
     private val desconocidoMaterial = app.getString(R.string.reportes_material_desconocido)
 
@@ -227,7 +232,8 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
         val state = uiState.value
         if (state.isEmailSending || state.isGlobalLoading) return
 
-        val datos = obtenerDatosParaExportar(state.reporteSeleccionado)
+        val tipo = state.reporteSeleccionado
+        val datos = obtenerDatosParaExportar(tipo)
         if (datos == null) {
             val mensaje = getApplication<Application>().getString(R.string.reportes_correo_error_sin_datos)
             _messages.tryEmit(mensaje)
@@ -243,7 +249,7 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
 
         val saludo = auth.currentUser?.displayName?.takeIf { it.isNotBlank() }
             ?: getApplication<Application>().getString(R.string.reportes_correo_saludo_generico)
-        val nombreReporte = getApplication<Application>().getString(state.reporteSeleccionado.titleRes)
+        val nombreReporte = getApplication<Application>().getString(tipo.titleRes)
         val subject = getApplication<Application>().getString(
             R.string.reportes_correo_asunto,
             nombreReporte,
@@ -260,16 +266,47 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
         )
 
         _uiState.update { it.copy(isEmailSending = true) }
-        mailSender.sendFormattedMail(subject, cuerpo, destino) { success, error ->
-            viewModelScope.launch {
-                _uiState.update { it.copy(isEmailSending = false) }
-                if (success) {
-                    val mensaje = getApplication<Application>().getString(R.string.reportes_correo_exito, destino)
-                    _messages.tryEmit(mensaje)
-                } else {
-                    val fallback = error ?: getApplication<Application>().getString(R.string.reportes_correo_error_envio)
-                    _messages.tryEmit(fallback)
+        viewModelScope.launch {
+            try {
+                val payload = ExportPayload(
+                    tipo = tipo,
+                    data = datos,
+                    resumen = state.resumen,
+                    rango = state.rangoTexto
+                )
+                val workbook = withContext(Dispatchers.Default) {
+                    ExcelReportExporter.buildWorkbook(getApplication(), payload)
                 }
+                val bytes = withContext(Dispatchers.IO) {
+                    ByteArrayOutputStream().use { output ->
+                        workbook.use { wb ->
+                            wb.write(output)
+                        }
+                        output.toByteArray()
+                    }
+                }
+                val attachment = MailSender.MailAttachment(
+                    fileName = generarNombreArchivo(tipo, state.fechaInicio, state.fechaFin),
+                    mimeType = MIME_TYPE_XLSX,
+                    bytes = bytes
+                )
+                mailSender.sendFormattedMail(subject, cuerpo, destino, attachment) { success, error ->
+                    viewModelScope.launch {
+                        _uiState.update { it.copy(isEmailSending = false) }
+                        if (success) {
+                            val mensaje = getApplication<Application>().getString(R.string.reportes_correo_exito, destino)
+                            _messages.tryEmit(mensaje)
+                        } else {
+                            val fallback = error ?: getApplication<Application>().getString(R.string.reportes_correo_error_envio)
+                            _messages.tryEmit(fallback)
+                        }
+                    }
+                }
+            } catch (t: Throwable) {
+                Log.e(TAG, "Error preparando correo", t)
+                _uiState.update { it.copy(isEmailSending = false) }
+                val mensaje = getApplication<Application>().getString(R.string.reportes_correo_error_generacion)
+                _messages.tryEmit(mensaje)
             }
         }
     }
@@ -663,5 +700,11 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
             is ReportExportData.MaterialesPorAveria -> data.items.size
             is ReportExportData.MaterialesTotales -> data.items.size
         }
+    }
+
+    private fun generarNombreArchivo(tipo: ReportType, inicio: LocalDate, fin: LocalDate): String {
+        val inicioTexto = inicio.format(fileNameFormatter)
+        val finTexto = fin.format(fileNameFormatter)
+        return "Reporte_${tipo.fileNameKey}_${inicioTexto}_${finTexto}.xlsx"
     }
 }

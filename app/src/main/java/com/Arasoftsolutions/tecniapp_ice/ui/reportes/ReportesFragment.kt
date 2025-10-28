@@ -6,6 +6,7 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
@@ -24,10 +25,9 @@ import com.Arasoftsolutions.tecniapp_ice.ui.reportes.ExcelReportExporter.MIME_TY
 import com.google.android.material.datepicker.MaterialDatePicker
 import androidx.core.util.Pair
 import com.google.android.material.snackbar.Snackbar
-import com.google.android.material.textfield.MaterialAutoCompleteTextView
 import java.time.Instant
 import java.time.LocalDate
-import java.time.ZoneOffset
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlinx.coroutines.Dispatchers
@@ -48,6 +48,7 @@ class ReportesFragment : Fragment() {
     private var isUpdatingTipoReporte = false
     private val locale = Locale.getDefault()
     private val fileNameFormatter = DateTimeFormatter.ofPattern("yyyyMMdd")
+    private val zoneId: ZoneId = ZoneId.systemDefault()
 
     private var pendingExport: ExportPayload? = null
 
@@ -64,7 +65,7 @@ class ReportesFragment : Fragment() {
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
-        savedInstanceState: Bundle?
+        savedInstanceState: Bundle?,
     ): View {
         _binding = FragmentReportesBinding.inflate(inflater, container, false)
         return binding.root
@@ -108,29 +109,27 @@ class ReportesFragment : Fragment() {
     private fun setupReportTypeSelector() {
         val labels = ReportType.values().map { getString(it.titleRes) }
         tiposAdapter = ArrayAdapter(requireContext(), R.layout.item_dropdown_report_type, labels)
-        binding.autoTipoReporte.setAdapter(tiposAdapter)
-        binding.autoTipoReporte.setOnItemClickListener { _, _, position, _ ->
-            if (isUpdatingTipoReporte) return@setOnItemClickListener
-            val tipo = ReportType.values().getOrNull(position) ?: return@setOnItemClickListener
-            viewModel.seleccionarTipo(tipo)
-        }
-        binding.autoTipoReporte.setOnClickListener { binding.autoTipoReporte.showDropDown() }
-        binding.autoTipoReporte.setOnFocusChangeListener { view, hasFocus ->
-            if (hasFocus) {
-                (view as? MaterialAutoCompleteTextView)?.showDropDown()
+        tiposAdapter.setDropDownViewResource(R.layout.item_dropdown_report_type)
+        binding.spinnerTipoReporte.adapter = tiposAdapter
+        binding.spinnerTipoReporte.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                if (isUpdatingTipoReporte) return
+                val tipo = ReportType.values().getOrNull(position) ?: return
+                viewModel.seleccionarTipo(tipo)
             }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) = Unit
         }
+        binding.selectorContainer.setOnClickListener { binding.spinnerTipoReporte.performClick() }
         syncReportTypeSelection(viewModel.uiState.value.reporteSeleccionado)
     }
 
     private fun syncReportTypeSelection(tipo: ReportType) {
         if (!::tiposAdapter.isInitialized) return
-        val label = getString(tipo.titleRes)
-        val current = binding.autoTipoReporte.text?.toString()
-        if (current != label) {
+        val index = ReportType.values().indexOf(tipo)
+        if (index >= 0 && binding.spinnerTipoReporte.selectedItemPosition != index) {
             isUpdatingTipoReporte = true
-            binding.autoTipoReporte.setText(label, false)
-            binding.autoTipoReporte.clearFocus()
+            binding.spinnerTipoReporte.setSelection(index, false)
             isUpdatingTipoReporte = false
         }
     }
@@ -163,14 +162,21 @@ class ReportesFragment : Fragment() {
                         }
                     )
                     binding.btnGenerarReporte.isEnabled = !isProcessing
-                    binding.inputLayoutTipoReporte.isEnabled = !isProcessing
-                    binding.autoTipoReporte.isEnabled = !isProcessing
+                    binding.spinnerTipoReporte.isEnabled = !isProcessing
+                    binding.selectorContainer.isEnabled = !isProcessing
 
-                    binding.tvResumenTotales.text = getString(
-                        R.string.reportes_resumen_encabezado,
-                        getString(seleccionado.titleRes),
-                        state.rangoTexto
-                    )
+                    binding.tvResumenTitulo.text = getString(seleccionado.titleRes)
+                    binding.tvResumenRango.text = state.rangoTexto
+
+                    val resumen = state.resumen
+                    val hasResumen = resumen != null
+                    binding.resumenCardsContainer.isVisible = hasResumen
+                    binding.tvResumenPlaceholder.isVisible = !hasResumen
+                    if (resumen != null) {
+                        binding.tvResumenTotalAverias.text = resumen.totalAverias.toString()
+                        binding.tvResumenTotalMateriales.text = resumen.totalMateriales.toString()
+                        binding.tvResumenTotalCodigos.text = resumen.totalMaterialesDistintos.toString()
+                    }
 
                     val section: ReportSectionState<*>
                     val recycler: RecyclerView
@@ -260,8 +266,8 @@ class ReportesFragment : Fragment() {
         if (childFragmentManager.findFragmentByTag(tag) != null) return
 
         val selection = Pair(
-            state.fechaInicio.toStartOfDayUtcMillis(),
-            state.fechaFin.toStartOfDayUtcMillis()
+            state.fechaInicio.toStartOfDayMillis(),
+            state.fechaFin.toStartOfDayMillis()
         )
 
         val picker = MaterialDatePicker.Builder.dateRangePicker()
@@ -332,11 +338,11 @@ class ReportesFragment : Fragment() {
         }
     }
 
-    private fun LocalDate.toStartOfDayUtcMillis(): Long =
-        this.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+    private fun LocalDate.toStartOfDayMillis(): Long =
+        this.atStartOfDay(zoneId).toInstant().toEpochMilli()
 
     private fun Long.toLocalDate(): LocalDate =
-        Instant.ofEpochMilli(this).atZone(ZoneOffset.UTC).toLocalDate()
+        Instant.ofEpochMilli(this).atZone(zoneId).toLocalDate()
 
     override fun onDestroyView() {
         super.onDestroyView()
