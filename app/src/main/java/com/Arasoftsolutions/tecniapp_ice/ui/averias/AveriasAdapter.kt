@@ -15,9 +15,11 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.Arasoftsolutions.tecniapp_ice.R
+import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasAdapter.VH
 import com.bumptech.glide.Glide
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.chip.Chip
+import com.sun.mail.imap.protocol.FetchResponse.getItem
 import java.text.DateFormat
 import java.util.Date
 import java.io.Serializable
@@ -89,7 +91,7 @@ class AveriasAdapter(
     private val onAsignar: (AveriaUI) -> Unit,
     private val onAtender: (AveriaUI) -> Unit,
     private val onResolver: (AveriaUI) -> Unit
-) : ListAdapter<AveriaUI, AveriasAdapter.VH>(Diff()) {
+) : ListAdapter<AveriaUI, VH>(Diff()) {
 
     var currentUserUid: String? = null
 
@@ -137,8 +139,8 @@ class AveriasAdapter(
             val lng = item.lng
             if (lat != 0.0 && lng != 0.0) {
                 val url = "https://maps.googleapis.com/maps/api/staticmap?" +
-                    "center=$lat,$lng&zoom=16&size=300x300&maptype=roadmap" +
-                    "&markers=color:red|$lat,$lng&key=AIzaSyBxgf6oA-rRK1-OlNft4oDgzF3gokLl1FU"
+                        "center=$lat,$lng&zoom=16&size=300x300&maptype=roadmap" +
+                        "&markers=color:red|$lat,$lng&key=AIzaSyBxgf6oA-rRK1-OlNft4oDgzF3gokLl1FU"
 
                 Glide.with(context)
                     .load(url)
@@ -150,7 +152,11 @@ class AveriasAdapter(
 
             val emptyValue = context.getString(R.string.averia_pdf_empty_value)
 
-            fun TextView.renderLabel(labelRes: Int, raw: CharSequence?, hideWhenEmpty: Boolean = false) {
+            fun TextView.renderLabel(
+                labelRes: Int,
+                raw: CharSequence?,
+                hideWhenEmpty: Boolean = false
+            ) {
                 val normalized = raw?.toString()?.takeIf { it.isNotBlank() }
                 if (hideWhenEmpty && normalized == null) {
                     isVisible = false
@@ -235,6 +241,7 @@ class AveriasAdapter(
                         append(" • ")
                         append(detalles.joinToString(" • "))
                     }
+
                     base != null -> base
                     detalles.isNotEmpty() -> detalles.joinToString(" • ")
                     else -> null
@@ -243,7 +250,11 @@ class AveriasAdapter(
             }
 
             tvDireccion?.let { label ->
-                label.renderLabel(R.string.averia_label_direccion, item.direccion, hideWhenEmpty = true)
+                label.renderLabel(
+                    R.string.averia_label_direccion,
+                    item.direccion,
+                    hideWhenEmpty = true
+                )
             }
 
             val fechaEvento = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT)
@@ -260,20 +271,19 @@ class AveriasAdapter(
                 append(' ')
                 append(fechaEvento)
                 inicioAtencion?.let {
-                    append('
-')
+                    append(' ')
                     bold { append(context.getString(R.string.averia_label_inicio)) }
                     append(' ')
                     append(it)
                 }
                 finAtencion?.let {
-                    append('
-')
+                    append('\n')
                     bold { append(context.getString(R.string.averia_label_fin)) }
                     append(' ')
                     append(it)
                 }
             }
+
 
             val estadoEnum = Estado.fromLabel(item.estado)
             val chipColor = when (estadoEnum) {
@@ -308,6 +318,7 @@ class AveriasAdapter(
                     }
                     btnResolver.isVisible = false
                 }
+
                 Estado.ASIGNADA -> {
                     btnAsignar.apply {
                         text = context.getString(R.string.averia_eliminar_asignacion)
@@ -321,6 +332,7 @@ class AveriasAdapter(
                     }
                     btnResolver.isVisible = false
                 }
+
                 Estado.EN_ATENCION -> {
                     btnAsignar.apply {
                         isEnabled = false
@@ -337,6 +349,7 @@ class AveriasAdapter(
                         isVisible = true
                     }
                 }
+
                 Estado.RESUELTA -> {
                     btnAsignar.apply {
                         isEnabled = false
@@ -352,6 +365,7 @@ class AveriasAdapter(
                         isVisible = true
                     }
                 }
+
                 Estado.ANULADA -> {
                     btnAsignar.isVisible = false
                     btnAtender.isVisible = false
@@ -360,13 +374,15 @@ class AveriasAdapter(
             }
         }
 
+
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
+            val view = LayoutInflater.from(parent.context)
+                .inflate(R.layout.item_averia, parent, false)
+            return VH(view)
+        }
+
+        override fun onBindViewHolder(holder: VH, position: Int) {
+            holder.bind(getItem(position))
         }
     }
-
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
-        val v = LayoutInflater.from(parent.context).inflate(R.layout.item_averia, parent, false)
-        return VH(v)
     }
-
-    override fun onBindViewHolder(holder: VH, position: Int) = holder.bind(getItem(position))
-}

@@ -1,12 +1,13 @@
 package com.Arasoftsolutions.tecniapp_ice.ui.reportes
 
+import MailSender
 import android.app.Application
 import android.util.Log
 import android.text.TextUtils
 import androidx.annotation.StringRes
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.Arasoftsolutions.tecniapp_ice.MailSender
+
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.AveriaEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.MaterialEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.room.AppDatabase

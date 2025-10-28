@@ -42,6 +42,7 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.ZoneOffset
 import androidx.core.util.Pair
+import com.Arasoftsolutions.tecniapp_ice.ui.averias.Estado.*
 import kotlin.math.abs
 
 class AveriasFragment : Fragment() {
@@ -163,11 +164,11 @@ class AveriasFragment : Fragment() {
         b.chipGroupEstado.setOnCheckedStateChangeListener { _, checkedIds ->
             val state = when (checkedIds.firstOrNull()) {
                 b.chipTodos.id -> null
-                b.chipPendiente.id -> Estado.PENDIENTE
-                b.chipAsignada.id -> Estado.ASIGNADA
-                b.chipEnAtencion.id -> Estado.EN_ATENCION
-                b.chipResuelta.id -> Estado.RESUELTA
-                b.chipAnulada.id -> Estado.ANULADA
+                b.chipPendiente.id -> PENDIENTE
+                b.chipAsignada.id -> ASIGNADA
+                b.chipEnAtencion.id -> EN_ATENCION
+                b.chipResuelta.id -> RESUELTA
+                b.chipAnulada.id -> ANULADA
                 else -> null
             }
             vm.setEstado(state)
@@ -180,10 +181,11 @@ class AveriasFragment : Fragment() {
                 ?.let { runCatching { Estado.valueOf(it) }.getOrNull() }
             estadoInicial?.let { estado ->
                 val chipId = when (estado) {
-                    Estado.ASIGNADA -> b.chipAsignada.id
-                    Estado.EN_ATENCION -> b.chipEnAtencion.id
-                    Estado.RESUELTA -> b.chipResuelta.id
-                    Estado.PENDIENTE -> b.chipPendiente.id
+                    ASIGNADA -> b.chipAsignada.id
+                    EN_ATENCION -> b.chipEnAtencion.id
+                    RESUELTA -> b.chipResuelta.id
+                    PENDIENTE -> b.chipPendiente.id
+                    ANULADA -> TODO()
                 }
                 b.chipGroupEstado.check(chipId)
             }
@@ -272,16 +274,16 @@ class AveriasFragment : Fragment() {
     }
     private fun handleAtender(item: AveriaUI) {
         when (Estado.fromLabel(item.estado)) {
-            Estado.ASIGNADA -> showDetalle(item)
-            Estado.EN_ATENCION -> vm.onCancelarAtencion(item)
+            ASIGNADA -> showDetalle(item)
+            EN_ATENCION -> vm.onCancelarAtencion(item)
             else -> showDetalle(item)
         }
     }
 
     private fun handleResolver(item: AveriaUI) {
         when (Estado.fromLabel(item.estado)) {
-            Estado.EN_ATENCION -> showDetalle(item)
-            Estado.RESUELTA -> viewLifecycleOwner.lifecycleScope.launch {
+            EN_ATENCION -> showDetalle(item)
+            RESUELTA -> viewLifecycleOwner.lifecycleScope.launch {
                 PdfGenerator.exportAveria(requireContext(), item)
             }
             else -> showDetalle(item)
