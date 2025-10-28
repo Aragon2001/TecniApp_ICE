@@ -72,7 +72,7 @@ class AdminManagementViewModel(application: Application) : AndroidViewModel(appl
         _medidorSeleccionado.value = null
     }
 
-    fun guardarMedidor(
+    fun crearMedidor(
         numero: String,
         cliente: String,
         localizacion: Long,
@@ -81,6 +81,29 @@ class AdminManagementViewModel(application: Application) : AndroidViewModel(appl
         metros: String,
         puebloCodigo: String,
         subregionId: String,
+    ) = procesarMedidor(numero, cliente, localizacion, calle, poste, metros, puebloCodigo, subregionId, esNuevo = true)
+
+    fun actualizarMedidor(
+        numero: String,
+        cliente: String,
+        localizacion: Long,
+        calle: String,
+        poste: String,
+        metros: String,
+        puebloCodigo: String,
+        subregionId: String,
+    ) = procesarMedidor(numero, cliente, localizacion, calle, poste, metros, puebloCodigo, subregionId, esNuevo = false)
+
+    private fun procesarMedidor(
+        numero: String,
+        cliente: String,
+        localizacion: Long,
+        calle: String,
+        poste: String,
+        metros: String,
+        puebloCodigo: String,
+        subregionId: String,
+        esNuevo: Boolean,
     ) {
         viewModelScope.launch {
             val numeroLimpio = numero.trim()
@@ -108,9 +131,29 @@ class AdminManagementViewModel(application: Application) : AndroidViewModel(appl
                     return@launch
                 }
 
-            val puebloExiste = pueblos.value.any { it.id.toString() == puebloLimpio }
-            if (!puebloExiste) {
+            if (pueblos.value.none { it.id.toString() == puebloLimpio }) {
                 _eventos.emit(AdminEvent.Error(texto(R.string.admin_medidor_error_pueblo)))
+                return@launch
+            }
+
+            val existente = repository.buscarMedidorPorNumero(numeroLimpio)
+            val medidoresActuales = medidores.value
+
+            if (esNuevo && existente != null) {
+                _eventos.emit(AdminEvent.Error(texto(R.string.admin_medidor_error_existente)))
+                return@launch
+            }
+
+            if (!esNuevo && existente == null) {
+                _eventos.emit(AdminEvent.Error(texto(R.string.admin_medidor_error_no_existe)))
+                return@launch
+            }
+
+            val localizacionDuplicada = medidoresActuales.any {
+                it.medidorNumber != numeroLimpio && it.localizacion == localizacion
+            }
+            if (localizacionDuplicada) {
+                _eventos.emit(AdminEvent.Error(texto(R.string.admin_medidor_error_localizacion_existente)))
                 return@launch
             }
 
@@ -135,18 +178,18 @@ class AdminManagementViewModel(application: Application) : AndroidViewModel(appl
         }
     }
 
-    fun eliminarMedidor(numero: String?, subregionId: String?) {
+    fun eliminarMedidor(numero: String, subregionId: String) {
         viewModelScope.launch {
-            val numeroLimpio = numero?.trim()?.takeIf { it.isNotEmpty() }
-                ?: run {
-                    _eventos.emit(AdminEvent.Error(texto(R.string.admin_medidor_error_numero)))
-                    return@launch
-                }
-            val subregionLimpia = subregionId?.trim()?.takeIf { it.isNotEmpty() }
-                ?: run {
-                    _eventos.emit(AdminEvent.Error(texto(R.string.admin_medidor_error_subregion)))
-                    return@launch
-                }
+            val numeroLimpio = numero.trim()
+            if (numeroLimpio.isEmpty()) {
+                _eventos.emit(AdminEvent.Error(texto(R.string.admin_medidor_error_numero)))
+                return@launch
+            }
+            val subregionLimpia = subregionId.trim()
+            if (subregionLimpia.isEmpty()) {
+                _eventos.emit(AdminEvent.Error(texto(R.string.admin_medidor_error_subregion)))
+                return@launch
+            }
 
             val subregionCatalogo = subregiones.value.firstOrNull {
                 it.id.equals(subregionLimpia, ignoreCase = true)
@@ -201,7 +244,55 @@ class AdminManagementViewModel(application: Application) : AndroidViewModel(appl
         _vehiculoSeleccionado.value = null
     }
 
-    fun guardarVehiculo(
+    fun crearVehiculo(
+        placa: Long,
+        agencia: String,
+        tipo: String,
+        subregionId: String,
+    ) {
+        viewModelScope.launch {
+            val subregionLimpia = subregionId.trim().takeIf { it.isNotEmpty() }
+                ?: run {
+                    _eventos.emit(AdminEvent.Error(texto(R.string.admin_vehiculo_error_subregion)))
+                    return@launch
+                }
+            if (subregiones.value.none { it.id.equals(subregionLimpia, ignoreCase = true) }) {
+                _eventos.emit(AdminEvent.Error(texto(R.string.admin_validacion_subregion_inexistente)))
+                return@launch
+            }
+
+            val agenciaLimpia = agencia.trim()
+            if (agenciaLimpia.isEmpty()) {
+                _eventos.emit(AdminEvent.Error(texto(R.string.admin_vehiculo_error_agencia)))
+                return@launch
+            }
+
+            val existente = repository.obtenerVehiculoPorPlaca(placa)
+            if (existente != null) {
+                _eventos.emit(AdminEvent.Error(texto(R.string.admin_vehiculo_error_placa_existente)))
+                return@launch
+            }
+
+            val nuevoId = (vehiculos.value.maxOfOrNull { it.id } ?: 0) + 1
+            val vehiculo = VehiculosEntity(
+                id = nuevoId,
+                agencia = agenciaLimpia,
+                placa = placa,
+                tipo = tipo.trim(),
+                subregion = subregionLimpia
+            )
+
+            try {
+                repository.guardarVehiculo(vehiculo)
+                _vehiculoSeleccionado.value = vehiculo
+                _eventos.emit(AdminEvent.Success(texto(R.string.admin_vehiculo_guardar_exito, placa.toString())))
+            } catch (t: Throwable) {
+                _eventos.emit(AdminEvent.Error(errorMensaje(t)))
+            }
+        }
+    }
+
+    fun actualizarVehiculo(
         id: Int,
         placa: Long,
         agencia: String,
@@ -225,8 +316,19 @@ class AdminManagementViewModel(application: Application) : AndroidViewModel(appl
                 return@launch
             }
 
-            val vehiculo = VehiculosEntity(
-                id = id,
+            val existente = repository.obtenerVehiculoPorId(id)
+                ?: run {
+                    _eventos.emit(AdminEvent.Error(texto(R.string.admin_vehiculo_error_no_existe)))
+                    return@launch
+                }
+
+            val otroConPlaca = repository.obtenerVehiculoPorPlaca(placa)
+            if (otroConPlaca != null && otroConPlaca.id != id) {
+                _eventos.emit(AdminEvent.Error(texto(R.string.admin_vehiculo_error_placa_existente)))
+                return@launch
+            }
+
+            val vehiculo = existente.copy(
                 agencia = agenciaLimpia,
                 placa = placa,
                 tipo = tipo.trim(),
@@ -243,17 +345,12 @@ class AdminManagementViewModel(application: Application) : AndroidViewModel(appl
         }
     }
 
-    fun eliminarVehiculo(id: Int?, etiqueta: String?) {
+    fun eliminarVehiculo(id: Int, etiqueta: String?) {
         viewModelScope.launch {
-            val idVal = id ?: run {
-                _eventos.emit(AdminEvent.Error(texto(R.string.admin_vehiculo_error_id)))
-                return@launch
-            }
-
             try {
-                repository.eliminarVehiculo(idVal)
+                repository.eliminarVehiculo(id)
                 _vehiculoSeleccionado.value = null
-                val label = etiqueta?.takeIf { it.isNotBlank() } ?: idVal.toString()
+                val label = etiqueta?.takeIf { it.isNotBlank() } ?: id.toString()
                 _eventos.emit(AdminEvent.Success(texto(R.string.admin_vehiculo_eliminar_exito, label)))
             } catch (t: Throwable) {
                 _eventos.emit(AdminEvent.Error(errorMensaje(t)))
@@ -281,8 +378,35 @@ class AdminManagementViewModel(application: Application) : AndroidViewModel(appl
         _localizacionSeleccionada.value = null
     }
 
-    fun guardarLocalizacion(
+    fun crearLocalizacion(
+        puebloId: Int,
+        calleId: Int,
+        direccion: String,
+        latitud: Double,
+        longitud: Double,
+        delPoste: Int,
+        alPoste: Int,
+        subregionId: String,
+    ) {
+        procesarLocalizacion(null, puebloId, calleId, direccion, latitud, longitud, delPoste, alPoste, subregionId)
+    }
+
+    fun actualizarLocalizacion(
         id: Int,
+        puebloId: Int,
+        calleId: Int,
+        direccion: String,
+        latitud: Double,
+        longitud: Double,
+        delPoste: Int,
+        alPoste: Int,
+        subregionId: String,
+    ) {
+        procesarLocalizacion(id, puebloId, calleId, direccion, latitud, longitud, delPoste, alPoste, subregionId)
+    }
+
+    private fun procesarLocalizacion(
+        id: Int?,
         puebloId: Int,
         calleId: Int,
         direccion: String,
@@ -319,8 +443,22 @@ class AdminManagementViewModel(application: Application) : AndroidViewModel(appl
                 return@launch
             }
 
+            val existeDuplicado = localizaciones.value.any {
+                (id == null || it.id != id) &&
+                    it.pueblo == puebloId &&
+                    it.calle == calleId &&
+                    it.delPoste == delPoste &&
+                    it.alPoste == alPoste
+            }
+            if (existeDuplicado) {
+                _eventos.emit(AdminEvent.Error(texto(R.string.admin_localizacion_error_existente)))
+                return@launch
+            }
+
+            val identificador = id ?: (localizaciones.value.maxOfOrNull { it.id } ?: 0) + 1
+
             val entity = LocalizacionesEntity(
-                id = id,
+                id = identificador,
                 pueblo = puebloId,
                 calle = calleId,
                 direccion = direccionVal,
@@ -334,23 +472,19 @@ class AdminManagementViewModel(application: Application) : AndroidViewModel(appl
             try {
                 repository.guardarLocalizacion(entity)
                 _localizacionSeleccionada.value = entity
-                _eventos.emit(AdminEvent.Success(texto(R.string.admin_localizacion_guardar_exito, id.toString())))
+                _eventos.emit(AdminEvent.Success(texto(R.string.admin_localizacion_guardar_exito, identificador.toString())))
             } catch (t: Throwable) {
                 _eventos.emit(AdminEvent.Error(errorMensaje(t)))
             }
         }
     }
 
-    fun eliminarLocalizacion(id: Int?) {
+    fun eliminarLocalizacion(id: Int) {
         viewModelScope.launch {
-            val idVal = id ?: run {
-                _eventos.emit(AdminEvent.Error(texto(R.string.admin_localizacion_error_id)))
-                return@launch
-            }
             try {
-                repository.eliminarLocalizacion(idVal)
+                repository.eliminarLocalizacion(id)
                 _localizacionSeleccionada.value = null
-                _eventos.emit(AdminEvent.Success(texto(R.string.admin_localizacion_eliminar_exito, idVal.toString())))
+                _eventos.emit(AdminEvent.Success(texto(R.string.admin_localizacion_eliminar_exito, id.toString())))
             } catch (t: Throwable) {
                 _eventos.emit(AdminEvent.Error(errorMensaje(t)))
             }
