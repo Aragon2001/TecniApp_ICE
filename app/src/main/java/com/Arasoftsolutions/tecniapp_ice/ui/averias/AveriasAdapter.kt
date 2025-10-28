@@ -20,6 +20,7 @@ import java.util.Date
 
 class AveriasAdapter(
     private val onVerDetalle: (AveriaUI) -> Unit,
+    private val onVerMapa: (AveriaUI) -> Unit,
     private val onAsignar: (AveriaUI) -> Unit,
     private val onAtender: (AveriaUI) -> Unit,
     private val onResolver: (AveriaUI) -> Unit,
@@ -80,6 +81,7 @@ class AveriasAdapter(
         private val tvFecha: TextView = view.findViewById(R.id.tvFecha)
         private val mapContainer: View = view.findViewById(R.id.mapContainer)
         private val imgMapa: ImageView = view.findViewById(R.id.imgMapa)
+        private val btnVerMapa: MaterialButton = view.findViewById(R.id.btnVerMapa)
         private val btnAsignar: MaterialButton = view.findViewById(R.id.btnAsignar)
         private val btnAtender: MaterialButton = view.findViewById(R.id.btnAtender)
         private val btnResolver: MaterialButton = view.findViewById(R.id.btnResolver)
@@ -237,6 +239,8 @@ class AveriasAdapter(
 
             val hasCoords = item.lat != 0.0 || item.lng != 0.0
             mapContainer.isVisible = hasCoords
+            btnVerMapa.isVisible = hasCoords
+            btnVerMapa.isEnabled = hasCoords
             if (hasCoords) {
                 val url = "https://maps.googleapis.com/maps/api/staticmap?" +
                     "center=${item.lat},${item.lng}&zoom=16&size=400x400&maptype=roadmap" +
@@ -252,7 +256,16 @@ class AveriasAdapter(
                 imgMapa.setImageResource(R.drawable.ic_map_placeholder)
             }
 
-            mapContainer.setOnClickListener { onVerDetalle(item) }
+            if (hasCoords) {
+                mapContainer.isClickable = true
+                mapContainer.isFocusable = true
+                mapContainer.setOnClickListener { onVerMapa(item) }
+            } else {
+                mapContainer.isClickable = false
+                mapContainer.isFocusable = false
+                mapContainer.setOnClickListener(null)
+            }
+            btnVerMapa.setOnClickListener { onVerMapa(item) }
 
             itemView.setOnClickListener { onVerDetalle(item) }
             btnAsignar.setOnClickListener { onAsignar(item) }
