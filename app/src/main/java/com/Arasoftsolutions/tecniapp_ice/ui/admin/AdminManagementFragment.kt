@@ -3,6 +3,7 @@ package com.Arasoftsolutions.tecniapp_ice.ui.admin
 import android.os.Bundle
 import android.view.View
 import android.widget.ArrayAdapter
+import androidx.annotation.IdRes
 import androidx.core.view.isVisible
 import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.Fragment
@@ -101,8 +102,20 @@ class AdminManagementFragment : Fragment(R.layout.fragment_admin_management) {
             binding.cardMedidores.isVisible = checkedId == R.id.btnAdminMedidores
             binding.cardVehiculos.isVisible = checkedId == R.id.btnAdminVehiculos
             binding.cardLocalizaciones.isVisible = checkedId == R.id.btnAdminLocalizaciones
+            actualizarIconoSeccion(checkedId)
         }
         binding.toggleAdminSections.check(R.id.btnAdminMedidores)
+    }
+
+    private fun actualizarIconoSeccion(@IdRes checkedId: Int) {
+        val (iconRes, contentDescriptionRes) = when (checkedId) {
+            R.id.btnAdminMedidores -> R.drawable.ic_menu_medidor to R.string.admin_section_icon_medidores
+            R.id.btnAdminVehiculos -> R.drawable.ic_menu_vehiculo to R.string.admin_section_icon_vehiculos
+            R.id.btnAdminLocalizaciones -> R.drawable.ic_menu_localizacion to R.string.admin_section_icon_localizaciones
+            else -> R.drawable.ic_menu_medidor to R.string.admin_section_icon_medidores
+        }
+        binding.imageAdminSectionIcon.setImageResource(iconRes)
+        binding.imageAdminSectionIcon.contentDescription = getString(contentDescriptionRes)
     }
 
     private fun setupListeners() {
@@ -115,10 +128,14 @@ class AdminManagementFragment : Fragment(R.layout.fragment_admin_management) {
             true
         }
 
+        binding.inputAdminMedidorNumero.doAfterTextChanged { actualizarEstadoBotonesMedidor() }
+
         binding.btnAdminMedidorLimpiar.setOnClickListener {
             limpiarFormularioMedidor()
             viewModel.limpiarMedidor()
+            actualizarEstadoBotonesMedidor()
         }
+        binding.btnAdminMedidorAgregar.setOnClickListener { agregarMedidor() }
         binding.btnAdminMedidorGuardar.setOnClickListener { guardarMedidor() }
         binding.btnAdminMedidorEliminar.setOnClickListener { eliminarMedidor() }
 
@@ -140,13 +157,20 @@ class AdminManagementFragment : Fragment(R.layout.fragment_admin_management) {
             true
         }
 
+        binding.inputAdminVehiculoPlaca.doAfterTextChanged { actualizarEstadoBotonesVehiculo() }
+
         binding.btnAdminVehiculoLimpiar.setOnClickListener {
             limpiarFormularioVehiculo()
             viewModel.limpiarVehiculo()
+            actualizarEstadoBotonesVehiculo()
         }
+        binding.btnAdminVehiculoAgregar.setOnClickListener { agregarVehiculo() }
         binding.btnAdminVehiculoGuardar.setOnClickListener { guardarVehiculo() }
         binding.btnAdminVehiculoEliminar.setOnClickListener { eliminarVehiculo() }
-        binding.actvAdminVehiculoSubregion.setOnItemClickListener { _, _, _, _ -> actualizarAgenciasFiltradas() }
+        binding.actvAdminVehiculoSubregion.setOnItemClickListener { _, _, _, _ ->
+            actualizarAgenciasFiltradas()
+            actualizarEstadoBotonesVehiculo()
+        }
 
         binding.actvAdminLocalizacionSubregion.setOnItemClickListener { _, _, _, _ ->
             actualizarPueblosLocalizacion()
@@ -174,7 +198,9 @@ class AdminManagementFragment : Fragment(R.layout.fragment_admin_management) {
         binding.btnAdminLocalizacionLimpiar.setOnClickListener {
             limpiarFormularioLocalizacion()
             viewModel.limpiarLocalizacion()
+            actualizarEstadoBotonesLocalizacion()
         }
+        binding.btnAdminLocalizacionAgregar.setOnClickListener { agregarLocalizacion() }
         binding.btnAdminLocalizacionGuardar.setOnClickListener { guardarLocalizacion() }
         binding.btnAdminLocalizacionEliminar.setOnClickListener { eliminarLocalizacion() }
         binding.btnAdminLocalizacionMapa.setOnClickListener { abrirSelectorMapa() }
@@ -211,6 +237,7 @@ class AdminManagementFragment : Fragment(R.layout.fragment_admin_management) {
         medidorAdapter.clear()
         medidorAdapter.addAll(datos)
         medidorAdapter.notifyDataSetChanged()
+        actualizarEstadoBotonesMedidor()
     }
 
     private fun actualizarVehiculos(lista: List<VehiculosEntity>) {
@@ -225,11 +252,13 @@ class AdminManagementFragment : Fragment(R.layout.fragment_admin_management) {
         vehiculoAdapter.addAll(datos)
         vehiculoAdapter.notifyDataSetChanged()
         actualizarAgenciasFiltradas()
+        actualizarEstadoBotonesVehiculo()
     }
 
     private fun actualizarLocalizaciones(lista: List<LocalizacionesEntity>) {
         localizacionesDisponibles = lista
         actualizarCallesLocalizacion()
+        actualizarEstadoBotonesLocalizacion()
     }
 
     private fun actualizarPueblos(lista: List<PueblosEntity>) {
@@ -320,12 +349,10 @@ class AdminManagementFragment : Fragment(R.layout.fragment_admin_management) {
         if (!datos.contains(binding.actvAdminVehiculoAgencia.text?.toString())) {
             binding.actvAdminVehiculoAgencia.setText("", false)
         }
+        actualizarEstadoBotonesVehiculo()
     }
 
-    private fun formatLocalizacionDisplay(entidad: LocalizacionesEntity): String {
-        val poste = "Poste ${entidad.delPoste}-${entidad.alPoste}"
-        return "${entidad.calle} - $poste (ID ${entidad.id})"
-    }
+    private fun formatLocalizacionDisplay(entidad: LocalizacionesEntity): String = entidad.calle.toString()
 
     private fun mostrarMedidor(entidad: MedidorEntity?) {
         limpiarErroresMedidor()
@@ -344,6 +371,7 @@ class AdminManagementFragment : Fragment(R.layout.fragment_admin_management) {
         binding.actvAdminMedidorSubregion.setText(formatSubregion(entidad.subregion), false)
         binding.inputAdminMedidorLocalizacion.setText(entidad.localizacion?.toString().orEmpty())
         actualizarMedidorLocalizacion()
+        actualizarEstadoBotonesMedidor()
     }
 
     private fun mostrarVehiculo(entidad: VehiculosEntity?) {
@@ -355,12 +383,12 @@ class AdminManagementFragment : Fragment(R.layout.fragment_admin_management) {
 
         val display = "${entidad.placa} - ${entidad.agencia}"
         binding.actvAdminVehiculoBuscar.setText(display, false)
-        binding.inputAdminVehiculoId.setText(entidad.id.toString())
         binding.inputAdminVehiculoPlaca.setText(entidad.placa.toString())
         binding.actvAdminVehiculoAgencia.setText(entidad.agencia, false)
         binding.inputAdminVehiculoTipo.setText(entidad.tipo)
         binding.actvAdminVehiculoSubregion.setText(formatSubregion(entidad.subregion), false)
         actualizarAgenciasFiltradas()
+        actualizarEstadoBotonesVehiculo()
     }
 
     private fun mostrarLocalizacion(entidad: LocalizacionesEntity?) {
@@ -370,7 +398,6 @@ class AdminManagementFragment : Fragment(R.layout.fragment_admin_management) {
             return
         }
 
-        binding.inputAdminLocalizacionId.setText(entidad.id.toString())
         val subregionResuelta = entidad.subregion
             ?: pueblosDisponibles.firstOrNull { it.id == entidad.pueblo }?.subregion_id_normalizado
         binding.actvAdminLocalizacionSubregion.setText(formatSubregion(subregionResuelta), false)
@@ -385,83 +412,85 @@ class AdminManagementFragment : Fragment(R.layout.fragment_admin_management) {
         binding.inputAdminLocalizacionLongitud.setText(entidad.longitud.takeUnless { it == 0.0 }?.let { formatCoordinate(it) }.orEmpty())
         binding.inputAdminLocalizacionDelPoste.setText(entidad.delPoste.toString())
         binding.inputAdminLocalizacionAlPoste.setText(entidad.alPoste.toString())
+        actualizarEstadoBotonesLocalizacion()
     }
 
     private fun guardarMedidor() {
         limpiarErroresMedidor()
-        val numero = binding.inputAdminMedidorNumero.text?.toString().orEmpty().trim()
-        if (numero.isEmpty()) {
-            binding.tilAdminMedidorNumero.error = getString(R.string.admin_medidor_error_numero)
+        val form = obtenerMedidorFormulario() ?: return
+
+        val existente = medidoresDisponibles.firstOrNull { it.medidorNumber.equals(form.numero, ignoreCase = true) }
+        if (existente == null) {
+            binding.tilAdminMedidorNumero.error = getString(R.string.admin_medidor_error_no_existe)
             return
         }
 
-        val cliente = binding.inputAdminMedidorCliente.text?.toString()?.trim().orEmpty()
-        if (cliente.isEmpty()) {
-            binding.tilAdminMedidorCliente.error = getString(R.string.admin_medidor_error_cliente)
+        val localizacionDuplicada = medidoresDisponibles.any {
+            it.medidorNumber != existente.medidorNumber && it.localizacion == form.localizacion
+        }
+        if (localizacionDuplicada) {
+            binding.tilAdminMedidorLocalizacion.error = getString(R.string.admin_medidor_error_localizacion_existente)
             return
         }
-
-        val calle = binding.inputAdminMedidorCalle.text?.toString()?.trim().orEmpty()
-        if (calle.isEmpty()) {
-            binding.tilAdminMedidorCalle.error = getString(R.string.admin_medidor_error_calle)
-            return
-        }
-
-        val poste = binding.inputAdminMedidorPoste.text?.toString()?.trim().orEmpty()
-        if (poste.isEmpty()) {
-            binding.tilAdminMedidorPoste.error = getString(R.string.admin_medidor_error_poste)
-            return
-        }
-
-        val metros = binding.inputAdminMedidorMetros.text?.toString()?.trim().orEmpty()
-        if (metros.isEmpty()) {
-            binding.tilAdminMedidorMetros.error = getString(R.string.admin_medidor_error_metros)
-            return
-        }
-
-        val puebloCodigo = resolvePuebloCode(binding.actvAdminMedidorPueblo.text?.toString())
-        if (puebloCodigo == null) {
-            binding.tilAdminMedidorPueblo.error = getString(R.string.admin_medidor_error_pueblo)
-            return
-        }
-
-        val subregionId = resolveSubregionId(binding.actvAdminMedidorSubregion.text?.toString())
-        if (subregionId.isNullOrEmpty()) {
-            binding.tilAdminMedidorSubregion.error = getString(R.string.admin_medidor_error_subregion)
-            return
-        }
-
-        val localizacion = generarLocalizacion(puebloCodigo, calle, poste, metros)
-        if (localizacion == null) {
-            binding.tilAdminMedidorLocalizacion.error = getString(R.string.admin_medidor_error_localizacion)
-            return
-        }
-        binding.inputAdminMedidorLocalizacion.setText(localizacion.toString())
 
         confirmarAccion(
             getString(R.string.admin_confirm_guardar_medidor_title),
-            getString(R.string.admin_confirm_guardar_medidor_message, numero)
+            getString(R.string.admin_confirm_guardar_medidor_message, form.numero)
         ) {
-            viewModel.guardarMedidor(
-                numero = numero,
-                cliente = cliente,
-                localizacion = localizacion,
-                calle = calle,
-                poste = poste,
-                metros = metros,
-                puebloCodigo = puebloCodigo,
-                subregionId = subregionId
+            viewModel.actualizarMedidor(
+                numero = form.numero,
+                cliente = form.cliente,
+                localizacion = form.localizacion,
+                calle = form.calle,
+                poste = form.poste,
+                metros = form.metros,
+                puebloCodigo = form.puebloCodigo,
+                subregionId = form.subregionId
+            )
+        }
+    }
+
+    private fun agregarMedidor() {
+        limpiarErroresMedidor()
+        val form = obtenerMedidorFormulario() ?: return
+
+        if (medidoresDisponibles.any { it.medidorNumber.equals(form.numero, ignoreCase = true) }) {
+            binding.tilAdminMedidorNumero.error = getString(R.string.admin_medidor_error_existente)
+            return
+        }
+
+        val localizacionDuplicada = medidoresDisponibles.any { it.localizacion == form.localizacion }
+        if (localizacionDuplicada) {
+            binding.tilAdminMedidorLocalizacion.error = getString(R.string.admin_medidor_error_localizacion_existente)
+            return
+        }
+
+        confirmarAccion(
+            getString(R.string.admin_confirm_agregar_medidor_title),
+            getString(R.string.admin_confirm_agregar_medidor_message, form.numero)
+        ) {
+            viewModel.crearMedidor(
+                numero = form.numero,
+                cliente = form.cliente,
+                localizacion = form.localizacion,
+                calle = form.calle,
+                poste = form.poste,
+                metros = form.metros,
+                puebloCodigo = form.puebloCodigo,
+                subregionId = form.subregionId
             )
         }
     }
 
     private fun eliminarMedidor() {
-        val numero = binding.inputAdminMedidorNumero.text?.toString()?.trim()
-        if (numero.isNullOrEmpty()) {
+        val numero = binding.inputAdminMedidorNumero.text?.toString()?.trim().orEmpty()
+        if (numero.isEmpty()) {
             binding.tilAdminMedidorNumero.error = getString(R.string.admin_medidor_error_numero)
             return
         }
-        val subregionId = resolveSubregionId(binding.actvAdminMedidorSubregion.text?.toString())
+        val existente = medidoresDisponibles.firstOrNull { it.medidorNumber.equals(numero, ignoreCase = true) }
+        val subregionId = existente?.subregion
+            ?: resolveSubregionId(binding.actvAdminMedidorSubregion.text?.toString())
         if (subregionId.isNullOrEmpty()) {
             binding.tilAdminMedidorSubregion.error = getString(R.string.admin_medidor_error_subregion)
             return
@@ -477,158 +506,173 @@ class AdminManagementFragment : Fragment(R.layout.fragment_admin_management) {
 
     private fun guardarVehiculo() {
         limpiarErroresVehiculo()
-        val id = binding.inputAdminVehiculoId.text?.toString()?.trim()?.toIntOrNull()
-        if (id == null) {
-            binding.tilAdminVehiculoId.error = getString(R.string.admin_vehiculo_error_id)
+        val form = obtenerVehiculoFormulario() ?: return
+
+        val seleccionado = viewModel.vehiculoSeleccionado.value
+        val existente = seleccionado ?: vehiculosDisponibles.firstOrNull { it.placa == form.placa }
+        val id = existente?.id ?: run {
+            binding.tilAdminVehiculoPlaca.error = getString(R.string.admin_vehiculo_error_no_existe)
             return
         }
 
-        val placaTexto = binding.inputAdminVehiculoPlaca.text?.toString()?.trim().orEmpty()
-        val placa = placaTexto.toLongOrNull()
-        if (placa == null) {
-            binding.tilAdminVehiculoPlaca.error = getString(R.string.admin_vehiculo_error_placa)
-            return
-        }
-
-        val agencia = resolveAgenciaNombre(binding.actvAdminVehiculoAgencia.text?.toString())
-        if (agencia.isNullOrEmpty()) {
-            binding.tilAdminVehiculoAgencia.error = getString(R.string.admin_vehiculo_error_agencia)
-            return
-        }
-
-        val tipo = binding.inputAdminVehiculoTipo.text?.toString()?.trim().orEmpty()
-        if (tipo.isEmpty()) {
-            binding.tilAdminVehiculoTipo.error = getString(R.string.admin_vehiculo_error_tipo)
-            return
-        }
-
-        val subregionId = resolveSubregionId(binding.actvAdminVehiculoSubregion.text?.toString())
-        if (subregionId.isNullOrEmpty()) {
-            binding.tilAdminVehiculoSubregion.error = getString(R.string.admin_vehiculo_error_subregion)
+        val placaEnUso = vehiculosDisponibles.any { it.placa == form.placa && it.id != id }
+        if (placaEnUso) {
+            binding.tilAdminVehiculoPlaca.error = getString(R.string.admin_vehiculo_error_placa_existente)
             return
         }
 
         confirmarAccion(
             getString(R.string.admin_confirm_guardar_vehiculo_title),
-            getString(R.string.admin_confirm_guardar_vehiculo_message, placaTexto.ifEmpty { id.toString() })
+            getString(R.string.admin_confirm_guardar_vehiculo_message, form.placa.toString())
         ) {
-            viewModel.guardarVehiculo(
+            viewModel.actualizarVehiculo(
                 id = id,
-                placa = placa,
-                agencia = agencia,
-                tipo = tipo,
-                subregionId = subregionId
+                placa = form.placa,
+                agencia = form.agencia,
+                tipo = form.tipo,
+                subregionId = form.subregionId
+            )
+        }
+    }
+
+    private fun agregarVehiculo() {
+        limpiarErroresVehiculo()
+        val form = obtenerVehiculoFormulario() ?: return
+
+        if (vehiculosDisponibles.any { it.placa == form.placa }) {
+            binding.tilAdminVehiculoPlaca.error = getString(R.string.admin_vehiculo_error_placa_existente)
+            return
+        }
+
+        confirmarAccion(
+            getString(R.string.admin_confirm_agregar_vehiculo_title),
+            getString(R.string.admin_confirm_agregar_vehiculo_message, form.placa.toString())
+        ) {
+            viewModel.crearVehiculo(
+                placa = form.placa,
+                agencia = form.agencia,
+                tipo = form.tipo,
+                subregionId = form.subregionId
             )
         }
     }
 
     private fun eliminarVehiculo() {
-        val id = binding.inputAdminVehiculoId.text?.toString()?.trim()?.toIntOrNull()
-        if (id == null) {
-            binding.tilAdminVehiculoId.error = getString(R.string.admin_vehiculo_error_id)
+        val placaTexto = binding.inputAdminVehiculoPlaca.text?.toString()?.trim().orEmpty()
+        val placa = placaTexto.toLongOrNull()
+        val seleccionado = viewModel.vehiculoSeleccionado.value
+        val existente = seleccionado ?: vehiculosDisponibles.firstOrNull { it.placa == placa }
+        if (existente == null) {
+            binding.tilAdminVehiculoPlaca.error = getString(R.string.admin_vehiculo_error_no_existe)
             return
         }
-        val placaTexto = binding.inputAdminVehiculoPlaca.text?.toString()?.trim().takeIf { !it.isNullOrEmpty() }
+
         confirmarAccion(
             getString(R.string.admin_confirm_eliminar_vehiculo_title),
-            getString(R.string.admin_confirm_eliminar_vehiculo_message, placaTexto ?: id.toString())
+            getString(
+                R.string.admin_confirm_eliminar_vehiculo_message,
+                placaTexto.ifEmpty { existente.id.toString() }
+            )
         ) {
-            viewModel.eliminarVehiculo(id, placaTexto)
+            viewModel.eliminarVehiculo(existente.id, placaTexto.ifEmpty { existente.placa.toString() })
         }
     }
 
     private fun guardarLocalizacion() {
         limpiarErroresLocalizacion()
-        val id = binding.inputAdminLocalizacionId.text?.toString()?.trim()?.toIntOrNull()
-        if (id == null) {
-            binding.tilAdminLocalizacionId.error = getString(R.string.admin_localizacion_error_id)
-            return
-        }
-
-        val subregionId = resolveSubregionId(binding.actvAdminLocalizacionSubregion.text?.toString())
-        if (subregionId.isNullOrEmpty()) {
-            binding.tilAdminLocalizacionSubregion.error = getString(R.string.admin_localizacion_error_subregion)
-            return
-        }
-
-        val puebloId = resolvePuebloId(binding.actvAdminLocalizacionPueblo.text?.toString())
-        val puebloEntidad = puebloId?.let { idPueblo -> pueblosDisponibles.firstOrNull { it.id == idPueblo } }
-        if (puebloId == null || puebloEntidad == null) {
-            binding.tilAdminLocalizacionPueblo.error = getString(R.string.admin_localizacion_error_pueblo)
-            return
-        }
-        if (!puebloEntidad.subregion_id_normalizado.equals(subregionId, ignoreCase = true)) {
-            binding.tilAdminLocalizacionPueblo.error = getString(R.string.admin_localizacion_error_relacion)
-            return
-        }
-
-        val calleTexto = binding.actvAdminLocalizacionCalle.text?.toString()?.trim()
-        val calle = calleTexto?.takeWhile { it.isDigit() }?.toIntOrNull()
-        if (calle == null) {
+        val seleccionada = viewModel.localizacionSeleccionada.value
+        if (seleccionada == null) {
             binding.tilAdminLocalizacionCalle.error = getString(R.string.admin_localizacion_error_calle)
             return
         }
 
-        val direccion = binding.inputAdminLocalizacionDireccion.text?.toString()?.trim()
-        if (direccion.isNullOrEmpty()) {
-            binding.tilAdminLocalizacionDireccion.error = getString(R.string.admin_localizacion_error_direccion)
-            return
-        }
+        val form = obtenerLocalizacionFormulario() ?: return
 
-        val latitud = binding.inputAdminLocalizacionLatitud.text?.toString()?.trim()?.toDoubleOrNull()
-        if (latitud == null) {
-            binding.tilAdminLocalizacionLatitud.error = getString(R.string.admin_localizacion_error_latitud)
-            return
+        val duplicada = localizacionesDisponibles.any {
+            it.id != seleccionada.id &&
+                it.pueblo == form.puebloId &&
+                it.calle == form.calleId &&
+                it.delPoste == form.delPoste &&
+                it.alPoste == form.alPoste
         }
-
-        val longitud = binding.inputAdminLocalizacionLongitud.text?.toString()?.trim()?.toDoubleOrNull()
-        if (longitud == null) {
-            binding.tilAdminLocalizacionLongitud.error = getString(R.string.admin_localizacion_error_longitud)
-            return
-        }
-
-        val delPoste = binding.inputAdminLocalizacionDelPoste.text?.toString()?.trim()?.toIntOrNull()
-        if (delPoste == null) {
-            binding.tilAdminLocalizacionDelPoste.error = getString(R.string.admin_localizacion_error_del_poste)
-            return
-        }
-
-        val alPoste = binding.inputAdminLocalizacionAlPoste.text?.toString()?.trim()?.toIntOrNull()
-        if (alPoste == null) {
-            binding.tilAdminLocalizacionAlPoste.error = getString(R.string.admin_localizacion_error_al_poste)
+        if (duplicada) {
+            binding.tilAdminLocalizacionCalle.error = getString(R.string.admin_localizacion_error_existente)
             return
         }
 
         confirmarAccion(
             getString(R.string.admin_confirm_guardar_localizacion_title),
-            getString(R.string.admin_confirm_guardar_localizacion_message, id.toString())
+            getString(
+                R.string.admin_confirm_guardar_localizacion_message,
+                seleccionada.id.toString()
+            )
         ) {
-            viewModel.guardarLocalizacion(
-                id = id,
-                puebloId = puebloId,
-                calleId = calle,
-                direccion = direccion,
-                latitud = latitud,
-                longitud = longitud,
-                delPoste = delPoste,
-                alPoste = alPoste,
-                subregionId = subregionId
+            viewModel.actualizarLocalizacion(
+                id = seleccionada.id,
+                puebloId = form.puebloId,
+                calleId = form.calleId,
+                direccion = form.direccion,
+                latitud = form.latitud,
+                longitud = form.longitud,
+                delPoste = form.delPoste,
+                alPoste = form.alPoste,
+                subregionId = form.subregionId
+            )
+        }
+    }
+
+    private fun agregarLocalizacion() {
+        limpiarErroresLocalizacion()
+        val form = obtenerLocalizacionFormulario() ?: return
+
+        val duplicada = localizacionesDisponibles.any {
+            it.pueblo == form.puebloId &&
+                it.calle == form.calleId &&
+                it.delPoste == form.delPoste &&
+                it.alPoste == form.alPoste
+        }
+        if (duplicada) {
+            binding.tilAdminLocalizacionCalle.error = getString(R.string.admin_localizacion_error_existente)
+            return
+        }
+
+        confirmarAccion(
+            getString(R.string.admin_confirm_agregar_localizacion_title),
+            getString(
+                R.string.admin_confirm_agregar_localizacion_message,
+                formatPueblo(form.puebloId.toString())
+            )
+        ) {
+            viewModel.crearLocalizacion(
+                puebloId = form.puebloId,
+                calleId = form.calleId,
+                direccion = form.direccion,
+                latitud = form.latitud,
+                longitud = form.longitud,
+                delPoste = form.delPoste,
+                alPoste = form.alPoste,
+                subregionId = form.subregionId
             )
         }
     }
 
     private fun eliminarLocalizacion() {
-        val id = binding.inputAdminLocalizacionId.text?.toString()?.trim()?.toIntOrNull()
-        if (id == null) {
-            binding.tilAdminLocalizacionId.error = getString(R.string.admin_localizacion_error_id)
+        val seleccionada = viewModel.localizacionSeleccionada.value
+            ?: run {
+                val display = binding.actvAdminLocalizacionCalle.text?.toString()?.trim()
+                val id = localizacionDisplayToId[display]
+                id?.let { localizacionesDisponibles.firstOrNull { loc -> loc.id == it } }
+            }
+        if (seleccionada == null) {
+            binding.tilAdminLocalizacionCalle.error = getString(R.string.admin_localizacion_error_calle)
             return
         }
 
         confirmarAccion(
             getString(R.string.admin_confirm_eliminar_localizacion_title),
-            getString(R.string.admin_confirm_eliminar_localizacion_message, id.toString())
+            getString(R.string.admin_confirm_eliminar_localizacion_message, seleccionada.id.toString())
         ) {
-            viewModel.eliminarLocalizacion(id)
+            viewModel.eliminarLocalizacion(seleccionada.id)
         }
     }
 
@@ -643,21 +687,21 @@ class AdminManagementFragment : Fragment(R.layout.fragment_admin_management) {
         binding.inputAdminMedidorMetros.setText("")
         binding.actvAdminMedidorPueblo.setText("", false)
         binding.actvAdminMedidorSubregion.setText("", false)
+        actualizarEstadoBotonesMedidor()
     }
 
     private fun limpiarFormularioVehiculo() {
         limpiarErroresVehiculo()
         binding.actvAdminVehiculoBuscar.setText("", false)
-        binding.inputAdminVehiculoId.setText("")
         binding.inputAdminVehiculoPlaca.setText("")
         binding.actvAdminVehiculoAgencia.setText("", false)
         binding.inputAdminVehiculoTipo.setText("")
         binding.actvAdminVehiculoSubregion.setText("", false)
+        actualizarEstadoBotonesVehiculo()
     }
 
     private fun limpiarFormularioLocalizacion() {
         limpiarErroresLocalizacion()
-        binding.inputAdminLocalizacionId.setText("")
         binding.actvAdminLocalizacionSubregion.setText("", false)
         binding.actvAdminLocalizacionPueblo.setText("", false)
         binding.actvAdminLocalizacionCalle.setText("", false)
@@ -666,6 +710,7 @@ class AdminManagementFragment : Fragment(R.layout.fragment_admin_management) {
         binding.inputAdminLocalizacionLongitud.setText("")
         binding.inputAdminLocalizacionDelPoste.setText("")
         binding.inputAdminLocalizacionAlPoste.setText("")
+        actualizarEstadoBotonesLocalizacion()
     }
 
     private fun limpiarErroresMedidor() {
@@ -680,7 +725,6 @@ class AdminManagementFragment : Fragment(R.layout.fragment_admin_management) {
     }
 
     private fun limpiarErroresVehiculo() {
-        binding.tilAdminVehiculoId.error = null
         binding.tilAdminVehiculoPlaca.error = null
         binding.tilAdminVehiculoAgencia.error = null
         binding.tilAdminVehiculoTipo.error = null
@@ -688,7 +732,6 @@ class AdminManagementFragment : Fragment(R.layout.fragment_admin_management) {
     }
 
     private fun limpiarErroresLocalizacion() {
-        binding.tilAdminLocalizacionId.error = null
         binding.tilAdminLocalizacionSubregion.error = null
         binding.tilAdminLocalizacionPueblo.error = null
         binding.tilAdminLocalizacionCalle.error = null
@@ -697,6 +740,31 @@ class AdminManagementFragment : Fragment(R.layout.fragment_admin_management) {
         binding.tilAdminLocalizacionLongitud.error = null
         binding.tilAdminLocalizacionDelPoste.error = null
         binding.tilAdminLocalizacionAlPoste.error = null
+    }
+
+    private fun actualizarEstadoBotonesMedidor() {
+        val numero = binding.inputAdminMedidorNumero.text?.toString()?.trim().orEmpty()
+        val existe = numero.isNotEmpty() && medidoresDisponibles.any { it.medidorNumber.equals(numero, ignoreCase = true) }
+        binding.btnAdminMedidorAgregar.isVisible = numero.isNotEmpty() && !existe
+        binding.btnAdminMedidorGuardar.isVisible = existe
+        binding.btnAdminMedidorEliminar.isVisible = existe
+    }
+
+    private fun actualizarEstadoBotonesVehiculo() {
+        val placaTexto = binding.inputAdminVehiculoPlaca.text?.toString()?.trim().orEmpty()
+        val placa = placaTexto.toLongOrNull()
+        val existe = placa != null && vehiculosDisponibles.any { it.placa == placa }
+        binding.btnAdminVehiculoAgregar.isVisible = placa != null && !existe
+        binding.btnAdminVehiculoGuardar.isVisible = existe
+        binding.btnAdminVehiculoEliminar.isVisible = existe
+    }
+
+    private fun actualizarEstadoBotonesLocalizacion() {
+        val seleccion = viewModel.localizacionSeleccionada.value
+        val haySeleccion = seleccion != null
+        binding.btnAdminLocalizacionAgregar.isVisible = !haySeleccion
+        binding.btnAdminLocalizacionGuardar.isVisible = haySeleccion
+        binding.btnAdminLocalizacionEliminar.isVisible = haySeleccion
     }
 
     private fun actualizarMedidorLocalizacion() {
@@ -722,6 +790,172 @@ class AdminManagementFragment : Fragment(R.layout.fragment_admin_management) {
         val metrosSegment = metros.filter(Char::isDigit).padStart(2, '0')
         val localizacionString = puebloSegment + calleSegment + posteSegment + metrosSegment
         return localizacionString.toLongOrNull()
+    }
+
+    private fun obtenerMedidorFormulario(): MedidorForm? {
+        val numero = binding.inputAdminMedidorNumero.text?.toString().orEmpty().trim()
+        if (numero.isEmpty()) {
+            binding.tilAdminMedidorNumero.error = getString(R.string.admin_medidor_error_numero)
+            return null
+        }
+
+        val cliente = binding.inputAdminMedidorCliente.text?.toString()?.trim().orEmpty()
+        if (cliente.isEmpty()) {
+            binding.tilAdminMedidorCliente.error = getString(R.string.admin_medidor_error_cliente)
+            return null
+        }
+
+        val subregionId = resolveSubregionId(binding.actvAdminMedidorSubregion.text?.toString())
+            ?.takeIf { it.isNotEmpty() }
+            ?: run {
+                binding.tilAdminMedidorSubregion.error = getString(R.string.admin_medidor_error_subregion)
+                return null
+            }
+
+        val puebloCodigo = resolvePuebloCode(binding.actvAdminMedidorPueblo.text?.toString())
+            ?: run {
+                binding.tilAdminMedidorPueblo.error = getString(R.string.admin_medidor_error_pueblo)
+                return null
+            }
+
+        val calle = binding.inputAdminMedidorCalle.text?.toString()?.trim().orEmpty()
+        if (calle.isEmpty()) {
+            binding.tilAdminMedidorCalle.error = getString(R.string.admin_medidor_error_calle)
+            return null
+        }
+
+        val poste = binding.inputAdminMedidorPoste.text?.toString()?.trim().orEmpty()
+        if (poste.isEmpty()) {
+            binding.tilAdminMedidorPoste.error = getString(R.string.admin_medidor_error_poste)
+            return null
+        }
+
+        val metros = binding.inputAdminMedidorMetros.text?.toString()?.trim().orEmpty()
+        if (metros.isEmpty()) {
+            binding.tilAdminMedidorMetros.error = getString(R.string.admin_medidor_error_metros)
+            return null
+        }
+
+        val localizacion = generarLocalizacion(puebloCodigo, calle, poste, metros)
+        if (localizacion == null) {
+            binding.tilAdminMedidorLocalizacion.error = getString(R.string.admin_medidor_error_localizacion)
+            return null
+        }
+        binding.inputAdminMedidorLocalizacion.setText(localizacion.toString())
+
+        return MedidorForm(
+            numero = numero,
+            cliente = cliente,
+            calle = calle,
+            poste = poste,
+            metros = metros,
+            puebloCodigo = puebloCodigo,
+            subregionId = subregionId,
+            localizacion = localizacion
+        )
+    }
+
+    private fun obtenerVehiculoFormulario(): VehiculoForm? {
+        val subregionId = resolveSubregionId(binding.actvAdminVehiculoSubregion.text?.toString())
+            ?.takeIf { it.isNotEmpty() }
+            ?: run {
+                binding.tilAdminVehiculoSubregion.error = getString(R.string.admin_vehiculo_error_subregion)
+                return null
+            }
+
+        val agencia = resolveAgenciaNombre(binding.actvAdminVehiculoAgencia.text?.toString())?.trim().orEmpty()
+        if (agencia.isEmpty()) {
+            binding.tilAdminVehiculoAgencia.error = getString(R.string.admin_vehiculo_error_agencia)
+            return null
+        }
+
+        val placaTexto = binding.inputAdminVehiculoPlaca.text?.toString()?.trim().orEmpty()
+        val placa = placaTexto.toLongOrNull()
+        if (placa == null) {
+            binding.tilAdminVehiculoPlaca.error = getString(R.string.admin_vehiculo_error_placa)
+            return null
+        }
+
+        val tipo = binding.inputAdminVehiculoTipo.text?.toString()?.trim().orEmpty()
+        if (tipo.isEmpty()) {
+            binding.tilAdminVehiculoTipo.error = getString(R.string.admin_vehiculo_error_tipo)
+            return null
+        }
+
+        return VehiculoForm(
+            placa = placa,
+            agencia = agencia,
+            tipo = tipo,
+            subregionId = subregionId
+        )
+    }
+
+    private fun obtenerLocalizacionFormulario(): LocalizacionForm? {
+        val subregionId = resolveSubregionId(binding.actvAdminLocalizacionSubregion.text?.toString())
+            ?.takeIf { it.isNotEmpty() }
+            ?: run {
+                binding.tilAdminLocalizacionSubregion.error = getString(R.string.admin_localizacion_error_subregion)
+                return null
+            }
+
+        val puebloId = resolvePuebloId(binding.actvAdminLocalizacionPueblo.text?.toString())
+        val puebloEntidad = puebloId?.let { idPueblo -> pueblosDisponibles.firstOrNull { it.id == idPueblo } }
+        if (puebloId == null || puebloEntidad == null) {
+            binding.tilAdminLocalizacionPueblo.error = getString(R.string.admin_localizacion_error_pueblo)
+            return null
+        }
+        if (!puebloEntidad.subregion_id_normalizado.equals(subregionId, ignoreCase = true)) {
+            binding.tilAdminLocalizacionPueblo.error = getString(R.string.admin_localizacion_error_relacion)
+            return null
+        }
+
+        val calleTexto = binding.actvAdminLocalizacionCalle.text?.toString()?.trim().orEmpty()
+        val calle = calleTexto.filter(Char::isDigit).toIntOrNull()
+        if (calle == null) {
+            binding.tilAdminLocalizacionCalle.error = getString(R.string.admin_localizacion_error_calle)
+            return null
+        }
+
+        val direccion = binding.inputAdminLocalizacionDireccion.text?.toString()?.trim()
+        if (direccion.isNullOrEmpty()) {
+            binding.tilAdminLocalizacionDireccion.error = getString(R.string.admin_localizacion_error_direccion)
+            return null
+        }
+
+        val latitud = binding.inputAdminLocalizacionLatitud.text?.toString()?.trim()?.toDoubleOrNull()
+        if (latitud == null) {
+            binding.tilAdminLocalizacionLatitud.error = getString(R.string.admin_localizacion_error_latitud)
+            return null
+        }
+
+        val longitud = binding.inputAdminLocalizacionLongitud.text?.toString()?.trim()?.toDoubleOrNull()
+        if (longitud == null) {
+            binding.tilAdminLocalizacionLongitud.error = getString(R.string.admin_localizacion_error_longitud)
+            return null
+        }
+
+        val delPoste = binding.inputAdminLocalizacionDelPoste.text?.toString()?.trim()?.toIntOrNull()
+        if (delPoste == null) {
+            binding.tilAdminLocalizacionDelPoste.error = getString(R.string.admin_localizacion_error_del_poste)
+            return null
+        }
+
+        val alPoste = binding.inputAdminLocalizacionAlPoste.text?.toString()?.trim()?.toIntOrNull()
+        if (alPoste == null) {
+            binding.tilAdminLocalizacionAlPoste.error = getString(R.string.admin_localizacion_error_al_poste)
+            return null
+        }
+
+        return LocalizacionForm(
+            puebloId = puebloId,
+            calleId = calle,
+            direccion = direccion,
+            latitud = latitud,
+            longitud = longitud,
+            delPoste = delPoste,
+            alPoste = alPoste,
+            subregionId = subregionId
+        )
     }
 
     private fun formatCoordinate(value: Double): String =
@@ -800,6 +1034,35 @@ class AdminManagementFragment : Fragment(R.layout.fragment_admin_management) {
             ?: raw
         return candidate.toIntOrNull()
     }
+
+    private data class MedidorForm(
+        val numero: String,
+        val cliente: String,
+        val calle: String,
+        val poste: String,
+        val metros: String,
+        val puebloCodigo: String,
+        val subregionId: String,
+        val localizacion: Long,
+    )
+
+    private data class VehiculoForm(
+        val placa: Long,
+        val agencia: String,
+        val tipo: String,
+        val subregionId: String,
+    )
+
+    private data class LocalizacionForm(
+        val puebloId: Int,
+        val calleId: Int,
+        val direccion: String,
+        val latitud: Double,
+        val longitud: Double,
+        val delPoste: Int,
+        val alPoste: Int,
+        val subregionId: String,
+    )
 
     override fun onDestroyView() {
         super.onDestroyView()
