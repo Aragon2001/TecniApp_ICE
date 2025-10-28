@@ -190,6 +190,7 @@ class AveriasRepository(private val db: AppDatabase) {
         if (raw.isNullOrBlank()) return "Pendiente"
         val v = raw.trim().lowercase(Locale.getDefault())
         return when {
+            "anul" in v -> "Anulada"
             "resuel" in v -> "Resuelta"
             "en at" in v || "atenci" in v -> "En atención"
             "asign" in v -> "Asignada"
@@ -202,6 +203,7 @@ class AveriasRepository(private val db: AppDatabase) {
         val localNormalized = normalizeEstadoLabel(local)
         val remoteNormalized = normalizeEstadoLabel(remote)
         return when {
+            localNormalized == "Anulada" -> "Anulada"
             local.isNullOrBlank() -> remoteNormalized
             remoteNormalized == "Resuelta" && localNormalized != "Resuelta" -> "Resuelta"
             else -> localNormalized
@@ -213,6 +215,7 @@ class AveriasRepository(private val db: AppDatabase) {
         "Asignada" -> 2
         "En atención" -> 3
         "Resuelta" -> 4
+        "Anulada" -> 5
         else -> 1
     }
 
@@ -251,6 +254,7 @@ class AveriasRepository(private val db: AppDatabase) {
                 2 -> "Asignada"
                 3 -> "En atención"
                 4 -> "Resuelta"
+                5 -> "Anulada"
                 else -> estadoTexto?.ifBlank { "Pendiente" } ?: "Pendiente"
             }
         )
@@ -373,6 +377,12 @@ class AveriasRepository(private val db: AppDatabase) {
     suspend fun revertirAPendiente(caseId: String) = withContext(Dispatchers.IO) {
         val now = System.currentTimeMillis()
         dao.revertirAPendiente(caseId, now)
+        syncSingle(caseId)
+    }
+
+    suspend fun anular(caseId: String) = withContext(Dispatchers.IO) {
+        val now = System.currentTimeMillis()
+        dao.marcarAnulada(caseId, lastUpdated = now)
         syncSingle(caseId)
     }
 
