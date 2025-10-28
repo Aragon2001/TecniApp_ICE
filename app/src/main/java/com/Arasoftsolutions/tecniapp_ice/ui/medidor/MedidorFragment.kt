@@ -477,14 +477,16 @@ class MedidorFragment : Fragment() {
             .setTitle(R.string.medidor_registro_confirm_title)
             .setMessage(R.string.medidor_registro_confirm_message)
             .setPositiveButton(R.string.medidor_registro_confirm_positive) { _, _ ->
-                viewModel.registrarMedidorManual(
-                    numero = numero,
-                    cliente = cliente,
-                    localizacion = localizacion,
-                    calle = calle,
-                    poste = poste,
-                    metros = metros
-                )
+                if (localizacion != null) {
+                    viewModel.registrarMedidorManual(
+                        numero = numero,
+                        cliente = cliente,
+                        localizacion = localizacion,
+                        calle = calle,
+                        poste = poste,
+                        metros = metros
+                    )
+                }
             }
             .setNegativeButton(android.R.string.cancel, null)
             .show()

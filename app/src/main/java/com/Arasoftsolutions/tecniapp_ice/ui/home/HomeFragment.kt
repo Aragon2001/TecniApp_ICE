@@ -10,6 +10,8 @@ import android.os.Bundle
 import android.view.View
 import android.widget.TextView
 import android.content.pm.PackageManager
+import android.view.ViewGroup
+import android.widget.ImageView
 import androidx.core.content.ContextCompat
 import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
@@ -457,18 +459,55 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         navController.navigate(destinationId, args, options)
     }
 
+    private var currentAlertView: View? = null
+
     private fun showOfflineDialog() {
-        if (offlineDialog?.isShowing == true || !isAdded) return
-        offlineDialog = MaterialAlertDialogBuilder(requireContext())
-            .setTitle(R.string.home_offline_dialog_title)
-            .setMessage(R.string.home_offline_dialog_message)
-            .setPositiveButton(R.string.home_offline_dialog_button) { dialog, _ ->
-                dialog.dismiss()
-            }
-            .setCancelable(false)
-            .create()
-        offlineDialog?.show()
+        // Evita mostrar más de una alerta
+        if (currentAlertView != null || !isAdded) return
+
+        val parent = requireActivity().findViewById<ViewGroup>(android.R.id.content)
+        val alertView = layoutInflater.inflate(R.layout.layout_top_alert, parent, false)
+        val textView = alertView.findViewById<TextView>(R.id.tvMessage)
+        val iconView = alertView.findViewById<ImageView>(R.id.iconAlert)
+
+        // Personaliza el mensaje y color (puedes usar tus colores corporativos)
+        textView.text = "Sin conexión a Internet"
+        alertView.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.red))
+        iconView.setColorFilter(ContextCompat.getColor(requireContext(), android.R.color.white))
+
+        // Añadir la vista al contenedor raíz
+        parent.addView(alertView)
+        currentAlertView = alertView
+
+        // Animación de entrada
+        alertView.translationY = -200f
+        alertView.alpha = 0f
+        alertView.animate()
+            .translationY(0f)
+            .alpha(1f)
+            .setDuration(350)
+            .start()
+
+        // Quitar automáticamente después de 3 segundos
+        alertView.postDelayed({
+            hideOfflineAlert()
+        }, 3000)
     }
+
+    private fun hideOfflineAlert() {
+        currentAlertView?.let { alert ->
+            alert.animate()
+                .translationY(-200f)
+                .alpha(0f)
+                .setDuration(350)
+                .withEndAction {
+                    (alert.parent as? ViewGroup)?.removeView(alert)
+                    currentAlertView = null
+                }
+                .start()
+        }
+    }
+
 
     private fun dismissOfflineDialog() {
         offlineDialog?.let { dialog ->
