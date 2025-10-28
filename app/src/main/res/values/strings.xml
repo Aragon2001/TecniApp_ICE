@@ -686,6 +686,9 @@ Cliente: %4$s</string>
     <string name="admin_action_agregar">Agregar</string>
     <string name="admin_action_modificar">Modificar</string>
     <string name="admin_action_eliminar">Eliminar registro</string>
+    <string name="admin_section_icon_medidores">Icono de medidores</string>
+    <string name="admin_section_icon_vehiculos">Icono de vehículos</string>
+    <string name="admin_section_icon_localizaciones">Icono de localizaciones</string>
     <string name="admin_medidor_error_numero">Ingresa el número del medidor.</string>
     <string name="admin_medidor_error_subregion">Selecciona una subregión válida.</string>
     <string name="admin_medidor_error_pueblo">Selecciona un pueblo existente.</string>
