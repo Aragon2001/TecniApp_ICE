@@ -71,6 +71,7 @@
     <color name="chip_en_atencion">#1E88E5</color>
     <color name="chip_pendiente">#E53935</color>
     <color name="chip_resuelta">#43A047</color>
+    <color name="chip_anulada">#546E7A</color>
 
     <!-- Outline -->
     <color name="outline_soft">#1F000000</color>

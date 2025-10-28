@@ -109,6 +109,11 @@
         <item name="android:textColor">@android:color/white</item>
     </style>
 
+    <style name="Tecni.Chip.Anulada" parent="Tecni.Chip.Base">
+        <item name="chipBackgroundColor">@color/chip_anulada</item>
+        <item name="android:textColor">@android:color/white</item>
+    </style>
+
     <!-- Botones compactos para el nuevo diseño -->
     <style name="Tecni.Button.Primary" parent="Widget.Material3.Button">
         <item name="android:minHeight">32dp</item>
