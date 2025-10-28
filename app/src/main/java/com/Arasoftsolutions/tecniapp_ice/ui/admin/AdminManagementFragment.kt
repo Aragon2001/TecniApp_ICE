@@ -3,6 +3,7 @@ package com.Arasoftsolutions.tecniapp_ice.ui.admin
 import android.os.Bundle
 import android.view.View
 import android.widget.ArrayAdapter
+import androidx.annotation.IdRes
 import androidx.core.view.isVisible
 import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.Fragment
@@ -101,8 +102,20 @@ class AdminManagementFragment : Fragment(R.layout.fragment_admin_management) {
             binding.cardMedidores.isVisible = checkedId == R.id.btnAdminMedidores
             binding.cardVehiculos.isVisible = checkedId == R.id.btnAdminVehiculos
             binding.cardLocalizaciones.isVisible = checkedId == R.id.btnAdminLocalizaciones
+            actualizarIconoSeccion(checkedId)
         }
         binding.toggleAdminSections.check(R.id.btnAdminMedidores)
+    }
+
+    private fun actualizarIconoSeccion(@IdRes checkedId: Int) {
+        val (iconRes, contentDescriptionRes) = when (checkedId) {
+            R.id.btnAdminMedidores -> R.drawable.ic_menu_medidor to R.string.admin_section_icon_medidores
+            R.id.btnAdminVehiculos -> R.drawable.ic_menu_vehiculo to R.string.admin_section_icon_vehiculos
+            R.id.btnAdminLocalizaciones -> R.drawable.ic_menu_localizacion to R.string.admin_section_icon_localizaciones
+            else -> R.drawable.ic_menu_medidor to R.string.admin_section_icon_medidores
+        }
+        binding.imageAdminSectionIcon.setImageResource(iconRes)
+        binding.imageAdminSectionIcon.contentDescription = getString(contentDescriptionRes)
     }
 
     private fun setupListeners() {
