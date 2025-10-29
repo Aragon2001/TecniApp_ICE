@@ -12,10 +12,10 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:gravity="center_horizontal">
+        android:animateLayoutChanges="true"
+        android:gravity="center_horizontal"
+        android:orientation="vertical">
 
-        <!-- Indicador de carga -->
         <com.google.android.material.progressindicator.LinearProgressIndicator
             android:id="@+id/progressLoading"
             style="@style/Widget.Material3.LinearProgressIndicator"
@@ -31,14 +31,16 @@
             android:orientation="vertical"
             android:gravity="center_horizontal">
 
-            <!-- TARJETA DE PERFIL -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:layout_marginBottom="12dp"
-                app:cardCornerRadius="20dp"
-                app:cardElevation="2dp">
+                app:cardCornerRadius="24dp"
+                app:cardElevation="0dp"
+                app:cardBackgroundColor="?attr/colorSurface"
+                app:strokeColor="?attr/colorOutlineVariant"
+                app:strokeWidth="1dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -47,18 +49,18 @@
                     android:padding="20dp"
                     android:gravity="center_horizontal">
 
-                    <!-- FOTO DE PERFIL -->
                     <FrameLayout
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content">
 
                         <com.google.android.material.imageview.ShapeableImageView
                             android:id="@+id/imageProfile"
-                            android:layout_width="110dp"
-                            android:layout_height="110dp"
-                            android:scaleType="centerCrop"
+                            android:layout_width="120dp"
+                            android:layout_height="120dp"
                             android:contentDescription="@string/nav_header_desc"
+                            android:scaleType="centerCrop"
                             android:src="@drawable/default_profile_picture"
+                            app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full"
                             app:strokeWidth="2dp"
                             app:strokeColor="@color/ice_blue" />
 
@@ -72,26 +74,25 @@
                             app:trackThickness="4dp" />
                     </FrameLayout>
 
-                    <!-- BOTÓN CAMBIAR FOTO -->
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnChangePhoto"
                         style="@style/Tecni.Button.Outlined"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="12dp"
-                        android:text="Cambiar foto"
+                        android:text="@string/profile_change_photo"
                         app:icon="@drawable/ic_camera"
                         app:iconGravity="textStart"
                         app:iconPadding="8dp" />
 
-                    <!-- DATOS DE USUARIO -->
                     <com.google.android.material.textview.MaterialTextView
                         android:id="@+id/textDisplayName"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="16dp"
-                        android:textAppearance="@style/TextAppearance.Material3.TitleLarge"
-                        android:textColor="@color/ice_blue_dark"
+                        android:layout_marginTop="20dp"
+                        android:gravity="center"
+                        android:textAppearance="@style/TextAppearance.Material3.HeadlineSmall"
+                        android:textColor="?attr/colorOnSurface"
                         tools:text="Carlos Rodríguez" />
 
                     <com.google.android.material.textview.MaterialTextView
@@ -99,27 +100,36 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
-                        android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
-                        android:textColor="@color/dark_gray"
+                        android:gravity="center"
+                        android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
+                        android:textColor="?attr/colorOnSurfaceVariant"
                         tools:text="carlos@ice.go.cr" />
+
+                    <com.google.android.material.divider.MaterialDivider
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginTop="16dp"
+                        android:layout_marginBottom="12dp"
+                        app:dividerColor="?attr/colorOutlineVariant" />
 
                     <com.google.android.material.textview.MaterialTextView
                         android:id="@+id/textUserId"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:textAppearance="@style/TextAppearance.Material3.LabelMedium"
-                        android:textColor="@color/dark_gray"
+                        android:textAppearance="@style/TextAppearance.Material3.LabelLarge"
+                        android:textColor="?attr/colorOnSurfaceVariant"
                         tools:text="Cédula: 1-1234-5678" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- TARJETA DE CONFIGURACIÓN -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardCornerRadius="20dp"
-                app:cardElevation="2dp">
+                app:cardCornerRadius="24dp"
+                app:cardElevation="0dp"
+                app:cardBackgroundColor="?attr/colorSurface"
+                app:strokeColor="?attr/colorOutlineVariant"
+                app:strokeWidth="1dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -127,172 +137,227 @@
                     android:orientation="vertical"
                     android:padding="20dp">
 
-                    <!-- Región -->
-                    <TextView
+                    <com.google.android.material.textview.MaterialTextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginBottom="4dp"
-                        android:text="Región"
-                        android:textColor="@color/ice_blue_dark"
-                        android:textSize="18sp"
-                        android:textStyle="bold" />
+                        android:text="@string/profile_section_assignment"
+                        android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+                        android:textColor="?attr/colorOnSurface" />
 
-                    <com.google.android.material.textfield.MaterialAutoCompleteTextView
-                        android:id="@+id/actvRegion"
+                    <com.google.android.material.divider.MaterialDivider
                         android:layout_width="match_parent"
-                        android:layout_height="50dp"
-                        android:background="@drawable/rounded_bg_f0f2f4"
-                        android:drawableEnd="@drawable/ic_arrow_down"
-                        android:inputType="none"
-                        android:paddingStart="16dp"
-                        android:paddingEnd="16dp"
-                        tools:text="Atlántica" />
-
-                    <!-- Subregión -->
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
+                        android:layout_height="1dp"
                         android:layout_marginTop="12dp"
-                        android:layout_marginBottom="4dp"
-                        android:text="Subregión"
-                        android:textColor="@color/ice_blue_dark"
-                        android:textSize="18sp"
-                        android:textStyle="bold" />
+                        android:layout_marginBottom="16dp"
+                        app:dividerColor="?attr/colorOutlineVariant" />
 
-                    <com.google.android.material.textfield.MaterialAutoCompleteTextView
-                        android:id="@+id/actvSubregion"
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tilRegion"
+                        style="@style/Widget.Material3.TextInputLayout.FilledBox.ExposedDropdownMenu"
                         android:layout_width="match_parent"
-                        android:layout_height="50dp"
-                        android:background="@drawable/rounded_bg_f0f2f4"
-                        android:drawableEnd="@drawable/ic_arrow_down"
-                        android:inputType="none"
-                        android:paddingStart="16dp"
-                        android:paddingEnd="16dp"
-                        tools:text="GAM" />
-
-                    <!-- Agencia -->
-                    <TextView
-                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:layout_marginBottom="4dp"
-                        android:text="Agencia"
-                        android:textColor="@color/ice_blue_dark"
-                        android:textSize="18sp"
-                        android:textStyle="bold" />
+                        android:hint="@string/profile_region_label"
+                        app:boxBackgroundColor="?attr/colorSurfaceVariant"
+                        app:boxCornerRadiusTopStart="18dp"
+                        app:boxCornerRadiusTopEnd="18dp"
+                        app:boxCornerRadiusBottomStart="18dp"
+                        app:boxCornerRadiusBottomEnd="18dp"
+                        app:startIconDrawable="@drawable/ic_location"
+                        app:startIconTint="?attr/colorOnSurfaceVariant">
 
-                    <com.google.android.material.textfield.MaterialAutoCompleteTextView
-                        android:id="@+id/actvAgency"
+                        <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                            android:id="@+id/actvRegion"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:dropDownHeight="wrap_content"
+                            android:focusable="false"
+                            android:inputType="none"
+                            android:textColor="?attr/colorOnSurface"
+                            android:textColorHint="?attr/colorOnSurfaceVariant"
+                            android:importantForAutofill="no"
+                            tools:text="Región Huetar Atlántica" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tilSubregion"
+                        style="@style/Widget.Material3.TextInputLayout.FilledBox.ExposedDropdownMenu"
                         android:layout_width="match_parent"
-                        android:layout_height="50dp"
-                        android:background="@drawable/rounded_bg_f0f2f4"
-                        android:drawableEnd="@drawable/ic_arrow_down"
-                        android:inputType="none"
-                        android:paddingStart="16dp"
-                        android:paddingEnd="16dp"
-                        tools:text="San José" />
-
-                    <!-- Vehículo -->
-                    <TextView
-                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:layout_marginBottom="4dp"
-                        android:text="Vehículo"
-                        android:textColor="@color/ice_blue_dark"
-                        android:textSize="18sp"
-                        android:textStyle="bold" />
+                        android:layout_marginTop="16dp"
+                        android:hint="@string/profile_subregion_label"
+                        app:boxBackgroundColor="?attr/colorSurfaceVariant"
+                        app:boxCornerRadiusTopStart="18dp"
+                        app:boxCornerRadiusTopEnd="18dp"
+                        app:boxCornerRadiusBottomStart="18dp"
+                        app:boxCornerRadiusBottomEnd="18dp">
 
-                    <com.google.android.material.textfield.MaterialAutoCompleteTextView
-                        android:id="@+id/actvVehicle"
+                        <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                            android:id="@+id/actvSubregion"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:dropDownHeight="wrap_content"
+                            android:focusable="false"
+                            android:inputType="none"
+                            android:importantForAutofill="no"
+                            android:textColor="?attr/colorOnSurface"
+                            android:textColorHint="?attr/colorOnSurfaceVariant"
+                            tools:text="Subregión Guápiles" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tilAgency"
+                        style="@style/Widget.Material3.TextInputLayout.FilledBox.ExposedDropdownMenu"
                         android:layout_width="match_parent"
-                        android:layout_height="50dp"
-                        android:background="@drawable/rounded_bg_f0f2f4"
-                        android:drawableEnd="@drawable/ic_arrow_down"
-                        android:inputType="none"
-                        android:paddingStart="16dp"
-                        android:paddingEnd="16dp"
-                        tools:text="123456 • Hilux" />
-
-                    <!-- Teléfono -->
-                    <TextView
-                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:layout_marginBottom="4dp"
-                        android:text="Teléfono"
-                        android:textColor="@color/ice_blue_dark"
-                        android:textSize="18sp"
-                        android:textStyle="bold" />
+                        android:layout_marginTop="16dp"
+                        android:hint="@string/profile_agency_label"
+                        app:boxBackgroundColor="?attr/colorSurfaceVariant"
+                        app:boxCornerRadiusTopStart="18dp"
+                        app:boxCornerRadiusTopEnd="18dp"
+                        app:boxCornerRadiusBottomStart="18dp"
+                        app:boxCornerRadiusBottomEnd="18dp">
 
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/etPhoneNumber"
+                        <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                            android:id="@+id/actvAgency"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:dropDownHeight="wrap_content"
+                            android:focusable="false"
+                            android:inputType="none"
+                            android:importantForAutofill="no"
+                            android:textColor="?attr/colorOnSurface"
+                            android:textColorHint="?attr/colorOnSurfaceVariant"
+                            tools:text="Agencia Guácimo" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tilVehicle"
+                        style="@style/Widget.Material3.TextInputLayout.FilledBox.ExposedDropdownMenu"
                         android:layout_width="match_parent"
-                        android:layout_height="50dp"
-                        android:background="@drawable/rounded_bg_f0f2f4"
-                        android:hint="88888888"
-                        android:inputType="phone"
-                        android:maxLength="9"
-                        android:paddingStart="16dp"
-                        android:paddingEnd="16dp"
-                        android:textColor="@color/black"
-                        android:textSize="16sp" />
-
-                    <!-- Contraseña -->
-                    <TextView
-                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:layout_marginBottom="4dp"
-                        android:text="Contraseña"
-                        android:textColor="@color/ice_blue_dark"
-                        android:textSize="18sp"
-                        android:textStyle="bold" />
+                        android:layout_marginTop="16dp"
+                        android:hint="@string/profile_vehicle_label"
+                        app:boxBackgroundColor="?attr/colorSurfaceVariant"
+                        app:boxCornerRadiusTopStart="18dp"
+                        app:boxCornerRadiusTopEnd="18dp"
+                        app:boxCornerRadiusBottomStart="18dp"
+                        app:boxCornerRadiusBottomEnd="18dp">
 
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/etPassword"
+                        <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                            android:id="@+id/actvVehicle"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:dropDownHeight="wrap_content"
+                            android:focusable="false"
+                            android:inputType="none"
+                            android:importantForAutofill="no"
+                            android:textColor="?attr/colorOnSurface"
+                            android:textColorHint="?attr/colorOnSurfaceVariant"
+                            tools:text="8558 • Grua Pequeño" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tilPhone"
+                        style="@style/Widget.Material3.TextInputLayout.FilledBox"
                         android:layout_width="match_parent"
-                        android:layout_height="50dp"
-                        android:background="@drawable/rounded_bg_f0f2f4"
-                        android:hint="********"
-                        android:inputType="textPassword"
-                        android:paddingStart="16dp"
-                        android:paddingEnd="16dp"
-                        android:textColor="@color/black"
-                        android:textSize="16sp" />
-
-                    <!-- Confirmar contraseña -->
-                    <TextView
-                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:layout_marginBottom="4dp"
-                        android:text="Confirmar contraseña"
-                        android:textColor="@color/ice_blue_dark"
-                        android:textSize="18sp"
-                        android:textStyle="bold" />
+                        android:layout_marginTop="16dp"
+                        android:hint="@string/profile_phone_hint"
+                        app:boxBackgroundColor="?attr/colorSurfaceVariant"
+                        app:boxCornerRadiusTopStart="18dp"
+                        app:boxCornerRadiusTopEnd="18dp"
+                        app:boxCornerRadiusBottomStart="18dp"
+                        app:boxCornerRadiusBottomEnd="18dp">
 
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/etConfirmPassword"
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etPhoneNumber"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="phone"
+                            android:maxLength="9"
+                            android:textColor="?attr/colorOnSurface"
+                            android:textColorHint="?attr/colorOnSurfaceVariant"
+                            tools:text="88888888" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.switchmaterial.SwitchMaterial
+                        android:id="@+id/switchChangePassword"
                         android:layout_width="match_parent"
-                        android:layout_height="50dp"
-                        android:background="@drawable/rounded_bg_f0f2f4"
-                        android:hint="********"
-                        android:inputType="textPassword"
-                        android:paddingStart="16dp"
-                        android:paddingEnd="16dp"
-                        android:textColor="@color/black"
-                        android:textSize="16sp" />
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="20dp"
+                        android:text="@string/profile_change_password_toggle"
+                        android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
+                        android:textColor="?attr/colorOnSurface" />
+
+                    <LinearLayout
+                        android:id="@+id/passwordGroup"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:orientation="vertical"
+                        android:visibility="gone">
+
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:id="@+id/tilPassword"
+                            style="@style/Widget.Material3.TextInputLayout.FilledBox"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:hint="@string/profile_password_hint"
+                            app:boxBackgroundColor="?attr/colorSurfaceVariant"
+                            app:boxCornerRadiusTopStart="18dp"
+                            app:boxCornerRadiusTopEnd="18dp"
+                            app:boxCornerRadiusBottomStart="18dp"
+                            app:boxCornerRadiusBottomEnd="18dp"
+                            app:endIconMode="password_toggle"
+                            app:endIconTint="?attr/colorOnSurfaceVariant">
+
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/etPassword"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="textPassword"
+                                android:textColor="?attr/colorOnSurface"
+                                android:textColorHint="?attr/colorOnSurfaceVariant"
+                                tools:text="" />
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:id="@+id/tilConfirmPassword"
+                            style="@style/Widget.Material3.TextInputLayout.FilledBox"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="16dp"
+                            android:hint="@string/profile_confirm_password_hint"
+                            app:boxBackgroundColor="?attr/colorSurfaceVariant"
+                            app:boxCornerRadiusTopStart="18dp"
+                            app:boxCornerRadiusTopEnd="18dp"
+                            app:boxCornerRadiusBottomStart="18dp"
+                            app:boxCornerRadiusBottomEnd="18dp"
+                            app:endIconMode="password_toggle"
+                            app:endIconTint="?attr/colorOnSurfaceVariant">
+
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/etConfirmPassword"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="textPassword"
+                                android:textColor="?attr/colorOnSurface"
+                                android:textColorHint="?attr/colorOnSurfaceVariant"
+                                tools:text="" />
+                        </com.google.android.material.textfield.TextInputLayout>
+                    </LinearLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- TARJETA DE RESUMEN -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
-                app:cardCornerRadius="20dp"
-                app:cardElevation="2dp">
+                app:cardCornerRadius="24dp"
+                app:cardElevation="0dp"
+                app:cardBackgroundColor="?attr/colorSurface"
+                app:strokeColor="?attr/colorOutlineVariant"
+                app:strokeWidth="1dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -301,43 +366,56 @@
                     android:padding="20dp">
 
                     <com.google.android.material.textview.MaterialTextView
-                        android:id="@+id/textSummaryRegion"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
-                        android:textColor="@color/dark_gray"
+                        android:text="@string/profile_summary_title"
+                        android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+                        android:textColor="?attr/colorOnSurface" />
+
+                    <com.google.android.material.divider.MaterialDivider
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginTop="12dp"
+                        android:layout_marginBottom="16dp"
+                        app:dividerColor="?attr/colorOutlineVariant" />
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:id="@+id/textSummaryRegion"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
+                        android:textColor="?attr/colorOnSurface"
                         tools:text="Región: —" />
 
                     <com.google.android.material.textview.MaterialTextView
                         android:id="@+id/textSummarySubregion"
-                        android:layout_width="wrap_content"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
-                        android:textColor="@color/dark_gray"
+                        android:layout_marginTop="8dp"
+                        android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
+                        android:textColor="?attr/colorOnSurface"
                         tools:text="Subregión: —" />
 
                     <com.google.android.material.textview.MaterialTextView
                         android:id="@+id/textSummaryAgency"
-                        android:layout_width="wrap_content"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
-                        android:textColor="@color/dark_gray"
+                        android:layout_marginTop="8dp"
+                        android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
+                        android:textColor="?attr/colorOnSurface"
                         tools:text="Agencia: —" />
 
                     <com.google.android.material.textview.MaterialTextView
                         android:id="@+id/textSummaryVehicle"
-                        android:layout_width="wrap_content"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
-                        android:textColor="@color/dark_gray"
+                        android:layout_marginTop="8dp"
+                        android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
+                        android:textColor="?attr/colorOnSurface"
                         tools:text="Vehículo: —" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Indicador de guardado -->
             <com.google.android.material.progressindicator.LinearProgressIndicator
                 android:id="@+id/progressSaving"
                 style="@style/Widget.Material3.LinearProgressIndicator"
@@ -347,7 +425,6 @@
                 android:visibility="gone"
                 app:trackThickness="4dp" />
 
-            <!-- BOTÓN GUARDAR CAMBIOS -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnSaveChanges"
                 style="@style/Tecni.Button.Primary.Original"

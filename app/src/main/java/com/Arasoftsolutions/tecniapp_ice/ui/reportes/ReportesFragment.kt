@@ -6,6 +6,8 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.view.isVisible
@@ -22,7 +24,6 @@ import com.Arasoftsolutions.tecniapp_ice.ui.reportes.ExcelReportExporter.ExportP
 import com.Arasoftsolutions.tecniapp_ice.ui.reportes.ExcelReportExporter.MIME_TYPE_XLSX
 import com.google.android.material.datepicker.MaterialDatePicker
 import androidx.core.util.Pair
-import com.google.android.material.chip.ChipGroup
 import com.google.android.material.snackbar.Snackbar
 import java.time.Instant
 import java.time.LocalDate
@@ -43,14 +44,11 @@ class ReportesFragment : Fragment() {
     private lateinit var averiasAdapter: AveriasReportAdapter
     private lateinit var materialesPorAveriaAdapter: MaterialesPorAveriaAdapter
     private lateinit var materialTotalAdapter: MaterialTotalAdapter
-
-    private val chipTypeMap: Map<Int, ReportType> = mapOf(
-        R.id.chipTipoAverias to ReportType.AVERIAS,
-        R.id.chipTipoMaterialPorAveria to ReportType.MATERIALES_POR_AVERIA,
-        R.id.chipTipoMaterialTotal to ReportType.MATERIALES_TOTALES
-    )
+    private lateinit var tiposAdapter: ArrayAdapter<String>
+    private var isUpdatingTipoReporte = false
     private val locale = Locale.getDefault()
     private val fileNameFormatter = DateTimeFormatter.ofPattern("yyyyMMdd")
+    private val zoneId: ZoneId = ZoneId.systemDefault()
 
     private var pendingExport: ExportPayload? = null
 
@@ -67,7 +65,7 @@ class ReportesFragment : Fragment() {
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
-        savedInstanceState: Bundle?
+        savedInstanceState: Bundle?,
     ): View {
         _binding = FragmentReportesBinding.inflate(inflater, container, false)
         return binding.root
@@ -77,6 +75,7 @@ class ReportesFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         setupAdapters()
+        setupReportTypeSelector()
         setupListeners()
         observeState()
     }
@@ -107,53 +106,77 @@ class ReportesFragment : Fragment() {
         }
     }
 
+    private fun setupReportTypeSelector() {
+        val labels = ReportType.values().map { getString(it.titleRes) }
+        tiposAdapter = ArrayAdapter(requireContext(), R.layout.item_dropdown_report_type, labels)
+        tiposAdapter.setDropDownViewResource(R.layout.item_dropdown_report_type)
+        binding.spinnerTipoReporte.adapter = tiposAdapter
+        binding.spinnerTipoReporte.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                if (isUpdatingTipoReporte) return
+                val tipo = ReportType.values().getOrNull(position) ?: return
+                viewModel.seleccionarTipo(tipo)
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) = Unit
+        }
+        binding.selectorContainer.setOnClickListener { binding.spinnerTipoReporte.performClick() }
+        syncReportTypeSelection(viewModel.uiState.value.reporteSeleccionado)
+    }
+
+    private fun syncReportTypeSelection(tipo: ReportType) {
+        if (!::tiposAdapter.isInitialized) return
+        val index = ReportType.values().indexOf(tipo)
+        if (index >= 0 && binding.spinnerTipoReporte.selectedItemPosition != index) {
+            isUpdatingTipoReporte = true
+            binding.spinnerTipoReporte.setSelection(index, false)
+            isUpdatingTipoReporte = false
+        }
+    }
+
     private fun setupListeners() {
         binding.btnCambiarFechas.setOnClickListener { mostrarSelectorRango() }
         binding.btnGenerarReporte.setOnClickListener { viewModel.generarReporteSeleccionado() }
         binding.btnExportarExcel.setOnClickListener { prepararExportacion() }
-
-        binding.chipGroupTipoReporte.setOnCheckedStateChangeListener {
-                _: ChipGroup,
-                checkedIds: MutableList<Int>
-            ->
-            val checkedId = checkedIds.firstOrNull() ?: return@setOnCheckedStateChangeListener
-            val tipo = chipTypeMap[checkedId] ?: return@setOnCheckedStateChangeListener
-            viewModel.seleccionarTipo(tipo)
-        }
-
-        marcarChipSeleccionado(viewModel.uiState.value.reporteSeleccionado)
+        binding.btnLimpiarFechas.setOnClickListener { viewModel.restablecerRango() }
+        binding.fabEnviarCorreo.setOnClickListener { viewModel.enviarReportePorCorreo() }
     }
 
     private fun observeState() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.uiState.collect { state ->
-                    binding.progressIndicator.isVisible = state.isGlobalLoading
+                    val isProcessing = state.isGlobalLoading || state.isEmailSending
+                    binding.progressIndicator.isVisible = isProcessing
                     binding.tvRangoFechas.text = state.rangoTexto
-
-                    val resumen = state.resumen
-                    if (resumen != null) {
-                        binding.tvResumenTotales.text = getString(
-                            R.string.reportes_totales_resumen,
-                            resumen.totalAverias,
-                            resumen.totalMateriales,
-                            resumen.totalMaterialesDistintos
-                        )
-                    } else {
-                    binding.tvResumenTotales.text = getString(R.string.reportes_totales_resumen_pendiente)
-                    }
+                    binding.btnLimpiarFechas.isVisible = !state.isDefaultRange
+                    binding.btnLimpiarFechas.isEnabled = !isProcessing
+                    binding.btnCambiarFechas.isEnabled = !isProcessing
 
                     val seleccionado = state.reporteSeleccionado
-                    actualizarTextoChips(state)
-                    marcarChipSeleccionado(seleccionado)
+                    syncReportTypeSelection(seleccionado)
                     binding.btnGenerarReporte.text = getString(
                         R.string.reportes_btn_generar_tipo,
                         getString(seleccionado.titleRes).replaceFirstChar { char ->
                             char.lowercase(locale)
                         }
                     )
+                    binding.btnGenerarReporte.isEnabled = !isProcessing
+                    binding.spinnerTipoReporte.isEnabled = !isProcessing
+                    binding.selectorContainer.isEnabled = !isProcessing
 
-                    binding.btnGenerarReporte.isEnabled = !state.isGlobalLoading
+                    binding.tvResumenTitulo.text = getString(seleccionado.titleRes)
+                    binding.tvResumenRango.text = state.rangoTexto
+
+                    val resumen = state.resumen
+                    val hasResumen = resumen != null
+                    binding.resumenCardsContainer.isVisible = hasResumen
+                    binding.tvResumenPlaceholder.isVisible = !hasResumen
+                    if (resumen != null) {
+                        binding.tvResumenTotalAverias.text = resumen.totalAverias.toString()
+                        binding.tvResumenTotalMateriales.text = resumen.totalMateriales.toString()
+                        binding.tvResumenTotalCodigos.text = resumen.totalMaterialesDistintos.toString()
+                    }
 
                     val section: ReportSectionState<*>
                     val recycler: RecyclerView
@@ -211,8 +234,20 @@ class ReportesFragment : Fragment() {
                         }
                     }
 
-                    binding.btnExportarExcel.isVisible = section.hasContent
-                    binding.btnExportarExcel.isEnabled = section.hasContent && !state.isGlobalLoading
+                    val hasContent = section.hasContent
+                    binding.fabActionsGroup.isVisible = hasContent
+                    binding.btnExportarExcel.isVisible = hasContent
+                    binding.fabEnviarCorreo.isVisible = hasContent
+                    binding.btnExportarExcel.isEnabled = hasContent && !isProcessing
+                    binding.fabEnviarCorreo.isEnabled = hasContent && !isProcessing
+
+                    if (hasContent) {
+                        binding.btnExportarExcel.extend()
+                        binding.fabEnviarCorreo.extend()
+                    } else {
+                        binding.btnExportarExcel.shrink()
+                        binding.fabEnviarCorreo.shrink()
+                    }
                 }
             }
         }
@@ -225,47 +260,14 @@ class ReportesFragment : Fragment() {
         }
     }
 
-    private fun marcarChipSeleccionado(tipo: ReportType) {
-        val targetId = chipTypeMap.entries.firstOrNull { it.value == tipo }?.key ?: return
-        if (binding.chipGroupTipoReporte.checkedChipId != targetId) {
-            binding.chipGroupTipoReporte.check(targetId)
-        }
-    }
-
-    private fun actualizarTextoChips(state: ReportesUiState) {
-        binding.chipTipoAverias.text = if (state.averiasState.hasContent) {
-            getString(R.string.reportes_chip_averias_conteo, state.averiasState.items.size)
-        } else {
-            getString(R.string.reportes_chip_averias)
-        }
-
-        binding.chipTipoMaterialPorAveria.text = if (state.materialesPorAveriaState.hasContent) {
-            getString(
-                R.string.reportes_chip_material_por_averia_conteo,
-                state.materialesPorAveriaState.items.size
-            )
-        } else {
-            getString(R.string.reportes_chip_material_por_averia)
-        }
-
-        binding.chipTipoMaterialTotal.text = if (state.materialesTotalesState.hasContent) {
-            getString(
-                R.string.reportes_chip_material_total_conteo,
-                state.materialesTotalesState.items.size
-            )
-        } else {
-            getString(R.string.reportes_chip_material_total)
-        }
-    }
-
     private fun mostrarSelectorRango() {
         val state = viewModel.uiState.value
         val tag = "reportes_rango"
         if (childFragmentManager.findFragmentByTag(tag) != null) return
 
         val selection = Pair(
-            state.fechaInicio.toStartOfDayUtcMillis(),
-            state.fechaFin.toStartOfDayUtcMillis()
+            state.fechaInicio.toStartOfDayMillis(),
+            state.fechaFin.toStartOfDayMillis()
         )
 
         val picker = MaterialDatePicker.Builder.dateRangePicker()
@@ -336,11 +338,11 @@ class ReportesFragment : Fragment() {
         }
     }
 
-    private fun LocalDate.toStartOfDayUtcMillis(): Long =
-        this.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+    private fun LocalDate.toStartOfDayMillis(): Long =
+        this.atStartOfDay(zoneId).toInstant().toEpochMilli()
 
     private fun Long.toLocalDate(): LocalDate =
-        Instant.ofEpochMilli(this).atZone(ZoneId.systemDefault()).toLocalDate()
+        Instant.ofEpochMilli(this).atZone(zoneId).toLocalDate()
 
     override fun onDestroyView() {
         super.onDestroyView()

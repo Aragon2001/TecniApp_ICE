@@ -3,7 +3,6 @@ package com.Arasoftsolutions.tecniapp_ice.ui.admin
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.pm.PackageManager
-import android.content.res.Resources
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -25,7 +24,6 @@ import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
-import com.google.android.gms.maps.model.MapStyleOptions
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
@@ -56,8 +54,6 @@ class MapCoordinatePickerBottomSheet : BottomSheetDialogFragment(), OnMapReadyCa
 
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private var googleMap: GoogleMap? = null
-    private var bottomSheetBehavior: BottomSheetBehavior<FrameLayout>? = null
-    private var isExpanded = true
     private var selectedLatLng: LatLng = DEFAULT_LATLNG
     private var currentMapTypeIndex = 0
 
@@ -106,24 +102,13 @@ class MapCoordinatePickerBottomSheet : BottomSheetDialogFragment(), OnMapReadyCa
                 val bottomSheet = dialog.findViewById<FrameLayout>(com.google.android.material.R.id.design_bottom_sheet)
                 bottomSheet?.let { sheet ->
                     sheet.layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT
-                    bottomSheetBehavior = BottomSheetBehavior.from(sheet).apply {
-                        skipCollapsed = false
-                        isFitToContents = false
-                        halfExpandedRatio = 0.6f
+                    BottomSheetBehavior.from(sheet).apply {
+                        skipCollapsed = true
+                        isFitToContents = true
                         state = BottomSheetBehavior.STATE_EXPANDED
-                        addBottomSheetCallback(object : BottomSheetBehavior.BottomSheetCallback() {
-                            override fun onStateChanged(bottomSheet: View, newState: Int) {
-                                val expanded = newState == BottomSheetBehavior.STATE_EXPANDED
-                                if (isExpanded != expanded) {
-                                    isExpanded = expanded
-                                    updateSheetToggleMenuItem()
-                                }
-                            }
-
-                            override fun onSlide(bottomSheet: View, slideOffset: Float) = Unit
-                        })
+                        isDraggable = false
+                        isHideable = false
                     }
-                    updateSheetToggleMenuItem()
                 }
             }
         }
@@ -145,6 +130,8 @@ class MapCoordinatePickerBottomSheet : BottomSheetDialogFragment(), OnMapReadyCa
         binding.mapView.onCreate(mapViewBundle)
         binding.mapView.getMapAsync(this)
 
+        handleMyLocationRequest()
+
         binding.btnCancelar.setOnClickListener { dismiss() }
         binding.btnConfirmar.setOnClickListener {
             val result = selectedLatLng
@@ -163,7 +150,7 @@ class MapCoordinatePickerBottomSheet : BottomSheetDialogFragment(), OnMapReadyCa
 
     private fun setupToolbar() = with(binding.toolbar) {
         title = getString(R.string.map_picker_title)
-        navigationIcon = ContextCompat.getDrawable(requireContext(), R.drawable.ic_arrow_down)
+        navigationIcon = ContextCompat.getDrawable(requireContext(), R.drawable.ic_close_sheet)
         navigationContentDescription = getString(android.R.string.cancel)
         setNavigationOnClickListener { dismiss() }
         if (menu.size() == 0) {
@@ -175,12 +162,6 @@ class MapCoordinatePickerBottomSheet : BottomSheetDialogFragment(), OnMapReadyCa
                     handleMyLocationRequest()
                     true
                 }
-
-                R.id.action_toggle_sheet -> {
-                    toggleBottomSheet()
-                    true
-                }
-
                 R.id.action_toggle_map_type -> {
                     cycleMapType()
                     true
@@ -189,7 +170,6 @@ class MapCoordinatePickerBottomSheet : BottomSheetDialogFragment(), OnMapReadyCa
                 else -> false
             }
         }
-        updateSheetToggleMenuItem()
     }
 
     private fun handleMyLocationRequest() {
@@ -205,18 +185,6 @@ class MapCoordinatePickerBottomSheet : BottomSheetDialogFragment(), OnMapReadyCa
         }
     }
 
-    private fun toggleBottomSheet() {
-        val behavior = bottomSheetBehavior ?: return
-        val targetState = if (isExpanded) {
-            BottomSheetBehavior.STATE_HALF_EXPANDED
-        } else {
-            BottomSheetBehavior.STATE_EXPANDED
-        }
-        behavior.state = targetState
-        isExpanded = targetState == BottomSheetBehavior.STATE_EXPANDED
-        updateSheetToggleMenuItem()
-    }
-
     private fun cycleMapType() {
         currentMapTypeIndex = (currentMapTypeIndex + 1) % mapTypes.size
         applyMapType()
@@ -227,14 +195,15 @@ class MapCoordinatePickerBottomSheet : BottomSheetDialogFragment(), OnMapReadyCa
     override fun onMapReady(map: GoogleMap) {
         googleMap = map
         map.uiSettings.apply {
-            isZoomControlsEnabled = false
+            isZoomControlsEnabled = true
             isCompassEnabled = true
-            isMapToolbarEnabled = false
-            isMyLocationButtonEnabled = false
+            isMapToolbarEnabled = true
+            isMyLocationButtonEnabled = true
             isRotateGesturesEnabled = true
             isTiltGesturesEnabled = true
             isScrollGesturesEnabled = true
             isZoomGesturesEnabled = true
+            isIndoorLevelPickerEnabled = true
         }
 
         map.setOnCameraIdleListener {
@@ -251,30 +220,13 @@ class MapCoordinatePickerBottomSheet : BottomSheetDialogFragment(), OnMapReadyCa
 
         applyMapType()
         enableMyLocationLayer()
+        moveToMyLocation()
     }
 
     private fun applyMapType() {
         val map = googleMap ?: return
         val mapType = mapTypes[currentMapTypeIndex]
         map.mapType = mapType
-        if (mapType == GoogleMap.MAP_TYPE_NORMAL) {
-            applyNightStyle(map)
-        } else {
-            map.setMapStyle(null)
-        }
-    }
-
-    private fun applyNightStyle(map: GoogleMap) {
-        try {
-            val success = map.setMapStyle(
-                MapStyleOptions.loadRawResourceStyle(requireContext(), R.raw.map_style_night)
-            )
-            if (!success) {
-                Log.w(TAG, "No se pudo aplicar el estilo nocturno al mapa")
-            }
-        } catch (exception: Resources.NotFoundException) {
-            Log.e(TAG, "No se encontró el estilo de mapa", exception)
-        }
     }
 
     private fun updateCoordinateLabels() {
@@ -293,18 +245,6 @@ class MapCoordinatePickerBottomSheet : BottomSheetDialogFragment(), OnMapReadyCa
             Manifest.permission.ACCESS_COARSE_LOCATION
         ) == PackageManager.PERMISSION_GRANTED
         return fineGranted || coarseGranted
-    }
-
-    private fun updateSheetToggleMenuItem() {
-        val toolbar = _binding?.toolbar ?: return
-        val menuItem = toolbar.menu.findItem(R.id.action_toggle_sheet) ?: return
-        if (isExpanded) {
-            menuItem.title = getString(R.string.map_picker_action_collapse)
-            menuItem.icon = ContextCompat.getDrawable(requireContext(), R.drawable.ic_fullscreen_exit)
-        } else {
-            menuItem.title = getString(R.string.map_picker_action_expand)
-            menuItem.icon = ContextCompat.getDrawable(requireContext(), R.drawable.ic_fullscreen)
-        }
     }
 
     private fun showSnackbar(messageRes: Int) {

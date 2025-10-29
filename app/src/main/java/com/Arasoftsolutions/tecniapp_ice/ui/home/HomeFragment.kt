@@ -1,5 +1,7 @@
 package com.Arasoftsolutions.tecniapp_ice.ui.home
 
+import android.Manifest
+import android.app.AlertDialog
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
@@ -7,18 +9,27 @@ import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.widget.TextView
+import android.content.pm.PackageManager
+import android.view.ViewGroup
+import android.widget.ImageView
+import androidx.core.content.ContextCompat
+import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
+import androidx.navigation.navOptions
 import com.Arasoftsolutions.tecniapp_ice.R
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.UserEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.apellidosCompletos
+import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasFragment
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasSyncWorker
+import com.Arasoftsolutions.tecniapp_ice.ui.averias.Estado
 import com.Arasoftsolutions.tecniapp_ice.ui.modal.SyncDialogFragment
 import com.google.android.material.button.MaterialButton
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.progressindicator.LinearProgressIndicator
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
@@ -48,6 +59,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
     private var connectivityManager: ConnectivityManager? = null
     private var networkCallbackRegistered = false
     private var syncDialog: SyncDialogFragment? = null
+    private var offlineDialog: AlertDialog? = null
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -66,6 +78,8 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         val attendedCount: TextView = view.findViewById(R.id.text_attended_count)
         val kilometrajeValue: TextView = view.findViewById(R.id.text_kilometraje)
         val mapCard: View = view.findViewById(R.id.card_map)
+        val cardPending: View = view.findViewById(R.id.card_pending)
+        val cardAttended: View = view.findViewById(R.id.card_attended)
         val actionAverias: View = view.findViewById(R.id.action_averias)
         val actionMedidor: View = view.findViewById(R.id.action_medidor)
         val actionReportes: View = view.findViewById(R.id.action_reportes)
@@ -80,14 +94,27 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         mapStatusText = mapStatus
         statusText.text = getString(R.string.home_status_offline)
         dateText.text = formatCurrentDate()
+        mapStatus.text = buildMapStatusMessage(formatRelativeSync(vm.lastManualSync.value))
 
         syncActionButton.isEnabled = false
         syncActionButton.setOnClickListener { sincronizarConModal() }
-        mapCard.setOnClickListener { findNavController().navigate(R.id.nav_localizacion) }
-        actionAverias.setOnClickListener { findNavController().navigate(R.id.nav_averias) }
-        actionMedidor.setOnClickListener { findNavController().navigate(R.id.nav_medidor) }
-        actionReportes.setOnClickListener { findNavController().navigate(R.id.nav_reportes) }
-        actionSettings.setOnClickListener { findNavController().navigate(R.id.nav_settings) }
+        mapCard.setOnClickListener { navigateTo(R.id.nav_localizacion) }
+        cardPending.setOnClickListener {
+            navigateTo(
+                R.id.nav_averias,
+                bundleOf(AveriasFragment.ARG_INITIAL_ESTADO to Estado.ASIGNADA.name)
+            )
+        }
+        cardAttended.setOnClickListener {
+            navigateTo(
+                R.id.nav_averias,
+                bundleOf(AveriasFragment.ARG_INITIAL_ESTADO to Estado.RESUELTA.name)
+            )
+        }
+        actionAverias.setOnClickListener { navigateTo(R.id.nav_averias) }
+        actionMedidor.setOnClickListener { navigateTo(R.id.nav_medidor) }
+        actionReportes.setOnClickListener { navigateTo(R.id.nav_reportes) }
+        actionSettings.setOnClickListener { navigateTo(R.id.nav_settings) }
 
         connectivityManager = requireContext()
             .getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
@@ -126,22 +153,17 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                     }
                 }
                 launch {
-                    vm.kilometrosInicialesHoy.collect { kms ->
-                        kilometrajeValue.text = if (kms <= 0.0) {
-                            getString(R.string.home_cards_placeholder)
-                        } else {
-                            getString(R.string.home_card_kilometraje_value, kms)
-                        }
+                    vm.kilometrajeFinalReciente.collect { kms ->
+                        kilometrajeValue.text = kms?.takeIf { it > 0.0 }?.let {
+                            getString(R.string.home_card_kilometraje_value, it)
+                        } ?: getString(R.string.home_cards_placeholder)
                     }
                 }
                 launch {
                     vm.lastManualSync.collect { timestamp ->
                         val relative = formatRelativeSync(timestamp)
                         lastSyncSummary.text = relative
-                        mapStatus.text = buildString {
-                            appendLine(getString(R.string.home_map_description))
-                            append(getString(R.string.home_map_last_sync, relative))
-                        }
+                        mapStatus.text = buildMapStatusMessage(relative)
                     }
                 }
             }
@@ -162,6 +184,8 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         mapStatusText = null
         statusIndicator = null
         syncDialog = null
+        offlineDialog?.dismiss()
+        offlineDialog = null
         connectivityManager = null
     }
 
@@ -233,13 +257,18 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
     }
 
     private fun updateNetworkStatus(statusText: TextView) {
-        val connected = isConnected()
+        renderNetworkStatus(statusText, isConnected())
+    }
+
+    private fun renderNetworkStatus(statusText: TextView, connected: Boolean) {
         if (connected) {
             statusText.text = getString(R.string.home_status_online)
             statusIndicator?.setBackgroundResource(R.drawable.bg_home_status_online)
+            dismissOfflineDialog()
         } else {
             statusText.text = getString(R.string.home_status_offline)
             statusIndicator?.setBackgroundResource(R.drawable.bg_home_status_offline)
+            showOfflineDialog()
         }
     }
 
@@ -252,12 +281,12 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         val callback = object : ConnectivityManager.NetworkCallback() {
             override fun onAvailable(network: android.net.Network) {
                 if (!isAdded) return
-                statusText.post { updateNetworkStatus(statusText) }
+                statusText.post { renderNetworkStatus(statusText, true) }
             }
 
             override fun onLost(network: android.net.Network) {
                 if (!isAdded) return
-                statusText.post { updateNetworkStatus(statusText) }
+                statusText.post { renderNetworkStatus(statusText, false) }
             }
         }
         runCatching { cm.registerDefaultNetworkCallback(callback) }
@@ -332,10 +361,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                             syncStatusText?.text = getString(R.string.home_sync_status_success)
                             val relative = formatRelativeSync(vm.lastManualSync.value)
                             lastSyncValue?.text = relative
-                            mapStatusText?.text = buildString {
-                                appendLine(getString(R.string.home_map_description))
-                                append(getString(R.string.home_map_last_sync, relative))
-                            }
+                            mapStatusText?.text = buildMapStatusMessage(relative)
                             syncDialog?.let { dialog ->
                                 runCatching { dialog.dismissAllowingStateLoss() }
                             }
@@ -401,6 +427,94 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         return detail
     }
 
-
+    private fun buildMapStatusMessage(relative: String): CharSequence {
+        val needsPermission = !hasLocationPermission()
+        return buildString {
+            appendLine(getString(R.string.home_map_description))
+            append(getString(R.string.home_map_last_sync, relative))
+            if (needsPermission) {
+                appendLine()
+                append(getString(R.string.home_map_permission_missing))
+            }
+        }
     }
+
+    private fun hasLocationPermission(): Boolean {
+        val context = context ?: return false
+        val fine = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)
+        val coarse = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION)
+        return fine == PackageManager.PERMISSION_GRANTED || coarse == PackageManager.PERMISSION_GRANTED
+    }
+
+    private fun navigateTo(destinationId: Int, args: Bundle? = null) {
+        val navController = findNavController()
+        val options = navOptions {
+            launchSingleTop = true
+            restoreState = true
+            popUpTo(navController.graph.startDestinationId) {
+                inclusive = false
+                saveState = true
+            }
+        }
+        navController.navigate(destinationId, args, options)
+    }
+
+    private var currentAlertView: View? = null
+
+    private fun showOfflineDialog() {
+        // Evita mostrar más de una alerta
+        if (currentAlertView != null || !isAdded) return
+
+        val parent = requireActivity().findViewById<ViewGroup>(android.R.id.content)
+        val alertView = layoutInflater.inflate(R.layout.layout_top_alert, parent, false)
+        val textView = alertView.findViewById<TextView>(R.id.tvMessage)
+        val iconView = alertView.findViewById<ImageView>(R.id.iconAlert)
+
+        // Personaliza el mensaje y color (puedes usar tus colores corporativos)
+        textView.text = "Sin conexión a Internet"
+        alertView.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.red))
+        iconView.setColorFilter(ContextCompat.getColor(requireContext(), android.R.color.white))
+
+        // Añadir la vista al contenedor raíz
+        parent.addView(alertView)
+        currentAlertView = alertView
+
+        // Animación de entrada
+        alertView.translationY = -200f
+        alertView.alpha = 0f
+        alertView.animate()
+            .translationY(0f)
+            .alpha(1f)
+            .setDuration(350)
+            .start()
+
+        // Quitar automáticamente después de 3 segundos
+        alertView.postDelayed({
+            hideOfflineAlert()
+        }, 3000)
+    }
+
+    private fun hideOfflineAlert() {
+        currentAlertView?.let { alert ->
+            alert.animate()
+                .translationY(-200f)
+                .alpha(0f)
+                .setDuration(350)
+                .withEndAction {
+                    (alert.parent as? ViewGroup)?.removeView(alert)
+                    currentAlertView = null
+                }
+                .start()
+        }
+    }
+
+
+    private fun dismissOfflineDialog() {
+        offlineDialog?.let { dialog ->
+            if (dialog.isShowing) {
+                dialog.dismiss()
+            }
+        }
+    }
+}
 
