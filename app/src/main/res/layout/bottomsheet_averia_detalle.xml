@@ -109,6 +109,18 @@
             android:layout_marginTop="2dp"
             android:textAppearance="?attr/textAppearanceBodySmall" />
 
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnDetalleVerMapa"
+            style="@style/Tecni.Button.Outlined"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/averia_ver_mapa"
+            app:icon="@drawable/ic_share_location24"
+            app:iconGravity="textStart"
+            app:iconPadding="4dp"
+            app:iconSize="18dp" />
+
         <TextView
             android:id="@+id/tvDireccionGps"
             android:layout_width="match_parent"
@@ -250,7 +262,9 @@
                 android:id="@+id/actvTecnico"
                 android:layout_width="match_parent"
                 android:layout_height="50dp"
-                android:inputType="text" />
+                android:inputType="text"
+                android:paddingStart="16dp"
+                android:paddingEnd="0dp" />
         </com.google.android.material.textfield.TextInputLayout>
 
 
@@ -263,14 +277,6 @@
             android:layout_marginTop="16dp"
             android:textAppearance="?attr/textAppearanceTitleSmall"
             android:text="@string/averia_materiales_usados"
-            android:visibility="gone" />
-
-        <TextView
-            android:id="@+id/tvMaterialesLista"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:textAppearance="?attr/textAppearanceBodyMedium"
             android:visibility="gone" />
 
         <com.google.android.material.textfield.TextInputLayout
@@ -287,7 +293,9 @@
                 android:id="@+id/actvMaterial"
                 android:layout_width="match_parent"
                 android:layout_height="50dp"
-                android:inputType="text" />
+                android:inputType="text"
+                android:paddingStart="16dp"
+                android:paddingEnd="0dp" />
         </com.google.android.material.textfield.TextInputLayout>
 
 
@@ -430,7 +438,9 @@
                 android:id="@+id/actvVehiculo"
                 android:layout_width="match_parent"
                 android:layout_height="60dp"
-                android:inputType="number" />
+                android:inputType="textCapCharacters"
+                android:paddingStart="16dp"
+                android:paddingEnd="0dp" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
@@ -439,7 +449,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:hint="@string/averia_hora_inicio_hint">
+            android:hint="@string/averia_hora_inicio_hint"
+            app:startIconDrawable="@drawable/ic_time"
+            app:startIconTint="?attr/colorOnSurfaceVariant">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/etHoraInicio"
@@ -456,7 +468,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:hint="@string/averia_hora_fin_hint">
+            android:hint="@string/averia_hora_fin_hint"
+            app:startIconDrawable="@drawable/ic_time"
+            app:startIconTint="?attr/colorOnSurfaceVariant">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/etHoraFin"
@@ -473,7 +487,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:hint="@string/averia_km_inicio_hint">
+            android:hint="@string/averia_km_inicio_hint"
+            app:startIconDrawable="@drawable/ic_speedometer"
+            app:startIconTint="?attr/colorOnSurfaceVariant">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/etKmInicio"
@@ -488,7 +504,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:hint="@string/averia_km_fin_hint">
+            android:hint="@string/averia_km_fin_hint"
+            app:startIconDrawable="@drawable/ic_speedometer"
+            app:startIconTint="?attr/colorOnSurfaceVariant">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/etKmFinal"
@@ -543,20 +561,6 @@
                 app:iconPadding="8dp" />
 
             <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnModificar"
-                style="@style/Tecni.Button.Primary"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="@string/averia_modificar"
-                android:textAllCaps="false"
-                android:visibility="gone"
-                app:icon="@drawable/ic_edit"
-                app:iconGravity="textStart"
-                app:iconPadding="8dp" />
-                <!-- TODO(Codex): Botón específico para modificar avería resuelta -->
-
-            <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnExportar"
                 style="@style/Tecni.Button.Primary"
                 android:layout_width="match_parent"
@@ -590,18 +594,6 @@
                 app:backgroundTint= "@color/error_500"
                 android:textAllCaps="false"
                 android:visibility="gone" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnVerMapa"
-                style="@style/Tecni.Button.Outlined"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="@string/averia_ver_mapa"
-                android:textAllCaps="false"
-                app:icon="@drawable/ic_share_location24"
-                app:iconGravity="textStart"
-                app:iconPadding="8dp" />
         </LinearLayout>
 
     </LinearLayout>

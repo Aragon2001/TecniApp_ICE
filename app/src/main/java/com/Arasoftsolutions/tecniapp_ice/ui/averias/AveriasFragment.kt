@@ -110,6 +110,7 @@ class AveriasFragment : Fragment() {
         // Recycler
         adapter = AveriasAdapter(
             onVerDetalle = { showDetalle(it) },
+            onVerMapa = { openMap(it) },
             onAsignar = { vm.onToggleAsignacion(it) },
             onAtender = { handleAtender(it) },
             onResolver = { handleResolver(it) }
@@ -126,7 +127,6 @@ class AveriasFragment : Fragment() {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 vm.usuarioActual.collectLatest { user ->
                     adapter.currentUserUid = user?.uid
-                    adapter.notifyDataSetChanged()
                 }
             }
         }
@@ -162,6 +162,7 @@ class AveriasFragment : Fragment() {
                 b.chipAsignada.id -> Estado.ASIGNADA
                 b.chipEnAtencion.id -> Estado.EN_ATENCION
                 b.chipResuelta.id -> Estado.RESUELTA
+                b.chipAnulada.id -> Estado.ANULADA
                 else -> null
             }
             vm.setEstado(state)
@@ -408,6 +409,23 @@ class AveriasFragment : Fragment() {
         val iconRes = if (enabled) R.drawable.ic_notification else R.drawable.ic_notification_off
         notificationMenuItem?.setIcon(iconRes)
         // TODO(Codex): Alternar iconografía de notificaciones habilitadas/deshabilitadas
+    }
+
+    private fun openMap(item: AveriaUI) {
+        val lat = item.lat
+        val lng = item.lng
+        if (lat == 0.0 && lng == 0.0) {
+            Snackbar.make(b.root, R.string.averia_error_sin_coordenadas, Snackbar.LENGTH_SHORT).show()
+            return
+        }
+        AveriaMapLauncher.show(
+            requireContext(),
+            lat,
+            lng,
+            item.descripcion.takeIf { it.isNotBlank() } ?: item.id
+        ) {
+            Snackbar.make(b.root, R.string.averia_error_app_mapa, Snackbar.LENGTH_SHORT).show()
+        }
     }
 
     private fun showDetalle(item: AveriaUI) {
