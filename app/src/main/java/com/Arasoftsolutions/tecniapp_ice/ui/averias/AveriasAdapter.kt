@@ -283,9 +283,8 @@ class AveriasAdapter(
                         isVisible = true
                     }
                     btnAtender.apply {
-                        text = context.getString(R.string.averia_atender)
-                        isEnabled = true
-                        isVisible = true
+                        isVisible = false
+                        isEnabled = false
                     }
                     btnResolver.isVisible = false
                 }

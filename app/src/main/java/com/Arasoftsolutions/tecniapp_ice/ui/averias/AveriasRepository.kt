@@ -91,6 +91,52 @@ class AveriasRepository(private val db: AppDatabase) {
         return if (trimmed.isNullOrEmpty()) local else trimmed
     }
 
+    private fun mergeForApi(existing: AveriaEntity, remote: AveriaEntity): AveriaEntity {
+        val estadoElegido = pickEstadoPreferAdvanced(existing.estado, remote.estado)
+        val idEstadoElegido = idEstadoFromLabel(estadoElegido)
+        return existing.copy(
+            region = remote.region,
+            provincia = remote.provincia,
+            agencia = remote.agencia,
+            nombreAgencia = remote.nombreAgencia,
+            nise = preferMeaningful(remote.nise, existing.nise),
+            causa = preferMeaningful(remote.causa, existing.causa),
+            observaciones = preferMeaningful(remote.observaciones, existing.observaciones),
+            estado = estadoElegido,
+            idEstadoAve = idEstadoElegido,
+            idEstadoAranda = remote.idEstadoAranda ?: existing.idEstadoAranda,
+            lat = remote.lat ?: existing.lat,
+            lng = remote.lng ?: existing.lng,
+            clientesAfectados = preferMeaningful(remote.clientesAfectados, existing.clientesAfectados),
+            fechaInicioMillis = remote.fechaInicioMillis.takeIf { it != 0L } ?: existing.fechaInicioMillis,
+            horaInicioMillis = remote.horaInicioMillis ?: existing.horaInicioMillis,
+            horaFinalMillis = remote.horaFinalMillis ?: existing.horaFinalMillis,
+            atencionHoraInicioMillis = remote.atencionHoraInicioMillis ?: existing.atencionHoraInicioMillis,
+            atencionHoraFinalMillis = remote.atencionHoraFinalMillis ?: existing.atencionHoraFinalMillis,
+            kilometrajeInicio = remote.kilometrajeInicio ?: existing.kilometrajeInicio,
+            kilometrajeFinal = remote.kilometrajeFinal ?: existing.kilometrajeFinal,
+            agenciaTag = remote.agenciaTag,
+            vehiculoAsignado = existing.vehiculoAsignado,
+            tecnicoAsignadoUid = existing.tecnicoAsignadoUid,
+            tecnicoAsignadoNombre = existing.tecnicoAsignadoNombre,
+            atendidoPorUid = existing.atendidoPorUid,
+            atendidoPorNombre = existing.atendidoPorNombre,
+            materialesTexto = existing.materialesTexto,
+            materialesDetalleJson = existing.materialesDetalleJson,
+            tecnicosAtendieronJson = existing.tecnicosAtendieronJson,
+            cliente = preferMeaningful(remote.cliente, existing.cliente),
+            localizacion = preferMeaningful(remote.localizacion, existing.localizacion),
+            tipoAfectacion = preferMeaningful(remote.tipoAfectacion, existing.tipoAfectacion),
+            numeroMedidor = preferMeaningful(remote.numeroMedidor, existing.numeroMedidor),
+            medidorCalle = preferMeaningful(remote.medidorCalle, existing.medidorCalle),
+            medidorPueblo = preferMeaningful(remote.medidorPueblo, existing.medidorPueblo),
+            medidorMetros = preferMeaningful(remote.medidorMetros, existing.medidorMetros),
+            medidorPoste = preferMeaningful(remote.medidorPoste, existing.medidorPoste),
+            lastUpdated = maxOf(existing.lastUpdated, remote.lastUpdated),
+            isSynced = true
+        )
+    }
+
     // Regiones canónicas
     private val REGION_CANON = mapOf(
         "huetar atlantica" to "Huetar Atlántica",
@@ -264,15 +310,17 @@ class AveriasRepository(private val db: AppDatabase) {
     private fun shouldInclude(remote: IceAveria): Boolean {
         val estadoTexto = remote.estado?.lowercase(Locale.getDefault()) ?: ""
         val byId = when (remote.idEstadoAve) {
-            1 -> true // Pendiente
-            2 -> false
-            3 -> false
-            4 -> false
+            1, 2, 3, 4, 5 -> true
             else -> false
         }
         if (byId) return true
         if (estadoTexto.isBlank()) return false
-        return estadoTexto.contains("nuevo") || estadoTexto.contains("pend")
+        return estadoTexto.contains("nuevo") ||
+            estadoTexto.contains("pend") ||
+            estadoTexto.contains("asign") ||
+            estadoTexto.contains("atenc") ||
+            estadoTexto.contains("resuel") ||
+            estadoTexto.contains("anul")
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -340,13 +388,31 @@ class AveriasRepository(private val db: AppDatabase) {
 
         if (incoming.isEmpty()) return@withContext emptyList()
 
-        val existentes = dao.allIds().toSet()
-        val nuevos = incoming
-            .filterNot { existentes.contains(it.caseId) }
-            .map { canonicalizeAgenciaFields(it) }
+        val canonical = incoming.map { canonicalizeAgenciaFields(it) }
+        val existentes = dao.all().associateBy { it.caseId }
+        val nuevos = mutableListOf<AveriaEntity>()
+        val actualizaciones = mutableListOf<AveriaEntity>()
 
+        canonical.forEach { remoto ->
+            val previo = existentes[remoto.caseId]
+            if (previo == null) {
+                nuevos += remoto.copy(isSynced = true)
+            } else {
+                val merged = mergeForApi(previo, remoto)
+                if (merged != previo) {
+                    actualizaciones += merged
+                }
+            }
+        }
+
+        val toUpsert = buildList {
+            addAll(nuevos)
+            addAll(actualizaciones)
+        }
+        if (toUpsert.isNotEmpty()) {
+            dao.upsertAll(toUpsert)
+        }
         if (nuevos.isNotEmpty()) {
-            dao.upsertAll(nuevos)
             registerNewOnFirebase(nuevos)
         }
 
