@@ -71,6 +71,7 @@ class UserFragment : Fragment() {
     private var selectedSubregion: SubregionesEntity? = null
     private var selectedAgency: AgenciaEntity? = null
     private var selectedVehicle: VehiculosEntity? = null
+    private var isChangingPassword: Boolean = false
 
     private val pickImageLauncher = registerForActivityResult(
         ActivityResultContracts.GetContent()
@@ -100,6 +101,7 @@ class UserFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         setupAdapters()
         setupListeners()
+        togglePasswordEdition(false)
         collectViewModel()
         loadUser()
     }
@@ -155,7 +157,7 @@ class UserFragment : Fragment() {
         binding.actvSubregion.setOnItemClickListener { _, _, position, _ ->
             selectedSubregion = filteredSubregions.getOrNull(position)
             selectedSubregion?.let {
-                binding.actvSubregion.setText(it.nombre, false)
+                binding.actvSubregion.setText(formatSubregion(it), false)
                 val regionForSubregion = findRegion(it.regionId)
                 if (regionForSubregion != null && selectedRegion?.id?.equals(regionForSubregion.id, true) != true) {
                     selectedRegion = regionForSubregion
@@ -179,7 +181,7 @@ class UserFragment : Fragment() {
         binding.actvAgency.setOnItemClickListener { _, _, position, _ ->
             selectedAgency = filteredAgencies.getOrNull(position)
             selectedAgency?.let {
-                binding.actvAgency.setText(it.nombre, false)
+                binding.actvAgency.setText(formatAgency(it), false)
             }
             updateSummary()
         }
@@ -203,6 +205,10 @@ class UserFragment : Fragment() {
         binding.btnSaveChanges.setOnClickListener {
             onSaveChanges()
         }
+
+        binding.switchChangePassword.setOnCheckedChangeListener { _, isChecked ->
+            togglePasswordEdition(isChecked)
+        }
     }
 
     private fun collectViewModel() {
@@ -216,28 +222,28 @@ class UserFragment : Fragment() {
                 }
                 launch {
                     viewModel.regions.collect { list ->
-                        regionItems = list
+                        regionItems = list.sortedBy { it.nombre.lowercase() }
                         updateRegionDropdown()
                         applyUserSelections()
                     }
                 }
                 launch {
                     viewModel.subregions.collect { list ->
-                        subregionItems = list
+                        subregionItems = list.sortedBy { it.nombre.lowercase() }
                         updateSubregionDropdown()
                         applyUserSelections()
                     }
                 }
                 launch {
                     viewModel.agencies.collect { list ->
-                        agencyItems = list
+                        agencyItems = list.sortedBy { it.nombre.lowercase() }
                         updateAgencyDropdown()
                         applyUserSelections()
                     }
                 }
                 launch {
                     viewModel.vehicles.collect { list ->
-                        vehicleItems = list
+                        vehicleItems = list.sortedBy { it.placa }
                         updateVehicleDropdown()
                         applyUserSelections()
                     }
@@ -282,6 +288,8 @@ class UserFragment : Fragment() {
             summaryValue(user.cedula, placeholder)
         )
         binding.etPhoneNumber.setText(user.telefono.orEmpty())
+        binding.switchChangePassword.isChecked = false
+        togglePasswordEdition(false)
 
         Glide.with(this)
             .load(user.fotoUrl)
@@ -322,7 +330,7 @@ class UserFragment : Fragment() {
         }
 
         selectedSubregion?.let {
-            binding.actvSubregion.setText(it.nombre, false)
+            binding.actvSubregion.setText(formatSubregion(it), false)
         } ?: run {
             val fallback = user.subregionNombre ?: user.subregion
             binding.actvSubregion.setText(fallback.orEmpty(), false)
@@ -334,7 +342,7 @@ class UserFragment : Fragment() {
                 ?: findAgency(user.agencia, selectedSubregion, effectiveRegion)
         }
         selectedAgency?.let {
-            binding.actvAgency.setText(it.nombre, false)
+            binding.actvAgency.setText(formatAgency(it), false)
         } ?: run {
             binding.actvAgency.setText(user.agencia.orEmpty(), false)
         }
@@ -375,7 +383,7 @@ class UserFragment : Fragment() {
         } else {
             subregionItems
         }
-        subregionAdapter.addAll(filteredSubregions.map { it.nombre })
+        subregionAdapter.addAll(filteredSubregions.map { formatSubregion(it) })
         subregionAdapter.notifyDataSetChanged()
 
         if (selectedSubregion?.let { subregionMatchesRegion(it, targetRegion) } != true) {
@@ -393,7 +401,7 @@ class UserFragment : Fragment() {
             else -> agencyItems
         }
         agencyAdapter.clear()
-        agencyAdapter.addAll(filteredAgencies.map { it.nombre })
+        agencyAdapter.addAll(filteredAgencies.map { formatAgency(it) })
         agencyAdapter.notifyDataSetChanged()
 
         if (selectedAgency?.let { agencyMatches(it, targetSubregion, targetRegion) } != true) {
@@ -426,8 +434,15 @@ class UserFragment : Fragment() {
         }
 
 
-        val newPassword = binding.etPassword.text?.toString().orEmpty()
-        val confirmPassword = binding.etConfirmPassword.text?.toString().orEmpty()
+        val changePassword = isChangingPassword
+        val newPassword = if (changePassword) binding.etPassword.text?.toString().orEmpty() else ""
+        val confirmPassword = if (changePassword) binding.etConfirmPassword.text?.toString().orEmpty() else ""
+
+        if (changePassword && newPassword.isBlank()) {
+            Toast.makeText(requireContext(), R.string.profile_password_required, Toast.LENGTH_LONG).show()
+            return
+        }
+
         if (newPassword.isNotEmpty() && newPassword.length < MIN_PASSWORD_LENGTH) {
             Toast.makeText(requireContext(), R.string.profile_password_too_short, Toast.LENGTH_LONG).show()
             return
@@ -486,6 +501,7 @@ class UserFragment : Fragment() {
                 currentUser = updatedUser
                 binding.etPassword.text?.clear()
                 binding.etConfirmPassword.text?.clear()
+                binding.switchChangePassword.isChecked = false
                 applyUserSelections()
                 updateSummary()
                 Toast.makeText(requireContext(), R.string.profile_save_success, Toast.LENGTH_SHORT).show()
@@ -553,8 +569,8 @@ class UserFragment : Fragment() {
             ?: selectedSubregion?.let { findRegion(it.regionId) }
             ?: currentUserRegion()
         val regionValue = regionEntity?.nombre ?: user?.regionNombre ?: user?.region
-        val subregionValue = selectedSubregion?.nombre ?: user?.subregionNombre ?: user?.subregion
-        val agencyValue = selectedAgency?.nombre ?: user?.agencia
+        val subregionValue = selectedSubregion?.let { formatSubregion(it) } ?: user?.subregionNombre ?: user?.subregion
+        val agencyValue = selectedAgency?.let { formatAgency(it) } ?: user?.agencia
         val vehicleValue = selectedVehicle?.let { formatVehicle(it) } ?: user?.placaVehiculo
         val placeholder = binding.root.context.getString(R.string.profile_summary_placeholder)
 
@@ -684,6 +700,39 @@ class UserFragment : Fragment() {
         return vehicleSub.equals(subId, ignoreCase = true) || vehicleSub.equals(subName, ignoreCase = true)
     }
 
+    private fun togglePasswordEdition(enable: Boolean) {
+        isChangingPassword = enable
+        binding.passwordGroup.isVisible = enable
+        binding.tilPassword.isEnabled = enable
+        binding.tilConfirmPassword.isEnabled = enable
+        binding.etPassword.isEnabled = enable
+        binding.etConfirmPassword.isEnabled = enable
+        if (!enable) {
+            binding.etPassword.text?.clear()
+            binding.etConfirmPassword.text?.clear()
+            binding.tilPassword.error = null
+            binding.tilConfirmPassword.error = null
+        }
+    }
+
+    private fun formatSubregion(subregion: SubregionesEntity): String {
+        val regionName = findRegion(subregion.regionId)?.nombre?.takeIf { it.isNotBlank() }
+        return if (regionName != null) {
+            getString(R.string.profile_dropdown_subregion_format, subregion.nombre, regionName)
+        } else {
+            subregion.nombre
+        }
+    }
+
+    private fun formatAgency(agency: AgenciaEntity): String {
+        val subregionName = findSubregion(agency.subregion)?.nombre?.takeIf { it.isNotBlank() }
+        return if (subregionName != null) {
+            getString(R.string.profile_dropdown_agency_format, agency.nombre, subregionName)
+        } else {
+            agency.nombre
+        }
+    }
+
     private fun formatVehicle(vehicle: VehiculosEntity): String {
         val placa = vehicle.placa.toString()
         val tipo = vehicle.tipo.takeIf { !it.isNullOrBlank() }?.trim().orEmpty()
@@ -700,6 +749,16 @@ class UserFragment : Fragment() {
         binding.progressSaving.isVisible = saving
         binding.btnSaveChanges.isEnabled = !saving
         binding.btnChangePhoto.isEnabled = !saving && !binding.progressPhoto.isVisible
+        binding.switchChangePassword.isEnabled = !saving
+        binding.tilRegion.isEnabled = !saving
+        binding.tilSubregion.isEnabled = !saving
+        binding.tilAgency.isEnabled = !saving
+        binding.tilVehicle.isEnabled = !saving
+        binding.tilPhone.isEnabled = !saving
+        binding.passwordGroup.isEnabled = !saving
+        if (!saving) {
+            togglePasswordEdition(binding.switchChangePassword.isChecked)
+        }
     }
 
     private fun setPhotoUploading(uploading: Boolean) {

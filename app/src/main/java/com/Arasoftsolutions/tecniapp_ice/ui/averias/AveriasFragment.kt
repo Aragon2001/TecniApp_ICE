@@ -1,5 +1,7 @@
 package com.Arasoftsolutions.tecniapp_ice.ui.averias
 
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.Menu
@@ -8,6 +10,7 @@ import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
+import android.widget.Toast
 import android.widget.CompoundButton
 import android.widget.TextView
 import androidx.core.view.MenuHost
@@ -41,9 +44,14 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.ZoneOffset
 import androidx.core.util.Pair
+import com.Arasoftsolutions.tecniapp_ice.ui.averias.Estado.*
 import kotlin.math.abs
 
 class AveriasFragment : Fragment() {
+
+    companion object {
+        const val ARG_INITIAL_ESTADO = "initial_estado"
+    }
 
     private var _b: FragmentAveriasBinding? = null
     private val b get() = _b!!
@@ -169,6 +177,23 @@ class AveriasFragment : Fragment() {
         }
         b.chipGroupEstado.check(b.chipTodos.id)
 
+        if (savedInstanceState == null) {
+            val estadoInicial = arguments?.getString(ARG_INITIAL_ESTADO)
+                ?.takeIf { it.isNotBlank() }
+                ?.let { runCatching { Estado.valueOf(it) }.getOrNull() }
+            estadoInicial?.let { estado ->
+                val chipId = when (estado) {
+                    ASIGNADA -> b.chipAsignada.id
+                    EN_ATENCION -> b.chipEnAtencion.id
+                    RESUELTA -> b.chipResuelta.id
+                    PENDIENTE -> b.chipPendiente.id
+                    ANULADA -> TODO()
+                }
+                b.chipGroupEstado.check(chipId)
+            }
+        }
+        arguments?.remove(ARG_INITIAL_ESTADO)
+
         // Dropdown Regiones
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -251,16 +276,16 @@ class AveriasFragment : Fragment() {
     }
     private fun handleAtender(item: AveriaUI) {
         when (Estado.fromLabel(item.estado)) {
-            Estado.ASIGNADA -> showDetalle(item)
-            Estado.EN_ATENCION -> vm.onCancelarAtencion(item)
+            ASIGNADA -> showDetalle(item)
+            EN_ATENCION -> vm.onCancelarAtencion(item)
             else -> showDetalle(item)
         }
     }
 
     private fun handleResolver(item: AveriaUI) {
         when (Estado.fromLabel(item.estado)) {
-            Estado.EN_ATENCION -> showDetalle(item)
-            Estado.RESUELTA -> viewLifecycleOwner.lifecycleScope.launch {
+            EN_ATENCION -> showDetalle(item)
+            RESUELTA -> viewLifecycleOwner.lifecycleScope.launch {
                 PdfGenerator.exportAveria(requireContext(), item)
             }
             else -> showDetalle(item)
@@ -320,6 +345,7 @@ class AveriasFragment : Fragment() {
         }
 
         sheetBinding.btnGuardarNotificaciones.setOnClickListener {
+            Toast.makeText(requireContext(), R.string.settings_notifications_saved, Toast.LENGTH_SHORT).show()
             dialog.dismiss()
         }
 

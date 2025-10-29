@@ -9,12 +9,6 @@
         app:showAsAction="ifRoom" />
 
     <item
-        android:id="@+id/action_toggle_sheet"
-        android:icon="@drawable/ic_fullscreen"
-        android:title="@string/map_picker_action_expand"
-        app:showAsAction="ifRoom" />
-
-    <item
         android:id="@+id/action_toggle_map_type"
         android:icon="@drawable/ic_layers"
         android:title="@string/map_picker_action_map_style"

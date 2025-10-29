@@ -30,7 +30,7 @@ class MaterialesPorAveriaAdapter :
             val emptyValue = context.getString(R.string.averia_pdf_empty_value)
 
             binding.tvTitulo.text = context.getString(R.string.reportes_item_caso, item.caseId)
-            binding.tvSubtitulo.text = context.getString(R.string.reportes_item_fecha, item.fechaTexto)
+            binding.tvSubtitulo.text = context.getString(R.string.reportes_item_fecha_compacto, item.fechaTexto)
 
             val agencia = item.agencia.ifBlank { emptyValue }
             binding.tvAgencia.text = context.getString(R.string.reportes_item_agencia, agencia)
