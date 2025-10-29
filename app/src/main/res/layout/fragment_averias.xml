@@ -105,7 +105,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="@string/averia_estado_todos"
-                            app:checkedIconVisible="false" />
+                            app:checkedIconVisible="true" />
 
                         <com.google.android.material.chip.Chip
                             android:id="@+id/chipPendiente"
@@ -113,7 +113,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="@string/estado_pendiente"
-                            app:checkedIconVisible="false" />
+                            app:checkedIconVisible="true" />
 
                         <com.google.android.material.chip.Chip
                             android:id="@+id/chipAsignada"
@@ -121,7 +121,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="@string/estado_asignada"
-                            app:checkedIconVisible="false" />
+                            app:checkedIconVisible="true" />
 
                         <com.google.android.material.chip.Chip
                             android:id="@+id/chipEnAtencion"
@@ -129,7 +129,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="@string/estado_en_atencion"
-                            app:checkedIconVisible="false" />
+                            app:checkedIconVisible="true" />
 
                         <com.google.android.material.chip.Chip
                             android:id="@+id/chipResuelta"
@@ -137,68 +137,76 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="@string/estado_resuelta"
-                            app:checkedIconVisible="false" />
+                            app:checkedIconVisible="true" />
+
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/chipAnulada"
+                            style="@style/Tecni.Chip.Anulada"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/estado_anulada"
+                            app:checkedIconVisible="true" />
                     </com.google.android.material.chip.ChipGroup>
                 </HorizontalScrollView>
 
-                <!-- Filtros Región y Agencia en horizontal -->
-                <LinearLayout
-                    android:layout_width="wrap_content"
+                <!-- Filtros Región y Agencia en una sola fila -->
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:weightSum="2">
+                    android:layout_marginTop="8dp">
 
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/tilRegion"
                         style="@style/Tecni.TextInput.Outlined.Dropdown"
-                        android:layout_width="wrap_content"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_marginEnd="4dp"
-                        android:layout_weight="0"
-                        android:minWidth="140dp"
                         android:hint="@string/averias_filtrar_region"
-                        app:endIconMode="dropdown_menu">
-                        <!-- TODO(Codex): Reducir ancho de los dropdowns para respetar feedback de diseño -->
+                        app:endIconMode="dropdown_menu"
+                        app:layout_constraintEnd_toStartOf="@id/tilAgencia"
+                        app:layout_constraintHorizontal_bias="0.0"
+                        app:layout_constraintHorizontal_chainStyle="packed"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent">
 
                         <com.google.android.material.textfield.MaterialAutoCompleteTextView
                             android:id="@+id/actvRegion"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:inputType="none"
-                            android:paddingStart="0dp"
-                            android:paddingEnd="0dp"
-                            android:gravity="center_vertical"
-                            android:maxLines="1"
                             android:ellipsize="end"
+                            android:gravity="center_vertical"
+                            android:inputType="none"
+                            android:maxLines="1"
+                            android:paddingStart="16dp"
+                            android:paddingEnd="0dp"
                             android:scrollHorizontally="true" />
-                        <!-- TODO(Codex): Utilizar MaterialAutoComplete para respetar estilos Material 3 -->
                     </com.google.android.material.textfield.TextInputLayout>
 
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/tilAgencia"
-                        style="@style/Tecni.TextInput.Outlined.Dense.Dropdown"
-                        android:layout_width="wrap_content"
+                        style="@style/Tecni.TextInput.Outlined.Dropdown"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="4dp"
-                        android:layout_weight="0"
-                        android:minWidth="140dp"
+                        android:layout_marginStart="16dp"
                         android:hint="@string/averias_filtrar_agencia"
-                        app:endIconMode="dropdown_menu">
+                        app:endIconMode="dropdown_menu"
+                        app:layout_constraintBaseline_toBaselineOf="@id/tilRegion"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toEndOf="@id/tilRegion">
 
                         <com.google.android.material.textfield.MaterialAutoCompleteTextView
                             android:id="@+id/actvAgencia"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:inputType="none"
-                            android:paddingStart="0dp"
-                            android:paddingEnd="0dp"
-                            android:gravity="center_vertical"
-                            android:maxLines="1"
                             android:ellipsize="end"
+                            android:gravity="center_vertical"
+                            android:inputType="none"
+                            android:maxLines="1"
+                            android:paddingStart="16dp"
+                            android:paddingEnd="0dp"
                             android:scrollHorizontally="true" />
-                        <!-- TODO(Codex): Alinear autocompletes de agencia con el estilo densificado -->
                     </com.google.android.material.textfield.TextInputLayout>
-                </LinearLayout>
+
+                </androidx.constraintlayout.widget.ConstraintLayout>
 
             </LinearLayout>
         </com.google.android.material.appbar.CollapsingToolbarLayout>
