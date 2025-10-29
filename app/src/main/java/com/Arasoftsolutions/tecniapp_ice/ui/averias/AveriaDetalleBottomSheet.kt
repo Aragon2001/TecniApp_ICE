@@ -26,7 +26,6 @@ import com.Arasoftsolutions.tecniapp_ice.Database.entities.TecnicoEntity
 import com.Arasoftsolutions.tecniapp_ice.R
 import com.Arasoftsolutions.tecniapp_ice.databinding.BottomsheetAveriaDetalleBinding
 import com.Arasoftsolutions.tecniapp_ice.databinding.BottomsheetMedidorMaterialBinding
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
@@ -35,6 +34,8 @@ import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import androidx.navigation.findNavController
 import com.google.android.material.button.MaterialButton
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
@@ -426,6 +427,20 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
             getString(R.string.averia_reporte_coordenadas_sin_datos)
         }
         b.tvCoordenadas.text = coordsText
+        b.btnDetalleVerMapa.apply {
+            val hasCoords = item.lat != 0.0 && item.lng != 0.0
+            isVisible = hasCoords
+            setOnClickListener {
+                AveriaMapLauncher.show(
+                    requireContext(),
+                    item.lat,
+                    item.lng,
+                    item.descripcion.takeIf { it.isNotBlank() } ?: item.id
+                ) {
+                    Snackbar.make(b.root, R.string.averia_error_app_mapa, Snackbar.LENGTH_SHORT).show()
+                }
+            }
+        }
         val direccionGps = item.direccion?.takeIf { it.isNotBlank() }
         b.tvDireccionGps.apply {
             isVisible = !direccionGps.isNullOrBlank()

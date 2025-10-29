@@ -444,19 +444,13 @@ class AveriasFragment : Fragment() {
             Snackbar.make(b.root, R.string.averia_error_sin_coordenadas, Snackbar.LENGTH_SHORT).show()
             return
         }
-
-        val encodedLabel = Uri.encode(item.descripcion.takeIf { it.isNotBlank() } ?: item.id)
-        val geoUri = Uri.parse("geo:$lat,$lng?q=$lat,$lng($encodedLabel)")
-
-        val mapsIntent = Intent(Intent.ACTION_VIEW, geoUri).apply {
-            setPackage("com.google.android.apps.maps")
-        }
-        val packageManager = requireContext().packageManager
-        when {
-            mapsIntent.resolveActivity(packageManager) != null -> startActivity(mapsIntent)
-            Intent(Intent.ACTION_VIEW, geoUri).resolveActivity(packageManager) != null ->
-                startActivity(Intent(Intent.ACTION_VIEW, geoUri))
-            else -> Snackbar.make(b.root, R.string.averia_error_app_mapa, Snackbar.LENGTH_SHORT).show()
+        AveriaMapLauncher.show(
+            requireContext(),
+            lat,
+            lng,
+            item.descripcion.takeIf { it.isNotBlank() } ?: item.id
+        ) {
+            Snackbar.make(b.root, R.string.averia_error_app_mapa, Snackbar.LENGTH_SHORT).show()
         }
     }
 
