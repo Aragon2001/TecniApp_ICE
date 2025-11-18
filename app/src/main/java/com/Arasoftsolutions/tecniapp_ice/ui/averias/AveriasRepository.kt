@@ -253,7 +253,7 @@ class AveriasRepository(private val db: AppDatabase) {
         return when {
             localNormalized == "Anulada" -> "Anulada"
             local.isNullOrBlank() -> remoteNormalized
-            remoteNormalized == "Resuelta" && localNormalized != "Resuelta" -> "Resuelta"
+            remoteNormalized == "Resuelta" -> "Resuelta"
             else -> localNormalized
         }
     }

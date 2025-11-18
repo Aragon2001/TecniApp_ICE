@@ -65,7 +65,7 @@ object AveriaNotifications {
         if (lat == 0.0 && lng == 0.0) return null
         val safeLabel = label?.takeIf { it.isNotBlank() }
             ?: context.getString(R.string.averia_notificacion_map_label_default)
-        val pendingIntent = FieldMapsIntents.pendingIntent(context, lat, lng, safeLabel, requestCode)
+        val pendingIntent = AveriaMapLauncher.pendingIntent(context, lat, lng, safeLabel, requestCode)
             ?: return null
         return NotificationCompat.Action.Builder(
             R.drawable.ic_map_placeholder,
