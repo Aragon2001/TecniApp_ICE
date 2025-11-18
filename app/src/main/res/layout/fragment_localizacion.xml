@@ -221,6 +221,17 @@
             app:iconGravity="textStart"
             app:iconPadding="8dp" />
 
+        <!-- Botón para mostrar/ocultar calles -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonToggleCalles"
+            style="@style/Tecni.Button.Primary"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Calles"
+            app:icon="@drawable/ic_round_filter_list_24"
+            app:iconGravity="textStart"
+            app:iconPadding="8dp" />
+
     </LinearLayout>
     <!-- Barra de progreso centrada y sobre todo el contenido -->
     <ProgressBar
