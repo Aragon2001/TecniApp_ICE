@@ -6,7 +6,6 @@ import android.Manifest
 import android.app.AlertDialog
 import android.content.ActivityNotFoundException
 import android.content.Context
-import android.content.SharedPreferences
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
@@ -27,7 +26,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
-import android.widget.CompoundButton
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -86,7 +84,6 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
     private var marcador: Marker? = null
     private val marcadoresCalles = mutableListOf<Marker>()
     private lateinit var fusedLocationClient: FusedLocationProviderClient
-    private lateinit var uiPreferences: SharedPreferences
     private val CLAVE_MAPA_VISTA_BUNDLE = "ClaveMapaVistaBundle"
 
     // --- Permisos (Activity Result API) ---
@@ -120,17 +117,11 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
     private val handler = Handler(Looper.getMainLooper())
 
     // --- Ubicación del usuario ---
-    private var followLocationEnabled = false
+    private var followLocationEnabled = true
     private var hasCenteredOnUser = false
     private var lastLocationErrorAt = 0L
     private var singleLocationToken: CancellationTokenSource? = null
     private val LOCATION_ERROR_TOAST_INTERVAL_MS = 10_000L
-    private val PREF_AUTO_ROTATE = "pref_auto_rotate_enabled"
-    private val PREF_FOLLOW_LOCATION = "pref_follow_location_enabled"
-
-    private val switchListener = CompoundButton.OnCheckedChangeListener { _, isChecked ->
-        viewModel.actualizarPreferenciaMostrarCalles(isChecked)
-    }
 
     // --- Requests de ubicación ---
     private val locationRequest = com.google.android.gms.location.LocationRequest.Builder(
@@ -172,10 +163,8 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
 
         // Ubicación
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity())
-        uiPreferences = requireContext().getSharedPreferences("localizacion_prefs", Context.MODE_PRIVATE)
-        autoRotatePreference = uiPreferences.getBoolean(PREF_AUTO_ROTATE, true)
+        autoRotatePreference = true
         runtimeAutoRotateEnabled = autoRotatePreference
-        followLocationEnabled = uiPreferences.getBoolean(PREF_FOLLOW_LOCATION, false)
 
         // Sensores
         sensorManager = requireContext().getSystemService(Context.SENSOR_SERVICE) as SensorManager
@@ -254,15 +243,6 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
             actualizarMarcadoresDeCalles(lista)
         }
 
-        viewModel.mostrarTodasCalles.observe(viewLifecycleOwner) { mostrar ->
-            val switch = binding.switchMostrarCalles
-            if (switch.isChecked != mostrar) {
-                switch.setOnCheckedChangeListener(null)
-                switch.isChecked = mostrar
-                switch.setOnCheckedChangeListener(switchListener)
-            }
-        }
-
         // Estado (progress + errores)
         viewModel.estado.observe(viewLifecycleOwner) { estado ->
             when (estado) {
@@ -296,31 +276,6 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
     private fun configurarControles() {
         binding.buttonNavegar.setOnClickListener { mostrarOpcionesDeNavegacion() }
         binding.buttonShare.setOnClickListener { compartirUbicacion() }
-        binding.switchMostrarCalles.setOnCheckedChangeListener(switchListener)
-        binding.switchAutoRotacion.apply {
-            isChecked = autoRotatePreference
-            setOnCheckedChangeListener { _, isChecked ->
-                autoRotatePreference = isChecked
-                uiPreferences.edit().putBoolean(PREF_AUTO_ROTATE, isChecked).apply()
-                if (!isChecked) {
-                    runtimeAutoRotateEnabled = false
-                } else {
-                    runtimeAutoRotateEnabled = true
-                    lastCompassBearing = mapaGoogle?.cameraPosition?.bearing?.let { normalizeBearing(it) }
-                }
-            }
-        }
-        binding.switchSeguirUbicacion.apply {
-            isChecked = followLocationEnabled
-            setOnCheckedChangeListener { _, isChecked ->
-                followLocationEnabled = isChecked
-                uiPreferences.edit().putBoolean(PREF_FOLLOW_LOCATION, isChecked).apply()
-                hasCenteredOnUser = false
-                if (isChecked) {
-                    solicitarUbicacionActual(force = true)
-                }
-            }
-        }
     }
 
     // Reset de textos y cámara a vista país
@@ -603,6 +558,7 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
         // URIs corregidas
         val fieldMapsUri = Uri.parse("arcgis-fieldmaps://?referenceContext=center&itemID=&center=$centerParam")
         val googleMapsUri = Uri.parse("google.navigation:q=$centerParam")
+        val wazeUri = Uri.parse("waze://?ll=$centerParam&navigate=yes")
         val browserUri = Uri.parse("https://maps.google.com/?q=$centerParam")
 
         // Intents
@@ -614,10 +570,14 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
             setPackage("com.google.android.apps.maps")
         }
 
+        val wazeIntent = Intent(Intent.ACTION_VIEW, wazeUri).apply {
+            setPackage("com.waze")
+        }
+
         val browserIntent = Intent(Intent.ACTION_VIEW, browserUri)
 
         // Mostrar selector manual
-        val opciones = arrayOf("Field Maps", "Google Maps", "Navegador web")
+        val opciones = arrayOf("Field Maps", "Google Maps", "Waze", "Navegador web")
 
         AlertDialog.Builder(context)
             .setTitle("Abrir ubicación con...")
@@ -637,7 +597,14 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
                             Toast.makeText(context, "Google Maps no está disponible.", Toast.LENGTH_LONG).show()
                         }
                     }
-                    2 -> { // Navegador
+                    2 -> { // Waze
+                        try {
+                            startActivity(wazeIntent)
+                        } catch (e: ActivityNotFoundException) {
+                            Toast.makeText(context, "Waze no está instalado.", Toast.LENGTH_LONG).show()
+                        }
+                    }
+                    3 -> { // Navegador
                         try {
                             startActivity(browserIntent)
                         } catch (e: Exception) {
@@ -761,9 +728,6 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
     override fun onDestroyView() {
         super.onDestroyView()
         binding.mapView.onDestroy()
-        binding.switchMostrarCalles.setOnCheckedChangeListener(null)
-        binding.switchAutoRotacion.setOnCheckedChangeListener(null)
-        binding.switchSeguirUbicacion.setOnCheckedChangeListener(null)
         handler.removeCallbacksAndMessages(null)
         singleLocationToken?.cancel()
         singleLocationToken = null

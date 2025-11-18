@@ -1,7 +1,6 @@
 package com.Arasoftsolutions.tecniapp_ice.ui.localizacion
 
 import android.app.Application
-import android.content.Context
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
@@ -41,9 +40,6 @@ class LocalizacionViewModel(app: Application) : AndroidViewModel(app) {
     private val _marcadoresCalles = MutableLiveData<List<MarcadorCalle>>(emptyList())
     val marcadoresCalles: LiveData<List<MarcadorCalle>> = _marcadoresCalles
 
-    private val _mostrarTodasCalles = MutableLiveData(false)
-    val mostrarTodasCalles: LiveData<Boolean> = _mostrarTodasCalles
-
     private var subregionActual: String? = null
     private var initialized = false
     private var pueblosJob: Job? = null
@@ -51,8 +47,6 @@ class LocalizacionViewModel(app: Application) : AndroidViewModel(app) {
     private var intentoSyncRealizado = false
     private var cacheCallesActuales: List<LocalizacionesEntity> = emptyList()
     private var puebloSeleccionadoActual: Int? = null
-    private val preferencias = app.getSharedPreferences("localizacion_prefs", Context.MODE_PRIVATE)
-    private var preferenciaMostrarCallesClave: String? = null
 
     fun prepararDatos() {
         if (initialized) return
@@ -92,10 +86,6 @@ class LocalizacionViewModel(app: Application) : AndroidViewModel(app) {
             }
 
             subregionActual = subregionCanonica
-            preferenciaMostrarCallesClave = "mostrar_todas_calles_" + uid
-            val preferencia = preferencias.getBoolean(preferenciaMostrarCallesClave, false)
-            _mostrarTodasCalles.postValue(preferencia)
-
             _estado.postValue(Estado.Cargando)
             observarPueblos(subregionCanonica)
         } catch (t: Throwable) {
@@ -213,25 +203,7 @@ class LocalizacionViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun actualizarPreferenciaMostrarCalles(mostrar: Boolean) {
-        _mostrarTodasCalles.value = mostrar
-        preferenciaMostrarCallesClave?.let { clave ->
-            preferencias.edit().putBoolean(clave, mostrar).apply()
-        }
-
-        if (mostrar) {
-            actualizarMarcadoresParaSeleccion()
-        } else {
-            _marcadoresCalles.value = emptyList()
-        }
-    }
-
     private fun actualizarMarcadoresParaSeleccion() {
-        if (_mostrarTodasCalles.value != true) {
-            _marcadoresCalles.value = emptyList()
-            return
-        }
-
         val seleccion = puebloSeleccionadoActual ?: run {
             _marcadoresCalles.value = emptyList()
             _estado.value = Estado.Error(
