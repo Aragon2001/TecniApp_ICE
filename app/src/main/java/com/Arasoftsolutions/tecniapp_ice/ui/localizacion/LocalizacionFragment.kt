@@ -83,6 +83,7 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
     private var mapaGoogle: GoogleMap? = null        // nullable para evitar isInitialized siempre-true
     private var marcador: Marker? = null
     private val marcadoresCalles = mutableListOf<Marker>()
+    private var mostrarCalles = false
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private val CLAVE_MAPA_VISTA_BUNDLE = "ClaveMapaVistaBundle"
 
@@ -102,9 +103,11 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
     private lateinit var sensorManager: SensorManager
     private var rotationVectorSensor: Sensor? = null
     private var autoRotatePreference = true
-    private var runtimeAutoRotateEnabled = true  // autorrotación controlada por brújula/sensor
+    private var runtimeAutoRotateEnabled = false  // autorrotación controlada por brújula/sensor
     private var isCompassTouched = false    // true cuando la orientación vuelve ~Norte (bearing≈0)
     private var userIsInteracting = false   // true mientras el usuario mueve la cámara
+    private var userRotatedDuringGesture = false
+    private var gestureStartBearing: Float? = null
 
     // Brújula
     private val BEARING_THRESHOLD_DEG = 2f
@@ -164,7 +167,7 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
         // Ubicación
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity())
         autoRotatePreference = true
-        runtimeAutoRotateEnabled = autoRotatePreference
+        runtimeAutoRotateEnabled = false
 
         // Sensores
         sensorManager = requireContext().getSystemService(Context.SENSOR_SERVICE) as SensorManager
@@ -276,6 +279,12 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
     private fun configurarControles() {
         binding.buttonNavegar.setOnClickListener { mostrarOpcionesDeNavegacion() }
         binding.buttonShare.setOnClickListener { compartirUbicacion() }
+        binding.buttonToggleCalles.setOnClickListener {
+            mostrarCalles = !mostrarCalles
+            actualizarEstadoBotonCalles()
+            actualizarMarcadoresDeCalles(viewModel.marcadoresCalles.value.orEmpty())
+        }
+        actualizarEstadoBotonCalles()
     }
 
     // Reset de textos y cámara a vista país
@@ -285,6 +294,15 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
         binding.alposteTextView.text = "Al Poste: 0"
         centrarMapaEnCostaRica()
         hasCenteredOnUser = false
+        mostrarCalles = false
+        actualizarEstadoBotonCalles()
+        actualizarMarcadoresDeCalles(emptyList())
+    }
+
+    private fun actualizarEstadoBotonCalles() {
+        val texto = if (mostrarCalles) getString(R.string.localizacion_ocultar_calles) else getString(R.string.localizacion_mostrar_calles)
+        binding.buttonToggleCalles.text = texto
+        binding.buttonToggleCalles.iconTint = null
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -319,6 +337,12 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
             isIndoorEnabled = true
             setMinZoomPreference(6f)
             setMaxZoomPreference(21f)
+            setOnMyLocationButtonClickListener {
+                followLocationEnabled = true
+                hasCenteredOnUser = false
+                solicitarUbicacionActual(force = true)
+                true
+            }
         }
 
         configurarTipoDeMapa()
@@ -344,8 +368,10 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
             if (reason == GoogleMap.OnCameraMoveStartedListener.REASON_GESTURE) {
                 userIsInteracting = true
                 actualizarAutorrotacionRuntime(false)
+                userRotatedDuringGesture = false
                 lastCompassBearing = mapaGoogle?.cameraPosition?.bearing?.let { normalizeBearing(it) }
                 lastBearingUpdateAt = SystemClock.elapsedRealtime()
+                gestureStartBearing = lastCompassBearing
                 Log.d("Localizacion", "Gesto detectado → autorrotación OFF")
             }
         }
@@ -354,8 +380,12 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
         map.setOnCameraMoveListener {
             val bearing = mapaGoogle?.cameraPosition?.bearing ?: return@setOnCameraMoveListener
             // Si el usuario realmente giró el mapa (bearing cambia), permitimos autorrotación posterior
-            if (abs(bearing) > 1 && !userIsInteracting) {
-                actualizarAutorrotacionRuntime(true)
+            if (userIsInteracting) {
+                gestureStartBearing?.let { start ->
+                    if (abs(deltaBearing(start, bearing)) > 1) {
+                        userRotatedDuringGesture = true
+                    }
+                }
             }
             // Si la orientación es ~Norte durante el movimiento, inferimos toque de brújula
             if (abs(bearing) < 1) {
@@ -375,15 +405,10 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
                 Log.d("Localizacion", "Idle ~Norte → autorrotación OFF por brújula")
             }
 
-            // Tras un gesto, reactivar autorrotación después de un breve tiempo (si no se tocó brújula)
             if (userIsInteracting) {
                 userIsInteracting = false
-                handler.postDelayed({
-                    if (!isCompassTouched) {
-                        actualizarAutorrotacionRuntime(true)
-                        Log.d("Localizacion", "Autorrotación ON tras gesto (delay)")
-                    }
-                }, 3000)
+                actualizarAutorrotacionRuntime(userRotatedDuringGesture && !isCompassTouched)
+                userRotatedDuringGesture = false
             }
 
             lastCompassBearing = normalizeBearing(bearing)
@@ -491,7 +516,7 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
         marcadoresCalles.forEach { it.remove() }
         marcadoresCalles.clear()
 
-        if (marcadores.isEmpty()) {
+        if (!mostrarCalles || marcadores.isEmpty()) {
             return
         }
 
@@ -801,9 +826,10 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
 
     private fun manejarUbicacionUsuario(location: Location) {
         lastLocationErrorAt = 0L
-        if (!hasCenteredOnUser || (followLocationEnabled && !userIsInteracting)) {
+        if (followLocationEnabled && !userIsInteracting) {
             moverCamaraAUbicacion(location, animate = hasCenteredOnUser)
             hasCenteredOnUser = true
+            followLocationEnabled = false
         }
     }
 
