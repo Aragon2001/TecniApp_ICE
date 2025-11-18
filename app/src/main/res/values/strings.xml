@@ -558,6 +558,8 @@ Cliente: %4$s</string>
     <string name="localizacion_navegacion_chooser">Selecciona una aplicación para navegar</string>
     <string name="localizacion_estado_sync_error">No se pudo sincronizar la información. Intenta nuevamente.</string>
     <string name="localizacion_estado_calles_sin_coordenadas">No hay coordenadas disponibles para las calles seleccionadas.</string>
+    <string name="localizacion_mostrar_calles">Mostrar calles</string>
+    <string name="localizacion_ocultar_calles">Ocultar calles</string>
     <string name="localizacion_marker_rango_postes">Postes %1$d – %2$d</string>
     <string name="localizacion_marker_poste_unico">Poste %1$d</string>
     <!-- Reportes -->
