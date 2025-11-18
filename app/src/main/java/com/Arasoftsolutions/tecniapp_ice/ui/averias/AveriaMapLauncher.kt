@@ -15,7 +15,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 
 object AveriaMapLauncher {
     private val PREFERRED_PACKAGES = listOf(
-        "com.google.android.apps.maps",
+
         "com.esri.fieldmaps"
     )
 

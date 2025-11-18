@@ -239,7 +239,7 @@
                             android:insetRight="0dp"
                             android:text="@string/reportes_btn_limpiar_filtro"
                             android:visibility="gone"
-                            app:icon="@drawable/ic_filter_reset"
+                            app:icon="@drawable/ic_delete"
                             app:iconPadding="8dp"
                             app:iconTint="@color/ice_blue_dark"
                             app:rippleColor="@color/ice_blue"

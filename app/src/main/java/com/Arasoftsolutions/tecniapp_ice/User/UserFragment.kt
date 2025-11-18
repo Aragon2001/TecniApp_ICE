@@ -574,22 +574,7 @@ class UserFragment : Fragment() {
         val vehicleValue = selectedVehicle?.let { formatVehicle(it) } ?: user?.placaVehiculo
         val placeholder = binding.root.context.getString(R.string.profile_summary_placeholder)
 
-        binding.textSummaryRegion.text = binding.root.context.getString(
-            R.string.profile_summary_region,
-            summaryValue(regionValue, placeholder)
-        )
-        binding.textSummarySubregion.text = binding.root.context.getString(
-            R.string.profile_summary_subregion,
-            summaryValue(subregionValue, placeholder)
-        )
-        binding.textSummaryAgency.text = binding.root.context.getString(
-            R.string.profile_summary_agency,
-            summaryValue(agencyValue, placeholder)
-        )
-        binding.textSummaryVehicle.text = binding.root.context.getString(
-            R.string.profile_summary_vehicle,
-            summaryValue(vehicleValue, placeholder)
-        )
+
     }
 
     private fun summaryValue(raw: String?, placeholder: String): String {

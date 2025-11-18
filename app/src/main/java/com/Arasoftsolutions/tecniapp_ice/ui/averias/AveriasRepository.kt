@@ -172,7 +172,7 @@ class AveriasRepository(private val db: AppDatabase) {
         "puerto limon" to "Limón",
 
         "talamanca" to "Talamanca",
-        "bri bri" to "Talamanca",
+        "bri bri" to "bribri",
         "bribri" to "Talamanca",
         "s limon talamanca" to "Talamanca",
 

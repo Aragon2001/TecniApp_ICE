@@ -13,17 +13,25 @@ class SyncDialogFragment : DialogFragment() {
     private var tvMessage: TextView? = null
     private var tvCounter: TextView? = null
 
-    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        val view = requireActivity().layoutInflater.inflate(R.layout.dialog_sync_progress, null)
-        tvHeader = view.findViewById(R.id.tvHeader)
-        tvMessage = view.findViewById(R.id.tvMessage)
-        tvCounter = view.findViewById(R.id.tvCounter)
+  override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
+    val view = requireActivity().layoutInflater.inflate(R.layout.dialog_sync_progress, null)
+    tvHeader = view.findViewById(R.id.tvHeader)
+    tvMessage = view.findViewById(R.id.tvMessage)
+    tvCounter = view.findViewById(R.id.tvCounter)
 
-        return MaterialAlertDialogBuilder(requireContext())
-            .setView(view)
-            .setCancelable(false)
-            .create()
-    }
+    // Recuperar argumentos
+    val header = arguments?.getString(ARG_HEADER)
+    val status = arguments?.getString(ARG_STATUS)
+
+    tvHeader?.text = header
+    tvMessage?.text = status
+
+    return MaterialAlertDialogBuilder(requireContext())
+        .setView(view)
+        .setCancelable(false)
+        .create()
+}
+
 
     fun setHeader(text: String) {
         tvHeader?.text = text
@@ -47,11 +55,24 @@ class SyncDialogFragment : DialogFragment() {
     }
 
     companion object {
-        fun show(fm: FragmentManager): SyncDialogFragment {
-            val f = SyncDialogFragment()
-            f.isCancelable = false
-            f.show(fm, "sync_dialog")
-            return f
+    private const val ARG_HEADER = "header"
+    private const val ARG_STATUS = "status"
+
+    fun newInstance(header: String, status: String): SyncDialogFragment {
+        return SyncDialogFragment().apply {
+            arguments = Bundle().apply {
+                putString(ARG_HEADER, header)
+                putString(ARG_STATUS, status)
+            }
         }
     }
+
+    fun show(fm: FragmentManager): SyncDialogFragment {
+        val f = SyncDialogFragment()
+        f.isCancelable = false
+        f.show(fm, "sync_dialog")
+        return f
+    }
+}
+
 }

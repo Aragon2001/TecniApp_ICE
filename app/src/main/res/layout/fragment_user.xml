@@ -105,12 +105,7 @@
                         android:textColor="?attr/colorOnSurfaceVariant"
                         tools:text="carlos@ice.go.cr" />
 
-                    <com.google.android.material.divider.MaterialDivider
-                        android:layout_width="match_parent"
-                        android:layout_height="1dp"
-                        android:layout_marginTop="16dp"
-                        android:layout_marginBottom="12dp"
-                        app:dividerColor="?attr/colorOutlineVariant" />
+
 
                     <com.google.android.material.textview.MaterialTextView
                         android:id="@+id/textUserId"
@@ -189,7 +184,9 @@
                         app:boxCornerRadiusTopStart="18dp"
                         app:boxCornerRadiusTopEnd="18dp"
                         app:boxCornerRadiusBottomStart="18dp"
-                        app:boxCornerRadiusBottomEnd="18dp">
+                        app:boxCornerRadiusBottomEnd="18dp"
+                        app:startIconDrawable="@drawable/ic_location"
+                        app:startIconTint="?attr/colorOnSurfaceVariant">
 
                         <com.google.android.material.textfield.MaterialAutoCompleteTextView
                             android:id="@+id/actvSubregion"
@@ -215,7 +212,9 @@
                         app:boxCornerRadiusTopStart="18dp"
                         app:boxCornerRadiusTopEnd="18dp"
                         app:boxCornerRadiusBottomStart="18dp"
-                        app:boxCornerRadiusBottomEnd="18dp">
+                        app:boxCornerRadiusBottomEnd="18dp"
+                        app:startIconDrawable="@drawable/ic_location"
+                        app:startIconTint="?attr/colorOnSurfaceVariant">
 
                         <com.google.android.material.textfield.MaterialAutoCompleteTextView
                             android:id="@+id/actvAgency"
@@ -241,7 +240,9 @@
                         app:boxCornerRadiusTopStart="18dp"
                         app:boxCornerRadiusTopEnd="18dp"
                         app:boxCornerRadiusBottomStart="18dp"
-                        app:boxCornerRadiusBottomEnd="18dp">
+                        app:boxCornerRadiusBottomEnd="18dp"
+                        app:startIconDrawable="@drawable/ic_car"
+                        app:startIconTint="?attr/colorOnSurfaceVariant">
 
                         <com.google.android.material.textfield.MaterialAutoCompleteTextView
                             android:id="@+id/actvVehicle"
@@ -267,7 +268,9 @@
                         app:boxCornerRadiusTopStart="18dp"
                         app:boxCornerRadiusTopEnd="18dp"
                         app:boxCornerRadiusBottomStart="18dp"
-                        app:boxCornerRadiusBottomEnd="18dp">
+                        app:boxCornerRadiusBottomEnd="18dp"
+                        app:startIconDrawable="@drawable/ic_phone"
+                        app:startIconTint="?attr/colorOnSurfaceVariant">
 
                         <com.google.android.material.textfield.TextInputEditText
                             android:id="@+id/etPhoneNumber"
@@ -359,61 +362,7 @@
                 app:strokeColor="?attr/colorOutlineVariant"
                 app:strokeWidth="1dp">
 
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="20dp">
 
-                    <com.google.android.material.textview.MaterialTextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/profile_summary_title"
-                        android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
-                        android:textColor="?attr/colorOnSurface" />
-
-                    <com.google.android.material.divider.MaterialDivider
-                        android:layout_width="match_parent"
-                        android:layout_height="1dp"
-                        android:layout_marginTop="12dp"
-                        android:layout_marginBottom="16dp"
-                        app:dividerColor="?attr/colorOutlineVariant" />
-
-                    <com.google.android.material.textview.MaterialTextView
-                        android:id="@+id/textSummaryRegion"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
-                        android:textColor="?attr/colorOnSurface"
-                        tools:text="Región: —" />
-
-                    <com.google.android.material.textview.MaterialTextView
-                        android:id="@+id/textSummarySubregion"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
-                        android:textColor="?attr/colorOnSurface"
-                        tools:text="Subregión: —" />
-
-                    <com.google.android.material.textview.MaterialTextView
-                        android:id="@+id/textSummaryAgency"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
-                        android:textColor="?attr/colorOnSurface"
-                        tools:text="Agencia: —" />
-
-                    <com.google.android.material.textview.MaterialTextView
-                        android:id="@+id/textSummaryVehicle"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
-                        android:textColor="?attr/colorOnSurface"
-                        tools:text="Vehículo: —" />
-                </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
             <com.google.android.material.progressindicator.LinearProgressIndicator

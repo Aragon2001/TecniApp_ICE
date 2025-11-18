@@ -189,6 +189,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         connectivityManager = null
     }
 
+    // HomeFragment
     private fun sincronizarConModal() {
         val usuarioActual = vm.usuario.value
         if (usuarioActual?.subregion.isNullOrBlank()) {
@@ -199,11 +200,14 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             return
         }
 
-        syncDialog = SyncDialogFragment.show(childFragmentManager).apply {
-            setHeader(getString(R.string.home_sync_dialog_title))
-            update(0, 0, getString(R.string.home_sync_status_running))
-        }
+        val dialog = SyncDialogFragment.newInstance(
+            header = getString(R.string.home_sync_dialog_title),
+            status = getString(R.string.home_sync_status_running)
+        )
+        dialog.show(childFragmentManager, "sync_dialog")
+        syncDialog = dialog
 
+        // Actualizas UI local
         syncButton?.isEnabled = false
         syncStatusText?.text = getString(R.string.home_sync_status_running)
         syncProgressIndicator?.apply {
@@ -218,6 +222,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
 
         vm.triggerManualSync()
     }
+
 
     private fun formatDisplayName(user: UserEntity?): String {
         if (user == null) return getString(R.string.home_header_default_user)

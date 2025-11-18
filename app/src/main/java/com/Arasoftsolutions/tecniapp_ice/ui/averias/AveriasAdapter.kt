@@ -4,6 +4,7 @@ import android.content.res.ColorStateList
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.core.text.bold
@@ -12,6 +13,7 @@ import androidx.core.view.isVisible
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.Arasoftsolutions.tecniapp_ice.R
+import com.bumptech.glide.Glide
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.chip.Chip
 import com.sun.mail.imap.protocol.FetchResponse.getItem
@@ -137,7 +139,7 @@ class AveriasAdapter(
                 tvKilometraje.isVisible = false
             }
             tvAsignado.renderLabel(R.string.averia_label_asignado, asignado)
-            val atendidoDisplay = item.resolvedAtendidoDisplay(emptyValue)
+
             tvAtendido.renderLabel(R.string.averia_label_atendido, atendidoDisplay)
             tvVehiculo.renderLabel(R.string.averia_label_vehiculo, item.vehiculo)
             tvNise.renderLabel(R.string.averia_label_nise, item.nise)

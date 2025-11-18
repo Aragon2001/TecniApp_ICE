@@ -17,9 +17,10 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="20dp"
-            app:cardBackgroundColor="@android:color/transparent"
+            app:cardBackgroundColor="@color/transparent"
             app:cardCornerRadius="28dp"
             app:cardElevation="0dp">
+
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -42,7 +43,7 @@
                         android:contentDescription="@string/admin_section_icon_medidores"
                         android:padding="12dp"
                         android:src="@drawable/ic_menu_medidor"
-                        android:tint="@android:color/white" />
+                        app:tint="@color/white" />
 
                     <LinearLayout
                         android:layout_width="0dp"
@@ -120,7 +121,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="20dp"
-            app:cardBackgroundColor="@android:color/transparent"
+            app:cardBackgroundColor="@color/transparent"
             app:cardCornerRadius="28dp"
             app:cardElevation="4dp"
             app:strokeColor="@color/admin_card_stroke"
@@ -362,7 +363,6 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="12dp"
-                        android:visibility="gone"
                         android:text="@string/admin_action_eliminar"
                         android:textAllCaps="false"
                         android:visibility="gone"
@@ -379,7 +379,7 @@
             android:layout_height="wrap_content"
             android:layout_marginBottom="20dp"
             android:visibility="gone"
-            app:cardBackgroundColor="@android:color/transparent"
+            app:cardBackgroundColor="@color/transparent"
             app:cardCornerRadius="28dp"
             app:cardElevation="4dp"
             app:strokeColor="@color/admin_card_stroke"
@@ -548,7 +548,6 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="12dp"
-                        android:visibility="gone"
                         android:text="@string/admin_action_eliminar"
                         android:textAllCaps="false"
                         android:visibility="gone"
@@ -565,7 +564,7 @@
             android:layout_height="wrap_content"
             android:layout_marginBottom="20dp"
             android:visibility="gone"
-            app:cardBackgroundColor="@android:color/transparent"
+            app:cardBackgroundColor="@color/transparent"
             app:cardCornerRadius="28dp"
             app:cardElevation="4dp"
             app:strokeColor="@color/admin_card_stroke"
@@ -804,7 +803,6 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="12dp"
-                        android:visibility="gone"
                         android:text="@string/admin_action_eliminar"
                         android:textAllCaps="false"
                         android:visibility="gone"
