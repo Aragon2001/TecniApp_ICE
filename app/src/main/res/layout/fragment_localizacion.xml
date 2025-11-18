@@ -161,45 +161,6 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/direccionTextView" />
-
-        <com.google.android.material.switchmaterial.SwitchMaterial
-            android:id="@+id/switchMostrarCalles"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="12dp"
-            android:layout_marginEnd="16dp"
-            android:text="@string/localizacion_calles_toggle_label"
-            android:textColor="?android:attr/textColorPrimary"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/infoTextView" />
-
-        <com.google.android.material.switchmaterial.SwitchMaterial
-            android:id="@+id/switchAutoRotacion"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="8dp"
-            android:layout_marginEnd="16dp"
-            android:text="@string/localizacion_toggle_autorrotacion"
-            android:textColor="?android:attr/textColorPrimary"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/switchMostrarCalles" />
-
-        <com.google.android.material.switchmaterial.SwitchMaterial
-            android:id="@+id/switchSeguirUbicacion"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="8dp"
-            android:layout_marginEnd="16dp"
-            android:text="@string/localizacion_toggle_seguir_ubicacion"
-            android:textColor="?android:attr/textColorPrimary"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/switchAutoRotacion" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 
     <!-- Contenedor del MapView -->
@@ -257,6 +218,17 @@
             android:layout_marginEnd="8dp"
             android:text="Compartir"
             app:icon="@drawable/ic_share"
+            app:iconGravity="textStart"
+            app:iconPadding="8dp" />
+
+        <!-- Botón para mostrar/ocultar calles -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/buttonToggleCalles"
+            style="@style/Tecni.Button.Primary"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Calles"
+            app:icon="@drawable/ic_round_filter_list_24"
             app:iconGravity="textStart"
             app:iconPadding="8dp" />
 
