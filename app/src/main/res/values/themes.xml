@@ -8,7 +8,7 @@
         <item name="colorOnSecondary">@color/black</item>
         <item name="colorPrimaryContainer">@color/primary_container_light</item>
         <item name="colorOnPrimaryContainer">@color/on_primary_container_light</item>
-        <item name="colorSecondaryContainer">@color/secondary_container_light</item>
+        <item name="colorSecondaryContainer">@color/ice_yellow</item>
         <item name="colorOnSecondaryContainer">@color/on_secondary_container_light</item>
         <item name="colorTertiary">@color/success_500</item>
         <item name="colorOnTertiary">@color/white</item>

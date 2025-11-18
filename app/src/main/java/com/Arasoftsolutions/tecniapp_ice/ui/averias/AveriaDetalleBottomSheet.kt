@@ -1101,7 +1101,7 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
 
     private fun esMaterialMedidor(material: MaterialEntity): Boolean {
         val texto = "${material.codigo} ${material.descripcion}".lowercase(Locale.getDefault())
-        return texto.contains("medidor")
+         return texto.contains("medidor")
     }
 
     private fun medidorDetalle(metadata: MedidorInstalacion?): String? {

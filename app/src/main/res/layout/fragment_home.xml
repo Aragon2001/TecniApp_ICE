@@ -112,7 +112,7 @@
                         android:foreground="?attr/selectableItemBackground"
                         app:cardBackgroundColor="@color/white"
                         app:cardCornerRadius="20dp"
-                        app:cardElevation="4dp">
+                        app:cardElevation="1dp">
 
                         <LinearLayout
                             android:layout_width="match_parent"
@@ -125,7 +125,7 @@
                                 android:layout_height="24dp"
                                 android:contentDescription="@string/home_card_pending_title"
                                 android:src="@drawable/ic_menu_averias"
-                                android:tint="@color/ice_blue" />
+                                app:tint="@color/ice_blue" />
 
                             <TextView
                                 android:id="@+id/text_pending_count"
@@ -159,7 +159,7 @@
                         android:foreground="?attr/selectableItemBackground"
                         app:cardBackgroundColor="@color/white"
                         app:cardCornerRadius="20dp"
-                        app:cardElevation="4dp">
+                        app:cardElevation="1dp">
 
                         <LinearLayout
                             android:layout_width="match_parent"
@@ -172,7 +172,7 @@
                                 android:layout_height="24dp"
                                 android:contentDescription="@string/home_card_attended_title"
                                 android:src="@drawable/ic_check"
-                                android:tint="@color/ice_blue" />
+                                app:tint="@color/ice_blue" />
 
                             <TextView
                                 android:id="@+id/text_attended_count"
@@ -210,7 +210,7 @@
                         android:layout_weight="1"
                         app:cardBackgroundColor="@color/white"
                         app:cardCornerRadius="20dp"
-                        app:cardElevation="4dp">
+                        app:cardElevation="1dp">
 
                         <LinearLayout
                             android:layout_width="match_parent"
@@ -223,7 +223,7 @@
                                 android:layout_height="24dp"
                                 android:contentDescription="@string/home_card_kilometraje_title"
                                 android:src="@drawable/ic_menu_localizacion"
-                                android:tint="@color/ice_blue" />
+                                app:tint="@color/ice_blue" />
 
                             <TextView
                                 android:id="@+id/text_kilometraje"
@@ -248,12 +248,12 @@
 
                     <com.google.android.material.card.MaterialCardView
                         android:layout_width="0dp"
-                        android:layout_height="wrap_content"
+                        android:layout_height="match_parent"
                         android:layout_marginStart="8dp"
                         android:layout_weight="1"
                         app:cardBackgroundColor="@color/white"
                         app:cardCornerRadius="20dp"
-                        app:cardElevation="4dp">
+                        app:cardElevation="1dp">
 
                         <LinearLayout
                             android:layout_width="match_parent"
@@ -265,8 +265,8 @@
                                 android:layout_width="24dp"
                                 android:layout_height="24dp"
                                 android:contentDescription="@string/home_card_last_sync_title"
-                                android:src="@drawable/ic_round_filter_list_24"
-                                android:tint="@color/ice_blue" />
+                                android:src="@drawable/ic_cloud_download"
+                                app:tint="@color/ice_blue" />
 
                             <TextView
                                 android:id="@+id/text_last_sync_value"
@@ -316,7 +316,7 @@
                         android:contentDescription="@string/home_map_preview_content_description"
                         android:scaleType="centerCrop"
                         android:src="@drawable/ic_map_placeholder"
-                        android:tint="@color/ice_blue"
+                        app:tint="@color/ice_blue"
                         tools:ignore="ContentDescription" />
 
                     <LinearLayout
@@ -407,7 +407,7 @@
                         android:layout_marginTop="20dp"
                         android:text="@string/home_sync_now"
                         app:cornerRadius="20dp"
-                        app:icon="@drawable/ic_round_filter_list_24"
+                        app:icon="@drawable/ic_refresh"
                         app:iconTint="@color/white" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
@@ -443,7 +443,7 @@
                         android:layout_height="24dp"
                         android:contentDescription="@string/home_quick_action_averias"
                         android:src="@drawable/ic_menu_averias"
-                        android:tint="@color/ice_blue" />
+                        app:tint="@color/ice_blue" />
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -476,7 +476,7 @@
                         android:layout_height="24dp"
                         android:contentDescription="@string/home_quick_action_medidor"
                         android:src="@drawable/ic_menu_medidor"
-                        android:tint="@color/ice_blue" />
+                        app:tint="@color/ice_blue" />
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -509,7 +509,7 @@
                         android:layout_height="24dp"
                         android:contentDescription="@string/home_quick_action_reportes"
                         android:src="@drawable/ic_menu_reportes"
-                        android:tint="@color/ice_blue" />
+                        app:tint="@color/ice_blue" />
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -542,7 +542,7 @@
                         android:layout_height="24dp"
                         android:contentDescription="@string/home_quick_action_settings"
                         android:src="@drawable/ic_settings"
-                        android:tint="@color/ice_blue" />
+                        app:tint="@color/ice_blue" />
 
                     <TextView
                         android:layout_width="wrap_content"
