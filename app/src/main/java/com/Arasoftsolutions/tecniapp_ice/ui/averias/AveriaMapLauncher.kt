@@ -88,17 +88,14 @@ object AveriaMapLauncher {
     ): List<MapAppOption> {
         if (lat == 0.0 && lng == 0.0) return emptyList()
         val pm = context.packageManager
-        val encodedLabel = label?.takeIf { it.isNotBlank() }?.let { Uri.encode(it) }
-        val geoUri = if (encodedLabel != null) {
-            Uri.parse("geo:$lat,$lng?q=$lat,$lng($encodedLabel)")
-        } else {
-            Uri.parse("geo:$lat,$lng")
-        }
+        val geoUri = buildGeoUri(lat, lng, label)
+        val preferred = buildPreferredOptions(pm, geoUri, lat, lng)
+
         val baseIntent = Intent(Intent.ACTION_VIEW, geoUri)
         val resolved = pm.queryIntentActivities(baseIntent, PackageManager.MATCH_DEFAULT_ONLY)
-        if (resolved.isEmpty()) return emptyList()
+        if (resolved.isEmpty() && preferred.isEmpty()) return emptyList()
 
-        val prioritized = resolved.mapNotNull { resolveInfo ->
+        val resolvedOptions = resolved.mapNotNull { resolveInfo ->
             val packageName = resolveInfo.activityInfo.packageName
             val intent = Intent(baseIntent).setPackage(packageName)
             val priorityIndex = PREFERRED_PACKAGES.indexOf(packageName)
@@ -110,13 +107,50 @@ object AveriaMapLauncher {
                 priority = priority,
                 packageName = packageName
             )
-        }
+        }.filterNot { option -> preferred.any { it.packageName == option.packageName } }
 
-        val supported = prioritized.filter { it.packageName in PREFERRED_PACKAGES }
-        val fallbacks = prioritized.filter { it.packageName !in PREFERRED_PACKAGES }
-
-        return (supported + fallbacks)
+        return (preferred + resolvedOptions)
             .sortedWith(compareBy<MapAppOption> { it.priority }.thenBy { it.label.lowercase() })
+    }
+
+    private fun buildPreferredOptions(
+        pm: PackageManager,
+        geoUri: Uri,
+        lat: Double,
+        lng: Double
+    ): List<MapAppOption> {
+        val preferredIntents = listOf(
+            PACKAGE_FIELD_MAPS to Intent(Intent.ACTION_VIEW, geoUri).setPackage(PACKAGE_FIELD_MAPS),
+            PACKAGE_GOOGLE_MAPS to Intent(Intent.ACTION_VIEW, geoUri).setPackage(PACKAGE_GOOGLE_MAPS),
+            PACKAGE_WAZE to Intent(
+                Intent.ACTION_VIEW,
+                Uri.parse("waze://?ll=$lat,$lng&navigate=yes")
+            ).setPackage(PACKAGE_WAZE)
+        )
+
+        return preferredIntents.mapIndexedNotNull { index, (packageName, intent) ->
+            val activityResolved = intent.resolveActivity(pm) ?: return@mapIndexedNotNull null
+            val appInfo = runCatching { pm.getApplicationInfo(packageName, 0) }.getOrNull()
+                ?: return@mapIndexedNotNull null
+            val labelText = pm.getApplicationLabel(appInfo).toString()
+            val icon = pm.getApplicationIcon(packageName)
+            MapAppOption(
+                label = labelText,
+                icon = icon,
+                intent = Intent(intent).apply { setPackage(packageName) },
+                priority = index,
+                packageName = activityResolved.packageName
+            )
+        }
+    }
+
+    private fun buildGeoUri(lat: Double, lng: Double, label: String?): Uri {
+        val encodedLabel = label?.takeIf { it.isNotBlank() }?.let { Uri.encode(it) }
+        return if (encodedLabel != null) {
+            Uri.parse("geo:$lat,$lng?q=$lat,$lng($encodedLabel)")
+        } else {
+            Uri.parse("geo:$lat,$lng")
+        }
     }
 
     private data class MapAppOption(
