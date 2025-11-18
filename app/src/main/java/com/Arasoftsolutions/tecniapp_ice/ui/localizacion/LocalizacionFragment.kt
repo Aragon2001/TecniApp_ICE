@@ -120,7 +120,7 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
     private val handler = Handler(Looper.getMainLooper())
 
     // --- Ubicación del usuario ---
-    private var followLocationEnabled = false
+    private var followLocationEnabled = true
     private var hasCenteredOnUser = false
     private var lastLocationErrorAt = 0L
     private var singleLocationToken: CancellationTokenSource? = null
