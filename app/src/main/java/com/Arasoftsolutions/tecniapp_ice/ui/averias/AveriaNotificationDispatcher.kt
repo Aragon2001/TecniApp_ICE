@@ -112,7 +112,7 @@ object AveriaNotificationDispatcher {
                 )
             )
             .apply {
-                FieldMapsIntents.pendingIntent(
+                AveriaMapLauncher.pendingIntent(
                     context,
                     averia.lat,
                     averia.lng,
