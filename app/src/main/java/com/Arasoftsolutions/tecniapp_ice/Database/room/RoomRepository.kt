@@ -21,6 +21,7 @@ class RoomRepository(context: Context) {
     private val db = AppDatabase.getInstance(context.applicationContext)
     private val firebase = FirebaseSyncManager(context.applicationContext)
     private val kilometrajeDao = db.vehiculoKilometrajeDao()
+    private val inventarioDao = db.inventarioDao()
 
     companion object {
         const val SUBREGION_SYNC_STEPS = 5
@@ -80,6 +81,12 @@ class RoomRepository(context: Context) {
 
     fun observarTecnicos(): Flow<List<TecnicoEntity>> =
         db.tecnicoDao().observarTecnicos()
+
+    fun observarInventarioPorVehiculo(vehiculoId: Int): Flow<List<InventarioConVehiculo>> =
+        inventarioDao.observarInventarioPorVehiculo(vehiculoId)
+
+    fun observarInventarioGeneral(): Flow<List<InventarioConVehiculo>> =
+        inventarioDao.observarInventarioGeneral()
 
     fun observarRegiones(): Flow<List<RegionEntity>> = db.regionDao().observarTodas()
 
@@ -141,6 +148,9 @@ class RoomRepository(context: Context) {
     suspend fun obtenerVehiculoPorPlaca(placa: Long): VehiculosEntity? =
         db.vehiculoDao().buscarPorPlaca(placa)
 
+    suspend fun obtenerMaterialPorCodigo(codigo: String): MaterialEntity? =
+        db.materialDao().obtenerPorCodigo(codigo)
+
     suspend fun buscarLocalizacion(
         puebloId: Int,
         calleId: Int,
@@ -198,6 +208,59 @@ class RoomRepository(context: Context) {
     suspend fun eliminarLocalizacion(id: Int) = withContext(Dispatchers.IO) {
         firebase.eliminarLocalizacion(id)
         db.localizacionDao().eliminarPorId(id)
+    }
+
+    suspend fun ajustarInventario(
+        vehiculoId: Int,
+        codigo: String,
+        descripcion: String,
+        delta: Double
+    ) = withContext(Dispatchers.IO) {
+        if (codigo.isBlank() || delta == 0.0) return@withContext
+        val existente = inventarioDao.obtenerItem(vehiculoId, codigo)
+        val nuevaCantidad = (existente?.cantidadDisponible ?: 0.0) + delta
+        if (nuevaCantidad <= 0) {
+            existente?.let { inventarioDao.eliminarPorId(it.id) }
+        } else {
+            val item = InventarioItemEntity(
+                id = existente?.id ?: 0L,
+                vehiculoId = vehiculoId,
+                codigoMaterial = codigo.trim(),
+                descripcionMaterial = descripcion.ifBlank { existente?.descripcionMaterial ?: codigo },
+                cantidadDisponible = nuevaCantidad
+            )
+            inventarioDao.upsert(item)
+        }
+    }
+
+    suspend fun cargarInventarioDesdeCsv(
+        vehiculoId: Int,
+        items: List<Pair<String, Double>>
+    ) = withContext(Dispatchers.IO) {
+        if (items.isEmpty()) return@withContext
+        items.forEach { (codigo, cantidad) ->
+            val descripcion = db.materialDao().obtenerPorCodigo(codigo)?.descripcion ?: codigo
+            ajustarInventario(vehiculoId, codigo, descripcion, cantidad)
+        }
+    }
+
+    suspend fun registrarReparacionLuminaria(
+        vehiculoId: Int,
+        localizacion: String,
+        codigoMaterial: String,
+        descripcionMaterial: String,
+        cantidad: Double
+    ) = withContext(Dispatchers.IO) {
+        val reparacion = LuminariaReparacionEntity(
+            vehiculoId = vehiculoId,
+            localizacion = localizacion,
+            codigoMaterial = codigoMaterial,
+            descripcionMaterial = descripcionMaterial,
+            cantidadUtilizada = cantidad,
+            fechaRegistro = System.currentTimeMillis()
+        )
+        inventarioDao.registrarReparacion(reparacion)
+        ajustarInventario(vehiculoId, codigoMaterial, descripcionMaterial, -cantidad)
     }
 
     suspend fun eliminarMedidor(
