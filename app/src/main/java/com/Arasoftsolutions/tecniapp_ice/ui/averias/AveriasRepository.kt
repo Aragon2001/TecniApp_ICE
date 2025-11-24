@@ -253,7 +253,7 @@ class AveriasRepository(private val db: AppDatabase) {
         return when {
             localNormalized == "Anulada" -> "Anulada"
             local.isNullOrBlank() -> remoteNormalized
-            remoteNormalized == "Resuelta" && localNormalized != "Resuelta" -> "Resuelta"
+            remoteNormalized == "Resuelta" -> "Resuelta"
             else -> localNormalized
         }
     }
@@ -265,6 +265,14 @@ class AveriasRepository(private val db: AppDatabase) {
         "Resuelta" -> 4
         "Anulada" -> 5
         else -> 1
+    }
+
+    private fun shouldCreateNewCase(estado: String?): Boolean =
+        normalizeEstadoLabel(estado) == "Pendiente"
+
+    private fun shouldProcessRemote(estado: String?): Boolean {
+        val normalized = normalizeEstadoLabel(estado)
+        return normalized == "Pendiente" || normalized == "Resuelta"
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -307,21 +315,8 @@ class AveriasRepository(private val db: AppDatabase) {
             }
         )
 
-    private fun shouldInclude(remote: IceAveria): Boolean {
-        val estadoTexto = remote.estado?.lowercase(Locale.getDefault()) ?: ""
-        val byId = when (remote.idEstadoAve) {
-            1, 2, 3, 4, 5 -> true
-            else -> false
-        }
-        if (byId) return true
-        if (estadoTexto.isBlank()) return false
-        return estadoTexto.contains("nuevo") ||
-            estadoTexto.contains("pend") ||
-            estadoTexto.contains("asign") ||
-            estadoTexto.contains("atenc") ||
-            estadoTexto.contains("resuel") ||
-            estadoTexto.contains("anul")
-    }
+    private fun shouldInclude(remote: IceAveria): Boolean =
+        shouldProcessRemote(estadoFromIce(remote.idEstadoAve, remote.estado))
 
     // ---------------------------------------------------------------------------------------------
     // Map desde ICE (con normalización de región/agencia)
@@ -396,7 +391,9 @@ class AveriasRepository(private val db: AppDatabase) {
         canonical.forEach { remoto ->
             val previo = existentes[remoto.caseId]
             if (previo == null) {
-                nuevos += remoto.copy(isSynced = true)
+                if (shouldCreateNewCase(remoto.estado)) {
+                    nuevos += remoto.copy(isSynced = true)
+                }
             } else {
                 val merged = mergeForApi(previo, remoto)
                 if (merged != previo) {
@@ -667,8 +664,12 @@ class AveriasRepository(private val db: AppDatabase) {
                 val remote = canonicalizeAgenciaFields(remoteBase)
 
                 val existing = current[remote.caseId]
+                if (!shouldProcessRemote(remote.estado)) return@forEach
+
                 when {
-                    existing == null -> updated += remote
+                    existing == null -> if (shouldCreateNewCase(remote.estado)) {
+                        updated += remote
+                    }
                     existing.isSynced && remote.lastUpdated >= existing.lastUpdated -> {
                         // Merge sin bajar estado
                         val estadoElegido = pickEstadoPreferAdvanced(existing.estado, remote.estado)
@@ -754,8 +755,10 @@ class AveriasRepository(private val db: AppDatabase) {
                         val remote = canonicalizeAgenciaFields(remoteBase)
 
                         val existing = current[remote.caseId]
+                        if (!shouldProcessRemote(remote.estado)) return@forEach
+
                         when {
-                            existing == null -> {
+                            existing == null -> if (shouldCreateNewCase(remote.estado)) {
                                 toUpsert += remote
                                 newlyCreated += remote
                             }
