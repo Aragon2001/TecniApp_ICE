@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.drawable.Drawable
 import android.net.Uri
+import java.util.Locale
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -119,17 +120,35 @@ object AveriaMapLauncher {
         lat: Double,
         lng: Double
     ): List<MapAppOption> {
-        val preferredIntents = listOf(
-            PACKAGE_FIELD_MAPS to Intent(Intent.ACTION_VIEW, geoUri).setPackage(PACKAGE_FIELD_MAPS),
-            PACKAGE_GOOGLE_MAPS to Intent(Intent.ACTION_VIEW, geoUri).setPackage(PACKAGE_GOOGLE_MAPS),
-            PACKAGE_WAZE to Intent(
+        val fieldMapsIntents = listOf(
+            Intent(
                 Intent.ACTION_VIEW,
-                Uri.parse("waze://?ll=$lat,$lng&navigate=yes")
-            ).setPackage(PACKAGE_WAZE)
+                Uri.parse(
+                    "arcgis-fieldmaps://?referenceContext=center&center=" +
+                        String.format(Locale.US, "%f,%f", lat, lng)
+                )
+            ).setPackage(PACKAGE_FIELD_MAPS),
+            Intent(Intent.ACTION_VIEW, geoUri).setPackage(PACKAGE_FIELD_MAPS)
         )
 
-        return preferredIntents.mapIndexedNotNull { index, (packageName, intent) ->
-            val activityResolved = intent.resolveActivity(pm) ?: return@mapIndexedNotNull null
+        val preferredIntents = listOf(
+            PACKAGE_FIELD_MAPS to fieldMapsIntents,
+            PACKAGE_GOOGLE_MAPS to listOf(Intent(Intent.ACTION_VIEW, geoUri).setPackage(PACKAGE_GOOGLE_MAPS)),
+            PACKAGE_WAZE to listOf(
+                Intent(
+                    Intent.ACTION_VIEW,
+                    Uri.parse("waze://?ll=$lat,$lng&navigate=yes")
+                ).setPackage(PACKAGE_WAZE)
+            )
+        )
+
+        return preferredIntents.mapIndexedNotNull { index, (packageName, intents) ->
+            val resolved = intents.firstNotNullOfOrNull { intent ->
+                val activityResolved = intent.resolveActivity(pm) ?: return@firstNotNullOfOrNull null
+                activityResolved to intent
+            } ?: return@mapIndexedNotNull null
+
+            val (activityResolved, intent) = resolved
             val appInfo = runCatching { pm.getApplicationInfo(packageName, 0) }.getOrNull()
                 ?: return@mapIndexedNotNull null
             val labelText = pm.getApplicationLabel(appInfo).toString()
