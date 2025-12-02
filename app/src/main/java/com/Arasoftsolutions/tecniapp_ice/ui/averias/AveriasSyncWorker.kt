@@ -34,7 +34,11 @@ class AveriasSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorke
 
         if (shouldDownload) {
             // 2. Descarga averías nuevas desde ICE cuando se solicita manualmente
-            val nuevos = repo.syncFromIce(BuildConfig.ICE_BEARER)
+            val syncResult = repo.syncFromIce(
+                bearer = BuildConfig.ICE_BEARER,
+                normalizedRegion = regionNormalizada,
+                agencyFilters = filters
+            )
 
             val usuario = FirebaseAuth.getInstance().currentUser?.uid?.let { uid ->
                 runCatching { roomRepo.obtenerUsuario(uid) }.getOrNull()
@@ -47,12 +51,18 @@ class AveriasSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorke
             val filters = AveriaNotificationPreferences.normalizedAgencies(applicationContext)
             val notificationsEnabled = AveriaNotificationPreferences.areNotificationsEnabled(applicationContext)
 
-            val porRegion = filterAveriasByRegion(nuevos, regionNormalizada)
+            val porRegion = filterAveriasByRegion(syncResult.nuevas, regionNormalizada)
             val filtradas = filterAveriasByAgencies(porRegion, filters)
 
             // 3. Notifica si hay nuevos casos
             if (notificationsEnabled && filtradas.isNotEmpty()) {
                 AveriaNotificationDispatcher.notifyNewCases(applicationContext, filtradas)
+            }
+
+            val resueltasRegion = filterAveriasByRegion(syncResult.resueltas, regionNormalizada)
+            val resueltasFiltradas = filterAveriasByAgencies(resueltasRegion, filters)
+            if (notificationsEnabled && resueltasFiltradas.isNotEmpty()) {
+                AveriaNotificationDispatcher.notifyResolvedCases(applicationContext, resueltasFiltradas)
             }
         }
         Result.success()
