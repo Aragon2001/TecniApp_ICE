@@ -57,8 +57,20 @@ object AveriasRealtimeNotifications {
                 runCatching {
                     val repo = repository ?: AveriasRepository(AppDatabase.getInstance(context))
                     repository = repo
-                    val nuevos = repo.syncFromIce(BuildConfig.ICE_BEARER.takeIf { it.isNotBlank() })
-                    handleNewAverias(context, nuevos)
+                    val roomRepo = roomRepository ?: RoomRepository.getInstance(context)
+                    val usuario = auth.currentUser?.uid?.let { uid ->
+                        runCatching { roomRepo.obtenerUsuario(uid) }.getOrNull()
+                    }
+                    val regionObjetivo = usuario?.regionNombre?.takeIf { !it.isNullOrBlank() }
+                        ?: usuario?.region?.takeIf { !it.isNullOrBlank() }
+                    val regionNormalizada = regionObjetivo?.let { normalizeAveriaText(it) }
+                    val filters = AveriaNotificationPreferences.normalizedAgencies(context)
+                    val result = repo.syncFromIce(
+                        bearer = BuildConfig.ICE_BEARER.takeIf { it.isNotBlank() },
+                        normalizedRegion = regionNormalizada,
+                        agencyFilters = filters
+                    )
+                    handleSyncResults(context, result, regionNormalizada, filters)
                 }.onFailure { t ->
                     Log.e("AveriasRealtime", "Error al sincronizar averías en segundo plano", t)
                 }
@@ -69,8 +81,6 @@ object AveriasRealtimeNotifications {
 
     private suspend fun handleNewAverias(context: Context, nuevas: List<AveriaEntity>) {
         if (nuevas.isEmpty()) return
-        val notificationsEnabled = AveriaNotificationPreferences.areNotificationsEnabled(context)
-        if (!notificationsEnabled) return
         val roomRepo = roomRepository ?: RoomRepository.getInstance(context)
         val usuario = auth.currentUser?.uid?.let { uid ->
             runCatching { roomRepo.obtenerUsuario(uid) }.getOrNull()
@@ -79,9 +89,28 @@ object AveriasRealtimeNotifications {
             ?: usuario?.region?.takeIf { !it.isNullOrBlank() }
         val regionNormalizada = regionObjetivo?.let { normalizeAveriaText(it) }
         val filters = AveriaNotificationPreferences.normalizedAgencies(context)
-        val porRegion = filterAveriasByRegion(nuevas, regionNormalizada)
-        val filtradas = filterAveriasByAgencies(porRegion, filters)
-        if (filtradas.isEmpty()) return
-        AveriaNotificationDispatcher.notifyNewCases(context, filtradas)
+        val result = AveriasRepository.SyncResult(nuevas, emptyList())
+        handleSyncResults(context, result, regionNormalizada, filters)
+    }
+
+    private suspend fun handleSyncResults(
+        context: Context,
+        result: AveriasRepository.SyncResult,
+        regionNormalizada: String?,
+        filters: Set<String>
+    ) {
+        val notificationsEnabled = AveriaNotificationPreferences.areNotificationsEnabled(context)
+        if (!notificationsEnabled) return
+        val porRegionNuevas = filterAveriasByRegion(result.nuevas, regionNormalizada)
+        val nuevasFiltradas = filterAveriasByAgencies(porRegionNuevas, filters)
+        if (nuevasFiltradas.isNotEmpty()) {
+            AveriaNotificationDispatcher.notifyNewCases(context, nuevasFiltradas)
+        }
+
+        val porRegionResueltas = filterAveriasByRegion(result.resueltas, regionNormalizada)
+        val resueltasFiltradas = filterAveriasByAgencies(porRegionResueltas, filters)
+        if (resueltasFiltradas.isNotEmpty()) {
+            AveriaNotificationDispatcher.notifyResolvedCases(context, resueltasFiltradas)
+        }
     }
 }
