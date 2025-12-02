@@ -244,7 +244,6 @@ class AveriasAdapter(
             btnVerMapa.isEnabled = hasCoords
             if (hasCoords) {
                 val mapLabel = item.direccion?.takeIf { it.isNotBlank() }
-                    ?: item.localizacion?.takeIf { it.isNotBlank() }
                     ?: item.agencia
                     ?: context.getString(R.string.averia_notificacion_map_placeholder)
                 val mapUrl = AveriaStaticMapProvider.buildUrl(context, item.lat, item.lng, mapLabel)

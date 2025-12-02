@@ -184,7 +184,7 @@ fun observe(
     @Query(
         """
         UPDATE averias SET
-          localizacion = :direccion,
+          direccion = :direccion,
           lastUpdated = :lastUpdated,
           isSynced = 0
         WHERE caseId = :caseId

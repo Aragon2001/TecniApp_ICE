@@ -192,7 +192,7 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
     val uiState: StateFlow<AveriasUiState> =
         combine(filteredAverias, _addresses, isLoading) { list, addresses, loading ->
             val items = list.map { entity ->
-                val savedAddress = entity.localizacion?.takeIf { it.isNotBlank() }
+                val savedAddress = entity.direccion?.takeIf { it.isNotBlank() }
                 val address = addresses[entity.caseId] ?: savedAddress
                 if (address == null) {
                     queueAddressLookup(entity)
@@ -597,7 +597,7 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
             horaFinal = entity.horaFinalMillis,
             cliente = entity.cliente?.trim(),
             localizacion = entity.localizacion?.trim(),
-            direccion = direccion,
+            direccion = direccion ?: entity.direccion?.trim(),
             tecnicosAtendieron = tecnicosAtendieron,
             tipoAfectacion = TipoAfectacion.fromRaw(entity.tipoAfectacion),
             numeroMedidor = entity.numeroMedidor?.trim(),

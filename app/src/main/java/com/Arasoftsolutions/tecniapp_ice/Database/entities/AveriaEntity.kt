@@ -50,6 +50,7 @@ data class AveriaEntity(
 
     val cliente: String? = null,
     val localizacion: String? = null,
+    val direccion: String? = null,
     val tipoAfectacion: String? = null,
     val numeroMedidor: String? = null,
     val medidorCalle: String? = null,
@@ -94,6 +95,7 @@ data class AveriaEntity(
         tecnicosAtendieronJson = null,
         cliente = null,
         localizacion = null,
+        direccion = null,
         tipoAfectacion = null,
         numeroMedidor = null,
         medidorCalle = null,
