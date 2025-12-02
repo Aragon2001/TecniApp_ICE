@@ -759,7 +759,7 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
     }
 
     private fun DataSnapshot.stringChild(name: String): String? =
-        child(name).getValue(String::class.java)?.takeIf { it.isNotBlank() }
+        child(name).value?.toString()?.trim()?.takeIf { it.isNotEmpty() }
 }
 
 private val DIACRITIC_REGEX = Regex("\\p{Mn}+")

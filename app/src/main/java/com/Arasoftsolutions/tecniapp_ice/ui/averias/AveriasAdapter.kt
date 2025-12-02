@@ -238,7 +238,7 @@ class AveriasAdapter(
             chipEstado.chipBackgroundColor = ColorStateList.valueOf(chipColor)
             chipEstado.setTextColor(ContextCompat.getColor(context, android.R.color.white))
 
-            val hasCoords = item.lat != 0.0 || item.lng != 0.0
+            val hasCoords = item.lat != null && item.lng != null && (item.lat != 0.0 || item.lng != 0.0)
             mapContainer.isVisible = hasCoords
             btnVerMapa.isVisible = hasCoords
             btnVerMapa.isEnabled = hasCoords
