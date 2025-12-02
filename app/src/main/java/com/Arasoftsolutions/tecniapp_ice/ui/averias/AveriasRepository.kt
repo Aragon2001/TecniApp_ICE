@@ -23,6 +23,11 @@ import java.util.TimeZone
 
 class AveriasRepository(private val db: AppDatabase) {
 
+    data class SyncResult(
+        val nuevas: List<AveriaEntity>,
+        val resueltas: List<AveriaEntity>
+    )
+
     private val dao get() = db.averiaDao()
     private val kilometrajeDao get() = db.vehiculoKilometrajeDao()
     private val firebaseRef = FirebaseDatabase
@@ -91,6 +96,28 @@ class AveriasRepository(private val db: AppDatabase) {
         return if (trimmed.isNullOrEmpty()) local else trimmed
     }
 
+    private fun preferSavedAddress(local: String?, remote: String?): String? {
+        val trimmedLocal = local?.trim()
+        if (!trimmedLocal.isNullOrEmpty()) return trimmedLocal
+        return remote?.trim()
+    }
+
+    private fun looksLikePlusCode(value: String?): Boolean {
+        if (value.isNullOrBlank()) return false
+        val hasPlus = value.contains("+")
+        val alnum = value.any { it.isLetterOrDigit() }
+        return hasPlus && alnum
+    }
+
+    private fun shouldReplaceAddress(current: String?, candidate: String): Boolean {
+        if (candidate.isBlank()) return false
+        if (current.isNullOrBlank()) return true
+        val normalizedCurrent = current.trim()
+        if (normalizedCurrent.startsWith("cerca de", ignoreCase = true)) return true
+        if (looksLikePlusCode(normalizedCurrent)) return true
+        return false
+    }
+
     private fun mergeForApi(existing: AveriaEntity, remote: AveriaEntity): AveriaEntity {
         val estadoElegido = pickEstadoPreferAdvanced(existing.estado, remote.estado)
         val idEstadoElegido = idEstadoFromLabel(estadoElegido)
@@ -125,7 +152,7 @@ class AveriasRepository(private val db: AppDatabase) {
             materialesDetalleJson = existing.materialesDetalleJson,
             tecnicosAtendieronJson = existing.tecnicosAtendieronJson,
             cliente = preferMeaningful(remote.cliente, existing.cliente),
-            localizacion = preferMeaningful(remote.localizacion, existing.localizacion),
+            localizacion = preferSavedAddress(existing.localizacion, remote.localizacion),
             tipoAfectacion = preferMeaningful(remote.tipoAfectacion, existing.tipoAfectacion),
             numeroMedidor = preferMeaningful(remote.numeroMedidor, existing.numeroMedidor),
             medidorCalle = preferMeaningful(remote.medidorCalle, existing.medidorCalle),
@@ -318,6 +345,29 @@ class AveriasRepository(private val db: AppDatabase) {
     private fun shouldInclude(remote: IceAveria): Boolean =
         shouldProcessRemote(estadoFromIce(remote.idEstadoAve, remote.estado))
 
+    private fun applyUserFilters(
+        averias: List<AveriaEntity>,
+        normalizedRegion: String?,
+        agencyFilters: Set<String>
+    ): List<AveriaEntity> {
+        val porRegion = filterAveriasByRegion(averias, normalizedRegion)
+        return filterAveriasByAgencies(porRegion, agencyFilters)
+    }
+
+    private suspend fun loadFirebaseCases(): Map<String, AveriaEntity> =
+        runCatching {
+            val snapshot = firebaseRef.get().await()
+            snapshot.children.mapNotNull { child ->
+                val remote0 = child.getValue(AveriaEntity::class.java) ?: return@mapNotNull null
+                val normalizedEstado = normalizeEstadoLabel(remote0.estado)
+                val remoteBase = remote0.copy(estado = normalizedEstado, isSynced = true)
+                canonicalizeAgenciaFields(remoteBase)
+            }.associateBy { it.caseId }
+        }.getOrElse { error ->
+            Log.e(TAG, "No se pudieron cargar averías desde Firebase", error)
+            emptyMap()
+        }
+
     // ---------------------------------------------------------------------------------------------
     // Map desde ICE (con normalización de región/agencia)
     // ---------------------------------------------------------------------------------------------
@@ -367,37 +417,130 @@ class AveriasRepository(private val db: AppDatabase) {
         )
     }
 
+    suspend fun persistDireccion(caseId: String, direccion: String) {
+        val cleaned = direccion.trim()
+        if (cleaned.isEmpty()) return
+
+        val existing = dao.getByCaseId(caseId) ?: return
+        if (!shouldReplaceAddress(existing.localizacion, cleaned)) return
+
+        val now = System.currentTimeMillis()
+        dao.actualizarDireccion(caseId, cleaned, now)
+
+        runCatching {
+            firebaseRef.child(caseId)
+                .updateChildren(mapOf("localizacion" to cleaned, "lastUpdated" to now))
+                .await()
+        }.onFailure { error ->
+            Log.w(TAG, "No se pudo actualizar la dirección en Firebase para $caseId", error)
+        }
+    }
+
     private fun idEstadoAveFromLabelOrRemote(label: String, remoteId: Int?): Int =
         remoteId ?: idEstadoFromLabel(label)
 
     // ---------------------------------------------------------------------------------------------
     // Sync desde ICE (merge sin bajar estado + conservar lastUpdated más nuevo)
     // ---------------------------------------------------------------------------------------------
+    /*
+     * Descripción funcional (Averías en segundo plano)
+     * -------------------------------------------------
+     * El Worker periódicamente llama a `syncFromIce` con el token Bearer para obtener la lista
+     * de averías de la API. El flujo esperado es:
+     *
+     * 1) La API devuelve averías filtradas por zona/subregión del usuario.
+     * 2) Se mapean a `AveriaEntity` normalizando región, agencia y estado (usar `estadoFromIce`).
+     * 3) Se separan casos por estado:
+     *    - Pendiente / Nuevo → candidatos a crear en Firebase/Room si no existen.
+     *    - Resuelta → permite que el estado se actualice desde la API si ya existe en Firebase.
+     * 4) Para Pendiente/Nuevo:
+     *    - Si no existe en Firebase → registrar en Room + crear nodo en Firebase y disparar
+     *      notificación local si el usuario la tiene activa para esa zona/estado.
+     *    - Si existe en Firebase → no sobreescribir campos operativos modificados en la app
+     *      (técnico, vehículo, horas, etc.). Solo se podrían refrescar campos no operativos si se
+     *      requiere, pero la app manda.
+     * 5) Para Resuelta:
+     *    - Si existe en Firebase → actualizar estado a "Resuelta" en Firebase y en Room, usando
+     *      la hora de cierre recibida (o `System.currentTimeMillis()` si falta). Esto aplica aun
+     *      cuando la app tuviera el caso como Pendiente/Asignada/En atención.
+     *    - Si no existe → puede ignorarse o crearse como histórico, según convenga.
+     * 6) El Worker puede enviar notificaciones locales de "Nueva avería" o "Resuelta por centro"
+     *    cuando los filtros del usuario coinciden. Las notificaciones no dependen de abrir el
+     *    fragmento de averías.
+     *
+     * Regla clave: la app conserva el control del estado mientras no llegue "Resuelta" desde la
+     * API; cuando llega ese estado, el centro de operación tiene prioridad y la app debe acatarlo
+     * para evitar casos atascados.
+     */
 
-    suspend fun syncFromIce(bearer: String?): List<AveriaEntity> = withContext(Dispatchers.IO) {
+    suspend fun syncFromIce(
+        bearer: String?,
+        normalizedRegion: String? = null,
+        agencyFilters: Set<String> = emptySet()
+    ): SyncResult = withContext(Dispatchers.IO) {
         val authHeader = bearer?.takeIf { it.isNotBlank() }?.let { "Bearer $it" }
         val envelope = IceApi.service.getAverias(authHeader)
         val incoming = envelope.payload()
             .filter { shouldInclude(it) }
             .mapNotNull { map(it) }
 
-        if (incoming.isEmpty()) return@withContext emptyList()
+        if (incoming.isEmpty()) return@withContext SyncResult(emptyList(), emptyList())
 
         val canonical = incoming.map { canonicalizeAgenciaFields(it) }
-        val existentes = dao.all().associateBy { it.caseId }
+        val filtradas = applyUserFilters(canonical, normalizedRegion, agencyFilters)
+
+        if (filtradas.isEmpty()) return@withContext SyncResult(emptyList(), emptyList())
+
+        val existentesRoom = dao.all().associateBy { it.caseId }
+        val existentesFirebase = loadFirebaseCases()
+
         val nuevos = mutableListOf<AveriaEntity>()
         val actualizaciones = mutableListOf<AveriaEntity>()
+        val resueltas = mutableListOf<AveriaEntity>()
 
-        canonical.forEach { remoto ->
-            val previo = existentes[remoto.caseId]
-            if (previo == null) {
-                if (shouldCreateNewCase(remoto.estado)) {
-                    nuevos += remoto.copy(isSynced = true)
+        filtradas.forEach { remoto ->
+            val estadoNormalizado = normalizeEstadoLabel(remoto.estado)
+            when (estadoNormalizado) {
+                "Resuelta" -> {
+                    val firebaseBase = existentesFirebase[remoto.caseId] ?: return@forEach
+                    val localBase = existentesRoom[remoto.caseId] ?: firebaseBase
+                    val now = System.currentTimeMillis()
+                    val merged = mergeForApi(localBase, remoto).copy(
+                        estado = "Resuelta",
+                        idEstadoAve = idEstadoFromLabel("Resuelta"),
+                        horaFinalMillis = remoto.horaFinalMillis
+                            ?: localBase.horaFinalMillis
+                            ?: now,
+                        lastUpdated = now,
+                        isSynced = true
+                    )
+                    resueltas += merged
+                    val needsUpsert = merged != localBase || existentesRoom[remoto.caseId] == null
+                    if (needsUpsert) {
+                        actualizaciones += merged
+                    }
+                    pushResolvedToFirebase(merged)
                 }
-            } else {
-                val merged = mergeForApi(previo, remoto)
-                if (merged != previo) {
-                    actualizaciones += merged
+
+                else -> {
+                    val existenteFirebase = existentesFirebase[remoto.caseId]
+                    val localBase = existentesRoom[remoto.caseId]
+                    val now = System.currentTimeMillis()
+                    if (existenteFirebase == null && localBase == null) {
+                        if (shouldCreateNewCase(remoto.estado)) {
+                            nuevos += remoto.copy(isSynced = true, lastUpdated = now)
+                        }
+                    } else {
+                        val base = localBase ?: existenteFirebase ?: remoto
+                        val merged = mergeForApi(base, remoto).copy(
+                            lastUpdated = listOf(base.lastUpdated, remoto.lastUpdated, now).maxOrNull() ?: now,
+                            isSynced = true
+                        )
+                        val needsUpsert = merged != base || localBase == null
+                        if (needsUpsert) {
+                            actualizaciones += merged
+                        }
+                    }
                 }
             }
         }
@@ -413,7 +556,7 @@ class AveriasRepository(private val db: AppDatabase) {
             registerNewOnFirebase(nuevos)
         }
 
-        nuevos
+        SyncResult(nuevos, resueltas)
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -578,6 +721,14 @@ class AveriasRepository(private val db: AppDatabase) {
         val payload = entity.toFirebasePayload()
         // 👇 En lugar de updateChildren usamos setValue para reemplazar todo el objeto completo
         firebaseRef.child(entity.caseId).setValue(payload).await()
+    }
+
+    private suspend fun pushResolvedToFirebase(entity: AveriaEntity) {
+        runCatching {
+            firebaseRef.child(entity.caseId).setValue(entity.toFirebasePayload()).await()
+        }.onFailure { error ->
+            Log.e(TAG, "No se pudo marcar como resuelta ${entity.caseId} en Firebase", error)
+        }
     }
 
     private suspend fun registerNewOnFirebase(entities: List<AveriaEntity>) {
