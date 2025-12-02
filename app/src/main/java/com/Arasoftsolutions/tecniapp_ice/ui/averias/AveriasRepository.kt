@@ -373,6 +373,36 @@ class AveriasRepository(private val db: AppDatabase) {
     // ---------------------------------------------------------------------------------------------
     // Sync desde ICE (merge sin bajar estado + conservar lastUpdated más nuevo)
     // ---------------------------------------------------------------------------------------------
+    /*
+     * Descripción funcional (Averías en segundo plano)
+     * -------------------------------------------------
+     * El Worker periódicamente llama a `syncFromIce` con el token Bearer para obtener la lista
+     * de averías de la API. El flujo esperado es:
+     *
+     * 1) La API devuelve averías filtradas por zona/subregión del usuario.
+     * 2) Se mapean a `AveriaEntity` normalizando región, agencia y estado (usar `estadoFromIce`).
+     * 3) Se separan casos por estado:
+     *    - Pendiente / Nuevo → candidatos a crear en Firebase/Room si no existen.
+     *    - Resuelta → permite que el estado se actualice desde la API si ya existe en Firebase.
+     * 4) Para Pendiente/Nuevo:
+     *    - Si no existe en Firebase → registrar en Room + crear nodo en Firebase y disparar
+     *      notificación local si el usuario la tiene activa para esa zona/estado.
+     *    - Si existe en Firebase → no sobreescribir campos operativos modificados en la app
+     *      (técnico, vehículo, horas, etc.). Solo se podrían refrescar campos no operativos si se
+     *      requiere, pero la app manda.
+     * 5) Para Resuelta:
+     *    - Si existe en Firebase → actualizar estado a "Resuelta" en Firebase y en Room, usando
+     *      la hora de cierre recibida (o `System.currentTimeMillis()` si falta). Esto aplica aun
+     *      cuando la app tuviera el caso como Pendiente/Asignada/En atención.
+     *    - Si no existe → puede ignorarse o crearse como histórico, según convenga.
+     * 6) El Worker puede enviar notificaciones locales de "Nueva avería" o "Resuelta por centro"
+     *    cuando los filtros del usuario coinciden. Las notificaciones no dependen de abrir el
+     *    fragmento de averías.
+     *
+     * Regla clave: la app conserva el control del estado mientras no llegue "Resuelta" desde la
+     * API; cuando llega ese estado, el centro de operación tiene prioridad y la app debe acatarlo
+     * para evitar casos atascados.
+     */
 
     suspend fun syncFromIce(bearer: String?): List<AveriaEntity> = withContext(Dispatchers.IO) {
         val authHeader = bearer?.takeIf { it.isNotBlank() }?.let { "Bearer $it" }
