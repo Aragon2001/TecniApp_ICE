@@ -13,10 +13,9 @@ import androidx.core.view.isVisible
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.Arasoftsolutions.tecniapp_ice.R
-import com.bumptech.glide.Glide
+import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriaStaticMapProvider
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.chip.Chip
-import com.sun.mail.imap.protocol.FetchResponse.getItem
 import java.text.DateFormat
 import java.util.Date
 
@@ -244,16 +243,15 @@ class AveriasAdapter(
             btnVerMapa.isVisible = hasCoords
             btnVerMapa.isEnabled = hasCoords
             if (hasCoords) {
-                val url = "https://maps.googleapis.com/maps/api/staticmap?" +
-                    "center=${item.lat},${item.lng}&zoom=16&size=400x400&maptype=roadmap" +
-                    "&markers=color:red|${item.lat},${item.lng}&key=AIzaSyBxgf6oA-rRK1-OlNft4oDgzF3gokLl1FU"
-
-                Glide.with(context)
-                    .load(url)
-                    .placeholder(R.drawable.ic_map_placeholder)
-                    .error(R.drawable.ic_map_placeholder)
-                    .centerCrop()
-                    .into(imgMapa)
+                val mapLabel = item.direccion?.takeIf { it.isNotBlank() }
+                    ?: item.agencia
+                    ?: context.getString(R.string.averia_notificacion_map_placeholder)
+                val mapUrl = AveriaStaticMapProvider.buildUrl(context, item.lat, item.lng, mapLabel)
+                if (mapUrl != null) {
+                    AveriaStaticMapProvider.loadInto(context, imgMapa, mapUrl)
+                } else {
+                    imgMapa.setImageResource(R.drawable.ic_map_placeholder)
+                }
             } else {
                 imgMapa.setImageResource(R.drawable.ic_map_placeholder)
             }

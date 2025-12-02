@@ -192,7 +192,8 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
     val uiState: StateFlow<AveriasUiState> =
         combine(filteredAverias, _addresses, isLoading) { list, addresses, loading ->
             val items = list.map { entity ->
-                val address = addresses[entity.caseId]
+                val savedAddress = entity.direccion?.takeIf { it.isNotBlank() }
+                val address = addresses[entity.caseId] ?: savedAddress
                 if (address == null) {
                     queueAddressLookup(entity)
                 }
@@ -596,7 +597,7 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
             horaFinal = entity.horaFinalMillis,
             cliente = entity.cliente?.trim(),
             localizacion = entity.localizacion?.trim(),
-            direccion = direccion,
+            direccion = direccion ?: entity.direccion?.trim(),
             tecnicosAtendieron = tecnicosAtendieron,
             tipoAfectacion = TipoAfectacion.fromRaw(entity.tipoAfectacion),
             numeroMedidor = entity.numeroMedidor?.trim(),
@@ -658,7 +659,9 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
                 pendingAddressLookups.remove(caseId)
             }
             if (!address.isNullOrBlank()) {
-                _addresses.update { it + (caseId to address) }
+                val cleaned = sanitizeAddress(address) ?: address
+                _addresses.update { it + (caseId to cleaned) }
+                runCatching { repo.persistDireccion(caseId, cleaned) }
             }
         }
     }
@@ -686,19 +689,38 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
             }.joinToString(" ").trim()
 
             val feature = address.featureName?.takeIf { it.isNotBlank() && !isPlusCode(it) }
+            val cleanedFeature = sanitizeAddress(feature)
 
             val composed = buildList {
-                if (street.isNotBlank()) add(street)
-                feature?.takeIf { it.isNotBlank() && !contains(it) }?.let { add(it) }
-                if (locality.isNotBlank()) add(locality)
+                sanitizeAddress(street)?.takeIf { it.isNotBlank() }?.let { add(it) }
+                cleanedFeature?.takeIf { it.isNotBlank() && !contains(it) }?.let { add(it) }
+                sanitizeAddress(locality)?.takeIf { it.isNotBlank() }?.let { add(it) }
             }.joinToString(", ").ifBlank {
-                locality.ifBlank { feature }
+                locality.ifBlank { cleanedFeature }
             }
 
             composed?.takeIf { it.isNotBlank() }
         } catch (t: Throwable) {
             Log.w(TAG, "No se pudo obtener la dirección para ($lat,$lng)", t)
             null
+        }
+    }
+
+    private fun sanitizeAddress(raw: String?): String? {
+        if (raw.isNullOrBlank()) return null
+        val normalized = raw.trim().replace("  ", " ")
+        val parts = normalized.split(",")
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+        val plusCode = parts.firstOrNull { isPlusCode(it) }
+        val nonPlus = parts.filterNot { isPlusCode(it) }
+        val base = nonPlus.joinToString(", ").trim().ifBlank { null }
+
+        return when {
+            base != null && plusCode != null -> "$base cerca de $plusCode"
+            base != null -> base
+            plusCode != null -> "Cerca de $plusCode"
+            else -> null
         }
     }
 
