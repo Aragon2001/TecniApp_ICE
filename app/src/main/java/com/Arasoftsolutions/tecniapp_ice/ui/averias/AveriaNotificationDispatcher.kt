@@ -129,7 +129,8 @@ object AveriaNotificationDispatcher {
             setTextColor(R.id.state_line, estadoColor)
         }
 
-        val mapPreview = AveriaMapPreviewRenderer.render(context, averia.lat, averia.lng, lugar)
+        val mapUrl = AveriaStaticMapProvider.buildUrl(context, averia.lat, averia.lng, lugar)
+        val mapPreview = AveriaStaticMapProvider.bitmapOrPlaceholder(context, mapUrl)
         val expanded = RemoteViews(context.packageName, R.layout.notification_averia_expanded).apply {
             setImageViewResource(R.id.icon_large, type.icon)
             setTextViewText(R.id.title, context.getString(type.titleRes, agencia))

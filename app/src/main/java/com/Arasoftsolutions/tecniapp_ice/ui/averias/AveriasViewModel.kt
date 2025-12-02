@@ -708,12 +708,20 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun sanitizeAddress(raw: String?): String? {
         if (raw.isNullOrBlank()) return null
-        val trimmed = raw.trim()
-        val withoutNear = trimmed.removePrefix("Cerca de ").removePrefix("cerca de ").trim()
-        val parts = withoutNear.split(",", " ")
-            .filterNot { isPlusCode(it) }
-        val recomposed = parts.joinToString(" ").replace("  ", " ").trim()
-        return recomposed.ifBlank { null }
+        val normalized = raw.trim().replace("  ", " ")
+        val parts = normalized.split(",")
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+        val plusCode = parts.firstOrNull { isPlusCode(it) }
+        val nonPlus = parts.filterNot { isPlusCode(it) }
+        val base = nonPlus.joinToString(", ").trim().ifBlank { null }
+
+        return when {
+            base != null && plusCode != null -> "$base cerca de $plusCode"
+            base != null -> base
+            plusCode != null -> "Cerca de $plusCode"
+            else -> null
+        }
     }
 
     private fun isPlusCode(value: String?): Boolean {
