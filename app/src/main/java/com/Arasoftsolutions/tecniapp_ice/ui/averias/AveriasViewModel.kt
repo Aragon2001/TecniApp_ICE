@@ -192,7 +192,8 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
     val uiState: StateFlow<AveriasUiState> =
         combine(filteredAverias, _addresses, isLoading) { list, addresses, loading ->
             val items = list.map { entity ->
-                val address = addresses[entity.caseId]
+                val savedAddress = entity.localizacion?.takeIf { it.isNotBlank() }
+                val address = addresses[entity.caseId] ?: savedAddress
                 if (address == null) {
                     queueAddressLookup(entity)
                 }
@@ -658,7 +659,9 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
                 pendingAddressLookups.remove(caseId)
             }
             if (!address.isNullOrBlank()) {
-                _addresses.update { it + (caseId to address) }
+                val cleaned = sanitizeAddress(address) ?: address
+                _addresses.update { it + (caseId to cleaned) }
+                runCatching { repo.persistDireccion(caseId, cleaned) }
             }
         }
     }
@@ -686,13 +689,14 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
             }.joinToString(" ").trim()
 
             val feature = address.featureName?.takeIf { it.isNotBlank() && !isPlusCode(it) }
+            val cleanedFeature = sanitizeAddress(feature)
 
             val composed = buildList {
-                if (street.isNotBlank()) add(street)
-                feature?.takeIf { it.isNotBlank() && !contains(it) }?.let { add(it) }
-                if (locality.isNotBlank()) add(locality)
+                sanitizeAddress(street)?.takeIf { it.isNotBlank() }?.let { add(it) }
+                cleanedFeature?.takeIf { it.isNotBlank() && !contains(it) }?.let { add(it) }
+                sanitizeAddress(locality)?.takeIf { it.isNotBlank() }?.let { add(it) }
             }.joinToString(", ").ifBlank {
-                locality.ifBlank { feature }
+                locality.ifBlank { cleanedFeature }
             }
 
             composed?.takeIf { it.isNotBlank() }
@@ -700,6 +704,16 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
             Log.w(TAG, "No se pudo obtener la dirección para ($lat,$lng)", t)
             null
         }
+    }
+
+    private fun sanitizeAddress(raw: String?): String? {
+        if (raw.isNullOrBlank()) return null
+        val trimmed = raw.trim()
+        val withoutNear = trimmed.removePrefix("Cerca de ").removePrefix("cerca de ").trim()
+        val parts = withoutNear.split(",", " ")
+            .filterNot { isPlusCode(it) }
+        val recomposed = parts.joinToString(" ").replace("  ", " ").trim()
+        return recomposed.ifBlank { null }
     }
 
     private fun isPlusCode(value: String?): Boolean {
