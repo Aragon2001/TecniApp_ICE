@@ -8,6 +8,7 @@ import android.media.AudioAttributes
 import android.net.Uri
 import android.os.Build
 import androidx.core.app.NotificationCompat
+import androidx.core.graphics.drawable.IconCompat
 import androidx.navigation.NavDeepLinkBuilder
 import com.Arasoftsolutions.tecniapp_ice.ActivityMain
 import com.Arasoftsolutions.tecniapp_ice.R
@@ -53,6 +54,17 @@ object AveriaNotifications {
             .setComponentName(ActivityMain::class.java)
             .createPendingIntent()
             // TODO(Codex): Definir intent directo a ajustes de notificaciones
+
+    fun bubbleMetadata(context: Context): NotificationCompat.BubbleMetadata? {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return null
+        val intent = averiasPendingIntent(context)
+        val icon = IconCompat.createWithResource(context, R.drawable.ic_notification)
+        return NotificationCompat.BubbleMetadata.Builder(intent)
+            .setDesiredHeight(context.resources.getDimensionPixelSize(R.dimen.averia_notification_map_height))
+            .setIcon(icon)
+            .setSuppressNotification(false)
+            .build()
+    }
 
     fun mapAction(
         context: Context,

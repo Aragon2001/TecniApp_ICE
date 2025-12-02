@@ -76,6 +76,16 @@
     <!-- Outline -->
     <color name="outline_soft">#1F000000</color>
 
+    <!-- Notificaciones averías -->
+    <color name="averia_notification_glow">#332196F3</color>
+    <color name="averia_notification_accent">#2196F3</color>
+    <color name="averia_notification_resolved">#2E7D32</color>
+    <color name="averia_notification_pending">#EF6C00</color>
+    <color name="averia_notification_surface">#F5F7FB</color>
+    <color name="averia_notification_on_surface">#1E2A37</color>
+    <color name="averia_notification_chip_bg">#142196F3</color>
+    <color name="averia_notification_chip_text">#E3F2FD</color>
+
     <!-- Utilitarios extra -->
     <color name="light_gray">#B3B3B3</color>
     <color name="dark_gray">#616161</color>
