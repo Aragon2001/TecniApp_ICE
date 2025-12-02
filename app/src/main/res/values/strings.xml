@@ -800,4 +800,22 @@ Cliente: %4$s</string>
     <string name="about_screen_title">Acerca de TecniApp ICE</string>
     <string name="about_contact_support">Escribir a soporte</string>
     <string name="structured_text_parse_error">No se pudo cargar el contenido informativo.</string>
+
+    <!-- Notificaciones de averías rediseñadas -->
+    <string name="averia_notificacion_header_nueva">NUEVA AVERÍA – %1$s</string>
+    <string name="averia_notificacion_header_resuelta">AVERÍA RESUELTA – %1$s</string>
+    <string name="averia_notificacion_caso_nise">Caso %1$s · NISE %2$s</string>
+    <string name="averia_notificacion_estado_clientes">Estado: %1$s · %2$s clientes</string>
+    <string name="averia_notificacion_estado">Estado: %1$s</string>
+    <string name="averia_notificacion_agencia">Agencia: %1$s</string>
+    <string name="averia_notificacion_direccion">%1$s</string>
+    <string name="averia_notificacion_causa">Causa: %1$s</string>
+    <string name="averia_notificacion_causa_no_definida">Causa no informada</string>
+    <string name="averia_notificacion_tecnico">Técnico: %1$s</string>
+    <string name="averia_notificacion_tecnico_no_asignado">Técnico: Sin asignar</string>
+    <string name="averia_notificacion_map_placeholder">Vista previa de mapa</string>
+    <string name="averia_notificacion_action_ver_detalle">Ver detalle</string>
+    <string name="averia_notificacion_action_ver_mapa">Ver en mapa</string>
+    <string name="averia_notificacion_action_asignar">Asignarme</string>
+    <string name="averia_notificacion_bubble_title">Averías ICE</string>
 </resources>
