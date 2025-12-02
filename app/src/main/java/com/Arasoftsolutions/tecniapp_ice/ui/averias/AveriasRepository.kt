@@ -152,7 +152,8 @@ class AveriasRepository(private val db: AppDatabase) {
             materialesDetalleJson = existing.materialesDetalleJson,
             tecnicosAtendieronJson = existing.tecnicosAtendieronJson,
             cliente = preferMeaningful(remote.cliente, existing.cliente),
-            localizacion = preferSavedAddress(existing.localizacion, remote.localizacion),
+            localizacion = preferMeaningful(remote.localizacion, existing.localizacion),
+            direccion = existing.direccion,
             tipoAfectacion = preferMeaningful(remote.tipoAfectacion, existing.tipoAfectacion),
             numeroMedidor = preferMeaningful(remote.numeroMedidor, existing.numeroMedidor),
             medidorCalle = preferMeaningful(remote.medidorCalle, existing.medidorCalle),
@@ -422,14 +423,14 @@ class AveriasRepository(private val db: AppDatabase) {
         if (cleaned.isEmpty()) return
 
         val existing = dao.getByCaseId(caseId) ?: return
-        if (!shouldReplaceAddress(existing.localizacion, cleaned)) return
+        if (!shouldReplaceAddress(existing.direccion, cleaned)) return
 
         val now = System.currentTimeMillis()
         dao.actualizarDireccion(caseId, cleaned, now)
 
         runCatching {
             firebaseRef.child(caseId)
-                .updateChildren(mapOf("localizacion" to cleaned, "lastUpdated" to now))
+                .updateChildren(mapOf("direccion" to cleaned, "lastUpdated" to now))
                 .await()
         }.onFailure { error ->
             Log.w(TAG, "No se pudo actualizar la dirección en Firebase para $caseId", error)
@@ -778,6 +779,7 @@ class AveriasRepository(private val db: AppDatabase) {
         "tecnicosAtendieronJson" to tecnicosAtendieronJson,
         "cliente" to cliente,
         "localizacion" to localizacion,
+        "direccion" to direccion,
         "tipoAfectacion" to tipoAfectacion,
         "numeroMedidor" to numeroMedidor,
         "medidorCalle" to medidorCalle,
@@ -862,6 +864,7 @@ class AveriasRepository(private val db: AppDatabase) {
                             ),
                             cliente = preferMeaningful(remote.cliente, existing.cliente),
                             localizacion = preferMeaningful(remote.localizacion, existing.localizacion),
+                            direccion = preferMeaningful(remote.direccion, existing.direccion),
                             tipoAfectacion = preferMeaningful(remote.tipoAfectacion, existing.tipoAfectacion),
                             numeroMedidor = preferMeaningful(remote.numeroMedidor, existing.numeroMedidor),
                             medidorCalle = preferMeaningful(remote.medidorCalle, existing.medidorCalle),
@@ -956,6 +959,7 @@ class AveriasRepository(private val db: AppDatabase) {
                                     ),
                                     cliente = preferMeaningful(remote.cliente, existing.cliente),
                                     localizacion = preferMeaningful(remote.localizacion, existing.localizacion),
+                                    direccion = preferMeaningful(remote.direccion, existing.direccion),
                                     tipoAfectacion = preferMeaningful(remote.tipoAfectacion, existing.tipoAfectacion),
                                     numeroMedidor = preferMeaningful(remote.numeroMedidor, existing.numeroMedidor),
                                     medidorCalle = preferMeaningful(remote.medidorCalle, existing.medidorCalle),
