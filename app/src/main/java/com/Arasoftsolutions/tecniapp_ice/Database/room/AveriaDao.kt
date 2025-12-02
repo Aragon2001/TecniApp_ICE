@@ -180,4 +180,15 @@ fun observe(
 
     @Query("DELETE FROM averias WHERE caseId = :caseId")
     suspend fun eliminarPorCaseId(caseId: String)
+
+    @Query(
+        """
+        UPDATE averias SET
+          direccion = :direccion,
+          lastUpdated = :lastUpdated,
+          isSynced = 0
+        WHERE caseId = :caseId
+        """
+    )
+    suspend fun actualizarDireccion(caseId: String, direccion: String, lastUpdated: Long)
 }

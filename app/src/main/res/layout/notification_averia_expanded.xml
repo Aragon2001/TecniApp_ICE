@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="12dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <ImageView
+            android:id="@+id/icon_large"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_marginEnd="10dp"
+            android:contentDescription="@string/averia_notificacion_map_placeholder"
+            android:scaleType="centerInside" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_weight="1">
+
+            <TextView
+                android:id="@+id/title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/averia_notification_on_surface"
+                android:textStyle="bold"
+                android:textSize="15sp"
+                android:maxLines="1"
+                android:ellipsize="end" />
+
+            <TextView
+                android:id="@+id/case_line"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/averia_notification_on_surface"
+                android:textSize="13sp"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:layout_marginTop="@dimen/averia_notification_line_spacing" />
+
+            <TextView
+                android:id="@+id/state_line"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/averia_notification_pending"
+                android:textSize="12sp"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:layout_marginTop="@dimen/averia_notification_line_spacing" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/address"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="@color/dark_gray"
+        android:textSize="13sp"
+        android:layout_marginTop="8dp" />
+
+    <TextView
+        android:id="@+id/cause"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="@color/averia_notification_on_surface"
+        android:textSize="12sp"
+        android:layout_marginTop="4dp" />
+
+    <TextView
+        android:id="@+id/technician"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="@color/averia_notification_on_surface"
+        android:textSize="12sp"
+        android:layout_marginTop="2dp" />
+
+    <ImageView
+        android:id="@+id/map_preview"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/averia_notification_map_height"
+        android:layout_marginTop="12dp"
+        android:scaleType="centerCrop"
+        android:contentDescription="@string/averia_notificacion_map_placeholder"
+        android:background="@drawable/bg_averia_notification" />
+
+    <LinearLayout
+        android:id="@+id/actions"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_marginTop="8dp">
+
+        <TextView
+            android:id="@+id/action_detail"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:padding="10dp"
+            android:background="@drawable/bg_averia_notification"
+            android:textColor="@color/averia_notification_accent"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:text="@string/averia_notificacion_action_ver_detalle" />
+
+        <View
+            android:layout_width="@dimen/averia_notification_action_spacing"
+            android:layout_height="match_parent" />
+
+        <TextView
+            android:id="@+id/action_map"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:padding="10dp"
+            android:background="@drawable/bg_averia_notification"
+            android:textColor="@color/averia_notification_accent"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:text="@string/averia_notificacion_action_ver_mapa" />
+
+        <View
+            android:layout_width="@dimen/averia_notification_action_spacing"
+            android:layout_height="match_parent" />
+
+        <TextView
+            android:id="@+id/action_assign"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:padding="10dp"
+            android:background="@drawable/bg_averia_notification"
+            android:textColor="@color/averia_notification_accent"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:text="@string/averia_notificacion_action_asignar" />
+    </LinearLayout>
+</LinearLayout>
