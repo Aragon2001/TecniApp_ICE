@@ -96,6 +96,12 @@ class AveriasRepository(private val db: AppDatabase) {
         return if (trimmed.isNullOrEmpty()) local else trimmed
     }
 
+    private fun preferSavedAddress(local: String?, remote: String?): String? {
+        val trimmedLocal = local?.trim()
+        if (!trimmedLocal.isNullOrEmpty()) return trimmedLocal
+        return remote?.trim()
+    }
+
     private fun looksLikePlusCode(value: String?): Boolean {
         if (value.isNullOrBlank()) return false
         val hasPlus = value.contains("+")
@@ -146,7 +152,7 @@ class AveriasRepository(private val db: AppDatabase) {
             materialesDetalleJson = existing.materialesDetalleJson,
             tecnicosAtendieronJson = existing.tecnicosAtendieronJson,
             cliente = preferMeaningful(remote.cliente, existing.cliente),
-            localizacion = preferMeaningful(remote.localizacion, existing.localizacion),
+            localizacion = preferSavedAddress(existing.localizacion, remote.localizacion),
             tipoAfectacion = preferMeaningful(remote.tipoAfectacion, existing.tipoAfectacion),
             numeroMedidor = preferMeaningful(remote.numeroMedidor, existing.numeroMedidor),
             medidorCalle = preferMeaningful(remote.medidorCalle, existing.medidorCalle),

@@ -13,7 +13,7 @@ import androidx.core.view.isVisible
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.Arasoftsolutions.tecniapp_ice.R
-import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriaMapPreviewRenderer
+import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriaStaticMapProvider
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.chip.Chip
 import java.text.DateFormat
@@ -247,8 +247,12 @@ class AveriasAdapter(
                     ?: item.localizacion?.takeIf { it.isNotBlank() }
                     ?: item.agencia
                     ?: context.getString(R.string.averia_notificacion_map_placeholder)
-                val preview = AveriaMapPreviewRenderer.render(context, item.lat, item.lng, mapLabel)
-                imgMapa.setImageBitmap(preview)
+                val mapUrl = AveriaStaticMapProvider.buildUrl(context, item.lat, item.lng, mapLabel)
+                if (mapUrl != null) {
+                    AveriaStaticMapProvider.loadInto(context, imgMapa, mapUrl)
+                } else {
+                    imgMapa.setImageResource(R.drawable.ic_map_placeholder)
+                }
             } else {
                 imgMapa.setImageResource(R.drawable.ic_map_placeholder)
             }
