@@ -57,23 +57,6 @@ object AveriaNotificationDispatcher {
         }
     }
 
-    fun notifyResolvedCases(context: Context, averias: List<AveriaEntity>) {
-        if (averias.isEmpty()) return
-        AveriaNotifications.ensureChannel(context)
-        val manager = NotificationManagerCompat.from(context)
-        if (!hasNotificationPermission(context, manager)) return
-        averias.forEach { averia ->
-            if (ActivityCompat.checkSelfPermission(
-                    context,
-                    Manifest.permission.POST_NOTIFICATIONS
-                ) != PackageManager.PERMISSION_GRANTED
-            ) {
-                return
-            }
-            manager.notify(averia.caseId.hashCode(), buildResolvedNotification(context, averia))
-        }
-    }
-
     private fun hasNotificationPermission(
         context: Context,
         manager: NotificationManagerCompat
@@ -217,37 +200,6 @@ object AveriaNotificationDispatcher {
         )
 
         return builder.build()
-    }
-
-    private fun buildResolvedNotification(context: Context, averia: AveriaEntity): Notification {
-        val hora = AveriaNotifications.formatDateTime(averia.horaFinalMillis ?: averia.fechaInicioMillis)
-            ?: context.getString(R.string.averia_notificacion_sin_hora)
-        val lugar = resolveLugar(context, averia)
-        val detalles = context.getString(
-            R.string.averia_notificacion_resuelta_body,
-            averia.caseId
-        )
-
-        return NotificationCompat.Builder(context, AveriaNotifications.CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle(context.getString(R.string.averia_notificacion_resuelta_title))
-            .setContentText(detalles)
-            .setStyle(
-                NotificationCompat.BigTextStyle()
-                    .bigText(
-                        context.getString(
-                            R.string.averia_notificacion_nueva_summary,
-                            hora,
-                            lugar
-                        )
-                    )
-                    .setSummaryText(averia.caseId)
-            )
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-            .setAutoCancel(true)
-            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .setContentIntent(AveriaNotifications.averiasPendingIntent(context))
-            .build()
     }
 
     private fun resolveLugar(context: Context, averia: AveriaEntity): String =
