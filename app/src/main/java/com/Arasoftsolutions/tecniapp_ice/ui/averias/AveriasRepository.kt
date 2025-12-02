@@ -96,6 +96,22 @@ class AveriasRepository(private val db: AppDatabase) {
         return if (trimmed.isNullOrEmpty()) local else trimmed
     }
 
+    private fun looksLikePlusCode(value: String?): Boolean {
+        if (value.isNullOrBlank()) return false
+        val hasPlus = value.contains("+")
+        val alnum = value.any { it.isLetterOrDigit() }
+        return hasPlus && alnum
+    }
+
+    private fun shouldReplaceAddress(current: String?, candidate: String): Boolean {
+        if (candidate.isBlank()) return false
+        if (current.isNullOrBlank()) return true
+        val normalizedCurrent = current.trim()
+        if (normalizedCurrent.startsWith("cerca de", ignoreCase = true)) return true
+        if (looksLikePlusCode(normalizedCurrent)) return true
+        return false
+    }
+
     private fun mergeForApi(existing: AveriaEntity, remote: AveriaEntity): AveriaEntity {
         val estadoElegido = pickEstadoPreferAdvanced(existing.estado, remote.estado)
         val idEstadoElegido = idEstadoFromLabel(estadoElegido)
@@ -393,6 +409,25 @@ class AveriasRepository(private val db: AppDatabase) {
             isSynced = true,
             lastUpdated = System.currentTimeMillis()
         )
+    }
+
+    suspend fun persistDireccion(caseId: String, direccion: String) {
+        val cleaned = direccion.trim()
+        if (cleaned.isEmpty()) return
+
+        val existing = dao.getByCaseId(caseId) ?: return
+        if (!shouldReplaceAddress(existing.localizacion, cleaned)) return
+
+        val now = System.currentTimeMillis()
+        dao.actualizarDireccion(caseId, cleaned, now)
+
+        runCatching {
+            firebaseRef.child(caseId)
+                .updateChildren(mapOf("localizacion" to cleaned, "lastUpdated" to now))
+                .await()
+        }.onFailure { error ->
+            Log.w(TAG, "No se pudo actualizar la dirección en Firebase para $caseId", error)
+        }
     }
 
     private fun idEstadoAveFromLabelOrRemote(label: String, remoteId: Int?): Int =
