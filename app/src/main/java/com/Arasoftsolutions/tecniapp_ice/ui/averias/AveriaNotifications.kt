@@ -59,7 +59,7 @@ object AveriaNotifications {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return null
         val intent = averiasPendingIntent(context)
         val icon = IconCompat.createWithResource(context, R.drawable.ic_notification)
-        return NotificationCompat.BubbleMetadata.Builder(intent)
+        return NotificationCompat.BubbleMetadata.Builder(intent.toString())
             .setDesiredHeight(context.resources.getDimensionPixelSize(R.dimen.averia_notification_map_height))
             .setIcon(icon)
             .setSuppressNotification(false)

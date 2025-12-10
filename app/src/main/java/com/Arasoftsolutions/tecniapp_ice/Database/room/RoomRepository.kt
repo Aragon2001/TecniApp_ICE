@@ -16,7 +16,7 @@ import kotlinx.coroutines.withContext
  * Repositorio centralizado para exponer operaciones de lectura sobre Room
  * y para sincronizar datos desde Firebase hacia la base de datos local.
  */
-class RoomRepository(context: Context) {
+class   RoomRepository(context: Context) {
 
     private val db = AppDatabase.getInstance(context.applicationContext)
     private val firebase = FirebaseSyncManager(context.applicationContext)
