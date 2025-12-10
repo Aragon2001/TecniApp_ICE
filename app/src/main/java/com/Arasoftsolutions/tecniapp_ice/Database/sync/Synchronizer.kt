@@ -3,10 +3,6 @@ package com.Arasoftsolutions.tecniapp_ice.Database.sync
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasRepository
 
-/**
- * Orquesta la sincronización de una subregión utilizando el repositorio y
- * expone callbacks simples para reportar el progreso al llamador (UI).
- */
 class Synchronizer(
     private val repository: RoomRepository,
     private val averiasRepository: AveriasRepository
@@ -23,26 +19,52 @@ class Synchronizer(
         onSyncSuccess: () -> Unit,
         onSyncError: (Throwable) -> Unit
     ) {
+
+        val total = RoomRepository.SUBREGION_SYNC_STEPS + EXTRA_STEPS
+        var done = 0
+
         try {
-            val total = RoomRepository.SUBREGION_SYNC_STEPS + EXTRA_STEPS
-            var done = 0
 
+            // ----------- 1. TÉCNICOS ----------------
             onSyncStart("Sincronizando técnicos…")
-            repository.syncTecnicos()
-            onSyncProgress(++done, total, "Sincronizando técnicos…")
-
-            onSyncProgress(++done, total, "Descargando materiales…")
-            repository.syncMateriales()
-
-            onSyncProgress(++done, total, "Cargando averías…")
-            averiasRepository.pullFromFirebaseOnce()
-
-            repository.syncSubregion(subregionId) { subDone, _, msg ->
-                val adjustedDone = EXTRA_STEPS + subDone
-                onSyncProgress(adjustedDone, total, msg)
+            try {
+                repository.syncTecnicos()
+                onSyncProgress(++done, total, "Sincronizando técnicos…")
+            } catch (e: Exception) {
+                throw Exception("Error en syncTecnicos(): ${e.message}", e)
             }
+
+            // ----------- 2. MATERIALES ----------------
+            onSyncProgress(++done, total, "Descargando materiales…")
+            try {
+                repository.syncMateriales()
+            } catch (e: Exception) {
+                throw Exception("Error en syncMateriales(): ${e.message}", e)
+            }
+
+            // ----------- 3. AVERÍAS ----------------
+            onSyncProgress(++done, total, "Cargando averías…")
+            try {
+                averiasRepository.pullFromFirebaseOnce()
+            } catch (e: Exception) {
+                throw Exception("Error al cargar averías: ${e.message}", e)
+            }
+
+            // ----------- 4. SUBREGIÓN COMPLETA ----------------
+            try {
+                repository.syncSubregion(subregionId) { subDone, _, msg ->
+                    val adjustedDone = EXTRA_STEPS + subDone
+                    onSyncProgress(adjustedDone, total, msg)
+                }
+            } catch (e: Exception) {
+                throw Exception("Error en syncSubregion(): ${e.message}", e)
+            }
+
+            // FINAL
             onSyncSuccess()
+
         } catch (t: Throwable) {
+            // Aquí cae cualquier error del proceso completo
             onSyncError(t)
         }
     }

@@ -34,6 +34,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import com.Arasoftsolutions.tecniapp_ice.R
 import com.Arasoftsolutions.tecniapp_ice.databinding.FragmentLocalizacionBinding
+import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriaMapLauncher
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationAvailability
 import com.google.android.gms.location.LocationCallback
@@ -570,77 +571,25 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
     }
 
     private fun mostrarOpcionesDeNavegacion() {
-        val lat = viewModel.localizacion.value?.latitud
-        val lng = viewModel.localizacion.value?.longitud
+        val loc = viewModel.localizacion.value
+        val lat = loc?.latitud
+        val lng = loc?.longitud
+
         if (lat == null || lng == null) {
             Toast.makeText(requireContext(), "La ubicación no está disponible", Toast.LENGTH_SHORT).show()
             return
         }
 
-        val context = requireContext()
-        val centerParam = String.format(Locale.US, "%f,%f", lat, lng)
-
-        // URIs corregidas
-        val fieldMapsUri = Uri.parse("arcgis-fieldmaps://?referenceContext=center&itemID=&center=$centerParam")
-        val googleMapsUri = Uri.parse("google.navigation:q=$centerParam")
-        val wazeUri = Uri.parse("waze://?ll=$centerParam&navigate=yes")
-        val browserUri = Uri.parse("https://maps.google.com/?q=$centerParam")
-
-        // Intents
-        val fieldMapsIntent = Intent(Intent.ACTION_VIEW, fieldMapsUri).apply {
-            setPackage("com.esri.fieldmaps")
+        AveriaMapLauncher.show(
+            context = requireContext(),
+            lat = lat,
+            lng = lng,
+            label = ""// o null si no tenés nombre
+        ) {
+            Toast.makeText(requireContext(), "No hay apps de mapas disponibles.", Toast.LENGTH_LONG).show()
         }
-
-        val googleMapsIntent = Intent(Intent.ACTION_VIEW, googleMapsUri).apply {
-            setPackage("com.google.android.apps.maps")
-        }
-
-        val wazeIntent = Intent(Intent.ACTION_VIEW, wazeUri).apply {
-            setPackage("com.waze")
-        }
-
-        val browserIntent = Intent(Intent.ACTION_VIEW, browserUri)
-
-        // Mostrar selector manual
-        val opciones = arrayOf("Field Maps", "Google Maps", "Waze", "Navegador web")
-
-        AlertDialog.Builder(context)
-            .setTitle("Abrir ubicación con...")
-            .setItems(opciones) { _, which ->
-                when (which) {
-                    0 -> { // Field Maps
-                        try {
-                            startActivity(fieldMapsIntent)
-                        } catch (e: Exception) {
-                            Toast.makeText(context, "Field Maps no está instalado o el vínculo es inválido.", Toast.LENGTH_LONG).show()
-                        }
-                    }
-                    1 -> { // Google Maps
-                        try {
-                            startActivity(googleMapsIntent)
-                        } catch (e: Exception) {
-                            Toast.makeText(context, "Google Maps no está disponible.", Toast.LENGTH_LONG).show()
-                        }
-                    }
-                    2 -> { // Waze
-                        try {
-                            startActivity(wazeIntent)
-                        } catch (e: ActivityNotFoundException) {
-                            Toast.makeText(context, "Waze no está instalado.", Toast.LENGTH_LONG).show()
-                        }
-                    }
-                    3 -> { // Navegador
-                        try {
-                            startActivity(browserIntent)
-                        } catch (e: Exception) {
-                            Toast.makeText(context, "No se pudo abrir en el navegador.", Toast.LENGTH_LONG).show()
-                        }
-                    }
-                }
-            }
-            .setNegativeButton("Cancelar", null)
-            .show()
     }
+
 
     private fun compartirUbicacion() {
         val loc = viewModel.localizacion.value
