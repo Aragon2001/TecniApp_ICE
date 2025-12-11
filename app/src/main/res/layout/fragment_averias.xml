@@ -149,12 +149,12 @@
                     </com.google.android.material.chip.ChipGroup>
                 </HorizontalScrollView>
 
-                <!-- Filtros Región y Agencia en una sola fila -->
                 <androidx.constraintlayout.widget.ConstraintLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp">
 
+                    <!-- Región -->
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/tilRegion"
                         style="@style/Tecni.TextInput.Outlined.Dropdown"
@@ -162,25 +162,21 @@
                         android:layout_height="wrap_content"
                         android:hint="@string/averias_filtrar_region"
                         app:endIconMode="dropdown_menu"
-                        app:layout_constraintEnd_toStartOf="@id/tilAgencia"
-                        app:layout_constraintHorizontal_bias="0.0"
-                        app:layout_constraintHorizontal_chainStyle="packed"
                         app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toTopOf="parent">
+                        app:layout_constraintEnd_toStartOf="@id/tilAgencia"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintHorizontal_weight="1">
 
                         <com.google.android.material.textfield.MaterialAutoCompleteTextView
                             android:id="@+id/actvRegion"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:ellipsize="end"
-                            android:gravity="center_vertical"
                             android:inputType="none"
-                            android:maxLines="1"
                             android:paddingStart="16dp"
-                            android:paddingEnd="0dp"
-                            android:scrollHorizontally="true" />
+                            android:paddingEnd="16dp"/>
                     </com.google.android.material.textfield.TextInputLayout>
 
+                    <!-- Agencia -->
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/tilAgencia"
                         style="@style/Tecni.TextInput.Outlined.Dropdown"
@@ -189,24 +185,22 @@
                         android:layout_marginStart="16dp"
                         android:hint="@string/averias_filtrar_agencia"
                         app:endIconMode="dropdown_menu"
-                        app:layout_constraintBaseline_toBaselineOf="@id/tilRegion"
+                        app:layout_constraintStart_toEndOf="@id/tilRegion"
                         app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintStart_toEndOf="@id/tilRegion">
+                        app:layout_constraintTop_toTopOf="@id/tilRegion"
+                        app:layout_constraintHorizontal_weight="1">
 
                         <com.google.android.material.textfield.MaterialAutoCompleteTextView
                             android:id="@+id/actvAgencia"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:ellipsize="end"
-                            android:gravity="center_vertical"
                             android:inputType="none"
-                            android:maxLines="1"
                             android:paddingStart="16dp"
-                            android:paddingEnd="0dp"
-                            android:scrollHorizontally="true" />
+                            android:paddingEnd="16dp"/>
                     </com.google.android.material.textfield.TextInputLayout>
 
-                </androidx.constraintlayout.widget.ConstraintLayout>
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
 
             </LinearLayout>
         </com.google.android.material.appbar.CollapsingToolbarLayout>
