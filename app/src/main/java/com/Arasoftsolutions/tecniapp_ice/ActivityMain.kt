@@ -17,6 +17,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.core.view.GravityCompat
+import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasSyncWorker
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.findNavController
@@ -81,6 +82,10 @@ class ActivityMain : AppCompatActivity() {
         lifecycleScope.launch {
             loadUserDataFromDatabase()
         }
+         val currentUser = auth.currentUser
+    if (currentUser != null) {
+        AveriasSyncWorker.triggerNow(applicationContext)
+    }
 
         requestNotificationPermissionIfNeeded()
 
