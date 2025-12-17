@@ -474,6 +474,7 @@ class AveriasRepository(private val db: AppDatabase) {
      * para evitar casos atascados.
      */
 
+    @Deprecated("ICE ahora se sincroniza desde Cloud Functions; usar Firebase como fuente de verdad")
     suspend fun syncFromIce(
         bearer: String?,
         normalizedRegion: String? = null,
