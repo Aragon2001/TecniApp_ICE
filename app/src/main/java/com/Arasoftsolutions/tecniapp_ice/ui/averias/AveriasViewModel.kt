@@ -2,8 +2,8 @@ package com.Arasoftsolutions.tecniapp_ice.ui.averias
 
 import android.app.Application
 import android.content.Context
-import android.location.Geocoder
 import android.util.Log
+import android.location.Geocoder
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.AgenciaEntity
@@ -20,6 +20,7 @@ import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
 import com.Arasoftsolutions.tecniapp_ice.Database.sync.FirebaseSyncManager
 import com.Arasoftsolutions.tecniapp_ice.R
 import com.google.firebase.auth.FirebaseAuth
+import com.Arasoftsolutions.tecniapp_ice.BuildConfig
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriaNotifications
 import com.Arasoftsolutions.tecniapp_ice.preferences.DataStoreManager
 import java.text.Normalizer
@@ -28,6 +29,7 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.time.ZoneOffset
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -138,6 +140,7 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
     val medidorEstado: StateFlow<MedidorLookupState> = _medidorEstado.asStateFlow()
     private val _addresses = MutableStateFlow<Map<String, String>>(emptyMap())
     private val pendingAddressLookups = mutableSetOf<String>()
+    private var syncJob: Job? = null
     private var cachedRegiones: List<RegionEntity> = emptyList()
     private var cachedSubregiones: List<SubregionesEntity> = emptyList()
     private var cachedAgencias: List<AgenciaEntity> = emptyList()
@@ -739,11 +742,15 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun syncNow() {
-        viewModelScope.launch {
+        if (syncJob?.isActive == true) return
+        syncJob = viewModelScope.launch {
             isLoading.emit(true)
             try {
                 repo.pullFromFirebaseOnce()
                 repo.syncPendientesConFirebase()
+                repo.syncFromIce(BuildConfig.ICE_BEARER)
+            } catch (t: Throwable) {
+                Log.e(TAG, "Error al sincronizar averías", t)
             } finally {
                 isLoading.emit(false)
             }
