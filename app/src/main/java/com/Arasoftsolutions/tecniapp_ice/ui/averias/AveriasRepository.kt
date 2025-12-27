@@ -49,6 +49,75 @@ class AveriasRepository(private val db: AppDatabase) {
     fun observe(agencias: List<String>, estado: String, q: String, s: String): Flow<List<AveriaEntity>> =
         dao.observe(agencias, agencias.size, estado, q)
 
+    suspend fun upsertFromPush(push: AveriaEntity) = withContext(Dispatchers.IO) {
+        val normalizedEstado = normalizeEstadoLabel(push.estado)
+        val canonical = canonicalizeAgenciaFields(push.copy(estado = normalizedEstado))
+        val now = System.currentTimeMillis()
+        val incomingFecha = canonical.fechaInicioMillis.takeIf { it > 0 } ?: now
+        val existing = dao.getByCaseId(canonical.caseId)
+
+        val merged = if (existing == null) {
+            canonical.copy(
+                agenciaTag = canonical.agenciaTag.ifBlank { canonical.agencia ?: canonical.nombreAgencia ?: "" },
+                fechaInicioMillis = incomingFecha,
+                lastUpdated = canonical.lastUpdated.takeIf { it > 0 } ?: now,
+                isSynced = true
+            )
+        } else {
+            val estadoElegido = pickEstadoPreferAdvanced(existing.estado, canonical.estado)
+            val idEstadoElegido = idEstadoFromLabel(estadoElegido)
+
+            existing.copy(
+                region = canonical.region ?: existing.region,
+                provincia = canonical.provincia ?: existing.provincia,
+                agencia = canonical.agencia ?: existing.agencia,
+                nombreAgencia = preferMeaningful(canonical.nombreAgencia, existing.nombreAgencia),
+                nise = preferMeaningful(canonical.nise, existing.nise),
+                causa = preferMeaningful(canonical.causa, existing.causa),
+                observaciones = preferMeaningful(canonical.observaciones, existing.observaciones),
+                estado = estadoElegido,
+                idEstadoAve = idEstadoElegido,
+                idEstadoAranda = canonical.idEstadoAranda ?: existing.idEstadoAranda,
+                lat = canonical.lat ?: existing.lat,
+                lng = canonical.lng ?: existing.lng,
+                clientesAfectados = preferMeaningful(canonical.clientesAfectados, existing.clientesAfectados),
+                fechaInicioMillis = when {
+                    canonical.fechaInicioMillis > 0 -> canonical.fechaInicioMillis
+                    existing.fechaInicioMillis > 0 -> existing.fechaInicioMillis
+                    else -> incomingFecha
+                },
+                horaInicioMillis = canonical.horaInicioMillis ?: existing.horaInicioMillis,
+                horaFinalMillis = canonical.horaFinalMillis ?: existing.horaFinalMillis,
+                atencionHoraInicioMillis = canonical.atencionHoraInicioMillis ?: existing.atencionHoraInicioMillis,
+                atencionHoraFinalMillis = canonical.atencionHoraFinalMillis ?: existing.atencionHoraFinalMillis,
+                kilometrajeInicio = canonical.kilometrajeInicio ?: existing.kilometrajeInicio,
+                kilometrajeFinal = canonical.kilometrajeFinal ?: existing.kilometrajeFinal,
+                agenciaTag = if (canonical.agenciaTag.isNotBlank()) canonical.agenciaTag else existing.agenciaTag,
+                vehiculoAsignado = canonical.vehiculoAsignado ?: existing.vehiculoAsignado,
+                tecnicoAsignadoUid = canonical.tecnicoAsignadoUid ?: existing.tecnicoAsignadoUid,
+                tecnicoAsignadoNombre = preferMeaningful(canonical.tecnicoAsignadoNombre, existing.tecnicoAsignadoNombre),
+                atendidoPorUid = canonical.atendidoPorUid ?: existing.atendidoPorUid,
+                atendidoPorNombre = preferMeaningful(canonical.atendidoPorNombre, existing.atendidoPorNombre),
+                materialesTexto = preferMeaningful(canonical.materialesTexto, existing.materialesTexto),
+                materialesDetalleJson = mergeRemoteString(canonical.materialesDetalleJson, existing.materialesDetalleJson),
+                tecnicosAtendieronJson = mergeRemoteString(canonical.tecnicosAtendieronJson, existing.tecnicosAtendieronJson),
+                cliente = preferMeaningful(canonical.cliente, existing.cliente),
+                localizacion = preferMeaningful(canonical.localizacion, existing.localizacion),
+                direccion = preferSavedAddress(existing.direccion, canonical.direccion),
+                tipoAfectacion = preferMeaningful(canonical.tipoAfectacion, existing.tipoAfectacion),
+                numeroMedidor = preferMeaningful(canonical.numeroMedidor, existing.numeroMedidor),
+                medidorCalle = preferMeaningful(canonical.medidorCalle, existing.medidorCalle),
+                medidorPueblo = preferMeaningful(canonical.medidorPueblo, existing.medidorPueblo),
+                medidorMetros = preferMeaningful(canonical.medidorMetros, existing.medidorMetros),
+                medidorPoste = preferMeaningful(canonical.medidorPoste, existing.medidorPoste),
+                lastUpdated = listOf(existing.lastUpdated, canonical.lastUpdated, now).maxOrNull() ?: now,
+                isSynced = true
+            )
+        }
+
+        dao.upsertAll(listOf(merged))
+    }
+
     // ---------------------------------------------------------------------------------------------
     // Normalizadores (región / agencia) y utilitarios
     // ---------------------------------------------------------------------------------------------
@@ -474,6 +543,7 @@ class AveriasRepository(private val db: AppDatabase) {
      * para evitar casos atascados.
      */
 
+    @Deprecated("ICE ahora se sincroniza desde Cloud Functions; usar Firebase como fuente de verdad")
     suspend fun syncFromIce(
         bearer: String?,
         normalizedRegion: String? = null,
