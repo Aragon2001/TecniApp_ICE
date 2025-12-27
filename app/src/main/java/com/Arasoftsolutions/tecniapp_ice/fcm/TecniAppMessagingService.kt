@@ -2,15 +2,25 @@ package com.Arasoftsolutions.tecniapp_ice.fcm
 
 import android.util.Log
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.AveriaEntity
+import com.Arasoftsolutions.tecniapp_ice.Database.room.AppDatabase
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriaNotificationDispatcher
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriaNotificationPreferences
+import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasRepository
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.shouldNotifyForAgency
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 
 class TecniAppMessagingService : FirebaseMessagingService() {
+
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val repo by lazy { AveriasRepository(AppDatabase.getInstance(applicationContext)) }
 
     override fun onNewToken(token: String) {
         super.onNewToken(token)
@@ -44,12 +54,19 @@ class TecniAppMessagingService : FirebaseMessagingService() {
             return
         }
 
+        val averia = buildAveriaFromMessage(caseId, data)
+
+        scope.launch {
+            repo.upsertFromPush(averia)
+            runCatching { repo.pullFromFirebaseOnce() } // Obtener detalles completos del caso cuando el servidor ya los tenga
+                .onFailure { Log.w(TAG, "No se pudo refrescar Firebase tras push", it) }
+        }
+
         if (!AveriaNotificationPreferences.areNotificationsEnabled(this)) {
-            Log.d(TAG, "Notificaciones desactivadas por el usuario; se descarta el push")
+            Log.d(TAG, "Notificaciones desactivadas por el usuario; se omite la alerta local")
             return
         }
 
-        val averia = buildAveriaFromMessage(caseId, data)
         val agencyFilters = AveriaNotificationPreferences.normalizedAgencies(this)
         if (!shouldNotifyForAgency(averia, agencyFilters)) {
             Log.d(TAG, "Mensaje FCM filtrado por agencia (${averia.agencia}/${averia.agenciaTag})")
@@ -66,6 +83,9 @@ class TecniAppMessagingService : FirebaseMessagingService() {
         val agencia = data["agencia"]
         val nombreAgencia = data["nombreAgencia"] ?: agencia
         val localizacion = data["localizacion"] ?: data["descripcion"] ?: nombreAgencia
+        val fechaInicio = data["fechaInicioMillis"]?.toLongOrNull()
+            ?: data["fechaInicio"]?.toLongOrNull()
+        val lastUpdated = data["lastUpdated"]?.toLongOrNull() ?: System.currentTimeMillis()
 
         return AveriaEntity(
             caseId = caseId,
@@ -80,8 +100,24 @@ class TecniAppMessagingService : FirebaseMessagingService() {
             causa = data["causa"],
             clientesAfectados = data["clientesAfectados"],
             lat = data["lat"]?.toDoubleOrNull(),
-            lng = data["lng"]?.toDoubleOrNull()
+            lng = data["lng"]?.toDoubleOrNull(),
+            fechaInicioMillis = fechaInicio ?: lastUpdated,
+            tipoAfectacion = data["tipoAfectacion"],
+            numeroMedidor = data["numeroMedidor"],
+            medidorCalle = data["medidorCalle"],
+            medidorPueblo = data["medidorPueblo"],
+            medidorMetros = data["medidorMetros"],
+            medidorPoste = data["medidorPoste"],
+            cliente = data["cliente"],
+            direccion = data["direccion"],
+            lastUpdated = lastUpdated,
+            isSynced = true
         )
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        scope.cancel()
     }
 
     companion object {
