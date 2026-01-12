@@ -148,6 +148,7 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
     private var pendingAgencyName: String? = prefs.getString(PREF_AGENCIA_NAME, null)
     private var catalogosSyncAttempted = false
     private var tecnicosSyncAttempted = false
+    private val drafts = mutableMapOf<String, AveriaDraft>()
 
     data class FechaFiltro(val inicioMillis: Long, val finExclusiveMillis: Long)
 
@@ -481,6 +482,20 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
         return refreshed
     }
 
+    fun getDraft(caseId: String): AveriaDraft? = drafts[caseId]
+
+    fun saveDraft(caseId: String, draft: AveriaDraft) {
+        if (draft.isEmpty()) {
+            drafts.remove(caseId)
+        } else {
+            drafts[caseId] = draft
+        }
+    }
+
+    fun clearDraft(caseId: String) {
+        drafts.remove(caseId)
+    }
+
     private fun nombreCompleto(user: UserEntity): String {
         val nombre = listOfNotNull(user.nombre, user.apellidosCompletos)
             .joinToString(" ")
@@ -769,16 +784,23 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun onAtender(ui: AveriaUI, data: AveriaActionData) {
-        if (data.causa.isBlank()) {
-            _messages.tryEmit(getApplication<Application>().getString(R.string.averia_error_causa_requerida))
-            return
-        }
         viewModelScope.launch {
-            if (Estado.fromLabel(ui.estado) != Estado.ASIGNADA) return@launch
-            val user = ensurePropietario(ui) ?: return@launch
+            val estado = Estado.fromLabel(ui.estado)
+            if (estado != Estado.ASIGNADA && estado != Estado.PENDIENTE) return@launch
+            val user = when (estado) {
+                Estado.ASIGNADA -> ensurePropietario(ui)
+                Estado.PENDIENTE -> requireUsuario()
+                else -> null
+            } ?: return@launch
+            if (estado == Estado.PENDIENTE && ui.tecnicoUid.isNullOrBlank()) {
+                val nombreTecnico = nombreCompleto(user)
+                val vehiculo = user.placaVehiculo?.takeIf { !it.isNullOrBlank() }
+                repo.asignar(ui.id, user.uid, nombreTecnico, vehiculo)
+            }
             val resolved = resolveData(ui, data, user)
             repo.enAtencion(ui.id, resolved)
             _messages.tryEmit(getApplication<Application>().getString(R.string.averia_exito_en_atencion))
+            clearDraft(ui.id)
             syncNow()
         }
     }
@@ -808,6 +830,7 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
             val shareItem = buildResolvedUi(baseUi, resolved)
             _shareRequests.tryEmit(shareItem)
             _messages.tryEmit(getApplication<Application>().getString(R.string.averia_exito_resuelta))
+            clearDraft(ui.id)
             syncNow()
         }
     }
