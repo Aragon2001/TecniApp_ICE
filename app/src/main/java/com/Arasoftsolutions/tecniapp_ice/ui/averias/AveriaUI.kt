@@ -48,6 +48,13 @@ data class AveriaUI(
     val observacionesClor: String?
 ) : Serializable {
 
+    fun ownerUidFor(estado: Estado): String? {
+        return when (estado) {
+            Estado.EN_ATENCION, Estado.RESUELTA -> atendidoPorUid ?: tecnicoUid
+            else -> tecnicoUid
+        }
+    }
+
     fun resolvedAtendidoDisplay(emptyValue: String): String {
         if (atendidoPor.isNotBlank()) return atendidoPor
         val tecnicos = resolvedTechniciansDisplay()
