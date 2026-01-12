@@ -24,6 +24,7 @@ class AveriasAdapter(
     private val onAsignar: (AveriaUI) -> Unit,
     private val onAtender: (AveriaUI) -> Unit,
     private val onResolver: (AveriaUI) -> Unit,
+    private val onRevertir: (AveriaUI) -> Unit,
 ) : RecyclerView.Adapter<AveriasAdapter.VH>() {
 
     private val items = mutableListOf<AveriaUI>()
@@ -102,15 +103,15 @@ class AveriasAdapter(
             // ===============================
             val currentUid = currentUserUid
             val bloqueadaPorClor = item.estadoClor.equals("RESUELTA", ignoreCase = true)
-            val asignadaAOtro = !item.tecnicoUid.isNullOrBlank() && (currentUid == null || item.tecnicoUid != currentUid)
-            val pertenece = !asignadaAOtro && !item.tecnicoUid.isNullOrBlank()
+            val estadoEnum = Estado.fromLabel(item.estado)
+            val ownerUid = item.ownerUidFor(estadoEnum)
+            val asignadaAOtro = !ownerUid.isNullOrBlank() && (currentUid == null || ownerUid != currentUid)
+            val pertenece = !asignadaAOtro && !ownerUid.isNullOrBlank()
             val readOnly = bloqueadaPorClor || asignadaAOtro
-
 
             tvTitulo.text = item.descripcion
 
             // Chip: color por estado visible, texto informativo
-            val estadoEnum = Estado.fromLabel(item.estado)
             val estadoParaColor = if (bloqueadaPorClor) Estado.RESUELTA else estadoEnum
 
             chipEstado.text = when {
@@ -142,17 +143,17 @@ class AveriasAdapter(
             val causaClor = item.causaClor?.takeIf { it.isNotBlank() }
             val obsApp = item.observaciones?.takeIf { it.isNotBlank() }
             val obsClor = item.observacionesClor?.takeIf { it.isNotBlank() }
-            val causaDisplay = listOf(
-                context.getString(R.string.averia_label_causa) to (causaApp ?: emptyValue),
-                context.getString(R.string.averia_label_causa_clor) to (causaClor ?: emptyValue)
-            ).joinToString("\n") { (label, value) -> "$label $value" }
-            val obsDisplay = listOf(
-                context.getString(R.string.averia_label_observaciones) to (obsApp ?: emptyValue),
+            val clorDisplay = listOf(
+                context.getString(R.string.averia_label_causa_clor) to (causaClor ?: emptyValue),
                 context.getString(R.string.averia_label_observaciones_clor) to (obsClor ?: emptyValue)
             ).joinToString("\n") { (label, value) -> "$label $value" }
-            tvCausa.text = causaDisplay
+            val tecnicoDisplay = listOf(
+                context.getString(R.string.averia_label_causa) to (causaApp ?: emptyValue),
+                context.getString(R.string.averia_label_observaciones) to (obsApp ?: emptyValue)
+            ).joinToString("\n") { (label, value) -> "$label $value" }
+            tvCausa.text = clorDisplay
             tvCausa.isVisible = true
-            tvObs.text = obsDisplay
+            tvObs.text = tecnicoDisplay
             tvObs.isVisible = true
 
             val asignado = if (item.tecnico.isBlank()) {
@@ -170,17 +171,6 @@ class AveriasAdapter(
             tvRegion.renderLabel(R.string.averia_label_region, item.region)
             tvAgencia.renderLabel(R.string.averia_label_agencia, item.agencia)
 
-            if (item.kilometrajeInicio != null || item.kilometrajeFinal != null) {
-                val inicio = item.kilometrajeInicio?.toString() ?: emptyValue
-                val fin = item.kilometrajeFinal?.toString() ?: emptyValue
-                tvKilometraje.renderLabel(
-                    R.string.averia_label_kilometraje,
-                    "$inicio → $fin",
-                )
-            } else {
-                tvKilometraje.isVisible = false
-            }
-
             tvCliente?.let { label ->
                 val cliente = item.cliente?.takeIf { it.isNotBlank() } ?: emptyValue
                 val tipo = when (item.tipoAfectacion) {
@@ -189,17 +179,13 @@ class AveriasAdapter(
                 }
                 val medidor = item.numeroMedidor?.takeIf { it.isNotBlank() }
                     ?.let { context.getString(R.string.averia_medidor_label, it) }
-                val extras = buildList {
-                    if (tipo.isNotBlank()) add(tipo)
-                    if (medidor != null) add(medidor)
-                }
-                val content = if (extras.isNotEmpty()) {
-                    buildString {
-                        append(cliente)
-                        append(" • ")
-                        append(extras.joinToString(" • "))
+                val content = buildList {
+                    add(tipo)
+                    if (item.tipoAfectacion == TipoAfectacion.CLIENTE) {
+                        add(cliente)
+                        medidor?.let { add(it) }
                     }
-                } else cliente
+                }.joinToString(" • ")
                 label.renderLabel(R.string.averia_label_cliente, content)
             }
 
@@ -234,31 +220,65 @@ class AveriasAdapter(
 
             tvDireccion?.renderLabel(R.string.averia_label_direccion, item.direccion, hideWhenEmpty = true)
 
-            val fechaEvento = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT)
-                .format(Date(item.fechaMillis))
-            val inicioAtencion = item.horaAtencionInicio?.let {
-                DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(Date(it))
-            }
-            val finAtencion = item.horaAtencionFinal?.let {
-                DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(Date(it))
-            }
+            val formatDateTime = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT)
+            val fechaEvento = formatDateTime.format(Date(item.fechaMillis))
+            val inicioEvento = item.horaInicio?.let { formatDateTime.format(Date(it)) }
+                ?: item.horaAtencionInicio?.let { formatDateTime.format(Date(it)) }
+            val llegadaEvento = item.horaLlegada?.let { formatDateTime.format(Date(it)) }
+            val finEvento = item.horaFinal?.let { formatDateTime.format(Date(it)) }
+                ?: item.horaAtencionFinal?.let { formatDateTime.format(Date(it)) }
 
             tvFecha.text = buildSpannedString {
                 bold { append(context.getString(R.string.averia_label_evento)) }
                 append(' ')
                 append(fechaEvento)
-                inicioAtencion?.let {
+                inicioEvento?.let {
                     append('\n')
                     bold { append(context.getString(R.string.averia_label_inicio)) }
                     append(' ')
                     append(it)
                 }
-                finAtencion?.let {
+                llegadaEvento?.let {
+                    append('\n')
+                    bold { append(context.getString(R.string.averia_hora_llegada_hint)) }
+                    append(' ')
+                    append(it)
+                }
+                finEvento?.let {
                     append('\n')
                     bold { append(context.getString(R.string.averia_label_fin)) }
                     append(' ')
                     append(it)
                 }
+            }
+
+            val kilometrajeInicio = item.kilometrajeInicio?.toString()
+            val kilometrajeLlegada = item.kilometrajeLlegada?.toString()
+            val kilometrajeFinal = item.kilometrajeFinal?.toString()
+            val kilometrajes = listOfNotNull(
+                kilometrajeInicio?.let {
+                    context.getString(R.string.averia_km_inicio_hint) to it
+                },
+                kilometrajeLlegada?.let {
+                    context.getString(R.string.averia_km_llegada_hint) to it
+                },
+                kilometrajeFinal?.let {
+                    context.getString(R.string.averia_km_fin_hint) to it
+                }
+            )
+            if (kilometrajes.isNotEmpty()) {
+                tvKilometraje.text = buildSpannedString {
+                    bold { append(context.getString(R.string.averia_label_kilometraje)) }
+                    kilometrajes.forEach { (label, value) ->
+                        append('\n')
+                        bold { append(label) }
+                        append(' ')
+                        append(value)
+                    }
+                }
+                tvKilometraje.isVisible = true
+            } else {
+                tvKilometraje.isVisible = false
             }
 
             // ✅ Colores: si CLOR resolvió, se pinta como RESUELTA (verde)
@@ -374,7 +394,13 @@ class AveriasAdapter(
                 }
 
                 Estado.ANULADA -> {
-                    btnAsignar.isVisible = false
+                    btnAsignar.apply {
+                        text = context.getString(R.string.averia_revertir_pendiente)
+                        isEnabled = pertenece
+                        isVisible = true
+                        alpha = if (pertenece) 1f else 0.45f
+                        setOnClickListener { onRevertir(item) }
+                    }
                     btnAtender.isVisible = false
                     btnResolver.isVisible = false
                 }

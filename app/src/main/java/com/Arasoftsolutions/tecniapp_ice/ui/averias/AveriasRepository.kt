@@ -903,6 +903,7 @@ private fun AveriaEntity.toFirebaseAppPayload(): Map<String, Any?> = hashMapOf(
         try {
             val snapshot = firebaseRef.get().await()
             val current = dao.all().associateBy { it.caseId }
+            val remoteIds = snapshot.children.mapNotNull { it.key?.trim() }.toSet()
             val updated = mutableListOf<AveriaEntity>()
             snapshot.children.forEach { child ->
                 val remote0 = child.getAveriaEntitySafe() ?: return@forEach
@@ -990,7 +991,16 @@ private fun AveriaEntity.toFirebaseAppPayload(): Map<String, Any?> = hashMapOf(
 
                 }
             }
-            if (updated.isNotEmpty()) dao.upsertAll(updated) else TODO()
+            if (updated.isNotEmpty()) dao.upsertAll(updated)
+
+            val removedIds = current.values
+                .filter { it.isSynced }
+                .map { it.caseId }
+                .filterNot { remoteIds.contains(it) }
+
+            if (removedIds.isNotEmpty()) {
+                dao.eliminarPorCaseIds(removedIds)
+            }
         } catch (t: Throwable) {
             Log.e(TAG, "Firebase pull failed", t)
         }
@@ -1008,6 +1018,7 @@ private fun AveriaEntity.toFirebaseAppPayload(): Map<String, Any?> = hashMapOf(
             override fun onDataChange(snapshot: DataSnapshot) {
                 scope.launch {
                     val current = dao.all().associateBy { it.caseId }
+                    val remoteIds = snapshot.children.mapNotNull { it.key?.trim() }.toSet()
                     val toUpsert = mutableListOf<AveriaEntity>()
                     val newlyCreated = mutableListOf<AveriaEntity>()
                     snapshot.children.forEach { child ->
@@ -1081,6 +1092,15 @@ private fun AveriaEntity.toFirebaseAppPayload(): Map<String, Any?> = hashMapOf(
                         }
                     }
                     if (toUpsert.isNotEmpty()) dao.upsertAll(toUpsert)
+
+                    val removedIds = current.values
+                        .filter { it.isSynced }
+                        .map { it.caseId }
+                        .filterNot { remoteIds.contains(it) }
+
+                    if (removedIds.isNotEmpty()) {
+                        dao.eliminarPorCaseIds(removedIds)
+                    }
 
                     val shouldNotify = realtimeEmittedOnce || !this@AveriasRepository.suppressInitialNotification
                     if (shouldNotify && newlyCreated.isNotEmpty()) {

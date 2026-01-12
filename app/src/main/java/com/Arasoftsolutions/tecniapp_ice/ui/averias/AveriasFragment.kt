@@ -132,7 +132,8 @@ override fun onStop() {
             onVerMapa = { openMap(it) },
             onAsignar = { vm.onToggleAsignacion(it) },
             onAtender = { handleAtender(it) },
-            onResolver = { handleResolver(it) }
+            onResolver = { handleResolver(it) },
+            onRevertir = { handleRevertir(it) }
         )
 
         b.recyclerViewAverias.apply {
@@ -301,6 +302,14 @@ override fun onStop() {
             }
             else -> showDetalle(item)
         }
+    }
+
+    private fun handleRevertir(item: AveriaUI) {
+        if (Estado.fromLabel(item.estado) != ANULADA) {
+            showDetalle(item)
+            return
+        }
+        vm.onRevertirAnulada(item)
     }
 
     private fun showNotificationFiltersSheet() {

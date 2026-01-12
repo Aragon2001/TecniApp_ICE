@@ -201,9 +201,16 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), AveriasUiState())
 
     init {
-         repo.startRealtimeListener(onNewAverias = { nuevas ->
+        repo.startRealtimeListener(onNewAverias = { nuevas ->
             viewModelScope.launch(Dispatchers.Default) {
+                if (AveriasForegroundTracker.isAveriasVisible) return@launch
+                if (!AveriaNotificationPreferences.areNotificationsEnabled(getApplication())) return@launch
 
+                val agencyFilters = AveriaNotificationPreferences.normalizedAgencies(getApplication())
+                val filtered = nuevas.filter { shouldNotifyForAgency(it, agencyFilters) }
+                if (filtered.isNotEmpty()) {
+                    AveriaNotificationDispatcher.notifyNewCases(getApplication(), filtered)
+                }
             }
         })
         AveriaNotifications.ensureChannel(app)
@@ -733,7 +740,8 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
 
     private suspend fun ensurePropietario(ui: AveriaUI): UserEntity? {
         val user = requireUsuario() ?: return null
-        val asignadoA = ui.tecnicoUid
+        val estado = Estado.fromLabel(ui.estado)
+        val asignadoA = ui.ownerUidFor(estado)
         if (!asignadoA.isNullOrBlank() && asignadoA != user.uid) {
             _messages.emit(getApplication<Application>().getString(R.string.averia_error_no_autorizado))
             return null
@@ -815,6 +823,16 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
             ensurePropietario(ui) ?: return@launch
             repo.revertirAPendiente(ui.id)
             _messages.tryEmit(getApplication<Application>().getString(R.string.averia_exito_cancelada))
+            syncNow()
+        }
+    }
+
+    fun onRevertirAnulada(ui: AveriaUI) {
+        viewModelScope.launch {
+            if (Estado.fromLabel(ui.estado) != Estado.ANULADA) return@launch
+            ensurePropietario(ui) ?: return@launch
+            repo.revertirAPendiente(ui.id)
+            _messages.tryEmit(getApplication<Application>().getString(R.string.averia_exito_revertida))
             syncNow()
         }
     }
