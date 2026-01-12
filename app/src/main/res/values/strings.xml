@@ -198,8 +198,11 @@ Cliente: %4$s</string>
     <string name="averia_error_no_autorizado">No puedes gestionar una avería asignada a otro técnico.</string>
     <string name="averia_error_hora_formato">Ingresa la hora en formato HH:mm.</string>
     <string name="averia_error_hora_final_menor">La hora final debe ser mayor a la inicial.</string>
+    <string name="averia_error_hora_llegada_menor">La hora de llegada no puede ser menor a la hora de inicio.</string>
     <string name="averia_error_km_invalido">Ingresa un kilometraje válido.</string>
     <string name="averia_error_km_final_menor">El kilometraje final no puede ser menor al inicial.</string>
+    <string name="averia_error_km_llegada_menor">El kilometraje de llegada no puede ser menor al inicial.</string>
+    <string name="averia_error_localizacion_requerida">La localización es requerida.</string>
     <string name="averia_error_hora_inicio_requerida">Ingresa la hora de inicio.</string>
     <string name="averia_error_hora_fin_requerida">Ingresa la hora de fin.</string>
     <string name="averia_error_km_inicio_requerido">Ingresa el kilometraje inicial.</string>
