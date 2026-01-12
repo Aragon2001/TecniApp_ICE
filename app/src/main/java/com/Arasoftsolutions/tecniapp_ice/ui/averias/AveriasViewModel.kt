@@ -740,7 +740,8 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
 
     private suspend fun ensurePropietario(ui: AveriaUI): UserEntity? {
         val user = requireUsuario() ?: return null
-        val asignadoA = ui.tecnicoUid
+        val estado = Estado.fromLabel(ui.estado)
+        val asignadoA = ui.ownerUidFor(estado)
         if (!asignadoA.isNullOrBlank() && asignadoA != user.uid) {
             _messages.emit(getApplication<Application>().getString(R.string.averia_error_no_autorizado))
             return null

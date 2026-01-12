@@ -726,9 +726,10 @@ private fun renderState() {
     val estado = if (clorResuelta) Estado.RESUELTA else Estado.fromLabel(item.estado)
     estadoActual = estado
 
-    val tieneAsignacion = !item.tecnicoUid.isNullOrBlank()
-    val pertenece = uid != null && item.tecnicoUid == uid
-    val asignadaAOtro = tieneAsignacion && (uid == null || item.tecnicoUid != uid)
+    val ownerUid = item.ownerUidFor(estado)
+    val tieneAsignacion = !ownerUid.isNullOrBlank()
+    val pertenece = uid != null && ownerUid == uid
+    val asignadaAOtro = tieneAsignacion && (uid == null || ownerUid != uid)
 
     val puedeEditarInicio = !clorResuelta && !asignadaAOtro &&
         (estado == Estado.PENDIENTE || estado == Estado.ASIGNADA || (estado == Estado.EN_ATENCION && pertenece))
@@ -1458,6 +1459,8 @@ b.btnExportar.isEnabled = pertenece
             estado = "En atención",
             tecnicoUid = uid,
             tecnico = nombre,
+            atendidoPorUid = uid,
+            atendidoPor = nombre,
             vehiculo = data.vehiculo ?: item.vehiculo,
             horaAtencionInicio = data.horaInicioMillis ?: item.horaAtencionInicio,
             horaLlegada = data.horaLlegadaMillis ?: item.horaLlegada,
