@@ -847,8 +847,7 @@ private fun configureButtonsForRules(
             b.btnAtender.setOnClickListener {
                 val data = collectFormData(ValidationContext.INICIAR) ?: return@setOnClickListener
                 vm.onAtender(item, data)
-                persistDraftOnDestroy = false
-                dismissAllowingStateLoss()
+                applyAtencionLocal(data)
             }
 
             b.btnAnular.isVisible = true
@@ -874,8 +873,7 @@ private fun configureButtonsForRules(
                 if (!pertenece) return@setOnClickListener
                 val data = collectFormData(ValidationContext.INICIAR) ?: return@setOnClickListener
                 vm.onAtender(item, data)
-                persistDraftOnDestroy = false
-                dismissAllowingStateLoss()
+                applyAtencionLocal(data)
             }
 
             b.btnAsignar.isVisible = true
@@ -1302,6 +1300,7 @@ b.btnExportar.isEnabled = pertenece
         b.tilKmFinal.error = null
         b.tilVehiculo.error = null
         b.tilObs.error = null
+        b.tilLocalizacion.error = null
 
         val horaLlegadaTexto = b.etHoraLlegada.text?.toString()?.trim()
         val horaInicioTexto = b.etHoraInicio.text?.toString()?.trim()
@@ -1315,6 +1314,10 @@ b.btnExportar.isEnabled = pertenece
         if (!horaFinalTexto.isNullOrBlank() && horaFinal == null) return null
         if (horaInicio != null && horaFinal != null && horaFinal <= horaInicio) {
             b.tilHoraFinal.error = getString(R.string.averia_error_hora_final_menor)
+            return null
+        }
+        if (horaLlegada != null && horaInicio != null && horaLlegada < horaInicio) {
+            b.tilHoraLlegada.error = getString(R.string.averia_error_hora_llegada_menor)
             return null
         }
 
@@ -1347,6 +1350,10 @@ b.btnExportar.isEnabled = pertenece
         }
         if (kmInicio != null && kmFinal != null && kmFinal < kmInicio) {
             b.tilKmFinal.error = getString(R.string.averia_error_km_final_menor)
+            return null
+        }
+        if (kmLlegada != null && kmInicio != null && kmLlegada < kmInicio) {
+            b.tilKmLlegada.error = getString(R.string.averia_error_km_llegada_menor)
             return null
         }
 
@@ -1391,6 +1398,10 @@ b.btnExportar.isEnabled = pertenece
         val medidorPoste = if (tipo == TipoAfectacion.CLIENTE) medidorSeleccionado?.poste?.trim() else null
         val localizacionTexto = b.etLocalizacion.text?.toString()?.trim()?.takeIf { it.isNotBlank() }
         val cliente = clienteSeleccionado ?: item.cliente
+        if (contexto == ValidationContext.RESOLVER && localizacionTexto.isNullOrBlank()) {
+            b.tilLocalizacion.error = getString(R.string.averia_error_localizacion_requerida)
+            return null
+        }
 
         return AveriaActionData(
             causa = causa,
@@ -1440,6 +1451,25 @@ b.btnExportar.isEnabled = pertenece
             materiales = materiales,
             tecnicos = tecnicos
         )
+    }
+
+    private fun applyAtencionLocal(data: AveriaActionData) {
+        val uid = data.atendidoPorUid ?: vm.usuarioActual.value?.uid ?: item.tecnicoUid
+        val nombre = data.atendidoPorNombre ?: item.tecnico
+        item = item.copy(
+            estado = "En atención",
+            tecnicoUid = uid,
+            tecnico = nombre,
+            vehiculo = data.vehiculo ?: item.vehiculo,
+            horaAtencionInicio = data.horaInicioMillis ?: item.horaAtencionInicio,
+            horaLlegada = data.horaLlegadaMillis ?: item.horaLlegada,
+            kilometrajeInicio = data.kilometrajeInicio ?: item.kilometrajeInicio,
+            kilometrajeLlegada = data.kilometrajeLlegada ?: item.kilometrajeLlegada
+        )
+        bindHeader(Estado.EN_ATENCION)
+        bindResumenes()
+        bindInputs()
+        renderState()
     }
 
     override fun onDestroyView() {

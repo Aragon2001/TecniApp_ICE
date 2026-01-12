@@ -393,7 +393,11 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun matchesEstado(entity: AveriaEntity, estadoSeleccionado: Estado?): Boolean {
         if (estadoSeleccionado == null) return true
-        val estadoEntity = Estado.fromLabel(entity.estado)
+        val estadoEntity = if (entity.estadoClor.equals("RESUELTA", ignoreCase = true)) {
+            Estado.RESUELTA
+        } else {
+            Estado.fromLabel(entity.estado)
+        }
         return estadoEntity == estadoSeleccionado
     }
 
