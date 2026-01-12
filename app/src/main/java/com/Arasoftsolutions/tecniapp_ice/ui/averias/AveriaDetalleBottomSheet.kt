@@ -63,6 +63,7 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
     private var finalInputsEnabled = false
     private var horaInicioEditable = false
     private var estadoActual: Estado = Estado.PENDIENTE
+    private var persistDraftOnDestroy = true
 
     private enum class ValidationContext { NONE, INICIAR, RESOLVER }
 
@@ -120,8 +121,9 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
 
         estadoActual = estadoInicial
         vm.resetMedidorEstado()
-        tipoSeleccionado = item.tipoAfectacion
-        clienteSeleccionado = item.cliente
+        val draft = vm.getDraft(item.id)
+        tipoSeleccionado = draft?.tipoAfectacion ?: item.tipoAfectacion
+        clienteSeleccionado = draft?.cliente ?: item.cliente
 
         b.btnCerrar.setOnClickListener { dismissAllowingStateLoss() }
         // TODO(Codex): Cerrar hoja únicamente mediante botón explícito
@@ -187,11 +189,13 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
         setupMedidorBusqueda()
 
         materialesSeleccionados.clear()
-        item.materialesDetalle.forEach { materialesSeleccionados[it.codigo] = it }
+        val materialesIniciales = draft?.materiales?.takeIf { it.isNotEmpty() } ?: item.materialesDetalle
+        materialesIniciales.forEach { materialesSeleccionados[it.codigo] = it }
         renderMateriales()
 
         tecnicosSeleccionados.clear()
-        item.tecnicosAtendieron.forEach { tecnico ->
+        val tecnicosIniciales = draft?.tecnicos?.takeIf { it.isNotEmpty() } ?: item.tecnicosAtendieron
+        tecnicosIniciales.forEach { tecnico ->
             val key = tecnico.cedula.takeIf { it.isNotBlank() } ?: tecnico.nombre
             if (key.isNotBlank()) tecnicosSeleccionados[key] = tecnico
         }
@@ -470,17 +474,15 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
 
     private fun bindResumenes() {
         val emptyValue = getString(R.string.averia_pdf_empty_value)
-        val bloqueadaPorClor = item.estadoClor.equals("RESUELTA", true)
-
         val causaDisplay = item.causa
         val obsDisplay = item.observaciones
 
         b.tvCausaActual.text = causaDisplay.ifBlank { emptyValue }
         b.tvObservacionesActuales.text = obsDisplay.ifBlank { emptyValue }
-        b.cardCausaClor.isVisible = bloqueadaPorClor && !item.causaClor.isNullOrBlank()
-        b.cardObservacionesClor.isVisible = bloqueadaPorClor && !item.observacionesClor.isNullOrBlank()
-        b.tvCausaClor.text = item.causaClor?.ifBlank { emptyValue }.orEmpty()
-        b.tvObservacionesClor.text = item.observacionesClor?.ifBlank { emptyValue }.orEmpty()
+        b.cardCausaClor.isVisible = true
+        b.cardObservacionesClor.isVisible = true
+        b.tvCausaClor.text = item.causaClor?.ifBlank { emptyValue } ?: emptyValue
+        b.tvObservacionesClor.text = item.observacionesClor?.ifBlank { emptyValue } ?: emptyValue
 
         val localizacion = item.localizacion?.takeIf { it.isNotBlank() } ?: emptyValue
         val detalleParts = buildList {
@@ -510,18 +512,19 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
     }
 
     private fun bindInputs() {
-        val vehiculo = item.vehiculo ?: vm.vehiculoPreferido()
-        b.etLocalizacion.setText(item.localizacion.orEmpty())
-        b.etCausa.setText(item.causa)
-        b.etObs.setText(item.observaciones)
+        val draft = vm.getDraft(item.id)
+        val vehiculo = draft?.vehiculo ?: item.vehiculo ?: vm.vehiculoPreferido()
+        b.etLocalizacion.setText(draft?.localizacion ?: item.localizacion.orEmpty())
+        b.etCausa.setText(draft?.causa ?: item.causa)
+        b.etObs.setText(draft?.observaciones ?: item.observaciones)
         b.actvVehiculo.setText(vehiculo.orEmpty(), false)
-        b.etHoraLlegada.setText(formatHora(item.horaLlegada))
-        b.etHoraInicio.setText(formatHora(item.horaAtencionInicio))
-        b.etHoraFin.setText(formatHora(item.horaAtencionFinal))
-        b.etKmLlegada.setText(item.kilometrajeLlegada?.toString().orEmpty())
-        b.etKmInicio.setText(item.kilometrajeInicio?.toString().orEmpty())
-        b.etKmFinal.setText(item.kilometrajeFinal?.toString().orEmpty())
-        b.etMedidor.setText(item.numeroMedidor.orEmpty())
+        b.etHoraLlegada.setText(draft?.horaLlegada ?: formatHora(item.horaLlegada))
+        b.etHoraInicio.setText(draft?.horaInicio ?: formatHora(item.horaAtencionInicio))
+        b.etHoraFin.setText(draft?.horaFinal ?: formatHora(item.horaAtencionFinal))
+        b.etKmLlegada.setText(draft?.kmLlegada ?: item.kilometrajeLlegada?.toString().orEmpty())
+        b.etKmInicio.setText(draft?.kmInicio ?: item.kilometrajeInicio?.toString().orEmpty())
+        b.etKmFinal.setText(draft?.kmFinal ?: item.kilometrajeFinal?.toString().orEmpty())
+        b.etMedidor.setText(draft?.numeroMedidor ?: item.numeroMedidor.orEmpty())
         b.tilCausa.error = null
         b.etCausa.doAfterTextChanged { b.tilCausa.error = null }
     }
@@ -727,11 +730,15 @@ private fun renderState() {
     val pertenece = uid != null && item.tecnicoUid == uid
     val asignadaAOtro = tieneAsignacion && (uid == null || item.tecnicoUid != uid)
 
-    // ✅ Regla clave: NO se rellena nada hasta que esté EN_ATENCION
-    // ✅ Solo se edita si está EN_ATENCION y pertenece (y no está asignada a otro, ni CLOR resuelta)
-    val puedeEditar = !clorResuelta && estado == Estado.EN_ATENCION && pertenece && !asignadaAOtro
+    val puedeEditarInicio = !clorResuelta && !asignadaAOtro &&
+        (estado == Estado.PENDIENTE || estado == Estado.ASIGNADA || (estado == Estado.EN_ATENCION && pertenece))
+    val puedeEditarCompleto = !clorResuelta && estado == Estado.EN_ATENCION && pertenece && !asignadaAOtro
 
-    applyInputStateForRules(estado = estado, puedeEditar = puedeEditar)
+    applyInputStateForRules(
+        estado = estado,
+        puedeEditarInicio = puedeEditarInicio,
+        puedeEditarCompleto = puedeEditarCompleto
+    )
 
     configureButtonsForRules(
         estado = estado,
@@ -741,35 +748,37 @@ private fun renderState() {
     )
 }
 
-private fun applyInputStateForRules(estado: Estado, puedeEditar: Boolean) {
-    // ✅ Inputs SOLO visibles cuando está EN_ATENCION (aunque sea readonly, vos decidís)
-    val showInputs = (estado == Estado.EN_ATENCION)
+private fun applyInputStateForRules(
+    estado: Estado,
+    puedeEditarInicio: Boolean,
+    puedeEditarCompleto: Boolean
+) {
+    val showInicio = estado == Estado.PENDIENTE || estado == Estado.ASIGNADA || estado == Estado.EN_ATENCION
+    val showCompleto = estado == Estado.EN_ATENCION
 
-    // Editable SOLO si puedeEditar
-    inputsEditable = puedeEditar
-    finalInputsEnabled = puedeEditar
-    horaInicioEditable = puedeEditar
+    inputsEditable = puedeEditarCompleto
+    finalInputsEnabled = puedeEditarCompleto
+    horaInicioEditable = puedeEditarInicio
 
-    // Mostrar/ocultar bloque inputs completo
-    b.toggleTipoAfectacion.isVisible = showInputs
-    b.toggleTipoAfectacion.isEnabled = puedeEditar
-    b.btnTipoCliente.isEnabled = puedeEditar
-    b.btnTipoSector.isEnabled = puedeEditar
-    b.tilTecnicoBuscar.isVisible = showInputs
-    b.tilMaterialBuscar.isVisible = showInputs
-    b.tilMedidor.isVisible = showInputs && tipoSeleccionado == TipoAfectacion.CLIENTE
-    b.tilLocalizacion.isVisible = showInputs
-    b.tilCausa.isVisible = showInputs
-    b.tilObs.isVisible = showInputs
-    b.tilVehiculo.isVisible = showInputs
-    b.tilHoraLlegada.isVisible = showInputs
-    b.tilHoraInicio.isVisible = showInputs
-    b.tilHoraFinal.isVisible = showInputs
-    b.tilKmLlegada.isVisible = showInputs
-    b.tilKmInicio.isVisible = showInputs
-    b.tilKmFinal.isVisible = showInputs
+    b.toggleTipoAfectacion.isVisible = showCompleto
+    b.toggleTipoAfectacion.isEnabled = puedeEditarCompleto
+    b.btnTipoCliente.isEnabled = puedeEditarCompleto
+    b.btnTipoSector.isEnabled = puedeEditarCompleto
+    b.tilTecnicoBuscar.isVisible = showCompleto
+    b.tilMaterialBuscar.isVisible = showCompleto
+    b.tilMedidor.isVisible = showCompleto && tipoSeleccionado == TipoAfectacion.CLIENTE
+    b.tilLocalizacion.isVisible = showCompleto
+    b.tilCausa.isVisible = showCompleto
+    b.tilObs.isVisible = showCompleto
+    b.tilHoraLlegada.isVisible = showCompleto
+    b.tilHoraFinal.isVisible = showCompleto
+    b.tilKmLlegada.isVisible = showCompleto
+    b.tilKmFinal.isVisible = showCompleto
 
-    // ✅ Habilitar/deshabilitar (si están visibles)
+    b.tilVehiculo.isVisible = showInicio
+    b.tilHoraInicio.isVisible = showInicio
+    b.tilKmInicio.isVisible = showInicio
+
     fun TextInputLayout.setEnabledDeep(enabled: Boolean) {
         isEnabled = enabled
         editText?.isEnabled = enabled
@@ -777,26 +786,26 @@ private fun applyInputStateForRules(estado: Estado, puedeEditar: Boolean) {
         editText?.isFocusableInTouchMode = enabled
     }
 
-    val enabled = puedeEditar
-    b.tilTecnicoBuscar.setEnabledDeep(enabled)
-    b.tilMaterialBuscar.setEnabledDeep(enabled)
-    b.tilMedidor.setEnabledDeep(enabled && tipoSeleccionado == TipoAfectacion.CLIENTE)
-    b.tilLocalizacion.setEnabledDeep(enabled)
-    b.tilCausa.setEnabledDeep(enabled)
-    b.tilObs.setEnabledDeep(enabled)
-    b.tilVehiculo.setEnabledDeep(enabled)
-    b.tilHoraLlegada.setEnabledDeep(enabled)
-    b.tilHoraInicio.setEnabledDeep(enabled)
-    b.tilHoraFinal.setEnabledDeep(enabled)
-    b.tilKmLlegada.setEnabledDeep(enabled)
-    b.tilKmInicio.setEnabledDeep(enabled)
-    b.tilKmFinal.setEnabledDeep(enabled)
+    b.tilTecnicoBuscar.setEnabledDeep(puedeEditarCompleto)
+    b.tilMaterialBuscar.setEnabledDeep(puedeEditarCompleto)
+    b.tilMedidor.setEnabledDeep(puedeEditarCompleto && tipoSeleccionado == TipoAfectacion.CLIENTE)
+    b.tilLocalizacion.setEnabledDeep(puedeEditarCompleto)
+    b.tilCausa.setEnabledDeep(puedeEditarCompleto)
+    b.tilObs.setEnabledDeep(puedeEditarCompleto)
+    b.tilHoraLlegada.setEnabledDeep(puedeEditarCompleto)
+    b.tilHoraFinal.setEnabledDeep(puedeEditarCompleto)
+    b.tilKmLlegada.setEnabledDeep(puedeEditarCompleto)
+    b.tilKmFinal.setEnabledDeep(puedeEditarCompleto)
 
-    b.actvTecnico.isEnabled = enabled
-    b.actvMaterial.isEnabled = enabled
-    b.actvVehiculo.isEnabled = enabled
-    b.chipGroupTecnicos.isEnabled = enabled
-    b.chipGroupMateriales.isEnabled = enabled
+    b.tilVehiculo.setEnabledDeep(puedeEditarInicio)
+    b.tilHoraInicio.setEnabledDeep(puedeEditarInicio)
+    b.tilKmInicio.setEnabledDeep(puedeEditarInicio)
+
+    b.actvTecnico.isEnabled = puedeEditarCompleto
+    b.actvMaterial.isEnabled = puedeEditarCompleto
+    b.actvVehiculo.isEnabled = puedeEditarInicio
+    b.chipGroupTecnicos.isEnabled = puedeEditarCompleto
+    b.chipGroupMateriales.isEnabled = puedeEditarCompleto
 
     renderTecnicos()
     renderMateriales()
@@ -836,7 +845,7 @@ private fun configureButtonsForRules(
             b.btnAtender.setOnClickListener {
                 val data = collectFormData(ValidationContext.INICIAR) ?: return@setOnClickListener
                 vm.onAtender(item, data)
-                dismissAllowingStateLoss()
+                applyAtencionLocal(data)
             }
 
             b.btnAnular.isVisible = true
@@ -862,7 +871,7 @@ private fun configureButtonsForRules(
                 if (!pertenece) return@setOnClickListener
                 val data = collectFormData(ValidationContext.INICIAR) ?: return@setOnClickListener
                 vm.onAtender(item, data)
-                dismissAllowingStateLoss()
+                applyAtencionLocal(data)
             }
 
             b.btnAsignar.isVisible = true
@@ -884,6 +893,7 @@ private fun configureButtonsForRules(
                 if (!pertenece) return@setOnClickListener
                 val data = collectFormData(ValidationContext.RESOLVER) ?: return@setOnClickListener
                 vm.onResolver(item, data)
+                persistDraftOnDestroy = false
                 dismissAllowingStateLoss()
             }
         }
@@ -1288,6 +1298,7 @@ b.btnExportar.isEnabled = pertenece
         b.tilKmFinal.error = null
         b.tilVehiculo.error = null
         b.tilObs.error = null
+        b.tilLocalizacion.error = null
 
         val horaLlegadaTexto = b.etHoraLlegada.text?.toString()?.trim()
         val horaInicioTexto = b.etHoraInicio.text?.toString()?.trim()
@@ -1301,6 +1312,10 @@ b.btnExportar.isEnabled = pertenece
         if (!horaFinalTexto.isNullOrBlank() && horaFinal == null) return null
         if (horaInicio != null && horaFinal != null && horaFinal <= horaInicio) {
             b.tilHoraFinal.error = getString(R.string.averia_error_hora_final_menor)
+            return null
+        }
+        if (horaLlegada != null && horaInicio != null && horaLlegada < horaInicio) {
+            b.tilHoraLlegada.error = getString(R.string.averia_error_hora_llegada_menor)
             return null
         }
 
@@ -1333,6 +1348,10 @@ b.btnExportar.isEnabled = pertenece
         }
         if (kmInicio != null && kmFinal != null && kmFinal < kmInicio) {
             b.tilKmFinal.error = getString(R.string.averia_error_km_final_menor)
+            return null
+        }
+        if (kmLlegada != null && kmInicio != null && kmLlegada < kmInicio) {
+            b.tilKmLlegada.error = getString(R.string.averia_error_km_llegada_menor)
             return null
         }
 
@@ -1377,6 +1396,10 @@ b.btnExportar.isEnabled = pertenece
         val medidorPoste = if (tipo == TipoAfectacion.CLIENTE) medidorSeleccionado?.poste?.trim() else null
         val localizacionTexto = b.etLocalizacion.text?.toString()?.trim()?.takeIf { it.isNotBlank() }
         val cliente = clienteSeleccionado ?: item.cliente
+        if (contexto == ValidationContext.RESOLVER && localizacionTexto.isNullOrBlank()) {
+            b.tilLocalizacion.error = getString(R.string.averia_error_localizacion_requerida)
+            return null
+        }
 
         return AveriaActionData(
             causa = causa,
@@ -1403,7 +1426,56 @@ b.btnExportar.isEnabled = pertenece
         )
     }
 
+    private fun buildDraft(): AveriaDraft {
+        fun TextInputEditText.readText(): String? =
+            text?.toString()?.trim()?.takeIf { it.isNotBlank() }
+
+        val materiales = materialesSeleccionados.values.filter { it.cantidad > 0 }
+        val tecnicos = tecnicosSeleccionados.values.toList()
+        return AveriaDraft(
+            localizacion = b.etLocalizacion.readText(),
+            causa = b.etCausa.readText(),
+            observaciones = b.etObs.readText(),
+            vehiculo = b.actvVehiculo.text?.toString()?.trim()?.takeIf { it.isNotBlank() },
+            horaLlegada = b.etHoraLlegada.readText(),
+            horaInicio = b.etHoraInicio.readText(),
+            horaFinal = b.etHoraFin.readText(),
+            kmLlegada = b.etKmLlegada.readText(),
+            kmInicio = b.etKmInicio.readText(),
+            kmFinal = b.etKmFinal.readText(),
+            tipoAfectacion = tipoSeleccionado,
+            numeroMedidor = b.etMedidor.readText(),
+            cliente = clienteSeleccionado,
+            materiales = materiales,
+            tecnicos = tecnicos
+        )
+    }
+
+    private fun applyAtencionLocal(data: AveriaActionData) {
+        val uid = data.atendidoPorUid ?: vm.usuarioActual.value?.uid ?: item.tecnicoUid
+        val nombre = data.atendidoPorNombre ?: item.tecnico
+        item = item.copy(
+            estado = "En atención",
+            tecnicoUid = uid,
+            tecnico = nombre,
+            vehiculo = data.vehiculo ?: item.vehiculo,
+            horaAtencionInicio = data.horaInicioMillis ?: item.horaAtencionInicio,
+            horaLlegada = data.horaLlegadaMillis ?: item.horaLlegada,
+            kilometrajeInicio = data.kilometrajeInicio ?: item.kilometrajeInicio,
+            kilometrajeLlegada = data.kilometrajeLlegada ?: item.kilometrajeLlegada
+        )
+        bindHeader(Estado.EN_ATENCION)
+        bindResumenes()
+        bindInputs()
+        renderState()
+    }
+
     override fun onDestroyView() {
+        if (persistDraftOnDestroy) {
+            vm.saveDraft(item.id, buildDraft())
+        } else {
+            vm.clearDraft(item.id)
+        }
         vm.resetMedidorEstado()
         _b = null
         super.onDestroyView()
