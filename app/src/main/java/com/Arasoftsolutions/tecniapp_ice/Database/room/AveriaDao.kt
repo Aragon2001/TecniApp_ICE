@@ -187,6 +187,9 @@ fun observe(
     @Query("DELETE FROM averias WHERE caseId = :caseId")
     suspend fun eliminarPorCaseId(caseId: String)
 
+    @Query("DELETE FROM averias WHERE caseId IN (:caseIds)")
+    suspend fun eliminarPorCaseIds(caseIds: List<String>)
+
     @Query(
         """
         UPDATE averias SET
