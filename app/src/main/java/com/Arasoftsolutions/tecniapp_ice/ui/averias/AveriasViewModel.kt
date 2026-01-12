@@ -510,7 +510,9 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
             ?: ui.horaAtencionInicio
             ?: ui.horaInicio
         val horaFinal = data.horaFinalMillis ?: ui.horaAtencionFinal ?: ui.horaFinal
+        val horaLlegada = data.horaLlegadaMillis ?: ui.horaLlegada
         val kmInicio = data.kilometrajeInicio ?: ui.kilometrajeInicio
+        val kmLlegada = data.kilometrajeLlegada ?: ui.kilometrajeLlegada
         val kmFinal = data.kilometrajeFinal ?: ui.kilometrajeFinal
         return data.copy(
             atendidoPorNombre = nombre,
@@ -523,7 +525,9 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
             cliente = cliente,
             horaInicioMillis = horaInicio,
             horaFinalMillis = horaFinal,
+            horaLlegadaMillis = horaLlegada,
             kilometrajeInicio = kmInicio,
+            kilometrajeLlegada = kmLlegada,
             kilometrajeFinal = kmFinal,
             tipoAfectacion = tipo,
             numeroMedidor = numeroMedidor,
@@ -561,7 +565,9 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
             materialesDetalle = materialesDetalle,
             horaAtencionInicio = entity.atencionHoraInicioMillis,
             horaAtencionFinal = entity.atencionHoraFinalMillis,
+            horaLlegada = entity.horaLlegadaMillis,
             kilometrajeInicio = entity.kilometrajeInicio,
+            kilometrajeLlegada = entity.kilometrajeLlegada,
             kilometrajeFinal = entity.kilometrajeFinal,
             horaInicio = entity.horaInicioMillis,
             horaFinal = entity.horaFinalMillis,
@@ -599,7 +605,9 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
             materialesDetalle = data.materiales,
             horaAtencionInicio = data.horaInicioMillis ?: base.horaAtencionInicio,
             horaAtencionFinal = data.horaFinalMillis ?: base.horaAtencionFinal,
+            horaLlegada = data.horaLlegadaMillis ?: base.horaLlegada,
             kilometrajeInicio = data.kilometrajeInicio ?: base.kilometrajeInicio,
+            kilometrajeLlegada = data.kilometrajeLlegada ?: base.kilometrajeLlegada,
             kilometrajeFinal = data.kilometrajeFinal ?: base.kilometrajeFinal,
             horaInicio = horaInicio,
             horaFinal = horaFinal,

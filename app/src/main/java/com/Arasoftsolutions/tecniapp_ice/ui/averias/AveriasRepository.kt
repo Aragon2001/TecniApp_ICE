@@ -90,7 +90,9 @@ class AveriasRepository(private val db: AppDatabase) {
                 horaFinalMillis = canonical.horaFinalMillis ?: existing.horaFinalMillis,
                 atencionHoraInicioMillis = canonical.atencionHoraInicioMillis ?: existing.atencionHoraInicioMillis,
                 atencionHoraFinalMillis = canonical.atencionHoraFinalMillis ?: existing.atencionHoraFinalMillis,
+                horaLlegadaMillis = canonical.horaLlegadaMillis ?: existing.horaLlegadaMillis,
                 kilometrajeInicio = canonical.kilometrajeInicio ?: existing.kilometrajeInicio,
+                kilometrajeLlegada = canonical.kilometrajeLlegada ?: existing.kilometrajeLlegada,
                 kilometrajeFinal = canonical.kilometrajeFinal ?: existing.kilometrajeFinal,
                 agenciaTag = if (canonical.agenciaTag.isNotBlank()) canonical.agenciaTag else existing.agenciaTag,
                 vehiculoAsignado = canonical.vehiculoAsignado ?: existing.vehiculoAsignado,
@@ -209,7 +211,9 @@ class AveriasRepository(private val db: AppDatabase) {
             horaFinalMillis = remote.horaFinalMillis ?: existing.horaFinalMillis,
             atencionHoraInicioMillis = remote.atencionHoraInicioMillis ?: existing.atencionHoraInicioMillis,
             atencionHoraFinalMillis = remote.atencionHoraFinalMillis ?: existing.atencionHoraFinalMillis,
+            horaLlegadaMillis = remote.horaLlegadaMillis ?: existing.horaLlegadaMillis,
             kilometrajeInicio = remote.kilometrajeInicio ?: existing.kilometrajeInicio,
+            kilometrajeLlegada = remote.kilometrajeLlegada ?: existing.kilometrajeLlegada,
             kilometrajeFinal = remote.kilometrajeFinal ?: existing.kilometrajeFinal,
             agenciaTag = remote.agenciaTag,
             vehiculoAsignado = existing.vehiculoAsignado,
@@ -489,7 +493,9 @@ return AveriaEntity(
     horaFinalMillis = map["horaFinalMillis"].asLongOrNull(),
     atencionHoraInicioMillis = map["atencionHoraInicioMillis"].asLongOrNull(),
     atencionHoraFinalMillis = map["atencionHoraFinalMillis"].asLongOrNull(),
+    horaLlegadaMillis = map["horaLlegadaMillis"].asLongOrNull(),
     kilometrajeInicio = map["kilometrajeInicio"].asDoubleOrNull(),
+    kilometrajeLlegada = map["kilometrajeLlegada"].asDoubleOrNull(),
     kilometrajeFinal = map["kilometrajeFinal"].asDoubleOrNull(),
     agenciaTag = map["agenciaTag"].asStringOrNull() ?: "", // ✅ ERA nullable, aquí no puede
     vehiculoAsignado = map["vehiculoAsignado"].asStringOrNull(),
@@ -652,6 +658,7 @@ return AveriaEntity(
         val horaFinal = data.horaFinalMillis
             ?: base?.atencionHoraFinalMillis
             ?: base?.horaFinalMillis
+        val horaLlegada = data.horaLlegadaMillis ?: base?.horaLlegadaMillis
         val resumen = MaterialesSerializer.toSummary(data.materiales).ifBlank { null }
         val detalle = MaterialesSerializer.toJson(data.materiales)
         val tecnicosJson = TecnicosSerializer.toJson(data.tecnicos)
@@ -664,7 +671,9 @@ return AveriaEntity(
             obs = data.observaciones,
             horaInicio = horaInicio,
             horaFinal = horaFinal,
+            horaLlegada = horaLlegada,
             kmInicio = data.kilometrajeInicio,
+            kmLlegada = data.kilometrajeLlegada,
             kmFinal = data.kilometrajeFinal,
             atendidoPorUid = data.atendidoPorUid,
             atendidoPorNombre = data.atendidoPorNombre,
@@ -697,6 +706,7 @@ return AveriaEntity(
         val horaFinal = data.horaFinalMillis
             ?: base?.atencionHoraFinalMillis
             ?: base?.horaFinalMillis
+        val horaLlegada = data.horaLlegadaMillis ?: base?.horaLlegadaMillis
         val resumen = MaterialesSerializer.toSummary(data.materiales).ifBlank { null }
         val detalle = MaterialesSerializer.toJson(data.materiales)
         val tecnicosJson = TecnicosSerializer.toJson(data.tecnicos)
@@ -709,7 +719,9 @@ return AveriaEntity(
             obs = data.observaciones,
             horaInicio = horaInicio,
             horaFinal = horaFinal,
+            horaLlegada = horaLlegada,
             kmInicio = data.kilometrajeInicio,
+            kmLlegada = data.kilometrajeLlegada,
             kmFinal = data.kilometrajeFinal,
             atendidoPorUid = data.atendidoPorUid,
             atendidoPorNombre = data.atendidoPorNombre,
@@ -790,7 +802,9 @@ private suspend fun pushToFirebase(entity: AveriaEntity) {
         "horaFinalMillis" to horaFinalMillis,
         "atencionHoraInicioMillis" to atencionHoraInicioMillis,
         "atencionHoraFinalMillis" to atencionHoraFinalMillis,
+        "horaLlegadaMillis" to horaLlegadaMillis,
         "kilometrajeInicio" to kilometrajeInicio,
+        "kilometrajeLlegada" to kilometrajeLlegada,
         "kilometrajeFinal" to kilometrajeFinal,
         "agenciaTag" to agenciaTag,
         "vehiculoAsignado" to vehiculoAsignado,
@@ -831,9 +845,11 @@ private fun AveriaEntity.toFirebaseAppPayload(): Map<String, Any?> = hashMapOf(
     "horaFinalMillis" to horaFinalMillis,
     "atencionHoraInicioMillis" to atencionHoraInicioMillis,
     "atencionHoraFinalMillis" to atencionHoraFinalMillis,
+    "horaLlegadaMillis" to horaLlegadaMillis,
 
     // ===== VEHÍCULO / KILOMETRAJE =====
     "kilometrajeInicio" to kilometrajeInicio,
+    "kilometrajeLlegada" to kilometrajeLlegada,
     "kilometrajeFinal" to kilometrajeFinal,
     "vehiculoAsignado" to vehiculoAsignado,
 
@@ -918,6 +934,7 @@ private fun AveriaEntity.toFirebaseAppPayload(): Map<String, Any?> = hashMapOf(
         fechaInicioMillis = remote.fechaInicioMillis,
         horaInicioMillis = remote.horaInicioMillis,
         horaFinalMillis = remote.horaFinalMillis,
+        horaLlegadaMillis = existing.horaLlegadaMillis,
 
         // ==========================================================
         // ✅ APP/TÉCNICO: NO se pisan con remote (CLOR no manda esto)
@@ -931,6 +948,7 @@ private fun AveriaEntity.toFirebaseAppPayload(): Map<String, Any?> = hashMapOf(
         atencionHoraInicioMillis = existing.atencionHoraInicioMillis,
         atencionHoraFinalMillis = existing.atencionHoraFinalMillis,
         kilometrajeInicio = existing.kilometrajeInicio,
+        kilometrajeLlegada = existing.kilometrajeLlegada,
         kilometrajeFinal = existing.kilometrajeFinal,
         vehiculoAsignado = existing.vehiculoAsignado,
         tecnicoAsignadoUid = existing.tecnicoAsignadoUid,
@@ -1030,7 +1048,9 @@ private fun AveriaEntity.toFirebaseAppPayload(): Map<String, Any?> = hashMapOf(
                                     horaFinalMillis = remote.horaFinalMillis,
                                     atencionHoraInicioMillis = remote.atencionHoraInicioMillis,
                                     atencionHoraFinalMillis = remote.atencionHoraFinalMillis,
+                                    horaLlegadaMillis = remote.horaLlegadaMillis,
                                     kilometrajeInicio = remote.kilometrajeInicio,
+                                    kilometrajeLlegada = remote.kilometrajeLlegada,
                                     kilometrajeFinal = remote.kilometrajeFinal,
                                     vehiculoAsignado = remote.vehiculoAsignado,
                                     tecnicoAsignadoUid = remote.tecnicoAsignadoUid,
