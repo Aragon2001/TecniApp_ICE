@@ -909,7 +909,16 @@ b.btnExportar.isEnabled = pertenece
             }
         }
 
-        Estado.ANULADA -> Unit
+        Estado.ANULADA -> {
+            b.btnAsignar.isVisible = true
+            b.btnAsignar.text = getString(R.string.averia_revertir_pendiente)
+            b.btnAsignar.isEnabled = pertenece
+            b.btnAsignar.setOnClickListener {
+                if (!pertenece) return@setOnClickListener
+                vm.onRevertirAnulada(item)
+                dismissAllowingStateLoss()
+            }
+        }
     }
 }
 
