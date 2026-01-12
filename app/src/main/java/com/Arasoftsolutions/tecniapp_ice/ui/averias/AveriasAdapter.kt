@@ -24,6 +24,7 @@ class AveriasAdapter(
     private val onAsignar: (AveriaUI) -> Unit,
     private val onAtender: (AveriaUI) -> Unit,
     private val onResolver: (AveriaUI) -> Unit,
+    private val onRevertir: (AveriaUI) -> Unit,
 ) : RecyclerView.Adapter<AveriasAdapter.VH>() {
 
     private val items = mutableListOf<AveriaUI>()
@@ -393,7 +394,13 @@ class AveriasAdapter(
                 }
 
                 Estado.ANULADA -> {
-                    btnAsignar.isVisible = false
+                    btnAsignar.apply {
+                        text = context.getString(R.string.averia_revertir_pendiente)
+                        isEnabled = pertenece
+                        isVisible = true
+                        alpha = if (pertenece) 1f else 0.45f
+                        setOnClickListener { onRevertir(item) }
+                    }
                     btnAtender.isVisible = false
                     btnResolver.isVisible = false
                 }

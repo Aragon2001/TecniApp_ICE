@@ -827,6 +827,16 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    fun onRevertirAnulada(ui: AveriaUI) {
+        viewModelScope.launch {
+            if (Estado.fromLabel(ui.estado) != Estado.ANULADA) return@launch
+            ensurePropietario(ui) ?: return@launch
+            repo.revertirAPendiente(ui.id)
+            _messages.tryEmit(getApplication<Application>().getString(R.string.averia_exito_revertida))
+            syncNow()
+        }
+    }
+
     fun onResolver(ui: AveriaUI, data: AveriaActionData) {
         if (data.causa.isBlank()) {
             _messages.tryEmit(getApplication<Application>().getString(R.string.averia_error_causa_requerida))
