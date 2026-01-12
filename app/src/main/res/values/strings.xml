@@ -354,6 +354,8 @@ Cliente: %4$s</string>
     <string name="averia_pdf_table_label_end_time">Fin de atención</string>
     <string name="averia_pdf_table_label_kilometers">Kilometraje recorrido</string>
     <string name="averia_pdf_table_label_kilometers_arrival">Kilometraje de llegada</string>
+    <string name="averia_pdf_table_label_kilometers_start">Kilometraje inicial</string>
+    <string name="averia_pdf_table_label_kilometers_end">Kilometraje final</string>
     <string name="averia_pdf_table_label_region">Región</string>
     <string name="averia_pdf_table_label_agency">Agencia</string>
     <string name="averia_pdf_table_label_client">Cliente</string>
