@@ -102,15 +102,15 @@ class AveriasAdapter(
             // ===============================
             val currentUid = currentUserUid
             val bloqueadaPorClor = item.estadoClor.equals("RESUELTA", ignoreCase = true)
-            val asignadaAOtro = !item.tecnicoUid.isNullOrBlank() && (currentUid == null || item.tecnicoUid != currentUid)
-            val pertenece = !asignadaAOtro && !item.tecnicoUid.isNullOrBlank()
+            val estadoEnum = Estado.fromLabel(item.estado)
+            val ownerUid = item.ownerUidFor(estadoEnum)
+            val asignadaAOtro = !ownerUid.isNullOrBlank() && (currentUid == null || ownerUid != currentUid)
+            val pertenece = !asignadaAOtro && !ownerUid.isNullOrBlank()
             val readOnly = bloqueadaPorClor || asignadaAOtro
-
 
             tvTitulo.text = item.descripcion
 
             // Chip: color por estado visible, texto informativo
-            val estadoEnum = Estado.fromLabel(item.estado)
             val estadoParaColor = if (bloqueadaPorClor) Estado.RESUELTA else estadoEnum
 
             chipEstado.text = when {
