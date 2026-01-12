@@ -14,6 +14,7 @@ import androidx.lifecycle.lifecycleScope
 import com.Arasoftsolutions.tecniapp_ice.Database.room.AppDatabase
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
 import com.Arasoftsolutions.tecniapp_ice.Database.sync.Synchronizer
+import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriaNotificationPreferences
 import com.Arasoftsolutions.tecniapp_ice.ui.modal.SyncDialogFragment
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasRepository
 import com.google.android.material.button.MaterialButton
@@ -22,6 +23,7 @@ import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.messaging.FirebaseMessaging
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -188,85 +190,106 @@ class LoginActivity : AppCompatActivity() {
         signInButton.isEnabled = false
 
         auth.signInWithEmailAndPassword(email, password)
-            .addOnCompleteListener { task ->
-                signInButton.isEnabled = true
-                if (!task.isSuccessful) {
-                    handleAuthError(task.exception)
-                    return@addOnCompleteListener
-                }
+    .addOnCompleteListener { task ->
+        signInButton.isEnabled = true
+        if (!task.isSuccessful) {
+            handleAuthError(task.exception)
+            return@addOnCompleteListener
+        }
 
-                // Persistencia de estado de sesión (dos ubicaciones por compatibilidad)
-                markLoggedIn()
+        // Ya hay usuario autenticado
+        val uid = auth.currentUser?.uid
+        if (uid.isNullOrBlank()) {
+            Toast.makeText(this, "No se pudo obtener el UID del usuario.", Toast.LENGTH_LONG).show()
+            return@addOnCompleteListener
+        }
 
-                val uid = auth.currentUser?.uid ?: run {
-                    Toast.makeText(this, "No se pudo obtener el UID del usuario.", Toast.LENGTH_LONG).show()
-                    return@addOnCompleteListener
-                }
+        // Persistencia de estado de sesión (compatibilidad)
+        markLoggedIn()
 
-                // Diálogo de progreso de sincronización
-                val dlg = SyncDialogFragment.show(supportFragmentManager).apply {
-                    setHeader("Sincronizando…")
-                    update(0, 0, "Preparando…")
-                }
+        // ✅ 1) Guardar token FCM en RTDB en el login
+        saveFcmTokenOnLogin(uid)
 
-                lifecycleScope.launch {
+        // ✅ 2) Subir filtros de notificación (si el usuario los tiene configurados)
+        AveriaNotificationPreferences.pushFiltersToFirebase(this)
+
+        // Diálogo de progreso de sincronización
+        val dlg = SyncDialogFragment.show(supportFragmentManager).apply {
+            setHeader("Sincronizando…")
+            update(0, 0, "Preparando…")
+        }
+
+        lifecycleScope.launch {
+            try {
+                val user = withContext(Dispatchers.IO) {
                     try {
-                        // 1) Perfil en Room desde RTDB. Si no existe en RTDB, se crea mínimo y se reintenta.
-                        val user = withContext(Dispatchers.IO) {
-                            try {
-                                roomRepository.upsertUserFromFirebase(uid)
-                            } catch (_: Exception) {
-                                createUserRtdbIfMissing(uid, email)
-                                roomRepository.upsertUserFromFirebase(uid)
-                            }
-                        }
-
-                        // 2) Sincronización de subregión (los datos operativos dependen de esto)
-                        val subId = user.subregion
-                        synchronizer.syncSubregion(
-                            subId.toString(),
-                            onSyncStart = { message ->
-                                if (!isFinishing && !isDestroyed) {
-                                    runOnUiThread { dlg.setHeader(message) }
-                                }
-                            },
-                            onSyncProgress = { done, total, msg ->
-                                if (!isFinishing && !isDestroyed) {
-                                    runOnUiThread { dlg.update(done, total, msg ?: "") }
-                                }
-                            },
-                            onSyncSuccess = {
-                                if (!isFinishing && !isDestroyed) {
-                                    dlg.dismissAllowingStateLoss()
-                                    Toast.makeText(
-                                        this@LoginActivity,
-                                        "Inicio de sesión exitoso",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                    startActivity(Intent(this@LoginActivity, ActivityMain::class.java))
-                                    finish()
-                                }
-                            },
-                            onSyncError = { err ->
-                                if (!isFinishing && !isDestroyed) {
-                                    dlg.dismissWithError(err.message ?: "Error de sincronización") { signIn() }
-                                }
-                            }
-                        )
-                    } catch (e: Exception) {
-                        if (!isFinishing && !isDestroyed) {
-                            dlg.dismissWithError(e.localizedMessage ?: "Error inesperado") { signIn() }
-                        }
-                        Log.e(TAG, "Error en sincronización inicial: ${e.message}", e)
+                        roomRepository.upsertUserFromFirebase(uid)
+                    } catch (_: Exception) {
+                        createUserRtdbIfMissing(uid, email)
+                        roomRepository.upsertUserFromFirebase(uid)
                     }
                 }
+
+                val subId = user.subregion
+                synchronizer.syncSubregion(
+                    subId.toString(),
+                    onSyncStart = { message ->
+                        if (!isFinishing && !isDestroyed) runOnUiThread { dlg.setHeader(message) }
+                    },
+                    onSyncProgress = { done, total, msg ->
+                        if (!isFinishing && !isDestroyed) runOnUiThread { dlg.update(done, total, msg ?: "") }
+                    },
+                    onSyncSuccess = {
+                        if (!isFinishing && !isDestroyed) {
+                            dlg.dismissAllowingStateLoss()
+                            Toast.makeText(this@LoginActivity, "Inicio de sesión exitoso", Toast.LENGTH_SHORT).show()
+                            startActivity(Intent(this@LoginActivity, ActivityMain::class.java))
+                            finish()
+                        }
+                    },
+                    onSyncError = { err ->
+                        if (!isFinishing && !isDestroyed) {
+                            dlg.dismissWithError(err.message ?: "Error de sincronización") { signIn() }
+                        }
+                    }
+                )
+            } catch (e: Exception) {
+                if (!isFinishing && !isDestroyed) {
+                    dlg.dismissWithError(e.localizedMessage ?: "Error inesperado") { signIn() }
+                }
+                Log.e(TAG, "Error en sincronización inicial: ${e.message}", e)
             }
-            .addOnFailureListener { ex ->
-                signInButton.isEnabled = true
-                Toast.makeText(this, "Error de autenticación: ${ex.message}", Toast.LENGTH_SHORT).show()
-                Log.e(TAG, "Auth failure: ${ex.message}", ex)
-            }
+        }
     }
+    .addOnFailureListener { ex ->
+        signInButton.isEnabled = true
+        Toast.makeText(this, "Error de autenticación: ${ex.message}", Toast.LENGTH_SHORT).show()
+        Log.e(TAG, "Auth failure: ${ex.message}", ex)
+    }
+
+
+
+    }
+
+
+    private fun saveFcmTokenOnLogin(uid: String) {
+    FirebaseMessaging.getInstance().token
+        .addOnSuccessListener { token ->
+            if (token.isNullOrBlank()) return@addOnSuccessListener
+
+            FirebaseDatabase.getInstance()
+                .getReference("usuarios")
+                .child(uid)
+                .child("fcmToken")
+                .setValue(token)
+                .addOnFailureListener { e ->
+                    Log.e(TAG, "No se pudo guardar fcmToken en login: ${e.message}", e)
+                }
+        }
+        .addOnFailureListener { e ->
+            Log.w(TAG, "No se pudo obtener token FCM en login: ${e.message}", e)
+        }
+}
 
     /**
      * Marcado de sesión en dos preferencias:

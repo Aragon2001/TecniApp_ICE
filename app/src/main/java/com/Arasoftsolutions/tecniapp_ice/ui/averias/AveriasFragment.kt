@@ -64,6 +64,17 @@ class AveriasFragment : Fragment() {
     private var notificationMenuItem: MenuItem? = null
     // TODO(Codex): Guardar referencia al ítem de menú para refrescar el icono de notificaciones
 
+
+    override fun onStart() {
+    super.onStart()
+    AveriasForegroundTracker.isAveriasVisible = true
+}
+
+override fun onStop() {
+    AveriasForegroundTracker.isAveriasVisible = false
+    super.onStop()
+}
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _b = FragmentAveriasBinding.inflate(inflater, container, false)
         return b.root

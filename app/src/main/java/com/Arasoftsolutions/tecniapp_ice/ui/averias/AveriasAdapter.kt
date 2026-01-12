@@ -13,7 +13,6 @@ import androidx.core.view.isVisible
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.Arasoftsolutions.tecniapp_ice.R
-import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriaStaticMapProvider
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.chip.Chip
 import java.text.DateFormat
@@ -29,6 +28,12 @@ class AveriasAdapter(
 
     private val items = mutableListOf<AveriaUI>()
 
+    /**
+     * ✅ UID del técnico logueado (lo setea el Fragment/ViewModel).
+     * Se usa para:
+     * - permitir acciones solo al dueño
+     * - bloquear si está asignada a otro técnico
+     */
     var currentUserUid: String? = null
         set(value) {
             field = value
@@ -89,8 +94,30 @@ class AveriasAdapter(
 
         fun bind(item: AveriaUI) {
             val context = itemView.context
+
+            // ===============================
+            // Reglas globales de bloqueo
+            // - Resuelta por CLOR: solo lectura (bloqueo total)
+            // - Asignada a otro técnico: se ve, pero sin acciones
+            // ===============================
+            val currentUid = currentUserUid
+            val bloqueadaPorClor = item.estadoClor.equals("RESUELTA", ignoreCase = true)
+            val asignadaAOtro = !item.tecnicoUid.isNullOrBlank() && (currentUid == null || item.tecnicoUid != currentUid)
+            val pertenece = !asignadaAOtro && !item.tecnicoUid.isNullOrBlank()
+            val readOnly = bloqueadaPorClor || asignadaAOtro
+
+
             tvTitulo.text = item.descripcion
-            chipEstado.text = item.estado
+
+            // Chip: color por estado visible, texto informativo
+            val estadoEnum = Estado.fromLabel(item.estado)
+            val estadoParaColor = if (bloqueadaPorClor) Estado.RESUELTA else estadoEnum
+
+            chipEstado.text = when {
+                bloqueadaPorClor -> "Resuelta (CLOR)"
+                asignadaAOtro && estadoEnum == Estado.ASIGNADA -> "Asignada (Otro técnico)"
+                else -> item.estado
+            }
             chipEstado.isCheckable = false
             chipEstado.isClickable = false
 
@@ -111,8 +138,12 @@ class AveriasAdapter(
                 isVisible = true
             }
 
-            tvCausa.renderLabel(R.string.averia_label_causa, item.causa)
-            tvObs.renderLabel(R.string.averia_label_observaciones, item.observaciones)
+            // En lista mostramos lo del técnico normalmente.
+            // Si CLOR cerró, priorizamos el texto del CLOR (si viene) para reflejar la verdad del centro.
+            val causaDisplay = if (bloqueadaPorClor) item.causaClor ?: item.causa else item.causa
+            val obsDisplay = if (bloqueadaPorClor) item.observacionesClor ?: item.observaciones else item.observaciones
+            tvCausa.renderLabel(R.string.averia_label_causa, causaDisplay)
+            tvObs.renderLabel(R.string.averia_label_observaciones, obsDisplay)
 
             val asignado = if (item.tecnico.isBlank()) {
                 context.getString(R.string.averia_sin_asignar)
@@ -120,8 +151,10 @@ class AveriasAdapter(
                 item.tecnico
             }
             tvAsignado.renderLabel(R.string.averia_label_asignado, asignado)
+
             val atendidoDisplay = item.resolvedAtendidoDisplay(emptyValue)
             tvAtendido.renderLabel(R.string.averia_label_atendido, atendidoDisplay)
+
             tvVehiculo.renderLabel(R.string.averia_label_vehiculo, item.vehiculo)
             tvNise.renderLabel(R.string.averia_label_nise, item.nise)
             tvRegion.renderLabel(R.string.averia_label_region, item.region)
@@ -137,13 +170,6 @@ class AveriasAdapter(
             } else {
                 tvKilometraje.isVisible = false
             }
-            tvAsignado.renderLabel(R.string.averia_label_asignado, asignado)
-
-            tvAtendido.renderLabel(R.string.averia_label_atendido, atendidoDisplay)
-            tvVehiculo.renderLabel(R.string.averia_label_vehiculo, item.vehiculo)
-            tvNise.renderLabel(R.string.averia_label_nise, item.nise)
-            tvRegion.renderLabel(R.string.averia_label_region, item.region)
-            tvAgencia.renderLabel(R.string.averia_label_agencia, item.agencia)
 
             tvCliente?.let { label ->
                 val cliente = item.cliente?.takeIf { it.isNotBlank() } ?: emptyValue
@@ -196,9 +222,7 @@ class AveriasAdapter(
                 label.renderLabel(R.string.averia_label_localizacion, content)
             }
 
-            tvDireccion?.let { label ->
-                label.renderLabel(R.string.averia_label_direccion, item.direccion, hideWhenEmpty = true)
-            }
+            tvDireccion?.renderLabel(R.string.averia_label_direccion, item.direccion, hideWhenEmpty = true)
 
             val fechaEvento = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT)
                 .format(Date(item.fechaMillis))
@@ -227,8 +251,8 @@ class AveriasAdapter(
                 }
             }
 
-            val estadoEnum = Estado.fromLabel(item.estado)
-            val chipColor = when (estadoEnum) {
+            // ✅ Colores: si CLOR resolvió, se pinta como RESUELTA (verde)
+            val chipColor = when (estadoParaColor) {
                 Estado.PENDIENTE -> ContextCompat.getColor(context, R.color.chip_pendiente)
                 Estado.ASIGNADA -> ContextCompat.getColor(context, R.color.chip_asignada)
                 Estado.EN_ATENCION -> ContextCompat.getColor(context, R.color.chip_en_atencion)
@@ -238,15 +262,18 @@ class AveriasAdapter(
             chipEstado.chipBackgroundColor = ColorStateList.valueOf(chipColor)
             chipEstado.setTextColor(ContextCompat.getColor(context, android.R.color.white))
 
-            val hasCoords = item.lat != null && item.lng != null && (item.lat != 0.0 || item.lng != 0.0)
+            // ✅ Coordenadas (evita warning “always true”)
+            val lat = item.lat
+            val lng = item.lng
+            val hasCoords = !(lat == 0.0 && lng == 0.0)
+
             mapContainer.isVisible = hasCoords
             btnVerMapa.isVisible = hasCoords
             btnVerMapa.isEnabled = hasCoords
+
             if (hasCoords) {
-                val mapLabel = item.direccion?.takeIf { it.isNotBlank() }
-                    ?: item.agencia
-                    ?: context.getString(R.string.averia_notificacion_map_placeholder)
-                val mapUrl = AveriaStaticMapProvider.buildUrl(context, item.lat, item.lng, mapLabel)
+                val mapLabel = item.direccion?.takeIf { it.isNotBlank() } ?: item.agencia
+                val mapUrl = AveriaStaticMapProvider.buildUrl(context, lat, lng, mapLabel)
                 if (mapUrl != null) {
                     AveriaStaticMapProvider.loadInto(context, imgMapa, mapUrl)
                 } else {
@@ -265,29 +292,37 @@ class AveriasAdapter(
                 mapContainer.isFocusable = false
                 mapContainer.setOnClickListener(null)
             }
+
             btnVerMapa.setOnClickListener { onVerMapa(item) }
 
+            // ✅ Ver detalle SIEMPRE (aunque sea readOnly)
             itemView.setOnClickListener { onVerDetalle(item) }
+
+            // ✅ Los callbacks se mantienen, pero los botones se bloquean abajo si hace falta
             btnAsignar.setOnClickListener { onAsignar(item) }
             btnAtender.setOnClickListener { onAtender(item) }
             btnResolver.setOnClickListener { onResolver(item) }
 
-            val currentUid = currentUserUid
-            val pertenece = currentUid != null && item.tecnicoUid == currentUid
-
+            // ===============================
+            // Botones por estado (flujo normal)
+            // ===============================
             when (estadoEnum) {
-                Estado.PENDIENTE -> {
-                    btnAsignar.apply {
-                        text = context.getString(R.string.averia_asignar)
-                        isEnabled = true
-                        isVisible = true
-                    }
-                    btnAtender.apply {
-                        isVisible = false
-                        isEnabled = false
-                    }
-                    btnResolver.isVisible = false
+               Estado.PENDIENTE -> {
+                btnAsignar.apply {
+                    text = context.getString(R.string.averia_asignar)
+                    isEnabled = true
+                    isVisible = true
+                    alpha = 1f
                 }
+                btnAtender.apply {
+                    text = context.getString(R.string.averia_atender)
+                    isEnabled = true
+                    isVisible = true
+                    alpha = 1f
+                }
+                btnResolver.isVisible = false
+            }
+
                 Estado.ASIGNADA -> {
                     btnAsignar.apply {
                         text = context.getString(R.string.averia_eliminar_asignacion)
@@ -322,16 +357,50 @@ class AveriasAdapter(
                     btnAtender.isVisible = false
                     btnResolver.apply {
                         text = context.getString(R.string.averia_exportar_pdf)
-                        isEnabled = true
-                        isVisible = true
+                        isEnabled = pertenece
+                        isVisible = pertenece   // <- si querés que ni aparezca cuando no pertenece
+                        alpha = if (pertenece) 1f else 0.45f
                     }
                 }
+
                 Estado.ANULADA -> {
                     btnAsignar.isVisible = false
                     btnAtender.isVisible = false
                     btnResolver.isVisible = false
                 }
             }
+
+            // ==========================================================
+            // Bloqueo final (NO ocultamos la avería, solo deshabilitamos)
+            // - CLOR resuelta: oculta acciones para evitar confusión
+            // - Asignada a otro: mantiene botones visibles según estado, pero disabled
+            // ==========================================================
+            if (bloqueadaPorClor) {
+                // Caso cerrado por CLOR: en lista no se permite ninguna acción.
+                btnAsignar.isVisible = false
+                btnAtender.isVisible = false
+                btnResolver.isVisible = false
+            } else if (asignadaAOtro) {
+                // Asignada a otro técnico: se ve, pero sin acciones.
+                btnAsignar.isEnabled = false
+                btnAtender.isEnabled = false
+                btnResolver.isEnabled = false
+
+                // Señal visual suave
+                btnAsignar.alpha = if (btnAsignar.isVisible) 0.45f else 1f
+                btnAtender.alpha = if (btnAtender.isVisible) 0.45f else 1f
+                btnResolver.alpha = if (btnResolver.isVisible) 0.45f else 1f
+            } else {
+                // Normal
+                btnAsignar.alpha = 1f
+                btnAtender.alpha = 1f
+                btnResolver.alpha = 1f
+            }
+
+            // readOnly está calculado arriba por claridad; no se usa directo aquí,
+            // pero sirve para debug y para futuras decisiones UI.
+            @Suppress("UNUSED_VARIABLE")
+            val _readOnly = readOnly
         }
     }
 }

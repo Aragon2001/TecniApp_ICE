@@ -1,6 +1,6 @@
 package com.Arasoftsolutions.tecniapp_ice.registro
 
-import MailSender
+
 import android.os.Bundle
 import android.text.TextUtils
 import android.text.method.PasswordTransformationMethod
@@ -26,11 +26,14 @@ import com.google.firebase.database.FirebaseDatabase
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import java.util.Locale
-import kotlin.random.Random
+import com.google.firebase.functions.FirebaseFunctions
+
 
 class Paso1Fragment : Fragment() {
 
     private lateinit var viewModel: RegistroViewModel
+    private val functions by lazy { FirebaseFunctions.getInstance() }
+
 
     // UI
     private lateinit var etPhoneNumber: TextInputEditText
@@ -197,10 +200,19 @@ class Paso1Fragment : Fragment() {
                 viewModel.setEmail(email)
                 viewModel.setPassword(password)
 
-                // Enviar código de verificación y pasar a Paso 2
-                val code = generateCode()
-                saveVerificationCode(email, code)
-                sendVerificationEmail(email, code)
+               // Llamar Cloud Function: sendVerificationCode(email)
+functions
+    .getHttpsCallable("sendVerificationCode")
+    .call(mapOf("email" to email))
+    .addOnSuccessListener {
+        Toast.makeText(requireContext(), "Te enviamos un código a $email", Toast.LENGTH_SHORT).show()
+        (activity as? RegistroActivity)?.goToNextStep(1) // Paso 2
+    }
+    .addOnFailureListener { e ->
+        Log.e("Paso1Fragment", "Error enviando correo de verificación", e)
+        Toast.makeText(requireContext(), "No se pudo enviar el código. Intenta de nuevo.", Toast.LENGTH_LONG).show()
+    }
+
 
                 Toast.makeText(requireContext(), "Te enviamos un código a $email", Toast.LENGTH_SHORT).show()
                 (activity as? RegistroActivity)?.goToNextStep(1) // avanza a Paso 2
@@ -219,95 +231,5 @@ class Paso1Fragment : Fragment() {
         // Si tienes progress en el layout, muéstralo/ocúltalo aquí.
     }
 
-    // ========= Verificación por correo =========
-    private fun generateCode(): String = Random.nextInt(100000, 999999).toString()
 
-    /**
-     * Guarda el código con expiración (5 min) bajo /verificationCodes/{emailKey}
-     * Estructura:
-     * {
-     *   code: "123456",
-     *   createdAt: 1690000000000,
-     *   expiresAt: 1690000300000
-     * }
-     */
-    private fun saveVerificationCode(email: String, verificationCode: String) {
-        val now = System.currentTimeMillis()
-        val payload = mapOf(
-            "code" to verificationCode,
-            "createdAt" to now,
-            "expiresAt" to (now + 300_000L) // 5 minutos
-        )
-
-        FirebaseDatabase
-            .getInstance("https://tecniapp-ice-user.firebaseio.com/")
-            .reference.child("verificationCodes")
-            .child(emailKey(email))
-            .setValue(payload)
-    }
-
-    private fun sendVerificationEmail(email: String, verificationCode: String) {
-        if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
-            Log.e("Registro", "Correo no válido: $email")
-            return
-        }
-
-        val message = """
-        <html>
-            <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Arial, sans-serif; background-color: #f4f7fc;">
-                <table align="center" width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; background-color: #ffffff; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: 40px auto;">
-                    <tr>
-                        <td style="padding: 20px; text-align: center;">
-                            <!-- Imagen del ICE (simulada con logo institucional) -->
-                            <img src="https://i.imgur.com/tGUD2Vo.png" alt="ICE Logo" width="100" style="margin-bottom: 20px;">
-                            <h2 style="color: #004C8C; margin-bottom: 8px;">TecniApp ICE</h2>
-                            <p style="color: #555; font-size: 16px; margin-top: 0;">Verificación de cuenta</p>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 20px;">
-                            <p style="color: #333; font-size: 15px;">
-                                Gracias por registrarte en <strong>TecniApp ICE</strong>. Tu código de verificación es el siguiente:
-                            </p>
-                            <div style="text-align: center; background-color: #0075C9; color: #ffffff; font-size: 28px; font-weight: bold; padding: 16px 0; border-radius: 8px; margin: 24px 0; letter-spacing: 3px;">
-                                $verificationCode
-                            </div>
-                            <p style="font-size: 14px; color: #555;">Este código es válido por <strong>5 minutos</strong>. No lo compartas con nadie.</p>
-                            <p style="font-size: 14px; color: #555;">Si no realizaste esta solicitud, puedes ignorar este mensaje.</p>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 10px 20px;">
-                            <hr style="border: none; border-top: 1px solid #eee;">
-                            <p style="text-align: center; font-size: 12px; color: #999; margin-top: 14px;">
-                                © 2025 Arasoft Solutions · Todos los derechos reservados<br>
-                                Este correo fue generado automáticamente por TecniApp ICE
-                            </p>
-                        </td>
-                    </tr>
-                </table>
-            </body>
-        </html>
-    """.trimIndent()
-
-        val mailSender = MailSender()
-        mailSender.sendFormattedMail(
-            subject = "Verificación de cuenta TecniApp",
-            body = message,
-            to = email
-        ) { success, errorMessage ->
-            if (success) {
-                Log.d("Registro", "Correo enviado exitosamente.")
-            } else {
-                Log.e("Registro", "Error al enviar el correo: $errorMessage")
-                if (isAdded) {
-                    Toast.makeText(
-                        requireContext(),
-                        "No se pudo enviar el correo. Verifica tu buzón/spam o intenta reenviar.",
-                        Toast.LENGTH_LONG
-                    ).show()
-                }
-            }
-        }
-    }
 }

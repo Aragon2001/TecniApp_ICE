@@ -58,7 +58,11 @@ data class AveriaEntity(
     val medidorMetros: String? = null,
     val medidorPoste: String? = null,
     val isSynced: Boolean = true,
-    val lastUpdated: Long = 0L
+    val lastUpdated: Long = 0L,
+    val estadoClor: String? = null,
+val causaClor: String? = null,
+val observacionesClor: String? = null
+
 ) {
     constructor() : this(
         caseId = "",
@@ -103,6 +107,9 @@ data class AveriaEntity(
         medidorMetros = null,
         medidorPoste = null,
         isSynced = true,
+        estadoClor = null,
+        causaClor= null,
+        observacionesClor = null,
         lastUpdated = 0L
     )
 }
