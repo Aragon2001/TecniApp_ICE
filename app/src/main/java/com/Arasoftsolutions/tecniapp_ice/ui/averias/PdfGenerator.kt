@@ -143,12 +143,18 @@ object PdfGenerator {
         try {
             val now = Date()
             val dateTimeFormatter = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+            val dateOnlyFormatter = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
             val yearFormatter = SimpleDateFormat("yyyy", Locale.getDefault())
             val shortTimeFormatter = SimpleDateFormat("HH:mm", Locale.getDefault())
 
             fun formatMillis(millis: Long?, fallback: String): String =
                 millis?.takeIf { it > 0 }
                     ?.let { dateTimeFormatter.format(Date(it)) }
+                    ?: fallback
+
+            fun formatDateOnly(millis: Long?, fallback: String): String =
+                millis?.takeIf { it > 0 }
+                    ?.let { dateOnlyFormatter.format(Date(it)) }
                     ?: fallback
 
             val generatedAt = dateTimeFormatter.format(now)
@@ -190,18 +196,22 @@ object PdfGenerator {
             val client = item.cliente?.takeIf { it.isNotBlank() } ?: emptyValue
             val textualLocation = item.localizacion?.takeIf { it.isNotBlank() } ?: emptyValue
             val geocodedAddress = item.direccion?.takeIf { it.isNotBlank() } ?: emptyValue
-            val horaLlegada = formatMillis(item.horaLlegada, emptyValue)
             val kilometrajeLlegada = item.kilometrajeLlegada?.toString() ?: emptyValue
-            val kilometraje = if (item.kilometrajeInicio != null || item.kilometrajeFinal != null) {
-                val inicio = item.kilometrajeInicio?.toString() ?: emptyValue
-                val fin = item.kilometrajeFinal?.toString() ?: emptyValue
-                context.getString(R.string.averia_pdf_kilometers_value, inicio, fin)
-            } else {
-                emptyValue
-            }
-            val eventDate = formatMillis(item.fechaMillis, emptyValue)
-            val startAttention = formatMillis(item.horaAtencionInicio, emptyValue)
-            val endAttention = formatMillis(item.horaAtencionFinal, emptyValue)
+            val kilometrajeInicio = item.kilometrajeInicio?.toString() ?: emptyValue
+            val kilometrajeFinal = item.kilometrajeFinal?.toString() ?: emptyValue
+            val eventDate = formatDateOnly(item.fechaMillis, emptyValue)
+            val startAttentionDate = formatDateOnly(item.horaAtencionInicio, emptyValue)
+            val arrivalAttentionDate = formatDateOnly(item.horaLlegada, emptyValue)
+            val endAttentionDate = formatDateOnly(item.horaAtencionFinal, emptyValue)
+            val startAttentionTime = item.horaAtencionInicio?.takeIf { it > 0 }
+                ?.let { shortTimeFormatter.format(Date(it)) }
+                ?: "--"
+            val arrivalAttentionTime = item.horaLlegada?.takeIf { it > 0 }
+                ?.let { shortTimeFormatter.format(Date(it)) }
+                ?: "--"
+            val endAttentionTime = item.horaAtencionFinal?.takeIf { it > 0 }
+                ?.let { shortTimeFormatter.format(Date(it)) }
+                ?: "--"
             val region = item.region.ifBlank { emptyValue }
             val agency = item.agencia.ifBlank { emptyValue }
 
@@ -231,11 +241,6 @@ object PdfGenerator {
                 InfoRow(context.getString(R.string.averia_pdf_table_label_address), geocodedAddress),
                 InfoRow(context.getString(R.string.averia_pdf_table_label_affectation), affectation),
                 InfoRow(context.getString(R.string.averia_pdf_table_label_event_date), eventDate),
-                InfoRow(context.getString(R.string.averia_pdf_table_label_start_time), startAttention),
-                InfoRow(context.getString(R.string.averia_pdf_table_label_arrival_time), horaLlegada),
-                InfoRow(context.getString(R.string.averia_pdf_table_label_end_time), endAttention),
-                InfoRow(context.getString(R.string.averia_pdf_table_label_kilometers_arrival), kilometrajeLlegada),
-                InfoRow(context.getString(R.string.averia_pdf_table_label_kilometers), kilometraje),
 
                 if (item.tipoAfectacion == TipoAfectacion.CLIENTE) {
                     InfoRow(context.getString(R.string.averia_pdf_table_label_medidor), medidorNumero)
@@ -259,17 +264,41 @@ object PdfGenerator {
                     ),
                     TimelineEntry(
                         title = context.getString(R.string.averia_pdf_table_label_start_time),
-                        date = startAttention,
-                        time = item.horaAtencionInicio?.takeIf { it > 0 }
-                            ?.let { shortTimeFormatter.format(Date(it)) }
-                            ?: "--"
+                        date = startAttentionDate,
+                        time = startAttentionTime
+                    ),
+                    TimelineEntry(
+                        title = context.getString(R.string.averia_pdf_table_label_arrival_time),
+                        date = arrivalAttentionDate,
+                        time = arrivalAttentionTime
                     ),
                     TimelineEntry(
                         title = context.getString(R.string.averia_pdf_table_label_end_time),
-                        date = endAttention,
-                        time = item.horaAtencionFinal?.takeIf { it > 0 }
-                            ?.let { shortTimeFormatter.format(Date(it)) }
-                            ?: "--"
+                        date = endAttentionDate,
+                        time = endAttentionTime
+                    ),
+                )
+            )
+
+            drawTimeline(
+                context = context,
+                state = state,
+                style = style,
+                items = listOf(
+                    TimelineEntry(
+                        title = context.getString(R.string.averia_pdf_table_label_kilometers_start),
+                        date = kilometrajeInicio,
+                        time = ""
+                    ),
+                    TimelineEntry(
+                        title = context.getString(R.string.averia_pdf_table_label_kilometers_arrival),
+                        date = kilometrajeLlegada,
+                        time = ""
+                    ),
+                    TimelineEntry(
+                        title = context.getString(R.string.averia_pdf_table_label_kilometers_end),
+                        date = kilometrajeFinal,
+                        time = ""
                     )
                 )
             )
@@ -701,7 +730,8 @@ object PdfGenerator {
     private fun drawTimeline(context: Context, state: PageState, style: PdfStyle, items: List<TimelineEntry>) {
         if (items.isEmpty()) return
         val cardPadding = 16f
-        val cardHeight = 108f
+        val showTime = items.any { it.time.isNotBlank() }
+        val cardHeight = if (showTime) 108f else 92f
         val requiredHeight = cardHeight
         state.ensureSpace(requiredHeight + 16f)
 
@@ -749,7 +779,9 @@ object PdfGenerator {
             val titleText = entry.title.uppercase(Locale.getDefault())
             drawCenteredText(state.canvas, titleText, centerX, titleY, titlePaint)
             drawCenteredText(state.canvas, entry.date.ifBlank { context.getString(R.string.averia_pdf_empty_value) }, centerX, dateY, datePaint)
-            drawCenteredText(state.canvas, entry.time.ifBlank { "--" }, centerX, timeY, timePaint)
+            if (showTime) {
+                drawCenteredText(state.canvas, entry.time.ifBlank { "--" }, centerX, timeY, timePaint)
+            }
         }
 
         state.currentY = rect.bottom + 12f
