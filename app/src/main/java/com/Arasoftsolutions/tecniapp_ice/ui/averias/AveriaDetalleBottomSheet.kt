@@ -474,17 +474,15 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
 
     private fun bindResumenes() {
         val emptyValue = getString(R.string.averia_pdf_empty_value)
-        val bloqueadaPorClor = item.estadoClor.equals("RESUELTA", true)
-
         val causaDisplay = item.causa
         val obsDisplay = item.observaciones
 
         b.tvCausaActual.text = causaDisplay.ifBlank { emptyValue }
         b.tvObservacionesActuales.text = obsDisplay.ifBlank { emptyValue }
-        b.cardCausaClor.isVisible = bloqueadaPorClor && !item.causaClor.isNullOrBlank()
-        b.cardObservacionesClor.isVisible = bloqueadaPorClor && !item.observacionesClor.isNullOrBlank()
-        b.tvCausaClor.text = item.causaClor?.ifBlank { emptyValue }.orEmpty()
-        b.tvObservacionesClor.text = item.observacionesClor?.ifBlank { emptyValue }.orEmpty()
+        b.cardCausaClor.isVisible = true
+        b.cardObservacionesClor.isVisible = true
+        b.tvCausaClor.text = item.causaClor?.ifBlank { emptyValue } ?: emptyValue
+        b.tvObservacionesClor.text = item.observacionesClor?.ifBlank { emptyValue } ?: emptyValue
 
         val localizacion = item.localizacion?.takeIf { it.isNotBlank() } ?: emptyValue
         val detalleParts = buildList {

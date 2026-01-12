@@ -248,7 +248,9 @@ Cliente: %4$s</string>
     <string name="averia_label_localizacion">Localización:</string>
     <string name="averia_label_direccion">Dirección:</string>
     <string name="averia_label_causa">Causa:</string>
+    <string name="averia_label_causa_clor">Causa (CLOR):</string>
     <string name="averia_label_observaciones">Observaciones:</string>
+    <string name="averia_label_observaciones_clor">Observaciones (CLOR):</string>
     <string name="averia_label_evento">Evento:</string>
     <string name="averia_label_inicio">Inicio:</string>
     <string name="averia_label_fin">Fin:</string>
@@ -348,8 +350,10 @@ Cliente: %4$s</string>
     <string name="averia_pdf_table_label_observations">Observaciones</string>
     <string name="averia_pdf_table_label_event_date">Fecha del evento</string>
     <string name="averia_pdf_table_label_start_time">Inicio de atención</string>
+    <string name="averia_pdf_table_label_arrival_time">Hora de llegada</string>
     <string name="averia_pdf_table_label_end_time">Fin de atención</string>
     <string name="averia_pdf_table_label_kilometers">Kilometraje recorrido</string>
+    <string name="averia_pdf_table_label_kilometers_arrival">Kilometraje de llegada</string>
     <string name="averia_pdf_table_label_region">Región</string>
     <string name="averia_pdf_table_label_agency">Agencia</string>
     <string name="averia_pdf_table_label_client">Cliente</string>

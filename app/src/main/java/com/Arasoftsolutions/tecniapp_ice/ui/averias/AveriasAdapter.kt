@@ -138,12 +138,22 @@ class AveriasAdapter(
                 isVisible = true
             }
 
-            // En lista mostramos lo del técnico normalmente.
-            // Si CLOR cerró, priorizamos el texto del CLOR (si viene) para reflejar la verdad del centro.
-            val causaDisplay = if (bloqueadaPorClor) item.causaClor ?: item.causa else item.causa
-            val obsDisplay = if (bloqueadaPorClor) item.observacionesClor ?: item.observaciones else item.observaciones
-            tvCausa.renderLabel(R.string.averia_label_causa, causaDisplay)
-            tvObs.renderLabel(R.string.averia_label_observaciones, obsDisplay)
+            val causaApp = item.causa?.takeIf { it.isNotBlank() }
+            val causaClor = item.causaClor?.takeIf { it.isNotBlank() }
+            val obsApp = item.observaciones?.takeIf { it.isNotBlank() }
+            val obsClor = item.observacionesClor?.takeIf { it.isNotBlank() }
+            val causaDisplay = listOf(
+                context.getString(R.string.averia_label_causa) to (causaApp ?: emptyValue),
+                context.getString(R.string.averia_label_causa_clor) to (causaClor ?: emptyValue)
+            ).joinToString("\n") { (label, value) -> "$label $value" }
+            val obsDisplay = listOf(
+                context.getString(R.string.averia_label_observaciones) to (obsApp ?: emptyValue),
+                context.getString(R.string.averia_label_observaciones_clor) to (obsClor ?: emptyValue)
+            ).joinToString("\n") { (label, value) -> "$label $value" }
+            tvCausa.text = causaDisplay
+            tvCausa.isVisible = true
+            tvObs.text = obsDisplay
+            tvObs.isVisible = true
 
             val asignado = if (item.tecnico.isBlank()) {
                 context.getString(R.string.averia_sin_asignar)
