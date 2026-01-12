@@ -186,11 +186,12 @@ object PdfGenerator {
             val attended = item.resolvedAtendidoDisplay(emptyValue)
             val vehicle = item.vehiculo ?: emptyValue
             val nise = item.nise.ifBlank { emptyValue }
-            val description = item.descripcion.ifBlank { emptyValue }
             val observations = item.observaciones.ifBlank { emptyValue }
             val client = item.cliente?.takeIf { it.isNotBlank() } ?: emptyValue
             val textualLocation = item.localizacion?.takeIf { it.isNotBlank() } ?: emptyValue
             val geocodedAddress = item.direccion?.takeIf { it.isNotBlank() } ?: emptyValue
+            val horaLlegada = formatMillis(item.horaLlegada, emptyValue)
+            val kilometrajeLlegada = item.kilometrajeLlegada?.toString() ?: emptyValue
             val kilometraje = if (item.kilometrajeInicio != null || item.kilometrajeFinal != null) {
                 val inicio = item.kilometrajeInicio?.toString() ?: emptyValue
                 val fin = item.kilometrajeFinal?.toString() ?: emptyValue
@@ -211,13 +212,17 @@ object PdfGenerator {
             val medidorNumero = item.numeroMedidor?.takeIf { it.isNotBlank() } ?: emptyValue
 
 
-            val infoRows = listOf(
+            val infoRows = listOfNotNull(
                 InfoRow(context.getString(R.string.averia_pdf_table_label_case), item.id),
                 InfoRow(context.getString(R.string.averia_pdf_table_label_status), item.estado),
                 InfoRow(context.getString(R.string.averia_pdf_table_label_assigned), assigned),
                 InfoRow(context.getString(R.string.averia_pdf_table_label_attended_by), attended),
                 InfoRow(context.getString(R.string.averia_pdf_table_label_vehicle), vehicle),
-                InfoRow(context.getString(R.string.averia_pdf_table_label_client), client),
+                if (item.tipoAfectacion == TipoAfectacion.CLIENTE) {
+                    InfoRow(context.getString(R.string.averia_pdf_table_label_client), client)
+                } else {
+                    null
+                },
                 InfoRow(context.getString(R.string.averia_pdf_table_label_nise), nise),
 
                 InfoRow(context.getString(R.string.averia_pdf_table_label_region), region),
@@ -227,11 +232,16 @@ object PdfGenerator {
                 InfoRow(context.getString(R.string.averia_pdf_table_label_affectation), affectation),
                 InfoRow(context.getString(R.string.averia_pdf_table_label_event_date), eventDate),
                 InfoRow(context.getString(R.string.averia_pdf_table_label_start_time), startAttention),
+                InfoRow(context.getString(R.string.averia_pdf_table_label_arrival_time), horaLlegada),
                 InfoRow(context.getString(R.string.averia_pdf_table_label_end_time), endAttention),
+                InfoRow(context.getString(R.string.averia_pdf_table_label_kilometers_arrival), kilometrajeLlegada),
                 InfoRow(context.getString(R.string.averia_pdf_table_label_kilometers), kilometraje),
 
-
-                InfoRow(context.getString(R.string.averia_pdf_table_label_medidor), medidorNumero)
+                if (item.tipoAfectacion == TipoAfectacion.CLIENTE) {
+                    InfoRow(context.getString(R.string.averia_pdf_table_label_medidor), medidorNumero)
+                } else {
+                    null
+                }
             )
 
             drawInfoGrid(state, style, infoRows)
@@ -265,10 +275,6 @@ object PdfGenerator {
             )
 
             val cards = listOf(
-                DetailCard(
-                    title = context.getString(R.string.averia_pdf_section_description),
-                    content = listOf(description)
-                ),
                 DetailCard(
                     title = context.getString(R.string.averia_pdf_section_cause),
                     content = listOf(item.causa.ifBlank { emptyValue })
