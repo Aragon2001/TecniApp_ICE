@@ -31,7 +31,7 @@ class AveriasRepository(private val db: AppDatabase) {
     private val dao get() = db.averiaDao()
     private val kilometrajeDao get() = db.vehiculoKilometrajeDao()
     private val firebaseRef = FirebaseDatabase
-        .getInstance("https://averias.firebaseio.com")
+        .getInstance("https://tecniapp-ice-default-rtdb.firebaseio.com")
         .reference
         .child("averias")
 
@@ -253,40 +253,28 @@ class AveriasRepository(private val db: AppDatabase) {
         return REGION_CANON[k] ?: raw?.trim()
     }
 
-    // Alias de agencias -> nombre canónico (enfocado en Huetar Atlántica + frecuentes)
+    // Alias de agencias -> nombre canónico
     private val AGENCIA_CANON = mapOf(
-        // Huetar Atlántica
         "guapiles" to "Guápiles",
         "s guapiles" to "Guápiles",
         "sub guapiles" to "Guápiles",
-
         "guacimo" to "Guácimo",
-
         "siquirres" to "Siquirres",
         "s siquirres" to "Siquirres",
-
         "limon" to "Limón",
         "puerto limon" to "Limón",
-
         "talamanca" to "Talamanca",
         "bri bri" to "bribri",
         "bribri" to "Talamanca",
         "s limon talamanca" to "Talamanca",
-
         "cariari" to "Cariari",
-
         "batan" to "Batán",
         "bataan" to "Batán",
-
         "tortuguero" to "Tortuguero",
-
         "rio frio" to "Río Frío",
         "riofrio" to "Río Frío",
-
         "turrialba" to "Turrialba",
         "juan vinas" to "Juan Viñas",
-
-        // Otras frecuentes (por si llegan)
         "heredia" to "Heredia",
         "cartago" to "Cartago",
         "san jose" to "San José",
@@ -299,16 +287,13 @@ class AveriasRepository(private val db: AppDatabase) {
     private data class AgenciaCanon(val agencia: String?, val nombre: String?, val tag: String?)
 
     private fun canonicalizeAgency(region: String?, agencia: String?, nombreAgencia: String?): AgenciaCanon {
-        // Preferimos el nombre visible si existe
         val source = nombreAgencia?.takeIf { it.isNotBlank() } ?: agencia ?: ""
         val k = normalizeKey(source)
         val canonNombre = AGENCIA_CANON[k] ?: run {
-            // Si no tenemos alias directo, intentar heurística simple (title case)
             if (source.isBlank()) null else titleCase(stripAccentsLower(source))
         }
 
         val tag = canonNombre?.let { slugTag(it) }
-        // En "agencia" guardamos el mismo canónico, y en nombre también
         return AgenciaCanon(
             agencia = canonNombre,
             nombre = canonNombre,
@@ -328,21 +313,45 @@ class AveriasRepository(private val db: AppDatabase) {
     }
 
     // ---------------------------------------------------------------------------------------------
-    // Estado (no “bajar” estado) + utilitarios
+    // Estado + utilitarios
     // ---------------------------------------------------------------------------------------------
+/**
+ * ✅ Devuelve true si este remote vale la pena procesarlo.
+ * Regla: si CLOR ya cerró (RESUELTA), SIEMPRE procesamos para bloquear UI y reflejar verdad.
+ * Si no, procesamos si el estado de app es Pendiente/Resuelta (tu regla base).
+ */
+private fun shouldProcessRemote(estadoApp: String?, estadoClor: String?): Boolean {
+    val app = normalizeEstadoLabel(estadoApp)
+    val clor = estadoClor?.trim()?.uppercase(Locale.getDefault())
+    return app == "Pendiente" || app == "Resuelta" || clor == "RESUELTA"
+}
 
-    private fun normalizeEstadoLabel(raw: String?): String {
-        if (raw.isNullOrBlank()) return "Pendiente"
-        val v = raw.trim().lowercase(Locale.getDefault())
-        return when {
-            "anul" in v -> "Anulada"
-            "resuel" in v -> "Resuelta"
-            "en at" in v || "atenci" in v -> "En atención"
-            "asign" in v -> "Asignada"
-            "nuevo" in v -> "Pendiente"
-            else -> if (v.isBlank()) "Pendiente" else raw.trim()
-        }
+/**
+ * ✅ Helpers para "preferir" campos CLOR: si viene remoto con valor, lo usamos;
+ * si viene vacío/no registra, dejamos el existente.
+ */
+private fun preferMeaningfulClor(remote: String?, existing: String?): String? {
+    val r = remote?.trim()
+    if (r.isNullOrBlank()) return existing
+    if (r.equals("No registra", true)) return existing
+    if (r.equals("Pendiente de verificar", true)) return existing
+    return r
+}
+
+ private fun normalizeEstadoLabel(raw: String?): String {
+    if (raw.isNullOrBlank()) return "Pendiente"
+    val v = raw.trim().lowercase(Locale.getDefault())
+    return when {
+        v.contains("anul") -> "Anulada"
+        v.contains("resuel") -> "Resuelta"
+        v.contains("en at") || v.contains("atenci") -> "En atención"
+        v.contains("asign") -> "Asignada"
+        v.contains("pendien") -> "Pendiente"   // ✅ FIX: acepta PENDIENTE / pendiente
+        v.contains("nuevo") -> "Pendiente"
+        else -> "Pendiente" // ✅ opcional: yo lo dejaría así para no inventar estados raros
     }
+}
+
 
     private fun pickEstadoPreferAdvanced(local: String?, remote: String?): String {
         val localNormalized = normalizeEstadoLabel(local)
@@ -373,7 +382,7 @@ class AveriasRepository(private val db: AppDatabase) {
     }
 
     // ---------------------------------------------------------------------------------------------
-    // Fechas, filtros de inclusión y tag de agencia (compat)
+    // Fechas, filtros
     // ---------------------------------------------------------------------------------------------
 
     private val datePatterns = listOf(
@@ -394,7 +403,6 @@ class AveriasRepository(private val db: AppDatabase) {
         return null
     }
 
-    // Mantengo este método (usado por vistas antiguas) redirigiendo al canónico.
     private fun agenciaTag(region: String?, nombreAgencia: String?): String {
         val canon = canonicalizeAgency(canonicalRegion(region), null, nombreAgencia)
         return canon.tag ?: "Otra"
@@ -424,11 +432,97 @@ class AveriasRepository(private val db: AppDatabase) {
         return filterAveriasByAgencies(porRegion, agencyFilters)
     }
 
+    // ---------------------------------------------------------------------------------------------
+    // ✅ FIX: Safe parsing Firebase (String -> Double)
+    // ---------------------------------------------------------------------------------------------
+
+    private fun Any?.asDoubleOrNull(): Double? = when (this) {
+        is Number -> this.toDouble()
+        is String -> this.trim().replace(",", ".").toDoubleOrNull()
+        else -> null
+    }
+
+    private fun Any?.asLongOrNull(): Long? = when (this) {
+        is Number -> this.toLong()
+        is String -> this.trim().toLongOrNull()
+        else -> null
+    }
+
+    private fun Any?.asIntOrNull(): Int? = when (this) {
+        is Number -> this.toInt()
+        is String -> this.trim().toIntOrNull()
+        else -> null
+    }
+
+    private fun Any?.asStringOrNull(): String? =
+        (this as? String)?.trim()?.takeIf { it.isNotBlank() }
+
+    private fun DataSnapshot.getAveriaEntitySafe(): AveriaEntity? {
+        runCatching { getValue(AveriaEntity::class.java) }
+            .getOrNull()
+            ?.let { return it }
+
+        val map = value as? Map<*, *> ?: return null
+
+        val caseId = map["caseId"].asStringOrNull()
+            ?: key?.trim()
+            ?: return null
+
+return AveriaEntity(
+    caseId = caseId,
+    region = map["region"].asStringOrNull(),
+    provincia = map["provincia"].asIntOrNull(), // ✅ ERA String, debe ser Int?
+    agencia = map["agencia"].asStringOrNull(),
+    nombreAgencia = map["nombreAgencia"].asStringOrNull(),
+    nise = map["nise"].asStringOrNull(),
+    causa = map["causa"].asStringOrNull(),
+    observaciones = map["observaciones"].asStringOrNull()
+        ?: map["descripcion"].asStringOrNull(),
+    estado = map["estado"].asStringOrNull() ?: "Pendiente",
+    idEstadoAve = map["idEstadoAve"].asIntOrNull(),
+    idEstadoAranda = map["idEstadoAranda"].asIntOrNull(),
+    lat = map["lat"].asDoubleOrNull(),
+    lng = map["lng"].asDoubleOrNull(),
+    clientesAfectados = map["clientesAfectados"].asStringOrNull(),
+    fechaInicioMillis = map["fechaInicioMillis"].asLongOrNull() ?: 0L,
+    horaInicioMillis = map["horaInicioMillis"].asLongOrNull(),
+    horaFinalMillis = map["horaFinalMillis"].asLongOrNull(),
+    atencionHoraInicioMillis = map["atencionHoraInicioMillis"].asLongOrNull(),
+    atencionHoraFinalMillis = map["atencionHoraFinalMillis"].asLongOrNull(),
+    kilometrajeInicio = map["kilometrajeInicio"].asDoubleOrNull(),
+    kilometrajeFinal = map["kilometrajeFinal"].asDoubleOrNull(),
+    agenciaTag = map["agenciaTag"].asStringOrNull() ?: "", // ✅ ERA nullable, aquí no puede
+    vehiculoAsignado = map["vehiculoAsignado"].asStringOrNull(),
+    tecnicoAsignadoUid = map["tecnicoAsignadoUid"].asStringOrNull(),
+    tecnicoAsignadoNombre = map["tecnicoAsignadoNombre"].asStringOrNull(),
+    atendidoPorUid = map["atendidoPorUid"].asStringOrNull(),
+    atendidoPorNombre = map["atendidoPorNombre"].asStringOrNull(),
+    materialesTexto = map["materialesTexto"].asStringOrNull(),
+    materialesDetalleJson = map["materialesDetalleJson"].asStringOrNull(),
+    tecnicosAtendieronJson = map["tecnicosAtendieronJson"].asStringOrNull(),
+    cliente = map["cliente"].asStringOrNull(),
+    localizacion = map["localizacion"].asStringOrNull(),
+    direccion = map["direccion"].asStringOrNull(),
+    tipoAfectacion = map["tipoAfectacion"].asStringOrNull(),
+    numeroMedidor = map["numeroMedidor"].asStringOrNull(),
+    medidorCalle = map["medidorCalle"].asStringOrNull(),
+    medidorPueblo = map["medidorPueblo"].asStringOrNull(),
+    medidorMetros = map["medidorMetros"].asStringOrNull(),
+    estadoClor = map["estadoClor"].asStringOrNull(),
+    causaClor = map["causaClor"].asStringOrNull(),
+    observacionesClor = map["observacionesClor"].asStringOrNull(),
+    medidorPoste = map["medidorPoste"].asStringOrNull(),
+    isSynced = true,
+    lastUpdated = map["lastUpdated"].asLongOrNull() ?: 0L
+)
+
+    }
+
     private suspend fun loadFirebaseCases(): Map<String, AveriaEntity> =
         runCatching {
             val snapshot = firebaseRef.get().await()
             snapshot.children.mapNotNull { child ->
-                val remote0 = child.getValue(AveriaEntity::class.java) ?: return@mapNotNull null
+                val remote0 = child.getAveriaEntitySafe() ?: return@mapNotNull null
                 val normalizedEstado = normalizeEstadoLabel(remote0.estado)
                 val remoteBase = remote0.copy(estado = normalizedEstado, isSynced = true)
                 canonicalizeAgenciaFields(remoteBase)
@@ -439,7 +533,7 @@ class AveriasRepository(private val db: AppDatabase) {
         }
 
     // ---------------------------------------------------------------------------------------------
-    // Map desde ICE (con normalización de región/agencia)
+    // Map desde ICE
     // ---------------------------------------------------------------------------------------------
 
     private fun map(remote: IceAveria): AveriaEntity? {
@@ -508,127 +602,6 @@ class AveriasRepository(private val db: AppDatabase) {
 
     private fun idEstadoAveFromLabelOrRemote(label: String, remoteId: Int?): Int =
         remoteId ?: idEstadoFromLabel(label)
-
-    // ---------------------------------------------------------------------------------------------
-    // Sync desde ICE (merge sin bajar estado + conservar lastUpdated más nuevo)
-    // ---------------------------------------------------------------------------------------------
-    /*
-     * Descripción funcional (Averías en segundo plano)
-     * -------------------------------------------------
-     * El Worker periódicamente llama a `syncFromIce` con el token Bearer para obtener la lista
-     * de averías de la API. El flujo esperado es:
-     *
-     * 1) La API devuelve averías filtradas por zona/subregión del usuario.
-     * 2) Se mapean a `AveriaEntity` normalizando región, agencia y estado (usar `estadoFromIce`).
-     * 3) Se separan casos por estado:
-     *    - Pendiente / Nuevo → candidatos a crear en Firebase/Room si no existen.
-     *    - Resuelta → permite que el estado se actualice desde la API si ya existe en Firebase.
-     * 4) Para Pendiente/Nuevo:
-     *    - Si no existe en Firebase → registrar en Room + crear nodo en Firebase y disparar
-     *      notificación local si el usuario la tiene activa para esa zona/estado.
-     *    - Si existe en Firebase → no sobreescribir campos operativos modificados en la app
-     *      (técnico, vehículo, horas, etc.). Solo se podrían refrescar campos no operativos si se
-     *      requiere, pero la app manda.
-     * 5) Para Resuelta:
-     *    - Si existe en Firebase → actualizar estado a "Resuelta" en Firebase y en Room, usando
-     *      la hora de cierre recibida (o `System.currentTimeMillis()` si falta). Esto aplica aun
-     *      cuando la app tuviera el caso como Pendiente/Asignada/En atención.
-     *    - Si no existe → puede ignorarse o crearse como histórico, según convenga.
-     * 6) El Worker puede enviar notificaciones locales de "Nueva avería" o "Resuelta por centro"
-     *    cuando los filtros del usuario coinciden. Las notificaciones no dependen de abrir el
-     *    fragmento de averías.
-     *
-     * Regla clave: la app conserva el control del estado mientras no llegue "Resuelta" desde la
-     * API; cuando llega ese estado, el centro de operación tiene prioridad y la app debe acatarlo
-     * para evitar casos atascados.
-     */
-
-    @Deprecated("ICE ahora se sincroniza desde Cloud Functions; usar Firebase como fuente de verdad")
-    suspend fun syncFromIce(
-        bearer: String?,
-        normalizedRegion: String? = null,
-        agencyFilters: Set<String> = emptySet()
-    ): SyncResult = withContext(Dispatchers.IO) {
-        val authHeader = bearer?.takeIf { it.isNotBlank() }?.let { "Bearer $it" }
-        val envelope = IceApi.service.getAverias(authHeader)
-        val incoming = envelope.payload()
-            .filter { shouldInclude(it) }
-            .mapNotNull { map(it) }
-
-        if (incoming.isEmpty()) return@withContext SyncResult(emptyList(), emptyList())
-
-        val canonical = incoming.map { canonicalizeAgenciaFields(it) }
-        val filtradas = applyUserFilters(canonical, normalizedRegion, agencyFilters)
-
-        if (filtradas.isEmpty()) return@withContext SyncResult(emptyList(), emptyList())
-
-        val existentesRoom = dao.all().associateBy { it.caseId }
-        val existentesFirebase = loadFirebaseCases()
-
-        val nuevos = mutableListOf<AveriaEntity>()
-        val actualizaciones = mutableListOf<AveriaEntity>()
-        val resueltas = mutableListOf<AveriaEntity>()
-
-        filtradas.forEach { remoto ->
-            val estadoNormalizado = normalizeEstadoLabel(remoto.estado)
-            when (estadoNormalizado) {
-                "Resuelta" -> {
-                    val firebaseBase = existentesFirebase[remoto.caseId] ?: return@forEach
-                    val localBase = existentesRoom[remoto.caseId] ?: firebaseBase
-                    val now = System.currentTimeMillis()
-                    val merged = mergeForApi(localBase, remoto).copy(
-                        estado = "Resuelta",
-                        idEstadoAve = idEstadoFromLabel("Resuelta"),
-                        horaFinalMillis = remoto.horaFinalMillis
-                            ?: localBase.horaFinalMillis
-                            ?: now,
-                        lastUpdated = now,
-                        isSynced = true
-                    )
-                    resueltas += merged
-                    val needsUpsert = merged != localBase || existentesRoom[remoto.caseId] == null
-                    if (needsUpsert) {
-                        actualizaciones += merged
-                    }
-                    pushResolvedToFirebase(merged)
-                }
-
-                else -> {
-                    val existenteFirebase = existentesFirebase[remoto.caseId]
-                    val localBase = existentesRoom[remoto.caseId]
-                    val now = System.currentTimeMillis()
-                    if (existenteFirebase == null && localBase == null) {
-                        if (shouldCreateNewCase(remoto.estado)) {
-                            nuevos += remoto.copy(isSynced = true, lastUpdated = now)
-                        }
-                    } else {
-                        val base = localBase ?: existenteFirebase ?: remoto
-                        val merged = mergeForApi(base, remoto).copy(
-                            lastUpdated = listOf(base.lastUpdated, remoto.lastUpdated, now).maxOrNull() ?: now,
-                            isSynced = true
-                        )
-                        val needsUpsert = merged != base || localBase == null
-                        if (needsUpsert) {
-                            actualizaciones += merged
-                        }
-                    }
-                }
-            }
-        }
-
-        val toUpsert = buildList {
-            addAll(nuevos)
-            addAll(actualizaciones)
-        }
-        if (toUpsert.isNotEmpty()) {
-            dao.upsertAll(toUpsert)
-        }
-        if (nuevos.isNotEmpty()) {
-            registerNewOnFirebase(nuevos)
-        }
-
-        SyncResult(nuevos, resueltas)
-    }
 
     // ---------------------------------------------------------------------------------------------
     // Acciones y sync con Firebase
@@ -715,7 +688,6 @@ class AveriasRepository(private val db: AppDatabase) {
         registrarKilometrajeFinal(data.vehiculo, data.kilometrajeFinal, data.horaFinalMillis ?: now)
     }
 
-
     suspend fun cerrar(caseId: String, data: AveriaActionData) = withContext(Dispatchers.IO) {
         val now = System.currentTimeMillis()
         val base = dao.getByCaseId(caseId)
@@ -788,33 +760,15 @@ class AveriasRepository(private val db: AppDatabase) {
         }
     }
 
-    private suspend fun pushToFirebase(entity: AveriaEntity) {
-        val payload = entity.toFirebasePayload()
-        // 👇 En lugar de updateChildren usamos setValue para reemplazar todo el objeto completo
-        firebaseRef.child(entity.caseId).setValue(payload).await()
-    }
+    /**
+ * ✅ Subida App → Firebase sin borrar campos CLOR.
+ * IMPORTANTE: usar updateChildren (NO setValue) para no reventar estadoClor/obsClor/causaClor.
+ */
+private suspend fun pushToFirebase(entity: AveriaEntity) {
+    val payload = entity.toFirebaseAppPayload()
+    firebaseRef.child(entity.caseId).updateChildren(payload).await()
+}
 
-    private suspend fun pushResolvedToFirebase(entity: AveriaEntity) {
-        runCatching {
-            firebaseRef.child(entity.caseId).setValue(entity.toFirebasePayload()).await()
-        }.onFailure { error ->
-            Log.e(TAG, "No se pudo marcar como resuelta ${entity.caseId} en Firebase", error)
-        }
-    }
-
-    private suspend fun registerNewOnFirebase(entities: List<AveriaEntity>) {
-        entities.forEach { entity ->
-            try {
-                val ref = firebaseRef.child(entity.caseId)
-                val snapshot = ref.get().await()
-                if (!snapshot.exists()) {
-                    ref.setValue(entity.toFirebasePayload()).await()
-                }
-            } catch (t: Throwable) {
-                Log.e(TAG, "No se pudo registrar avería nueva ${entity.caseId} en Firebase", t)
-            }
-        }
-    }
 
     private fun AveriaEntity.toFirebasePayload(): Map<String, Any?> = hashMapOf(
         "caseId" to caseId,
@@ -859,6 +813,57 @@ class AveriasRepository(private val db: AppDatabase) {
         "lastUpdated" to lastUpdated
     )
 
+    /**
+ * ✅ Payload SOLO de la APP / TÉCNICO.
+ * NO incluye campos CLOR.
+ * Se usa SIEMPRE con updateChildren().
+ */
+private fun AveriaEntity.toFirebaseAppPayload(): Map<String, Any?> = hashMapOf(
+    "caseId" to caseId,
+
+    // ===== ESTADO Y NOTAS DEL TÉCNICO =====
+    "estado" to estado,
+    "causa" to causa,
+    "observaciones" to observaciones,
+
+    // ===== TIEMPOS DE ATENCIÓN =====
+    "horaInicioMillis" to horaInicioMillis,
+    "horaFinalMillis" to horaFinalMillis,
+    "atencionHoraInicioMillis" to atencionHoraInicioMillis,
+    "atencionHoraFinalMillis" to atencionHoraFinalMillis,
+
+    // ===== VEHÍCULO / KILOMETRAJE =====
+    "kilometrajeInicio" to kilometrajeInicio,
+    "kilometrajeFinal" to kilometrajeFinal,
+    "vehiculoAsignado" to vehiculoAsignado,
+
+    // ===== ASIGNACIÓN =====
+    "tecnicoAsignadoUid" to tecnicoAsignadoUid,
+    "tecnicoAsignadoNombre" to tecnicoAsignadoNombre,
+    "atendidoPorUid" to atendidoPorUid,
+    "atendidoPorNombre" to atendidoPorNombre,
+
+    // ===== MATERIALES / TÉCNICOS =====
+    "materialesTexto" to materialesTexto,
+    "materialesDetalleJson" to materialesDetalleJson,
+    "tecnicosAtendieronJson" to tecnicosAtendieronJson,
+
+    // ===== DATOS COMPLEMENTARIOS APP =====
+    "cliente" to cliente,
+    "localizacion" to localizacion,
+    "direccion" to direccion,
+    "tipoAfectacion" to tipoAfectacion,
+    "numeroMedidor" to numeroMedidor,
+    "medidorCalle" to medidorCalle,
+    "medidorPueblo" to medidorPueblo,
+    "medidorMetros" to medidorMetros,
+    "medidorPoste" to medidorPoste,
+
+    // ===== HOUSEKEEPING =====
+    "lastUpdated" to lastUpdated,
+    "isSynced" to true
+)
+
     private suspend fun registrarMaterialesUsados(lista: List<MaterialUso>) {
         lista.forEach { uso ->
             val ref = materialesRef.child(uso.codigo)
@@ -871,7 +876,7 @@ class AveriasRepository(private val db: AppDatabase) {
     }
 
     // ---------------------------------------------------------------------------------------------
-    // Firebase: pull (una vez) y realtime (con normalización y sin bajar estado)
+    // Firebase: pull (una vez) y realtime
     // ---------------------------------------------------------------------------------------------
 
     suspend fun pullFromFirebaseOnce() = withContext(Dispatchers.IO) {
@@ -880,79 +885,90 @@ class AveriasRepository(private val db: AppDatabase) {
             val current = dao.all().associateBy { it.caseId }
             val updated = mutableListOf<AveriaEntity>()
             snapshot.children.forEach { child ->
-                val remote0 = child.getValue(AveriaEntity::class.java) ?: return@forEach
-                // Normalizar estado "nuevo" -> "Pendiente"
+                val remote0 = child.getAveriaEntitySafe() ?: return@forEach
                 val normalizedEstado = normalizeEstadoLabel(remote0.estado)
                 val remoteBase = remote0.copy(estado = normalizedEstado, isSynced = true)
                 val remote = canonicalizeAgenciaFields(remoteBase)
 
                 val existing = current[remote.caseId]
-                if (!shouldProcessRemote(remote.estado)) return@forEach
+                if (!shouldProcessRemote(remote.estado, remote.estadoClor)) return@forEach
 
                 when {
                     existing == null -> if (shouldCreateNewCase(remote.estado)) {
                         updated += remote
                     }
-                    existing.isSynced && remote.lastUpdated >= existing.lastUpdated -> {
-                        // Merge sin bajar estado
-                        val estadoElegido = pickEstadoPreferAdvanced(existing.estado, remote.estado)
-                        val idEstadoElegido = idEstadoFromLabel(estadoElegido)
-                        updated += existing.copy(
-                            region = remote.region,
-                            provincia = remote.provincia,
-                            agencia = remote.agencia,
-                            nombreAgencia = remote.nombreAgencia,
-                            nise = remote.nise,
-                            causa = preferMeaningful(remote.causa, existing.causa),
-                            observaciones = preferMeaningful(remote.observaciones, existing.observaciones),
-                            estado = estadoElegido,
-                            idEstadoAve = idEstadoElegido,
-                            idEstadoAranda = remote.idEstadoAranda,
-                            lat = remote.lat,
-                            lng = remote.lng,
-                            clientesAfectados = remote.clientesAfectados,
-                            fechaInicioMillis = remote.fechaInicioMillis,
-                            horaInicioMillis = remote.horaInicioMillis,
-                            horaFinalMillis = remote.horaFinalMillis,
-                            atencionHoraInicioMillis = remote.atencionHoraInicioMillis,
-                            atencionHoraFinalMillis = remote.atencionHoraFinalMillis,
-                            kilometrajeInicio = remote.kilometrajeInicio,
-                            kilometrajeFinal = remote.kilometrajeFinal,
-                            vehiculoAsignado = remote.vehiculoAsignado,
-                            tecnicoAsignadoUid = remote.tecnicoAsignadoUid,
-                            tecnicoAsignadoNombre = remote.tecnicoAsignadoNombre,
-                            atendidoPorUid = remote.atendidoPorUid,
-                            atendidoPorNombre = remote.atendidoPorNombre,
-                            materialesTexto = preferMeaningful(remote.materialesTexto, existing.materialesTexto),
-                            materialesDetalleJson = preferMeaningful(
-                                remote.materialesDetalleJson,
-                                existing.materialesDetalleJson
-                            ),
-                            tecnicosAtendieronJson = mergeRemoteString(
-                                remote.tecnicosAtendieronJson,
-                                existing.tecnicosAtendieronJson
-                            ),
-                            cliente = preferMeaningful(remote.cliente, existing.cliente),
-                            localizacion = preferMeaningful(remote.localizacion, existing.localizacion),
-                            direccion = preferMeaningful(remote.direccion, existing.direccion),
-                            tipoAfectacion = preferMeaningful(remote.tipoAfectacion, existing.tipoAfectacion),
-                            numeroMedidor = preferMeaningful(remote.numeroMedidor, existing.numeroMedidor),
-                            medidorCalle = preferMeaningful(remote.medidorCalle, existing.medidorCalle),
-                            medidorPueblo = preferMeaningful(remote.medidorPueblo, existing.medidorPueblo),
-                            medidorMetros = preferMeaningful(remote.medidorMetros, existing.medidorMetros),
-                            medidorPoste = preferMeaningful(remote.medidorPoste, existing.medidorPoste),
-                            agenciaTag = remote.agenciaTag,
-                            lastUpdated = maxOf(existing.lastUpdated, remote.lastUpdated),
-                            isSynced = true
-                        )
-                    }
+
+                   existing.isSynced && remote.lastUpdated >= existing.lastUpdated -> {
+    // ✅ Estado app se decide con tu lógica (pickEstadoPreferAdvanced)
+    val estadoElegido = pickEstadoPreferAdvanced(existing.estado, remote.estado)
+    val idEstadoElegido = idEstadoFromLabel(estadoElegido)
+
+    updated += existing.copy(
+        // ==========================================================
+        // NEUTROS / API (se pueden refrescar sin romper al técnico)
+        // ==========================================================
+        region = remote.region,
+        provincia = remote.provincia,
+        agencia = remote.agencia,
+        nombreAgencia = remote.nombreAgencia,
+        nise = remote.nise,
+        clientesAfectados = remote.clientesAfectados,
+        lat = remote.lat,
+        lng = remote.lng,
+        fechaInicioMillis = remote.fechaInicioMillis,
+        horaInicioMillis = remote.horaInicioMillis,
+        horaFinalMillis = remote.horaFinalMillis,
+
+        // ==========================================================
+        // ✅ APP/TÉCNICO: NO se pisan con remote (CLOR no manda esto)
+        // ==========================================================
+        estado = estadoElegido,
+        idEstadoAve = idEstadoElegido,
+        idEstadoAranda = remote.idEstadoAranda, // este sí puede venir de CLOR
+        causa = existing.causa,
+        observaciones = existing.observaciones,
+
+        atencionHoraInicioMillis = existing.atencionHoraInicioMillis,
+        atencionHoraFinalMillis = existing.atencionHoraFinalMillis,
+        kilometrajeInicio = existing.kilometrajeInicio,
+        kilometrajeFinal = existing.kilometrajeFinal,
+        vehiculoAsignado = existing.vehiculoAsignado,
+        tecnicoAsignadoUid = existing.tecnicoAsignadoUid,
+        tecnicoAsignadoNombre = existing.tecnicoAsignadoNombre,
+        atendidoPorUid = existing.atendidoPorUid,
+        atendidoPorNombre = existing.atendidoPorNombre,
+        materialesTexto = existing.materialesTexto,
+        materialesDetalleJson = existing.materialesDetalleJson,
+        tecnicosAtendieronJson = existing.tecnicosAtendieronJson,
+        cliente = existing.cliente,
+        localizacion = existing.localizacion,
+        direccion = existing.direccion,
+        tipoAfectacion = existing.tipoAfectacion,
+        numeroMedidor = existing.numeroMedidor,
+        medidorCalle = existing.medidorCalle,
+        medidorPueblo = existing.medidorPueblo,
+        medidorMetros = existing.medidorMetros,
+        medidorPoste = existing.medidorPoste,
+        agenciaTag = remote.agenciaTag,
+
+        // ==========================================================
+        // ✅ CLOR separado (estos sí deben actualizarse desde remote)
+        // ==========================================================
+        estadoClor = preferMeaningfulClor(remote.estadoClor, existing.estadoClor),
+        causaClor = preferMeaningfulClor(remote.causaClor, existing.causaClor),
+        observacionesClor = preferMeaningfulClor(remote.observacionesClor, existing.observacionesClor),
+
+        // ==========================================================
+        // Housekeeping
+        // ==========================================================
+        lastUpdated = maxOf(existing.lastUpdated, remote.lastUpdated),
+        isSynced = true
+    )
+}
+
                 }
             }
-            if (updated.isNotEmpty()) {
-                dao.upsertAll(updated)
-            } else {
-
-            }
+            if (updated.isNotEmpty()) dao.upsertAll(updated) else TODO()
         } catch (t: Throwable) {
             Log.e(TAG, "Firebase pull failed", t)
         }
@@ -973,22 +989,25 @@ class AveriasRepository(private val db: AppDatabase) {
                     val toUpsert = mutableListOf<AveriaEntity>()
                     val newlyCreated = mutableListOf<AveriaEntity>()
                     snapshot.children.forEach { child ->
-                        val remote0 = child.getValue(AveriaEntity::class.java) ?: return@forEach
+                        val remote0 = child.getAveriaEntitySafe() ?: return@forEach
                         val normalizedEstado = normalizeEstadoLabel(remote0.estado)
                         val remoteBase = remote0.copy(estado = normalizedEstado, isSynced = true)
                         val remote = canonicalizeAgenciaFields(remoteBase)
 
                         val existing = current[remote.caseId]
-                        if (!shouldProcessRemote(remote.estado)) return@forEach
+                        if (!shouldProcessRemote(remote.estado, remote.estadoClor)) return@forEach
+
 
                         when {
                             existing == null -> if (shouldCreateNewCase(remote.estado)) {
                                 toUpsert += remote
                                 newlyCreated += remote
                             }
+
                             !existing.isSynced -> if (remote.lastUpdated > existing.lastUpdated) {
                                 toUpsert += remote
                             }
+
                             remote.lastUpdated >= existing.lastUpdated -> {
                                 val estadoElegido = pickEstadoPreferAdvanced(existing.estado, remote.estado)
                                 val idEstadoElegido = idEstadoFromLabel(estadoElegido)
@@ -1019,14 +1038,8 @@ class AveriasRepository(private val db: AppDatabase) {
                                     atendidoPorUid = remote.atendidoPorUid,
                                     atendidoPorNombre = remote.atendidoPorNombre,
                                     materialesTexto = preferMeaningful(remote.materialesTexto, existing.materialesTexto),
-                                    materialesDetalleJson = preferMeaningful(
-                                        remote.materialesDetalleJson,
-                                        existing.materialesDetalleJson
-                                    ),
-                                    tecnicosAtendieronJson = mergeRemoteString(
-                                        remote.tecnicosAtendieronJson,
-                                        existing.tecnicosAtendieronJson
-                                    ),
+                                    materialesDetalleJson = preferMeaningful(remote.materialesDetalleJson, existing.materialesDetalleJson),
+                                    tecnicosAtendieronJson = mergeRemoteString(remote.tecnicosAtendieronJson, existing.tecnicosAtendieronJson),
                                     cliente = preferMeaningful(remote.cliente, existing.cliente),
                                     localizacion = preferMeaningful(remote.localizacion, existing.localizacion),
                                     direccion = preferMeaningful(remote.direccion, existing.direccion),
@@ -1043,9 +1056,8 @@ class AveriasRepository(private val db: AppDatabase) {
                             }
                         }
                     }
-                    if (toUpsert.isNotEmpty()) {
-                        dao.upsertAll(toUpsert)
-                    }
+                    if (toUpsert.isNotEmpty()) dao.upsertAll(toUpsert)
+
                     val shouldNotify = realtimeEmittedOnce || !this@AveriasRepository.suppressInitialNotification
                     if (shouldNotify && newlyCreated.isNotEmpty()) {
                         realtimeCallback?.invoke(newlyCreated)

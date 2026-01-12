@@ -5,6 +5,7 @@ import com.Arasoftsolutions.tecniapp_ice.Database.entities.AveriaEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.room.AppDatabase
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriaNotificationDispatcher
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriaNotificationPreferences
+import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasForegroundTracker
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasRepository
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.shouldNotifyForAgency
 import com.google.firebase.auth.FirebaseAuth
@@ -15,12 +16,18 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
+import java.util.concurrent.atomic.AtomicLong
 
 class TecniAppMessagingService : FirebaseMessagingService() {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val repo by lazy { AveriasRepository(AppDatabase.getInstance(applicationContext)) }
+
+    // Debounce para pullFromFirebaseOnce()
+    private var refreshJob: Job? = null
 
     override fun onNewToken(token: String) {
         super.onNewToken(token)
@@ -32,15 +39,7 @@ class TecniAppMessagingService : FirebaseMessagingService() {
             return
         }
 
-        val ref = FirebaseDatabase.getInstance()
-            .getReference("usuarios")
-            .child(uid)
-            .child("fcmToken")
-
-        ref.setValue(token)
-            .addOnFailureListener { error ->
-                Log.e(TAG, "No se pudo guardar el token FCM", error)
-            }
+        saveTokenToRtdb(uid, token)
     }
 
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
@@ -56,17 +55,27 @@ class TecniAppMessagingService : FirebaseMessagingService() {
 
         val averia = buildAveriaFromMessage(caseId, data)
 
+        // 1) Guardar SIEMPRE en Room (offline-first)
         scope.launch {
             repo.upsertFromPush(averia)
-            runCatching { repo.pullFromFirebaseOnce() } // Obtener detalles completos del caso cuando el servidor ya los tenga
-                .onFailure { Log.w(TAG, "No se pudo refrescar Firebase tras push", it) }
+
+            // 2) Refrescar desde Firebase, pero con debounce para no saturar
+            scheduleFirebaseRefreshDebounced()
         }
 
-        if (!AveriaNotificationPreferences.areNotificationsEnabled(this)) {
-            Log.d(TAG, "Notificaciones desactivadas por el usuario; se omite la alerta local")
+        // 3) Evitar duplicados: si el usuario está viendo Averías, no notificar
+        if (AveriasForegroundTracker.isAveriasVisible) {
+            Log.d(TAG, "Averías visible en foreground: se omite notificación local (solo persistencia)")
             return
         }
 
+        // 4) Respetar apagado global del usuario
+        if (!AveriaNotificationPreferences.areNotificationsEnabled(this)) {
+            Log.d(TAG, "Notificaciones desactivadas por el usuario; se omite alerta local")
+            return
+        }
+
+        // 5) Aplicar filtros locales por agencias (preferencias)
         val agencyFilters = AveriaNotificationPreferences.normalizedAgencies(this)
         if (!shouldNotifyForAgency(averia, agencyFilters)) {
             Log.d(TAG, "Mensaje FCM filtrado por agencia (${averia.agencia}/${averia.agenciaTag})")
@@ -74,6 +83,33 @@ class TecniAppMessagingService : FirebaseMessagingService() {
         }
 
         AveriaNotificationDispatcher.notifyNewCases(this, listOf(averia))
+    }
+
+    private fun scheduleFirebaseRefreshDebounced() {
+        // Si llegan muchos pushes seguidos, cancelamos y reprogramamos
+        refreshJob?.cancel()
+        refreshJob = scope.launch {
+            delay(15_000) // 15s (ajustable 10–20s)
+            val now = System.currentTimeMillis()
+            val last = LAST_REFRESH_AT.get()
+            // Gate extra: no permitir más de 1 refresh cada 12s aunque algo raro pase
+            if (now - last < 12_000) return@launch
+
+            LAST_REFRESH_AT.set(now)
+            runCatching { repo.pullFromFirebaseOnce() }
+                .onFailure { Log.w(TAG, "No se pudo refrescar Firebase (debounced)", it) }
+        }
+    }
+
+    private fun saveTokenToRtdb(uid: String, token: String) {
+        FirebaseDatabase.getInstance()
+            .getReference("usuarios")
+            .child(uid)
+            .child("fcmToken")
+            .setValue(token)
+            .addOnFailureListener { error ->
+                Log.e(TAG, "No se pudo guardar el token FCM", error)
+            }
     }
 
     private fun buildAveriaFromMessage(
@@ -89,7 +125,8 @@ class TecniAppMessagingService : FirebaseMessagingService() {
 
         return AveriaEntity(
             caseId = caseId,
-            estado = data["estado"] ?: "NUEVO",
+            // OJO: Idealmente server manda PENDIENTE/RESUELTA; si no, esto igual no crashea.
+            estado = data["estado"] ?: "PENDIENTE",
             agencia = agencia,
             nombreAgencia = nombreAgencia,
             agenciaTag = data["agenciaTag"] ?: agencia ?: "",
@@ -122,5 +159,6 @@ class TecniAppMessagingService : FirebaseMessagingService() {
 
     companion object {
         private const val TAG = "TecniAppFCM"
+        private val LAST_REFRESH_AT = AtomicLong(0L)
     }
 }

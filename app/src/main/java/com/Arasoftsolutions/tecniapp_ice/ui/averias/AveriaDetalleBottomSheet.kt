@@ -126,7 +126,14 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        val estadoInicial = Estado.fromLabel(item.estado)
+        val bloqueadaPorClor = item.estadoClor.equals("RESUELTA", true)
+
+        val estadoInicial = if (bloqueadaPorClor) {
+            Estado.RESUELTA
+        } else {
+            Estado.fromLabel(item.estado)
+        }
+
         estadoActual = estadoInicial
         vm.resetMedidorEstado()
         tipoSeleccionado = item.tipoAfectacion
@@ -170,9 +177,12 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
             true
         }
 
-        if (estadoInicial == Estado.ASIGNADA && b.etHoraInicio.text.isNullOrBlank()) {
-            b.etHoraInicio.setText(horaFormatter.format(Date()))
-        }
+        if ((estadoInicial == Estado.ASIGNADA || estadoInicial == Estado.PENDIENTE) &&
+    b.etHoraInicio.text.isNullOrBlank()
+) {
+    b.etHoraInicio.setText(horaFormatter.format(Date()))
+}
+
         // TODO(Codex): Prefijar hora de inicio con la hora actual al asignar
 
         bindHeader(estadoInicial)
@@ -365,12 +375,16 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
         b.actvVehiculo.isFocusable = true
         b.actvVehiculo.isFocusableInTouchMode = true
 
-        configureButtons(estadoInicial)
+
+        renderState()
+
     }
 
     private fun bindHeader(estado: Estado) {
         b.tvCaso.text = getString(R.string.averia_caso_format, item.id)
-        b.chipEstado.text = item.estado
+        val bloqueadaPorClor = item.estadoClor.equals("RESUELTA", true)
+        b.chipEstado.text = if (bloqueadaPorClor) "Resuelta (CLOR)" else item.estado
+
         val color = when (estado) {
             Estado.PENDIENTE -> "#E53935"
             Estado.ASIGNADA -> "#FBC02D"
@@ -461,8 +475,14 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
 
     private fun bindResumenes() {
         val emptyValue = getString(R.string.averia_pdf_empty_value)
-        b.tvCausaActual.text = item.causa.ifBlank { emptyValue }
-        b.tvObservacionesActuales.text = item.observaciones.ifBlank { emptyValue }
+        val bloqueadaPorClor = item.estadoClor.equals("RESUELTA", true)
+
+        val causaDisplay = if (bloqueadaPorClor) item.causaClor ?: item.causa else item.causa
+        val obsDisplay = if (bloqueadaPorClor) item.observacionesClor ?: item.observaciones else item.observaciones
+
+        b.tvCausaActual.text = causaDisplay.ifBlank { emptyValue }
+        b.tvObservacionesActuales.text = obsDisplay.ifBlank { emptyValue }
+
         val localizacion = item.localizacion?.takeIf { it.isNotBlank() } ?: emptyValue
         val detalleParts = buildList {
             item.medidorPueblo?.takeIf { it.isNotBlank() }?.let {
@@ -695,188 +715,358 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
         }
     }
 
-    private fun applyInputState(estado: Estado) {
-        estadoActual = estado
-        val isPending = estado == Estado.PENDIENTE
-        val isAsignada = estado == Estado.ASIGNADA
-        val isEnAtencion = estado == Estado.EN_ATENCION
-        val isResuelta = estado == Estado.RESUELTA
-        val isAnulada = estado == Estado.ANULADA
+private fun renderState() {
+    val uid = vm.usuarioActual.value?.uid
+    val clorResuelta = item.estadoClor.equals("RESUELTA", true)
 
-        val hideInputs = isPending || isAnulada
+    val estado = if (clorResuelta) Estado.RESUELTA else Estado.fromLabel(item.estado)
+    estadoActual = estado
 
-        inputsEditable = !hideInputs
-        finalInputsEnabled = !isAnulada && (isEnAtencion || isResuelta)
-        horaInicioEditable = (!isAnulada && isAsignada) || finalInputsEnabled
+    val tieneAsignacion = !item.tecnicoUid.isNullOrBlank()
+    val pertenece = uid != null && item.tecnicoUid == uid
+    val asignadaAOtro = tieneAsignacion && (uid == null || item.tecnicoUid != uid)
 
-        val allowCauseObs = !hideInputs && (isEnAtencion || isResuelta)
-        val allowMaterials = !hideInputs && (isEnAtencion || isResuelta)
-        val allowLocalizacion = !hideInputs && (isEnAtencion || isResuelta)
-        val allowInitialKm = !hideInputs
-        val allowMedidor = !hideInputs && tipoSeleccionado == TipoAfectacion.CLIENTE
-        val allowVehiculo = !hideInputs
-        val allowTecnicos = !hideInputs
+    // ✅ Regla clave: NO se rellena nada hasta que esté EN_ATENCION
+    // ✅ Solo se edita si está EN_ATENCION y pertenece (y no está asignada a otro, ni CLOR resuelta)
+    val puedeEditar = !clorResuelta && estado == Estado.EN_ATENCION && pertenece && !asignadaAOtro
 
-        b.toggleTipoAfectacion.isEnabled = !hideInputs
-        b.btnTipoCliente.isEnabled = !hideInputs
-        b.btnTipoSector.isEnabled = !hideInputs
-        b.toggleTipoAfectacion.isVisible = !hideInputs
+    applyInputStateForRules(estado = estado, puedeEditar = puedeEditar)
 
-        if (hideInputs) {
-            b.tilTecnicoBuscar.isVisible = false
-            b.tilMaterialBuscar.isVisible = false
-            b.tilMedidor.isVisible = false
-            b.tilLocalizacion.isVisible = false
-            b.tilCausa.isVisible = false
-            b.tilObs.isVisible = false
-            b.tilVehiculo.isVisible = false
-            b.tilHoraInicio.isVisible = false
-            b.tilHoraFinal.isVisible = false
-            b.tilKmInicio.isVisible = false
-            b.tilKmFinal.isVisible = false
-        } else {
-            b.tilTecnicoBuscar.applyAvailability(allowTecnicos)
-            b.tilMaterialBuscar.applyAvailability(allowMaterials)
-            b.tilMedidor.applyAvailability(allowMedidor)
-            b.tilLocalizacion.applyAvailability(allowLocalizacion)
-            b.tilCausa.applyAvailability(allowCauseObs)
-            b.tilObs.applyAvailability(allowCauseObs)
-            b.tilVehiculo.applyAvailability(allowVehiculo)
-            b.tilHoraInicio.applyAvailability(horaInicioEditable)
-            b.tilHoraFinal.applyAvailability(finalInputsEnabled)
-            b.tilKmInicio.applyAvailability(allowInitialKm)
-            b.tilKmFinal.applyAvailability(finalInputsEnabled)
-        }
+    configureButtonsForRules(
+        estado = estado,
+        pertenece = pertenece,
+        asignadaAOtro = asignadaAOtro,
+        clorResuelta = clorResuelta
+    )
+}
 
-        b.actvTecnico.isEnabled = allowTecnicos
-        b.actvTecnico.isClickable = allowTecnicos
-        b.actvMaterial.isEnabled = allowMaterials
-        b.actvMaterial.isClickable = allowMaterials
-        b.actvVehiculo.isEnabled = allowVehiculo
-        b.actvVehiculo.isClickable = allowVehiculo
+private fun applyInputStateForRules(estado: Estado, puedeEditar: Boolean) {
+    // ✅ Inputs SOLO visibles cuando está EN_ATENCION (aunque sea readonly, vos decidís)
+    val showInputs = (estado == Estado.EN_ATENCION)
 
-        b.etHoraInicio.isVisible = b.tilHoraInicio.isVisible
-        b.etHoraFin.isVisible = b.tilHoraFinal.isVisible
-        b.etKmInicio.isVisible = b.tilKmInicio.isVisible
-        b.etKmFinal.isVisible = b.tilKmFinal.isVisible
+    // Editable SOLO si puedeEditar
+    inputsEditable = puedeEditar
+    finalInputsEnabled = puedeEditar
+    horaInicioEditable = puedeEditar
 
-        b.tilMedidor.isEndIconVisible = allowMedidor
-        b.chipGroupTecnicos.isEnabled = allowTecnicos && !hideInputs
-        val hasTecnicos = b.chipGroupTecnicos.childCount > 0
-        b.chipGroupTecnicos.isVisible = !hideInputs && (allowTecnicos || hasTecnicos)
-        b.chipGroupMateriales.isEnabled = allowMaterials && !hideInputs
-        val hasMateriales = b.chipGroupMateriales.childCount > 0
-        b.chipGroupMateriales.isVisible = !hideInputs && (allowMaterials || hasMateriales)
+    // Mostrar/ocultar bloque inputs completo
+    b.tilTecnicoBuscar.isVisible = showInputs
+    b.tilMaterialBuscar.isVisible = showInputs
+    b.tilMedidor.isVisible = showInputs && tipoSeleccionado == TipoAfectacion.CLIENTE
+    b.tilLocalizacion.isVisible = showInputs
+    b.tilCausa.isVisible = showInputs
+    b.tilObs.isVisible = showInputs
+    b.tilVehiculo.isVisible = showInputs
+    b.tilHoraInicio.isVisible = showInputs
+    b.tilHoraFinal.isVisible = showInputs
+    b.tilKmInicio.isVisible = showInputs
+    b.tilKmFinal.isVisible = showInputs
 
-        renderTecnicos()
-        renderMateriales()
+    // ✅ Habilitar/deshabilitar (si están visibles)
+    fun TextInputLayout.setEnabledDeep(enabled: Boolean) {
+        isEnabled = enabled
+        editText?.isEnabled = enabled
+        editText?.isFocusable = enabled
+        editText?.isFocusableInTouchMode = enabled
     }
 
+    val enabled = puedeEditar
+    b.tilTecnicoBuscar.setEnabledDeep(enabled)
+    b.tilMaterialBuscar.setEnabledDeep(enabled)
+    b.tilMedidor.setEnabledDeep(enabled && tipoSeleccionado == TipoAfectacion.CLIENTE)
+    b.tilLocalizacion.setEnabledDeep(enabled)
+    b.tilCausa.setEnabledDeep(enabled)
+    b.tilObs.setEnabledDeep(enabled)
+    b.tilVehiculo.setEnabledDeep(enabled)
+    b.tilHoraInicio.setEnabledDeep(enabled)
+    b.tilHoraFinal.setEnabledDeep(enabled)
+    b.tilKmInicio.setEnabledDeep(enabled)
+    b.tilKmFinal.setEnabledDeep(enabled)
+
+    b.actvTecnico.isEnabled = enabled
+    b.actvMaterial.isEnabled = enabled
+    b.actvVehiculo.isEnabled = enabled
+    b.chipGroupTecnicos.isEnabled = enabled
+    b.chipGroupMateriales.isEnabled = enabled
+
+    renderTecnicos()
+    renderMateriales()
+}
+
+private fun configureButtonsForRules(
+    estado: Estado,
+    pertenece: Boolean,
+    asignadaAOtro: Boolean,
+    clorResuelta: Boolean
+) {
+    // Reset
+    b.btnAsignar.isVisible = false
+    b.btnAtender.isVisible = false
+    b.btnResolver.isVisible = false
+    b.btnAnular.isVisible = false
+    b.btnExportar.isVisible = false
+    b.btnEliminar.isVisible = false
+
+    // ✅ Regla global: CLOR resuelta = solo lectura (solo exportar + cerrar)
+    if (clorResuelta) {
+        b.btnExportar.isVisible = false
+        b.btnExportar.setOnClickListener {
+            viewLifecycleOwner.lifecycleScope.launch { PdfGenerator.exportAveria(requireContext(), item) }
+        }
+        return
+    }
+
+    // ✅ Asignada a otro: bottomsheet sin acciones
+    if (asignadaAOtro) return
+
+    when (estado) {
+        Estado.PENDIENTE -> {
+            // ✅ BottomSheet: Atender + Anular (NO asignar)
+            b.btnAtender.isVisible = true
+            b.btnAtender.text = getString(R.string.averia_iniciar_atencion)
+            b.btnAtender.setOnClickListener {
+                val data = collectFormData(ValidationContext.INICIAR) ?: return@setOnClickListener
+                vm.onAtender(item, data)
+                dismissAllowingStateLoss()
+            }
+
+            b.btnAnular.isVisible = true
+            b.btnAnular.setOnClickListener {
+                MaterialAlertDialogBuilder(requireContext())
+                    .setTitle(R.string.averia_anular_confirm_title)
+                    .setMessage(R.string.averia_anular_confirm_message)
+                    .setPositiveButton(R.string.averia_anular_confirm_positive) { _, _ ->
+                        vm.onAnularPendiente(item)
+                        dismissAllowingStateLoss()
+                    }
+                    .setNegativeButton(android.R.string.cancel, null)
+                    .show()
+            }
+        }
+
+        Estado.ASIGNADA -> {
+            // ✅ BottomSheet: sin edición, solo Atender + Eliminar asignación (si pertenece)
+            b.btnAtender.isVisible = true
+            b.btnAtender.text = getString(R.string.averia_iniciar_atencion)
+            b.btnAtender.isEnabled = pertenece
+            b.btnAtender.setOnClickListener {
+                if (!pertenece) return@setOnClickListener
+                val data = collectFormData(ValidationContext.INICIAR) ?: return@setOnClickListener
+                vm.onAtender(item, data)
+                dismissAllowingStateLoss()
+            }
+
+            b.btnAsignar.isVisible = true
+            b.btnAsignar.text = getString(R.string.averia_eliminar_asignacion)
+            b.btnAsignar.isEnabled = pertenece
+            b.btnAsignar.setOnClickListener {
+                if (!pertenece) return@setOnClickListener
+                vm.onToggleAsignacion(item)
+                dismissAllowingStateLoss()
+            }
+        }
+
+        Estado.EN_ATENCION -> {
+            // ✅ Resolver (guardar) solo si pertenece
+            b.btnResolver.isVisible = true
+            b.btnResolver.text = getString(R.string.averia_guardar_resolucion)
+            b.btnResolver.isEnabled = pertenece
+            b.btnResolver.setOnClickListener {
+                if (!pertenece) return@setOnClickListener
+                val data = collectFormData(ValidationContext.RESOLVER) ?: return@setOnClickListener
+                vm.onResolver(item, data)
+                dismissAllowingStateLoss()
+            }
+        }
+
+        Estado.RESUELTA -> {
+            // ✅ Resuelta por app: solo exportar
+            b.btnExportar.isVisible = pertenece
+b.btnExportar.isEnabled = pertenece
+
+            b.btnExportar.setOnClickListener {
+                viewLifecycleOwner.lifecycleScope.launch { PdfGenerator.exportAveria(requireContext(), item) }
+            }
+        }
+
+        Estado.ANULADA -> Unit
+    }
+}
+
+
+
+
+
+
+
+
+
+
+    private fun applyInputState(estado: Estado) {
+    estadoActual = estado
+        renderState()
+
+    val usuarioUid = vm.usuarioActual.value?.uid
+    val clorResuelta = item.estadoClor.equals("RESUELTA", true)
+
+    val tieneAsignacion = !item.tecnicoUid.isNullOrBlank()
+    val pertenece = usuarioUid != null && item.tecnicoUid == usuarioUid
+    val asignadaAOtro = tieneAsignacion && (usuarioUid == null || item.tecnicoUid != usuarioUid)
+
+    val isPending = estado == Estado.PENDIENTE
+    val isAsignada = estado == Estado.ASIGNADA
+    val isEnAtencion = estado == Estado.EN_ATENCION
+    val isResuelta = estado == Estado.RESUELTA
+    val isAnulada = estado == Estado.ANULADA
+
+    // ✅ Regla: SOLO se edita en EN_ATENCION y si pertenece
+    // Todo lo demás: solo lectura / no se rellena.
+  val showInputs = !clorResuelta && !asignadaAOtro && (isPending || isAsignada || isEnAtencion)
+
+// Puede editar:
+// - si está sin asignar (PENDIENTE) y hay usuario logueado
+// - o si pertenece (ASIGNADA / EN_ATENCION)
+val canEdit = showInputs && usuarioUid != null && (item.tecnicoUid.isNullOrBlank() || pertenece)
+
+inputsEditable = canEdit
+horaInicioEditable = canEdit              // se puede poner al iniciar
+finalInputsEnabled = canEdit && isEnAtencion // hora fin / km fin solo en atención
+
+
+    // Si está cerrado por CLOR o asignada a otro -> ocultamos inputs completos
+    val hideInputs = !showInputs
+
+    b.toggleTipoAfectacion.isVisible = !hideInputs
+    b.toggleTipoAfectacion.isEnabled = canEdit
+    b.btnTipoCliente.isEnabled = canEdit
+    b.btnTipoSector.isEnabled = canEdit
+
+    if (hideInputs) {
+        b.tilTecnicoBuscar.isVisible = false
+        b.tilMaterialBuscar.isVisible = false
+        b.tilMedidor.isVisible = false
+        b.tilLocalizacion.isVisible = false
+        b.tilCausa.isVisible = false
+        b.tilObs.isVisible = false
+        b.tilVehiculo.isVisible = false
+        b.tilHoraInicio.isVisible = false
+        b.tilHoraFinal.isVisible = false
+        b.tilKmInicio.isVisible = false
+        b.tilKmFinal.isVisible = false
+    } else {
+        val allowMedidor = canEdit && tipoSeleccionado == TipoAfectacion.CLIENTE
+
+        b.tilTecnicoBuscar.applyAvailability(canEdit)
+        b.tilMaterialBuscar.applyAvailability(canEdit)
+        b.tilMedidor.applyAvailability(allowMedidor)
+        b.tilLocalizacion.applyAvailability(canEdit)
+        b.tilCausa.applyAvailability(canEdit)
+        b.tilObs.applyAvailability(canEdit)
+        b.tilVehiculo.applyAvailability(canEdit)
+        b.tilHoraInicio.applyAvailability(canEdit)
+        b.tilHoraFinal.applyAvailability(canEdit)
+        b.tilKmInicio.applyAvailability(canEdit)
+        b.tilKmFinal.applyAvailability(canEdit)
+
+        b.tilMedidor.isEndIconVisible = allowMedidor
+    }
+
+    b.actvTecnico.isEnabled = canEdit
+    b.actvTecnico.isClickable = canEdit
+    b.actvMaterial.isEnabled = canEdit
+    b.actvMaterial.isClickable = canEdit
+    b.actvVehiculo.isEnabled = canEdit
+    b.actvVehiculo.isClickable = canEdit
+
+    b.chipGroupTecnicos.isEnabled = canEdit
+    b.chipGroupTecnicos.isVisible = !hideInputs && (canEdit || b.chipGroupTecnicos.childCount > 0)
+
+    b.chipGroupMateriales.isEnabled = canEdit
+    b.chipGroupMateriales.isVisible = !hideInputs && (canEdit || b.chipGroupMateriales.childCount > 0)
+
+    renderTecnicos()
+    renderMateriales()
+}
+
+
     private fun configureButtons(initialEstado: Estado) {
-        val usuarioUid = vm.usuarioActual.value?.uid
-        val puedeGestionar = item.tecnicoUid.isNullOrBlank() || item.tecnicoUid == usuarioUid
+       val usuarioUid = vm.usuarioActual.value?.uid
+        val clorResuelta = item.estadoClor.equals("RESUELTA", true)
+        val pertenece = usuarioUid != null && item.tecnicoUid == usuarioUid
+
+        // Si CLOR la cerró: bottomsheet sin acciones (ni exportar)
+        if (clorResuelta) {
+            b.btnAsignar.isVisible = false
+            b.btnAtender.isVisible = false
+            b.btnResolver.isVisible = false
+            b.btnExportar.isVisible = false
+            b.btnAnular.isVisible = false
+            b.btnEliminar.isVisible = false
+            return
+        }
+
+        val tieneAsignacion = !item.tecnicoUid.isNullOrBlank()
+        val asignadaAOtro = tieneAsignacion && (usuarioUid == null || item.tecnicoUid != usuarioUid)
+
         val green = ContextCompat.getColor(requireContext(), R.color.success_500)
         val red = ContextCompat.getColor(requireContext(), R.color.error_500)
+
         fun MaterialButton.applyPalette(background: Int, textColor: Int = Color.WHITE) {
             backgroundTintList = ColorStateList.valueOf(background)
             setTextColor(textColor)
             iconTint = ColorStateList.valueOf(textColor)
         }
 
-        b.btnEliminar.applyPalette(red)
-        b.btnResolver.applyPalette(green)
         b.btnAtender.applyPalette(green)
-        b.btnAsignar.apply {
-            when (initialEstado) {
-                Estado.PENDIENTE -> {
-                    text = getString(R.string.averia_asignar)
-                    isVisible = true
-                    isEnabled = usuarioUid != null
-                    setOnClickListener {
-                        vm.onToggleAsignacion(item)
-                        dismissAllowingStateLoss()
-                    }
-                }
-                Estado.ASIGNADA -> {
-                    text = getString(R.string.averia_eliminar_asignacion)
-                    isVisible = true
-                    isEnabled = puedeGestionar
-                    setOnClickListener {
-                        if (!puedeGestionar) return@setOnClickListener
-                        vm.onToggleAsignacion(item)
-                        dismissAllowingStateLoss()
-                    }
-                }
-                else -> {
-                    isVisible = false
-                }
-            }
-        }
+        b.btnResolver.applyPalette(green)
+        b.btnAnular.applyPalette(red)
+        b.btnEliminar.applyPalette(red)
 
+        // Reset
+        b.btnAsignar.isVisible = false
         b.btnAtender.isVisible = false
         b.btnResolver.isVisible = false
         b.btnExportar.isVisible = false
         b.btnAnular.isVisible = false
         b.btnEliminar.isVisible = false
 
+        // ✅ Regla global: CLOR Resuelta = solo lectura
+        if (clorResuelta) {
+            b.btnExportar.isVisible = false
+            b.btnExportar.setOnClickListener {
+                viewLifecycleOwner.lifecycleScope.launch {
+                    PdfGenerator.exportAveria(requireContext(), item)
+                }
+            }
+            return
+        }
+
+        // ✅ Si está asignada a otro, bottomsheet sin acciones
+        if (asignadaAOtro) return
+
         when (initialEstado) {
-            Estado.ASIGNADA -> {
+            Estado.PENDIENTE -> {
+                // ✅ BottomSheet: Atender + Anular (NO Asignar)
                 b.btnAtender.apply {
                     isVisible = true
                     text = getString(R.string.averia_iniciar_atencion)
-                    isEnabled = puedeGestionar
+                    isEnabled = usuarioUid != null
                     setOnClickListener {
-                        if (!puedeGestionar) return@setOnClickListener
                         val data = collectFormData(ValidationContext.INICIAR) ?: return@setOnClickListener
                         vm.onAtender(item, data)
                         dismissAllowingStateLoss()
                     }
                 }
-            }
-            Estado.EN_ATENCION -> {
-                b.btnAtender.apply {
+
+                b.btnAnular.apply {
                     isVisible = true
-                    text = getString(R.string.averia_cancelar_atencion)
-                    isEnabled = puedeGestionar
-                    applyPalette(red)
+                    isEnabled = usuarioUid != null
                     setOnClickListener {
-                        if (!puedeGestionar) return@setOnClickListener
-                        vm.onCancelarAtencion(item)
-                        dismissAllowingStateLoss()
-                    }
-                }
-                b.btnResolver.apply {
-                    isVisible = true
-                    isEnabled = puedeGestionar
-                    text = getString(R.string.averia_guardar_resolucion)
-                    applyPalette(green)
-                    setOnClickListener {
-                        if (!puedeGestionar) return@setOnClickListener
-                        val data = collectFormData(ValidationContext.RESOLVER) ?: return@setOnClickListener
-                        vm.onResolver(item, data)
-                        dismissAllowingStateLoss()
-                    }
-                }
-            }
-            Estado.RESUELTA -> {
-                b.btnExportar.apply {
-                    isVisible = true
-                    setOnClickListener {
-                        viewLifecycleOwner.lifecycleScope.launch {
-                            PdfGenerator.exportAveria(requireContext(), item)
-                        }
-                    }
-                }
-                b.btnEliminar.apply {
-                    isVisible = true
-                    isEnabled = puedeGestionar
-                    setOnClickListener {
-                        if (!puedeGestionar) return@setOnClickListener
                         MaterialAlertDialogBuilder(requireContext())
-                            .setTitle(R.string.averia_eliminar_confirm_title)
-                            .setMessage(R.string.averia_eliminar_confirm_message)
-                            .setPositiveButton(R.string.averia_eliminar_confirm_positive) { _, _ ->
-                                vm.onEliminarResuelta(item)
+                            .setTitle(R.string.averia_anular_confirm_title)
+                            .setMessage(R.string.averia_anular_confirm_message)
+                            .setPositiveButton(R.string.averia_anular_confirm_positive) { _, _ ->
+                                vm.onAnularPendiente(item)
                                 dismissAllowingStateLoss()
                             }
                             .setNegativeButton(android.R.string.cancel, null)
@@ -884,30 +1074,64 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
                     }
                 }
             }
-            else -> Unit
-        }
 
-        if (initialEstado == Estado.PENDIENTE) {
-            b.btnAnular.apply {
-                isVisible = true
-                isEnabled = puedeGestionar
-                applyPalette(red)
-                setOnClickListener {
-                    if (!puedeGestionar) return@setOnClickListener
-                    MaterialAlertDialogBuilder(requireContext())
-                        .setTitle(R.string.averia_anular_confirm_title)
-                        .setMessage(R.string.averia_anular_confirm_message)
-                        .setPositiveButton(R.string.averia_anular_confirm_positive) { _, _ ->
-                            vm.onAnularPendiente(item)
-                            dismissAllowingStateLoss()
-                        }
-                        .setNegativeButton(android.R.string.cancel, null)
-                        .show()
+            Estado.ASIGNADA -> {
+                // ✅ BottomSheet: sin edición, solo Atender + Eliminar asignación (si pertenece)
+                b.btnAtender.apply {
+                    isVisible = true
+                    text = getString(R.string.averia_iniciar_atencion)
+                    isEnabled = pertenece
+                    setOnClickListener {
+                        if (!pertenece) return@setOnClickListener
+                        val data = collectFormData(ValidationContext.INICIAR) ?: return@setOnClickListener
+                        vm.onAtender(item, data)
+                        dismissAllowingStateLoss()
+                    }
+                }
+
+                b.btnAsignar.apply {
+                    isVisible = true
+                    text = getString(R.string.averia_eliminar_asignacion)
+                    isEnabled = pertenece
+                    setOnClickListener {
+                        if (!pertenece) return@setOnClickListener
+                        vm.onToggleAsignacion(item)
+                        dismissAllowingStateLoss()
+                    }
                 }
             }
-        }
 
+            Estado.EN_ATENCION -> {
+                // ✅ Resolver (guardar resolución) solo si pertenece
+                b.btnResolver.apply {
+                    isVisible = true
+                    text = getString(R.string.averia_guardar_resolucion)
+                    isEnabled = pertenece
+                    setOnClickListener {
+                        if (!pertenece) return@setOnClickListener
+                        val data = collectFormData(ValidationContext.RESOLVER) ?: return@setOnClickListener
+                        vm.onResolver(item, data)
+                        dismissAllowingStateLoss()
+                    }
+                }
+            }
+
+            Estado.RESUELTA -> {
+                // ✅ Resuelta por app: solo exportar
+                b.btnExportar.apply {
+                    isVisible = false
+                    setOnClickListener {
+                        viewLifecycleOwner.lifecycleScope.launch {
+                            PdfGenerator.exportAveria(requireContext(), item)
+                        }
+                    }
+                }
+            }
+
+            Estado.ANULADA -> Unit
+        }
     }
+
 
     private fun openTimePicker(onPick: (Int, Int) -> Unit) {
         val cal = Calendar.getInstance()

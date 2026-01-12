@@ -25,7 +25,7 @@ import com.Arasoftsolutions.tecniapp_ice.Database.entities.*
         LuminariaReparacionEntity::class // Reparaciones de luminarias
     ],
 
-    version = 14,                        // ✅ mantener la versión más alta
+    version = 15,                        // ✅ mantener la versión más alta
 
     exportSchema = true
 )

@@ -41,6 +41,9 @@ data class AveriaUI(
     val medidorPueblo: String?,
     val medidorMetros: String?,
     val medidorPoste: String?,
+    val estadoClor: String?,
+    val causaClor: String?,
+    val observacionesClor: String?
 ) : Serializable {
 
     fun resolvedAtendidoDisplay(emptyValue: String): String {

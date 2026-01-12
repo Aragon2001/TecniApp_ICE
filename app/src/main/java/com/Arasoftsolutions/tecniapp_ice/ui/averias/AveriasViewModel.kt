@@ -20,7 +20,6 @@ import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
 import com.Arasoftsolutions.tecniapp_ice.Database.sync.FirebaseSyncManager
 import com.Arasoftsolutions.tecniapp_ice.R
 import com.google.firebase.auth.FirebaseAuth
-import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriaNotifications
 import com.Arasoftsolutions.tecniapp_ice.preferences.DataStoreManager
 import java.text.Normalizer
 import java.time.Instant
@@ -203,7 +202,7 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
     init {
          repo.startRealtimeListener(onNewAverias = { nuevas ->
             viewModelScope.launch(Dispatchers.Default) {
-                handleRealtimeNewAverias(nuevas)
+
             }
         })
         AveriaNotifications.ensureChannel(app)
@@ -391,32 +390,6 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
     fun nombreTecnicoActual(): String? = _usuario.value?.let { nombreCompleto(it) }
     fun vehiculoPreferido(): String? = _usuario.value?.placaVehiculo
 
-    private fun handleRealtimeNewAverias(nuevas: List<AveriaEntity>) {
-        if (nuevas.isEmpty()) return
-        if (!_notificationsEnabled.value) return
-
-        val context = getApplication<Application>()
-        val estadoSeleccionado = estado.value
-        val regionSeleccionada = _regionSeleccionada.value
-        val agenciaSeleccionada = _agenciaSeleccionada.value
-        val fechaSeleccionada = fechaFiltro.value
-        val consulta = q.value
-        val filtrosAgencias = AveriaNotificationPreferences.normalizedAgencies(context)
-
-        val filtradas = nuevas.filter { averia ->
-            matchesEstado(averia, estadoSeleccionado) &&
-                matchesRegion(averia, regionSeleccionada) &&
-                matchesAgencia(averia, agenciaSeleccionada) &&
-                matchesFecha(averia, fechaSeleccionada) &&
-                matchesQuery(averia, consulta) &&
-                shouldNotifyForAgency(averia, filtrosAgencias)
-        }
-
-        if (filtradas.isEmpty()) return
-
-        AveriaNotificationDispatcher.notifyNewCases(context, filtradas)
-    }
-
     private fun matchesEstado(entity: AveriaEntity, estadoSeleccionado: Estado?): Boolean {
         if (estadoSeleccionado == null) return true
         val estadoEntity = Estado.fromLabel(entity.estado)
@@ -601,7 +574,10 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
             medidorCalle = entity.medidorCalle?.trim(),
             medidorPueblo = entity.medidorPueblo?.trim(),
             medidorMetros = entity.medidorMetros?.trim(),
-            medidorPoste = entity.medidorPoste?.trim()
+            medidorPoste = entity.medidorPoste?.trim(),
+            causaClor= entity.causaClor?.trim(),
+            estadoClor = entity.estadoClor?.trim(),
+            observacionesClor = entity.observacionesClor?.trim()
         )
     }
 
