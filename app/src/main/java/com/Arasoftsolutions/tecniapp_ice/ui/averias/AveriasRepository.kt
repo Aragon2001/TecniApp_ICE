@@ -64,7 +64,7 @@ class AveriasRepository(private val db: AppDatabase) {
                 isSynced = true
             )
         } else {
-            val estadoElegido = pickEstadoPreferAdvanced(existing.estado, canonical.estado)
+            val estadoElegido = pickEstadoPreferAdvanced(existing.estado, canonical.estado, canonical.estadoClor)
             val idEstadoElegido = idEstadoFromLabel(estadoElegido)
 
             existing.copy(
@@ -190,7 +190,7 @@ class AveriasRepository(private val db: AppDatabase) {
     }
 
     private fun mergeForApi(existing: AveriaEntity, remote: AveriaEntity): AveriaEntity {
-        val estadoElegido = pickEstadoPreferAdvanced(existing.estado, remote.estado)
+        val estadoElegido = pickEstadoPreferAdvanced(existing.estado, remote.estado, remote.estadoClor)
         val idEstadoElegido = idEstadoFromLabel(estadoElegido)
         return existing.copy(
             region = remote.region,
@@ -357,7 +357,11 @@ private fun preferMeaningfulClor(remote: String?, existing: String?): String? {
 }
 
 
-    private fun pickEstadoPreferAdvanced(local: String?, remote: String?): String {
+    private fun isClorResuelta(estadoClor: String?): Boolean =
+        estadoClor?.trim()?.equals("RESUELTA", ignoreCase = true) == true
+
+    private fun pickEstadoPreferAdvanced(local: String?, remote: String?, estadoClor: String?): String {
+        if (isClorResuelta(estadoClor)) return "Resuelta"
         val localNormalized = normalizeEstadoLabel(local)
         val remoteNormalized = normalizeEstadoLabel(remote)
         return when {
@@ -916,7 +920,7 @@ private fun AveriaEntity.toFirebaseAppPayload(): Map<String, Any?> = hashMapOf(
 
                    existing.isSynced && remote.lastUpdated >= existing.lastUpdated -> {
     // ✅ Estado app se decide con tu lógica (pickEstadoPreferAdvanced)
-    val estadoElegido = pickEstadoPreferAdvanced(existing.estado, remote.estado)
+        val estadoElegido = pickEstadoPreferAdvanced(existing.estado, remote.estado, remote.estadoClor)
     val idEstadoElegido = idEstadoFromLabel(estadoElegido)
 
     updated += existing.copy(
@@ -1027,7 +1031,7 @@ private fun AveriaEntity.toFirebaseAppPayload(): Map<String, Any?> = hashMapOf(
                             }
 
                             remote.lastUpdated >= existing.lastUpdated -> {
-                                val estadoElegido = pickEstadoPreferAdvanced(existing.estado, remote.estado)
+                                val estadoElegido = pickEstadoPreferAdvanced(existing.estado, remote.estado, remote.estadoClor)
                                 val idEstadoElegido = idEstadoFromLabel(estadoElegido)
                                 toUpsert += existing.copy(
                                     region = remote.region,
