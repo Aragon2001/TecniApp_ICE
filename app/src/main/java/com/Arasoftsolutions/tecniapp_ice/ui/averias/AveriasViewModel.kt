@@ -201,9 +201,16 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), AveriasUiState())
 
     init {
-         repo.startRealtimeListener(onNewAverias = { nuevas ->
+        repo.startRealtimeListener(onNewAverias = { nuevas ->
             viewModelScope.launch(Dispatchers.Default) {
+                if (AveriasForegroundTracker.isAveriasVisible) return@launch
+                if (!AveriaNotificationPreferences.areNotificationsEnabled(getApplication())) return@launch
 
+                val agencyFilters = AveriaNotificationPreferences.normalizedAgencies(getApplication())
+                val filtered = nuevas.filter { shouldNotifyForAgency(it, agencyFilters) }
+                if (filtered.isNotEmpty()) {
+                    AveriaNotificationDispatcher.notifyNewCases(getApplication(), filtered)
+                }
             }
         })
         AveriaNotifications.ensureChannel(app)
