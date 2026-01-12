@@ -198,8 +198,11 @@ Cliente: %4$s</string>
     <string name="averia_error_no_autorizado">No puedes gestionar una avería asignada a otro técnico.</string>
     <string name="averia_error_hora_formato">Ingresa la hora en formato HH:mm.</string>
     <string name="averia_error_hora_final_menor">La hora final debe ser mayor a la inicial.</string>
+    <string name="averia_error_hora_llegada_menor">La hora de llegada no puede ser menor a la hora de inicio.</string>
     <string name="averia_error_km_invalido">Ingresa un kilometraje válido.</string>
     <string name="averia_error_km_final_menor">El kilometraje final no puede ser menor al inicial.</string>
+    <string name="averia_error_km_llegada_menor">El kilometraje de llegada no puede ser menor al inicial.</string>
+    <string name="averia_error_localizacion_requerida">La localización es requerida.</string>
     <string name="averia_error_hora_inicio_requerida">Ingresa la hora de inicio.</string>
     <string name="averia_error_hora_fin_requerida">Ingresa la hora de fin.</string>
     <string name="averia_error_km_inicio_requerido">Ingresa el kilometraje inicial.</string>
@@ -245,7 +248,9 @@ Cliente: %4$s</string>
     <string name="averia_label_localizacion">Localización:</string>
     <string name="averia_label_direccion">Dirección:</string>
     <string name="averia_label_causa">Causa:</string>
+    <string name="averia_label_causa_clor">Causa (CLOR):</string>
     <string name="averia_label_observaciones">Observaciones:</string>
+    <string name="averia_label_observaciones_clor">Observaciones (CLOR):</string>
     <string name="averia_label_evento">Evento:</string>
     <string name="averia_label_inicio">Inicio:</string>
     <string name="averia_label_fin">Fin:</string>
@@ -345,8 +350,10 @@ Cliente: %4$s</string>
     <string name="averia_pdf_table_label_observations">Observaciones</string>
     <string name="averia_pdf_table_label_event_date">Fecha del evento</string>
     <string name="averia_pdf_table_label_start_time">Inicio de atención</string>
+    <string name="averia_pdf_table_label_arrival_time">Hora de llegada</string>
     <string name="averia_pdf_table_label_end_time">Fin de atención</string>
     <string name="averia_pdf_table_label_kilometers">Kilometraje recorrido</string>
+    <string name="averia_pdf_table_label_kilometers_arrival">Kilometraje de llegada</string>
     <string name="averia_pdf_table_label_region">Región</string>
     <string name="averia_pdf_table_label_agency">Agencia</string>
     <string name="averia_pdf_table_label_client">Cliente</string>
