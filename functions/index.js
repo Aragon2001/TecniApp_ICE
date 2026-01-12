@@ -350,7 +350,7 @@ exports.syncAveriasYNotificar = onSchedule(
 
                 // ✅ Guardar / actualizar avería en Realtime (fuente “viva”)
         // 🔥 CLOR separado: NO pisa campos del técnico (estado/observaciones/causa de la app)
-        await db.ref("averias").child(caseId).update({
+        const payload = {
           caseId,
 
           // Neutros / API
@@ -369,7 +369,13 @@ exports.syncAveriasYNotificar = onSchedule(
           estadoClor: estado, // "PENDIENTE" | "RESUELTA"
           observacionesClor: String(a.observaciones || ""),
           causaClor: String(a.causa || ""),
-        });
+        };
+
+        if (estado === "RESUELTA") {
+          payload.estado = "Resuelta";
+        }
+
+        await db.ref("averias").child(caseId).update(payload);
 
         // ✅ Decide si notifica (nueva PENDIENTE, o cambio a RESUELTA)
         if (!shouldNotify(prevEstado, estado, isNew)) continue;
