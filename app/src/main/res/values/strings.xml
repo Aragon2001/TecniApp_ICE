@@ -219,8 +219,10 @@ Cliente: %4$s</string>
     <string name="averia_export_error">No se pudo generar el reporte.</string>
     <string name="averia_materiales_hint">Ej.: 3x Cable #6, 1x Medidor</string>
     <string name="averia_materiales_autocomplete_hint">Buscar material</string>
+    <string name="averia_hora_llegada_hint">Hora de llegada (HH:mm)</string>
     <string name="averia_hora_inicio_hint">Hora de inicio (HH:mm)</string>
     <string name="averia_hora_fin_hint">Hora de finalización (HH:mm)</string>
+    <string name="averia_km_llegada_hint">Kilometraje de llegada</string>
     <string name="averia_km_inicio_hint">Kilometraje inicial</string>
     <string name="averia_km_fin_hint">Kilometraje final</string>
     <string name="averia_obs_hint">Observaciones</string>
@@ -422,8 +424,10 @@ Cliente: %4$s</string>
     <string name="averia_pdf_no_meter_details">No se registró información del medidor.</string>
     <string name="averia_pdf_card_continuation_title">%1$s (continuación)</string>
 
-    <string name="averia_detalle_causa_title">Causa identificada</string>
-    <string name="averia_detalle_observaciones_title">Observaciones registradas</string>
+    <string name="averia_detalle_causa_title">Causa del técnico</string>
+    <string name="averia_detalle_observaciones_title">Observaciones del técnico</string>
+    <string name="averia_detalle_causa_clor_title">Causa registrada en CLOR</string>
+    <string name="averia_detalle_observaciones_clor_title">Observaciones registradas en CLOR</string>
     <string name="averia_detalle_cerrar">Cerrar detalle</string>
 
     <!-- Material SearchView -->
