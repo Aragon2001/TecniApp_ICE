@@ -6,6 +6,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.Toast
+import androidx.appcompat.widget.AppCompatEditText
 import androidx.core.view.isVisible
 import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.Fragment
@@ -15,7 +16,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.Arasoftsolutions.tecniapp_ice.databinding.FragmentLuminariasBinding
-import com.Arasoftsolutions.tecniapp_ice.ui.inventario.InventarioAdapter
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.launch
 
 class LuminariasFragment : Fragment() {
@@ -24,8 +25,11 @@ class LuminariasFragment : Fragment() {
     private val binding get() = _binding!!
 
     private val viewModel: LuminariasViewModel by viewModels()
-    private lateinit var inventarioAdapter: InventarioAdapter
     private var vehiculosAdapter: ArrayAdapter<String>? = null
+    private var materialesAdapter: ArrayAdapter<String>? = null
+    private lateinit var materialesSeleccionadosAdapter: LuminariaMaterialAdapter
+    private lateinit var reparacionesAdapter: LuminariaReparacionAdapter
+    private var materialesCatalogo = emptyList<com.Arasoftsolutions.tecniapp_ice.Database.entities.MaterialEntity>()
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -38,13 +42,19 @@ class LuminariasFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        inventarioAdapter = InventarioAdapter()
-        binding.listInventarioLuminaria.layoutManager = LinearLayoutManager(requireContext())
-        binding.listInventarioLuminaria.adapter = inventarioAdapter
+        materialesSeleccionadosAdapter = LuminariaMaterialAdapter { material ->
+            viewModel.eliminarMaterial(material.codigo)
+        }
+        reparacionesAdapter = LuminariaReparacionAdapter(
+            onEdit = { reparacion -> mostrarDialogoEdicion(reparacion) },
+            onDelete = { reparacion -> viewModel.eliminarReparacion(reparacion.id) }
+        )
+        binding.listMaterialesLuminaria.layoutManager = LinearLayoutManager(requireContext())
+        binding.listMaterialesLuminaria.adapter = materialesSeleccionadosAdapter
+        binding.listReparacionesLuminaria.layoutManager = LinearLayoutManager(requireContext())
+        binding.listReparacionesLuminaria.adapter = reparacionesAdapter
 
         binding.btnRegistrarLuminaria.setOnClickListener { viewModel.registrarReparacion() }
-        binding.etCodigo.doAfterTextChanged { viewModel.actualizarCodigo(it?.toString().orEmpty()) }
-        binding.etCantidad.doAfterTextChanged { viewModel.actualizarCantidad(it?.toString().orEmpty()) }
         binding.etLocalizacion.doAfterTextChanged { viewModel.actualizarLocalizacion(it?.toString().orEmpty()) }
 
         observarEstado()
@@ -71,7 +81,31 @@ class LuminariasFragment : Fragment() {
                         state.vehiculos.getOrNull(position)?.id?.let { viewModel.seleccionarVehiculo(it) }
                     }
 
-                    inventarioAdapter.submitList(state.inventario)
+                    materialesCatalogo = state.materiales
+                    val materialesLabel = state.materiales.map { "${it.codigo} - ${it.descripcion}" }
+                    if (materialesAdapter == null) {
+                        materialesAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_list_item_1, materialesLabel)
+                        binding.actMaterialLuminaria.setAdapter(materialesAdapter)
+                    } else {
+                        materialesAdapter?.clear()
+                        materialesAdapter?.addAll(materialesLabel)
+                    }
+
+                    binding.actMaterialLuminaria.setOnItemClickListener { _, _, position, _ ->
+                        materialesCatalogo.getOrNull(position)?.let { material ->
+                            mostrarDialogoCantidad(material)
+                        }
+                    }
+
+                    materialesSeleccionadosAdapter.submitList(state.materialesSeleccionados)
+                    binding.tvEmptyMateriales.isVisible = state.materialesSeleccionados.isEmpty()
+
+                    reparacionesAdapter.submitList(state.reparaciones)
+                    binding.tvEmptyReparaciones.isVisible = state.reparaciones.isEmpty()
+
+                    if (binding.etLocalizacion.text?.toString() != state.localizacion) {
+                        binding.etLocalizacion.setText(state.localizacion)
+                    }
                 }
             }
         }
@@ -95,5 +129,51 @@ class LuminariasFragment : Fragment() {
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
+    }
+
+    private fun mostrarDialogoCantidad(material: com.Arasoftsolutions.tecniapp_ice.Database.entities.MaterialEntity) {
+        val dialogView = layoutInflater.inflate(
+            com.Arasoftsolutions.tecniapp_ice.R.layout.dialog_luminaria_cantidad,
+            null
+        )
+        val cantidadInput = dialogView.findViewById<AppCompatEditText>(
+            com.Arasoftsolutions.tecniapp_ice.R.id.etCantidadMaterial
+        )
+        cantidadInput.setText("1")
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle("Cantidad usada")
+            .setView(dialogView)
+            .setPositiveButton("Agregar") { _, _ ->
+                val cantidad = cantidadInput.text?.toString()?.toDoubleOrNull() ?: 0.0
+                viewModel.agregarMaterial(material.codigo, material.descripcion, cantidad)
+                binding.actMaterialLuminaria.setText("", false)
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+
+    private fun mostrarDialogoEdicion(reparacion: com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaReparacionEntity) {
+        val dialogView = layoutInflater.inflate(
+            com.Arasoftsolutions.tecniapp_ice.R.layout.dialog_luminaria_edicion,
+            null
+        )
+        val localizacionInput = dialogView.findViewById<AppCompatEditText>(
+            com.Arasoftsolutions.tecniapp_ice.R.id.etLocalizacionReparacion
+        )
+        val cantidadInput = dialogView.findViewById<AppCompatEditText>(
+            com.Arasoftsolutions.tecniapp_ice.R.id.etCantidadReparacion
+        )
+        localizacionInput.setText(reparacion.localizacion)
+        cantidadInput.setText(reparacion.cantidadUtilizada.toString())
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle("Editar reparación")
+            .setView(dialogView)
+            .setPositiveButton("Guardar") { _, _ ->
+                val nuevaLocalizacion = localizacionInput.text?.toString().orEmpty()
+                val nuevaCantidad = cantidadInput.text?.toString()?.toDoubleOrNull() ?: 0.0
+                viewModel.actualizarReparacion(reparacion.id, nuevaLocalizacion, nuevaCantidad)
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
     }
 }

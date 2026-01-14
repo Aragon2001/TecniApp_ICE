@@ -9,6 +9,7 @@ import androidx.lifecycle.viewModelScope
 import com.google.firebase.functions.FirebaseFunctions
 import com.google.firebase.storage.FirebaseStorage
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.AveriaEntity
+import com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaReparacionEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.MaterialEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.room.AppDatabase
 import com.Arasoftsolutions.tecniapp_ice.R
@@ -25,6 +26,7 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlinx.coroutines.Dispatchers
+import kotlin.math.roundToInt
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -55,7 +57,8 @@ private data class MaterialAcumulado(
 enum class ReportType(@StringRes val titleRes: Int, val fileNameKey: String) {
     AVERIAS(R.string.reportes_chip_averias, "averias"),
     MATERIALES_POR_AVERIA(R.string.reportes_chip_material_por_averia, "material_por_averia"),
-    MATERIALES_TOTALES(R.string.reportes_chip_material_total, "material_total")
+    MATERIALES_TOTALES(R.string.reportes_chip_material_total, "material_total"),
+    LUMINARIAS_REPARADAS(R.string.reportes_chip_luminarias, "luminarias_reparadas")
 }
 
 data class AveriaReportItem(
@@ -87,6 +90,19 @@ data class MaterialTotalItem(
     val averias: Int
 )
 
+data class LuminariaReparadaReportItem(
+    val id: Long,
+    val fechaTexto: String,
+    val localizacion: String,
+    val localizacionTexto: String,
+    val codigo: String,
+    val descripcion: String,
+    val cantidad: Double,
+    val materialTexto: String,
+    val cantidadTexto: String,
+    val vehiculoTexto: String
+)
+
 data class ReportSectionState<T>(
     val isLoading: Boolean = false,
     val items: List<T> = emptyList(),
@@ -103,6 +119,7 @@ sealed class ReportExportData {
     data class Averias(val items: List<AveriaReportItem>) : ReportExportData()
     data class MaterialesPorAveria(val items: List<MaterialPorAveriaReportItem>) : ReportExportData()
     data class MaterialesTotales(val items: List<MaterialTotalItem>) : ReportExportData()
+    data class LuminariasReparadas(val items: List<LuminariaReparadaReportItem>) : ReportExportData()
 }
 
 data class ReportesUiState(
@@ -116,13 +133,20 @@ data class ReportesUiState(
     val isEmailSending: Boolean = false,
     val averiasState: ReportSectionState<AveriaReportItem> = ReportSectionState(),
     val materialesPorAveriaState: ReportSectionState<MaterialPorAveriaReportItem> = ReportSectionState(),
-    val materialesTotalesState: ReportSectionState<MaterialTotalItem> = ReportSectionState()
+    val materialesTotalesState: ReportSectionState<MaterialTotalItem> = ReportSectionState(),
+    val luminariasState: ReportSectionState<LuminariaReparadaReportItem> = ReportSectionState()
 )
 
 private data class DatosBase(
     val averias: List<AveriaReporteInterno>,
     val materialesTotales: List<MaterialTotalItem>,
     val totalMateriales: Int
+)
+
+private data class DatosLuminarias(
+    val reparaciones: List<LuminariaReparacionEntity>,
+    val totalMateriales: Double,
+    val codigosDistintos: Int
 )
 
 class ReportesViewModel(app: Application) : AndroidViewModel(app) {
@@ -203,25 +227,46 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
         setSectionLoading(tipo)
         viewModelScope.launch {
             try {
-                val base = obtenerDatosBase(state.fechaInicio, state.fechaFin)
-                val resumen = ResumenTotales(
-                    totalAverias = base.averias.size,
-                    totalMateriales = base.totalMateriales,
-                    totalMaterialesDistintos = base.materialesTotales.size
-                )
-
                 when (tipo) {
                     ReportType.AVERIAS -> {
+                        val base = obtenerDatosBase(state.fechaInicio, state.fechaFin)
+                        val resumen = ResumenTotales(
+                            totalAverias = base.averias.size,
+                            totalMateriales = base.totalMateriales,
+                            totalMaterialesDistintos = base.materialesTotales.size
+                        )
                         val items = mapAverias(base)
                         setAveriasSuccess(items, resumen)
                     }
                     ReportType.MATERIALES_POR_AVERIA -> {
+                        val base = obtenerDatosBase(state.fechaInicio, state.fechaFin)
+                        val resumen = ResumenTotales(
+                            totalAverias = base.averias.size,
+                            totalMateriales = base.totalMateriales,
+                            totalMaterialesDistintos = base.materialesTotales.size
+                        )
                         val items = mapMaterialesPorAveria(base)
                         setMaterialesPorAveriaSuccess(items, resumen)
                     }
                     ReportType.MATERIALES_TOTALES -> {
+                        val base = obtenerDatosBase(state.fechaInicio, state.fechaFin)
+                        val resumen = ResumenTotales(
+                            totalAverias = base.averias.size,
+                            totalMateriales = base.totalMateriales,
+                            totalMaterialesDistintos = base.materialesTotales.size
+                        )
                         val items = base.materialesTotales
                         setMaterialesTotalesSuccess(items, resumen)
+                    }
+                    ReportType.LUMINARIAS_REPARADAS -> {
+                        val base = obtenerDatosLuminarias(state.fechaInicio, state.fechaFin)
+                        val resumen = ResumenTotales(
+                            totalAverias = base.reparaciones.size,
+                            totalMateriales = base.totalMateriales.roundToInt(),
+                            totalMaterialesDistintos = base.codigosDistintos
+                        )
+                        val items = mapLuminarias(base)
+                        setLuminariasSuccess(items, resumen)
                     }
                 }
             } catch (t: Throwable) {
@@ -339,7 +384,24 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
                 if (!state.materialesTotalesState.hasContent) return null
                 ReportExportData.MaterialesTotales(state.materialesTotalesState.items)
             }
+            ReportType.LUMINARIAS_REPARADAS -> {
+                if (!state.luminariasState.hasContent) return null
+                ReportExportData.LuminariasReparadas(state.luminariasState.items)
+            }
         }
+    }
+
+    private suspend fun obtenerDatosLuminarias(inicio: LocalDate, fin: LocalDate): DatosLuminarias {
+        val zona = ZoneId.systemDefault()
+        val inicioMillis = inicio.atStartOfDay(zona).toInstant().toEpochMilli()
+        val finExclusiveMillis = fin.plusDays(1).atStartOfDay(zona).toInstant().toEpochMilli()
+        val reparaciones = withContext(Dispatchers.IO) {
+            database.inventarioDao().observarReparaciones().first()
+        }.filter { it.fechaRegistro in inicioMillis until finExclusiveMillis }
+            .sortedByDescending { it.fechaRegistro }
+        val totalMateriales = reparaciones.sumOf { it.cantidadUtilizada }
+        val codigosDistintos = reparaciones.map { it.codigoMaterial }.filter { it.isNotBlank() }.distinct().size
+        return DatosLuminarias(reparaciones, totalMateriales, codigosDistintos)
     }
 
     private suspend fun obtenerDatosBase(inicio: LocalDate, fin: LocalDate): DatosBase {
@@ -477,6 +539,49 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    private suspend fun mapLuminarias(base: DatosLuminarias): List<LuminariaReparadaReportItem> {
+        val vehiculos = withContext(Dispatchers.IO) { database.vehiculoDao().getAll() }
+        val vehiculosPorId = vehiculos.associateBy { it.id }
+        return base.reparaciones.map { reparacion ->
+            val vehiculo = vehiculosPorId[reparacion.vehiculoId]
+            val vehiculoTexto = buildString {
+                append(getApplication<Application>().getString(R.string.reportes_luminarias_vehiculo))
+                append(" ")
+                append(vehiculo?.placa?.toString().orEmpty().ifBlank { "-" })
+                val agencia = vehiculo?.agencia?.trim().orEmpty()
+                if (agencia.isNotBlank()) {
+                    append(" · ")
+                    append(agencia)
+                }
+            }
+            val descripcion = reparacion.descripcionMaterial.ifBlank { desconocidoMaterial }
+            val materialTexto = when {
+                reparacion.codigoMaterial.isNotBlank() && descripcion.isNotBlank() ->
+                    "${reparacion.codigoMaterial} · $descripcion"
+                descripcion.isNotBlank() -> descripcion
+                else -> reparacion.codigoMaterial
+            }
+            LuminariaReparadaReportItem(
+                id = reparacion.id,
+                fechaTexto = formatDateTime(reparacion.fechaRegistro),
+                localizacion = reparacion.localizacion,
+                localizacionTexto = getApplication<Application>().getString(
+                    R.string.reportes_luminarias_localizacion,
+                    reparacion.localizacion
+                ),
+                codigo = reparacion.codigoMaterial,
+                descripcion = descripcion,
+                cantidad = reparacion.cantidadUtilizada,
+                materialTexto = materialTexto,
+                cantidadTexto = getApplication<Application>().getString(
+                    R.string.reportes_luminarias_cantidad,
+                    reparacion.cantidadUtilizada
+                ),
+                vehiculoTexto = vehiculoTexto
+            )
+        }
+    }
+
     private fun setSectionLoading(tipo: ReportType) {
         _uiState.update { current ->
             when (tipo) {
@@ -484,19 +589,29 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
                     isGlobalLoading = true,
                     averiasState = current.averiasState.copy(isLoading = true),
                     materialesPorAveriaState = current.materialesPorAveriaState.copy(isLoading = false),
-                    materialesTotalesState = current.materialesTotalesState.copy(isLoading = false)
+                    materialesTotalesState = current.materialesTotalesState.copy(isLoading = false),
+                    luminariasState = current.luminariasState.copy(isLoading = false)
                 )
                 ReportType.MATERIALES_POR_AVERIA -> current.copy(
                     isGlobalLoading = true,
                     materialesPorAveriaState = current.materialesPorAveriaState.copy(isLoading = true),
                     averiasState = current.averiasState.copy(isLoading = false),
-                    materialesTotalesState = current.materialesTotalesState.copy(isLoading = false)
+                    materialesTotalesState = current.materialesTotalesState.copy(isLoading = false),
+                    luminariasState = current.luminariasState.copy(isLoading = false)
                 )
                 ReportType.MATERIALES_TOTALES -> current.copy(
                     isGlobalLoading = true,
                     materialesTotalesState = current.materialesTotalesState.copy(isLoading = true),
                     averiasState = current.averiasState.copy(isLoading = false),
-                    materialesPorAveriaState = current.materialesPorAveriaState.copy(isLoading = false)
+                    materialesPorAveriaState = current.materialesPorAveriaState.copy(isLoading = false),
+                    luminariasState = current.luminariasState.copy(isLoading = false)
+                )
+                ReportType.LUMINARIAS_REPARADAS -> current.copy(
+                    isGlobalLoading = true,
+                    luminariasState = current.luminariasState.copy(isLoading = true),
+                    averiasState = current.averiasState.copy(isLoading = false),
+                    materialesPorAveriaState = current.materialesPorAveriaState.copy(isLoading = false),
+                    materialesTotalesState = current.materialesTotalesState.copy(isLoading = false)
                 )
             }
         }
@@ -539,7 +654,24 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
                 resumen = resumen,
                 materialesTotalesState = ReportSectionState(isLoading = false, items = items, hasContent = true),
                 averiasState = current.averiasState.copy(isLoading = false),
-                materialesPorAveriaState = current.materialesPorAveriaState.copy(isLoading = false)
+                materialesPorAveriaState = current.materialesPorAveriaState.copy(isLoading = false),
+                luminariasState = current.luminariasState.copy(isLoading = false)
+            )
+        }
+    }
+
+    private fun setLuminariasSuccess(
+        items: List<LuminariaReparadaReportItem>,
+        resumen: ResumenTotales
+    ) {
+        _uiState.update { current ->
+            current.copy(
+                isGlobalLoading = false,
+                resumen = resumen,
+                luminariasState = ReportSectionState(isLoading = false, items = items, hasContent = true),
+                averiasState = current.averiasState.copy(isLoading = false),
+                materialesPorAveriaState = current.materialesPorAveriaState.copy(isLoading = false),
+                materialesTotalesState = current.materialesTotalesState.copy(isLoading = false)
             )
         }
     }
@@ -558,6 +690,10 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
                 ReportType.MATERIALES_TOTALES -> current.copy(
                     isGlobalLoading = false,
                     materialesTotalesState = current.materialesTotalesState.copy(isLoading = false)
+                )
+                ReportType.LUMINARIAS_REPARADAS -> current.copy(
+                    isGlobalLoading = false,
+                    luminariasState = current.luminariasState.copy(isLoading = false)
                 )
             }
         }
@@ -712,6 +848,7 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
             is ReportExportData.Averias -> data.items.size
             is ReportExportData.MaterialesPorAveria -> data.items.size
             is ReportExportData.MaterialesTotales -> data.items.size
+            is ReportExportData.LuminariasReparadas -> data.items.size
         }
     }
 
