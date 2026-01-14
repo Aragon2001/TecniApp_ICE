@@ -9,6 +9,7 @@ import androidx.lifecycle.viewModelScope
 import com.google.firebase.functions.FirebaseFunctions
 import com.google.firebase.storage.FirebaseStorage
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.AveriaEntity
+import com.Arasoftsolutions.tecniapp_ice.Database.entities.InventarioConVehiculo
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaReparacionEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.MaterialEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.room.AppDatabase
@@ -36,6 +37,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
+import java.text.DecimalFormat
 
 private val functions by lazy { FirebaseFunctions.getInstance() }
 private val storage by lazy { FirebaseStorage.getInstance() }
@@ -79,15 +81,26 @@ data class MaterialPorAveriaReportItem(
     val agencia: String,
     val vehiculo: String?,
     val materiales: List<MaterialUso>,
+    val materialesDetalle: List<MaterialDetalleReportItem>,
     val resumen: String,
     val tieneMateriales: Boolean
+)
+
+data class MaterialDetalleReportItem(
+    val codigo: String,
+    val descripcion: String,
+    val cantidad: Int,
+    val existenciaActual: Double,
+    val existenciaTexto: String
 )
 
 data class MaterialTotalItem(
     val codigo: String,
     val descripcion: String,
     val total: Int,
-    val averias: Int
+    val averias: Int,
+    val existenciaActual: Double,
+    val existenciaTexto: String
 )
 
 data class LuminariaReparadaReportItem(
@@ -140,13 +153,15 @@ data class ReportesUiState(
 private data class DatosBase(
     val averias: List<AveriaReporteInterno>,
     val materialesTotales: List<MaterialTotalItem>,
-    val totalMateriales: Int
+    val totalMateriales: Int,
+    val existenciasActuales: Map<String, Double>
 )
 
 private data class DatosLuminarias(
     val reparaciones: List<LuminariaReparacionEntity>,
     val totalMateriales: Double,
-    val codigosDistintos: Int
+    val codigosDistintos: Int,
+    val existenciasActuales: Map<String, Double>
 )
 
 class ReportesViewModel(app: Application) : AndroidViewModel(app) {
@@ -163,6 +178,7 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
     private val rangeFormatter = DateTimeFormatter.ofPattern("dd MMM yyyy", locale)
     private val dateTimeFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm", locale)
     private val fileNameFormatter = DateTimeFormatter.ofPattern("yyyyMMdd")
+    private val quantityFormatter = DecimalFormat("#,##0.##")
 
     private val desconocidoMaterial = app.getString(R.string.reportes_material_desconocido)
 
@@ -395,9 +411,12 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
         val zona = ZoneId.systemDefault()
         val inicioMillis = inicio.atStartOfDay(zona).toInstant().toEpochMilli()
         val finExclusiveMillis = fin.plusDays(1).atStartOfDay(zona).toInstant().toEpochMilli()
-        val reparaciones = withContext(Dispatchers.IO) {
-            database.inventarioDao().observarReparaciones().first()
-        }.filter { it.fechaRegistro in inicioMillis until finExclusiveMillis }
+        val (reparaciones, inventario) = withContext(Dispatchers.IO) {
+            val reparaciones = database.inventarioDao().observarReparaciones().first()
+            val inventario = database.inventarioDao().observarInventarioGeneral().first()
+            reparaciones to inventario
+        }
+        val reparacionesFiltradas = reparaciones.filter { it.fechaRegistro in inicioMillis until finExclusiveMillis }
             .sortedByDescending { it.fechaRegistro }
         val materiales = reparaciones.flatMap {
             com.Arasoftsolutions.tecniapp_ice.ui.luminarias.LuminariaMaterialSerializer.fromJson(it.materialesJson)
@@ -417,7 +436,8 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
         val resultado = withContext(Dispatchers.IO) {
             val averias = database.averiaDao().all()
             val materialesCatalogo = database.materialDao().observarMateriales().first()
-            construirDatosBase(averias, materialesCatalogo, inicio, fin)
+            val inventario = database.inventarioDao().observarInventarioGeneral().first()
+            construirDatosBase(averias, materialesCatalogo, inventario, inicio, fin)
         }
 
         cachedBase = resultado
@@ -428,6 +448,7 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
     private fun construirDatosBase(
         averias: List<AveriaEntity>,
         catalogo: List<MaterialEntity>,
+        inventario: List<InventarioConVehiculo>,
         inicio: LocalDate,
         fin: LocalDate
     ): DatosBase {
@@ -484,15 +505,19 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
             }
         }
 
+        val existenciasActuales = buildExistenciasActuales(inventario)
         val materialesTotales = acumulados.values
             .map { acumulado ->
                 val descripcion = acumulado.descripcion.ifBlank { desconocidoMaterial }
                 val codigo = acumulado.codigo
+                val existencia = buscarExistenciaActual(existenciasActuales, codigo, descripcion)
                 MaterialTotalItem(
                     codigo = codigo,
                     descripcion = descripcion,
                     total = acumulado.total,
-                    averias = acumulado.averias.size
+                    averias = acumulado.averias.size,
+                    existenciaActual = existencia,
+                    existenciaTexto = formatCantidad(existencia)
                 )
             }
             .sortedWith(
@@ -503,7 +528,8 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
         return DatosBase(
             averias = atendidas,
             materialesTotales = materialesTotales,
-            totalMateriales = totalMateriales
+            totalMateriales = totalMateriales,
+            existenciasActuales = existenciasActuales
         )
     }
 
@@ -530,12 +556,23 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
         return base.averias.map { raw ->
             val entidad = raw.entity
             val resumen = MaterialesSerializer.toSummary(raw.materiales)
+            val materialesDetalle = raw.materiales.map { uso ->
+                val existencia = buscarExistenciaActual(base.existenciasActuales, uso.codigo, uso.descripcion)
+                MaterialDetalleReportItem(
+                    codigo = uso.codigo,
+                    descripcion = uso.descripcion,
+                    cantidad = uso.cantidad,
+                    existenciaActual = existencia,
+                    existenciaTexto = formatCantidad(existencia)
+                )
+            }
             MaterialPorAveriaReportItem(
                 caseId = entidad.caseId,
                 fechaTexto = formatDateTime(raw.finalMillis),
                 agencia = obtenerAgencia(entidad),
                 vehiculo = entidad.vehiculoAsignado?.trim()?.takeIf { it.isNotEmpty() },
                 materiales = raw.materiales,
+                materialesDetalle = materialesDetalle,
                 resumen = resumen,
                 tieneMateriales = raw.materiales.isNotEmpty()
             )
@@ -798,6 +835,33 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
             ?: entity.tecnicoAsignadoNombre?.trim()?.takeIf { it.isNotEmpty() }
             ?: ""
     }
+
+    private fun buildExistenciasActuales(items: List<InventarioConVehiculo>): Map<String, Double> {
+        val acumulado = mutableMapOf<String, Double>()
+        items.forEach { item ->
+            val key = buildExistenciaKey(item.item.codigoMaterial, item.item.descripcionMaterial) ?: return@forEach
+            acumulado[key] = (acumulado[key] ?: 0.0) + item.item.cantidadDisponible
+        }
+        return acumulado
+    }
+
+    private fun buscarExistenciaActual(
+        existencias: Map<String, Double>,
+        codigo: String,
+        descripcion: String
+    ): Double {
+        val key = buildExistenciaKey(codigo, descripcion) ?: return 0.0
+        return existencias[key] ?: 0.0
+    }
+
+    private fun buildExistenciaKey(codigo: String, descripcion: String): String? {
+        val limpioCodigo = codigo.trim()
+        if (limpioCodigo.isNotEmpty()) return limpioCodigo
+        val limpiaDescripcion = descripcion.trim()
+        return limpiaDescripcion.takeIf { it.isNotEmpty() }?.lowercase(locale)
+    }
+
+    private fun formatCantidad(cantidad: Double): String = quantityFormatter.format(cantidad)
 
     private fun formatDateTime(millis: Long): String {
         return Instant.ofEpochMilli(millis)

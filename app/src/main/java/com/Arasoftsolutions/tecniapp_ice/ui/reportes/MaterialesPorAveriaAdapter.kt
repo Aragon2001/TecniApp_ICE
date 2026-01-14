@@ -7,7 +7,6 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.Arasoftsolutions.tecniapp_ice.R
 import com.Arasoftsolutions.tecniapp_ice.databinding.ItemReporteMaterialPorAveriaBinding
-import com.Arasoftsolutions.tecniapp_ice.ui.averias.MaterialUso
 
 class MaterialesPorAveriaAdapter :
     ListAdapter<MaterialPorAveriaReportItem, MaterialesPorAveriaAdapter.ViewHolder>(DiffCallback) {
@@ -39,9 +38,13 @@ class MaterialesPorAveriaAdapter :
                 ?: context.getString(R.string.reportes_item_vehiculo_desconocido)
             binding.tvVehiculo.text = context.getString(R.string.reportes_item_vehiculo, vehiculo)
 
-            val materialesTexto = if (item.tieneMateriales && item.materiales.isNotEmpty()) {
-                item.materiales.joinToString(separator = "\n") { uso ->
-                    formatMaterialLine(context.getString(R.string.reportes_material_desconocido), uso)
+            val materialesTexto = if (item.tieneMateriales && item.materialesDetalle.isNotEmpty()) {
+                item.materialesDetalle.joinToString(separator = "\n") { uso ->
+                    formatMaterialLine(
+                        context.getString(R.string.reportes_material_desconocido),
+                        uso,
+                        context.getString(R.string.reportes_material_existencia_actual, uso.existenciaTexto)
+                    )
                 }
             } else {
                 context.getString(R.string.reportes_material_sin_detalle)
@@ -50,15 +53,19 @@ class MaterialesPorAveriaAdapter :
             binding.tvMateriales.text = materialesTexto
         }
 
-        private fun formatMaterialLine(desconocido: String, uso: MaterialUso): String {
+        private fun formatMaterialLine(
+            desconocido: String,
+            uso: MaterialDetalleReportItem,
+            existenciaTexto: String
+        ): String {
             val descripcion = uso.descripcion.ifBlank {
                 uso.codigo.takeIf { it.isNotBlank() } ?: desconocido
             }
             val cantidad = uso.cantidad
             return if (cantidad <= 1) {
-                "• $descripcion"
+                "• $descripcion · $existenciaTexto"
             } else {
-                "• ${cantidad}x $descripcion"
+                "• ${cantidad}x $descripcion · $existenciaTexto"
             }
         }
     }
