@@ -35,7 +35,7 @@ class AveriasSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorke
     }
 
     companion object {
-        private const val UNIQUE_PERIODIC_WORK = "averias_sync"
+        const val UNIQUE_PERIODIC_WORK = "averias_sync"
         const val UNIQUE_MANUAL_WORK = "averias_sync_now"
 
         fun schedule(ctx: Context) {
