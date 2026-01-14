@@ -37,7 +37,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
-            tools:text="MAT-102 · Fotocelda" />
+            tools:text="2x Fotocelda, 1x Lámpara LED" />
 
         <TextView
             android:id="@+id/tvCantidad"
@@ -48,13 +48,22 @@
             tools:text="Cantidad: 2" />
 
         <TextView
-            android:id="@+id/tvExistencia"
+            android:id="@+id/tvEstado"
+            style="@style/TextAppearance.Material3.BodySmall"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:textColor="@color/dark_gray"
+            tools:text="Estado: Reparada" />
+
+        <TextView
+            android:id="@+id/tvEjecutor"
             style="@style/TextAppearance.Material3.BodySmall"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="2dp"
             android:textColor="@color/dark_gray"
-            tools:text="Existencia actual: 14" />
+            tools:text="Ejecutor: Juan Pérez" />
 
         <TextView
             android:id="@+id/tvVehiculo"
