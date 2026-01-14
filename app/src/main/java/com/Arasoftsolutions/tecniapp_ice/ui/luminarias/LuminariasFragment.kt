@@ -42,14 +42,35 @@ class LuminariasFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        inventarioAdapter = InventarioAdapter(showActions = false)
-        binding.listInventarioLuminaria.layoutManager = LinearLayoutManager(requireContext())
-        binding.listInventarioLuminaria.adapter = inventarioAdapter
+        setupAdapters()
 
         binding.btnRegistrarLuminaria.setOnClickListener { viewModel.registrarReparacion() }
         binding.etLocalizacion.doAfterTextChanged { viewModel.actualizarLocalizacion(it?.toString().orEmpty()) }
 
         observarEstado()
+    }
+
+    private fun setupAdapters() {
+        materialesSeleccionadosAdapter = LuminariaMaterialAdapter { material ->
+            viewModel.eliminarMaterial(material.codigo)
+        }
+        binding.listMaterialesLuminaria.apply {
+            layoutManager = LinearLayoutManager(requireContext())
+            adapter = materialesSeleccionadosAdapter
+            setHasFixedSize(false)
+            isNestedScrollingEnabled = false
+        }
+
+        reparacionesAdapter = LuminariaReparacionAdapter(
+            onEdit = { reparacion -> mostrarDialogoEdicion(reparacion) },
+            onDelete = { reparacion -> viewModel.eliminarReparacion(reparacion.id) }
+        )
+        binding.listReparacionesLuminaria.apply {
+            layoutManager = LinearLayoutManager(requireContext())
+            adapter = reparacionesAdapter
+            setHasFixedSize(false)
+            isNestedScrollingEnabled = false
+        }
     }
 
     private fun observarEstado() {
