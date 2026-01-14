@@ -29,11 +29,22 @@ data class LuminariaReparacionEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0L,
     val vehiculoId: Int,
     val localizacion: String,
-    val codigoMaterial: String,
-    val descripcionMaterial: String = "",
-    val cantidadUtilizada: Double = 0.0,
+    val materialesJson: String? = null,
+    val estado: String = LuminariaEstado.REPARADA.name,
+    val ejecutorNombre: String = "",
+    val ejecutorCedula: String? = null,
     val fechaRegistro: Long = System.currentTimeMillis()
 )
+
+enum class LuminariaEstado {
+    PENDIENTE,
+    REPARADA;
+
+    companion object {
+        fun fromRaw(raw: String?): LuminariaEstado =
+            values().firstOrNull { it.name.equals(raw, ignoreCase = true) } ?: REPARADA
+    }
+}
 
 data class InventarioConVehiculo(
     @Embedded val item: InventarioItemEntity,

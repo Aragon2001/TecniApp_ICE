@@ -28,12 +28,10 @@ class LuminariasReparadasAdapter :
             val context = binding.root.context
             binding.tvFecha.text = item.fechaTexto
             binding.tvLocalizacion.text = item.localizacionTexto
-            binding.tvMaterial.text = item.materialTexto
+            binding.tvMaterial.text = item.materialesTexto
             binding.tvCantidad.text = item.cantidadTexto
-            binding.tvExistencia.text = context.getString(
-                R.string.reportes_material_existencia_actual,
-                item.existenciaTexto
-            )
+            binding.tvEstado.text = item.estadoTexto
+            binding.tvEjecutor.text = item.ejecutorTexto
             binding.tvVehiculo.text = item.vehiculoTexto
         }
     }
