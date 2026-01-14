@@ -95,11 +95,11 @@ data class LuminariaReparadaReportItem(
     val fechaTexto: String,
     val localizacion: String,
     val localizacionTexto: String,
-    val codigo: String,
-    val descripcion: String,
-    val cantidad: Double,
-    val materialTexto: String,
+    val materialesTexto: String,
+    val cantidadTotal: Double,
     val cantidadTexto: String,
+    val estadoTexto: String,
+    val ejecutorTexto: String,
     val vehiculoTexto: String
 )
 
@@ -399,8 +399,11 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
             database.inventarioDao().observarReparaciones().first()
         }.filter { it.fechaRegistro in inicioMillis until finExclusiveMillis }
             .sortedByDescending { it.fechaRegistro }
-        val totalMateriales = reparaciones.sumOf { it.cantidadUtilizada }
-        val codigosDistintos = reparaciones.map { it.codigoMaterial }.filter { it.isNotBlank() }.distinct().size
+        val materiales = reparaciones.flatMap {
+            com.Arasoftsolutions.tecniapp_ice.ui.luminarias.LuminariaMaterialSerializer.fromJson(it.materialesJson)
+        }
+        val totalMateriales = materiales.sumOf { it.cantidad }
+        val codigosDistintos = materiales.map { it.codigo }.filter { it.isNotBlank() }.distinct().size
         return DatosLuminarias(reparaciones, totalMateriales, codigosDistintos)
     }
 
@@ -554,12 +557,18 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
                     append(agencia)
                 }
             }
-            val descripcion = reparacion.descripcionMaterial.ifBlank { desconocidoMaterial }
-            val materialTexto = when {
-                reparacion.codigoMaterial.isNotBlank() && descripcion.isNotBlank() ->
-                    "${reparacion.codigoMaterial} · $descripcion"
-                descripcion.isNotBlank() -> descripcion
-                else -> reparacion.codigoMaterial
+            val materiales = com.Arasoftsolutions.tecniapp_ice.ui.luminarias.LuminariaMaterialSerializer
+                .fromJson(reparacion.materialesJson)
+            val resumenMateriales = com.Arasoftsolutions.tecniapp_ice.ui.luminarias.LuminariaMaterialSerializer
+                .toSummary(materiales)
+                .ifBlank { desconocidoMaterial }
+            val total = materiales.sumOf { it.cantidad }
+            val estadoTexto = if (com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado.fromRaw(reparacion.estado) ==
+                com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado.PENDIENTE
+            ) {
+                getApplication<Application>().getString(R.string.reportes_luminarias_estado_pendiente)
+            } else {
+                getApplication<Application>().getString(R.string.reportes_luminarias_estado_reparada)
             }
             LuminariaReparadaReportItem(
                 id = reparacion.id,
@@ -569,14 +578,21 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
                     R.string.reportes_luminarias_localizacion,
                     reparacion.localizacion
                 ),
-                codigo = reparacion.codigoMaterial,
-                descripcion = descripcion,
-                cantidad = reparacion.cantidadUtilizada,
-                materialTexto = materialTexto,
+                materialesTexto = resumenMateriales,
+                cantidadTotal = total,
                 cantidadTexto = getApplication<Application>().getString(
                     R.string.reportes_luminarias_cantidad,
-                    reparacion.cantidadUtilizada
+                    total
                 ),
+                estadoTexto = estadoTexto,
+                ejecutorTexto = if (reparacion.ejecutorNombre.isNotBlank()) {
+                    getApplication<Application>().getString(
+                        R.string.reportes_luminarias_ejecutor,
+                        reparacion.ejecutorNombre
+                    )
+                } else {
+                    getApplication<Application>().getString(R.string.reportes_luminarias_ejecutor_sin_datos)
+                },
                 vehiculoTexto = vehiculoTexto
             )
         }

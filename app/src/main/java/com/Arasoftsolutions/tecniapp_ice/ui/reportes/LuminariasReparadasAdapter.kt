@@ -26,8 +26,10 @@ class LuminariasReparadasAdapter :
         fun bind(item: LuminariaReparadaReportItem) {
             binding.tvFecha.text = item.fechaTexto
             binding.tvLocalizacion.text = item.localizacionTexto
-            binding.tvMaterial.text = item.materialTexto
+            binding.tvMaterial.text = item.materialesTexto
             binding.tvCantidad.text = item.cantidadTexto
+            binding.tvEstado.text = item.estadoTexto
+            binding.tvEjecutor.text = item.ejecutorTexto
             binding.tvVehiculo.text = item.vehiculoTexto
         }
     }
