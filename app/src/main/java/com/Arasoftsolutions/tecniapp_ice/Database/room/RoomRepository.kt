@@ -263,49 +263,79 @@ class   RoomRepository(context: Context) {
     suspend fun registrarReparacionLuminaria(
         vehiculoId: Int,
         localizacion: String,
-        codigoMaterial: String,
-        descripcionMaterial: String,
-        cantidad: Double
+        materiales: List<com.Arasoftsolutions.tecniapp_ice.ui.luminarias.LuminariaMaterialUso>,
+        estado: com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado,
+        ejecutorNombre: String,
+        ejecutorCedula: String?
     ) = withContext(Dispatchers.IO) {
         val reparacion = LuminariaReparacionEntity(
             vehiculoId = vehiculoId,
             localizacion = localizacion,
-            codigoMaterial = codigoMaterial,
-            descripcionMaterial = descripcionMaterial,
-            cantidadUtilizada = cantidad,
+            materialesJson = com.Arasoftsolutions.tecniapp_ice.ui.luminarias.LuminariaMaterialSerializer
+                .toJson(materiales),
+            estado = estado.name,
+            ejecutorNombre = ejecutorNombre,
+            ejecutorCedula = ejecutorCedula,
             fechaRegistro = System.currentTimeMillis()
         )
         inventarioDao.registrarReparacion(reparacion)
-        ajustarInventario(vehiculoId, codigoMaterial, descripcionMaterial, -cantidad)
+        materiales.forEach { material ->
+            ajustarInventario(vehiculoId, material.codigo, material.descripcion, -material.cantidad)
+        }
     }
 
     suspend fun eliminarReparacionLuminaria(id: Long) = withContext(Dispatchers.IO) {
         val reparacion = inventarioDao.obtenerReparacion(id) ?: return@withContext
         inventarioDao.eliminarReparacion(id)
-        ajustarInventario(
-            vehiculoId = reparacion.vehiculoId,
-            codigo = reparacion.codigoMaterial,
-            descripcion = reparacion.descripcionMaterial,
-            delta = reparacion.cantidadUtilizada
-        )
+        val materiales = com.Arasoftsolutions.tecniapp_ice.ui.luminarias.LuminariaMaterialSerializer
+            .fromJson(reparacion.materialesJson)
+        materiales.forEach { material ->
+            ajustarInventario(
+                vehiculoId = reparacion.vehiculoId,
+                codigo = material.codigo,
+                descripcion = material.descripcion,
+                delta = material.cantidad
+            )
+        }
     }
 
     suspend fun actualizarReparacionLuminaria(
         id: Long,
         nuevaLocalizacion: String,
-        nuevaCantidad: Double
+        nuevosMateriales: List<com.Arasoftsolutions.tecniapp_ice.ui.luminarias.LuminariaMaterialUso>,
+        nuevoEstado: com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado,
+        nuevoEjecutorNombre: String,
+        nuevoEjecutorCedula: String?
     ) = withContext(Dispatchers.IO) {
         val reparacion = inventarioDao.obtenerReparacion(id) ?: return@withContext
-        val delta = nuevaCantidad - reparacion.cantidadUtilizada
+        val materialesPrevios = com.Arasoftsolutions.tecniapp_ice.ui.luminarias.LuminariaMaterialSerializer
+            .fromJson(reparacion.materialesJson)
+        val mapPrevio = materialesPrevios.associateBy({ it.codigo }, { it })
+        val mapNuevo = nuevosMateriales.associateBy({ it.codigo }, { it })
+        val todosCodigos = (mapPrevio.keys + mapNuevo.keys).toSet()
         inventarioDao.actualizarReparacion(
-            reparacion.copy(localizacion = nuevaLocalizacion, cantidadUtilizada = nuevaCantidad)
+            reparacion.copy(
+                localizacion = nuevaLocalizacion,
+                materialesJson = com.Arasoftsolutions.tecniapp_ice.ui.luminarias.LuminariaMaterialSerializer
+                    .toJson(nuevosMateriales),
+                estado = nuevoEstado.name,
+                ejecutorNombre = nuevoEjecutorNombre,
+                ejecutorCedula = nuevoEjecutorCedula
+            )
         )
-        ajustarInventario(
-            vehiculoId = reparacion.vehiculoId,
-            codigo = reparacion.codigoMaterial,
-            descripcion = reparacion.descripcionMaterial,
-            delta = -delta
-        )
+        todosCodigos.forEach { codigo ->
+            val anterior = mapPrevio[codigo]
+            val nuevo = mapNuevo[codigo]
+            val deltaCantidad = (nuevo?.cantidad ?: 0.0) - (anterior?.cantidad ?: 0.0)
+            if (deltaCantidad != 0.0) {
+                ajustarInventario(
+                    vehiculoId = reparacion.vehiculoId,
+                    codigo = codigo,
+                    descripcion = nuevo?.descripcion ?: anterior?.descripcion.orEmpty(),
+                    delta = -deltaCantidad
+                )
+            }
+        }
     }
 
     suspend fun eliminarMedidor(
