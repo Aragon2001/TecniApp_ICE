@@ -633,6 +633,8 @@ Cliente: %4$s</string>
     <string name="reportes_luminarias_ejecutor_sin_datos">Ejecutor: Sin datos</string>
     <string name="reportes_material_codigo">Código: %1$s</string>
     <string name="reportes_material_total_detalle">%1$s · %2$s</string>
+    <string name="reportes_material_total_detalle_existencia">%1$s · %2$s · %3$s</string>
+    <string name="reportes_material_existencia_actual">Existencia actual: %1$s</string>
     <plurals name="reportes_material_total_unidades">
         <item quantity="one">%d unidad</item>
         <item quantity="other">%d unidades</item>
@@ -672,6 +674,7 @@ Cliente: %4$s</string>
     <string name="inventario_gestion_titulo">Inventario por camión</string>
     <string name="inventario_gestion_descripcion">Carga un archivo CSV de Excel para reemplazar el inventario del camión seleccionado. La lista se actualizará automáticamente con los materiales usados.</string>
     <string name="inventario_importar_csv">Cargar CSV</string>
+    <string name="inventario_filtro_todos">Todos los camiones</string>
     <string name="inventario_disponible_titulo">Materiales disponibles</string>
     <string name="inventario_vacio">No hay materiales cargados en este camión.</string>
     <string name="inventario_icono_material">Icono de material</string>
@@ -692,6 +695,7 @@ Cliente: %4$s</string>
     <string name="inventario_confirmar_eliminar_mensaje">Se eliminará %1$s del inventario del camión. ¿Deseas continuar?</string>
     <string name="inventario_confirmar_eliminar_si">Sí, eliminar</string>
     <string name="inventario_confirmar_eliminar_no">Cancelar</string>
+    <string name="inventario_error_seleccionar_camion">Selecciona un camión para cargar el CSV.</string>
     <string name="reportes_excel_col_codigo">Código</string>
     <string name="reportes_excel_col_descripcion">Descripción</string>
     <string name="reportes_excel_col_cantidad">Cantidad</string>
