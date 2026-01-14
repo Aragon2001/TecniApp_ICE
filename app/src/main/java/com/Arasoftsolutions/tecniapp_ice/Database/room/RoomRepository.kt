@@ -236,15 +236,28 @@ class   RoomRepository(context: Context) {
         }
     }
 
+    suspend fun eliminarInventarioItem(id: Long) = withContext(Dispatchers.IO) {
+        inventarioDao.eliminarPorId(id)
+    }
+
     suspend fun cargarInventarioDesdeCsv(
         vehiculoId: Int,
         items: List<Pair<String, Double>>
     ) = withContext(Dispatchers.IO) {
         if (items.isEmpty()) return@withContext
-        items.forEach { (codigo, cantidad) ->
-            val descripcion = db.materialDao().obtenerPorCodigo(codigo)?.descripcion ?: codigo
-            ajustarInventario(vehiculoId, codigo, descripcion, cantidad)
-        }
+        inventarioDao.eliminarPorVehiculo(vehiculoId)
+        items
+            .filter { it.second > 0 }
+            .forEach { (codigo, cantidad) ->
+                val descripcion = db.materialDao().obtenerPorCodigo(codigo)?.descripcion ?: codigo
+                val item = InventarioItemEntity(
+                    vehiculoId = vehiculoId,
+                    codigoMaterial = codigo.trim(),
+                    descripcionMaterial = descripcion,
+                    cantidadDisponible = cantidad
+                )
+                inventarioDao.upsert(item)
+            }
     }
 
     suspend fun registrarReparacionLuminaria(

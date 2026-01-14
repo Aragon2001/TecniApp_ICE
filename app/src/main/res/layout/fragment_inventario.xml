@@ -28,7 +28,9 @@
                     style="@style/TextAppearance.Material3.TitleMedium"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Gestión de inventario por vehículo"
+                    android:drawableStart="@drawable/ic_summary_material"
+                    android:drawablePadding="8dp"
+                    android:text="@string/inventario_gestion_titulo"
                     android:textStyle="bold" />
 
                 <TextView
@@ -36,7 +38,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
-                    android:text="Importa un CSV o ajusta manualmente las existencias asociadas al vehículo seleccionado." />
+                    android:text="@string/inventario_gestion_descripcion" />
 
                 <com.google.android.material.textfield.MaterialAutoCompleteTextView
                     android:id="@+id/spVehiculos"
@@ -54,12 +56,15 @@
                     android:layout_marginTop="12dp"
                     android:orientation="horizontal">
 
-                    <Button
+                    <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnImportarCsv"
+                        style="@style/Tecni.Button"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Importar CSV" />
+                        android:text="@string/inventario_importar_csv"
+                        app:icon="@drawable/ic_excel"
+                        app:iconPadding="8dp" />
 
                     <ProgressBar
                         android:id="@+id/progressInventario"
@@ -68,68 +73,6 @@
                         android:layout_height="wrap_content"
                         android:layout_marginStart="8dp"
                         android:visibility="gone" />
-                </LinearLayout>
-
-                <com.google.android.material.textfield.TextInputLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:hint="Código de material">
-
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/etCodigoMaterial"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:inputType="text" />
-                </com.google.android.material.textfield.TextInputLayout>
-
-                <com.google.android.material.textfield.TextInputLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:hint="Descripción">
-
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/etDescripcion"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:inputType="text" />
-                </com.google.android.material.textfield.TextInputLayout>
-
-                <com.google.android.material.textfield.TextInputLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:hint="Cantidad">
-
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/etCantidad"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:inputType="numberDecimal"
-                        android:text="1" />
-                </com.google.android.material.textfield.TextInputLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:orientation="horizontal">
-
-                    <Button
-                        android:id="@+id/btnAgregar"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Agregar" />
-
-                    <Button
-                        android:id="@+id/btnRetirar"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
-                        android:layout_weight="1"
-                        android:text="Retirar" />
                 </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
@@ -149,7 +92,9 @@
                     style="@style/TextAppearance.Material3.TitleMedium"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Inventario disponible"
+                    android:drawableStart="@drawable/ic_menu_inventario"
+                    android:drawablePadding="8dp"
+                    android:text="@string/inventario_disponible_titulo"
                     android:textStyle="bold" />
 
                 <androidx.recyclerview.widget.RecyclerView
@@ -168,7 +113,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
                     android:gravity="center"
-                    android:text="No hay inventario cargado"
+                    android:text="@string/inventario_vacio"
                     android:visibility="gone" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
