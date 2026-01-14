@@ -232,9 +232,10 @@ object ExcelReportExporter {
         val headers = listOf(
             context.getString(R.string.reportes_excel_col_fecha),
             context.getString(R.string.reportes_excel_col_localizacion),
-            context.getString(R.string.reportes_excel_col_codigo),
-            context.getString(R.string.reportes_excel_col_descripcion),
+            context.getString(R.string.reportes_excel_col_materiales),
             context.getString(R.string.reportes_excel_col_cantidad),
+            context.getString(R.string.reportes_excel_col_estado),
+            context.getString(R.string.reportes_excel_col_ejecutor),
             context.getString(R.string.reportes_excel_col_vehiculo)
         )
 
@@ -243,10 +244,11 @@ object ExcelReportExporter {
             val row = sheet.createRow(rowIndex++)
             row.createCell(0).setCellValue(item.fechaTexto)
             row.createCell(1).setCellValue(item.localizacion)
-            row.createCell(2).setCellValue(item.codigo)
-            row.createCell(3).setCellValue(item.descripcion)
-            row.createCell(4).setCellValue(item.cantidad)
-            row.createCell(5).setCellValue(item.vehiculoTexto)
+            row.createCell(2).setCellValue(item.materialesTexto)
+            row.createCell(3).setCellValue(item.cantidadTotal)
+            row.createCell(4).setCellValue(item.estadoTexto)
+            row.createCell(5).setCellValue(item.ejecutorTexto)
+            row.createCell(6).setCellValue(item.vehiculoTexto)
         }
 
         autosize(sheet, headers.size)
