@@ -5,6 +5,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
+import androidx.room.Update
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.InventarioConVehiculo
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.InventarioItemEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaReparacionEntity
@@ -45,4 +46,13 @@ interface InventarioDao {
     @Transaction
     @Query("SELECT * FROM luminaria_reparacion ORDER BY fechaRegistro DESC")
     fun observarReparaciones(): Flow<List<LuminariaReparacionEntity>>
+
+    @Query("SELECT * FROM luminaria_reparacion WHERE id = :id LIMIT 1")
+    suspend fun obtenerReparacion(id: Long): LuminariaReparacionEntity?
+
+    @Update
+    suspend fun actualizarReparacion(entity: LuminariaReparacionEntity)
+
+    @Query("DELETE FROM luminaria_reparacion WHERE id = :id")
+    suspend fun eliminarReparacion(id: Long)
 }
