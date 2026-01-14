@@ -3,7 +3,8 @@ package com.Arasoftsolutions.tecniapp_ice.ui.luminarias
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.Arasoftsolutions.tecniapp_ice.Database.entities.InventarioConVehiculo
+import com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaReparacionEntity
+import com.Arasoftsolutions.tecniapp_ice.Database.entities.MaterialEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.VehiculosEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,12 +20,18 @@ sealed class LuminariaMensaje {
 
 data class LuminariaUiState(
     val vehiculos: List<VehiculosEntity> = emptyList(),
-    val inventario: List<InventarioConVehiculo> = emptyList(),
+    val materiales: List<MaterialEntity> = emptyList(),
+    val reparaciones: List<LuminariaReparacionEntity> = emptyList(),
     val vehiculoSeleccionado: Int? = null,
-    val codigoMaterial: String = "",
-    val cantidad: String = "1",
     val localizacion: String = "",
+    val materialesSeleccionados: List<LuminariaMaterialSeleccionado> = emptyList(),
     val isProcessing: Boolean = false
+)
+
+data class LuminariaMaterialSeleccionado(
+    val codigo: String,
+    val descripcion: String,
+    val cantidad: Double
 )
 
 class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
@@ -37,17 +44,24 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
     private val _mensaje = MutableStateFlow<LuminariaMensaje?>(null)
     val mensaje: StateFlow<LuminariaMensaje?> = _mensaje.asStateFlow()
 
+    private var reparacionesCache: List<LuminariaReparacionEntity> = emptyList()
+
     init {
         viewModelScope.launch {
             combine(
                 repository.observarVehiculosCatalogo(),
-                repository.observarInventarioGeneral()
-            ) { vehiculos, inventario -> vehiculos to inventario }
-                .collect { (vehiculos, inventario) ->
+                repository.observarMateriales(),
+                repository.observarReparaciones()
+            ) { vehiculos, materiales, reparaciones ->
+                Triple(vehiculos, materiales, reparaciones)
+            }.collect { (vehiculos, materiales, reparaciones) ->
+                    reparacionesCache = reparaciones
                     val seleccionado = _uiState.value.vehiculoSeleccionado ?: vehiculos.firstOrNull()?.id
+                    val filtradas = reparaciones.filter { it.vehiculoId == seleccionado }
                     _uiState.value = _uiState.value.copy(
                         vehiculos = vehiculos,
-                        inventario = inventario.filter { it.item.vehiculoId == seleccionado },
+                        materiales = materiales,
+                        reparaciones = filtradas,
                         vehiculoSeleccionado = seleccionado
                     )
                 }
@@ -55,22 +69,36 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun seleccionarVehiculo(id: Int?) {
+        val filtradas = reparacionesCache.filter { id == null || it.vehiculoId == id }
         _uiState.value = _uiState.value.copy(
             vehiculoSeleccionado = id,
-            inventario = uiState.value.inventario.filter { id == null || it.item.vehiculoId == id }
+            reparaciones = filtradas
         )
-    }
-
-    fun actualizarCodigo(codigo: String) {
-        _uiState.value = _uiState.value.copy(codigoMaterial = codigo)
-    }
-
-    fun actualizarCantidad(valor: String) {
-        _uiState.value = _uiState.value.copy(cantidad = valor)
     }
 
     fun actualizarLocalizacion(valor: String) {
         _uiState.value = _uiState.value.copy(localizacion = valor)
+    }
+
+    fun agregarMaterial(codigo: String, descripcion: String, cantidad: Double) {
+        if (cantidad <= 0) {
+            _mensaje.value = LuminariaMensaje.Error("Ingresa una cantidad válida")
+            return
+        }
+        val actuales = _uiState.value.materialesSeleccionados.toMutableList()
+        val index = actuales.indexOfFirst { it.codigo == codigo }
+        if (index >= 0) {
+            val existente = actuales[index]
+            actuales[index] = existente.copy(cantidad = existente.cantidad + cantidad)
+        } else {
+            actuales.add(LuminariaMaterialSeleccionado(codigo, descripcion, cantidad))
+        }
+        _uiState.value = _uiState.value.copy(materialesSeleccionados = actuales)
+    }
+
+    fun eliminarMaterial(codigo: String) {
+        val actualizados = _uiState.value.materialesSeleccionados.filterNot { it.codigo == codigo }
+        _uiState.value = _uiState.value.copy(materialesSeleccionados = actualizados)
     }
 
     fun registrarReparacion() {
@@ -78,30 +106,51 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
             _mensaje.value = LuminariaMensaje.Error("Selecciona un vehículo")
             return
         }
-        val codigo = _uiState.value.codigoMaterial.trim()
-        val cantidadNum = _uiState.value.cantidad.toDoubleOrNull() ?: 0.0
         val localizacion = _uiState.value.localizacion.trim()
-        if (codigo.isBlank() || cantidadNum <= 0 || localizacion.isBlank()) {
-            _mensaje.value = LuminariaMensaje.Error("Completa los campos requeridos")
+        if (localizacion.isBlank()) {
+            _mensaje.value = LuminariaMensaje.Error("Ingresa el número de localización")
+            return
+        }
+        val materiales = _uiState.value.materialesSeleccionados
+        if (materiales.isEmpty()) {
+            _mensaje.value = LuminariaMensaje.Error("Agrega al menos un material")
             return
         }
         _uiState.value = _uiState.value.copy(isProcessing = true)
         viewModelScope.launch {
-            val descripcion = repository.obtenerMaterialPorCodigo(codigo)?.descripcion ?: codigo
-            repository.registrarReparacionLuminaria(
-                vehiculoId = vehiculoId,
-                localizacion = localizacion,
-                codigoMaterial = codigo,
-                descripcionMaterial = descripcion,
-                cantidad = cantidadNum
-            )
+            materiales.forEach { material ->
+                repository.registrarReparacionLuminaria(
+                    vehiculoId = vehiculoId,
+                    localizacion = localizacion,
+                    codigoMaterial = material.codigo,
+                    descripcionMaterial = material.descripcion,
+                    cantidad = material.cantidad
+                )
+            }
             _uiState.value = _uiState.value.copy(
                 isProcessing = false,
-                codigoMaterial = "",
-                cantidad = "1",
-                localizacion = ""
+                localizacion = "",
+                materialesSeleccionados = emptyList()
             )
-            _mensaje.value = LuminariaMensaje.Exito("Reparación registrada y material descontado")
+            _mensaje.value = LuminariaMensaje.Exito("Reparación registrada")
+        }
+    }
+
+    fun eliminarReparacion(id: Long) {
+        viewModelScope.launch {
+            repository.eliminarReparacionLuminaria(id)
+            _mensaje.value = LuminariaMensaje.Exito("Reparación eliminada")
+        }
+    }
+
+    fun actualizarReparacion(id: Long, nuevaLocalizacion: String, nuevaCantidad: Double) {
+        if (nuevaLocalizacion.isBlank() || nuevaCantidad <= 0) {
+            _mensaje.value = LuminariaMensaje.Error("Completa los datos de la reparación")
+            return
+        }
+        viewModelScope.launch {
+            repository.actualizarReparacionLuminaria(id, nuevaLocalizacion, nuevaCantidad)
+            _mensaje.value = LuminariaMensaje.Exito("Reparación actualizada")
         }
     }
 
