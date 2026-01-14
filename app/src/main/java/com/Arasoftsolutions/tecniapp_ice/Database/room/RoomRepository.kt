@@ -88,6 +88,9 @@ class   RoomRepository(context: Context) {
     fun observarInventarioGeneral(): Flow<List<InventarioConVehiculo>> =
         inventarioDao.observarInventarioGeneral()
 
+    fun observarReparaciones(): Flow<List<LuminariaReparacionEntity>> =
+        inventarioDao.observarReparaciones()
+
     fun observarRegiones(): Flow<List<RegionEntity>> = db.regionDao().observarTodas()
 
     fun observarSubregiones(): Flow<List<SubregionesEntity>> =
@@ -274,6 +277,35 @@ class   RoomRepository(context: Context) {
         )
         inventarioDao.registrarReparacion(reparacion)
         ajustarInventario(vehiculoId, codigoMaterial, descripcionMaterial, -cantidad)
+    }
+
+    suspend fun eliminarReparacionLuminaria(id: Long) = withContext(Dispatchers.IO) {
+        val reparacion = inventarioDao.obtenerReparacion(id) ?: return@withContext
+        inventarioDao.eliminarReparacion(id)
+        ajustarInventario(
+            vehiculoId = reparacion.vehiculoId,
+            codigo = reparacion.codigoMaterial,
+            descripcion = reparacion.descripcionMaterial,
+            delta = reparacion.cantidadUtilizada
+        )
+    }
+
+    suspend fun actualizarReparacionLuminaria(
+        id: Long,
+        nuevaLocalizacion: String,
+        nuevaCantidad: Double
+    ) = withContext(Dispatchers.IO) {
+        val reparacion = inventarioDao.obtenerReparacion(id) ?: return@withContext
+        val delta = nuevaCantidad - reparacion.cantidadUtilizada
+        inventarioDao.actualizarReparacion(
+            reparacion.copy(localizacion = nuevaLocalizacion, cantidadUtilizada = nuevaCantidad)
+        )
+        ajustarInventario(
+            vehiculoId = reparacion.vehiculoId,
+            codigo = reparacion.codigoMaterial,
+            descripcion = reparacion.descripcionMaterial,
+            delta = -delta
+        )
     }
 
     suspend fun eliminarMedidor(

@@ -46,6 +46,7 @@ class ReportesFragment : Fragment() {
     private lateinit var averiasAdapter: AveriasReportAdapter
     private lateinit var materialesPorAveriaAdapter: MaterialesPorAveriaAdapter
     private lateinit var materialTotalAdapter: MaterialTotalAdapter
+    private lateinit var luminariasAdapter: LuminariasReparadasAdapter
     private lateinit var inventarioAdapter: InventarioAdapter
     private lateinit var tiposAdapter: ArrayAdapter<String>
     private var isUpdatingTipoReporte = false
@@ -105,6 +106,14 @@ class ReportesFragment : Fragment() {
         binding.recyclerMaterialTotal.apply {
             layoutManager = LinearLayoutManager(context)
             adapter = materialTotalAdapter
+            setHasFixedSize(false)
+            isNestedScrollingEnabled = false
+        }
+
+        luminariasAdapter = LuminariasReparadasAdapter()
+        binding.recyclerLuminarias.apply {
+            layoutManager = LinearLayoutManager(context)
+            adapter = luminariasAdapter
             setHasFixedSize(false)
             isNestedScrollingEnabled = false
         }
@@ -212,6 +221,7 @@ class ReportesFragment : Fragment() {
                             binding.cardAverias.isVisible = true
                             binding.cardMaterialPorAveria.isVisible = false
                             binding.cardMaterialTotal.isVisible = false
+                            binding.cardLuminariasReparadas.isVisible = false
                             averiasAdapter.submitList(state.averiasState.items)
                             section = state.averiasState
                             recycler = binding.recyclerAverias
@@ -222,6 +232,7 @@ class ReportesFragment : Fragment() {
                             binding.cardAverias.isVisible = false
                             binding.cardMaterialPorAveria.isVisible = true
                             binding.cardMaterialTotal.isVisible = false
+                            binding.cardLuminariasReparadas.isVisible = false
                             materialesPorAveriaAdapter.submitList(state.materialesPorAveriaState.items)
                             section = state.materialesPorAveriaState
                             recycler = binding.recyclerMaterialPorAveria
@@ -232,11 +243,23 @@ class ReportesFragment : Fragment() {
                             binding.cardAverias.isVisible = false
                             binding.cardMaterialPorAveria.isVisible = false
                             binding.cardMaterialTotal.isVisible = true
+                            binding.cardLuminariasReparadas.isVisible = false
                             materialTotalAdapter.submitList(state.materialesTotalesState.items)
                             section = state.materialesTotalesState
                             recycler = binding.recyclerMaterialTotal
                             emptyView = binding.tvMaterialTotalVacio
                             emptyRes = R.string.reportes_material_total_vacio
+                        }
+                        ReportType.LUMINARIAS_REPARADAS -> {
+                            binding.cardAverias.isVisible = false
+                            binding.cardMaterialPorAveria.isVisible = false
+                            binding.cardMaterialTotal.isVisible = false
+                            binding.cardLuminariasReparadas.isVisible = true
+                            luminariasAdapter.submitList(state.luminariasState.items)
+                            section = state.luminariasState
+                            recycler = binding.recyclerLuminarias
+                            emptyView = binding.tvLuminariasVacio
+                            emptyRes = R.string.reportes_luminarias_vacio
                         }
                     }
 

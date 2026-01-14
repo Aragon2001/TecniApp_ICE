@@ -588,6 +588,7 @@ Cliente: %4$s</string>
     <string name="reportes_chip_material_por_averia_conteo">Material por avería (%1$d)</string>
     <string name="reportes_chip_material_total">Consumo total</string>
     <string name="reportes_chip_material_total_conteo">Consumo total (%1$d)</string>
+    <string name="reportes_chip_luminarias">Luminarias reparadas</string>
     <string name="reportes_btn_limpiar_filtro">Limpiar rango</string>
     <string name="reportes_btn_generar">Generar reporte</string>
     <string name="reportes_btn_generar_tipo">Generar %1$s</string>
@@ -605,6 +606,8 @@ Cliente: %4$s</string>
     <string name="reportes_material_por_averia_vacio">No hay materiales registrados en las averías atendidas.</string>
     <string name="reportes_material_total_titulo">Material gastado total</string>
     <string name="reportes_material_total_vacio">No hay consumo de material registrado en este rango.</string>
+    <string name="reportes_luminarias_titulo">Luminarias reparadas</string>
+    <string name="reportes_luminarias_vacio">No hay luminarias reparadas en el rango seleccionado.</string>
     <string name="reportes_estado_pendiente">Selecciona el reporte y toca "Generar" para ver los datos.</string>
     <string name="reportes_estado_cargando">Generando reporte…</string>
     <string name="reportes_dialog_rango_titulo">Selecciona el rango de fechas</string>
@@ -621,6 +624,9 @@ Cliente: %4$s</string>
     <string name="reportes_item_vehiculo_desconocido">Sin vehículo asignado</string>
     <string name="reportes_item_materiales">%1$d unidades · %2$s</string>
     <string name="reportes_item_materiales_sin">Sin materiales registrados</string>
+    <string name="reportes_luminarias_localizacion">Localización #%1$s</string>
+    <string name="reportes_luminarias_cantidad">Cantidad: %1$.2f</string>
+    <string name="reportes_luminarias_vehiculo">Vehículo:</string>
     <string name="reportes_material_codigo">Código: %1$s</string>
     <string name="reportes_material_total_detalle">%1$s · %2$s</string>
     <plurals name="reportes_material_total_unidades">
@@ -646,6 +652,7 @@ Cliente: %4$s</string>
     <string name="reportes_excel_materiales_por_averia_sheet_vehicle">Material · %1$s</string>
     <string name="reportes_excel_materiales_por_averia_sheet_sin_vehiculo">Material · Sin vehículo</string>
     <string name="reportes_excel_materiales_totales_sheet">Consumo total</string>
+    <string name="reportes_excel_luminarias_sheet">Luminarias reparadas</string>
     <string name="reportes_excel_col_case">Caso</string>
     <string name="reportes_excel_col_fecha">Fecha</string>
     <string name="reportes_excel_col_agencia">Agencia</string>
@@ -681,6 +688,7 @@ Cliente: %4$s</string>
     <string name="reportes_excel_col_codigo">Código</string>
     <string name="reportes_excel_col_descripcion">Descripción</string>
     <string name="reportes_excel_col_cantidad">Cantidad</string>
+    <string name="reportes_excel_col_localizacion">Localización</string>
     <string name="reportes_excel_col_averias">Averías</string>
     <string name="reportes_correo_asunto">Reporte %1$s · %2$s</string>
     <string name="reportes_correo_saludo_generico">compañero ICE</string>
