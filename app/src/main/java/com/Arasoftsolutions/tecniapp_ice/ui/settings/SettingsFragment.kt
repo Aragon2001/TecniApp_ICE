@@ -122,7 +122,8 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
                 AveriasSyncWorker.schedule(requireContext())
                 updateAutoSyncSummary(true, latestAutoSyncInfo)
             } else {
-                WorkManager.getInstance(requireContext()).cancelUniqueWork("averias_sync")
+                WorkManager.getInstance(requireContext())
+                    .cancelUniqueWork(AveriasSyncWorker.UNIQUE_PERIODIC_WORK)
                 updateAutoSyncSummary(false, latestAutoSyncInfo)
             }
         }
@@ -138,14 +139,14 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         }
 
         WorkManager.getInstance(requireContext())
-            .getWorkInfosForUniqueWorkLiveData("averias_sync")
+            .getWorkInfosForUniqueWorkLiveData(AveriasSyncWorker.UNIQUE_PERIODIC_WORK)
             .observe(viewLifecycleOwner) { infos ->
                 latestAutoSyncInfo = infos.firstOrNull()
                 updateAutoSyncSummary(binding.switchAutoSync.isChecked, latestAutoSyncInfo)
             }
 
         WorkManager.getInstance(requireContext())
-            .getWorkInfosForUniqueWorkLiveData("averias_sync_now")
+            .getWorkInfosForUniqueWorkLiveData(AveriasSyncWorker.UNIQUE_MANUAL_WORK)
             .observe(viewLifecycleOwner) { infos ->
                 val info = infos.firstOrNull()
                 if (info == null) {
@@ -447,4 +448,3 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         }
     }
 }
-
