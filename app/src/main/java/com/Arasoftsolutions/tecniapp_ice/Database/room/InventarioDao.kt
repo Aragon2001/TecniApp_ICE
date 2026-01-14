@@ -39,6 +39,9 @@ interface InventarioDao {
     @Query("DELETE FROM inventario_material WHERE id = :id")
     suspend fun eliminarPorId(id: Long)
 
+    @Query("DELETE FROM inventario_material WHERE vehiculoId = :vehiculoId")
+    suspend fun eliminarPorVehiculo(vehiculoId: Int)
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun registrarReparacion(entity: LuminariaReparacionEntity)
 
