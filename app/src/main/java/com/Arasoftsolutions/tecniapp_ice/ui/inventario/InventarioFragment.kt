@@ -15,7 +15,10 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.Arasoftsolutions.tecniapp_ice.Database.entities.InventarioConVehiculo
+import com.Arasoftsolutions.tecniapp_ice.R
 import com.Arasoftsolutions.tecniapp_ice.databinding.FragmentInventarioBinding
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.launch
 
 class InventarioFragment : Fragment() {
@@ -42,7 +45,12 @@ class InventarioFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        adapter = InventarioAdapter()
+        adapter = InventarioAdapter(
+            showActions = true,
+            onIncrease = { viewModel.ajustarCantidad(it, 1.0) },
+            onDecrease = { viewModel.ajustarCantidad(it, -1.0) },
+            onDelete = { mostrarConfirmacionEliminar(it) }
+        )
         binding.listInventario.layoutManager = LinearLayoutManager(requireContext())
         binding.listInventario.adapter = adapter
         setupListeners()
@@ -50,21 +58,7 @@ class InventarioFragment : Fragment() {
     }
 
     private fun setupListeners() {
-        binding.btnAgregar.setOnClickListener { ajustarCantidad(true) }
-        binding.btnRetirar.setOnClickListener { ajustarCantidad(false) }
         binding.btnImportarCsv.setOnClickListener { csvLauncher.launch("text/csv") }
-    }
-
-    private fun ajustarCantidad(esEntrada: Boolean) {
-        val codigo = binding.etCodigoMaterial.text?.toString().orEmpty()
-        val descripcion = binding.etDescripcion.text?.toString().orEmpty()
-        val cantidad = binding.etCantidad.text?.toString()?.toDoubleOrNull() ?: 0.0
-        if (codigo.isBlank() || cantidad <= 0) {
-            Toast.makeText(requireContext(), "Ingresa código y cantidad válida", Toast.LENGTH_SHORT).show()
-            return
-        }
-        val delta = if (esEntrada) cantidad else -cantidad
-        viewModel.ajustarCantidadManual(codigo, descripcion, delta)
     }
 
     private fun observarEstado() {
@@ -108,6 +102,18 @@ class InventarioFragment : Fragment() {
                 }
             }
         }
+    }
+
+    private fun mostrarConfirmacionEliminar(item: InventarioConVehiculo) {
+        val descripcion = item.item.descripcionMaterial.ifBlank { item.item.codigoMaterial }
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(getString(R.string.inventario_confirmar_eliminar_titulo))
+            .setMessage(getString(R.string.inventario_confirmar_eliminar_mensaje, descripcion))
+            .setPositiveButton(R.string.inventario_confirmar_eliminar_si) { _, _ ->
+                viewModel.eliminarItem(item)
+            }
+            .setNegativeButton(R.string.inventario_confirmar_eliminar_no, null)
+            .show()
     }
 
     override fun onDestroyView() {
