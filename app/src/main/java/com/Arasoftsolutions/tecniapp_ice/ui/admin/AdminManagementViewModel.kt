@@ -10,6 +10,8 @@ import com.Arasoftsolutions.tecniapp_ice.Database.entities.SubregionesEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.VehiculosEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
 import com.Arasoftsolutions.tecniapp_ice.R
+import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -18,10 +20,12 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class AdminManagementViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository = RoomRepository.getInstance(application)
+    private val auth = FirebaseAuth.getInstance()
 
     val medidores: StateFlow<List<MedidorEntity>> = repository.observarTodosLosMedidores()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
@@ -41,6 +45,9 @@ class AdminManagementViewModel(application: Application) : AndroidViewModel(appl
     val agencias: StateFlow<List<AgenciaEntity>> = repository.observarAgenciasCatalogo()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
+    private val _subregionUsuario = MutableStateFlow<SubregionUsuario?>(null)
+    val subregionUsuario: StateFlow<SubregionUsuario?> = _subregionUsuario.asStateFlow()
+
     private val _medidorSeleccionado = MutableStateFlow<MedidorEntity?>(null)
     val medidorSeleccionado: StateFlow<MedidorEntity?> = _medidorSeleccionado.asStateFlow()
 
@@ -52,6 +59,24 @@ class AdminManagementViewModel(application: Application) : AndroidViewModel(appl
 
     private val _eventos = MutableSharedFlow<AdminEvent>()
     val eventos = _eventos.asSharedFlow()
+
+    init {
+        viewModelScope.launch {
+            cargarSubregionUsuario()
+        }
+    }
+
+    private suspend fun cargarSubregionUsuario() {
+        val uid = auth.currentUser?.uid?.takeIf { it.isNotBlank() } ?: return
+        val usuario = withContext(Dispatchers.IO) {
+            repository.obtenerUsuario(uid) ?: repository.upsertUserFromFirebase(uid)
+        }
+        val subregionId = usuario.subregion?.trim()?.takeIf { it.isNotEmpty() }
+        val subregionNombre = usuario.subregionNombre?.trim()?.takeIf { it.isNotEmpty() }
+        if (subregionId != null || subregionNombre != null) {
+            _subregionUsuario.value = SubregionUsuario(subregionId, subregionNombre)
+        }
+    }
 
     fun seleccionarMedidor(numero: String) {
         viewModelScope.launch {
@@ -498,6 +523,11 @@ class AdminManagementViewModel(application: Application) : AndroidViewModel(appl
         val detalle = t.localizedMessage?.takeIf { it.isNotBlank() } ?: texto(R.string.admin_error_desconocido)
         return texto(R.string.admin_accion_error_general, detalle)
     }
+
+    data class SubregionUsuario(
+        val id: String?,
+        val nombre: String?
+    )
 }
 
 sealed class AdminEvent {
