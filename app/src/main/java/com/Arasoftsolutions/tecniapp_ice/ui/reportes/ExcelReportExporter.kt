@@ -34,6 +34,9 @@ object ExcelReportExporter {
 
             is ReportExportData.MaterialesTotales ->
                 addMaterialesTotalesSheet(context, workbook, headerStyle, payload.data.items)
+
+            is ReportExportData.LuminariasReparadas ->
+                addLuminariasReparadasSheet(context, workbook, headerStyle, payload.data.items)
         }
 
         return workbook
@@ -211,6 +214,39 @@ object ExcelReportExporter {
             row.createCell(1).setCellValue(item.descripcion)
             row.createCell(2).setCellValue(item.total.toDouble())
             row.createCell(3).setCellValue(item.averias.toDouble())
+        }
+
+        autosize(sheet, headers.size)
+    }
+
+    // ---- Hoja Luminarias Reparadas ----
+    private fun addLuminariasReparadasSheet(
+        context: Context,
+        workbook: Workbook,
+        headerStyle: CellStyle,
+        items: List<LuminariaReparadaReportItem>
+    ) {
+        val sheet = workbook.createSheet(
+            context.getString(R.string.reportes_excel_luminarias_sheet)
+        )
+        val headers = listOf(
+            context.getString(R.string.reportes_excel_col_fecha),
+            context.getString(R.string.reportes_excel_col_localizacion),
+            context.getString(R.string.reportes_excel_col_codigo),
+            context.getString(R.string.reportes_excel_col_descripcion),
+            context.getString(R.string.reportes_excel_col_cantidad),
+            context.getString(R.string.reportes_excel_col_vehiculo)
+        )
+
+        var rowIndex = createHeader(sheet, headerStyle, headers)
+        items.forEach { item ->
+            val row = sheet.createRow(rowIndex++)
+            row.createCell(0).setCellValue(item.fechaTexto)
+            row.createCell(1).setCellValue(item.localizacion)
+            row.createCell(2).setCellValue(item.codigo)
+            row.createCell(3).setCellValue(item.descripcion)
+            row.createCell(4).setCellValue(item.cantidad)
+            row.createCell(5).setCellValue(item.vehiculoTexto)
         }
 
         autosize(sheet, headers.size)
