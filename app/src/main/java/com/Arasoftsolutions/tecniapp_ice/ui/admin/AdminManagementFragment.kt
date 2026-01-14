@@ -40,6 +40,15 @@ class AdminManagementFragment : Fragment(R.layout.fragment_admin_management) {
     private lateinit var localizacionCalleAdapter: ArrayAdapter<String>
     private lateinit var subregionAdapter: ArrayAdapter<String>
 
+    private var subregionUsuario: AdminManagementViewModel.SubregionUsuario? = null
+
+    private var pueblosCatalogo: List<PueblosEntity> = emptyList()
+    private var subregionesCatalogo: List<SubregionesEntity> = emptyList()
+    private var agenciasCatalogo: List<AgenciaEntity> = emptyList()
+    private var medidoresCatalogo: List<MedidorEntity> = emptyList()
+    private var vehiculosCatalogo: List<VehiculosEntity> = emptyList()
+    private var localizacionesCatalogo: List<LocalizacionesEntity> = emptyList()
+
     private var pueblosDisponibles: List<PueblosEntity> = emptyList()
     private var subregionesDisponibles: List<SubregionesEntity> = emptyList()
     private var agenciasDisponibles: List<AgenciaEntity> = emptyList()
@@ -215,6 +224,7 @@ class AdminManagementFragment : Fragment(R.layout.fragment_admin_management) {
                 launch { viewModel.pueblos.collect { actualizarPueblos(it) } }
                 launch { viewModel.subregiones.collect { actualizarSubregiones(it) } }
                 launch { viewModel.agencias.collect { actualizarAgencias(it) } }
+                launch { viewModel.subregionUsuario.collect { actualizarSubregionUsuario(it) } }
                 launch { viewModel.medidorSeleccionado.collect { mostrarMedidor(it) } }
                 launch { viewModel.vehiculoSeleccionado.collect { mostrarVehiculo(it) } }
                 launch { viewModel.localizacionSeleccionada.collect { mostrarLocalizacion(it) } }
@@ -232,8 +242,9 @@ class AdminManagementFragment : Fragment(R.layout.fragment_admin_management) {
     }
 
     private fun actualizarMedidores(lista: List<MedidorEntity>) {
-        medidoresDisponibles = lista
-        val datos = lista.map { it.medidorNumber }.sorted()
+        medidoresCatalogo = lista
+        medidoresDisponibles = filtrarPorSubregionUsuario(medidoresCatalogo) { it.subregion }
+        val datos = medidoresDisponibles.map { it.medidorNumber }.sorted()
         medidorAdapter.clear()
         medidorAdapter.addAll(datos)
         medidorAdapter.notifyDataSetChanged()
@@ -241,9 +252,10 @@ class AdminManagementFragment : Fragment(R.layout.fragment_admin_management) {
     }
 
     private fun actualizarVehiculos(lista: List<VehiculosEntity>) {
-        vehiculosDisponibles = lista
+        vehiculosCatalogo = lista
+        vehiculosDisponibles = filtrarPorSubregionUsuario(vehiculosCatalogo) { it.subregion }
         vehiculoDisplayToPlaca.clear()
-        val datos = lista.sortedBy { it.placa }.map { vehiculo ->
+        val datos = vehiculosDisponibles.sortedBy { it.placa }.map { vehiculo ->
             val display = "${vehiculo.placa} - ${vehiculo.agencia}"
             vehiculoDisplayToPlaca[display] = vehiculo.placa
             display
@@ -256,37 +268,50 @@ class AdminManagementFragment : Fragment(R.layout.fragment_admin_management) {
     }
 
     private fun actualizarLocalizaciones(lista: List<LocalizacionesEntity>) {
-        localizacionesDisponibles = lista
+        localizacionesCatalogo = lista
+        localizacionesDisponibles = localizacionesCatalogo
         actualizarCallesLocalizacion()
         actualizarEstadoBotonesLocalizacion()
     }
 
     private fun actualizarPueblos(lista: List<PueblosEntity>) {
-        pueblosDisponibles = lista
+        pueblosCatalogo = lista
+        pueblosDisponibles = filtrarPorSubregionUsuario(pueblosCatalogo) { it.subregion_id_normalizado }
         actualizarPueblosMedidor()
         actualizarPueblosLocalizacion()
     }
 
     private fun actualizarSubregiones(lista: List<SubregionesEntity>) {
-        subregionesDisponibles = lista
-        val datos = lista.sortedBy { it.id }.map { "${it.id} - ${it.nombre}" }
+        subregionesCatalogo = lista
+        subregionesDisponibles = filtrarSubregionesUsuario(subregionesCatalogo)
+        val datos = subregionesDisponibles
+            .sortedBy { it.nombre.lowercase(Locale.getDefault()) }
+            .map { it.nombre }
         subregionAdapter.clear()
         subregionAdapter.addAll(datos)
         subregionAdapter.notifyDataSetChanged()
+        aplicarSubregionPorDefecto()
         actualizarPueblosMedidor()
         actualizarPueblosLocalizacion()
         actualizarAgenciasFiltradas()
     }
 
     private fun actualizarAgencias(lista: List<AgenciaEntity>) {
-        agenciasDisponibles = lista
+        agenciasCatalogo = lista
+        agenciasDisponibles = filtrarPorSubregionUsuario(agenciasCatalogo) { it.subregion }
         actualizarAgenciasFiltradas()
     }
 
     private fun actualizarPueblosMedidor() {
         val subregionSeleccionada = resolveSubregionId(binding.actvAdminMedidorSubregion.text?.toString())
+            ?: subregionUsuario?.id
+        val subregionNombre = resolveSubregionNombre(binding.actvAdminMedidorSubregion.text?.toString())
+            ?: subregionUsuario?.nombre
         val datos = pueblosDisponibles
-            .filter { subregionSeleccionada == null || it.subregion_id_normalizado.equals(subregionSeleccionada, ignoreCase = true) }
+            .filter {
+                subregionSeleccionada == null && subregionNombre == null ||
+                    matchesSubregionFiltro(it.subregion_id_normalizado, subregionSeleccionada, subregionNombre)
+            }
             .sortedBy { it.id }
             .map { "${it.id} - ${it.nombre}" }
         medidorPuebloAdapter.clear()
@@ -299,8 +324,14 @@ class AdminManagementFragment : Fragment(R.layout.fragment_admin_management) {
 
     private fun actualizarPueblosLocalizacion() {
         val subregionSeleccionada = resolveSubregionId(binding.actvAdminLocalizacionSubregion.text?.toString())
+            ?: subregionUsuario?.id
+        val subregionNombre = resolveSubregionNombre(binding.actvAdminLocalizacionSubregion.text?.toString())
+            ?: subregionUsuario?.nombre
         val datos = pueblosDisponibles
-            .filter { subregionSeleccionada == null || it.subregion_id_normalizado.equals(subregionSeleccionada, ignoreCase = true) }
+            .filter {
+                subregionSeleccionada == null && subregionNombre == null ||
+                    matchesSubregionFiltro(it.subregion_id_normalizado, subregionSeleccionada, subregionNombre)
+            }
             .sortedBy { it.id }
             .map { "${it.id} - ${it.nombre}" }
         localizacionPuebloAdapter.clear()
@@ -339,8 +370,14 @@ class AdminManagementFragment : Fragment(R.layout.fragment_admin_management) {
 
     private fun actualizarAgenciasFiltradas() {
         val subregionSeleccionada = resolveSubregionId(binding.actvAdminVehiculoSubregion.text?.toString())
+            ?: subregionUsuario?.id
+        val subregionNombre = resolveSubregionNombre(binding.actvAdminVehiculoSubregion.text?.toString())
+            ?: subregionUsuario?.nombre
         val datos = agenciasDisponibles
-            .filter { subregionSeleccionada == null || it.subregion?.equals(subregionSeleccionada, ignoreCase = true) == true }
+            .filter {
+                subregionSeleccionada == null && subregionNombre == null ||
+                    matchesSubregionFiltro(it.subregion, subregionSeleccionada, subregionNombre)
+            }
             .sortedBy { it.nombre }
             .map { it.nombre }
         vehiculoAgenciaAdapter.clear()
@@ -350,6 +387,71 @@ class AdminManagementFragment : Fragment(R.layout.fragment_admin_management) {
             binding.actvAdminVehiculoAgencia.setText("", false)
         }
         actualizarEstadoBotonesVehiculo()
+    }
+
+    private fun actualizarSubregionUsuario(subregion: AdminManagementViewModel.SubregionUsuario?) {
+        subregionUsuario = subregion
+        actualizarSubregiones(subregionesCatalogo)
+        actualizarAgencias(agenciasCatalogo)
+        actualizarPueblos(pueblosCatalogo)
+        actualizarMedidores(medidoresCatalogo)
+        actualizarVehiculos(vehiculosCatalogo)
+        actualizarLocalizaciones(localizacionesCatalogo)
+    }
+
+    private fun aplicarSubregionPorDefecto() {
+        val unica = subregionesDisponibles.singleOrNull()?.nombre ?: return
+        var cambio = false
+        if (binding.actvAdminMedidorSubregion.text.isNullOrBlank()) {
+            binding.actvAdminMedidorSubregion.setText(unica, false)
+            cambio = true
+        }
+        if (binding.actvAdminVehiculoSubregion.text.isNullOrBlank()) {
+            binding.actvAdminVehiculoSubregion.setText(unica, false)
+            cambio = true
+        }
+        if (binding.actvAdminLocalizacionSubregion.text.isNullOrBlank()) {
+            binding.actvAdminLocalizacionSubregion.setText(unica, false)
+            cambio = true
+        }
+        if (cambio) {
+            actualizarPueblosMedidor()
+            actualizarPueblosLocalizacion()
+            actualizarAgenciasFiltradas()
+        }
+    }
+
+    private fun filtrarSubregionesUsuario(lista: List<SubregionesEntity>): List<SubregionesEntity> {
+        val subregion = subregionUsuario ?: return lista
+        return lista.filter { entidad ->
+            matchesSubregion(entidad.id, subregion) || matchesSubregion(entidad.nombre, subregion)
+        }
+    }
+
+    private fun <T> filtrarPorSubregionUsuario(
+        lista: List<T>,
+        selector: (T) -> String?
+    ): List<T> {
+        val subregion = subregionUsuario ?: return lista
+        return lista.filter { item -> matchesSubregion(selector(item), subregion) }
+    }
+
+    private fun matchesSubregion(
+        value: String?,
+        subregion: AdminManagementViewModel.SubregionUsuario?
+    ): Boolean {
+        if (subregion == null) return true
+        val candidate = value?.trim().takeIf { it.isNotEmpty() } ?: return false
+        val matchesId = subregion.id?.equals(candidate, ignoreCase = true) == true
+        val matchesNombre = subregion.nombre?.equals(candidate, ignoreCase = true) == true
+        return matchesId || matchesNombre
+    }
+
+    private fun matchesSubregionFiltro(value: String?, subregionId: String?, subregionNombre: String?): Boolean {
+        val candidate = value?.trim().takeIf { it.isNotEmpty() } ?: return false
+        val matchesId = subregionId?.equals(candidate, ignoreCase = true) == true
+        val matchesNombre = subregionNombre?.equals(candidate, ignoreCase = true) == true
+        return matchesId || matchesNombre
     }
 
     private fun formatLocalizacionDisplay(entidad: LocalizacionesEntity): String = entidad.calle.toString()
@@ -1015,6 +1117,17 @@ class AdminManagementFragment : Fragment(R.layout.fragment_admin_management) {
         return matchByName?.id ?: candidate
     }
 
+    private fun resolveSubregionNombre(display: String?): String? {
+        val raw = display?.trim().orEmpty()
+        if (raw.isEmpty()) return null
+        val candidate = raw.split(" - ").getOrNull(1)?.trim().takeUnless { it.isNullOrEmpty() }
+            ?: raw
+        val matchByName = subregionesDisponibles.firstOrNull { it.nombre.equals(candidate, ignoreCase = true) }
+        if (matchByName != null) return matchByName.nombre
+        val matchById = subregionesDisponibles.firstOrNull { it.id.equals(candidate, ignoreCase = true) }
+        return matchById?.nombre ?: candidate
+    }
+
     private fun formatPueblo(codigo: String?): String {
         if (codigo.isNullOrBlank()) return ""
         val match = pueblosDisponibles.firstOrNull { it.id.toString() == codigo.trim() }
@@ -1023,8 +1136,9 @@ class AdminManagementFragment : Fragment(R.layout.fragment_admin_management) {
 
     private fun formatSubregion(codigo: String?): String {
         if (codigo.isNullOrBlank()) return ""
-        val match = subregionesDisponibles.firstOrNull { it.id.equals(codigo, ignoreCase = true) }
-        return match?.let { "${it.id} - ${it.nombre}" } ?: codigo
+        val matchById = subregionesDisponibles.firstOrNull { it.id.equals(codigo, ignoreCase = true) }
+        val matchByName = subregionesDisponibles.firstOrNull { it.nombre.equals(codigo, ignoreCase = true) }
+        return matchById?.nombre ?: matchByName?.nombre ?: codigo
     }
 
     private fun parseVehiculoId(text: String?): Int? {

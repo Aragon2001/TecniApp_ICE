@@ -56,6 +56,7 @@ class MapCoordinatePickerBottomSheet : BottomSheetDialogFragment(), OnMapReadyCa
     private var googleMap: GoogleMap? = null
     private var selectedLatLng: LatLng = DEFAULT_LATLNG
     private var currentMapTypeIndex = 0
+    private var shouldRequestMyLocation = true
 
     private val mapTypes = intArrayOf(
         GoogleMap.MAP_TYPE_NORMAL,
@@ -91,6 +92,7 @@ class MapCoordinatePickerBottomSheet : BottomSheetDialogFragment(), OnMapReadyCa
         if (restoredLat != null && restoredLng != null) {
             selectedLatLng = LatLng(restoredLat, restoredLng)
         }
+        shouldRequestMyLocation = restoredLat == null || restoredLng == null
 
         currentMapTypeIndex = savedInstanceState?.getInt(STATE_MAP_TYPE_INDEX) ?: 0
     }
@@ -130,7 +132,9 @@ class MapCoordinatePickerBottomSheet : BottomSheetDialogFragment(), OnMapReadyCa
         binding.mapView.onCreate(mapViewBundle)
         binding.mapView.getMapAsync(this)
 
-        handleMyLocationRequest()
+        if (shouldRequestMyLocation) {
+            handleMyLocationRequest()
+        }
 
         binding.btnCancelar.setOnClickListener { dismiss() }
         binding.btnConfirmar.setOnClickListener {
@@ -220,7 +224,9 @@ class MapCoordinatePickerBottomSheet : BottomSheetDialogFragment(), OnMapReadyCa
 
         applyMapType()
         enableMyLocationLayer()
-        moveToMyLocation()
+        if (shouldRequestMyLocation) {
+            moveToMyLocation()
+        }
     }
 
     private fun applyMapType() {
