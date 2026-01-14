@@ -17,11 +17,21 @@ admin.initializeApp();
 */
 function getMailConfig() {
   const cfg = functions.config();
-  const user = cfg?.mail?.user;
-  const pass = cfg?.mail?.pass;
+  const user =
+    cfg?.mail?.user ||
+    process.env.MAIL_USER ||
+    process.env.mail_user ||
+    process.env.SMTP_USER ||
+    "";
+  const pass =
+    cfg?.mail?.pass ||
+    process.env.MAIL_PASS ||
+    process.env.mail_pass ||
+    process.env.SMTP_PASS ||
+    "";
   if (!user || !pass) {
     throw new Error(
-      "Faltan credenciales. Configure con: firebase functions:config:set mail.user=... mail.pass=..."
+      "Faltan credenciales. Configure con: firebase functions:config:set mail.user=... mail.pass=... o variables MAIL_USER/MAIL_PASS."
     );
   }
   return { user, pass };
@@ -135,7 +145,10 @@ function userWantsThisAveria(user, averiaAgencyTag) {
   if (list.length > 0) return list.includes(averiaAgencyTag);
 
   const fallback = normTag(user.agenciaId || user.agencia);
-  return fallback && fallback === averiaAgencyTag;
+  if (fallback) return fallback === averiaAgencyTag;
+
+  // Sin filtros configurados => recibir todas
+  return true;
 }
 
 // Reglas de notificación (alineadas con Android + Room + Firebase):
@@ -386,6 +399,7 @@ exports.syncAveriasYNotificar = onSchedule(
 
           // ✅ CLOR
           estadoClor: String(estado),
+          estado: String(estado),
 
           agencia: String(agencia || ""),
           nombreAgencia: String(nombreAgencia || ""),
