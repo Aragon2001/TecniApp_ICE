@@ -73,14 +73,28 @@ class InventarioViewModel(app: Application) : AndroidViewModel(app) {
         )
     }
 
-    fun ajustarCantidadManual(codigo: String, descripcion: String, cantidad: Double) {
+    fun ajustarCantidad(item: InventarioConVehiculo, delta: Double) {
         val vehiculoId = _uiState.value.vehiculoSeleccionado ?: return
-        if (codigo.isBlank() || cantidad == 0.0) return
+        if (delta == 0.0) return
         _uiState.value = _uiState.value.copy(isProcessing = true)
         viewModelScope.launch {
-            repository.ajustarInventario(vehiculoId, codigo.trim(), descripcion.trim(), cantidad)
+            repository.ajustarInventario(
+                vehiculoId,
+                item.item.codigoMaterial.trim(),
+                item.item.descripcionMaterial.trim(),
+                delta
+            )
             _uiState.value = _uiState.value.copy(isProcessing = false)
             _mensajes.value = InventarioMensaje.Exito("Inventario actualizado")
+        }
+    }
+
+    fun eliminarItem(item: InventarioConVehiculo) {
+        _uiState.value = _uiState.value.copy(isProcessing = true)
+        viewModelScope.launch {
+            repository.eliminarInventarioItem(item.item.id)
+            _uiState.value = _uiState.value.copy(isProcessing = false)
+            _mensajes.value = InventarioMensaje.Exito("Material eliminado del inventario")
         }
     }
 
@@ -96,7 +110,7 @@ class InventarioViewModel(app: Application) : AndroidViewModel(app) {
             }
             repository.cargarInventarioDesdeCsv(vehiculoId, pares)
             _uiState.value = _uiState.value.copy(isProcessing = false)
-            _mensajes.value = InventarioMensaje.Exito("Inventario importado desde CSV")
+            _mensajes.value = InventarioMensaje.Exito("Inventario reemplazado con la carga CSV")
         }
     }
 

@@ -38,7 +38,7 @@ class LuminariasFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        inventarioAdapter = InventarioAdapter()
+        inventarioAdapter = InventarioAdapter(showActions = false)
         binding.listInventarioLuminaria.layoutManager = LinearLayoutManager(requireContext())
         binding.listInventarioLuminaria.adapter = inventarioAdapter
 
