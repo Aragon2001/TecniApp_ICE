@@ -48,6 +48,15 @@
             tools:text="Cantidad: 2" />
 
         <TextView
+            android:id="@+id/tvExistencia"
+            style="@style/TextAppearance.Material3.BodySmall"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:textColor="@color/dark_gray"
+            tools:text="Existencia actual: 14" />
+
+        <TextView
             android:id="@+id/tvVehiculo"
             style="@style/TextAppearance.Material3.BodySmall"
             android:layout_width="match_parent"

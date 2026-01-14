@@ -5,6 +5,7 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import com.Arasoftsolutions.tecniapp_ice.R
 import com.Arasoftsolutions.tecniapp_ice.databinding.ItemReporteLuminariaReparadaBinding
 
 class LuminariasReparadasAdapter :
@@ -24,10 +25,15 @@ class LuminariasReparadasAdapter :
         private val binding: ItemReporteLuminariaReparadaBinding
     ) : RecyclerView.ViewHolder(binding.root) {
         fun bind(item: LuminariaReparadaReportItem) {
+            val context = binding.root.context
             binding.tvFecha.text = item.fechaTexto
             binding.tvLocalizacion.text = item.localizacionTexto
             binding.tvMaterial.text = item.materialTexto
             binding.tvCantidad.text = item.cantidadTexto
+            binding.tvExistencia.text = context.getString(
+                R.string.reportes_material_existencia_actual,
+                item.existenciaTexto
+            )
             binding.tvVehiculo.text = item.vehiculoTexto
         }
     }
