@@ -441,10 +441,9 @@ class AdminManagementFragment : Fragment(R.layout.fragment_admin_management) {
         subregion: AdminManagementViewModel.SubregionUsuario?
     ): Boolean {
         if (subregion == null) return true
-        val candidate = value?.trim()
-        if (candidate.isNullOrEmpty()) return false
-        val matchesId = subregion.id?.trim()?.equals(candidate, ignoreCase = true) == true
-        val matchesNombre = subregion.nombre?.trim()?.equals(candidate, ignoreCase = true) == true
+        val candidate = value?.trim().takeIf { it.isNotEmpty() } ?: return false
+        val matchesId = subregion.id?.equals(candidate, ignoreCase = true) == true
+        val matchesNombre = subregion.nombre?.equals(candidate, ignoreCase = true) == true
         return matchesId || matchesNombre
     }
 

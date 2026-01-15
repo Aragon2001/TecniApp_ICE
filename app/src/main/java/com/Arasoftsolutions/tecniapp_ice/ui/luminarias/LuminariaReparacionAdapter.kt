@@ -5,6 +5,7 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaReparacionEntity
 import com.Arasoftsolutions.tecniapp_ice.databinding.ItemLuminariaReparacionBinding
 
@@ -29,13 +30,17 @@ class LuminariaReparacionAdapter(
         private val onDelete: (LuminariaReparacionEntity) -> Unit
     ) : RecyclerView.ViewHolder(binding.root) {
         fun bind(item: LuminariaReparacionEntity) {
-            val nombreMaterial = if (item.descripcionMaterial.isNotBlank()) {
-                "${item.codigoMaterial} · ${item.descripcionMaterial}"
+            val materiales = LuminariaMaterialSerializer.fromJson(item.materialesJson)
+            val resumen = LuminariaMaterialSerializer.toSummary(materiales).ifBlank { "Sin materiales" }
+            val total = materiales.sumOf { it.cantidad }
+            val estadoTexto = if (LuminariaEstado.fromRaw(item.estado) == LuminariaEstado.PENDIENTE) {
+                "Pendiente"
             } else {
-                item.codigoMaterial
+                "Reparada"
             }
-            binding.tvReparacionMaterial.text = nombreMaterial
-            binding.tvReparacionDetalle.text = "Localización #${item.localizacion} · Cantidad: ${item.cantidadUtilizada}"
+            binding.tvReparacionMaterial.text = resumen
+            binding.tvReparacionDetalle.text = "Localización #${item.localizacion} · Total: $total · $estadoTexto"
+            binding.tvReparacionEjecutor.text = "Ejecutor: ${item.ejecutorNombre.ifBlank { "-" }}"
             binding.btnEditarReparacion.setOnClickListener { onEdit(item) }
             binding.btnEliminarReparacion.setOnClickListener { onDelete(item) }
         }

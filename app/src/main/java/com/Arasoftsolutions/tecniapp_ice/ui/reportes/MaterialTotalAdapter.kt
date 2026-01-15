@@ -39,7 +39,13 @@ class MaterialTotalAdapter :
             val recursos = context.resources
             val unidades = recursos.getQuantityString(R.plurals.reportes_material_total_unidades, item.total, item.total)
             val averias = recursos.getQuantityString(R.plurals.reportes_material_total_averias, item.averias, item.averias)
-            binding.tvDetalle.text = context.getString(R.string.reportes_material_total_detalle, unidades, averias)
+            val existencia = context.getString(R.string.reportes_material_existencia_actual, item.existenciaTexto)
+            binding.tvDetalle.text = context.getString(
+                R.string.reportes_material_total_detalle_existencia,
+                unidades,
+                averias,
+                existencia
+            )
         }
     }
 

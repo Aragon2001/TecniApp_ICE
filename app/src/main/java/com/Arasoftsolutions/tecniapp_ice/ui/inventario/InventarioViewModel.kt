@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.InventarioConVehiculo
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.VehiculosEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
+import com.Arasoftsolutions.tecniapp_ice.R
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import kotlinx.coroutines.Dispatchers
@@ -25,6 +26,7 @@ sealed class InventarioMensaje {
 data class InventarioUiState(
     val vehiculos: List<VehiculosEntity> = emptyList(),
     val inventario: List<InventarioConVehiculo> = emptyList(),
+    val inventarioCompleto: List<InventarioConVehiculo> = emptyList(),
     val vehiculoSeleccionado: Int? = null,
     val isProcessing: Boolean = false
 )
@@ -50,10 +52,12 @@ class InventarioViewModel(app: Application) : AndroidViewModel(app) {
             combine(vehiculosFlow, inventarioFlow) { vehiculos, inventario ->
                 vehiculos to inventario
             }.collect { (vehiculos, inventario) ->
-                val seleccionado = _uiState.value.vehiculoSeleccionado ?: vehiculos.firstOrNull()?.id
+                val seleccionadoActual = _uiState.value.vehiculoSeleccionado
+                val seleccionado = seleccionadoActual?.takeIf { id -> vehiculos.any { it.id == id } }
                 _uiState.value = _uiState.value.copy(
                     vehiculos = vehiculos,
-                    inventario = inventario.filter { seleccionado == null || it.item.vehiculoId == seleccionado },
+                    inventarioCompleto = inventario,
+                    inventario = filtrarInventario(inventario, seleccionado),
                     vehiculoSeleccionado = seleccionado
                 )
             }
@@ -67,14 +71,14 @@ class InventarioViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun filtrarInventario() {
         val seleccionado = _uiState.value.vehiculoSeleccionado
-        val inventario = _uiState.value.inventario
+        val inventario = _uiState.value.inventarioCompleto
         _uiState.value = _uiState.value.copy(
-            inventario = if (seleccionado == null) inventario else inventario.filter { it.item.vehiculoId == seleccionado }
+            inventario = filtrarInventario(inventario, seleccionado)
         )
     }
 
     fun ajustarCantidad(item: InventarioConVehiculo, delta: Double) {
-        val vehiculoId = _uiState.value.vehiculoSeleccionado ?: return
+        val vehiculoId = item.item.vehiculoId
         if (delta == 0.0) return
         _uiState.value = _uiState.value.copy(isProcessing = true)
         viewModelScope.launch {
@@ -99,7 +103,12 @@ class InventarioViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun procesarCsv(uri: Uri) {
-        val vehiculoId = _uiState.value.vehiculoSeleccionado ?: return
+        val vehiculoId = _uiState.value.vehiculoSeleccionado
+        if (vehiculoId == null) {
+            val texto = getApplication<Application>().getString(R.string.inventario_error_seleccionar_camion)
+            _mensajes.value = InventarioMensaje.Error(texto)
+            return
+        }
         _uiState.value = _uiState.value.copy(isProcessing = true)
         viewModelScope.launch {
             val pares = leerCsv(uri)
@@ -131,5 +140,16 @@ class InventarioViewModel(app: Application) : AndroidViewModel(app) {
 
     fun consumirMensaje() {
         _mensajes.value = null
+    }
+
+    private fun filtrarInventario(
+        inventario: List<InventarioConVehiculo>,
+        seleccionado: Int?
+    ): List<InventarioConVehiculo> {
+        return if (seleccionado == null) {
+            inventario
+        } else {
+            inventario.filter { it.item.vehiculoId == seleccionado }
+        }
     }
 }
