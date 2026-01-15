@@ -113,6 +113,7 @@
     <string name="averia_error_app_mapa">Instala una aplicación de mapas para continuar.</string>
     <string name="averia_map_select_app">Abrir con</string>
     <string name="averias_vacio">No hay averías con los filtros actuales.</string>
+    <string name="averia_error_region_diferente">Solo puedes gestionar averías de tu región.</string>
     <string name="estado_pendiente">Pendiente</string>
     <string name="estado_asignada">Asignada</string>
     <string name="estado_en_atencion">En atención</string>
