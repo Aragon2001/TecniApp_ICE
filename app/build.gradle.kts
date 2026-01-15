@@ -25,6 +25,11 @@ android {
         // Usados por IceApi / Repository
         buildConfigField("String", "ICE_BASE_URL", "\"https://agenciaelectricidad.cn.ice.go.cr/api/\"")
         buildConfigField("String", "ICE_BEARER", "\"\"")
+        buildConfigField(
+            "String",
+            "UPDATE_JSON_URL",
+            "\"https://github.com/ORG/REPO/releases/latest/download/update.json\""
+        )
 
         minSdk = 26
         targetSdk = 34
@@ -184,4 +189,3 @@ ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
     arg("room.incremental", "true")
 }
-

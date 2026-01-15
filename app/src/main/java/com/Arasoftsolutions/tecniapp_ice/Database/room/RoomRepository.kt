@@ -448,4 +448,8 @@ class   RoomRepository(context: Context) {
         runCatching { syncMateriales() }
     }
 
+    suspend fun limpiarBaseLocal() = withContext(Dispatchers.IO) {
+        db.clearAllTables()
+    }
+
 }
