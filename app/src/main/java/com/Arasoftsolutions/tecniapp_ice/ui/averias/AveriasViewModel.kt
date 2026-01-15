@@ -749,6 +749,41 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
         return user
     }
 
+    fun resolveUserRegionLabel(user: UserEntity?): String? {
+        if (user == null) return null
+        val regionNombre = user.regionNombre?.trim().takeIf { !it.isNullOrBlank() }
+        val regionId = user.region?.trim().takeIf { !it.isNullOrBlank() }
+        val subregionId = user.subregion?.trim().takeIf { !it.isNullOrBlank() }
+        val regionFromId = regionId?.let { id ->
+            cachedRegiones.firstOrNull { it.id.equals(id, ignoreCase = true) }?.nombre
+        }
+        val regionFromSubregion = subregionId
+            ?.let { subId ->
+                cachedSubregiones.firstOrNull { it.id.equals(subId, ignoreCase = true) }?.regionId
+            }
+            ?.let { regionFromSubId ->
+                cachedRegiones.firstOrNull { it.id.equals(regionFromSubId, ignoreCase = true) }?.nombre
+            }
+        return regionNombre ?: regionFromId ?: regionFromSubregion ?: regionId
+    }
+
+    private fun isRegionMismatch(ui: AveriaUI): Boolean {
+        val userRegion = resolveUserRegionLabel(_usuario.value)?.trim().orEmpty()
+        val averiaRegion = ui.region.trim()
+        if (userRegion.isBlank() || averiaRegion.isBlank()) return false
+        return userRegion.normalize() != averiaRegion.normalize()
+    }
+
+    fun isRegionAllowed(ui: AveriaUI): Boolean = !isRegionMismatch(ui)
+
+    private suspend fun ensureRegionAllowed(ui: AveriaUI): Boolean {
+        if (isRegionMismatch(ui)) {
+            _messages.emit(getApplication<Application>().getString(R.string.averia_error_region_diferente))
+            return false
+        }
+        return true
+    }
+
     fun syncNow() {
         viewModelScope.launch {
             isLoading.emit(true)
@@ -763,6 +798,7 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
 
     fun onToggleAsignacion(ui: AveriaUI) {
         viewModelScope.launch {
+            if (!ensureRegionAllowed(ui)) return@launch
             when (Estado.fromLabel(ui.estado)) {
                 Estado.PENDIENTE -> {
                     val user = requireUsuario() ?: return@launch
@@ -784,6 +820,7 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
 
     fun onAutoAsignarPendiente(ui: AveriaUI) {
         viewModelScope.launch {
+            if (!ensureRegionAllowed(ui)) return@launch
             if (Estado.fromLabel(ui.estado) != Estado.PENDIENTE) return@launch
             if (!ui.tecnicoUid.isNullOrBlank()) return@launch
             val user = requireUsuario() ?: return@launch
@@ -797,6 +834,7 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
 
     fun onAtender(ui: AveriaUI, data: AveriaActionData) {
         viewModelScope.launch {
+            if (!ensureRegionAllowed(ui)) return@launch
             val estado = Estado.fromLabel(ui.estado)
             if (estado != Estado.ASIGNADA && estado != Estado.PENDIENTE) return@launch
             val user = when (estado) {
@@ -819,6 +857,7 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
 
     fun onCancelarAtencion(ui: AveriaUI) {
         viewModelScope.launch {
+            if (!ensureRegionAllowed(ui)) return@launch
             if (Estado.fromLabel(ui.estado) != Estado.EN_ATENCION) return@launch
             ensurePropietario(ui) ?: return@launch
             repo.revertirAPendiente(ui.id)
@@ -829,6 +868,7 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
 
     fun onRevertirAnulada(ui: AveriaUI) {
         viewModelScope.launch {
+            if (!ensureRegionAllowed(ui)) return@launch
             if (Estado.fromLabel(ui.estado) != Estado.ANULADA) return@launch
             ensurePropietario(ui) ?: return@launch
             repo.revertirAPendiente(ui.id)
@@ -838,6 +878,10 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun onResolver(ui: AveriaUI, data: AveriaActionData) {
+        if (isRegionMismatch(ui)) {
+            _messages.tryEmit(getApplication<Application>().getString(R.string.averia_error_region_diferente))
+            return
+        }
         if (data.causa.isBlank()) {
             _messages.tryEmit(getApplication<Application>().getString(R.string.averia_error_causa_requerida))
             return
@@ -859,6 +903,7 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
 
     fun onEliminarResuelta(ui: AveriaUI) {
         viewModelScope.launch {
+            if (!ensureRegionAllowed(ui)) return@launch
             if (Estado.fromLabel(ui.estado) != Estado.RESUELTA) return@launch
             ensurePropietario(ui) ?: return@launch
             runCatching { repo.eliminarAveria(ui.id) }
@@ -875,6 +920,7 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
 
     fun onAnularPendiente(ui: AveriaUI) {
         viewModelScope.launch {
+            if (!ensureRegionAllowed(ui)) return@launch
             if (Estado.fromLabel(ui.estado) != Estado.PENDIENTE) return@launch
             ensurePropietario(ui) ?: return@launch
             runCatching { repo.anular(ui.id) }
