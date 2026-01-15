@@ -30,6 +30,11 @@ import com.Arasoftsolutions.tecniapp_ice.databinding.FragmentSettingsBinding
 import com.Arasoftsolutions.tecniapp_ice.preferences.DataStoreManager
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriaNotificationPreferences
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasSyncWorker
+import com.Arasoftsolutions.tecniapp_ice.update.GithubUpdateChecker
+import com.Arasoftsolutions.tecniapp_ice.update.UpdateCheckResult
+import com.Arasoftsolutions.tecniapp_ice.update.UpdateDialog
+import com.Arasoftsolutions.tecniapp_ice.update.UpdateDownloadManager
+import com.Arasoftsolutions.tecniapp_ice.update.UpdateInfo
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.chip.Chip
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -53,6 +58,7 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
     private val roomRepository by lazy { RoomRepository.getInstance(requireContext()) }
     private var availableNotificationAgencies: List<String> = emptyList()
     private var latestAutoSyncInfo: WorkInfo? = null
+    private val updateDownloadManager by lazy { UpdateDownloadManager(requireContext()) }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -65,6 +71,7 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         setupLocationPreferences()
         setupAppearancePreferences()
         setupAccountSection()
+        setupUpdateSection()
     }
 
     private fun setupNotificationPreferences() {
@@ -189,6 +196,44 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
                 }
             }
         }
+    }
+
+    private fun setupUpdateSection() {
+        binding.btnCheckUpdates.setOnClickListener {
+            binding.btnCheckUpdates.isEnabled = false
+            Toast.makeText(requireContext(), R.string.update_checking, Toast.LENGTH_SHORT).show()
+            viewLifecycleOwner.lifecycleScope.launch {
+                val checker = GithubUpdateChecker(BuildConfig.UPDATE_JSON_URL)
+                val result = checker.checkForUpdate(BuildConfig.VERSION_CODE)
+                binding.btnCheckUpdates.isEnabled = true
+                when (result) {
+                    is UpdateCheckResult.UpdateAvailable -> {
+                        dataStore.setPendingUpdateInfo(result.info)
+                        showUpdateDialog(result.info)
+                    }
+                    UpdateCheckResult.UpToDate -> {
+                        dataStore.setPendingUpdateInfo(null)
+                        Toast.makeText(requireContext(), R.string.update_no_update, Toast.LENGTH_LONG).show()
+                    }
+                    is UpdateCheckResult.Error -> {
+                        Toast.makeText(requireContext(), R.string.update_check_failed, Toast.LENGTH_LONG).show()
+                    }
+                }
+            }
+        }
+    }
+
+    private fun showUpdateDialog(info: UpdateInfo) {
+        val manager = parentFragmentManager
+        if (manager.findFragmentByTag(UPDATE_DIALOG_TAG) != null) return
+        val dialog = UpdateDialog.newInstance(info).apply {
+            onConfirmUpdate = { updateDownloadManager.startDownload(requireActivity(), it) }
+        }
+        dialog.show(manager, UPDATE_DIALOG_TAG)
+    }
+
+    companion object {
+        private const val UPDATE_DIALOG_TAG = "update_dialog"
     }
 
     private fun setupLocationPreferences() {

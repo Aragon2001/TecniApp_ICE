@@ -25,6 +25,7 @@ import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.navigateUp
 import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
+import com.Arasoftsolutions.tecniapp_ice.BuildConfig
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.UserEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.apellidosCompletos
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
@@ -39,7 +40,12 @@ import kotlinx.coroutines.launch
 import com.Arasoftsolutions.tecniapp_ice.ui.legal.StructuredTextFormatter
 import com.Arasoftsolutions.tecniapp_ice.ui.legal.StructuredTextParser
 import com.Arasoftsolutions.tecniapp_ice.ui.legal.renderStructuredContent
+import com.Arasoftsolutions.tecniapp_ice.preferences.DataStoreManager
+import com.Arasoftsolutions.tecniapp_ice.update.UpdateDialog
+import com.Arasoftsolutions.tecniapp_ice.update.UpdateDownloadManager
+import com.Arasoftsolutions.tecniapp_ice.update.UpdateInfo
 import java.util.Calendar
+import kotlinx.coroutines.flow.first
 
 class ActivityMain : AppCompatActivity() {
 
@@ -48,6 +54,8 @@ class ActivityMain : AppCompatActivity() {
     private lateinit var auth: FirebaseAuth
     private lateinit var repository: RoomRepository
     private lateinit var headerBinding: NavHeaderMainBinding
+    private val dataStore by lazy { DataStoreManager.getInstance(applicationContext) }
+    private val updateDownloadManager by lazy { UpdateDownloadManager(this) }
 
     private val requestNotificationPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -68,6 +76,7 @@ class ActivityMain : AppCompatActivity() {
         setContentView(binding.root)
 
         ensureTermsAccepted()
+        checkPendingUpdate()
 
         // Toolbar
         setSupportActionBar(binding.appBarMain.toolbar)
@@ -120,6 +129,31 @@ class ActivityMain : AppCompatActivity() {
 
         setupActionBarWithNavController(navController, appBarConfiguration)
         navView.setupWithNavController(navController)
+    }
+
+    private fun checkPendingUpdate() {
+        lifecycleScope.launch {
+            val info = dataStore.pendingUpdateInfo.first()
+            if (info == null) return@launch
+            if (!info.isNewerThan(BuildConfig.VERSION_CODE)) {
+                dataStore.setPendingUpdateInfo(null)
+                return@launch
+            }
+            showUpdateDialog(info)
+        }
+    }
+
+    private fun showUpdateDialog(info: UpdateInfo) {
+        if (supportFragmentManager.findFragmentByTag(UPDATE_DIALOG_TAG) != null) return
+        if (supportFragmentManager.isStateSaved) return
+        val dialog = UpdateDialog.newInstance(info).apply {
+            onConfirmUpdate = { updateDownloadManager.startDownload(this@ActivityMain, it) }
+        }
+        dialog.show(supportFragmentManager, UPDATE_DIALOG_TAG)
+    }
+
+    companion object {
+        private const val UPDATE_DIALOG_TAG = "update_dialog"
     }
 
     /**

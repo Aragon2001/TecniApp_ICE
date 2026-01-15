@@ -298,7 +298,7 @@ class AdminManagementFragment : Fragment(R.layout.fragment_admin_management) {
 
     private fun actualizarAgencias(lista: List<AgenciaEntity>) {
         agenciasCatalogo = lista
-        agenciasDisponibles = agenciasCatalogo
+        agenciasDisponibles = filtrarPorSubregionUsuario(agenciasCatalogo) { it.subregion }
         actualizarAgenciasFiltradas()
     }
 
