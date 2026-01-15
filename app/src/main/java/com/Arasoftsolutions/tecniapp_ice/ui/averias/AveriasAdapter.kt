@@ -17,6 +17,8 @@ import com.google.android.material.button.MaterialButton
 import com.google.android.material.chip.Chip
 import java.text.DateFormat
 import java.util.Date
+import java.text.Normalizer
+import java.util.Locale
 
 class AveriasAdapter(
     private val onVerDetalle: (AveriaUI) -> Unit,
@@ -40,6 +42,18 @@ class AveriasAdapter(
             field = value
             notifyDataSetChanged()
         }
+
+    var currentUserRegion: String? = null
+        set(value) {
+            field = value
+            notifyDataSetChanged()
+        }
+
+    private fun normalizeRegion(value: String): String {
+        val normalized = Normalizer.normalize(value, Normalizer.Form.NFD)
+        return normalized.replace("\\p{InCombiningDiacriticalMarks}+".toRegex(), "")
+            .lowercase(Locale.getDefault())
+    }
 
     fun submitList(newItems: List<AveriaUI>) {
         val diff = DiffUtil.calculateDiff(object : DiffUtil.Callback() {
@@ -107,7 +121,12 @@ class AveriasAdapter(
             val ownerUid = item.ownerUidFor(estadoEnum)
             val asignadaAOtro = !ownerUid.isNullOrBlank() && (currentUid == null || ownerUid != currentUid)
             val pertenece = !asignadaAOtro && !ownerUid.isNullOrBlank()
-            val readOnly = bloqueadaPorClor || asignadaAOtro
+            val regionMismatch = currentUserRegion?.let { regionUsuario ->
+                val regionAveria = item.region.trim()
+                regionAveria.isNotBlank() &&
+                    normalizeRegion(regionUsuario) != normalizeRegion(regionAveria)
+            } ?: false
+            val readOnly = bloqueadaPorClor || asignadaAOtro || regionMismatch
 
             tvTitulo.text = item.descripcion
 
@@ -325,8 +344,14 @@ class AveriasAdapter(
 
             btnVerMapa.setOnClickListener { onVerMapa(item) }
 
-            // ✅ Ver detalle SIEMPRE (aunque sea readOnly)
-            itemView.setOnClickListener { onVerDetalle(item) }
+            if (regionMismatch) {
+                itemView.setOnClickListener(null)
+                itemView.isClickable = false
+            } else {
+                // ✅ Ver detalle SIEMPRE (aunque sea readOnly)
+                itemView.setOnClickListener { onVerDetalle(item) }
+                itemView.isClickable = true
+            }
 
             // ✅ Los callbacks se mantienen, pero los botones se bloquean abajo si hace falta
             btnAsignar.setOnClickListener { onAsignar(item) }
@@ -411,7 +436,11 @@ class AveriasAdapter(
             // - CLOR resuelta: oculta acciones para evitar confusión
             // - Asignada a otro: mantiene botones visibles según estado, pero disabled
             // ==========================================================
-            if (bloqueadaPorClor) {
+            if (regionMismatch) {
+                btnAsignar.isVisible = false
+                btnAtender.isVisible = false
+                btnResolver.isVisible = false
+            } else if (bloqueadaPorClor) {
                 // Caso cerrado por CLOR: en lista no se permite ninguna acción.
                 btnAsignar.isVisible = false
                 btnAtender.isVisible = false

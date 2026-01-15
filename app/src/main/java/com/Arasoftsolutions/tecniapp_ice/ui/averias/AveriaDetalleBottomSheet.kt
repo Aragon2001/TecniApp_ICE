@@ -722,6 +722,7 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
 private fun renderState() {
     val uid = vm.usuarioActual.value?.uid
     val clorResuelta = item.estadoClor.equals("RESUELTA", true)
+    val regionMismatch = !vm.isRegionAllowed(item)
 
     val estado = if (clorResuelta) Estado.RESUELTA else Estado.fromLabel(item.estado)
     estadoActual = estado
@@ -731,9 +732,10 @@ private fun renderState() {
     val pertenece = uid != null && ownerUid == uid
     val asignadaAOtro = tieneAsignacion && (uid == null || ownerUid != uid)
 
-    val puedeEditarInicio = !clorResuelta && !asignadaAOtro &&
+    val puedeEditarInicio = !regionMismatch && !clorResuelta && !asignadaAOtro &&
         (estado == Estado.PENDIENTE || estado == Estado.ASIGNADA || (estado == Estado.EN_ATENCION && pertenece))
-    val puedeEditarCompleto = !clorResuelta && estado == Estado.EN_ATENCION && pertenece && !asignadaAOtro
+    val puedeEditarCompleto = !regionMismatch && !clorResuelta &&
+        estado == Estado.EN_ATENCION && pertenece && !asignadaAOtro
 
     applyInputStateForRules(
         estado = estado,
@@ -745,7 +747,8 @@ private fun renderState() {
         estado = estado,
         pertenece = pertenece,
         asignadaAOtro = asignadaAOtro,
-        clorResuelta = clorResuelta
+        clorResuelta = clorResuelta,
+        regionMismatch = regionMismatch
     )
 }
 
@@ -816,7 +819,8 @@ private fun configureButtonsForRules(
     estado: Estado,
     pertenece: Boolean,
     asignadaAOtro: Boolean,
-    clorResuelta: Boolean
+    clorResuelta: Boolean,
+    regionMismatch: Boolean
 ) {
     // Reset
     b.btnAsignar.isVisible = false
@@ -825,6 +829,8 @@ private fun configureButtonsForRules(
     b.btnAnular.isVisible = false
     b.btnExportar.isVisible = false
     b.btnEliminar.isVisible = false
+
+    if (regionMismatch) return
 
     // ✅ Regla global: CLOR resuelta = solo lectura (solo exportar + cerrar)
     if (clorResuelta) {

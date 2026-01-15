@@ -134,6 +134,7 @@ fun observe(
         """
         UPDATE averias SET
           estado = 'Pendiente',
+          idEstadoAve = 1,
           tecnicoAsignadoUid = NULL,
           tecnicoAsignadoNombre = NULL,
           vehiculoAsignado = NULL,
