@@ -25,7 +25,6 @@ import com.Arasoftsolutions.tecniapp_ice.ui.reportes.ExcelReportExporter.MIME_TY
 import com.google.android.material.datepicker.MaterialDatePicker
 import androidx.core.util.Pair
 import com.google.android.material.snackbar.Snackbar
-import com.Arasoftsolutions.tecniapp_ice.ui.inventario.InventarioAdapter
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -41,13 +40,10 @@ class ReportesFragment : Fragment() {
     private val binding get() = _binding!!
 
     private val viewModel: ReportesViewModel by viewModels()
-    private val inventarioReportViewModel: InventarioReportViewModel by viewModels()
-
     private lateinit var averiasAdapter: AveriasReportAdapter
     private lateinit var materialesPorAveriaAdapter: MaterialesPorAveriaAdapter
     private lateinit var materialTotalAdapter: MaterialTotalAdapter
     private lateinit var luminariasAdapter: LuminariasReparadasAdapter
-    private lateinit var inventarioAdapter: InventarioAdapter
     private lateinit var tiposAdapter: ArrayAdapter<String>
     private var isUpdatingTipoReporte = false
     private val locale = Locale.getDefault()
@@ -82,7 +78,6 @@ class ReportesFragment : Fragment() {
         setupReportTypeSelector()
         setupListeners()
         observeState()
-        observeInventario()
     }
 
     private fun setupAdapters() {
@@ -118,13 +113,6 @@ class ReportesFragment : Fragment() {
             isNestedScrollingEnabled = false
         }
 
-        inventarioAdapter = InventarioAdapter()
-        binding.recyclerInventario.apply {
-            layoutManager = LinearLayoutManager(context)
-            adapter = inventarioAdapter
-            setHasFixedSize(false)
-            isNestedScrollingEnabled = false
-        }
     }
 
     private fun setupReportTypeSelector() {
@@ -161,18 +149,6 @@ class ReportesFragment : Fragment() {
         binding.btnExportarExcel.setOnClickListener { prepararExportacion() }
         binding.btnLimpiarFechas.setOnClickListener { viewModel.restablecerRango() }
         binding.fabEnviarCorreo.setOnClickListener { viewModel.enviarReportePorCorreo() }
-    }
-
-    private fun observeInventario() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                inventarioReportViewModel.inventario.collect { items ->
-                    inventarioAdapter.submitList(items)
-                    binding.cardInventario.isVisible = true
-                    binding.tvInventarioVacio.isVisible = items.isEmpty()
-                }
-            }
-        }
     }
 
     private fun observeState() {
