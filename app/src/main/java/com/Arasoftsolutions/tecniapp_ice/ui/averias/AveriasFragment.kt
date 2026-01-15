@@ -147,6 +147,7 @@ override fun onStop() {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 vm.usuarioActual.collectLatest { user ->
                     adapter.currentUserUid = user?.uid
+                    adapter.currentUserRegion = vm.resolveUserRegionLabel(user)
                 }
             }
         }
