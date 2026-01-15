@@ -298,9 +298,8 @@ class Paso4Fragment : Fragment() {
                         ?: snap.child("subregionId").getValue(String::class.java)
 
                     val matchesSubregion = agencyMatchesSubregion(subregionValue, subregion)
-                    val matchesRegion = regionId.isNullOrBlank() || subregion.regionId.equals(regionId.trim(), ignoreCase = true)
 
-                    if (!matchesSubregion && !matchesRegion) {
+                    if (!matchesSubregion) {
                         null
                     } else {
                         AgencyItem(id?.takeIf { it.isNotBlank() }, nombre, regionId?.trim(), subregionValue?.trim())
