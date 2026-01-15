@@ -27,6 +27,9 @@ interface MedidorDao {
     @Query("SELECT * FROM medidores WHERE medidorNumber = :numero LIMIT 1")
     suspend fun buscarPorNumero(numero: String): MedidorEntity?
 
+    @Query("SELECT * FROM medidores WHERE localizacion = :localizacion LIMIT 1")
+    suspend fun buscarPorLocalizacion(localizacion: Long): MedidorEntity?
+
     @Query("SELECT COUNT(*) FROM medidores WHERE subregion = :subregionId")
     suspend fun contarPorSubregion(subregionId: String): Int
 
