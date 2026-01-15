@@ -324,7 +324,8 @@ class LuminariasFragment : Fragment() {
                 .toMutableList()
         } ?: mutableListOf()
 
-        val adapterMateriales = LuminariaMaterialAdapter { material ->
+        lateinit var adapterMateriales: LuminariaMaterialAdapter
+        adapterMateriales = LuminariaMaterialAdapter { material ->
             materialesSeleccionados.removeAll { it.codigo == material.codigo }
             adapterMateriales.submitList(materialesSeleccionados.toList())
             binding.tvEmptyMateriales.isVisible = materialesSeleccionados.isEmpty()
