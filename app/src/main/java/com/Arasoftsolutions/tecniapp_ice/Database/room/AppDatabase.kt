@@ -25,7 +25,7 @@ import com.Arasoftsolutions.tecniapp_ice.Database.entities.*
         LuminariaReparacionEntity::class // Reparaciones de luminarias
     ],
 
-    version = 16,                        // ✅ mantener la versión más alta
+    version = AppDatabase.SCHEMA_VERSION,                        // ✅ mantener la versión más alta
 
     exportSchema = true
 )
@@ -46,6 +46,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun inventarioDao(): InventarioDao
 
     companion object {
+        const val SCHEMA_VERSION = 16
+
         @Volatile private var INSTANCE: AppDatabase? = null
 
         fun getInstance(context: Context): AppDatabase =

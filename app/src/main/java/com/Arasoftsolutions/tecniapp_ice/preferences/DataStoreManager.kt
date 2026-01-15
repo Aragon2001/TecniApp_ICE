@@ -4,8 +4,10 @@ import android.content.Context
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.Arasoftsolutions.tecniapp_ice.update.UpdateInfo
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -33,6 +35,25 @@ class DataStoreManager private constructor(private val appContext: Context) {
         preferences[Keys.LAST_MANUAL_SYNC]
     }
 
+    val lastSchemaVersionApplied: Flow<Int?> = dataStore.data.map { preferences ->
+        preferences[Keys.LAST_SCHEMA_VERSION_APPLIED]
+    }
+
+    val pendingUpdateInfo: Flow<UpdateInfo?> = dataStore.data.map { preferences ->
+        val versionCode = preferences[Keys.PENDING_UPDATE_VERSION_CODE] ?: return@map null
+        val apkUrl = preferences[Keys.PENDING_UPDATE_APK_URL] ?: return@map null
+        val versionName = preferences[Keys.PENDING_UPDATE_VERSION_NAME] ?: ""
+        val notes = preferences[Keys.PENDING_UPDATE_NOTES] ?: ""
+        val sha256 = preferences[Keys.PENDING_UPDATE_SHA256]
+        UpdateInfo(
+            versionCode = versionCode,
+            versionName = versionName,
+            apkUrl = apkUrl,
+            sha256 = sha256,
+            notes = notes
+        )
+    }
+
     suspend fun setNotificationsEnabled(value: Boolean) {
         dataStore.edit { prefs -> prefs[Keys.NOTIFICATIONS_ENABLED] = value }
     }
@@ -57,6 +78,28 @@ class DataStoreManager private constructor(private val appContext: Context) {
         dataStore.edit { prefs -> prefs[Keys.LAST_MANUAL_SYNC] = timestampMillis }
     }
 
+    suspend fun setLastSchemaVersionApplied(schemaVersion: Int) {
+        dataStore.edit { prefs -> prefs[Keys.LAST_SCHEMA_VERSION_APPLIED] = schemaVersion }
+    }
+
+    suspend fun setPendingUpdateInfo(info: UpdateInfo?) {
+        dataStore.edit { prefs ->
+            if (info == null) {
+                prefs.remove(Keys.PENDING_UPDATE_VERSION_CODE)
+                prefs.remove(Keys.PENDING_UPDATE_VERSION_NAME)
+                prefs.remove(Keys.PENDING_UPDATE_APK_URL)
+                prefs.remove(Keys.PENDING_UPDATE_SHA256)
+                prefs.remove(Keys.PENDING_UPDATE_NOTES)
+            } else {
+                prefs[Keys.PENDING_UPDATE_VERSION_CODE] = info.versionCode
+                prefs[Keys.PENDING_UPDATE_VERSION_NAME] = info.versionName
+                prefs[Keys.PENDING_UPDATE_APK_URL] = info.apkUrl
+                info.sha256?.let { prefs[Keys.PENDING_UPDATE_SHA256] = it }
+                prefs[Keys.PENDING_UPDATE_NOTES] = info.notes
+            }
+        }
+    }
+
     private fun booleanFlow(key: Preferences.Key<Boolean>, default: Boolean): Flow<Boolean> =
         dataStore.data.map { prefs -> prefs[key] ?: default }
 
@@ -67,6 +110,20 @@ class DataStoreManager private constructor(private val appContext: Context) {
         val DARK_THEME_ENABLED = booleanPreferencesKey("dark_theme_enabled")
         val LAST_MANUAL_SYNC = longPreferencesKey("last_manual_sync")
         val ONBOARDING_COMPLETED = booleanPreferencesKey("onboarding_completed")
+        val LAST_SCHEMA_VERSION_APPLIED = intPreferencesKey("last_schema_version_applied")
+        val PENDING_UPDATE_VERSION_CODE = intPreferencesKey("pending_update_version_code")
+        val PENDING_UPDATE_VERSION_NAME = androidx.datastore.preferences.core.stringPreferencesKey(
+            "pending_update_version_name"
+        )
+        val PENDING_UPDATE_APK_URL = androidx.datastore.preferences.core.stringPreferencesKey(
+            "pending_update_apk_url"
+        )
+        val PENDING_UPDATE_SHA256 = androidx.datastore.preferences.core.stringPreferencesKey(
+            "pending_update_sha256"
+        )
+        val PENDING_UPDATE_NOTES = androidx.datastore.preferences.core.stringPreferencesKey(
+            "pending_update_notes"
+        )
     }
 
     companion object {
@@ -82,4 +139,3 @@ class DataStoreManager private constructor(private val appContext: Context) {
         }
     }
 }
-
