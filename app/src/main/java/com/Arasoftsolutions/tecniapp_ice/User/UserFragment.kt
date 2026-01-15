@@ -381,7 +381,7 @@ class UserFragment : Fragment() {
         filteredSubregions = if (targetRegion != null) {
             subregionItems.filter { subregionMatchesRegion(it, targetRegion) }
         } else {
-            subregionItems
+            emptyList()
         }
         subregionAdapter.addAll(filteredSubregions.map { formatSubregion(it) })
         subregionAdapter.notifyDataSetChanged()
@@ -394,27 +394,26 @@ class UserFragment : Fragment() {
 
     private fun updateAgencyDropdown() {
         val targetSubregion = selectedSubregion ?: currentUserSubregion()
-        val targetRegion = selectedRegion ?: targetSubregion?.let { findRegion(it.regionId) } ?: currentUserRegion()
         filteredAgencies = when {
             targetSubregion != null -> agencyItems.filter { agencyMatchesSubregion(it, targetSubregion) }
-            targetRegion != null -> agencyItems.filter { agencyMatchesRegion(it, targetRegion) }
-            else -> agencyItems
+            else -> emptyList()
         }
         agencyAdapter.clear()
         agencyAdapter.addAll(filteredAgencies.map { formatAgency(it) })
         agencyAdapter.notifyDataSetChanged()
 
-        if (selectedAgency?.let { agencyMatches(it, targetSubregion, targetRegion) } != true) {
+        if (selectedAgency?.let { agencyMatchesSubregion(it, targetSubregion) } != true) {
             selectedAgency = null
             binding.actvAgency.setText("", false)
         }
     }
 
     private fun updateVehicleDropdown() {
-        val targetSubregion = selectedSubregion ?: currentUserSubregion()
-        filteredVehicles = targetSubregion?.let { subregion ->
-            vehicleItems.filter { vehicleMatchesSubregion(it, subregion) }
-        } ?: vehicleItems
+        val targetAgency = selectedAgency ?: currentUserAgency()
+        filteredVehicles = when {
+            targetAgency != null -> vehicleItems.filter { vehicleMatchesAgency(it, targetAgency) }
+            else -> emptyList()
+        }
         vehicleAdapter.clear()
         vehicleAdapter.addAll(filteredVehicles.map { formatVehicle(it) })
         vehicleAdapter.notifyDataSetChanged()
@@ -623,6 +622,14 @@ class UserFragment : Fragment() {
         return findRegion(user.region) ?: findRegion(user.regionNombre)
     }
 
+    private fun currentUserAgency(): AgenciaEntity? {
+        val user = currentUser ?: return null
+        val subregion = selectedSubregion ?: currentUserSubregion()
+        val region = selectedRegion ?: subregion?.let { findRegion(it.regionId) } ?: currentUserRegion()
+        return findAgency(user.agenciaId, subregion, region)
+            ?: findAgency(user.agencia, subregion, region)
+    }
+
     private fun findVehicle(value: String?): VehiculosEntity? {
         if (value.isNullOrBlank()) return null
         val normalizedDigits = value.filter { it.isDigit() }
@@ -676,13 +683,13 @@ class UserFragment : Fragment() {
         return target.equals(regionId, ignoreCase = true) || target.equals(regionName, ignoreCase = true)
     }
 
-    private fun vehicleMatchesSubregion(vehicle: VehiculosEntity, subregion: SubregionesEntity?): Boolean {
-        if (subregion == null) return true
-        val vehicleSub = vehicle.subregion?.trim().orEmpty()
-        if (vehicleSub.isEmpty()) return true
-        val subId = subregion.id.trim()
-        val subName = subregion.nombre.trim()
-        return vehicleSub.equals(subId, ignoreCase = true) || vehicleSub.equals(subName, ignoreCase = true)
+    private fun vehicleMatchesAgency(vehicle: VehiculosEntity, agency: AgenciaEntity): Boolean {
+        val vehicleAgency = vehicle.agencia.trim()
+        if (vehicleAgency.isEmpty()) return true
+        val agencyId = agency.id?.trim().orEmpty()
+        val agencyName = agency.nombre.trim()
+        return vehicleAgency.equals(agencyName, ignoreCase = true) ||
+            (agencyId.isNotEmpty() && vehicleAgency.equals(agencyId, ignoreCase = true))
     }
 
     private fun togglePasswordEdition(enable: Boolean) {
@@ -701,12 +708,7 @@ class UserFragment : Fragment() {
     }
 
     private fun formatSubregion(subregion: SubregionesEntity): String {
-        val regionName = findRegion(subregion.regionId)?.nombre?.takeIf { it.isNotBlank() }
-        return if (regionName != null) {
-            getString(R.string.profile_dropdown_subregion_format, subregion.nombre, regionName)
-        } else {
-            subregion.nombre
-        }
+        return subregion.nombre
     }
 
     private fun formatAgency(agency: AgenciaEntity): String {
