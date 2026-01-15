@@ -432,7 +432,10 @@ class AdminManagementFragment : Fragment(R.layout.fragment_admin_management) {
         lista: List<T>,
         selector: (T) -> String?
     ): List<T> {
-        val subregion = subregionUsuario ?: return lista
+        val subregion = subregionUsuario
+        val subregionId = subregion?.id?.trim().orEmpty()
+        val subregionNombre = subregion?.nombre?.trim().orEmpty()
+        if (subregionId.isEmpty() && subregionNombre.isEmpty()) return lista
         return lista.filter { item -> matchesSubregion(selector(item), subregion) }
     }
 
@@ -440,11 +443,13 @@ class AdminManagementFragment : Fragment(R.layout.fragment_admin_management) {
         value: String?,
         subregion: AdminManagementViewModel.SubregionUsuario?
     ): Boolean {
-        if (subregion == null) return true
-        val candidate = value?.trim().takeIf { it.isNotEmpty() } ?: return false
-        val matchesId = subregion.id?.equals(candidate, ignoreCase = true) == true
-        val matchesNombre = subregion.nombre?.equals(candidate, ignoreCase = true) == true
-        return matchesId || matchesNombre
+        val candidate = value?.trim().orEmpty()
+        if (candidate.isEmpty()) return false
+        val subregionId = subregion?.id?.trim().orEmpty()
+        val subregionNombre = subregion?.nombre?.trim().orEmpty()
+        if (subregionId.isEmpty() && subregionNombre.isEmpty()) return false
+        return candidate.equals(subregionId, ignoreCase = true) ||
+            candidate.equals(subregionNombre, ignoreCase = true)
     }
 
     private fun matchesSubregionFiltro(value: String?, subregionId: String?, subregionNombre: String?): Boolean {
