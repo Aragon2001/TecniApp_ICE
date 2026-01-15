@@ -66,7 +66,8 @@ class InventarioFragment : Fragment() {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.uiState.collect { state ->
                     binding.progressInventario.isVisible = state.isProcessing
-                    val labels = state.vehiculos.map { "${it.placa} - ${it.tipo}" }
+                    val labels = mutableListOf(getString(R.string.inventario_filtro_todos))
+                    labels.addAll(state.vehiculos.map { "${it.placa} - ${it.tipo}" })
                     if (vehiculosAdapter == null) {
                         vehiculosAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_list_item_1, labels)
                         binding.spVehiculos.setAdapter(vehiculosAdapter)
@@ -74,12 +75,19 @@ class InventarioFragment : Fragment() {
                         vehiculosAdapter?.clear()
                         vehiculosAdapter?.addAll(labels)
                     }
-                    val seleccion = state.vehiculos.indexOfFirst { it.id == state.vehiculoSeleccionado }
-                    if (seleccion >= 0 && seleccion < labels.size) {
-                        binding.spVehiculos.setText(labels[seleccion], false)
+                    val seleccion = state.vehiculoSeleccionado?.let { id ->
+                        state.vehiculos.indexOfFirst { it.id == id }
+                    } ?: -1
+                    val index = if (seleccion >= 0) seleccion + 1 else 0
+                    if (index in labels.indices) {
+                        binding.spVehiculos.setText(labels[index], false)
                     }
                     binding.spVehiculos.setOnItemClickListener { _, _, position, _ ->
-                        state.vehiculos.getOrNull(position)?.id?.let { viewModel.seleccionarVehiculo(it) }
+                        if (position == 0) {
+                            viewModel.seleccionarVehiculo(null)
+                        } else {
+                            state.vehiculos.getOrNull(position - 1)?.id?.let { viewModel.seleccionarVehiculo(it) }
+                        }
                     }
 
                     adapter.submitList(state.inventario)
