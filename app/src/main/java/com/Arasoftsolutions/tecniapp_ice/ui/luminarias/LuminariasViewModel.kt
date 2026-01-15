@@ -3,14 +3,19 @@ package com.Arasoftsolutions.tecniapp_ice.ui.luminarias
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaReparacionEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.MaterialEntity
+import com.Arasoftsolutions.tecniapp_ice.Database.entities.TecnicoEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.VehiculosEntity
+import com.Arasoftsolutions.tecniapp_ice.Database.entities.apellidosCompletos
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
+import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 sealed class LuminariaMensaje {
@@ -21,10 +26,16 @@ sealed class LuminariaMensaje {
 data class LuminariaUiState(
     val vehiculos: List<VehiculosEntity> = emptyList(),
     val materiales: List<MaterialEntity> = emptyList(),
-    val reparaciones: List<LuminariaReparacionEntity> = emptyList(),
+    val tecnicos: List<TecnicoEntity> = emptyList(),
+    val reparacionesPendientes: List<LuminariaReparacionEntity> = emptyList(),
+    val reparacionesReparadas: List<LuminariaReparacionEntity> = emptyList(),
     val vehiculoSeleccionado: Int? = null,
+    val vehiculoAutomatico: Boolean = false,
     val localizacion: String = "",
     val materialesSeleccionados: List<LuminariaMaterialSeleccionado> = emptyList(),
+    val estadoSeleccionado: LuminariaEstado = LuminariaEstado.REPARADA,
+    val ejecutorNombre: String = "",
+    val ejecutorCedula: String? = null,
     val isProcessing: Boolean = false
 )
 
@@ -37,6 +48,7 @@ data class LuminariaMaterialSeleccionado(
 class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
 
     private val repository = RoomRepository.getInstance(app)
+    private val auth: FirebaseAuth = FirebaseAuth.getInstance()
 
     private val _uiState = MutableStateFlow(LuminariaUiState())
     val uiState: StateFlow<LuminariaUiState> = _uiState.asStateFlow()
@@ -45,39 +57,95 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
     val mensaje: StateFlow<LuminariaMensaje?> = _mensaje.asStateFlow()
 
     private var reparacionesCache: List<LuminariaReparacionEntity> = emptyList()
+    private var vehiculoPreferidoId: Int? = null
 
     init {
+        viewModelScope.launch {
+            cargarPreferenciasUsuario()
+        }
         viewModelScope.launch {
             combine(
                 repository.observarVehiculosCatalogo(),
                 repository.observarMateriales(),
+                repository.observarTecnicos(),
                 repository.observarReparaciones()
-            ) { vehiculos, materiales, reparaciones ->
-                Triple(vehiculos, materiales, reparaciones)
-            }.collect { (vehiculos, materiales, reparaciones) ->
-                    reparacionesCache = reparaciones
-                    val seleccionado = _uiState.value.vehiculoSeleccionado ?: vehiculos.firstOrNull()?.id
-                    val filtradas = reparaciones.filter { it.vehiculoId == seleccionado }
-                    _uiState.value = _uiState.value.copy(
+            ) { vehiculos, materiales, tecnicos, reparaciones ->
+                Quad(vehiculos, materiales, tecnicos, reparaciones)
+            }.collect { (vehiculos, materiales, tecnicos, reparaciones) ->
+                reparacionesCache = reparaciones
+                val seleccionado = _uiState.value.vehiculoSeleccionado
+                    ?: vehiculoPreferidoId
+                    ?: vehiculos.firstOrNull()?.id
+                val filtradas = reparaciones.filter { it.vehiculoId == seleccionado }
+                val pendientes = filtradas.filter { LuminariaEstado.fromRaw(it.estado) == LuminariaEstado.PENDIENTE }
+                val reparadas = filtradas.filter { LuminariaEstado.fromRaw(it.estado) == LuminariaEstado.REPARADA }
+                _uiState.update {
+                    it.copy(
                         vehiculos = vehiculos,
                         materiales = materiales,
-                        reparaciones = filtradas,
+                        tecnicos = tecnicos,
+                        reparacionesPendientes = pendientes,
+                        reparacionesReparadas = reparadas,
                         vehiculoSeleccionado = seleccionado
                     )
                 }
+            }
+        }
+    }
+
+    private suspend fun cargarPreferenciasUsuario() {
+        val uid = auth.currentUser?.uid ?: return
+        val usuario = repository.obtenerUsuario(uid) ?: return
+        val placa = usuario.placaVehiculo?.trim().orEmpty()
+        val vehiculo = placa.toLongOrNull()?.let { repository.obtenerVehiculoPorPlaca(it) }
+        vehiculoPreferidoId = vehiculo?.id
+        val nombre = buildString {
+            usuario.nombre?.trim()?.takeIf { it.isNotBlank() }?.let { append(it) }
+            val apellidos = usuario.apellidosCompletos?.trim().orEmpty()
+            if (apellidos.isNotBlank()) {
+                if (isNotEmpty()) append(" ")
+                append(apellidos)
+            }
+        }.ifBlank { usuario.nombre ?: "" }
+        _uiState.update { current ->
+            current.copy(
+                vehiculoSeleccionado = current.vehiculoSeleccionado ?: vehiculoPreferidoId,
+                vehiculoAutomatico = vehiculoPreferidoId != null,
+                ejecutorNombre = current.ejecutorNombre.ifBlank { nombre },
+                ejecutorCedula = current.ejecutorCedula ?: usuario.cedula
+            )
         }
     }
 
     fun seleccionarVehiculo(id: Int?) {
         val filtradas = reparacionesCache.filter { id == null || it.vehiculoId == id }
-        _uiState.value = _uiState.value.copy(
-            vehiculoSeleccionado = id,
-            reparaciones = filtradas
-        )
+        val pendientes = filtradas.filter { LuminariaEstado.fromRaw(it.estado) == LuminariaEstado.PENDIENTE }
+        val reparadas = filtradas.filter { LuminariaEstado.fromRaw(it.estado) == LuminariaEstado.REPARADA }
+        _uiState.update {
+            it.copy(
+                vehiculoSeleccionado = id,
+                reparacionesPendientes = pendientes,
+                reparacionesReparadas = reparadas
+            )
+        }
     }
 
     fun actualizarLocalizacion(valor: String) {
         _uiState.value = _uiState.value.copy(localizacion = valor)
+    }
+
+    fun actualizarEjecutor(nombre: String) {
+        val tecnico = _uiState.value.tecnicos.firstOrNull { it.nombre.equals(nombre, ignoreCase = true) }
+        _uiState.update {
+            it.copy(
+                ejecutorNombre = nombre,
+                ejecutorCedula = tecnico?.cedula
+            )
+        }
+    }
+
+    fun actualizarEstado(estado: LuminariaEstado) {
+        _uiState.value = _uiState.value.copy(estadoSeleccionado = estado)
     }
 
     fun agregarMaterial(codigo: String, descripcion: String, cantidad: Double) {
@@ -116,17 +184,23 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
             _mensaje.value = LuminariaMensaje.Error("Agrega al menos un material")
             return
         }
+        val ejecutorNombre = _uiState.value.ejecutorNombre.trim()
+        if (ejecutorNombre.isBlank()) {
+            _mensaje.value = LuminariaMensaje.Error("Indica quién realizó la reparación")
+            return
+        }
         _uiState.value = _uiState.value.copy(isProcessing = true)
         viewModelScope.launch {
-            materiales.forEach { material ->
-                repository.registrarReparacionLuminaria(
-                    vehiculoId = vehiculoId,
-                    localizacion = localizacion,
-                    codigoMaterial = material.codigo,
-                    descripcionMaterial = material.descripcion,
-                    cantidad = material.cantidad
-                )
-            }
+            repository.registrarReparacionLuminaria(
+                vehiculoId = vehiculoId,
+                localizacion = localizacion,
+                materiales = materiales.map {
+                    LuminariaMaterialUso(it.codigo, it.descripcion, it.cantidad)
+                },
+                estado = _uiState.value.estadoSeleccionado,
+                ejecutorNombre = ejecutorNombre,
+                ejecutorCedula = _uiState.value.ejecutorCedula
+            )
             _uiState.value = _uiState.value.copy(
                 isProcessing = false,
                 localizacion = "",
@@ -143,13 +217,35 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun actualizarReparacion(id: Long, nuevaLocalizacion: String, nuevaCantidad: Double) {
-        if (nuevaLocalizacion.isBlank() || nuevaCantidad <= 0) {
-            _mensaje.value = LuminariaMensaje.Error("Completa los datos de la reparación")
+    fun actualizarReparacion(
+        id: Long,
+        nuevaLocalizacion: String,
+        materiales: List<LuminariaMaterialSeleccionado>,
+        estado: LuminariaEstado,
+        ejecutorNombre: String,
+        ejecutorCedula: String?
+    ) {
+        if (nuevaLocalizacion.isBlank()) {
+            _mensaje.value = LuminariaMensaje.Error("Completa la localización")
+            return
+        }
+        if (materiales.isEmpty()) {
+            _mensaje.value = LuminariaMensaje.Error("Agrega al menos un material")
+            return
+        }
+        if (ejecutorNombre.isBlank()) {
+            _mensaje.value = LuminariaMensaje.Error("Indica quién realizó la reparación")
             return
         }
         viewModelScope.launch {
-            repository.actualizarReparacionLuminaria(id, nuevaLocalizacion, nuevaCantidad)
+            repository.actualizarReparacionLuminaria(
+                id,
+                nuevaLocalizacion,
+                materiales.map { LuminariaMaterialUso(it.codigo, it.descripcion, it.cantidad) },
+                estado,
+                ejecutorNombre,
+                ejecutorCedula
+            )
             _mensaje.value = LuminariaMensaje.Exito("Reparación actualizada")
         }
     }
@@ -158,3 +254,10 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
         _mensaje.value = null
     }
 }
+
+private data class Quad<A, B, C, D>(
+    val first: A,
+    val second: B,
+    val third: C,
+    val fourth: D
+)

@@ -49,6 +49,13 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="Localización # - Cantidad" />
+
+            <TextView
+                android:id="@+id/tvReparacionEjecutor"
+                style="@style/TextAppearance.Material3.BodySmall"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Ejecutor" />
         </LinearLayout>
 
         <ImageButton
