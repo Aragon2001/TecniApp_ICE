@@ -2,6 +2,7 @@ package com.Arasoftsolutions.tecniapp_ice.ui.luminarias
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.core.view.isVisible
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -10,14 +11,16 @@ import com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaReparacionEn
 import com.Arasoftsolutions.tecniapp_ice.databinding.ItemLuminariaReparacionBinding
 
 class LuminariaReparacionAdapter(
+    private val showActions: Boolean,
     private val onEdit: (LuminariaReparacionEntity) -> Unit,
-    private val onDelete: (LuminariaReparacionEntity) -> Unit
+    private val onDelete: (LuminariaReparacionEntity) -> Unit,
+    private val onSelect: ((LuminariaReparacionEntity) -> Unit)? = null
 ) : ListAdapter<LuminariaReparacionEntity, LuminariaReparacionAdapter.ReparacionViewHolder>(DiffCallback) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ReparacionViewHolder {
         val inflater = LayoutInflater.from(parent.context)
         val binding = ItemLuminariaReparacionBinding.inflate(inflater, parent, false)
-        return ReparacionViewHolder(binding, onEdit, onDelete)
+        return ReparacionViewHolder(binding, showActions, onEdit, onDelete, onSelect)
     }
 
     override fun onBindViewHolder(holder: ReparacionViewHolder, position: Int) {
@@ -26,8 +29,10 @@ class LuminariaReparacionAdapter(
 
     class ReparacionViewHolder(
         private val binding: ItemLuminariaReparacionBinding,
+        private val showActions: Boolean,
         private val onEdit: (LuminariaReparacionEntity) -> Unit,
-        private val onDelete: (LuminariaReparacionEntity) -> Unit
+        private val onDelete: (LuminariaReparacionEntity) -> Unit,
+        private val onSelect: ((LuminariaReparacionEntity) -> Unit)?
     ) : RecyclerView.ViewHolder(binding.root) {
         fun bind(item: LuminariaReparacionEntity) {
             val materiales = LuminariaMaterialSerializer.fromJson(item.materialesJson)
@@ -41,8 +46,11 @@ class LuminariaReparacionAdapter(
             binding.tvReparacionMaterial.text = resumen
             binding.tvReparacionDetalle.text = "Localización #${item.localizacion} · Total: $total · $estadoTexto"
             binding.tvReparacionEjecutor.text = "Ejecutor: ${item.ejecutorNombre.ifBlank { "-" }}"
+            binding.btnEditarReparacion.isVisible = showActions
+            binding.btnEliminarReparacion.isVisible = showActions
             binding.btnEditarReparacion.setOnClickListener { onEdit(item) }
             binding.btnEliminarReparacion.setOnClickListener { onDelete(item) }
+            binding.root.setOnClickListener { onSelect?.invoke(item) }
         }
     }
 

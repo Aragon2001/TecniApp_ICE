@@ -108,6 +108,9 @@ class   RoomRepository(context: Context) {
     suspend fun buscarMedidorPorNumero(numero: String): MedidorEntity? =
         db.medidorDao().buscarPorNumero(numero)
 
+    suspend fun buscarMedidorPorLocalizacion(localizacion: Long): MedidorEntity? =
+        db.medidorDao().buscarPorLocalizacion(localizacion)
+
     suspend fun insertarMedidor(entity: MedidorEntity) {
         db.medidorDao().insertAll(listOf(entity))
     }
@@ -278,7 +281,8 @@ class   RoomRepository(context: Context) {
             ejecutorCedula = ejecutorCedula,
             fechaRegistro = System.currentTimeMillis()
         )
-        inventarioDao.registrarReparacion(reparacion)
+        val reparacionId = inventarioDao.registrarReparacion(reparacion)
+        firebase.guardarReparacionLuminaria(reparacion.copy(id = reparacionId))
         materiales.forEach { material ->
             ajustarInventario(vehiculoId, material.codigo, material.descripcion, -material.cantidad)
         }
@@ -287,6 +291,7 @@ class   RoomRepository(context: Context) {
     suspend fun eliminarReparacionLuminaria(id: Long) = withContext(Dispatchers.IO) {
         val reparacion = inventarioDao.obtenerReparacion(id) ?: return@withContext
         inventarioDao.eliminarReparacion(id)
+        firebase.eliminarReparacionLuminaria(id)
         val materiales = com.Arasoftsolutions.tecniapp_ice.ui.luminarias.LuminariaMaterialSerializer
             .fromJson(reparacion.materialesJson)
         materiales.forEach { material ->
@@ -314,6 +319,16 @@ class   RoomRepository(context: Context) {
         val mapNuevo = nuevosMateriales.associateBy({ it.codigo }, { it })
         val todosCodigos = (mapPrevio.keys + mapNuevo.keys).toSet()
         inventarioDao.actualizarReparacion(
+            reparacion.copy(
+                localizacion = nuevaLocalizacion,
+                materialesJson = com.Arasoftsolutions.tecniapp_ice.ui.luminarias.LuminariaMaterialSerializer
+                    .toJson(nuevosMateriales),
+                estado = nuevoEstado.name,
+                ejecutorNombre = nuevoEjecutorNombre,
+                ejecutorCedula = nuevoEjecutorCedula
+            )
+        )
+        firebase.guardarReparacionLuminaria(
             reparacion.copy(
                 localizacion = nuevaLocalizacion,
                 materialesJson = com.Arasoftsolutions.tecniapp_ice.ui.luminarias.LuminariaMaterialSerializer
