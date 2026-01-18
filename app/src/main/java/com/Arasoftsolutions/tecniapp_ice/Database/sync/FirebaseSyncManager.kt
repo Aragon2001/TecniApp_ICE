@@ -448,11 +448,17 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
             "ejecutorCedula" to reparacion.ejecutorCedula,
             "fechaRegistro" to reparacion.fechaRegistro
         )
-        root.child(reparacion.id.toString()).setValue(payload).await()
+        val estado = LuminariaEstado.fromRaw(reparacion.estado)
+        val destino = if (estado == LuminariaEstado.PENDIENTE) "pendientes" else "reparadas"
+        val limpiar = if (estado == LuminariaEstado.PENDIENTE) "reparadas" else "pendientes"
+        root.child(destino).child(reparacion.id.toString()).setValue(payload).await()
+        root.child(limpiar).child(reparacion.id.toString()).removeValue().await()
     }
 
     suspend fun eliminarReparacionLuminaria(id: Long) {
-        luminariasRoot().child(id.toString()).removeValue().await()
+        val root = luminariasRoot()
+        root.child("pendientes").child(id.toString()).removeValue().await()
+        root.child("reparadas").child(id.toString()).removeValue().await()
     }
 
     suspend fun eliminarLocalizacion(id: Int) {
@@ -565,21 +571,9 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
     }
 
     private suspend fun luminariasRoot(): DatabaseReference {
-        val preferredUpper = dbLocal.child("Luminarias")
-        val preferredLower = dbLocal.child("luminarias")
-        val legacyUpper = dbLocal.child("LuminariasReparaciones")
-        val legacyLower = dbLocal.child("luminarias_reparaciones")
-        val preferredUpperExists = runCatching { preferredUpper.get().await().exists() }.getOrDefault(false)
-        val preferredLowerExists = runCatching { preferredLower.get().await().exists() }.getOrDefault(false)
-        val legacyUpperExists = runCatching { legacyUpper.get().await().exists() }.getOrDefault(false)
-        val legacyLowerExists = runCatching { legacyLower.get().await().exists() }.getOrDefault(false)
-        return when {
-            preferredUpperExists -> preferredUpper
-            preferredLowerExists -> preferredLower
-            legacyUpperExists -> legacyUpper
-            legacyLowerExists -> legacyLower
-            else -> preferredUpper
-        }
+        val root = dbLocal.child("luminarias")
+        val exists = runCatching { root.get().await().exists() }.getOrDefault(false)
+        return if (exists) root else root
     }
 
     private fun esNodoMedidor(node: DataSnapshot): Boolean {

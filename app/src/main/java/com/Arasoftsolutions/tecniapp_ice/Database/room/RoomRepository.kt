@@ -288,6 +288,31 @@ class   RoomRepository(context: Context) {
         }
     }
 
+    suspend fun registrarLuminariasPendientes(
+        vehiculoId: Int,
+        localizaciones: List<String>,
+        ejecutorNombre: String,
+        ejecutorCedula: String?
+    ) = withContext(Dispatchers.IO) {
+        if (localizaciones.isEmpty()) return@withContext
+        localizaciones
+            .mapNotNull { it.trim().takeIf(String::isNotEmpty) }
+            .forEach { localizacion ->
+                val reparacion = LuminariaReparacionEntity(
+                    vehiculoId = vehiculoId,
+                    localizacion = localizacion,
+                    materialesJson = com.Arasoftsolutions.tecniapp_ice.ui.luminarias.LuminariaMaterialSerializer
+                        .toJson(emptyList()),
+                    estado = com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado.PENDIENTE.name,
+                    ejecutorNombre = ejecutorNombre,
+                    ejecutorCedula = ejecutorCedula,
+                    fechaRegistro = System.currentTimeMillis()
+                )
+                val reparacionId = inventarioDao.registrarReparacion(reparacion)
+                firebase.guardarReparacionLuminaria(reparacion.copy(id = reparacionId))
+            }
+    }
+
     suspend fun eliminarReparacionLuminaria(id: Long) = withContext(Dispatchers.IO) {
         val reparacion = inventarioDao.obtenerReparacion(id) ?: return@withContext
         inventarioDao.eliminarReparacion(id)
