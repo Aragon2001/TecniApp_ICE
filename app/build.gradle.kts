@@ -175,6 +175,11 @@ dependencies {
     implementation("org.apache.poi:poi-ooxml:5.2.5")
 
     /* =========================================================
+       Lectura de PDF
+       ========================================================= */
+    implementation("com.tom-roush:pdfbox-android:2.0.27.0")
+
+    /* =========================================================
        Testing
        ========================================================= */
     testImplementation(libs.junit)

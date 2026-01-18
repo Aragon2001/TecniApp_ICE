@@ -34,6 +34,10 @@ class InventarioFragment : Fragment() {
         uri?.let { viewModel.procesarCsv(it) }
     }
 
+    private val pdfLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+        uri?.let { viewModel.procesarPdf(it) }
+    }
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -59,6 +63,7 @@ class InventarioFragment : Fragment() {
 
     private fun setupListeners() {
         binding.btnImportarCsv.setOnClickListener { csvLauncher.launch("text/csv") }
+        binding.btnImportarPdf.setOnClickListener { pdfLauncher.launch("application/pdf") }
     }
 
     private fun observarEstado() {

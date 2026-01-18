@@ -247,6 +247,13 @@ class   RoomRepository(context: Context) {
         vehiculoId: Int,
         items: List<Pair<String, Double>>
     ) = withContext(Dispatchers.IO) {
+        cargarInventarioDesdeLista(vehiculoId, items)
+    }
+
+    suspend fun cargarInventarioDesdeLista(
+        vehiculoId: Int,
+        items: List<Pair<String, Double>>
+    ) = withContext(Dispatchers.IO) {
         if (items.isEmpty()) return@withContext
         inventarioDao.eliminarPorVehiculo(vehiculoId)
         items
@@ -261,6 +268,11 @@ class   RoomRepository(context: Context) {
                 )
                 inventarioDao.upsert(item)
             }
+    }
+
+    suspend fun obtenerCodigosMateriales(codigos: Set<String>): Set<String> = withContext(Dispatchers.IO) {
+        if (codigos.isEmpty()) return@withContext emptySet()
+        db.materialDao().obtenerCodigos(codigos.toList()).toSet()
     }
 
     suspend fun registrarReparacionLuminaria(
