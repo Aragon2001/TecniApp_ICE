@@ -475,7 +475,8 @@ class Paso4Fragment : Fragment() {
                     "agencia"       to agencyItem.nombre,
                     "agencia_id"    to agencyItem.id,
                     "placaVehiculo" to selectedVehicle,
-                    "createdAt"     to ServerValue.TIMESTAMP
+                    "createdAt"     to ServerValue.TIMESTAMP,
+                    "rol"           to ""
                 )
 
                 // C) Multi-location update atómico

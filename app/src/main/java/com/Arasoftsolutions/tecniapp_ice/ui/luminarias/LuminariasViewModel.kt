@@ -28,6 +28,9 @@ data class LuminariaUiState(
     val reparacionesPendientes: List<LuminariaReparacionEntity> = emptyList(),
     val reparacionesReparadas: List<LuminariaReparacionEntity> = emptyList(),
     val vehiculoUsuarioId: Int? = null,
+    val rolUsuario: String? = null,
+    val esSupervisor: Boolean = false,
+    val puedeImportarCsv: Boolean = false,
     val localizacion: String = "",
     val materialesSeleccionados: List<LuminariaMaterialSeleccionado> = emptyList(),
     val estadoSeleccionado: LuminariaEstado = LuminariaEstado.REPARADA,
@@ -89,6 +92,8 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
         val placa = usuario.placaVehiculo?.trim().orEmpty()
         val vehiculo = placa.toLongOrNull()?.let { repository.obtenerVehiculoPorPlaca(it) }
         vehiculoPreferidoId = vehiculo?.id
+        val rolNormalizado = usuario.rol?.trim().orEmpty()
+        val rolLower = rolNormalizado.lowercase()
         val nombre = buildString {
             usuario.nombre?.trim()?.takeIf { it.isNotBlank() }?.let { append(it) }
             val apellidos = usuario.apellidosCompletos?.trim().orEmpty()
@@ -101,7 +106,10 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
             current.copy(
                 vehiculoUsuarioId = vehiculoPreferidoId,
                 ejecutorNombre = current.ejecutorNombre.ifBlank { nombre },
-                ejecutorCedula = current.ejecutorCedula ?: usuario.cedula
+                ejecutorCedula = current.ejecutorCedula ?: usuario.cedula,
+                rolUsuario = rolNormalizado.ifBlank { null },
+                esSupervisor = rolLower == "supervisor",
+                puedeImportarCsv = rolLower == "administrador"
             )
         }
     }
@@ -160,12 +168,13 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
             return
         }
         val materiales = _uiState.value.materialesSeleccionados
-        if (materiales.isEmpty()) {
+        val estado = _uiState.value.estadoSeleccionado
+        if (estado == LuminariaEstado.REPARADA && materiales.isEmpty()) {
             _mensaje.value = LuminariaMensaje.Error("Agrega al menos un material")
             return
         }
         val ejecutorNombre = _uiState.value.ejecutorNombre.trim()
-        if (ejecutorNombre.isBlank()) {
+        if (estado == LuminariaEstado.REPARADA && ejecutorNombre.isBlank()) {
             _mensaje.value = LuminariaMensaje.Error("Indica quién realizó la reparación")
             return
         }
@@ -177,7 +186,7 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
                 materiales = materiales.map {
                     LuminariaMaterialUso(it.codigo, it.descripcion, it.cantidad)
                 },
-                estado = _uiState.value.estadoSeleccionado,
+                estado = estado,
                 ejecutorNombre = ejecutorNombre,
                 ejecutorCedula = _uiState.value.ejecutorCedula
             )
@@ -210,11 +219,11 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
             _mensaje.value = LuminariaMensaje.Error("Completa la localización")
             return
         }
-        if (materiales.isEmpty()) {
+        if (estado == LuminariaEstado.REPARADA && materiales.isEmpty()) {
             _mensaje.value = LuminariaMensaje.Error("Agrega al menos un material")
             return
         }
-        if (ejecutorNombre.isBlank()) {
+        if (estado == LuminariaEstado.REPARADA && ejecutorNombre.isBlank()) {
             _mensaje.value = LuminariaMensaje.Error("Indica quién realizó la reparación")
             return
         }
@@ -255,6 +264,47 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
             )
         }
     }
+
+    fun procesarCsv(uri: android.net.Uri) {
+        val vehiculoId = _uiState.value.vehiculoUsuarioId
+        if (vehiculoId == null) {
+            _mensaje.value = LuminariaMensaje.Error("No se encontró un vehículo asignado al usuario")
+            return
+        }
+        _uiState.value = _uiState.value.copy(isProcessing = true)
+        viewModelScope.launch {
+            val localizaciones = leerCsvLocalizaciones(uri)
+            if (localizaciones.isEmpty()) {
+                _mensaje.value = LuminariaMensaje.Error("El archivo está vacío")
+                _uiState.value = _uiState.value.copy(isProcessing = false)
+                return@launch
+            }
+            repository.registrarLuminariasPendientes(
+                vehiculoId = vehiculoId,
+                localizaciones = localizaciones,
+                ejecutorNombre = _uiState.value.ejecutorNombre.trim(),
+                ejecutorCedula = _uiState.value.ejecutorCedula
+            )
+            _uiState.value = _uiState.value.copy(isProcessing = false)
+            _mensaje.value = LuminariaMensaje.Exito("Lista de luminarias cargada")
+        }
+    }
+
+    private suspend fun leerCsvLocalizaciones(uri: android.net.Uri): List<String> =
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            val resolver = getApplication<Application>().contentResolver
+            val input = resolver.openInputStream(uri) ?: return@withContext emptyList()
+            java.io.BufferedReader(java.io.InputStreamReader(input)).useLines { lines ->
+                lines.mapNotNull { row ->
+                    val parts = row.split(",")
+                    if (parts.isEmpty()) return@mapNotNull null
+                    val raw = parts.first().trim()
+                    if (raw.isBlank()) return@mapNotNull null
+                    if (raw.equals("localizacion", ignoreCase = true)) return@mapNotNull null
+                    raw
+                }.distinct().toList()
+            }
+        }
 
     suspend fun buscarMedidorPorLocalizacion(localizacion: String) =
         localizacion.trim().toLongOrNull()?.let { repository.buscarMedidorPorLocalizacion(it) }

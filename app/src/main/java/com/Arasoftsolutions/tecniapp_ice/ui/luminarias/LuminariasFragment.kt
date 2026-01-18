@@ -8,6 +8,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.widget.AppCompatEditText
 import androidx.core.view.isVisible
 import androidx.core.widget.doAfterTextChanged
@@ -35,6 +36,10 @@ class LuminariasFragment : Fragment() {
     private var materialesCatalogo = emptyList<com.Arasoftsolutions.tecniapp_ice.Database.entities.MaterialEntity>()
     private var tecnicosCatalogo = emptyList<com.Arasoftsolutions.tecniapp_ice.Database.entities.TecnicoEntity>()
 
+    private val csvLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+        uri?.let { viewModel.procesarCsv(it) }
+    }
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -49,6 +54,7 @@ class LuminariasFragment : Fragment() {
         setupAdapters()
 
         binding.btnRegistrarLuminaria.setOnClickListener { mostrarRegistroBottomSheet() }
+        binding.btnImportarLuminariasCsv.setOnClickListener { csvLauncher.launch("text/csv") }
         binding.etBuscarLocalizacion.doAfterTextChanged {
             viewModel.actualizarBusquedaLocalizacion(it?.toString().orEmpty())
         }
@@ -93,6 +99,8 @@ class LuminariasFragment : Fragment() {
                     binding.progressLuminaria.isVisible = state.isProcessing
                     materialesCatalogo = state.materiales
                     tecnicosCatalogo = state.tecnicos
+                    binding.btnImportarLuminariasCsv.isVisible = state.puedeImportarCsv
+                    actualizarModoChip(state.esSupervisor)
 
                     reparacionesPendientesAdapter.submitList(state.reparacionesPendientes)
                     binding.tvEmptyReparacionesPendientes.isVisible = state.reparacionesPendientes.isEmpty()
@@ -409,13 +417,15 @@ class LuminariasFragment : Fragment() {
 
         binding.btnGuardarReparacion.setOnClickListener {
             if (reparacion == null) {
+                val estado = obtenerEstado(binding.actEstadoLuminaria)
                 val valido = validarFormularioRegistro(
                     binding,
                     materialesSeleccionados,
-                    binding.actEjecutorLuminaria.text?.toString().orEmpty()
+                    binding.actEjecutorLuminaria.text?.toString().orEmpty(),
+                    estado
                 )
                 if (valido) {
-                    viewModel.actualizarEstado(obtenerEstado(binding.actEstadoLuminaria))
+                    viewModel.actualizarEstado(estado)
                     viewModel.registrarReparacion()
                 }
             } else {
@@ -425,7 +435,7 @@ class LuminariasFragment : Fragment() {
                     it.nombre.equals(ejecutorNombre, ignoreCase = true)
                 }?.cedula
                 val localizacion = binding.etLocalizacion.text?.toString().orEmpty()
-                if (validarFormularioRegistro(binding, materialesSeleccionados, ejecutorNombre)) {
+                if (validarFormularioRegistro(binding, materialesSeleccionados, ejecutorNombre, estado)) {
                     viewModel.actualizarReparacion(
                         reparacion.id,
                         localizacion,
@@ -442,7 +452,8 @@ class LuminariasFragment : Fragment() {
     private fun validarFormularioRegistro(
         binding: BottomSheetLuminariaReparacionBinding,
         materiales: List<LuminariaMaterialSeleccionado>,
-        ejecutor: String
+        ejecutor: String,
+        estado: com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado
     ): Boolean {
         var valido = true
         val localizacion = binding.etLocalizacion.text?.toString().orEmpty().trim()
@@ -453,14 +464,14 @@ class LuminariasFragment : Fragment() {
             binding.tilLocalizacion.error = null
         }
 
-        if (materiales.isEmpty()) {
+        if (estado == com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado.REPARADA && materiales.isEmpty()) {
             binding.tilMaterialLuminaria.error = "Agrega al menos un material"
             valido = false
         } else {
             binding.tilMaterialLuminaria.error = null
         }
 
-        if (ejecutor.trim().isBlank()) {
+        if (estado == com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado.REPARADA && ejecutor.trim().isBlank()) {
             binding.tilEjecutorLuminaria.error = "Indica quién ejecutó la reparación"
             valido = false
         } else {
@@ -483,5 +494,12 @@ class LuminariasFragment : Fragment() {
         val reparadasActivas = binding.chipReparadas.isChecked
         binding.cardPendientes.isVisible = pendientesActivas
         binding.cardReparadas.isVisible = reparadasActivas
+    }
+
+    private fun actualizarModoChip(esSupervisor: Boolean) {
+        binding.chipGroupEstado.isSingleSelection = esSupervisor
+        if (esSupervisor && binding.chipPendientes.isChecked && binding.chipReparadas.isChecked) {
+            binding.chipReparadas.isChecked = false
+        }
     }
 }
