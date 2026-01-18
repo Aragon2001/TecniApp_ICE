@@ -8,6 +8,9 @@ import com.Arasoftsolutions.tecniapp_ice.Database.entities.InventarioConVehiculo
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.VehiculosEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
 import com.Arasoftsolutions.tecniapp_ice.R
+import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
+import com.tom_roush.pdfbox.pdmodel.PDDocument
+import com.tom_roush.pdfbox.text.PDFTextStripper
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import kotlinx.coroutines.Dispatchers
@@ -123,6 +126,47 @@ class InventarioViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    fun procesarPdf(uri: Uri) {
+        val vehiculoId = _uiState.value.vehiculoSeleccionado
+        if (vehiculoId == null) {
+            val texto = getApplication<Application>().getString(R.string.inventario_error_seleccionar_camion)
+            _mensajes.value = InventarioMensaje.Error(texto)
+            return
+        }
+        _uiState.value = _uiState.value.copy(isProcessing = true)
+        viewModelScope.launch {
+            try {
+                val pares = leerPdf(uri)
+                if (pares.isEmpty()) {
+                    _mensajes.value = InventarioMensaje.Error(
+                        getApplication<Application>().getString(R.string.inventario_pdf_error_vacio)
+                    )
+                    _uiState.value = _uiState.value.copy(isProcessing = false)
+                    return@launch
+                }
+                val codigos = pares.map { it.first }.toSet()
+                val codigosExistentes = repository.obtenerCodigosMateriales(codigos)
+                repository.cargarInventarioDesdeLista(vehiculoId, pares)
+                val faltantes = codigos.minus(codigosExistentes)
+                val mensaje = if (faltantes.isNotEmpty()) {
+                    getApplication<Application>().getString(
+                        R.string.inventario_pdf_exito_con_faltantes,
+                        faltantes.size
+                    )
+                } else {
+                    getApplication<Application>().getString(R.string.inventario_pdf_exito)
+                }
+                _uiState.value = _uiState.value.copy(isProcessing = false)
+                _mensajes.value = InventarioMensaje.Exito(mensaje)
+            } catch (ex: Exception) {
+                _uiState.value = _uiState.value.copy(isProcessing = false)
+                _mensajes.value = InventarioMensaje.Error(
+                    getApplication<Application>().getString(R.string.inventario_pdf_error_lectura)
+                )
+            }
+        }
+    }
+
     private suspend fun leerCsv(uri: Uri): List<Pair<String, Double>> = withContext(Dispatchers.IO) {
         val resolver = getApplication<Application>().contentResolver
         val input = resolver.openInputStream(uri) ?: return@withContext emptyList()
@@ -136,6 +180,42 @@ class InventarioViewModel(app: Application) : AndroidViewModel(app) {
                 codigo to cantidad
             }.toList()
         }
+    }
+
+    private suspend fun leerPdf(uri: Uri): List<Pair<String, Double>> = withContext(Dispatchers.IO) {
+        val resolver = getApplication<Application>().contentResolver
+        val input = resolver.openInputStream(uri) ?: return@withContext emptyList()
+        PDFBoxResourceLoader.init(getApplication())
+        input.use { stream ->
+            val document = PDDocument.load(stream)
+            document.use { pdf ->
+                val stripper = PDFTextStripper().apply { sortByPosition = true }
+                val text = stripper.getText(pdf)
+                val acumulados = mutableMapOf<String, Double>()
+                text.lineSequence().forEach { line ->
+                    val columns = line.trim()
+                        .split(Regex("\\s{2,}"))
+                        .filter { it.isNotBlank() }
+                    if (columns.isEmpty()) return@forEach
+                    val codigo = columns.first().trim()
+                    if (!codigo.matches(Regex("\\d{5,}"))) return@forEach
+                    val cantidad = buscarCantidad(columns.drop(1)) ?: return@forEach
+                    val actual = acumulados[codigo] ?: 0.0
+                    acumulados[codigo] = actual + cantidad
+                }
+                acumulados.toList()
+            }
+        }
+    }
+
+    private fun buscarCantidad(columns: List<String>): Double? {
+        columns.forEach { col ->
+            val normalized = col.trim().replace(",", ".")
+            if (normalized.matches(Regex("\\d+(?:\\.\\d+)?"))) {
+                return normalized.toDoubleOrNull()
+            }
+        }
+        return null
     }
 
     fun consumirMensaje() {
