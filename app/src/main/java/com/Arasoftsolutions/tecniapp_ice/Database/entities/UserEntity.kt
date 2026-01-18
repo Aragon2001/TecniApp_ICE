@@ -41,7 +41,8 @@ data class UserEntity(
     var placaVehiculo: String? = null,
     var telefono: String? = null,
     var password: String? = null,
-    var fotoUrl: String? = null
+    var fotoUrl: String? = null,
+    var rol: String? = null
 ) {
     constructor() : this(
         uid = "",
@@ -61,7 +62,8 @@ data class UserEntity(
         placaVehiculo = null,
         telefono = null,
         password = null,
-        fotoUrl = null
+        fotoUrl = null,
+        rol = null
     )
 }
 
@@ -77,4 +79,3 @@ val UserEntity.apellidosCompletos: String?
             else -> apellidos?.takeIf { it.isNotBlank() }
         }
     }
-

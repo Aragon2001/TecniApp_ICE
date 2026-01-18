@@ -151,7 +151,8 @@ class LoginActivity : AppCompatActivity() {
                         "agencia_id" to "",
                         "placaVehiculo" to "",
                         "telefono" to "",
-                        "password" to ""
+                        "password" to "",
+                        "rol" to ""
                     )
                     userRef.setValue(userMap)
                 }
