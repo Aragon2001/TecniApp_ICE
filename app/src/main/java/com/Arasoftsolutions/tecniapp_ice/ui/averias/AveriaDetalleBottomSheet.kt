@@ -722,7 +722,7 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
 private fun renderState() {
     val uid = vm.usuarioActual.value?.uid
     val clorResuelta = item.estadoClor.equals("RESUELTA", true)
-    val regionMismatch = !vm.isRegionAllowed(item)
+    val regionMismatch = !vm.isSubregionAllowed(item)
 
     val estado = if (clorResuelta) Estado.RESUELTA else Estado.fromLabel(item.estado)
     estadoActual = estado
