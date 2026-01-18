@@ -897,15 +897,12 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun onResolver(ui: AveriaUI, data: AveriaActionData) {
-        if (isRegionMismatch(ui)) {
-            _messages.tryEmit(getApplication<Application>().getString(R.string.averia_error_region_diferente))
-            return
-        }
         if (data.causa.isBlank()) {
             _messages.tryEmit(getApplication<Application>().getString(R.string.averia_error_causa_requerida))
             return
         }
         viewModelScope.launch {
+            if (!ensureSubregionAllowed(ui)) return@launch
             if (Estado.fromLabel(ui.estado) != Estado.EN_ATENCION) return@launch
             val user = ensurePropietario(ui) ?: return@launch
             val resolved = resolveData(ui, data, user)
