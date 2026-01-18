@@ -42,11 +42,10 @@
     <string name="home_card_last_sync_title">Última sincronización</string>
     <string name="home_card_kilometraje_value">%1$.1f km</string>
     <string name="home_sync_now">Sincronizar ahora</string>
-    <string name="home_map_title">Ubicaciones actualizadas</string>
-    <string name="home_map_description">Sincroniza tus rutas y mapas antes de salir a campo.</string>
-    <string name="home_map_preview_content_description">Vista previa del mapa sincronizado</string>
-    <string name="home_map_last_sync">Última sincronización: %1$s</string>
-    <string name="home_map_permission_missing">Activa los permisos de ubicación para visualizar la cartografía en vivo.</string>
+    <string name="home_stats_title">Estadísticas rápidas</string>
+    <string name="home_stats_pending_averias">Averías pendientes</string>
+    <string name="home_stats_damaged_lights">Luminarias dañadas</string>
+    <string name="home_stats_scheduled_visits">Visitas programadas</string>
     <string name="home_sync_status_title">Sincronización manual</string>
     <string name="home_sync_status_idle">Sincroniza para obtener los últimos datos.</string>
     <string name="home_sync_status_running">Sincronizando…</string>

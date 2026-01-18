@@ -685,7 +685,7 @@ class UserFragment : Fragment() {
 
     private fun vehicleMatchesAgency(vehicle: VehiculosEntity, agency: AgenciaEntity): Boolean {
         val vehicleAgency = vehicle.agencia.trim()
-        if (vehicleAgency.isEmpty()) return false
+        if (vehicleAgency.isEmpty()) return true
         val agencyId = agency.id?.trim().orEmpty()
         val agencyName = agency.nombre.trim()
         return vehicleAgency.equals(agencyName, ignoreCase = true) ||

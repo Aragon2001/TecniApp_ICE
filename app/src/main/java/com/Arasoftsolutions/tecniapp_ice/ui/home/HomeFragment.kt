@@ -1,6 +1,5 @@
 package com.Arasoftsolutions.tecniapp_ice.ui.home
 
-import android.Manifest
 import android.app.AlertDialog
 import android.content.Context
 import android.net.ConnectivityManager
@@ -9,7 +8,6 @@ import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.widget.TextView
-import android.content.pm.PackageManager
 import android.view.ViewGroup
 import android.widget.ImageView
 import androidx.core.content.ContextCompat
@@ -29,7 +27,6 @@ import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasSyncWorker
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.Estado
 import com.Arasoftsolutions.tecniapp_ice.ui.modal.SyncDialogFragment
 import com.google.android.material.button.MaterialButton
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.progressindicator.LinearProgressIndicator
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
@@ -54,7 +51,6 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
     private var syncProgressIndicator: LinearProgressIndicator? = null
     private var syncProgressLabel: TextView? = null
     private var lastSyncValue: TextView? = null
-    private var mapStatusText: TextView? = null
     private var statusIndicator: View? = null
     private var connectivityManager: ConnectivityManager? = null
     private var networkCallbackRegistered = false
@@ -69,7 +65,6 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         val assignmentText: TextView = view.findViewById(R.id.text_assignment)
         val dateText: TextView = view.findViewById(R.id.text_date)
         val lastSyncSummary: TextView = view.findViewById(R.id.text_last_sync_value)
-        val mapStatus: TextView = view.findViewById(R.id.text_map_status)
         val syncStatus: TextView = view.findViewById(R.id.text_sync_status)
         val syncProgress: LinearProgressIndicator = view.findViewById(R.id.progress_sync)
         val syncProgressText: TextView = view.findViewById(R.id.text_sync_progress)
@@ -77,7 +72,9 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         val pendingCount: TextView = view.findViewById(R.id.text_pending_count)
         val attendedCount: TextView = view.findViewById(R.id.text_attended_count)
         val kilometrajeValue: TextView = view.findViewById(R.id.text_kilometraje)
-        val mapCard: View = view.findViewById(R.id.card_map)
+        val statsPendingAverias: TextView = view.findViewById(R.id.text_stats_pending_averias)
+        val statsDamagedLights: TextView = view.findViewById(R.id.text_stats_damaged_lights)
+        val statsScheduledVisits: TextView = view.findViewById(R.id.text_stats_scheduled_visits)
         val cardPending: View = view.findViewById(R.id.card_pending)
         val cardAttended: View = view.findViewById(R.id.card_attended)
         val actionAverias: View = view.findViewById(R.id.action_averias)
@@ -91,14 +88,13 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         syncProgressIndicator = syncProgress
         syncProgressLabel = syncProgressText
         lastSyncValue = lastSyncSummary
-        mapStatusText = mapStatus
         statusText.text = getString(R.string.home_status_offline)
         dateText.text = formatCurrentDate()
-        mapStatus.text = buildMapStatusMessage(formatRelativeSync(vm.lastManualSync.value))
+        statsDamagedLights.text = getString(R.string.home_cards_placeholder)
+        statsScheduledVisits.text = getString(R.string.home_cards_placeholder)
 
         syncActionButton.isEnabled = false
         syncActionButton.setOnClickListener { sincronizarConModal() }
-        mapCard.setOnClickListener { navigateTo(R.id.nav_localizacion) }
         cardPending.setOnClickListener {
             navigateTo(
                 R.id.nav_averias,
@@ -145,6 +141,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                 launch {
                     vm.averiasAsignadasCount.collect { count ->
                         pendingCount.text = count.toString()
+                        statsPendingAverias.text = count.toString()
                     }
                 }
                 launch {
@@ -163,7 +160,6 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                     vm.lastManualSync.collect { timestamp ->
                         val relative = formatRelativeSync(timestamp)
                         lastSyncSummary.text = relative
-                        mapStatus.text = buildMapStatusMessage(relative)
                     }
                 }
             }
@@ -181,7 +177,6 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         syncProgressIndicator = null
         syncProgressLabel = null
         lastSyncValue = null
-        mapStatusText = null
         statusIndicator = null
         syncDialog = null
         offlineDialog?.dismiss()
@@ -366,7 +361,6 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                             syncStatusText?.text = getString(R.string.home_sync_status_success)
                             val relative = formatRelativeSync(vm.lastManualSync.value)
                             lastSyncValue?.text = relative
-                            mapStatusText?.text = buildMapStatusMessage(relative)
                             syncDialog?.let { dialog ->
                                 runCatching { dialog.dismissAllowingStateLoss() }
                             }
@@ -430,25 +424,6 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             ?: throwable?.javaClass?.simpleName
             ?: getString(R.string.home_sync_unknown_error)
         return detail
-    }
-
-    private fun buildMapStatusMessage(relative: String): CharSequence {
-        val needsPermission = !hasLocationPermission()
-        return buildString {
-            appendLine(getString(R.string.home_map_description))
-            append(getString(R.string.home_map_last_sync, relative))
-            if (needsPermission) {
-                appendLine()
-                append(getString(R.string.home_map_permission_missing))
-            }
-        }
-    }
-
-    private fun hasLocationPermission(): Boolean {
-        val context = context ?: return false
-        val fine = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)
-        val coarse = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION)
-        return fine == PackageManager.PERMISSION_GRANTED || coarse == PackageManager.PERMISSION_GRANTED
     }
 
     private fun navigateTo(destinationId: Int, args: Bundle? = null) {
@@ -522,4 +497,3 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         }
     }
 }
-

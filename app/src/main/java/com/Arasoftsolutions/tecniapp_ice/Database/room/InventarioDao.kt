@@ -44,7 +44,7 @@ interface InventarioDao {
     suspend fun eliminarPorVehiculo(vehiculoId: Int)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun registrarReparacion(entity: LuminariaReparacionEntity)
+    suspend fun registrarReparacion(entity: LuminariaReparacionEntity): Long
 
     @Transaction
     @Query("SELECT * FROM luminaria_reparacion ORDER BY fechaRegistro DESC")

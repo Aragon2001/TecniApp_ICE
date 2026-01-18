@@ -436,6 +436,25 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
         root.child(key).setValue(payload).await()
     }
 
+    suspend fun guardarReparacionLuminaria(reparacion: LuminariaReparacionEntity) {
+        val root = luminariasRoot()
+        val payload = mapOf(
+            "id" to reparacion.id,
+            "vehiculoId" to reparacion.vehiculoId,
+            "localizacion" to reparacion.localizacion,
+            "materialesJson" to reparacion.materialesJson,
+            "estado" to reparacion.estado,
+            "ejecutorNombre" to reparacion.ejecutorNombre,
+            "ejecutorCedula" to reparacion.ejecutorCedula,
+            "fechaRegistro" to reparacion.fechaRegistro
+        )
+        root.child(reparacion.id.toString()).setValue(payload).await()
+    }
+
+    suspend fun eliminarReparacionLuminaria(id: Long) {
+        luminariasRoot().child(id.toString()).removeValue().await()
+    }
+
     suspend fun eliminarLocalizacion(id: Int) {
         if (id == 0) return
         val root = localizacionesRoot()
@@ -536,6 +555,18 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
     private suspend fun localizacionesRoot(): DatabaseReference {
         val upper = dbLocal.child("Localizaciones")
         val lower = dbLocal.child("localizaciones")
+        val upperExists = runCatching { upper.get().await().exists() }.getOrDefault(false)
+        val lowerExists = runCatching { lower.get().await().exists() }.getOrDefault(false)
+        return when {
+            upperExists -> upper
+            lowerExists -> lower
+            else -> upper
+        }
+    }
+
+    private suspend fun luminariasRoot(): DatabaseReference {
+        val upper = dbLocal.child("LuminariasReparaciones")
+        val lower = dbLocal.child("luminarias_reparaciones")
         val upperExists = runCatching { upper.get().await().exists() }.getOrDefault(false)
         val lowerExists = runCatching { lower.get().await().exists() }.getOrDefault(false)
         return when {
