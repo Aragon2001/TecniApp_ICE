@@ -43,8 +43,8 @@ class LuminariaReparacionAdapter(
             } else {
                 "Reparada"
             }
-            binding.tvReparacionMaterial.text = resumen
-            binding.tvReparacionDetalle.text = "Localización #${item.localizacion} · Total: $total · $estadoTexto"
+            binding.tvReparacionMaterial.text = "Localización #${item.localizacion}"
+            binding.tvReparacionDetalle.text = "Materiales: $resumen · Total: $total · $estadoTexto"
             binding.tvReparacionEjecutor.text = "Ejecutor: ${item.ejecutorNombre.ifBlank { "-" }}"
             binding.btnEditarReparacion.isVisible = showActions
             binding.btnEliminarReparacion.isVisible = showActions

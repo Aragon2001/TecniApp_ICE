@@ -71,6 +71,15 @@
                     android:icon="@drawable/ic_save"
                     android:text="Registrar reparación" />
 
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnImportarLuminariasCsv"
+                    style="@style/Widget.Material3.Button.Outlined"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/luminarias_importar_csv"
+                    android:visibility="gone" />
+
                 <ProgressBar
                     android:id="@+id/progressLuminaria"
                     style="@style/Widget.Material3.CircularProgressIndicator"
