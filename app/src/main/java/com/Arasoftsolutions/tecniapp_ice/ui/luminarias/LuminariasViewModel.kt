@@ -7,7 +7,6 @@ import com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaReparacionEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.MaterialEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.TecnicoEntity
-import com.Arasoftsolutions.tecniapp_ice.Database.entities.VehiculosEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.apellidosCompletos
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
 import com.google.firebase.auth.FirebaseAuth
@@ -24,18 +23,17 @@ sealed class LuminariaMensaje {
 }
 
 data class LuminariaUiState(
-    val vehiculos: List<VehiculosEntity> = emptyList(),
     val materiales: List<MaterialEntity> = emptyList(),
     val tecnicos: List<TecnicoEntity> = emptyList(),
     val reparacionesPendientes: List<LuminariaReparacionEntity> = emptyList(),
     val reparacionesReparadas: List<LuminariaReparacionEntity> = emptyList(),
-    val vehiculoSeleccionado: Int? = null,
-    val vehiculoAutomatico: Boolean = false,
+    val vehiculoUsuarioId: Int? = null,
     val localizacion: String = "",
     val materialesSeleccionados: List<LuminariaMaterialSeleccionado> = emptyList(),
     val estadoSeleccionado: LuminariaEstado = LuminariaEstado.REPARADA,
     val ejecutorNombre: String = "",
     val ejecutorCedula: String? = null,
+    val busquedaLocalizacion: String = "",
     val isProcessing: Boolean = false
 )
 
@@ -65,28 +63,20 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
         }
         viewModelScope.launch {
             combine(
-                repository.observarVehiculosCatalogo(),
                 repository.observarMateriales(),
                 repository.observarTecnicos(),
                 repository.observarReparaciones()
-            ) { vehiculos, materiales, tecnicos, reparaciones ->
-                Quad(vehiculos, materiales, tecnicos, reparaciones)
-            }.collect { (vehiculos, materiales, tecnicos, reparaciones) ->
+            ) { materiales, tecnicos, reparaciones ->
+                Triple(materiales, tecnicos, reparaciones)
+            }.collect { (materiales, tecnicos, reparaciones) ->
                 reparacionesCache = reparaciones
-                val seleccionado = _uiState.value.vehiculoSeleccionado
-                    ?: vehiculoPreferidoId
-                    ?: vehiculos.firstOrNull()?.id
-                val filtradas = reparaciones.filter { it.vehiculoId == seleccionado }
-                val pendientes = filtradas.filter { LuminariaEstado.fromRaw(it.estado) == LuminariaEstado.PENDIENTE }
-                val reparadas = filtradas.filter { LuminariaEstado.fromRaw(it.estado) == LuminariaEstado.REPARADA }
+                val (pendientes, reparadas) = filtrarReparaciones(_uiState.value.busquedaLocalizacion)
                 _uiState.update {
                     it.copy(
-                        vehiculos = vehiculos,
                         materiales = materiales,
                         tecnicos = tecnicos,
                         reparacionesPendientes = pendientes,
-                        reparacionesReparadas = reparadas,
-                        vehiculoSeleccionado = seleccionado
+                        reparacionesReparadas = reparadas
                     )
                 }
             }
@@ -109,23 +99,9 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
         }.ifBlank { usuario.nombre ?: "" }
         _uiState.update { current ->
             current.copy(
-                vehiculoSeleccionado = current.vehiculoSeleccionado ?: vehiculoPreferidoId,
-                vehiculoAutomatico = vehiculoPreferidoId != null,
+                vehiculoUsuarioId = vehiculoPreferidoId,
                 ejecutorNombre = current.ejecutorNombre.ifBlank { nombre },
                 ejecutorCedula = current.ejecutorCedula ?: usuario.cedula
-            )
-        }
-    }
-
-    fun seleccionarVehiculo(id: Int?) {
-        val filtradas = reparacionesCache.filter { id == null || it.vehiculoId == id }
-        val pendientes = filtradas.filter { LuminariaEstado.fromRaw(it.estado) == LuminariaEstado.PENDIENTE }
-        val reparadas = filtradas.filter { LuminariaEstado.fromRaw(it.estado) == LuminariaEstado.REPARADA }
-        _uiState.update {
-            it.copy(
-                vehiculoSeleccionado = id,
-                reparacionesPendientes = pendientes,
-                reparacionesReparadas = reparadas
             )
         }
     }
@@ -169,9 +145,13 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
         _uiState.value = _uiState.value.copy(materialesSeleccionados = actualizados)
     }
 
+    fun actualizarMaterialesSeleccionados(materiales: List<LuminariaMaterialSeleccionado>) {
+        _uiState.value = _uiState.value.copy(materialesSeleccionados = materiales)
+    }
+
     fun registrarReparacion() {
-        val vehiculoId = _uiState.value.vehiculoSeleccionado ?: run {
-            _mensaje.value = LuminariaMensaje.Error("Selecciona un vehículo")
+        val vehiculoId = _uiState.value.vehiculoUsuarioId ?: run {
+            _mensaje.value = LuminariaMensaje.Error("No se encontró un vehículo asignado al usuario")
             return
         }
         val localizacion = _uiState.value.localizacion.trim()
@@ -204,7 +184,8 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
             _uiState.value = _uiState.value.copy(
                 isProcessing = false,
                 localizacion = "",
-                materialesSeleccionados = emptyList()
+                materialesSeleccionados = emptyList(),
+                estadoSeleccionado = LuminariaEstado.REPARADA
             )
             _mensaje.value = LuminariaMensaje.Exito("Reparación registrada")
         }
@@ -253,11 +234,42 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
     fun consumirMensaje() {
         _mensaje.value = null
     }
-}
 
-private data class Quad<A, B, C, D>(
-    val first: A,
-    val second: B,
-    val third: C,
-    val fourth: D
-)
+    fun actualizarBusquedaLocalizacion(valor: String) {
+        _uiState.update { it.copy(busquedaLocalizacion = valor) }
+        val (pendientes, reparadas) = filtrarReparaciones(valor)
+        _uiState.update {
+            it.copy(
+                reparacionesPendientes = pendientes,
+                reparacionesReparadas = reparadas
+            )
+        }
+    }
+
+    fun prepararFormularioRegistro() {
+        _uiState.update {
+            it.copy(
+                localizacion = "",
+                materialesSeleccionados = emptyList(),
+                estadoSeleccionado = LuminariaEstado.REPARADA
+            )
+        }
+    }
+
+    suspend fun buscarMedidorPorLocalizacion(localizacion: String) =
+        localizacion.trim().toLongOrNull()?.let { repository.buscarMedidorPorLocalizacion(it) }
+
+    private fun filtrarReparaciones(busqueda: String): Pair<List<LuminariaReparacionEntity>, List<LuminariaReparacionEntity>> {
+        val texto = busqueda.trim().lowercase()
+        val filtradas = reparacionesCache.filter { reparacion ->
+            texto.isBlank() || reparacion.localizacion.lowercase().contains(texto)
+        }
+        val pendientes = filtradas
+            .filter { LuminariaEstado.fromRaw(it.estado) == LuminariaEstado.PENDIENTE }
+            .sortedBy { it.localizacion }
+        val reparadas = filtradas
+            .filter { LuminariaEstado.fromRaw(it.estado) == LuminariaEstado.REPARADA }
+            .sortedBy { it.localizacion }
+        return pendientes to reparadas
+    }
+}

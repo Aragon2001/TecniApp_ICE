@@ -1,5 +1,7 @@
 package com.Arasoftsolutions.tecniapp_ice.ui.luminarias
 
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -16,7 +18,10 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.Arasoftsolutions.tecniapp_ice.databinding.FragmentLuminariasBinding
+import com.Arasoftsolutions.tecniapp_ice.databinding.BottomSheetLuminariaReparacionBinding
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.bottomsheet.BottomSheetDialog
+import com.google.android.material.textfield.MaterialAutoCompleteTextView
 import kotlinx.coroutines.launch
 
 class LuminariasFragment : Fragment() {
@@ -25,11 +30,6 @@ class LuminariasFragment : Fragment() {
     private val binding get() = _binding!!
 
     private val viewModel: LuminariasViewModel by viewModels()
-    private var vehiculosAdapter: ArrayAdapter<String>? = null
-    private var materialesAdapter: ArrayAdapter<String>? = null
-    private var tecnicosAdapter: ArrayAdapter<String>? = null
-    private var estadosAdapter: ArrayAdapter<String>? = null
-    private lateinit var materialesSeleccionadosAdapter: LuminariaMaterialAdapter
     private lateinit var reparacionesPendientesAdapter: LuminariaReparacionAdapter
     private lateinit var reparacionesReparadasAdapter: LuminariaReparacionAdapter
     private var materialesCatalogo = emptyList<com.Arasoftsolutions.tecniapp_ice.Database.entities.MaterialEntity>()
@@ -48,33 +48,23 @@ class LuminariasFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         setupAdapters()
 
-        binding.btnRegistrarLuminaria.setOnClickListener { validarYRegistrar() }
-        binding.etLocalizacion.doAfterTextChanged {
-            viewModel.actualizarLocalizacion(it?.toString().orEmpty())
-            binding.tilLocalizacion.error = null
+        binding.btnRegistrarLuminaria.setOnClickListener { mostrarRegistroBottomSheet() }
+        binding.etBuscarLocalizacion.doAfterTextChanged {
+            viewModel.actualizarBusquedaLocalizacion(it?.toString().orEmpty())
         }
-        binding.actEjecutorLuminaria.doAfterTextChanged {
-            viewModel.actualizarEjecutor(it?.toString().orEmpty())
-            binding.tilEjecutorLuminaria.error = null
-        }
+        binding.chipPendientes.setOnCheckedChangeListener { _, _ -> actualizarVisibilidadListas() }
+        binding.chipReparadas.setOnCheckedChangeListener { _, _ -> actualizarVisibilidadListas() }
 
         observarEstado()
+        actualizarVisibilidadListas()
     }
 
     private fun setupAdapters() {
-        materialesSeleccionadosAdapter = LuminariaMaterialAdapter { material ->
-            viewModel.eliminarMaterial(material.codigo)
-        }
-        binding.listMaterialesLuminaria.apply {
-            layoutManager = LinearLayoutManager(requireContext())
-            adapter = materialesSeleccionadosAdapter
-            setHasFixedSize(false)
-            isNestedScrollingEnabled = false
-        }
-
         reparacionesPendientesAdapter = LuminariaReparacionAdapter(
+            showActions = false,
             onEdit = { reparacion -> mostrarDialogoEdicion(reparacion) },
-            onDelete = { reparacion -> confirmarEliminacion(reparacion) }
+            onDelete = { reparacion -> confirmarEliminacion(reparacion) },
+            onSelect = { reparacion -> mostrarDetallePendiente(reparacion) }
         )
         binding.listReparacionesPendientes.apply {
             layoutManager = LinearLayoutManager(requireContext())
@@ -84,6 +74,7 @@ class LuminariasFragment : Fragment() {
         }
 
         reparacionesReparadasAdapter = LuminariaReparacionAdapter(
+            showActions = true,
             onEdit = { reparacion -> mostrarDialogoEdicion(reparacion) },
             onDelete = { reparacion -> confirmarEliminacion(reparacion) }
         )
@@ -100,92 +91,14 @@ class LuminariasFragment : Fragment() {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.uiState.collect { state ->
                     binding.progressLuminaria.isVisible = state.isProcessing
-                    val labels = state.vehiculos.map { "${it.placa} - ${it.tipo}" }
-                    if (vehiculosAdapter == null) {
-                        vehiculosAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_list_item_1, labels)
-                        binding.spVehiculoLuminaria.setAdapter(vehiculosAdapter)
-                    } else {
-                        vehiculosAdapter?.clear()
-                        vehiculosAdapter?.addAll(labels)
-                    }
-                    val seleccion = state.vehiculos.indexOfFirst { it.id == state.vehiculoSeleccionado }
-                    if (seleccion >= 0 && seleccion < labels.size) {
-                        binding.spVehiculoLuminaria.setText(labels[seleccion], false)
-                    }
-                    binding.spVehiculoLuminaria.setOnItemClickListener { _, _, position, _ ->
-                        state.vehiculos.getOrNull(position)?.id?.let { viewModel.seleccionarVehiculo(it) }
-                    }
-                    binding.spVehiculoLuminaria.isEnabled = !state.vehiculoAutomatico
-
                     materialesCatalogo = state.materiales
-                    val materialesLabel = state.materiales.map { "${it.codigo} - ${it.descripcion}" }
-                    if (materialesAdapter == null) {
-                        materialesAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_list_item_1, materialesLabel)
-                        binding.actMaterialLuminaria.setAdapter(materialesAdapter)
-                    } else {
-                        materialesAdapter?.clear()
-                        materialesAdapter?.addAll(materialesLabel)
-                    }
-
-                    binding.actMaterialLuminaria.setOnItemClickListener { _, _, position, _ ->
-                        materialesCatalogo.getOrNull(position)?.let { material ->
-                            mostrarDialogoCantidad(material) { cantidad ->
-                                viewModel.agregarMaterial(material.codigo, material.descripcion, cantidad)
-                                binding.actMaterialLuminaria.setText("", false)
-                            }
-                        }
-                    }
-
                     tecnicosCatalogo = state.tecnicos
-                    val tecnicosLabel = state.tecnicos.map { it.nombre }
-                    if (tecnicosAdapter == null) {
-                        tecnicosAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_list_item_1, tecnicosLabel)
-                        binding.actEjecutorLuminaria.setAdapter(tecnicosAdapter)
-                    } else {
-                        tecnicosAdapter?.clear()
-                        tecnicosAdapter?.addAll(tecnicosLabel)
-                    }
-                    if (binding.actEjecutorLuminaria.text?.toString() != state.ejecutorNombre) {
-                        binding.actEjecutorLuminaria.setText(state.ejecutorNombre, false)
-                    }
-
-                    val estadosLabel = listOf("Pendiente", "Reparada")
-                    if (estadosAdapter == null) {
-                        estadosAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_list_item_1, estadosLabel)
-                        binding.actEstadoLuminaria.setAdapter(estadosAdapter)
-                    }
-                    val estadoTexto = if (state.estadoSeleccionado == com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado.PENDIENTE) {
-                        "Pendiente"
-                    } else {
-                        "Reparada"
-                    }
-                    if (binding.actEstadoLuminaria.text?.toString() != estadoTexto) {
-                        binding.actEstadoLuminaria.setText(estadoTexto, false)
-                    }
-                    binding.actEstadoLuminaria.setOnItemClickListener { _, _, position, _ ->
-                        val estado = if (position == 0) {
-                            com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado.PENDIENTE
-                        } else {
-                            com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado.REPARADA
-                        }
-                        viewModel.actualizarEstado(estado)
-                    }
-
-                    materialesSeleccionadosAdapter.submitList(state.materialesSeleccionados)
-                    binding.tvEmptyMateriales.isVisible = state.materialesSeleccionados.isEmpty()
-                    if (state.materialesSeleccionados.isNotEmpty()) {
-                        binding.tilMaterialLuminaria.error = null
-                    }
 
                     reparacionesPendientesAdapter.submitList(state.reparacionesPendientes)
                     binding.tvEmptyReparacionesPendientes.isVisible = state.reparacionesPendientes.isEmpty()
 
                     reparacionesReparadasAdapter.submitList(state.reparacionesReparadas)
                     binding.tvEmptyReparaciones.isVisible = state.reparacionesReparadas.isEmpty()
-
-                    if (binding.etLocalizacion.text?.toString() != state.localizacion) {
-                        binding.etLocalizacion.setText(state.localizacion)
-                    }
                 }
             }
         }
@@ -259,6 +172,7 @@ class LuminariasFragment : Fragment() {
         localizacionInput.setText(reparacion.localizacion)
         val estadoAdapterDialog = ArrayAdapter(requireContext(), android.R.layout.simple_list_item_1, listOf("Pendiente", "Reparada"))
         estadoInput.setAdapter(estadoAdapterDialog)
+        estadoInput.keyListener = null
         val estadoTexto = if (com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado.fromRaw(reparacion.estado) ==
             com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado.PENDIENTE
         ) {
@@ -339,10 +253,198 @@ class LuminariasFragment : Fragment() {
             .show()
     }
 
-    private fun validarYRegistrar() {
-        val state = viewModel.uiState.value
-        var valido = true
+    private fun confirmarEliminacion(reparacion: com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaReparacionEntity) {
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle("Eliminar reparación")
+            .setMessage("¿Deseas eliminar esta reparación? Esta acción no se puede deshacer.")
+            .setPositiveButton("Eliminar") { _, _ -> viewModel.eliminarReparacion(reparacion.id) }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
 
+    private fun mostrarRegistroBottomSheet() {
+        viewModel.prepararFormularioRegistro()
+        val sheetBinding = BottomSheetLuminariaReparacionBinding.inflate(layoutInflater)
+        val dialog = BottomSheetDialog(requireContext())
+        dialog.setContentView(sheetBinding.root)
+        configurarFormularioBottomSheet(
+            binding = sheetBinding,
+            titulo = "Registrar reparación",
+            mostrarDetalle = false,
+            reparacion = null
+        )
+        dialog.show()
+    }
+
+    private fun mostrarDetallePendiente(reparacion: com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaReparacionEntity) {
+        val sheetBinding = BottomSheetLuminariaReparacionBinding.inflate(layoutInflater)
+        val dialog = BottomSheetDialog(requireContext())
+        dialog.setContentView(sheetBinding.root)
+        configurarFormularioBottomSheet(
+            binding = sheetBinding,
+            titulo = "Detalle de lámpara pendiente",
+            mostrarDetalle = true,
+            reparacion = reparacion
+        )
+        dialog.show()
+        viewLifecycleOwner.lifecycleScope.launch {
+            val medidor = viewModel.buscarMedidorPorLocalizacion(reparacion.localizacion)
+            sheetBinding.tvClienteDetalle.text = medidor?.cliente?.ifBlank { "Sin datos" } ?: "Sin datos"
+            sheetBinding.tvContactoDetalle.text = "Sin datos"
+            sheetBinding.btnLlamarContacto.isEnabled = false
+        }
+    }
+
+    private fun configurarFormularioBottomSheet(
+        binding: BottomSheetLuminariaReparacionBinding,
+        titulo: String,
+        mostrarDetalle: Boolean,
+        reparacion: com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaReparacionEntity?
+    ) {
+        binding.tvTituloBottomSheet.text = titulo
+        binding.groupDetalle.isVisible = mostrarDetalle
+        binding.tvLocalizacionDetalle.text = reparacion?.localizacion?.let { "Localización #$it" } ?: "-"
+        binding.btnGuardarReparacion.text = if (reparacion == null) {
+            "Registrar reparación"
+        } else {
+            "Actualizar reparación"
+        }
+        binding.btnLlamarContacto.setOnClickListener {
+            val telefono = binding.tvContactoDetalle.text?.toString().orEmpty()
+            if (telefono.isNotBlank()) {
+                val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:$telefono"))
+                startActivity(intent)
+            }
+        }
+
+        val materialesSeleccionados = reparacion?.let {
+            com.Arasoftsolutions.tecniapp_ice.ui.luminarias.LuminariaMaterialSerializer
+                .fromJson(it.materialesJson)
+                .map { material -> LuminariaMaterialSeleccionado(material.codigo, material.descripcion, material.cantidad) }
+                .toMutableList()
+        } ?: mutableListOf()
+
+        lateinit var adapterMateriales: LuminariaMaterialAdapter
+        adapterMateriales = LuminariaMaterialAdapter { material ->
+            materialesSeleccionados.removeAll { it.codigo == material.codigo }
+            adapterMateriales.submitList(materialesSeleccionados.toList())
+            binding.tvEmptyMateriales.isVisible = materialesSeleccionados.isEmpty()
+            if (reparacion == null) {
+                viewModel.actualizarMaterialesSeleccionados(materialesSeleccionados.toList())
+            }
+        }
+        binding.listMaterialesLuminaria.apply {
+            layoutManager = LinearLayoutManager(requireContext())
+            adapter = adapterMateriales
+            setHasFixedSize(false)
+            isNestedScrollingEnabled = false
+        }
+        adapterMateriales.submitList(materialesSeleccionados.toList())
+        binding.tvEmptyMateriales.isVisible = materialesSeleccionados.isEmpty()
+        if (reparacion == null) {
+            viewModel.actualizarMaterialesSeleccionados(materialesSeleccionados.toList())
+        }
+
+        val materialesLabel = materialesCatalogo.map { "${it.codigo} - ${it.descripcion}" }
+        val materialesAdapterDialog = ArrayAdapter(requireContext(), android.R.layout.simple_list_item_1, materialesLabel)
+        binding.actMaterialLuminaria.setAdapter(materialesAdapterDialog)
+        binding.actMaterialLuminaria.setOnItemClickListener { _, _, position, _ ->
+            materialesCatalogo.getOrNull(position)?.let { material ->
+                mostrarDialogoCantidad(material) { cantidad ->
+                    val index = materialesSeleccionados.indexOfFirst { it.codigo == material.codigo }
+                    if (index >= 0) {
+                        val actual = materialesSeleccionados[index]
+                        materialesSeleccionados[index] = actual.copy(cantidad = actual.cantidad + cantidad)
+                    } else {
+                        materialesSeleccionados.add(LuminariaMaterialSeleccionado(material.codigo, material.descripcion, cantidad))
+                    }
+                    adapterMateriales.submitList(materialesSeleccionados.toList())
+                    binding.tvEmptyMateriales.isVisible = materialesSeleccionados.isEmpty()
+                    if (reparacion == null) {
+                        viewModel.actualizarMaterialesSeleccionados(materialesSeleccionados.toList())
+                    }
+                    binding.actMaterialLuminaria.setText("", false)
+                }
+            }
+        }
+
+        val tecnicosLabel = tecnicosCatalogo.map { it.nombre }
+        val tecnicosAdapterDialog = ArrayAdapter(requireContext(), android.R.layout.simple_list_item_1, tecnicosLabel)
+        binding.actEjecutorLuminaria.setAdapter(tecnicosAdapterDialog)
+
+        val estadosLabel = listOf("Pendiente", "Reparada")
+        val estadosAdapterDialog = ArrayAdapter(requireContext(), android.R.layout.simple_list_item_1, estadosLabel)
+        binding.actEstadoLuminaria.setAdapter(estadosAdapterDialog)
+        binding.actEstadoLuminaria.keyListener = null
+
+        val estadoInicial = reparacion?.let {
+            if (com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado.fromRaw(it.estado) ==
+                com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado.PENDIENTE
+            ) {
+                "Pendiente"
+            } else {
+                "Reparada"
+            }
+        } ?: "Reparada"
+        binding.actEstadoLuminaria.setText(estadoInicial, false)
+
+        binding.etLocalizacion.setText(reparacion?.localizacion ?: viewModel.uiState.value.localizacion)
+        binding.actEjecutorLuminaria.setText(
+            reparacion?.ejecutorNombre ?: viewModel.uiState.value.ejecutorNombre,
+            false
+        )
+
+        binding.etLocalizacion.doAfterTextChanged {
+            if (reparacion == null) {
+                viewModel.actualizarLocalizacion(it?.toString().orEmpty())
+            }
+            binding.tilLocalizacion.error = null
+        }
+        binding.actEjecutorLuminaria.doAfterTextChanged {
+            if (reparacion == null) {
+                viewModel.actualizarEjecutor(it?.toString().orEmpty())
+            }
+            binding.tilEjecutorLuminaria.error = null
+        }
+
+        binding.btnGuardarReparacion.setOnClickListener {
+            if (reparacion == null) {
+                val valido = validarFormularioRegistro(
+                    binding,
+                    materialesSeleccionados,
+                    binding.actEjecutorLuminaria.text?.toString().orEmpty()
+                )
+                if (valido) {
+                    viewModel.actualizarEstado(obtenerEstado(binding.actEstadoLuminaria))
+                    viewModel.registrarReparacion()
+                }
+            } else {
+                val estado = obtenerEstado(binding.actEstadoLuminaria)
+                val ejecutorNombre = binding.actEjecutorLuminaria.text?.toString().orEmpty()
+                val ejecutorCedula = tecnicosCatalogo.firstOrNull {
+                    it.nombre.equals(ejecutorNombre, ignoreCase = true)
+                }?.cedula
+                val localizacion = binding.etLocalizacion.text?.toString().orEmpty()
+                if (validarFormularioRegistro(binding, materialesSeleccionados, ejecutorNombre)) {
+                    viewModel.actualizarReparacion(
+                        reparacion.id,
+                        localizacion,
+                        materialesSeleccionados.toList(),
+                        estado,
+                        ejecutorNombre,
+                        ejecutorCedula
+                    )
+                }
+            }
+        }
+    }
+
+    private fun validarFormularioRegistro(
+        binding: BottomSheetLuminariaReparacionBinding,
+        materiales: List<LuminariaMaterialSeleccionado>,
+        ejecutor: String
+    ): Boolean {
+        var valido = true
         val localizacion = binding.etLocalizacion.text?.toString().orEmpty().trim()
         if (localizacion.isBlank()) {
             binding.tilLocalizacion.error = "Ingresa el número de localización"
@@ -351,32 +453,35 @@ class LuminariasFragment : Fragment() {
             binding.tilLocalizacion.error = null
         }
 
-        if (state.materialesSeleccionados.isEmpty()) {
+        if (materiales.isEmpty()) {
             binding.tilMaterialLuminaria.error = "Agrega al menos un material"
             valido = false
         } else {
             binding.tilMaterialLuminaria.error = null
         }
 
-        val ejecutor = binding.actEjecutorLuminaria.text?.toString().orEmpty().trim()
-        if (ejecutor.isBlank()) {
+        if (ejecutor.trim().isBlank()) {
             binding.tilEjecutorLuminaria.error = "Indica quién ejecutó la reparación"
             valido = false
         } else {
             binding.tilEjecutorLuminaria.error = null
         }
 
-        if (valido) {
-            viewModel.registrarReparacion()
+        return valido
+    }
+
+    private fun obtenerEstado(input: MaterialAutoCompleteTextView): com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado {
+        return if (input.text?.toString().orEmpty().equals("Pendiente", ignoreCase = true)) {
+            com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado.PENDIENTE
+        } else {
+            com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado.REPARADA
         }
     }
 
-    private fun confirmarEliminacion(reparacion: com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaReparacionEntity) {
-        MaterialAlertDialogBuilder(requireContext())
-            .setTitle("Eliminar reparación")
-            .setMessage("¿Deseas eliminar esta reparación? Esta acción no se puede deshacer.")
-            .setPositiveButton("Eliminar") { _, _ -> viewModel.eliminarReparacion(reparacion.id) }
-            .setNegativeButton("Cancelar", null)
-            .show()
+    private fun actualizarVisibilidadListas() {
+        val pendientesActivas = binding.chipPendientes.isChecked
+        val reparadasActivas = binding.chipReparadas.isChecked
+        binding.cardPendientes.isVisible = pendientesActivas
+        binding.cardReparadas.isVisible = reparadasActivas
     }
 }
