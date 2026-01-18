@@ -18,4 +18,7 @@ interface MaterialDao {
 
     @Query("SELECT * FROM materiales WHERE codigo = :codigo LIMIT 1")
     suspend fun obtenerPorCodigo(codigo: String): MaterialEntity?
+
+    @Query("SELECT codigo FROM materiales WHERE codigo IN (:codigos)")
+    suspend fun obtenerCodigos(codigos: List<String>): List<String>
 }
