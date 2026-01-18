@@ -109,7 +109,7 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
                 ejecutorCedula = current.ejecutorCedula ?: usuario.cedula,
                 rolUsuario = rolNormalizado.ifBlank { null },
                 esSupervisor = rolLower == "supervisor",
-                puedeImportarCsv = rolLower == "administrador"
+                puedeImportarCsv = rolLower == "administrador" || rolLower == "supervisor"
             )
         }
     }

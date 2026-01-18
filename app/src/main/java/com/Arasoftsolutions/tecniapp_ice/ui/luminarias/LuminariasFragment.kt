@@ -100,7 +100,7 @@ class LuminariasFragment : Fragment() {
                     materialesCatalogo = state.materiales
                     tecnicosCatalogo = state.tecnicos
                     binding.btnImportarLuminariasCsv.isVisible = state.puedeImportarCsv
-                    actualizarModoChip(state.esSupervisor)
+                    actualizarModoChip()
 
                     reparacionesPendientesAdapter.submitList(state.reparacionesPendientes)
                     binding.tvEmptyReparacionesPendientes.isVisible = state.reparacionesPendientes.isEmpty()
@@ -496,9 +496,9 @@ class LuminariasFragment : Fragment() {
         binding.cardReparadas.isVisible = reparadasActivas
     }
 
-    private fun actualizarModoChip(esSupervisor: Boolean) {
-        binding.chipGroupEstado.isSingleSelection = esSupervisor
-        if (esSupervisor && binding.chipPendientes.isChecked && binding.chipReparadas.isChecked) {
+    private fun actualizarModoChip() {
+        binding.chipGroupEstado.isSingleSelection = true
+        if (binding.chipPendientes.isChecked && binding.chipReparadas.isChecked) {
             binding.chipReparadas.isChecked = false
         }
     }
