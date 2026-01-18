@@ -266,10 +266,10 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
         }
         val pendientes = filtradas
             .filter { LuminariaEstado.fromRaw(it.estado) == LuminariaEstado.PENDIENTE }
-            .sortedBy { it.localizacion }
+            .sortedWith(compareBy({ it.localizacion.toLongOrNull() ?: Long.MAX_VALUE }, { it.localizacion }))
         val reparadas = filtradas
             .filter { LuminariaEstado.fromRaw(it.estado) == LuminariaEstado.REPARADA }
-            .sortedBy { it.localizacion }
+            .sortedWith(compareBy({ it.localizacion.toLongOrNull() ?: Long.MAX_VALUE }, { it.localizacion }))
         return pendientes to reparadas
     }
 }

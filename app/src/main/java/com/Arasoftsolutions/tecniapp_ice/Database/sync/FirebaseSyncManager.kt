@@ -565,14 +565,20 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
     }
 
     private suspend fun luminariasRoot(): DatabaseReference {
-        val upper = dbLocal.child("LuminariasReparaciones")
-        val lower = dbLocal.child("luminarias_reparaciones")
-        val upperExists = runCatching { upper.get().await().exists() }.getOrDefault(false)
-        val lowerExists = runCatching { lower.get().await().exists() }.getOrDefault(false)
+        val preferredUpper = dbLocal.child("Luminarias")
+        val preferredLower = dbLocal.child("luminarias")
+        val legacyUpper = dbLocal.child("LuminariasReparaciones")
+        val legacyLower = dbLocal.child("luminarias_reparaciones")
+        val preferredUpperExists = runCatching { preferredUpper.get().await().exists() }.getOrDefault(false)
+        val preferredLowerExists = runCatching { preferredLower.get().await().exists() }.getOrDefault(false)
+        val legacyUpperExists = runCatching { legacyUpper.get().await().exists() }.getOrDefault(false)
+        val legacyLowerExists = runCatching { legacyLower.get().await().exists() }.getOrDefault(false)
         return when {
-            upperExists -> upper
-            lowerExists -> lower
-            else -> upper
+            preferredUpperExists -> preferredUpper
+            preferredLowerExists -> preferredLower
+            legacyUpperExists -> legacyUpper
+            legacyLowerExists -> legacyLower
+            else -> preferredUpper
         }
     }
 
