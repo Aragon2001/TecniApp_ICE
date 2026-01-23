@@ -36,7 +36,7 @@ class LuminariasFragment : Fragment() {
     private var materialesCatalogo = emptyList<com.Arasoftsolutions.tecniapp_ice.Database.entities.MaterialEntity>()
     private var tecnicosCatalogo = emptyList<com.Arasoftsolutions.tecniapp_ice.Database.entities.TecnicoEntity>()
 
-    private val csvLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+    private val csvLauncher = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
         uri?.let { viewModel.procesarCsv(it) }
     }
 
@@ -54,7 +54,17 @@ class LuminariasFragment : Fragment() {
         setupAdapters()
 
         binding.btnRegistrarLuminaria.setOnClickListener { mostrarRegistroBottomSheet() }
-        binding.btnImportarLuminariasCsv.setOnClickListener { csvLauncher.launch("text/csv") }
+        binding.btnImportarLuminariasCsv.setOnClickListener {
+            csvLauncher.launch(
+                arrayOf(
+                    "text/csv",
+                    "text/comma-separated-values",
+                    "application/csv",
+                    "application/vnd.ms-excel",
+                    "text/plain"
+                )
+            )
+        }
         binding.etBuscarLocalizacion.doAfterTextChanged {
             viewModel.actualizarBusquedaLocalizacion(it?.toString().orEmpty())
         }
