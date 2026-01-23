@@ -652,7 +652,7 @@ class UserFragment : Fragment() {
     private fun agencyMatchesSubregion(agency: AgenciaEntity, subregion: SubregionesEntity?): Boolean {
         if (subregion == null) return true
         val agencySub = agency.subregion?.trim().orEmpty()
-        if (agencySub.isEmpty()) return true
+        if (agencySub.isEmpty()) return false
         val subId = subregion.id.trim()
         val subName = subregion.nombre.trim()
         return agencySub.equals(subId, ignoreCase = true) || agencySub.equals(subName, ignoreCase = true)

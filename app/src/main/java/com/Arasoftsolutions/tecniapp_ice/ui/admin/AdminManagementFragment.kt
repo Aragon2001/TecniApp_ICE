@@ -178,6 +178,11 @@ class AdminManagementFragment : Fragment(R.layout.fragment_admin_management) {
         binding.btnAdminVehiculoEliminar.setOnClickListener { eliminarVehiculo() }
         binding.actvAdminVehiculoSubregion.setOnItemClickListener { _, _, _, _ ->
             actualizarAgenciasFiltradas()
+            actualizarVehiculosFiltrados()
+            actualizarEstadoBotonesVehiculo()
+        }
+        binding.actvAdminVehiculoAgencia.setOnItemClickListener { _, _, _, _ ->
+            actualizarVehiculosFiltrados()
             actualizarEstadoBotonesVehiculo()
         }
 
@@ -253,17 +258,8 @@ class AdminManagementFragment : Fragment(R.layout.fragment_admin_management) {
 
     private fun actualizarVehiculos(lista: List<VehiculosEntity>) {
         vehiculosCatalogo = lista
-        vehiculosDisponibles = filtrarPorSubregionUsuario(vehiculosCatalogo) { it.subregion }
-        vehiculoDisplayToPlaca.clear()
-        val datos = vehiculosDisponibles.sortedBy { it.placa }.map { vehiculo ->
-            val display = "${vehiculo.placa} - ${vehiculo.agencia}"
-            vehiculoDisplayToPlaca[display] = vehiculo.placa
-            display
-        }
-        vehiculoAdapter.clear()
-        vehiculoAdapter.addAll(datos)
-        vehiculoAdapter.notifyDataSetChanged()
         actualizarAgenciasFiltradas()
+        actualizarVehiculosFiltrados()
         actualizarEstadoBotonesVehiculo()
     }
 
@@ -373,20 +369,52 @@ class AdminManagementFragment : Fragment(R.layout.fragment_admin_management) {
             ?: subregionUsuario?.id
         val subregionNombre = resolveSubregionNombre(binding.actvAdminVehiculoSubregion.text?.toString())
             ?: subregionUsuario?.nombre
-        val datos = agenciasDisponibles
-            .filter {
-                subregionSeleccionada == null && subregionNombre == null ||
-                    matchesSubregionFiltro(it.subregion, subregionSeleccionada, subregionNombre)
-            }
-            .sortedBy { it.nombre }
-            .map { it.nombre }
+        val datos = if (subregionSeleccionada == null && subregionNombre == null) {
+            emptyList()
+        } else {
+            agenciasDisponibles
+                .filter { matchesSubregionFiltro(it.subregion, subregionSeleccionada, subregionNombre) }
+                .sortedBy { it.nombre }
+                .map { it.nombre }
+        }
         vehiculoAgenciaAdapter.clear()
         vehiculoAgenciaAdapter.addAll(datos)
         vehiculoAgenciaAdapter.notifyDataSetChanged()
         if (!datos.contains(binding.actvAdminVehiculoAgencia.text?.toString())) {
             binding.actvAdminVehiculoAgencia.setText("", false)
         }
-        actualizarEstadoBotonesVehiculo()
+        actualizarVehiculosFiltrados()
+    }
+
+    private fun actualizarVehiculosFiltrados() {
+        val subregionSeleccionada = resolveSubregionId(binding.actvAdminVehiculoSubregion.text?.toString())
+            ?: subregionUsuario?.id
+        val subregionNombre = resolveSubregionNombre(binding.actvAdminVehiculoSubregion.text?.toString())
+            ?: subregionUsuario?.nombre
+        val agenciaSeleccionada = resolveAgenciaNombre(binding.actvAdminVehiculoAgencia.text?.toString())
+
+        vehiculosDisponibles = filtrarPorSubregionUsuario(vehiculosCatalogo) { it.subregion }
+            .filter {
+                if (subregionSeleccionada == null && subregionNombre == null) {
+                    false
+                } else {
+                    matchesSubregionFiltro(it.subregion, subregionSeleccionada, subregionNombre)
+                }
+            }
+            .filter { vehiculo ->
+                val agencia = agenciaSeleccionada?.trim().orEmpty()
+                agencia.isNotEmpty() && vehiculo.agencia.equals(agencia, ignoreCase = true)
+            }
+
+        vehiculoDisplayToPlaca.clear()
+        val datos = vehiculosDisponibles.sortedBy { it.placa }.map { vehiculo ->
+            val display = "${vehiculo.placa} - ${vehiculo.agencia}"
+            vehiculoDisplayToPlaca[display] = vehiculo.placa
+            display
+        }
+        vehiculoAdapter.clear()
+        vehiculoAdapter.addAll(datos)
+        vehiculoAdapter.notifyDataSetChanged()
     }
 
     private fun actualizarSubregionUsuario(subregion: AdminManagementViewModel.SubregionUsuario?) {
