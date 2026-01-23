@@ -175,10 +175,11 @@ class LuminariasFragment : Fragment() {
         configurarFormularioBottomSheet(
             binding = sheetBinding,
             titulo = "Editar reparación",
-            mostrarDetalle = false,
+            mostrarDetalle = true,
             reparacion = reparacion
         )
         dialog.show()
+        cargarDetalleCliente(sheetBinding, reparacion)
     }
 
     private fun confirmarEliminacion(reparacion: com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaReparacionEntity) {
@@ -215,6 +216,13 @@ class LuminariasFragment : Fragment() {
             reparacion = reparacion
         )
         dialog.show()
+        cargarDetalleCliente(sheetBinding, reparacion)
+    }
+
+    private fun cargarDetalleCliente(
+        sheetBinding: BottomSheetLuminariaReparacionBinding,
+        reparacion: com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaReparacionEntity
+    ) {
         viewLifecycleOwner.lifecycleScope.launch {
             val medidor = viewModel.buscarMedidorPorLocalizacion(reparacion.localizacion)
             val cliente = reparacion.cliente?.trim().orEmpty().ifBlank {
@@ -236,7 +244,7 @@ class LuminariasFragment : Fragment() {
         reparacion: com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaReparacionEntity?
     ) {
         binding.tvTituloBottomSheet.text = titulo
-        binding.groupDetalle.isVisible = mostrarDetalle
+        binding.groupDetalle.isVisible = mostrarDetalle || reparacion != null
         binding.tvLocalizacionDetalle.text = reparacion?.localizacion?.let { "Localización #$it" } ?: "-"
         binding.btnGuardarReparacion.text = if (reparacion == null) {
             "Registrar reparación"
@@ -328,7 +336,7 @@ class LuminariasFragment : Fragment() {
             if (com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado.fromRaw(it.estado) ==
                 com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado.PENDIENTE
             ) {
-                "Pendiente"
+                "Reparada"
             } else {
                 "Reparada"
             }

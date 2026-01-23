@@ -36,7 +36,9 @@ data class LuminariaReparacionEntity(
     val estado: String = LuminariaEstado.REPARADA.name,
     val ejecutorNombre: String = "",
     val ejecutorCedula: String? = null,
-    val fechaRegistro: Long = System.currentTimeMillis()
+    val fechaRegistro: Long = System.currentTimeMillis(),
+    val fechaCarga: Long = System.currentTimeMillis(),
+    val fechaReparacion: Long? = null
 )
 
 enum class LuminariaEstado {
