@@ -53,6 +53,7 @@ class AveriasAdapter(
         val normalized = Normalizer.normalize(value, Normalizer.Form.NFD)
         return normalized.replace("\\p{InCombiningDiacriticalMarks}+".toRegex(), "")
             .lowercase(Locale.getDefault())
+            .replace("[^a-z0-9]".toRegex(), "")
     }
 
     fun submitList(newItems: List<AveriaUI>) {
@@ -123,8 +124,16 @@ class AveriasAdapter(
             val pertenece = !asignadaAOtro && !ownerUid.isNullOrBlank()
             val regionMismatch = currentUserRegion?.let { regionUsuario ->
                 val regionAveria = item.region.trim()
-                regionAveria.isNotBlank() &&
-                    normalizeRegion(regionUsuario) != normalizeRegion(regionAveria)
+                if (regionAveria.isBlank()) {
+                    false
+                } else {
+                    val userKey = normalizeRegion(regionUsuario)
+                    val averiaKey = normalizeRegion(regionAveria)
+                    userKey.isNotBlank() &&
+                        averiaKey.isNotBlank() &&
+                        !userKey.contains(averiaKey) &&
+                        !averiaKey.contains(userKey)
+                }
             } ?: false
             val readOnly = bloqueadaPorClor || asignadaAOtro || regionMismatch
 
