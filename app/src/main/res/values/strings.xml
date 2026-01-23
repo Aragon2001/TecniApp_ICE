@@ -34,6 +34,7 @@
     <string name="home_header_default_user">técnico</string>
     <string name="home_status_online">Online</string>
     <string name="home_status_offline">Sin conexión</string>
+    <string name="offline_alert_message">Sin conexión a Internet</string>
     <string name="home_header_assignment_placeholder">Actualiza tu perfil para ver la asignación.</string>
     <string name="home_header_date_format">%1$s · %2$s</string>
     <string name="home_card_pending_title">Averías asignadas</string>
