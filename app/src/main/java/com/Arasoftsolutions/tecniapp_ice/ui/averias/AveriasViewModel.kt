@@ -889,7 +889,10 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             if (!ensureSubregionAllowed(ui)) return@launch
             if (Estado.fromLabel(ui.estado) != Estado.ANULADA) return@launch
-            ensurePropietario(ui) ?: return@launch
+            val ownerUid = ui.ownerUidFor(Estado.ANULADA)
+            if (!ownerUid.isNullOrBlank()) {
+                ensurePropietario(ui) ?: return@launch
+            }
             repo.revertirAPendiente(ui.id)
             _messages.tryEmit(getApplication<Application>().getString(R.string.averia_exito_revertida))
             syncNow()

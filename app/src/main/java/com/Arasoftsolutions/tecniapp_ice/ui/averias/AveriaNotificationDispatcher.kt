@@ -92,6 +92,17 @@ object AveriaNotificationDispatcher {
             averia.caseId,
             averia.nise ?: context.getString(R.string.averia_notificacion_sin_cliente)
         )
+        val cliente = averia.cliente?.takeIf { it.isNotBlank() }
+            ?: context.getString(R.string.averia_notificacion_sin_cliente)
+        val detalleCliente = context.getString(R.string.averia_notificacion_detalle_cliente, cliente)
+        val detalleAgencia = context.getString(R.string.averia_notificacion_detalle_agencia, agencia)
+        val detalleHora = context.getString(R.string.averia_notificacion_detalle_hora, hora)
+        val afectados = averia.clientesAfectados?.takeIf { it.isNotBlank() }
+            ?: context.getString(R.string.averia_notificacion_sin_cliente)
+        val detalleAfectados = context.getString(R.string.averia_notificacion_detalle_afectados, afectados)
+        val tipoAfectacion = averia.tipoAfectacion?.takeIf { it.isNotBlank() }
+            ?: context.getString(R.string.averia_notificacion_sin_cliente)
+        val detalleTipo = context.getString(R.string.averia_notificacion_detalle_tipo, tipoAfectacion)
         val estadoColor = when (type) {
             NotificationType.NEW -> ContextCompat.getColor(context, R.color.averia_notification_pending)
             NotificationType.RESOLVED -> ContextCompat.getColor(context, R.color.averia_notification_resolved)
@@ -131,6 +142,7 @@ object AveriaNotificationDispatcher {
 
         val mapUrl = AveriaStaticMapProvider.buildUrl(context, averia.lat, averia.lng, lugar)
         val mapPreview = AveriaStaticMapProvider.bitmapOrPlaceholder(context, mapUrl)
+        val baseIntent = AveriaNotifications.averiasPendingIntent(context)
         val expanded = RemoteViews(context.packageName, R.layout.notification_averia_expanded).apply {
             setImageViewResource(R.id.icon_large, type.icon)
             setTextViewText(R.id.title, context.getString(type.titleRes, agencia))
@@ -138,6 +150,11 @@ object AveriaNotificationDispatcher {
             setTextViewText(R.id.state_line, estadoLabel)
             setTextColor(R.id.state_line, estadoColor)
             setTextViewText(R.id.address, context.getString(R.string.averia_notificacion_direccion, lugar))
+            setTextViewText(R.id.agency, detalleAgencia)
+            setTextViewText(R.id.time, detalleHora)
+            setTextViewText(R.id.customer, detalleCliente)
+            setTextViewText(R.id.affected, detalleAfectados)
+            setTextViewText(R.id.impact, detalleTipo)
             setTextViewText(R.id.cause, cause)
             setTextViewText(R.id.technician, technician)
             setImageViewBitmap(R.id.map_preview, mapPreview)
@@ -152,13 +169,9 @@ object AveriaNotificationDispatcher {
             )?.let { mapPending ->
                 setOnClickPendingIntent(R.id.action_map, mapPending)
             }
-            setOnClickPendingIntent(
-                R.id.action_assign,
-                AveriaNotifications.notificationPreferencesPendingIntent(context)
-            )
+            setOnClickPendingIntent(R.id.action_attend, baseIntent)
         }
 
-        val baseIntent = AveriaNotifications.averiasPendingIntent(context)
         val builder = NotificationCompat.Builder(context, AveriaNotifications.CHANNEL_ID)
             .setSmallIcon(type.icon)
             .setCustomContentView(collapsed)
@@ -195,7 +208,7 @@ object AveriaNotificationDispatcher {
         builder.addAction(
             NotificationCompat.Action.Builder(
                 R.drawable.ic_outage_assign,
-                context.getString(R.string.averia_notificacion_action_ver_detalle),
+                context.getString(R.string.averia_notificacion_action_atender),
                 baseIntent
             ).build()
         )
@@ -215,7 +228,7 @@ object AveriaNotificationDispatcher {
             ?: context.getString(R.string.averia_notificacion_sin_agencia)
 
     private enum class NotificationType(val icon: Int, val titleRes: Int) {
-        NEW(R.drawable.ic_outage_new, R.string.averia_notificacion_header_nueva),
-        RESOLVED(R.drawable.ic_outage_resolved, R.string.averia_notificacion_header_resuelta)
+        NEW(R.drawable.ic_notification_bolt, R.string.averia_notificacion_header_nueva),
+        RESOLVED(R.drawable.ic_notification_bolt, R.string.averia_notificacion_header_resuelta)
     }
 }
