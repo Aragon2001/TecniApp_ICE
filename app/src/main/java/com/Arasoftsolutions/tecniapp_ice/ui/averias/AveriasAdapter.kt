@@ -121,7 +121,11 @@ class AveriasAdapter(
             val estadoEnum = Estado.fromLabel(item.estado)
             val ownerUid = item.ownerUidFor(estadoEnum)
             val asignadaAOtro = !ownerUid.isNullOrBlank() && (currentUid == null || ownerUid != currentUid)
-            val pertenece = !asignadaAOtro && !ownerUid.isNullOrBlank()
+            val pertenece = if (estadoEnum == Estado.ANULADA && ownerUid.isNullOrBlank()) {
+                true
+            } else {
+                !asignadaAOtro && !ownerUid.isNullOrBlank()
+            }
             val regionMismatch = currentUserRegion?.let { regionUsuario ->
                 val regionAveria = item.region.trim()
                 if (regionAveria.isBlank()) {
