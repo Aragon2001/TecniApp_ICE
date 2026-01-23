@@ -283,7 +283,10 @@ class LuminariasFragment : Fragment() {
         val materialesAdapterDialog = ArrayAdapter(requireContext(), android.R.layout.simple_list_item_1, materialesLabel)
         binding.actMaterialLuminaria.setAdapter(materialesAdapterDialog)
         binding.actMaterialLuminaria.setOnItemClickListener { _, _, position, _ ->
-            materialesCatalogo.getOrNull(position)?.let { material ->
+            val seleccion = materialesAdapterDialog.getItem(position).orEmpty()
+            val codigo = seleccion.substringBefore(" - ").trim()
+            val material = materialesCatalogo.firstOrNull { it.codigo == codigo }
+            material?.let {
                 mostrarDialogoCantidad(material) { cantidad ->
                     val index = materialesSeleccionados.indexOfFirst { it.codigo == material.codigo }
                     if (index >= 0) {
