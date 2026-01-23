@@ -6,6 +6,9 @@ import android.util.Log
 import androidx.core.content.edit
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.FirebaseDatabase
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
 
 /**
  * Gestor centralizado de preferencias relacionadas con las notificaciones de averías.
@@ -50,6 +53,18 @@ object AveriaNotificationPreferences {
         }
         // ✅ Sync server (no bloquea)
         pushFiltersToFirebase(context)
+    }
+
+    fun selectedAgenciesFlow(context: Context): Flow<List<String>> = callbackFlow {
+        val preferences = prefs(context)
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            if (key == KEY_AGENCIES) {
+                trySend(getSelectedAgencies(context)).isSuccess
+            }
+        }
+        trySend(getSelectedAgencies(context)).isSuccess
+        preferences.registerOnSharedPreferenceChangeListener(listener)
+        awaitClose { preferences.unregisterOnSharedPreferenceChangeListener(listener) }
     }
 
     fun addAgency(context: Context, agency: String) {

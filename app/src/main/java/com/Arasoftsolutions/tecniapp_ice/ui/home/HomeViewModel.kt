@@ -4,13 +4,18 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.AveriaEntity
+import com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado
+import com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaReparacionEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.MedidorEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.UserEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.room.AppDatabase
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
 import com.Arasoftsolutions.tecniapp_ice.preferences.DataStoreManager
+import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriaNotificationPreferences
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasRepository
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasSyncWorker
+import com.Arasoftsolutions.tecniapp_ice.ui.averias.normalizeAveriaText
+import com.Arasoftsolutions.tecniapp_ice.ui.averias.shouldNotifyForAgency
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -19,7 +24,6 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.util.Locale
-import kotlin.math.max
 
 /**
  * Opción A: AndroidViewModel con constructor (Application).
@@ -29,7 +33,7 @@ import kotlin.math.max
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class HomeViewModel(app: Application) : AndroidViewModel(app) {
 
-    private val repo = RoomRepository(app)
+    private val repo = RoomRepository.getInstance(app)
     private val database = AppDatabase.getInstance(app)
     private val averiasRepository = AveriasRepository(database)
     private val dataStore = DataStoreManager.getInstance(app)
@@ -44,7 +48,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     private val _usuario = MutableStateFlow<UserEntity?>(null)
     val usuario: StateFlow<UserEntity?> = _usuario.asStateFlow()
 
-    private val _agenciasFiltro = MutableStateFlow<List<String>>(emptyList())
+    data class AveriasPendientesPorAgencia(val agencia: String, val pendientes: Int)
 
     // Lista observable de medidores para la subregión (lectura 100% Room)
     val medidores: StateFlow<List<MedidorEntity>> =
@@ -55,8 +59,30 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
             }
             .stateIn(viewModelScope, sharing, emptyList())
 
+    private val agenciasSeleccionadas: StateFlow<List<String>> =
+        AveriaNotificationPreferences.selectedAgenciesFlow(app)
+            .stateIn(viewModelScope, sharing, emptyList())
+
+    private val agenciasPreferidas: StateFlow<List<String>> =
+        combine(agenciasSeleccionadas, usuario) { agencias, user ->
+            if (agencias.isNotEmpty()) {
+                agencias
+            } else {
+                listOfNotNull(user?.agencia?.takeIf { it.isNotBlank() }
+                    ?: user?.subregion?.takeIf { it.isNotBlank() })
+            }
+        }.stateIn(viewModelScope, sharing, emptyList())
+
+    private val agenciasFiltroTags: StateFlow<List<String>> =
+        agenciasPreferidas
+            .map { agencias ->
+                agencias.mapNotNull { canonicalAgencyTag(it) }
+                    .distinctBy { it.lowercase(Locale.getDefault()) }
+            }
+            .stateIn(viewModelScope, sharing, emptyList())
+
     private val averias: StateFlow<List<AveriaEntity>> =
-        _agenciasFiltro
+        agenciasFiltroTags
             .flatMapLatest { agencias ->
                 averiasRepository.observe(agencias, "", "", "")
             }
@@ -96,6 +122,28 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
             }
         }.stateIn(viewModelScope, sharing, 0)
 
+    val averiasPendientesPorAgencia: StateFlow<List<AveriasPendientesPorAgencia>> =
+        combine(averias, agenciasPreferidas) { lista, agencias ->
+            if (agencias.isEmpty()) {
+                emptyList()
+            } else {
+                val pendientes = lista.filter { averia ->
+                    !averia.estado.equals("Resuelta", ignoreCase = true)
+                }
+                agencias.map { agencia ->
+                    val normalized = normalizeAveriaText(agencia)
+                    val count = if (normalized.isBlank()) {
+                        0
+                    } else {
+                        pendientes.count { averia ->
+                            shouldNotifyForAgency(averia, setOf(normalized))
+                        }
+                    }
+                    AveriasPendientesPorAgencia(agencia, count)
+                }
+            }
+        }.stateIn(viewModelScope, sharing, emptyList())
+
     private val placaVehiculo: StateFlow<String?> =
         usuario
             .map { it?.placaVehiculo?.takeIf { placa -> placa.isNotBlank() } }
@@ -117,15 +165,25 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
         dataStore.lastManualSyncMillis
             .stateIn(viewModelScope, sharing, null)
 
+    private val reparacionesLuminarias: StateFlow<List<LuminariaReparacionEntity>> =
+        repo.observarReparaciones()
+            .stateIn(viewModelScope, sharing, emptyList())
+
+    val luminariasPendientesCount: StateFlow<Int> =
+        reparacionesLuminarias
+            .map { reparaciones ->
+                reparaciones.count { reparacion ->
+                    LuminariaEstado.fromRaw(reparacion.estado) == LuminariaEstado.PENDIENTE
+                }
+            }
+            .stateIn(viewModelScope, sharing, 0)
+
     fun loadUsuarioActual() {
         viewModelScope.launch {
             val uid = auth.currentUser?.uid ?: return@launch
             val user = repo.obtenerUsuario(uid)
             _usuario.value = user
             user?.subregion?.takeIf { it.isNotBlank() }?.let { setSubregion(it) }
-            _agenciasFiltro.value = user?.let { usuario ->
-                listOfNotNull(canonicalAgencyTag(usuario.agencia ?: usuario.subregion))
-            } ?: emptyList()
         }
     }
 

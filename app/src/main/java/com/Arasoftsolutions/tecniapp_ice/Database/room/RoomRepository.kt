@@ -223,10 +223,12 @@ class   RoomRepository(context: Context) {
         delta: Double
     ) = withContext(Dispatchers.IO) {
         if (codigo.isBlank() || delta == 0.0) return@withContext
+        val vehiculoKey = resolveVehiculoKey(vehiculoId)
         val existente = inventarioDao.obtenerItem(vehiculoId, codigo)
         val nuevaCantidad = (existente?.cantidadDisponible ?: 0.0) + delta
         if (nuevaCantidad <= 0) {
             existente?.let { inventarioDao.eliminarPorId(it.id) }
+            firebase.eliminarInventarioItem(vehiculoKey, codigo)
         } else {
             val item = InventarioItemEntity(
                 id = existente?.id ?: 0L,
@@ -236,11 +238,14 @@ class   RoomRepository(context: Context) {
                 cantidadDisponible = nuevaCantidad
             )
             inventarioDao.upsert(item)
+            firebase.guardarInventarioItem(vehiculoKey, item)
         }
     }
 
     suspend fun eliminarInventarioItem(id: Long) = withContext(Dispatchers.IO) {
+        val item = inventarioDao.obtenerItemPorId(id)
         inventarioDao.eliminarPorId(id)
+        item?.let { firebase.eliminarInventarioItem(resolveVehiculoKey(it.vehiculoId), it.codigoMaterial) }
     }
 
     suspend fun cargarInventarioDesdeCsv(
@@ -268,6 +273,8 @@ class   RoomRepository(context: Context) {
                 )
                 inventarioDao.upsert(item)
             }
+        val inventarioActualizado = inventarioDao.obtenerPorVehiculo(vehiculoId)
+        firebase.guardarInventarioVehiculo(resolveVehiculoKey(vehiculoId), vehiculoId, inventarioActualizado)
     }
 
     suspend fun obtenerCodigosMateriales(codigos: Set<String>): Set<String> = withContext(Dispatchers.IO) {
@@ -283,6 +290,12 @@ class   RoomRepository(context: Context) {
         ejecutorNombre: String,
         ejecutorCedula: String?
     ) = withContext(Dispatchers.IO) {
+        val ahora = System.currentTimeMillis()
+        val fechaReparacion = if (estado == com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado.REPARADA) {
+            ahora
+        } else {
+            null
+        }
         val reparacion = LuminariaReparacionEntity(
             vehiculoId = vehiculoId,
             localizacion = localizacion,
@@ -291,10 +304,13 @@ class   RoomRepository(context: Context) {
             estado = estado.name,
             ejecutorNombre = ejecutorNombre,
             ejecutorCedula = ejecutorCedula,
-            fechaRegistro = System.currentTimeMillis()
+            fechaRegistro = ahora,
+            fechaCarga = ahora,
+            fechaReparacion = fechaReparacion
         )
         val reparacionId = inventarioDao.registrarReparacion(reparacion)
-        firebase.guardarReparacionLuminaria(reparacion.copy(id = reparacionId))
+        val agencia = db.vehiculoDao().buscarPorId(vehiculoId)?.agencia
+        firebase.guardarReparacionLuminaria(reparacion.copy(id = reparacionId), agencia)
         materiales.forEach { material ->
             ajustarInventario(vehiculoId, material.codigo, material.descripcion, -material.cantidad)
         }
@@ -302,33 +318,59 @@ class   RoomRepository(context: Context) {
 
     suspend fun registrarLuminariasPendientes(
         vehiculoId: Int,
-        localizaciones: List<String>,
+        registros: List<com.Arasoftsolutions.tecniapp_ice.ui.luminarias.LuminariaCsvRegistro>,
         ejecutorNombre: String,
         ejecutorCedula: String?
     ) = withContext(Dispatchers.IO) {
-        if (localizaciones.isEmpty()) return@withContext
-        localizaciones
-            .mapNotNull { it.trim().takeIf(String::isNotEmpty) }
-            .forEach { localizacion ->
+        if (registros.isEmpty()) return@withContext
+        val agencia = db.vehiculoDao().buscarPorId(vehiculoId)?.agencia
+        registros
+            .mapNotNull { it.localizacion.trim().takeIf(String::isNotEmpty)?.let { loc -> it.copy(localizacion = loc) } }
+            .forEach { registro ->
+                val existente = inventarioDao.obtenerReparacionPorLocalizacionYEstado(
+                    registro.localizacion,
+                    com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado.PENDIENTE.name
+                )
+                val cliente = registro.cliente?.trim().takeIf { !it.isNullOrEmpty() }
+                val contacto = registro.contacto?.trim().takeIf { !it.isNullOrEmpty() }
+                val observaciones = registro.observaciones?.trim().takeIf { !it.isNullOrEmpty() }
+                if (existente != null) {
+                    val actualizado = existente.copy(
+                        cliente = existente.cliente ?: cliente,
+                        contacto = existente.contacto ?: contacto,
+                        observaciones = existente.observaciones ?: observaciones
+                    )
+                    if (actualizado != existente) {
+                        inventarioDao.actualizarReparacion(actualizado)
+                        firebase.guardarReparacionLuminaria(actualizado, agencia)
+                    }
+                    return@forEach
+                }
+                val ahora = System.currentTimeMillis()
                 val reparacion = LuminariaReparacionEntity(
                     vehiculoId = vehiculoId,
-                    localizacion = localizacion,
+                    localizacion = registro.localizacion,
+                    cliente = cliente,
+                    contacto = contacto,
+                    observaciones = observaciones,
                     materialesJson = com.Arasoftsolutions.tecniapp_ice.ui.luminarias.LuminariaMaterialSerializer
                         .toJson(emptyList()),
                     estado = com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado.PENDIENTE.name,
                     ejecutorNombre = ejecutorNombre,
                     ejecutorCedula = ejecutorCedula,
-                    fechaRegistro = System.currentTimeMillis()
+                    fechaRegistro = ahora,
+                    fechaCarga = ahora
                 )
                 val reparacionId = inventarioDao.registrarReparacion(reparacion)
-                firebase.guardarReparacionLuminaria(reparacion.copy(id = reparacionId))
+                firebase.guardarReparacionLuminaria(reparacion.copy(id = reparacionId), agencia)
             }
     }
 
     suspend fun eliminarReparacionLuminaria(id: Long) = withContext(Dispatchers.IO) {
         val reparacion = inventarioDao.obtenerReparacion(id) ?: return@withContext
         inventarioDao.eliminarReparacion(id)
-        firebase.eliminarReparacionLuminaria(id)
+        val agencia = db.vehiculoDao().buscarPorId(reparacion.vehiculoId)?.agencia
+        firebase.eliminarReparacionLuminaria(id, agencia)
         val materiales = com.Arasoftsolutions.tecniapp_ice.ui.luminarias.LuminariaMaterialSerializer
             .fromJson(reparacion.materialesJson)
         materiales.forEach { material ->
@@ -355,6 +397,12 @@ class   RoomRepository(context: Context) {
         val mapPrevio = materialesPrevios.associateBy({ it.codigo }, { it })
         val mapNuevo = nuevosMateriales.associateBy({ it.codigo }, { it })
         val todosCodigos = (mapPrevio.keys + mapNuevo.keys).toSet()
+        val fechaReparacion = if (nuevoEstado == com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado.REPARADA) {
+            reparacion.fechaReparacion ?: System.currentTimeMillis()
+        } else {
+            reparacion.fechaReparacion
+        }
+        val agencia = db.vehiculoDao().buscarPorId(reparacion.vehiculoId)?.agencia
         inventarioDao.actualizarReparacion(
             reparacion.copy(
                 localizacion = nuevaLocalizacion,
@@ -362,7 +410,8 @@ class   RoomRepository(context: Context) {
                     .toJson(nuevosMateriales),
                 estado = nuevoEstado.name,
                 ejecutorNombre = nuevoEjecutorNombre,
-                ejecutorCedula = nuevoEjecutorCedula
+                ejecutorCedula = nuevoEjecutorCedula,
+                fechaReparacion = fechaReparacion
             )
         )
         firebase.guardarReparacionLuminaria(
@@ -372,8 +421,10 @@ class   RoomRepository(context: Context) {
                     .toJson(nuevosMateriales),
                 estado = nuevoEstado.name,
                 ejecutorNombre = nuevoEjecutorNombre,
-                ejecutorCedula = nuevoEjecutorCedula
-            )
+                ejecutorCedula = nuevoEjecutorCedula,
+                fechaReparacion = fechaReparacion
+            ),
+            agencia
         )
         todosCodigos.forEach { codigo ->
             val anterior = mapPrevio[codigo]
@@ -412,6 +463,19 @@ class   RoomRepository(context: Context) {
         if (materiales.isNotEmpty()) {
             db.materialDao().insertAll(materiales)
         }
+    }
+
+    suspend fun syncInventario() = withContext(Dispatchers.IO) {
+        val inventario = firebase.obtenerInventario()
+        inventarioDao.limpiarTodo()
+        if (inventario.isNotEmpty()) {
+            inventarioDao.insertAll(inventario)
+        }
+    }
+
+    private suspend fun resolveVehiculoKey(vehiculoId: Int): String {
+        val vehiculo = db.vehiculoDao().buscarPorId(vehiculoId)
+        return vehiculo?.placa?.toString() ?: vehiculoId.toString()
     }
 
     suspend fun syncSubregion(

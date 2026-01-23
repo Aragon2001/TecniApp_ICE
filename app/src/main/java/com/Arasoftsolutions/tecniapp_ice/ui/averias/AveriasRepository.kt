@@ -152,6 +152,12 @@ class AveriasRepository(private val db: AppDatabase) {
         return n.split(" ").joinToString("") { titleCase(it) } // "Río Frío" -> "RioFrio"
     }
 
+    companion object {
+        private val DIACRITICS_REGEX = "\\p{InCombiningDiacriticalMarks}+".toRegex()
+        private val NON_ALNUM_SPACE_REGEX = "[^a-z0-9 ]".toRegex()
+        private val MULTI_SPACE_REGEX = "\\s+".toRegex()
+    }
+
     private fun mergeRemoteString(remote: String?, local: String?): String? {
         val trimmed = remote?.trim()
         return when {
