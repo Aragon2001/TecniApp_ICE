@@ -45,6 +45,10 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
         database("https://tecniapp-ice-materiales.firebaseio.com/")
     }
 
+    private val dbLuminarias: DatabaseReference by lazy {
+        database("https://tecniapp-ice-luminarias.firebaseio.com/")
+    }
+
     private val subregionNombreCache = mutableMapOf<String, String>()
 
     private fun database(url: String): DatabaseReference {
@@ -436,8 +440,11 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
         root.child(key).setValue(payload).await()
     }
 
-    suspend fun guardarReparacionLuminaria(reparacion: LuminariaReparacionEntity) {
-        val root = luminariasRoot()
+    suspend fun guardarReparacionLuminaria(
+        reparacion: LuminariaReparacionEntity,
+        agencia: String?
+    ) {
+        val root = luminariasRoot(agencia)
         val payload = mapOf(
             "id" to reparacion.id,
             "vehiculoId" to reparacion.vehiculoId,
@@ -449,7 +456,9 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
             "estado" to reparacion.estado,
             "ejecutorNombre" to reparacion.ejecutorNombre,
             "ejecutorCedula" to reparacion.ejecutorCedula,
-            "fechaRegistro" to reparacion.fechaRegistro
+            "fechaRegistro" to reparacion.fechaRegistro,
+            "fechaCarga" to reparacion.fechaCarga,
+            "fechaReparacion" to reparacion.fechaReparacion
         )
         val estado = LuminariaEstado.fromRaw(reparacion.estado)
         val destino = if (estado == LuminariaEstado.PENDIENTE) "pendientes" else "reparadas"
@@ -458,8 +467,8 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
         root.child(limpiar).child(reparacion.id.toString()).removeValue().await()
     }
 
-    suspend fun eliminarReparacionLuminaria(id: Long) {
-        val root = luminariasRoot()
+    suspend fun eliminarReparacionLuminaria(id: Long, agencia: String?) {
+        val root = luminariasRoot(agencia)
         root.child("pendientes").child(id.toString()).removeValue().await()
         root.child("reparadas").child(id.toString()).removeValue().await()
     }
@@ -573,8 +582,9 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
         }
     }
 
-    private suspend fun luminariasRoot(): DatabaseReference {
-        val root = dbLocal.child("luminarias")
+    private suspend fun luminariasRoot(agencia: String?): DatabaseReference {
+        val agenciaKey = normalizarClave(agencia)?.takeIf { it.isNotBlank() } ?: "sin_agencia"
+        val root = dbLuminarias.child(agenciaKey)
         val exists = runCatching { root.get().await().exists() }.getOrDefault(false)
         return if (exists) root else root
     }

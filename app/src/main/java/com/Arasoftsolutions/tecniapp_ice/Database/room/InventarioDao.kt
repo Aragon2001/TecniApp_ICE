@@ -53,6 +53,16 @@ interface InventarioDao {
     @Query("SELECT * FROM luminaria_reparacion WHERE id = :id LIMIT 1")
     suspend fun obtenerReparacion(id: Long): LuminariaReparacionEntity?
 
+    @Query(
+        "SELECT * FROM luminaria_reparacion " +
+            "WHERE localizacion = :localizacion AND estado = :estado " +
+            "ORDER BY fechaRegistro DESC LIMIT 1"
+    )
+    suspend fun obtenerReparacionPorLocalizacionYEstado(
+        localizacion: String,
+        estado: String
+    ): LuminariaReparacionEntity?
+
     @Update
     suspend fun actualizarReparacion(entity: LuminariaReparacionEntity)
 

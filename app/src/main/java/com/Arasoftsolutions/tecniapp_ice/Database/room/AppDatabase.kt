@@ -46,7 +46,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun inventarioDao(): InventarioDao
 
     companion object {
-        const val SCHEMA_VERSION = 18
+        const val SCHEMA_VERSION = 19
 
         @Volatile private var INSTANCE: AppDatabase? = null
 
