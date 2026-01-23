@@ -44,6 +44,9 @@ class InventarioAdapter(
             binding.tvCantidad.text = context.getString(R.string.inventario_material_existencia, cantidad)
             binding.tvVehiculo.text = context.getString(R.string.inventario_material_vehiculo, placa)
             binding.layoutAcciones.isVisible = showActions
+            val puedeRestar = item.item.cantidadDisponible > 1.0
+            binding.btnRestar.isEnabled = puedeRestar
+            binding.btnRestar.alpha = if (puedeRestar) 1f else 0.4f
             binding.btnSumar.setOnClickListener { onIncrease?.invoke(item) }
             binding.btnRestar.setOnClickListener { onDecrease?.invoke(item) }
             binding.btnEliminar.setOnClickListener { onDelete?.invoke(item) }
