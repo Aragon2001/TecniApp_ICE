@@ -34,18 +34,32 @@ class LuminariaReparacionAdapter(
         private val onDelete: (LuminariaReparacionEntity) -> Unit,
         private val onSelect: ((LuminariaReparacionEntity) -> Unit)?
     ) : RecyclerView.ViewHolder(binding.root) {
+        private fun formatCantidad(cantidad: Double): String {
+            return if (cantidad % 1.0 == 0.0) {
+                cantidad.toInt().toString()
+            } else {
+                cantidad.toString()
+            }
+        }
+
         fun bind(item: LuminariaReparacionEntity) {
             val materiales = LuminariaMaterialSerializer.fromJson(item.materialesJson)
-            val resumen = LuminariaMaterialSerializer.toSummary(materiales).ifBlank { "Sin materiales" }
-            val total = materiales.sumOf { it.cantidad }
+            val resumen = if (materiales.isEmpty()) {
+                "Sin materiales"
+            } else {
+                materiales.joinToString("\n") { material ->
+                    "- ${material.descripcion}\nCantidad: ${formatCantidad(material.cantidad)}"
+                }
+            }
             val estadoTexto = if (LuminariaEstado.fromRaw(item.estado) == LuminariaEstado.PENDIENTE) {
                 "Pendiente"
             } else {
                 "Reparada"
             }
-            binding.tvReparacionMaterial.text = "Localización #${item.localizacion}"
-            binding.tvReparacionDetalle.text = "Materiales: $resumen · Total: $total · $estadoTexto"
-            binding.tvReparacionEjecutor.text = "Ejecutor: ${item.ejecutorNombre.ifBlank { "-" }}"
+            val localizacion = item.localizacion.ifBlank { "-" }
+            binding.tvReparacionMaterial.text = "Localización: #$localizacion"
+            binding.tvReparacionDetalle.text = "Materiales:\n$resumen\n\nEstado: $estadoTexto"
+            binding.tvReparacionEjecutor.text = "Ejecutó: ${item.ejecutorNombre.ifBlank { "-" }}"
             binding.btnEditarReparacion.isVisible = showActions
             binding.btnEliminarReparacion.isVisible = showActions
             binding.btnEditarReparacion.setOnClickListener { onEdit(item) }

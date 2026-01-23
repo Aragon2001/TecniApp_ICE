@@ -896,5 +896,6 @@ Cliente: %4$s</string>
     <string name="averia_notificacion_action_ver_detalle">Ver detalle</string>
     <string name="averia_notificacion_action_ver_mapa">Ver en mapa</string>
     <string name="averia_notificacion_action_asignar">Asignarme</string>
+    <string name="averia_notificacion_action_atender">Atender</string>
     <string name="averia_notificacion_bubble_title">Averías ICE</string>
 </resources>
