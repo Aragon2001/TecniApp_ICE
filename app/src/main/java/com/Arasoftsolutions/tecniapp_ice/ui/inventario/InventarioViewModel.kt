@@ -8,6 +8,7 @@ import com.Arasoftsolutions.tecniapp_ice.Database.entities.InventarioConVehiculo
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.VehiculosEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
 import com.Arasoftsolutions.tecniapp_ice.R
+import com.google.firebase.auth.FirebaseAuth
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 import com.tom_roush.pdfbox.pdmodel.PDDocument
 import com.tom_roush.pdfbox.text.PDFTextStripper
@@ -37,6 +38,8 @@ data class InventarioUiState(
 class InventarioViewModel(app: Application) : AndroidViewModel(app) {
 
     private val repository = RoomRepository.getInstance(app)
+    private val auth: FirebaseAuth = FirebaseAuth.getInstance()
+    private var vehiculoPreferidoId: Int? = null
 
     private val _mensajes = MutableStateFlow<InventarioMensaje?>(null)
     val mensajes: StateFlow<InventarioMensaje?> = _mensajes.asStateFlow()
@@ -45,6 +48,9 @@ class InventarioViewModel(app: Application) : AndroidViewModel(app) {
     val uiState: StateFlow<InventarioUiState> = _uiState.asStateFlow()
 
     init {
+        viewModelScope.launch {
+            cargarPreferenciasUsuario()
+        }
         cargarDatosIniciales()
     }
 
@@ -56,7 +62,7 @@ class InventarioViewModel(app: Application) : AndroidViewModel(app) {
                 vehiculos to inventario
             }.collect { (vehiculos, inventario) ->
                 val seleccionadoActual = _uiState.value.vehiculoSeleccionado
-                val seleccionado = seleccionadoActual?.takeIf { id -> vehiculos.any { it.id == id } }
+                val seleccionado = resolveVehiculoSeleccionado(vehiculos, seleccionadoActual)
                 _uiState.value = _uiState.value.copy(
                     vehiculos = vehiculos,
                     inventarioCompleto = inventario,
@@ -65,6 +71,36 @@ class InventarioViewModel(app: Application) : AndroidViewModel(app) {
                 )
             }
         }
+    }
+
+    private suspend fun cargarPreferenciasUsuario() {
+        val uid = auth.currentUser?.uid ?: return
+        val usuario = repository.obtenerUsuario(uid) ?: return
+        val placa = usuario.placaVehiculo?.trim().orEmpty()
+        val vehiculo = placa.toLongOrNull()?.let { repository.obtenerVehiculoPorPlaca(it) }
+        vehiculoPreferidoId = vehiculo?.id
+        aplicarVehiculoPreferidoSiAplica()
+    }
+
+    private fun aplicarVehiculoPreferidoSiAplica() {
+        val vehiculos = _uiState.value.vehiculos
+        val seleccionadoActual = _uiState.value.vehiculoSeleccionado
+        val seleccionado = resolveVehiculoSeleccionado(vehiculos, seleccionadoActual)
+        if (seleccionado != seleccionadoActual) {
+            _uiState.value = _uiState.value.copy(
+                vehiculoSeleccionado = seleccionado,
+                inventario = filtrarInventario(_uiState.value.inventarioCompleto, seleccionado)
+            )
+        }
+    }
+
+    private fun resolveVehiculoSeleccionado(
+        vehiculos: List<VehiculosEntity>,
+        seleccionadoActual: Int?
+    ): Int? {
+        val actualValido = seleccionadoActual?.takeIf { id -> vehiculos.any { it.id == id } }
+        if (actualValido != null) return actualValido
+        return vehiculoPreferidoId?.takeIf { id -> vehiculos.any { it.id == id } }
     }
 
     fun seleccionarVehiculo(id: Int?) {
