@@ -34,6 +34,7 @@ class MedidorFragment : Fragment() {
     private var currentPuebloDisplays: List<String> = emptyList()
     private val subregionDisplayToOption = mutableMapOf<String, SubregionOption>()
     private val puebloDisplayToOption = mutableMapOf<String, PuebloOption>()
+    private var wasManualVisible = false
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -227,11 +228,23 @@ class MedidorFragment : Fragment() {
                         actualizarLocalizacionSugerida()
                     }
 
+                    if (estado.showManualForm && !wasManualVisible) {
+                        binding.scrollMedidor.post {
+                            binding.scrollMedidor.smoothScrollTo(0, binding.cardRegistroManual.top)
+                        }
+                    }
+                    wasManualVisible = estado.showManualForm
+
                     if (estado.showNotFoundDialog && estado.notFoundNumero != null) {
                         viewModel.onNotFoundDialogMostrado()
+                        val dialogMessage = if (estado.notFoundOffline) {
+                            getString(R.string.medidor_no_registrado_dialog_offline, estado.notFoundNumero)
+                        } else {
+                            getString(R.string.medidor_no_registrado_dialog_message, estado.notFoundNumero)
+                        }
                         MaterialAlertDialogBuilder(requireContext())
                             .setTitle(R.string.medidor_no_registrado_dialog_title)
-                            .setMessage(getString(R.string.medidor_no_registrado_dialog_message, estado.notFoundNumero))
+                            .setMessage(dialogMessage)
                             .setPositiveButton(R.string.medidor_no_registrado_dialog_positive) { _, _ ->
                                 viewModel.habilitarRegistroManual()
                             }
