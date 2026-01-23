@@ -29,11 +29,16 @@ data class LuminariaReparacionEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0L,
     val vehiculoId: Int,
     val localizacion: String,
+    val cliente: String? = null,
+    val contacto: String? = null,
+    val observaciones: String? = null,
     val materialesJson: String? = null,
     val estado: String = LuminariaEstado.REPARADA.name,
     val ejecutorNombre: String = "",
     val ejecutorCedula: String? = null,
-    val fechaRegistro: Long = System.currentTimeMillis()
+    val fechaRegistro: Long = System.currentTimeMillis(),
+    val fechaCarga: Long = System.currentTimeMillis(),
+    val fechaReparacion: Long? = null
 )
 
 enum class LuminariaEstado {
