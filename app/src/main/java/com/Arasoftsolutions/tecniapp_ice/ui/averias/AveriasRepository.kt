@@ -126,15 +126,14 @@ class AveriasRepository(private val db: AppDatabase) {
 
     private fun stripAccentsLower(s: String): String {
         val n = Normalizer.normalize(s, Normalizer.Form.NFD)
-        return n.replace("\\p{InCombiningDiacriticalMarks}+".toRegex(), "")
-            .lowercase(Locale.getDefault())
+        return DIACRITICS_REGEX.replace(n, "").lowercase(Locale.getDefault())
     }
 
     private fun normalizeKey(s: String?): String {
         if (s.isNullOrBlank()) return ""
         var k = stripAccentsLower(s)
-        k = k.replace("[^a-z0-9 ]".toRegex(), " ")
-            .replace("\\s+".toRegex(), " ")
+        k = NON_ALNUM_SPACE_REGEX.replace(k, " ")
+            .let { MULTI_SPACE_REGEX.replace(it, " ") }
             .trim()
         // Remueve prefijos ruidosos frecuentes (S., SUB, AGENCIA, etc.)
         k = k.removePrefix("s ").removePrefix("sub ").removePrefix("agencia ")
@@ -149,8 +148,14 @@ class AveriasRepository(private val db: AppDatabase) {
             }
 
     private fun slugTag(s: String): String {
-        val n = stripAccentsLower(s).replace("\\s+".toRegex(), " ").trim()
+        val n = MULTI_SPACE_REGEX.replace(stripAccentsLower(s), " ").trim()
         return n.split(" ").joinToString("") { titleCase(it) } // "Río Frío" -> "RioFrio"
+    }
+
+    companion object {
+        private val DIACRITICS_REGEX = "\\p{InCombiningDiacriticalMarks}+".toRegex()
+        private val NON_ALNUM_SPACE_REGEX = "[^a-z0-9 ]".toRegex()
+        private val MULTI_SPACE_REGEX = "\\s+".toRegex()
     }
 
     private fun mergeRemoteString(remote: String?, local: String?): String? {
