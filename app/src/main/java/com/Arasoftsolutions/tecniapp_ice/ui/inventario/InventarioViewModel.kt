@@ -232,10 +232,14 @@ class InventarioViewModel(app: Application) : AndroidViewModel(app) {
                     val columns = line.trim()
                         .split(Regex("\\s{2,}"))
                         .filter { it.isNotBlank() }
-                    if (columns.isEmpty()) return@forEach
-                    val codigo = columns.first().trim()
-                    if (!codigo.matches(Regex("\\d{5,}"))) return@forEach
-                    val cantidad = buscarCantidad(columns.drop(1)) ?: return@forEach
+                    val (codigo, cantidad) = if (columns.size > 1) {
+                        val codigoCol = columns.first().trim()
+                        if (!codigoCol.matches(Regex("\\d{5,}"))) return@forEach
+                        codigoCol to (buscarCantidad(columns.drop(1)) ?: return@forEach)
+                    } else {
+                        val fallback = parseLineaInventario(line) ?: return@forEach
+                        fallback
+                    }
                     val actual = acumulados[codigo] ?: 0.0
                     acumulados[codigo] = actual + cantidad
                 }
@@ -244,10 +248,27 @@ class InventarioViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    private fun parseLineaInventario(line: String): Pair<String, Double>? {
+        val tokens = line.trim().split(Regex("\\s+")).filter { it.isNotBlank() }
+        if (tokens.isEmpty()) return null
+        val codigoIndex = tokens.indexOfFirst { it.matches(Regex("\\d{5,}")) }
+        if (codigoIndex < 0) return null
+        val codigo = tokens[codigoIndex]
+        val loteIndex = tokens.indexOfFirst {
+            it.equals("ICE", ignoreCase = true) || it.startsWith("NOVA", ignoreCase = true)
+        }
+        val cantidad = if (loteIndex > codigoIndex) {
+            buscarCantidad(tokens.subList(codigoIndex + 1, loteIndex).reversed())
+        } else {
+            buscarCantidad(tokens.drop(codigoIndex + 1))
+        }
+        return cantidad?.let { codigo to it }
+    }
+
     private fun buscarCantidad(columns: List<String>): Double? {
         columns.forEach { col ->
             val normalized = col.trim().replace(",", ".")
-            if (normalized.matches(Regex("\\d+(?:\\.\\d+)?"))) {
+            if (normalized.matches(Regex("\\d+(?:\\.\\d+)?")) && col.none { it.isLetter() || it == '/' }) {
                 return normalized.toDoubleOrNull()
             }
         }
