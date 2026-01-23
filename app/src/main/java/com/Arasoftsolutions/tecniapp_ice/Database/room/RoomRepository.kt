@@ -223,10 +223,12 @@ class   RoomRepository(context: Context) {
         delta: Double
     ) = withContext(Dispatchers.IO) {
         if (codigo.isBlank() || delta == 0.0) return@withContext
+        val vehiculoKey = resolveVehiculoKey(vehiculoId)
         val existente = inventarioDao.obtenerItem(vehiculoId, codigo)
         val nuevaCantidad = (existente?.cantidadDisponible ?: 0.0) + delta
         if (nuevaCantidad <= 0) {
             existente?.let { inventarioDao.eliminarPorId(it.id) }
+            firebase.eliminarInventarioItem(vehiculoKey, codigo)
         } else {
             val item = InventarioItemEntity(
                 id = existente?.id ?: 0L,
@@ -236,11 +238,14 @@ class   RoomRepository(context: Context) {
                 cantidadDisponible = nuevaCantidad
             )
             inventarioDao.upsert(item)
+            firebase.guardarInventarioItem(vehiculoKey, item)
         }
     }
 
     suspend fun eliminarInventarioItem(id: Long) = withContext(Dispatchers.IO) {
+        val item = inventarioDao.obtenerItemPorId(id)
         inventarioDao.eliminarPorId(id)
+        item?.let { firebase.eliminarInventarioItem(resolveVehiculoKey(it.vehiculoId), it.codigoMaterial) }
     }
 
     suspend fun cargarInventarioDesdeCsv(
@@ -268,6 +273,8 @@ class   RoomRepository(context: Context) {
                 )
                 inventarioDao.upsert(item)
             }
+        val inventarioActualizado = inventarioDao.obtenerPorVehiculo(vehiculoId)
+        firebase.guardarInventarioVehiculo(resolveVehiculoKey(vehiculoId), vehiculoId, inventarioActualizado)
     }
 
     suspend fun obtenerCodigosMateriales(codigos: Set<String>): Set<String> = withContext(Dispatchers.IO) {
@@ -412,6 +419,19 @@ class   RoomRepository(context: Context) {
         if (materiales.isNotEmpty()) {
             db.materialDao().insertAll(materiales)
         }
+    }
+
+    suspend fun syncInventario() = withContext(Dispatchers.IO) {
+        val inventario = firebase.obtenerInventario()
+        inventarioDao.limpiarTodo()
+        if (inventario.isNotEmpty()) {
+            inventarioDao.insertAll(inventario)
+        }
+    }
+
+    private suspend fun resolveVehiculoKey(vehiculoId: Int): String {
+        val vehiculo = db.vehiculoDao().buscarPorId(vehiculoId)
+        return vehiculo?.placa?.toString() ?: vehiculoId.toString()
     }
 
     suspend fun syncSubregion(
