@@ -33,7 +33,7 @@ import java.util.Locale
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class HomeViewModel(app: Application) : AndroidViewModel(app) {
 
-    private val repo = RoomRepository(app)
+    private val repo = RoomRepository.getInstance(app)
     private val database = AppDatabase.getInstance(app)
     private val averiasRepository = AveriasRepository(database)
     private val dataStore = DataStoreManager.getInstance(app)
