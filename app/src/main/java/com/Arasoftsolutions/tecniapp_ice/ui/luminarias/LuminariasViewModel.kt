@@ -7,6 +7,7 @@ import com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaReparacionEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.MaterialEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.TecnicoEntity
+import com.Arasoftsolutions.tecniapp_ice.Database.entities.VehiculosEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.apellidosCompletos
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
 import com.google.firebase.auth.FirebaseAuth
@@ -28,6 +29,7 @@ data class LuminariaUiState(
     val reparacionesPendientes: List<LuminariaReparacionEntity> = emptyList(),
     val reparacionesReparadas: List<LuminariaReparacionEntity> = emptyList(),
     val vehiculoUsuarioId: Int? = null,
+    val agenciaUsuario: String? = null,
     val rolUsuario: String? = null,
     val esSupervisor: Boolean = false,
     val puedeImportarCsv: Boolean = false,
@@ -44,6 +46,13 @@ data class LuminariaMaterialSeleccionado(
     val codigo: String,
     val descripcion: String,
     val cantidad: Double
+)
+
+data class LuminariaCatalogoState(
+    val materiales: List<MaterialEntity>,
+    val tecnicos: List<TecnicoEntity>,
+    val reparaciones: List<LuminariaReparacionEntity>,
+    val vehiculos: List<VehiculosEntity>
 )
 
 class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
@@ -68,11 +77,22 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
             combine(
                 repository.observarMateriales(),
                 repository.observarTecnicos(),
-                repository.observarReparaciones()
-            ) { materiales, tecnicos, reparaciones ->
-                Triple(materiales, tecnicos, reparaciones)
-            }.collect { (materiales, tecnicos, reparaciones) ->
-                reparacionesCache = reparaciones
+                repository.observarReparaciones(),
+                repository.observarVehiculosCatalogo()
+            ) { materiales, tecnicos, reparaciones, vehiculos ->
+                LuminariaCatalogoState(materiales, tecnicos, reparaciones, vehiculos)
+            }.collect { (materiales, tecnicos, reparaciones, vehiculos) ->
+                val agenciaUsuario = _uiState.value.agenciaUsuario?.trim().orEmpty()
+                val vehiculosPorId = vehiculos.associateBy { it.id }
+                val filtradasPorAgencia = if (agenciaUsuario.isBlank()) {
+                    reparaciones
+                } else {
+                    reparaciones.filter { reparacion ->
+                        val agencia = vehiculosPorId[reparacion.vehiculoId]?.agencia?.trim().orEmpty()
+                        agencia.equals(agenciaUsuario, ignoreCase = true)
+                    }
+                }
+                reparacionesCache = filtradasPorAgencia
                 val (pendientes, reparadas) = filtrarReparaciones(_uiState.value.busquedaLocalizacion)
                 _uiState.update {
                     it.copy(
@@ -107,6 +127,7 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
                 vehiculoUsuarioId = vehiculoPreferidoId,
                 ejecutorNombre = current.ejecutorNombre.ifBlank { nombre },
                 ejecutorCedula = current.ejecutorCedula ?: usuario.cedula,
+                agenciaUsuario = usuario.agencia?.trim()?.takeIf { it.isNotBlank() },
                 rolUsuario = rolNormalizado.ifBlank { null },
                 esSupervisor = rolLower == "supervisor",
                 puedeImportarCsv = rolLower == "administrador" || rolLower == "supervisor"
