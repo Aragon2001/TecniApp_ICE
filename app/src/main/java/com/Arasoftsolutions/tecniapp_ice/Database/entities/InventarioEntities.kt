@@ -41,8 +41,16 @@ enum class LuminariaEstado {
     REPARADA;
 
     companion object {
-        fun fromRaw(raw: String?): LuminariaEstado =
-            values().firstOrNull { it.name.equals(raw, ignoreCase = true) } ?: REPARADA
+        fun fromRaw(raw: String?): LuminariaEstado {
+            val cleaned = raw?.trim().orEmpty()
+            return when {
+                cleaned.equals(PENDIENTE.name, ignoreCase = true) -> PENDIENTE
+                cleaned.equals(REPARADA.name, ignoreCase = true) -> REPARADA
+                cleaned.startsWith("pend", ignoreCase = true) -> PENDIENTE
+                cleaned.startsWith("repar", ignoreCase = true) -> REPARADA
+                else -> REPARADA
+            }
+        }
     }
 }
 

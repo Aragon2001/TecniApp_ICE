@@ -141,7 +141,6 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                 launch {
                     vm.averiasAsignadasCount.collect { count ->
                         pendingCount.text = count.toString()
-                        statsPendingAverias.text = count.toString()
                     }
                 }
                 launch {
@@ -150,10 +149,20 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                     }
                 }
                 launch {
+                    vm.averiasPendientesPorAgencia.collect { items ->
+                        statsPendingAverias.text = formatPendingAverias(items)
+                    }
+                }
+                launch {
                     vm.kilometrajeFinalReciente.collect { kms ->
                         kilometrajeValue.text = kms?.takeIf { it > 0.0 }?.let {
                             getString(R.string.home_card_kilometraje_value, it)
                         } ?: getString(R.string.home_cards_placeholder)
+                    }
+                }
+                launch {
+                    vm.luminariasPendientesCount.collect { count ->
+                        statsDamagedLights.text = count.toString()
                     }
                 }
                 launch {
@@ -258,6 +267,15 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
 
     private fun updateNetworkStatus(statusText: TextView) {
         renderNetworkStatus(statusText, isConnected())
+    }
+
+    private fun formatPendingAverias(items: List<HomeViewModel.AveriasPendientesPorAgencia>): String {
+        if (items.isEmpty()) {
+            return getString(R.string.home_cards_placeholder)
+        }
+        return items.joinToString("\n") { item ->
+            "• ${item.agencia} ${item.pendientes}"
+        }
     }
 
     private fun renderNetworkStatus(statusText: TextView, connected: Boolean) {
