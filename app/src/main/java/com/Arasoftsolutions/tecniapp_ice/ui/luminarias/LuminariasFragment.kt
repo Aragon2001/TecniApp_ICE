@@ -175,11 +175,10 @@ class LuminariasFragment : Fragment() {
         configurarFormularioBottomSheet(
             binding = sheetBinding,
             titulo = "Editar reparación",
-            mostrarDetalle = true,
+            mostrarDetalle = false,
             reparacion = reparacion
         )
         dialog.show()
-        cargarDetalleCliente(sheetBinding, reparacion)
     }
 
     private fun confirmarEliminacion(reparacion: com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaReparacionEntity) {
