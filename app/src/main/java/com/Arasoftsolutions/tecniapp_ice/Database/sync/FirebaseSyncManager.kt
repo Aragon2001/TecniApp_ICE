@@ -332,6 +332,30 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
         return buscarMedidorEnNodo(snapshot, storageKey, numeroBuscado)
     }
 
+    suspend fun buscarMedidorEnFirebaseLigero(
+        subregionId: String,
+        subregionNombre: String?,
+        medidorNumber: String
+    ): MedidorEntity? {
+        val storageKey = subregionId.takeIf { it.isNotBlank() }?.trim()
+            ?: subregionNombre?.takeIf { it.isNotBlank() }?.trim()
+            ?: return null
+        val numeroBuscado = medidorNumber.trim()
+        if (numeroBuscado.isEmpty()) return null
+
+        val lookupNombre = subregionNombre?.takeIf { it.isNotBlank() }
+            ?: nombreSubregionDesdeCatalogo(subregionId)
+
+        val referencia = obtenerReferenciaSubregion(storageKey, lookupNombre, createIfMissing = false)
+            ?: return null
+
+        val directo = referencia.child(numeroBuscado).get().await()
+        if (directo.exists()) {
+            return parseMedidorSnapshot(directo, storageKey, numeroBuscado)
+        }
+        return null
+    }
+
     suspend fun registrarMedidorManual(
         subregionId: String,
         subregionNombre: String?,
