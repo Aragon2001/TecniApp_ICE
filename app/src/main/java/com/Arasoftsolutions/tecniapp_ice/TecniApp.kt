@@ -7,6 +7,7 @@ import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
 import com.Arasoftsolutions.tecniapp_ice.preferences.DataStoreManager
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriaNotifications
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasSyncWorker
+import com.Arasoftsolutions.tecniapp_ice.ui.common.NetworkAlertManager
 import com.Arasoftsolutions.tecniapp_ice.update.UpdateWorker
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.CoroutineScope
@@ -17,11 +18,13 @@ import kotlinx.coroutines.launch
 
 class TecniApp : Application() {
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val networkAlertManager by lazy { NetworkAlertManager(this) }
 
     override fun onCreate() {
         super.onCreate()
         android.util.Log.d("TecniApp", "Application onCreate() ejecutado ✅")
         AveriaNotifications.ensureChannel(this)
+        networkAlertManager.start()
         val dataStore = DataStoreManager.getInstance(this)
         applicationScope.launch {
             val autoSyncEnabled = dataStore.autoSyncEnabled.first()

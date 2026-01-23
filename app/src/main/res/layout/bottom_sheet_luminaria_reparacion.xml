@@ -71,6 +71,21 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
+                android:text="Observaciones:"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvObservacionesDetalle"
+                style="@style/TextAppearance.Material3.BodyMedium"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Sin datos" />
+
+            <TextView
+                style="@style/TextAppearance.Material3.BodyMedium"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
                 android:text="Localización:"
                 android:textStyle="bold" />
 

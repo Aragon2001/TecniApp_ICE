@@ -1,6 +1,5 @@
 package com.Arasoftsolutions.tecniapp_ice.ui.home
 
-import android.app.AlertDialog
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
@@ -8,9 +7,6 @@ import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.widget.TextView
-import android.view.ViewGroup
-import android.widget.ImageView
-import androidx.core.content.ContextCompat
 import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -55,7 +51,6 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
     private var connectivityManager: ConnectivityManager? = null
     private var networkCallbackRegistered = false
     private var syncDialog: SyncDialogFragment? = null
-    private var offlineDialog: AlertDialog? = null
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -141,7 +136,6 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                 launch {
                     vm.averiasAsignadasCount.collect { count ->
                         pendingCount.text = count.toString()
-                        statsPendingAverias.text = count.toString()
                     }
                 }
                 launch {
@@ -150,10 +144,20 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                     }
                 }
                 launch {
+                    vm.averiasPendientesPorAgencia.collect { items ->
+                        statsPendingAverias.text = formatPendingAverias(items)
+                    }
+                }
+                launch {
                     vm.kilometrajeFinalReciente.collect { kms ->
                         kilometrajeValue.text = kms?.takeIf { it > 0.0 }?.let {
                             getString(R.string.home_card_kilometraje_value, it)
                         } ?: getString(R.string.home_cards_placeholder)
+                    }
+                }
+                launch {
+                    vm.luminariasPendientesCount.collect { count ->
+                        statsDamagedLights.text = count.toString()
                     }
                 }
                 launch {
@@ -179,8 +183,6 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         lastSyncValue = null
         statusIndicator = null
         syncDialog = null
-        offlineDialog?.dismiss()
-        offlineDialog = null
         connectivityManager = null
     }
 
@@ -260,15 +262,22 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         renderNetworkStatus(statusText, isConnected())
     }
 
+    private fun formatPendingAverias(items: List<HomeViewModel.AveriasPendientesPorAgencia>): String {
+        if (items.isEmpty()) {
+            return getString(R.string.home_cards_placeholder)
+        }
+        return items.joinToString("\n") { item ->
+            "• ${item.agencia} ${item.pendientes}"
+        }
+    }
+
     private fun renderNetworkStatus(statusText: TextView, connected: Boolean) {
         if (connected) {
             statusText.text = getString(R.string.home_status_online)
             statusIndicator?.setBackgroundResource(R.drawable.bg_home_status_online)
-            dismissOfflineDialog()
         } else {
             statusText.text = getString(R.string.home_status_offline)
             statusIndicator?.setBackgroundResource(R.drawable.bg_home_status_offline)
-            showOfflineDialog()
         }
     }
 
@@ -439,61 +448,4 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         navController.navigate(destinationId, args, options)
     }
 
-    private var currentAlertView: View? = null
-
-    private fun showOfflineDialog() {
-        // Evita mostrar más de una alerta
-        if (currentAlertView != null || !isAdded) return
-
-        val parent = requireActivity().findViewById<ViewGroup>(android.R.id.content)
-        val alertView = layoutInflater.inflate(R.layout.layout_top_alert, parent, false)
-        val textView = alertView.findViewById<TextView>(R.id.tvMessage)
-        val iconView = alertView.findViewById<ImageView>(R.id.iconAlert)
-
-        // Personaliza el mensaje y color (puedes usar tus colores corporativos)
-        textView.text = "Sin conexión a Internet"
-        alertView.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.red))
-        iconView.setColorFilter(ContextCompat.getColor(requireContext(), android.R.color.white))
-
-        // Añadir la vista al contenedor raíz
-        parent.addView(alertView)
-        currentAlertView = alertView
-
-        // Animación de entrada
-        alertView.translationY = -200f
-        alertView.alpha = 0f
-        alertView.animate()
-            .translationY(0f)
-            .alpha(1f)
-            .setDuration(350)
-            .start()
-
-        // Quitar automáticamente después de 3 segundos
-        alertView.postDelayed({
-            hideOfflineAlert()
-        }, 3000)
-    }
-
-    private fun hideOfflineAlert() {
-        currentAlertView?.let { alert ->
-            alert.animate()
-                .translationY(-200f)
-                .alpha(0f)
-                .setDuration(350)
-                .withEndAction {
-                    (alert.parent as? ViewGroup)?.removeView(alert)
-                    currentAlertView = null
-                }
-                .start()
-        }
-    }
-
-
-    private fun dismissOfflineDialog() {
-        offlineDialog?.let { dialog ->
-            if (dialog.isShowing) {
-                dialog.dismiss()
-            }
-        }
-    }
 }
