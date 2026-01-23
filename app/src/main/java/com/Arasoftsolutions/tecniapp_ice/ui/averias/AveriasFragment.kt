@@ -171,7 +171,9 @@ override fun onStop() {
         // TODO(Codex): Sincronizar el texto del filtro de fecha con la selección actual
 
         // Pull to refresh → Sync
+        var refreshTriggeredByUser = false
         b.swipeRefresh.setOnRefreshListener {
+            refreshTriggeredByUser = true
             vm.syncNow()
         }
 
@@ -266,7 +268,10 @@ override fun onStop() {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
                     vm.uiState.collectLatest { state ->
-                        b.swipeRefresh.isRefreshing = state.loading
+                        if (refreshTriggeredByUser && !state.loading) {
+                            refreshTriggeredByUser = false
+                        }
+                        b.swipeRefresh.isRefreshing = refreshTriggeredByUser && state.loading
                         adapter.submitList(state.items)
                         b.tvVacio.visibility = if (state.items.isEmpty() && !state.loading) View.VISIBLE else View.GONE
                     }
