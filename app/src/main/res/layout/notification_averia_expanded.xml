@@ -66,6 +66,46 @@
         android:layout_marginTop="8dp" />
 
     <TextView
+        android:id="@+id/agency"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="@color/averia_notification_on_surface"
+        android:textSize="12sp"
+        android:layout_marginTop="4dp" />
+
+    <TextView
+        android:id="@+id/time"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="@color/averia_notification_on_surface"
+        android:textSize="12sp"
+        android:layout_marginTop="2dp" />
+
+    <TextView
+        android:id="@+id/customer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="@color/averia_notification_on_surface"
+        android:textSize="12sp"
+        android:layout_marginTop="2dp" />
+
+    <TextView
+        android:id="@+id/affected"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="@color/averia_notification_on_surface"
+        android:textSize="12sp"
+        android:layout_marginTop="2dp" />
+
+    <TextView
+        android:id="@+id/impact"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="@color/averia_notification_on_surface"
+        android:textSize="12sp"
+        android:layout_marginTop="2dp" />
+
+    <TextView
         android:id="@+id/cause"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -100,11 +140,11 @@
 
         <TextView
             android:id="@+id/action_detail"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:padding="10dp"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:padding="10dp"
             android:background="@drawable/bg_averia_notification"
             android:textColor="@color/averia_notification_accent"
             android:textSize="13sp"
@@ -133,7 +173,7 @@
             android:layout_height="match_parent" />
 
         <TextView
-            android:id="@+id/action_assign"
+            android:id="@+id/action_attend"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
@@ -143,6 +183,6 @@
             android:textColor="@color/averia_notification_accent"
             android:textSize="13sp"
             android:textStyle="bold"
-            android:text="@string/averia_notificacion_action_asignar" />
+            android:text="@string/averia_notificacion_action_atender" />
     </LinearLayout>
 </LinearLayout>

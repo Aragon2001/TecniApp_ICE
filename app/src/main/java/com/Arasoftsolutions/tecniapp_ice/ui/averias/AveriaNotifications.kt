@@ -58,10 +58,9 @@ object AveriaNotifications {
     fun bubbleMetadata(context: Context): NotificationCompat.BubbleMetadata? {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return null
         val intent = averiasPendingIntent(context)
-        val icon = IconCompat.createWithResource(context, R.drawable.ic_notification)
-        return NotificationCompat.BubbleMetadata.Builder(intent.toString())
+        val icon = IconCompat.createWithResource(context, R.drawable.ic_notification_bolt)
+        return NotificationCompat.BubbleMetadata.Builder(intent, icon)
             .setDesiredHeight(context.resources.getDimensionPixelSize(R.dimen.averia_notification_map_height))
-            .setIcon(icon)
             .setSuppressNotification(false)
             .build()
     }
@@ -106,7 +105,7 @@ object AveriaNotifications {
         } else {
             context.getString(R.string.averia_notification_pref_disabled_body)
         }
-        val smallIcon = if (enabled) R.drawable.ic_notification else R.drawable.ic_notification_off
+        val smallIcon = if (enabled) R.drawable.ic_notification_bolt else R.drawable.ic_notification_off
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(smallIcon)
             .setContentTitle(title)
