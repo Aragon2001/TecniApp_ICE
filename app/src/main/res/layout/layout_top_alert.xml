@@ -23,7 +23,7 @@
         android:id="@+id/tvMessage"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Sin conexión a Internet"
+        android:text="@string/offline_alert_message"
         android:textColor="@android:color/white"
         android:textStyle="bold"
         android:textSize="15sp" />
