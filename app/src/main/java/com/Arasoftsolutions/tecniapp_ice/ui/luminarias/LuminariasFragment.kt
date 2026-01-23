@@ -58,6 +58,9 @@ class LuminariasFragment : Fragment() {
         binding.etBuscarLocalizacion.doAfterTextChanged {
             viewModel.actualizarBusquedaLocalizacion(it?.toString().orEmpty())
         }
+        binding.chipGroupEstado.isSingleSelection = true
+        binding.chipPendientes.isChecked = true
+        binding.chipReparadas.isChecked = false
         binding.chipPendientes.setOnCheckedChangeListener { _, _ -> actualizarVisibilidadListas() }
         binding.chipReparadas.setOnCheckedChangeListener { _, _ -> actualizarVisibilidadListas() }
 
@@ -156,109 +159,16 @@ class LuminariasFragment : Fragment() {
     }
 
     private fun mostrarDialogoEdicion(reparacion: com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaReparacionEntity) {
-        val dialogView = layoutInflater.inflate(
-            com.Arasoftsolutions.tecniapp_ice.R.layout.dialog_luminaria_edicion,
-            null
+        val sheetBinding = BottomSheetLuminariaReparacionBinding.inflate(layoutInflater)
+        val dialog = BottomSheetDialog(requireContext())
+        dialog.setContentView(sheetBinding.root)
+        configurarFormularioBottomSheet(
+            binding = sheetBinding,
+            titulo = "Editar reparación",
+            mostrarDetalle = false,
+            reparacion = reparacion
         )
-        val localizacionInput = dialogView.findViewById<AppCompatEditText>(com.Arasoftsolutions.tecniapp_ice.R.id.etLocalizacionReparacion)
-        val estadoInput = dialogView.findViewById<com.google.android.material.textfield.MaterialAutoCompleteTextView>(
-            com.Arasoftsolutions.tecniapp_ice.R.id.actEstadoReparacion
-        )
-        val ejecutorInput = dialogView.findViewById<com.google.android.material.textfield.MaterialAutoCompleteTextView>(
-            com.Arasoftsolutions.tecniapp_ice.R.id.actEjecutorReparacion
-        )
-        val materialInput = dialogView.findViewById<com.google.android.material.textfield.MaterialAutoCompleteTextView>(
-            com.Arasoftsolutions.tecniapp_ice.R.id.actMaterialReparacion
-        )
-        val materialesList = dialogView.findViewById<androidx.recyclerview.widget.RecyclerView>(
-            com.Arasoftsolutions.tecniapp_ice.R.id.listMaterialesReparacion
-        )
-        val emptyMateriales = dialogView.findViewById<android.widget.TextView>(
-            com.Arasoftsolutions.tecniapp_ice.R.id.tvEmptyMaterialesReparacion
-        )
-
-        localizacionInput.setText(reparacion.localizacion)
-        val estadoAdapterDialog = ArrayAdapter(requireContext(), android.R.layout.simple_list_item_1, listOf("Pendiente", "Reparada"))
-        estadoInput.setAdapter(estadoAdapterDialog)
-        estadoInput.keyListener = null
-        val estadoTexto = if (com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado.fromRaw(reparacion.estado) ==
-            com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado.PENDIENTE
-        ) {
-            "Pendiente"
-        } else {
-            "Reparada"
-        }
-        estadoInput.setText(estadoTexto, false)
-
-        val tecnicosLabel = tecnicosCatalogo.map { it.nombre }
-        val tecnicosAdapterDialog = ArrayAdapter(requireContext(), android.R.layout.simple_list_item_1, tecnicosLabel)
-        ejecutorInput.setAdapter(tecnicosAdapterDialog)
-        ejecutorInput.setText(reparacion.ejecutorNombre, false)
-
-        val materialesLabel = materialesCatalogo.map { "${it.codigo} - ${it.descripcion}" }
-        val materialesAdapterDialog = ArrayAdapter(requireContext(), android.R.layout.simple_list_item_1, materialesLabel)
-        materialInput.setAdapter(materialesAdapterDialog)
-
-        val materialesSeleccionados = com.Arasoftsolutions.tecniapp_ice.ui.luminarias.LuminariaMaterialSerializer
-            .fromJson(reparacion.materialesJson)
-            .map { LuminariaMaterialSeleccionado(it.codigo, it.descripcion, it.cantidad) }
-            .toMutableList()
-        lateinit var adapterDialog: LuminariaMaterialAdapter
-        adapterDialog = LuminariaMaterialAdapter { material ->
-            materialesSeleccionados.removeAll { it.codigo == material.codigo }
-            adapterDialog.submitList(materialesSeleccionados.toList())
-            emptyMateriales.isVisible = materialesSeleccionados.isEmpty()
-        }
-        materialesList.apply {
-            layoutManager = LinearLayoutManager(requireContext())
-            adapter = adapterDialog
-            setHasFixedSize(false)
-            isNestedScrollingEnabled = false
-        }
-        adapterDialog.submitList(materialesSeleccionados.toList())
-        emptyMateriales.isVisible = materialesSeleccionados.isEmpty()
-
-        materialInput.setOnItemClickListener { _, _, position, _ ->
-            materialesCatalogo.getOrNull(position)?.let { material ->
-                mostrarDialogoCantidad(material) { cantidad ->
-                    val index = materialesSeleccionados.indexOfFirst { it.codigo == material.codigo }
-                    if (index >= 0) {
-                        val actual = materialesSeleccionados[index]
-                        materialesSeleccionados[index] = actual.copy(cantidad = actual.cantidad + cantidad)
-                    } else {
-                        materialesSeleccionados.add(LuminariaMaterialSeleccionado(material.codigo, material.descripcion, cantidad))
-                    }
-                    adapterDialog.submitList(materialesSeleccionados.toList())
-                    emptyMateriales.isVisible = materialesSeleccionados.isEmpty()
-                    materialInput.setText("", false)
-                }
-            }
-        }
-        MaterialAlertDialogBuilder(requireContext())
-            .setTitle("Editar reparación")
-            .setView(dialogView)
-            .setPositiveButton("Guardar") { _, _ ->
-                val nuevaLocalizacion = localizacionInput.text?.toString().orEmpty()
-                val estado = if (estadoInput.text?.toString().orEmpty().equals("Pendiente", ignoreCase = true)) {
-                    com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado.PENDIENTE
-                } else {
-                    com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado.REPARADA
-                }
-                val ejecutorNombre = ejecutorInput.text?.toString().orEmpty()
-                val ejecutorCedula = tecnicosCatalogo.firstOrNull {
-                    it.nombre.equals(ejecutorNombre, ignoreCase = true)
-                }?.cedula
-                viewModel.actualizarReparacion(
-                    reparacion.id,
-                    nuevaLocalizacion,
-                    materialesSeleccionados.toList(),
-                    estado,
-                    ejecutorNombre,
-                    ejecutorCedula
-                )
-            }
-            .setNegativeButton("Cancelar", null)
-            .show()
+        dialog.show()
     }
 
     private fun confirmarEliminacion(reparacion: com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaReparacionEntity) {
