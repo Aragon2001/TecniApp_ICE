@@ -273,15 +273,15 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
         }
         _uiState.value = _uiState.value.copy(isProcessing = true)
         viewModelScope.launch {
-            val localizaciones = leerCsvLocalizaciones(uri)
-            if (localizaciones.isEmpty()) {
+            val registros = leerCsvLuminarias(uri)
+            if (registros.isEmpty()) {
                 _mensaje.value = LuminariaMensaje.Error("El archivo está vacío")
                 _uiState.value = _uiState.value.copy(isProcessing = false)
                 return@launch
             }
             repository.registrarLuminariasPendientes(
                 vehiculoId = vehiculoId,
-                localizaciones = localizaciones,
+                registros = registros,
                 ejecutorNombre = _uiState.value.ejecutorNombre.trim(),
                 ejecutorCedula = _uiState.value.ejecutorCedula
             )
@@ -290,21 +290,75 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    private suspend fun leerCsvLocalizaciones(uri: android.net.Uri): List<String> =
+    private suspend fun leerCsvLuminarias(uri: android.net.Uri): List<LuminariaCsvRegistro> =
         kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
             val resolver = getApplication<Application>().contentResolver
             val input = resolver.openInputStream(uri) ?: return@withContext emptyList()
             java.io.BufferedReader(java.io.InputStreamReader(input)).useLines { lines ->
-                lines.mapNotNull { row ->
-                    val parts = row.split(",")
-                    if (parts.isEmpty()) return@mapNotNull null
-                    val raw = parts.first().trim()
-                    if (raw.isBlank()) return@mapNotNull null
-                    if (raw.equals("localizacion", ignoreCase = true)) return@mapNotNull null
-                    raw
-                }.distinct().toList()
+                val parsed = lines.mapNotNull { row ->
+                    if (row.isBlank()) return@mapNotNull null
+                    parseCsvRow(row)
+                }.toList()
+                if (parsed.isEmpty()) return@useLines emptyList()
+                val header = parsed.first().map { it.trim().lowercase() }
+                val hasHeader = header.any { it.contains("localizacion") || it.contains("localización") }
+                val startIndex = if (hasHeader) 1 else 0
+                val localizacionIndex = header.indexOfFirst {
+                    it.contains("localizacion") || it.contains("localización")
+                }.takeIf { it >= 0 } ?: 0
+                val clienteIndex = header.indexOfFirst { it.contains("cliente") }
+                val contactoIndex = header.indexOfFirst { it.contains("contacto") || it.contains("telefono") }
+                val observacionesIndex = header.indexOfFirst { it.contains("observacion") || it.contains("observaciones") }
+                val registros = linkedMapOf<String, LuminariaCsvRegistro>()
+                parsed.drop(startIndex).forEach { columns ->
+                    val localizacion = columns.getOrNull(localizacionIndex)?.trim().orEmpty()
+                    if (localizacion.isBlank()) return@forEach
+                    val cliente = columns.getOrNull(clienteIndex)?.trim().takeIf { !it.isNullOrEmpty() }
+                    val contacto = columns.getOrNull(contactoIndex)?.trim().takeIf { !it.isNullOrEmpty() }
+                    val observaciones = columns.getOrNull(observacionesIndex)?.trim().takeIf { !it.isNullOrEmpty() }
+                    val existente = registros[localizacion]
+                    registros[localizacion] = if (existente == null) {
+                        LuminariaCsvRegistro(localizacion, cliente, contacto, observaciones)
+                    } else {
+                        existente.copy(
+                            cliente = existente.cliente ?: cliente,
+                            contacto = existente.contacto ?: contacto,
+                            observaciones = existente.observaciones ?: observaciones
+                        )
+                    }
+                }
+                registros.values.toList()
             }
         }
+
+    private fun parseCsvRow(row: String): List<String> {
+        val result = mutableListOf<String>()
+        val buffer = StringBuilder()
+        var inQuotes = false
+        var index = 0
+        while (index < row.length) {
+            val char = row[index]
+            when {
+                char == '"' -> {
+                    val next = row.getOrNull(index + 1)
+                    if (inQuotes && next == '"') {
+                        buffer.append('"')
+                        index++
+                    } else {
+                        inQuotes = !inQuotes
+                    }
+                }
+                char == ',' && !inQuotes -> {
+                    result.add(buffer.toString())
+                    buffer.setLength(0)
+                }
+                else -> buffer.append(char)
+            }
+            index++
+        }
+        result.add(buffer.toString())
+        return result
+    }
 
     suspend fun buscarMedidorPorLocalizacion(localizacion: String) =
         localizacion.trim().toLongOrNull()?.let { repository.buscarMedidorPorLocalizacion(it) }
