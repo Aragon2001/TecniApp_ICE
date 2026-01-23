@@ -302,17 +302,20 @@ class   RoomRepository(context: Context) {
 
     suspend fun registrarLuminariasPendientes(
         vehiculoId: Int,
-        localizaciones: List<String>,
+        registros: List<com.Arasoftsolutions.tecniapp_ice.ui.luminarias.LuminariaCsvRegistro>,
         ejecutorNombre: String,
         ejecutorCedula: String?
     ) = withContext(Dispatchers.IO) {
-        if (localizaciones.isEmpty()) return@withContext
-        localizaciones
-            .mapNotNull { it.trim().takeIf(String::isNotEmpty) }
-            .forEach { localizacion ->
+        if (registros.isEmpty()) return@withContext
+        registros
+            .mapNotNull { it.localizacion.trim().takeIf(String::isNotEmpty)?.let { loc -> it.copy(localizacion = loc) } }
+            .forEach { registro ->
                 val reparacion = LuminariaReparacionEntity(
                     vehiculoId = vehiculoId,
-                    localizacion = localizacion,
+                    localizacion = registro.localizacion,
+                    cliente = registro.cliente?.trim().takeIf { !it.isNullOrEmpty() },
+                    contacto = registro.contacto?.trim().takeIf { !it.isNullOrEmpty() },
+                    observaciones = registro.observaciones?.trim().takeIf { !it.isNullOrEmpty() },
                     materialesJson = com.Arasoftsolutions.tecniapp_ice.ui.luminarias.LuminariaMaterialSerializer
                         .toJson(emptyList()),
                     estado = com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado.PENDIENTE.name,
