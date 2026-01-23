@@ -36,7 +36,7 @@ class LuminariasFragment : Fragment() {
     private var materialesCatalogo = emptyList<com.Arasoftsolutions.tecniapp_ice.Database.entities.MaterialEntity>()
     private var tecnicosCatalogo = emptyList<com.Arasoftsolutions.tecniapp_ice.Database.entities.TecnicoEntity>()
 
-    private val csvLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+    private val csvLauncher = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
         uri?.let { viewModel.procesarCsv(it) }
     }
 
@@ -54,7 +54,17 @@ class LuminariasFragment : Fragment() {
         setupAdapters()
 
         binding.btnRegistrarLuminaria.setOnClickListener { mostrarRegistroBottomSheet() }
-        binding.btnImportarLuminariasCsv.setOnClickListener { csvLauncher.launch("text/csv") }
+        binding.btnImportarLuminariasCsv.setOnClickListener {
+            csvLauncher.launch(
+                arrayOf(
+                    "text/csv",
+                    "text/comma-separated-values",
+                    "application/csv",
+                    "application/vnd.ms-excel",
+                    "text/plain"
+                )
+            )
+        }
         binding.etBuscarLocalizacion.doAfterTextChanged {
             viewModel.actualizarBusquedaLocalizacion(it?.toString().orEmpty())
         }
@@ -207,9 +217,15 @@ class LuminariasFragment : Fragment() {
         dialog.show()
         viewLifecycleOwner.lifecycleScope.launch {
             val medidor = viewModel.buscarMedidorPorLocalizacion(reparacion.localizacion)
-            sheetBinding.tvClienteDetalle.text = medidor?.cliente?.ifBlank { "Sin datos" } ?: "Sin datos"
-            sheetBinding.tvContactoDetalle.text = "Sin datos"
-            sheetBinding.btnLlamarContacto.isEnabled = false
+            val cliente = reparacion.cliente?.trim().orEmpty().ifBlank {
+                medidor?.cliente?.trim().orEmpty()
+            }
+            val contacto = reparacion.contacto?.trim().orEmpty()
+            val observaciones = reparacion.observaciones?.trim().orEmpty()
+            sheetBinding.tvClienteDetalle.text = cliente.ifBlank { "Sin datos" }
+            sheetBinding.tvContactoDetalle.text = formatContactos(contacto).ifBlank { "Sin datos" }
+            sheetBinding.tvObservacionesDetalle.text = observaciones.ifBlank { "Sin datos" }
+            sheetBinding.btnLlamarContacto.isEnabled = obtenerContactos(contacto).isNotEmpty()
         }
     }
 
@@ -228,10 +244,20 @@ class LuminariasFragment : Fragment() {
             "Actualizar reparación"
         }
         binding.btnLlamarContacto.setOnClickListener {
-            val telefono = binding.tvContactoDetalle.text?.toString().orEmpty()
-            if (telefono.isNotBlank()) {
-                val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:$telefono"))
-                startActivity(intent)
+            val telefonoRaw = binding.tvContactoDetalle.text?.toString().orEmpty()
+            if (telefonoRaw.isBlank()) return@setOnClickListener
+            val contactos = obtenerContactos(telefonoRaw)
+            if (contactos.isEmpty()) return@setOnClickListener
+            if (contactos.size == 1) {
+                marcarContacto(contactos.first())
+            } else {
+                MaterialAlertDialogBuilder(requireContext())
+                    .setTitle("Selecciona un número")
+                    .setItems(contactos.toTypedArray()) { _, which ->
+                        marcarContacto(contactos[which])
+                    }
+                    .setNegativeButton("Cancelar", null)
+                    .show()
             }
         }
 
@@ -267,7 +293,10 @@ class LuminariasFragment : Fragment() {
         val materialesAdapterDialog = ArrayAdapter(requireContext(), android.R.layout.simple_list_item_1, materialesLabel)
         binding.actMaterialLuminaria.setAdapter(materialesAdapterDialog)
         binding.actMaterialLuminaria.setOnItemClickListener { _, _, position, _ ->
-            materialesCatalogo.getOrNull(position)?.let { material ->
+            val seleccion = materialesAdapterDialog.getItem(position).orEmpty()
+            val codigo = seleccion.substringBefore(" - ").trim()
+            val material = materialesCatalogo.firstOrNull { it.codigo == codigo }
+            material?.let {
                 mostrarDialogoCantidad(material) { cantidad ->
                     val index = materialesSeleccionados.indexOfFirst { it.codigo == material.codigo }
                     if (index >= 0) {
@@ -411,5 +440,27 @@ class LuminariasFragment : Fragment() {
         if (binding.chipPendientes.isChecked && binding.chipReparadas.isChecked) {
             binding.chipReparadas.isChecked = false
         }
+    }
+
+    private fun obtenerContactos(raw: String): List<String> {
+        if (raw.isBlank()) return emptyList()
+        val normalized = raw.replace("\n", " ")
+        val contactos = normalized.split(Regex("[,;/]"))
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+            .map { it.replace("\\s+".toRegex(), "") }
+            .map { it.replace("[^0-9+]".toRegex(), "") }
+            .filter { it.isNotBlank() }
+        return if (contactos.isEmpty()) emptyList() else contactos.distinct()
+    }
+
+    private fun formatContactos(raw: String): String {
+        val contactos = obtenerContactos(raw)
+        return if (contactos.isEmpty()) "" else contactos.joinToString(" / ")
+    }
+
+    private fun marcarContacto(contacto: String) {
+        val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:$contacto"))
+        startActivity(intent)
     }
 }
