@@ -45,6 +45,10 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
         database("https://tecniapp-ice-materiales.firebaseio.com/")
     }
 
+    private val dbInventario: DatabaseReference by lazy {
+        database("https://tecniapp-ice-inventario.firebaseio.com/").child("inventario")
+    }
+
     private val subregionNombreCache = mutableMapOf<String, String>()
 
     private fun database(url: String): DatabaseReference {
@@ -459,6 +463,78 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
         val root = luminariasRoot()
         root.child("pendientes").child(id.toString()).removeValue().await()
         root.child("reparadas").child(id.toString()).removeValue().await()
+    }
+
+    // --- INVENTARIO ---
+    suspend fun obtenerInventario(): List<InventarioItemEntity> {
+        val snap = dbInventario.get().await()
+        if (!snap.exists()) return emptyList()
+        return snap.children.flatMap { vehiculoNode ->
+            vehiculoNode.children.mapNotNull { itemNode ->
+                val vehiculoId = itemNode.intValueAny("vehiculoId", "vehiculo_id")
+                    ?: vehiculoNode.intValueAny("vehiculoId", "vehiculo_id")
+                    ?: vehiculoNode.key?.toIntOrNull()
+                    ?: return@mapNotNull null
+                val codigo = itemNode.stringChildAny("codigoMaterial", "codigo", "codigo_material")
+                    ?: itemNode.key?.trim()
+                if (codigo.isNullOrBlank()) return@mapNotNull null
+                val descripcion = itemNode.stringChildAny(
+                    "descripcionMaterial",
+                    "descripcion",
+                    "descripcion_material"
+                ).orEmpty()
+                val cantidad = itemNode.doubleValueAny(
+                    "cantidadDisponible",
+                    "cantidad",
+                    "cantidad_disponible"
+                ) ?: 0.0
+                val id = itemNode.longChildAny("id") ?: 0L
+                InventarioItemEntity(
+                    id = id,
+                    vehiculoId = vehiculoId,
+                    codigoMaterial = codigo,
+                    descripcionMaterial = descripcion,
+                    cantidadDisponible = cantidad
+                )
+            }
+        }
+    }
+
+    suspend fun guardarInventarioVehiculo(vehiculoKey: String, vehiculoId: Int, items: List<InventarioItemEntity>) {
+        val payload = items.associate { item ->
+            val key = item.codigoMaterial.trim()
+            key to mapOf(
+                "id" to item.id,
+                "vehiculoId" to vehiculoId,
+                "codigoMaterial" to item.codigoMaterial,
+                "descripcionMaterial" to item.descripcionMaterial,
+                "cantidadDisponible" to item.cantidadDisponible
+            )
+        }
+        dbInventario.child(vehiculoKey).setValue(payload).await()
+    }
+
+    suspend fun guardarInventarioItem(vehiculoKey: String, item: InventarioItemEntity) {
+        val codigo = item.codigoMaterial.trim()
+        if (codigo.isEmpty()) return
+        val payload = mapOf(
+            "id" to item.id,
+            "vehiculoId" to item.vehiculoId,
+            "codigoMaterial" to item.codigoMaterial,
+            "descripcionMaterial" to item.descripcionMaterial,
+            "cantidadDisponible" to item.cantidadDisponible
+        )
+        dbInventario.child(vehiculoKey).child(codigo).setValue(payload).await()
+    }
+
+    suspend fun eliminarInventarioItem(vehiculoKey: String, codigoMaterial: String) {
+        val codigo = codigoMaterial.trim()
+        if (codigo.isEmpty()) return
+        dbInventario.child(vehiculoKey).child(codigo).removeValue().await()
+    }
+
+    suspend fun eliminarInventarioVehiculo(vehiculoKey: String) {
+        dbInventario.child(vehiculoKey).removeValue().await()
     }
 
     suspend fun eliminarLocalizacion(id: Int) {
