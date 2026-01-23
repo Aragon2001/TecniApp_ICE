@@ -227,6 +227,7 @@ class   RoomRepository(context: Context) {
         val nuevaCantidad = (existente?.cantidadDisponible ?: 0.0) + delta
         if (nuevaCantidad <= 0) {
             existente?.let { inventarioDao.eliminarPorId(it.id) }
+            firebase.eliminarInventarioItem(vehiculoId, codigo)
         } else {
             val item = InventarioItemEntity(
                 id = existente?.id ?: 0L,
@@ -236,11 +237,14 @@ class   RoomRepository(context: Context) {
                 cantidadDisponible = nuevaCantidad
             )
             inventarioDao.upsert(item)
+            firebase.guardarInventarioItem(item)
         }
     }
 
     suspend fun eliminarInventarioItem(id: Long) = withContext(Dispatchers.IO) {
+        val item = inventarioDao.obtenerItemPorId(id)
         inventarioDao.eliminarPorId(id)
+        item?.let { firebase.eliminarInventarioItem(it.vehiculoId, it.codigoMaterial) }
     }
 
     suspend fun cargarInventarioDesdeCsv(
@@ -268,6 +272,8 @@ class   RoomRepository(context: Context) {
                 )
                 inventarioDao.upsert(item)
             }
+        val inventarioActualizado = inventarioDao.obtenerPorVehiculo(vehiculoId)
+        firebase.guardarInventarioVehiculo(vehiculoId, inventarioActualizado)
     }
 
     suspend fun obtenerCodigosMateriales(codigos: Set<String>): Set<String> = withContext(Dispatchers.IO) {
@@ -414,6 +420,14 @@ class   RoomRepository(context: Context) {
         val materiales = firebase.obtenerMaterialesCatalogo()
         if (materiales.isNotEmpty()) {
             db.materialDao().insertAll(materiales)
+        }
+    }
+
+    suspend fun syncInventario() = withContext(Dispatchers.IO) {
+        val inventario = firebase.obtenerInventario()
+        inventarioDao.limpiarTodo()
+        if (inventario.isNotEmpty()) {
+            inventarioDao.insertAll(inventario)
         }
     }
 
