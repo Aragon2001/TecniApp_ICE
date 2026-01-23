@@ -18,14 +18,18 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.Arasoftsolutions.tecniapp_ice.R
+import com.Arasoftsolutions.tecniapp_ice.databinding.BottomsheetMedidorRegistroBinding
 import com.Arasoftsolutions.tecniapp_ice.databinding.FragmentMedidorBinding
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.bottomsheet.BottomSheetDialog
 import kotlinx.coroutines.launch
 
 class MedidorFragment : Fragment() {
 
     private var _binding: FragmentMedidorBinding? = null
     private val binding get() = _binding!!
+    private var registroDialog: BottomSheetDialog? = null
+    private var registroBinding: BottomsheetMedidorRegistroBinding? = null
 
     private val viewModel: MedidorViewModel by viewModels()
     private lateinit var subregionAdapter: ArrayAdapter<String>
@@ -34,6 +38,7 @@ class MedidorFragment : Fragment() {
     private var currentPuebloDisplays: List<String> = emptyList()
     private val subregionDisplayToOption = mutableMapOf<String, SubregionOption>()
     private val puebloDisplayToOption = mutableMapOf<String, PuebloOption>()
+    private var wasManualVisible = false
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -69,77 +74,15 @@ class MedidorFragment : Fragment() {
         binding.btnCompartir.setOnClickListener { compartirInformacion() }
         binding.btnMostrarRegistro.setOnClickListener {
             viewModel.habilitarRegistroManual()
-            binding.tilRegistroNumero.error = null
-            binding.tilRegistroLocalizacion.error = null
-            binding.tilRegistroCliente.error = null
-            binding.tilRegistroCalle.error = null
-            binding.tilRegistroPoste.error = null
-            binding.tilRegistroMetros.error = null
-            binding.tilRegistroPueblo.error = null
-            binding.tilRegistroSubregion.error = null
-        }
-        binding.btnCancelarRegistro.setOnClickListener {
-            viewModel.cancelarRegistroManual()
-            limpiarFormularioManual()
-        }
-        binding.btnGuardarManual.setOnClickListener { registrarMedidorManual() }
-
-        binding.inputRegistroNumero.doAfterTextChanged {
-            binding.tilRegistroNumero.error = null
-        }
-        binding.inputRegistroCliente.doAfterTextChanged {
-            binding.tilRegistroCliente.error = null
-        }
-        binding.inputRegistroCalle.doAfterTextChanged {
-            binding.tilRegistroCalle.error = null
-            actualizarLocalizacionSugerida()
-        }
-        binding.inputRegistroPoste.doAfterTextChanged {
-            binding.tilRegistroPoste.error = null
-            actualizarLocalizacionSugerida()
-        }
-        binding.inputRegistroMetros.doAfterTextChanged {
-            binding.tilRegistroMetros.error = null
-            actualizarLocalizacionSugerida()
-        }
-        binding.inputRegistroLocalizacion.doAfterTextChanged {
-            binding.tilRegistroLocalizacion.error = null
-        }
-        binding.inputRegistroSubregion.apply {
-            keyListener = null
-            isFocusable = true
-            isFocusableInTouchMode = true
-            setAdapter(subregionAdapter)
-            setOnClickListener { showDropDown() }
-            setOnFocusChangeListener { _, hasFocus -> if (hasFocus) showDropDown() }
-            doAfterTextChanged {
-                binding.tilRegistroSubregion.error = null
-            }
-            setOnItemClickListener { _, _, position, _ ->
-                val display = subregionAdapter.getItem(position) ?: return@setOnItemClickListener
-                subregionDisplayToOption[display]?.let { option ->
-                    viewModel.seleccionarSubregionParaRegistro(option)
-                    binding.tilRegistroSubregion.error = null
-                }
-            }
-        }
-        binding.inputRegistroPueblo.apply {
-            keyListener = null
-            isFocusable = true
-            isFocusableInTouchMode = true
-            setAdapter(puebloAdapter)
-            setOnClickListener { showDropDown() }
-            setOnFocusChangeListener { _, hasFocus -> if (hasFocus) showDropDown() }
-            doAfterTextChanged {
-                binding.tilRegistroPueblo.error = null
-            }
-            setOnItemClickListener { _, _, position, _ ->
-                val display = puebloAdapter.getItem(position) ?: return@setOnItemClickListener
-                puebloDisplayToOption[display]?.let { option ->
-                    viewModel.seleccionarPuebloParaRegistro(option)
-                    binding.tilRegistroPueblo.error = null
-                    actualizarLocalizacionSugerida()
-                }
+            registroBinding?.let { registro ->
+                registro.tilRegistroNumero.error = null
+                registro.tilRegistroLocalizacion.error = null
+                registro.tilRegistroCliente.error = null
+                registro.tilRegistroCalle.error = null
+                registro.tilRegistroPoste.error = null
+                registro.tilRegistroMetros.error = null
+                registro.tilRegistroPueblo.error = null
+                registro.tilRegistroSubregion.error = null
             }
         }
     }
@@ -153,11 +96,7 @@ class MedidorFragment : Fragment() {
                     binding.cardResultado.isVisible = estado.medidor != null
                     binding.layoutAcciones.isVisible = estado.medidor != null
                     binding.cardNoEncontrado.isVisible = estado.notFoundNumero != null && !estado.showManualForm
-                    binding.cardRegistroManual.isVisible = estado.showManualForm
-                    binding.btnGuardarManual.isEnabled = !estado.isRegistering && !estado.isPueblosLoading
-                    binding.progressRegistro.isVisible = estado.isRegistering
                     binding.btnMostrarRegistro.isEnabled = !estado.isRegistering
-                    binding.btnCancelarRegistro.isEnabled = !estado.isRegistering
 
                     val mensaje = estado.message ?: getString(R.string.medidor_estado_listo)
                     val infoMessages = setOf(
@@ -177,39 +116,18 @@ class MedidorFragment : Fragment() {
                     binding.textEstadoMessage.isVisible = mensaje.isNotBlank() && mensaje !in infoMessages
 
                     actualizarSubregionAdapter(estado.subregionOptions)
-                    val subregionDisplay = estado.selectedSubregionDisplay.orEmpty()
-                    if (binding.inputRegistroSubregion.text?.toString() != subregionDisplay) {
-                        binding.inputRegistroSubregion.setText(subregionDisplay, false)
-                    }
-                    val subregionDisponible = estado.subregionOptions.isNotEmpty()
-                    binding.tilRegistroSubregion.isEnabled = subregionDisponible
-                    binding.inputRegistroSubregion.isEnabled = subregionDisponible
-                    binding.tilRegistroSubregion.helperText = when {
-                        estado.showManualForm && !subregionDisponible -> getString(R.string.medidor_registro_subregion_cargando)
-                        else -> null
-                    }
-
                     actualizarPuebloAdapter(estado.puebloOptions)
-                    val puebloDisplay = estado.selectedPuebloDisplay.orEmpty()
-                    if (binding.inputRegistroPueblo.text?.toString() != puebloDisplay) {
-                        binding.inputRegistroPueblo.setText(puebloDisplay, false)
-                    }
-                    val pueblosDisponibles = estado.puebloOptions.isNotEmpty()
-                    binding.inputRegistroPueblo.isEnabled = pueblosDisponibles && !estado.isPueblosLoading
-                    binding.tilRegistroPueblo.isEnabled = pueblosDisponibles || estado.isPueblosLoading
-                    binding.tilRegistroPueblo.helperText = when {
-                        estado.showManualForm && estado.isPueblosLoading -> getString(R.string.medidor_registro_pueblo_cargando)
-                        else -> null
-                    }
 
                     estado.notFoundNumero?.let { numero ->
                         binding.textNoEncontradoDescription.text = getString(
                             R.string.medidor_no_encontrado_descripcion,
                             numero
                         )
-                        if (estado.showManualForm && binding.inputRegistroNumero.text.isNullOrBlank()) {
-                            binding.inputRegistroNumero.setText(numero)
-                            binding.inputRegistroNumero.setSelection(numero.length)
+                        registroBinding?.let { registro ->
+                            if (estado.showManualForm && registro.inputRegistroNumero.text.isNullOrBlank()) {
+                                registro.inputRegistroNumero.setText(numero)
+                                registro.inputRegistroNumero.setSelection(numero.length)
+                            }
                         }
                     } ?: run {
                         binding.textNoEncontradoDescription.text = getString(R.string.medidor_no_encontrado_descripcion_vacia)
@@ -218,20 +136,31 @@ class MedidorFragment : Fragment() {
                         }
                     }
 
-                    if (!estado.showManualForm) {
-                        binding.tilRegistroSubregion.helperText = null
-                        binding.tilRegistroPueblo.helperText = null
+                    if (estado.showManualForm) {
+                        showRegistroBottomSheet()
+                        registroBinding?.let { updateRegistroContent(it, estado) }
+                        actualizarLocalizacionSugerida()
+                    } else {
+                        dismissRegistroBottomSheet()
                     }
 
-                    if (estado.showManualForm) {
-                        actualizarLocalizacionSugerida()
+                    if (estado.showManualForm && !wasManualVisible) {
+                        binding.scrollMedidor.post {
+                            binding.scrollMedidor.smoothScrollTo(0, binding.cardRegistroManual.top)
+                        }
                     }
+                    wasManualVisible = estado.showManualForm
 
                     if (estado.showNotFoundDialog && estado.notFoundNumero != null) {
                         viewModel.onNotFoundDialogMostrado()
+                        val dialogMessage = if (estado.notFoundOffline) {
+                            getString(R.string.medidor_no_registrado_dialog_offline, estado.notFoundNumero)
+                        } else {
+                            getString(R.string.medidor_no_registrado_dialog_message, estado.notFoundNumero)
+                        }
                         MaterialAlertDialogBuilder(requireContext())
                             .setTitle(R.string.medidor_no_registrado_dialog_title)
-                            .setMessage(getString(R.string.medidor_no_registrado_dialog_message, estado.notFoundNumero))
+                            .setMessage(dialogMessage)
                             .setPositiveButton(R.string.medidor_no_registrado_dialog_positive) { _, _ ->
                                 viewModel.habilitarRegistroManual()
                             }
@@ -365,16 +294,17 @@ class MedidorFragment : Fragment() {
     private fun actualizarLocalizacionSugerida() {
         val estadoActual = viewModel.uiState.value
         val puebloCodigo = estadoActual.selectedPuebloId?.toString()
-        val calle = binding.inputRegistroCalle.text?.toString().orEmpty()
-        val poste = binding.inputRegistroPoste.text?.toString().orEmpty()
-        val metros = binding.inputRegistroMetros.text?.toString().orEmpty()
+        val registro = registroBinding ?: return
+        val calle = registro.inputRegistroCalle.text?.toString().orEmpty()
+        val poste = registro.inputRegistroPoste.text?.toString().orEmpty()
+        val metros = registro.inputRegistroMetros.text?.toString().orEmpty()
         val localizacion = generarLocalizacion(puebloCodigo, calle, poste, metros)
         val nuevoTexto = localizacion?.toString().orEmpty()
-        if (binding.inputRegistroLocalizacion.text?.toString() != nuevoTexto) {
-            binding.inputRegistroLocalizacion.setText(nuevoTexto)
+        if (registro.inputRegistroLocalizacion.text?.toString() != nuevoTexto) {
+            registro.inputRegistroLocalizacion.setText(nuevoTexto)
         }
         if (localizacion != null) {
-            binding.tilRegistroLocalizacion.error = null
+            registro.tilRegistroLocalizacion.error = null
         }
     }
 
@@ -397,75 +327,76 @@ class MedidorFragment : Fragment() {
 
     private fun registrarMedidorManual() {
         if (viewModel.uiState.value.isPueblosLoading) return
+        val registro = registroBinding ?: return
 
-        val numero = binding.inputRegistroNumero.text?.toString().orEmpty().trim()
-        val cliente = binding.inputRegistroCliente.text?.toString().orEmpty().trim()
-        val calle = binding.inputRegistroCalle.text?.toString().orEmpty().trim()
-        val poste = binding.inputRegistroPoste.text?.toString().orEmpty().trim()
-        val metros = binding.inputRegistroMetros.text?.toString().orEmpty().trim()
+        val numero = registro.inputRegistroNumero.text?.toString().orEmpty().trim()
+        val cliente = registro.inputRegistroCliente.text?.toString().orEmpty().trim()
+        val calle = registro.inputRegistroCalle.text?.toString().orEmpty().trim()
+        val poste = registro.inputRegistroPoste.text?.toString().orEmpty().trim()
+        val metros = registro.inputRegistroMetros.text?.toString().orEmpty().trim()
         actualizarLocalizacionSugerida()
-        val localizacionTexto = binding.inputRegistroLocalizacion.text?.toString()?.trim().orEmpty()
-        val subregionDisplay = binding.inputRegistroSubregion.text?.toString()?.trim().orEmpty()
-        val puebloDisplay = binding.inputRegistroPueblo.text?.toString()?.trim().orEmpty()
+        val localizacionTexto = registro.inputRegistroLocalizacion.text?.toString()?.trim().orEmpty()
+        val subregionDisplay = registro.inputRegistroSubregion.text?.toString()?.trim().orEmpty()
+        val puebloDisplay = registro.inputRegistroPueblo.text?.toString()?.trim().orEmpty()
 
         var hasError = false
         if (numero.isEmpty()) {
-            binding.tilRegistroNumero.error = getString(R.string.medidor_registro_requerido_numero)
+            registro.tilRegistroNumero.error = getString(R.string.medidor_registro_requerido_numero)
             hasError = true
         } else {
-            binding.tilRegistroNumero.error = null
+            registro.tilRegistroNumero.error = null
         }
 
         val subregionOption = subregionDisplayToOption[subregionDisplay]
         if (subregionOption == null) {
-            binding.tilRegistroSubregion.error = getString(R.string.medidor_registro_subregion_requerida)
+            registro.tilRegistroSubregion.error = getString(R.string.medidor_registro_subregion_requerida)
             hasError = true
         } else {
-            binding.tilRegistroSubregion.error = null
+            registro.tilRegistroSubregion.error = null
         }
 
         val puebloOption = puebloDisplayToOption[puebloDisplay]
         if (puebloOption == null) {
-            binding.tilRegistroPueblo.error = getString(R.string.medidor_registro_pueblo_requerido)
+            registro.tilRegistroPueblo.error = getString(R.string.medidor_registro_pueblo_requerido)
             hasError = true
         } else {
-            binding.tilRegistroPueblo.error = null
+            registro.tilRegistroPueblo.error = null
         }
 
         if (cliente.isEmpty()) {
-            binding.tilRegistroCliente.error = getString(R.string.medidor_registro_cliente_requerido)
+            registro.tilRegistroCliente.error = getString(R.string.medidor_registro_cliente_requerido)
             hasError = true
         } else {
-            binding.tilRegistroCliente.error = null
+            registro.tilRegistroCliente.error = null
         }
 
         if (calle.isEmpty()) {
-            binding.tilRegistroCalle.error = getString(R.string.medidor_registro_calle_requerida)
+            registro.tilRegistroCalle.error = getString(R.string.medidor_registro_calle_requerida)
             hasError = true
         } else {
-            binding.tilRegistroCalle.error = null
+            registro.tilRegistroCalle.error = null
         }
 
         if (poste.isEmpty()) {
-            binding.tilRegistroPoste.error = getString(R.string.medidor_registro_poste_requerido)
+            registro.tilRegistroPoste.error = getString(R.string.medidor_registro_poste_requerido)
             hasError = true
         } else {
-            binding.tilRegistroPoste.error = null
+            registro.tilRegistroPoste.error = null
         }
 
         if (metros.isEmpty()) {
-            binding.tilRegistroMetros.error = getString(R.string.medidor_registro_metros_requeridos)
+            registro.tilRegistroMetros.error = getString(R.string.medidor_registro_metros_requeridos)
             hasError = true
         } else {
-            binding.tilRegistroMetros.error = null
+            registro.tilRegistroMetros.error = null
         }
 
         val localizacion = localizacionTexto.toLongOrNull()
         if (localizacion == null) {
-            binding.tilRegistroLocalizacion.error = getString(R.string.medidor_registro_localizacion_obligatoria)
+            registro.tilRegistroLocalizacion.error = getString(R.string.medidor_registro_localizacion_obligatoria)
             hasError = true
         } else {
-            binding.tilRegistroLocalizacion.error = null
+            registro.tilRegistroLocalizacion.error = null
         }
 
         if (hasError) return
@@ -493,30 +424,168 @@ class MedidorFragment : Fragment() {
     }
 
     private fun limpiarFormularioManual() {
-        binding.tilRegistroNumero.error = null
-        binding.tilRegistroLocalizacion.error = null
-        binding.tilRegistroCliente.error = null
-        binding.tilRegistroCalle.error = null
-        binding.tilRegistroPoste.error = null
-        binding.tilRegistroMetros.error = null
-        binding.tilRegistroPueblo.error = null
-        binding.tilRegistroSubregion.error = null
-        binding.inputRegistroNumero.setText("")
-        binding.inputRegistroCliente.setText("")
-        binding.inputRegistroLocalizacion.setText("")
-        binding.inputRegistroCalle.setText("")
-        binding.inputRegistroPoste.setText("")
-        binding.inputRegistroMetros.setText("")
-        binding.inputRegistroPueblo.setText("", false)
+        val registro = registroBinding ?: return
+        registro.tilRegistroNumero.error = null
+        registro.tilRegistroLocalizacion.error = null
+        registro.tilRegistroCliente.error = null
+        registro.tilRegistroCalle.error = null
+        registro.tilRegistroPoste.error = null
+        registro.tilRegistroMetros.error = null
+        registro.tilRegistroPueblo.error = null
+        registro.tilRegistroSubregion.error = null
+        registro.inputRegistroNumero.setText("")
+        registro.inputRegistroCliente.setText("")
+        registro.inputRegistroLocalizacion.setText("")
+        registro.inputRegistroCalle.setText("")
+        registro.inputRegistroPoste.setText("")
+        registro.inputRegistroMetros.setText("")
+        registro.inputRegistroPueblo.setText("", false)
         viewModel.limpiarSeleccionPueblo()
         val subregionSeleccionada = viewModel.uiState.value.selectedSubregionDisplay.orEmpty()
         if (subregionSeleccionada.isNotEmpty()) {
-            binding.inputRegistroSubregion.setText(subregionSeleccionada, false)
+            registro.inputRegistroSubregion.setText(subregionSeleccionada, false)
         }
+    }
+
+    private fun showRegistroBottomSheet() {
+        if (registroDialog != null) {
+            registroBinding?.let { updateRegistroUi(it, viewModel.uiState.value) }
+            return
+        }
+        val dialog = BottomSheetDialog(requireContext())
+        val sheetBinding = BottomsheetMedidorRegistroBinding.inflate(layoutInflater)
+        dialog.setContentView(sheetBinding.root)
+        dialog.setOnDismissListener {
+            registroBinding = null
+            registroDialog = null
+            if (viewModel.uiState.value.showManualForm) {
+                viewModel.cancelarRegistroManual()
+            }
+        }
+        registroDialog = dialog
+        registroBinding = sheetBinding
+        configureRegistroSheet(sheetBinding)
+        updateRegistroUi(sheetBinding, viewModel.uiState.value)
+        dialog.show()
+    }
+
+    private fun dismissRegistroBottomSheet() {
+        registroDialog?.dismiss()
+        registroDialog = null
+        registroBinding = null
+    }
+
+    private fun configureRegistroSheet(registro: BottomsheetMedidorRegistroBinding) {
+        registro.btnCancelarRegistro.setOnClickListener {
+            viewModel.cancelarRegistroManual()
+            limpiarFormularioManual()
+            dismissRegistroBottomSheet()
+        }
+        registro.btnGuardarManual.setOnClickListener { registrarMedidorManual() }
+
+        registro.inputRegistroNumero.doAfterTextChanged {
+            registro.tilRegistroNumero.error = null
+        }
+        registro.inputRegistroCliente.doAfterTextChanged {
+            registro.tilRegistroCliente.error = null
+        }
+        registro.inputRegistroCalle.doAfterTextChanged {
+            registro.tilRegistroCalle.error = null
+            actualizarLocalizacionSugerida()
+        }
+        registro.inputRegistroPoste.doAfterTextChanged {
+            registro.tilRegistroPoste.error = null
+            actualizarLocalizacionSugerida()
+        }
+        registro.inputRegistroMetros.doAfterTextChanged {
+            registro.tilRegistroMetros.error = null
+            actualizarLocalizacionSugerida()
+        }
+        registro.inputRegistroLocalizacion.doAfterTextChanged {
+            registro.tilRegistroLocalizacion.error = null
+        }
+        registro.inputRegistroSubregion.apply {
+            keyListener = null
+            isFocusable = true
+            isFocusableInTouchMode = true
+            setAdapter(subregionAdapter)
+            setOnClickListener { showDropDown() }
+            setOnFocusChangeListener { _, hasFocus -> if (hasFocus) showDropDown() }
+            doAfterTextChanged {
+                registro.tilRegistroSubregion.error = null
+            }
+            setOnItemClickListener { _, _, position, _ ->
+                val display = subregionAdapter.getItem(position) ?: return@setOnItemClickListener
+                subregionDisplayToOption[display]?.let { option ->
+                    viewModel.seleccionarSubregionParaRegistro(option)
+                    registro.tilRegistroSubregion.error = null
+                }
+            }
+        }
+        registro.inputRegistroPueblo.apply {
+            keyListener = null
+            isFocusable = true
+            isFocusableInTouchMode = true
+            setAdapter(puebloAdapter)
+            setOnClickListener { showDropDown() }
+            setOnFocusChangeListener { _, hasFocus -> if (hasFocus) showDropDown() }
+            doAfterTextChanged {
+                registro.tilRegistroPueblo.error = null
+            }
+            setOnItemClickListener { _, _, position, _ ->
+                val display = puebloAdapter.getItem(position) ?: return@setOnItemClickListener
+                puebloDisplayToOption[display]?.let { option ->
+                    viewModel.seleccionarPuebloParaRegistro(option)
+                    registro.tilRegistroPueblo.error = null
+                    actualizarLocalizacionSugerida()
+                }
+            }
+        }
+    }
+
+    private fun updateRegistroUi(registro: BottomsheetMedidorRegistroBinding, estado: MedidorUiState) {
+        registro.btnGuardarManual.isEnabled = !estado.isRegistering && !estado.isPueblosLoading
+        registro.progressRegistro.isVisible = estado.isRegistering
+        registro.btnCancelarRegistro.isEnabled = !estado.isRegistering
+    }
+
+    private fun updateRegistroContent(registro: BottomsheetMedidorRegistroBinding, estado: MedidorUiState) {
+        estado.notFoundNumero?.let { numero ->
+            if (estado.showManualForm && registro.inputRegistroNumero.text.isNullOrBlank()) {
+                registro.inputRegistroNumero.setText(numero)
+                registro.inputRegistroNumero.setSelection(numero.length)
+            }
+        }
+        val subregionDisplay = estado.selectedSubregionDisplay.orEmpty()
+        if (registro.inputRegistroSubregion.text?.toString() != subregionDisplay) {
+            registro.inputRegistroSubregion.setText(subregionDisplay, false)
+        }
+        val subregionDisponible = estado.subregionOptions.isNotEmpty()
+        registro.tilRegistroSubregion.isEnabled = subregionDisponible
+        registro.inputRegistroSubregion.isEnabled = subregionDisponible
+        registro.tilRegistroSubregion.helperText = when {
+            estado.showManualForm && !subregionDisponible -> getString(R.string.medidor_registro_subregion_cargando)
+            else -> null
+        }
+
+        val puebloDisplay = estado.selectedPuebloDisplay.orEmpty()
+        if (registro.inputRegistroPueblo.text?.toString() != puebloDisplay) {
+            registro.inputRegistroPueblo.setText(puebloDisplay, false)
+        }
+        val pueblosDisponibles = estado.puebloOptions.isNotEmpty()
+        registro.inputRegistroPueblo.isEnabled = pueblosDisponibles && !estado.isPueblosLoading
+        registro.tilRegistroPueblo.isEnabled = pueblosDisponibles || estado.isPueblosLoading
+        registro.tilRegistroPueblo.helperText = when {
+            estado.showManualForm && estado.isPueblosLoading -> getString(R.string.medidor_registro_pueblo_cargando)
+            else -> null
+        }
+
+        updateRegistroUi(registro, estado)
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
+        dismissRegistroBottomSheet()
         _binding = null
     }
 }

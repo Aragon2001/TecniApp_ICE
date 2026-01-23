@@ -332,6 +332,30 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
         return buscarMedidorEnNodo(snapshot, storageKey, numeroBuscado)
     }
 
+    suspend fun buscarMedidorEnFirebaseLigero(
+        subregionId: String,
+        subregionNombre: String?,
+        medidorNumber: String
+    ): MedidorEntity? {
+        val storageKey = subregionId.takeIf { it.isNotBlank() }?.trim()
+            ?: subregionNombre?.takeIf { it.isNotBlank() }?.trim()
+            ?: return null
+        val numeroBuscado = medidorNumber.trim()
+        if (numeroBuscado.isEmpty()) return null
+
+        val lookupNombre = subregionNombre?.takeIf { it.isNotBlank() }
+            ?: nombreSubregionDesdeCatalogo(subregionId)
+
+        val referencia = obtenerReferenciaSubregion(storageKey, lookupNombre, createIfMissing = false)
+            ?: return null
+
+        val directo = referencia.child(numeroBuscado).get().await()
+        if (directo.exists()) {
+            return parseMedidorSnapshot(directo, storageKey, numeroBuscado)
+        }
+        return null
+    }
+
     suspend fun registrarMedidorManual(
         subregionId: String,
         subregionNombre: String?,
@@ -440,17 +464,25 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
         root.child(key).setValue(payload).await()
     }
 
-    suspend fun guardarReparacionLuminaria(reparacion: LuminariaReparacionEntity) {
-        val root = luminariasRoot()
+    suspend fun guardarReparacionLuminaria(
+        reparacion: LuminariaReparacionEntity,
+        agencia: String?
+    ) {
+        val root = luminariasRoot(agencia)
         val payload = mapOf(
             "id" to reparacion.id,
             "vehiculoId" to reparacion.vehiculoId,
             "localizacion" to reparacion.localizacion,
+            "cliente" to reparacion.cliente,
+            "contacto" to reparacion.contacto,
+            "observaciones" to reparacion.observaciones,
             "materialesJson" to reparacion.materialesJson,
             "estado" to reparacion.estado,
             "ejecutorNombre" to reparacion.ejecutorNombre,
             "ejecutorCedula" to reparacion.ejecutorCedula,
-            "fechaRegistro" to reparacion.fechaRegistro
+            "fechaRegistro" to reparacion.fechaRegistro,
+            "fechaCarga" to reparacion.fechaCarga,
+            "fechaReparacion" to reparacion.fechaReparacion
         )
         val estado = LuminariaEstado.fromRaw(reparacion.estado)
         val destino = if (estado == LuminariaEstado.PENDIENTE) "pendientes" else "reparadas"
@@ -459,8 +491,8 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
         root.child(limpiar).child(reparacion.id.toString()).removeValue().await()
     }
 
-    suspend fun eliminarReparacionLuminaria(id: Long) {
-        val root = luminariasRoot()
+    suspend fun eliminarReparacionLuminaria(id: Long, agencia: String?) {
+        val root = luminariasRoot(agencia)
         root.child("pendientes").child(id.toString()).removeValue().await()
         root.child("reparadas").child(id.toString()).removeValue().await()
     }
@@ -646,8 +678,9 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
         }
     }
 
-    private suspend fun luminariasRoot(): DatabaseReference {
-        val root = dbLocal.child("luminarias")
+    private suspend fun luminariasRoot(agencia: String?): DatabaseReference {
+        val agenciaKey = normalizarClave(agencia)?.takeIf { it.isNotBlank() } ?: "sin_agencia"
+        val root = dbLuminarias.child(agenciaKey)
         val exists = runCatching { root.get().await().exists() }.getOrDefault(false)
         return if (exists) root else root
     }

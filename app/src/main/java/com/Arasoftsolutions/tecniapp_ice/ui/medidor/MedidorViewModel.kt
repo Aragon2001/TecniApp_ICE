@@ -1,6 +1,9 @@
 package com.Arasoftsolutions.tecniapp_ice.ui.medidor
 
 import android.app.Application
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -221,14 +224,30 @@ class MedidorViewModel(app: Application) : AndroidViewModel(app) {
                             message = context.getString(R.string.medidor_estado_encontrado, local.medidorNumber),
                             notFoundNumero = null,
                             showManualForm = false,
-                            showNotFoundDialog = false
+                            showNotFoundDialog = false,
+                            notFoundOffline = false
+                        )
+                    }
+                    return@launch
+                }
+
+                if (!hasInternetConnection()) {
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            medidor = null,
+                            message = context.getString(R.string.medidor_estado_sin_red, trimmed),
+                            notFoundNumero = trimmed,
+                            showManualForm = false,
+                            showNotFoundDialog = true,
+                            notFoundOffline = true
                         )
                     }
                     return@launch
                 }
 
                 val remoto = withContext(Dispatchers.IO) {
-                    runCatching { firebase.buscarMedidorEnFirebase(storageKey, displayName, trimmed) }
+                    runCatching { firebase.buscarMedidorEnFirebaseLigero(storageKey, displayName, trimmed) }
                         .getOrNull()
                 }
 
@@ -241,7 +260,8 @@ class MedidorViewModel(app: Application) : AndroidViewModel(app) {
                             message = context.getString(R.string.medidor_estado_encontrado, remoto.medidorNumber),
                             notFoundNumero = null,
                             showManualForm = false,
-                            showNotFoundDialog = false
+                            showNotFoundDialog = false,
+                            notFoundOffline = false
                         )
                     }
                 } else {
@@ -252,7 +272,8 @@ class MedidorViewModel(app: Application) : AndroidViewModel(app) {
                             message = context.getString(R.string.medidor_estado_no_result_registro, trimmed),
                             notFoundNumero = trimmed,
                             showManualForm = false,
-                            showNotFoundDialog = true
+                            showNotFoundDialog = true,
+                            notFoundOffline = false
                         )
                     }
                 }
@@ -265,7 +286,8 @@ class MedidorViewModel(app: Application) : AndroidViewModel(app) {
                         message = getApplication<Application>().getString(R.string.medidor_estado_error_generico),
                         notFoundNumero = null,
                         showManualForm = false,
-                        showNotFoundDialog = false
+                        showNotFoundDialog = false,
+                        notFoundOffline = false
                     )
                 }
             }
@@ -296,12 +318,12 @@ class MedidorViewModel(app: Application) : AndroidViewModel(app) {
 
     fun habilitarRegistroManual() {
         ensureRegistroSubregionSeleccionada()
-        _uiState.update { it.copy(showManualForm = true, showNotFoundDialog = false) }
+        _uiState.update { it.copy(showManualForm = true, showNotFoundDialog = false, notFoundOffline = false) }
     }
 
     fun cancelarRegistroManual() {
         _uiState.update {
-            it.copy(showManualForm = false, isRegistering = false, showNotFoundDialog = false)
+            it.copy(showManualForm = false, isRegistering = false, showNotFoundDialog = false, notFoundOffline = false)
         }
     }
 
@@ -376,7 +398,7 @@ class MedidorViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun onNotFoundDialogMostrado() {
-        _uiState.update { it.copy(showNotFoundDialog = false) }
+        _uiState.update { it.copy(showNotFoundDialog = false, notFoundOffline = false) }
     }
 
     fun registrarMedidorManual(
@@ -454,17 +476,18 @@ class MedidorViewModel(app: Application) : AndroidViewModel(app) {
                 }
                 if (existenteLocal != null) {
                     _uiState.update {
-                        it.copy(
-                            isRegistering = false,
-                            medidor = existenteLocal,
-                            message = context.getString(R.string.medidor_estado_encontrado, existenteLocal.medidorNumber),
-                            notFoundNumero = null,
-                            showManualForm = false,
-                            showNotFoundDialog = false
-                        )
-                    }
-                    return@launch
+                    it.copy(
+                        isRegistering = false,
+                        medidor = existenteLocal,
+                        message = context.getString(R.string.medidor_estado_encontrado, existenteLocal.medidorNumber),
+                        notFoundNumero = null,
+                        showManualForm = false,
+                        showNotFoundDialog = false,
+                        notFoundOffline = false
+                    )
                 }
+                return@launch
+            }
 
                 val existenteRemoto = withContext(Dispatchers.IO) {
                     runCatching {
@@ -478,17 +501,18 @@ class MedidorViewModel(app: Application) : AndroidViewModel(app) {
                 if (existenteRemoto != null) {
                     withContext(Dispatchers.IO) { repository.insertarMedidor(existenteRemoto) }
                     _uiState.update {
-                        it.copy(
-                            isRegistering = false,
-                            medidor = existenteRemoto,
-                            message = context.getString(R.string.medidor_estado_encontrado, existenteRemoto.medidorNumber),
-                            notFoundNumero = null,
-                            showManualForm = false,
-                            showNotFoundDialog = false
-                        )
-                    }
-                    return@launch
+                    it.copy(
+                        isRegistering = false,
+                        medidor = existenteRemoto,
+                        message = context.getString(R.string.medidor_estado_encontrado, existenteRemoto.medidorNumber),
+                        notFoundNumero = null,
+                        showManualForm = false,
+                        showNotFoundDialog = false,
+                        notFoundOffline = false
+                    )
                 }
+                return@launch
+            }
 
                 val entity = MedidorEntity(
                     medidorNumber = numeroLimpio,
@@ -513,7 +537,8 @@ class MedidorViewModel(app: Application) : AndroidViewModel(app) {
                         message = context.getString(R.string.medidor_estado_registro_exito, numeroLimpio),
                         notFoundNumero = null,
                         showManualForm = false,
-                        showNotFoundDialog = false
+                        showNotFoundDialog = false,
+                        notFoundOffline = false
                     )
                 }
             } catch (t: Throwable) {
@@ -523,11 +548,21 @@ class MedidorViewModel(app: Application) : AndroidViewModel(app) {
                         isRegistering = false,
                         message = context.getString(R.string.medidor_estado_registro_error, numeroLimpio),
                         showManualForm = true,
-                        notFoundNumero = numeroLimpio
+                        notFoundNumero = numeroLimpio,
+                        notFoundOffline = false
                     )
                 }
             }
         }
+    }
+
+    private fun hasInternetConnection(): Boolean {
+        val connectivityManager = getApplication<Application>()
+            .getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+            ?: return false
+        val network = connectivityManager.activeNetwork ?: return false
+        val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
+        return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
     }
 }
 
@@ -541,6 +576,7 @@ data class MedidorUiState(
     val isRegistering: Boolean = false,
     val subregionNombre: String? = null,
     val showNotFoundDialog: Boolean = false,
+    val notFoundOffline: Boolean = false,
     val subregionOptions: List<SubregionOption> = emptyList(),
     val selectedSubregionId: String? = null,
     val selectedSubregionNombre: String? = null,
