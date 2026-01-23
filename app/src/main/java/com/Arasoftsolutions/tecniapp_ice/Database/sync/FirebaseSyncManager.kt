@@ -45,8 +45,8 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
         database("https://tecniapp-ice-materiales.firebaseio.com/")
     }
 
-    private val dbLuminarias: DatabaseReference by lazy {
-        database("https://tecniapp-ice-luminarias.firebaseio.com/")
+    private val dbInventario: DatabaseReference by lazy {
+        database("https://tecniapp-ice-inventario.firebaseio.com/").child("inventario")
     }
 
     private val subregionNombreCache = mutableMapOf<String, String>()
@@ -502,10 +502,11 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
         val snap = dbInventario.get().await()
         if (!snap.exists()) return emptyList()
         return snap.children.flatMap { vehiculoNode ->
-            val vehiculoId = vehiculoNode.key?.toIntOrNull()
-                ?: vehiculoNode.intValueAny("vehiculoId", "vehiculo_id")
-                ?: return@flatMap emptyList()
             vehiculoNode.children.mapNotNull { itemNode ->
+                val vehiculoId = itemNode.intValueAny("vehiculoId", "vehiculo_id")
+                    ?: vehiculoNode.intValueAny("vehiculoId", "vehiculo_id")
+                    ?: vehiculoNode.key?.toIntOrNull()
+                    ?: return@mapNotNull null
                 val codigo = itemNode.stringChildAny("codigoMaterial", "codigo", "codigo_material")
                     ?: itemNode.key?.trim()
                 if (codigo.isNullOrBlank()) return@mapNotNull null
@@ -531,7 +532,7 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
         }
     }
 
-    suspend fun guardarInventarioVehiculo(vehiculoId: Int, items: List<InventarioItemEntity>) {
+    suspend fun guardarInventarioVehiculo(vehiculoKey: String, vehiculoId: Int, items: List<InventarioItemEntity>) {
         val payload = items.associate { item ->
             val key = item.codigoMaterial.trim()
             key to mapOf(
@@ -542,10 +543,10 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
                 "cantidadDisponible" to item.cantidadDisponible
             )
         }
-        dbInventario.child(vehiculoId.toString()).setValue(payload).await()
+        dbInventario.child(vehiculoKey).setValue(payload).await()
     }
 
-    suspend fun guardarInventarioItem(item: InventarioItemEntity) {
+    suspend fun guardarInventarioItem(vehiculoKey: String, item: InventarioItemEntity) {
         val codigo = item.codigoMaterial.trim()
         if (codigo.isEmpty()) return
         val payload = mapOf(
@@ -555,17 +556,17 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
             "descripcionMaterial" to item.descripcionMaterial,
             "cantidadDisponible" to item.cantidadDisponible
         )
-        dbInventario.child(item.vehiculoId.toString()).child(codigo).setValue(payload).await()
+        dbInventario.child(vehiculoKey).child(codigo).setValue(payload).await()
     }
 
-    suspend fun eliminarInventarioItem(vehiculoId: Int, codigoMaterial: String) {
+    suspend fun eliminarInventarioItem(vehiculoKey: String, codigoMaterial: String) {
         val codigo = codigoMaterial.trim()
         if (codigo.isEmpty()) return
-        dbInventario.child(vehiculoId.toString()).child(codigo).removeValue().await()
+        dbInventario.child(vehiculoKey).child(codigo).removeValue().await()
     }
 
-    suspend fun eliminarInventarioVehiculo(vehiculoId: Int) {
-        dbInventario.child(vehiculoId.toString()).removeValue().await()
+    suspend fun eliminarInventarioVehiculo(vehiculoKey: String) {
+        dbInventario.child(vehiculoKey).removeValue().await()
     }
 
     suspend fun eliminarLocalizacion(id: Int) {
