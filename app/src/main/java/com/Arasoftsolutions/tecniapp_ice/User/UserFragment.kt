@@ -22,6 +22,7 @@ import com.Arasoftsolutions.tecniapp_ice.Database.entities.UserEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.VehiculosEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.apellidosCompletos
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
+import com.Arasoftsolutions.tecniapp_ice.Database.sync.SubregionNormalizer
 
 import com.Arasoftsolutions.tecniapp_ice.R
 import com.Arasoftsolutions.tecniapp_ice.databinding.FragmentUserBinding
@@ -584,8 +585,19 @@ class UserFragment : Fragment() {
     private fun findSubregion(value: String?): SubregionesEntity? {
         if (value.isNullOrBlank()) return null
         val normalized = value.trim().lowercase()
+        val canonicalTarget = SubregionNormalizer.canonicalIdOrSelf(value)
         return subregionItems.firstOrNull {
-            it.id.trim().lowercase() == normalized || it.nombre.trim().lowercase() == normalized
+            val idMatch = it.id.trim().lowercase() == normalized
+            val nameMatch = it.nombre.trim().lowercase() == normalized
+            if (idMatch || nameMatch) {
+                true
+            } else {
+                val canonicalId = SubregionNormalizer.canonicalIdOrSelf(it.id)
+                val canonicalNombre = SubregionNormalizer.canonicalIdOrSelf(it.nombre)
+                canonicalTarget != null && listOfNotNull(canonicalId, canonicalNombre).any { canon ->
+                    canon.equals(canonicalTarget, ignoreCase = true)
+                }
+            }
         }
     }
 
@@ -655,6 +667,12 @@ class UserFragment : Fragment() {
         if (agencySub.isEmpty()) return false
         val subId = subregion.id.trim()
         val subName = subregion.nombre.trim()
+        val agencyCanonical = SubregionNormalizer.canonicalIdOrSelf(agencySub)
+        val subregionCanonical = SubregionNormalizer.canonicalIdOrSelf(subId)
+            ?: SubregionNormalizer.canonicalIdOrSelf(subName)
+        if (agencyCanonical != null && subregionCanonical != null) {
+            return agencyCanonical.equals(subregionCanonical, ignoreCase = true)
+        }
         return agencySub.equals(subId, ignoreCase = true) || agencySub.equals(subName, ignoreCase = true)
     }
 
