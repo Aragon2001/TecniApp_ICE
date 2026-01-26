@@ -70,7 +70,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:text="Ingresa la siguiente información para crear una cuenta."
+        android:text="Ingresa tu cédula para validar el personal. El nombre y apellidos se completan automáticamente."
         android:textSize="14sp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/tvStep" />
@@ -84,97 +84,6 @@
         android:orientation="vertical"
         android:visibility="visible"
         app:layout_constraintTop_toBottomOf="@id/tvInstructions">
-
-        <!-- Campo para ingresar el nombre -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:layout_marginBottom="4dp"
-            android:text="Nombre"
-            android:textColor="@color/ice_blue_dark"
-            android:textSize="18sp"
-            android:textStyle="bold" />
-
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/etFirstName"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@drawable/rounded_bg_f0f2f4"
-            android:hint="Ingresa tu nombre"
-            android:padding="12dp"
-            android:textColor="@color/dark_gray"
-            android:textColorHint="@color/light_gray" />
-
-        <!-- Mensaje de error para el nombre -->
-        <TextView
-            android:id="@+id/tvFirstNameError"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:textColor="@color/red"
-            android:visibility="gone" />
-
-        <!-- Campo para ingresar el apellido -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:layout_marginBottom="4dp"
-            android:text="Primer Apellido"
-            android:textColor="@color/ice_blue_dark"
-            android:textSize="18sp"
-            android:textStyle="bold" />
-
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/etLastName"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@drawable/rounded_bg_f0f2f4"
-            android:hint="Ingresa tu primer apellido"
-            android:padding="12dp"
-            android:textColor="@color/dark_gray"
-            android:textColorHint="@color/light_gray" />
-
-        <!-- Mensaje de error para el apellido -->
-        <TextView
-            android:id="@+id/tvLastNameError"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:textColor="@color/red"
-            android:visibility="gone" />
-
-
-        <!-- Campo para ingresar el apellido 2-->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:layout_marginBottom="4dp"
-            android:text="Segundo Apellido "
-            android:textColor="@color/ice_blue_dark"
-            android:textSize="18sp"
-            android:textStyle="bold" />
-
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/etLastName2"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@drawable/rounded_bg_f0f2f4"
-            android:hint="Ingresa tu segundo apellido"
-            android:padding="12dp"
-            android:textColor="@color/dark_gray"
-            android:textColorHint="@color/light_gray" />
-
-        <!-- Mensaje de error para el segundo apellido -->
-        <TextView
-            android:id="@+id/tvLastNameError2"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:textColor="@color/red"
-            android:visibility="gone" />
 
         <!-- Campo para ingresar la cédula -->
         <TextView
@@ -203,6 +112,99 @@
         <!-- Mensaje de error para la cédula -->
         <TextView
             android:id="@+id/tvIDError"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:textColor="@color/red"
+            android:visibility="gone" />
+
+        <!-- Campo para mostrar el nombre -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="4dp"
+            android:text="Nombre"
+            android:textColor="@color/ice_blue_dark"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etFirstName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/rounded_bg_f0f2f4"
+            android:enabled="false"
+            android:hint="Se completa automáticamente"
+            android:padding="12dp"
+            android:textColor="@color/dark_gray"
+            android:textColorHint="@color/light_gray" />
+
+        <!-- Mensaje de error para el nombre -->
+        <TextView
+            android:id="@+id/tvFirstNameError"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:textColor="@color/red"
+            android:visibility="gone" />
+
+        <!-- Campo para mostrar el primer apellido -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="4dp"
+            android:text="Primer Apellido"
+            android:textColor="@color/ice_blue_dark"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etLastName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/rounded_bg_f0f2f4"
+            android:enabled="false"
+            android:hint="Se completa automáticamente"
+            android:padding="12dp"
+            android:textColor="@color/dark_gray"
+            android:textColorHint="@color/light_gray" />
+
+        <!-- Mensaje de error para el apellido -->
+        <TextView
+            android:id="@+id/tvLastNameError"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:textColor="@color/red"
+            android:visibility="gone" />
+
+        <!-- Campo para mostrar el segundo apellido -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="4dp"
+            android:text="Segundo Apellido"
+            android:textColor="@color/ice_blue_dark"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etLastName2"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/rounded_bg_f0f2f4"
+            android:enabled="false"
+            android:hint="Se completa automáticamente"
+            android:padding="12dp"
+            android:textColor="@color/dark_gray"
+            android:textColorHint="@color/light_gray" />
+
+        <!-- Mensaje de error para el segundo apellido -->
+        <TextView
+            android:id="@+id/tvLastNameError2"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
