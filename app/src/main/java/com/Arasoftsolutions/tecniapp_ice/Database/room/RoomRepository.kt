@@ -329,7 +329,8 @@ class   RoomRepository(context: Context) {
             .forEach { registro ->
                 val existente = inventarioDao.obtenerReparacionPorLocalizacionYEstado(
                     registro.localizacion,
-                    com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado.PENDIENTE.name
+                    com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado.PENDIENTE.name,
+                    vehiculoId
                 )
                 val cliente = registro.cliente?.trim().takeIf { !it.isNullOrEmpty() }
                 val contacto = registro.contacto?.trim().takeIf { !it.isNullOrEmpty() }
