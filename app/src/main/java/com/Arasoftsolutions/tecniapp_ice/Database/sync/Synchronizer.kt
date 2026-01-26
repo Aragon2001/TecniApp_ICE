@@ -26,10 +26,10 @@ class Synchronizer(
         try {
 
             // ----------- 1. TÉCNICOS ----------------
-            onSyncStart("Sincronizando técnicos…")
+            onSyncStart("Descargando técnicos…")
             try {
                 repository.syncTecnicos()
-                onSyncProgress(++done, total, "Sincronizando técnicos…")
+                onSyncProgress(++done, total, "Descargando técnicos…")
             } catch (e: Exception) {
                 throw Exception("Error en syncTecnicos(): ${e.message}", e)
             }
@@ -43,7 +43,7 @@ class Synchronizer(
             }
 
             // ----------- 3. AVERÍAS ----------------
-            onSyncProgress(++done, total, "Cargando averías…")
+            onSyncProgress(++done, total, "Descargando averías…")
             try {
                 averiasRepository.pullFromFirebaseOnce()
             } catch (e: Exception) {
