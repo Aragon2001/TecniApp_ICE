@@ -149,7 +149,7 @@ class LuminariasFragment : Fragment() {
 
                     reparacionesReparadasAdapter.updatePermissions(
                         showEdit = !state.esSupervisor,
-                        showDelete = state.puedeEliminarLuminarias
+                        showDelete = state.puedeEliminarLuminarias && !state.esSupervisor
                     )
                     reparacionesReparadasAdapter.submitList(state.reparacionesReparadas)
                     binding.tvEmptyReparaciones.isVisible = state.reparacionesReparadas.isEmpty()
@@ -413,6 +413,17 @@ class LuminariasFragment : Fragment() {
             binding.tilEjecutorLuminaria.isEnabled = false
             binding.actEjecutorLuminaria.isEnabled = false
             binding.actEstadoLuminaria.isEnabled = false
+            binding.tilMaterialLuminaria.isVisible = false
+            binding.listMaterialesLuminaria.isVisible = false
+            binding.tvEmptyMateriales.isVisible = false
+            binding.tilEjecutorLuminaria.isVisible = false
+            binding.tilEstadoLuminaria.isVisible = false
+        } else {
+            binding.tilMaterialLuminaria.isVisible = true
+            binding.listMaterialesLuminaria.isVisible = true
+            binding.tvEmptyMateriales.isVisible = materialesSeleccionados.isEmpty()
+            binding.tilEjecutorLuminaria.isVisible = true
+            binding.tilEstadoLuminaria.isVisible = true
         }
 
         binding.btnGuardarReparacion.setOnClickListener {
