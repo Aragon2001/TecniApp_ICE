@@ -20,7 +20,8 @@
         android:id="@+id/progressBar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:indeterminate="true"
+        android:indeterminate="false"
+        android:max="10000"
         app:indicatorColor="?attr/colorPrimary"
         android:layout_marginTop="4dp"
         android:layout_marginBottom="4dp"/>
@@ -40,4 +41,12 @@
         android:text="0 / 0"
         android:textAppearance="@style/TextAppearance.Material3.BodySmall"
         android:paddingTop="4dp"/>
+
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/tvBytes"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="0.00 MB"
+        android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+        android:paddingTop="2dp"/>
 </LinearLayout>

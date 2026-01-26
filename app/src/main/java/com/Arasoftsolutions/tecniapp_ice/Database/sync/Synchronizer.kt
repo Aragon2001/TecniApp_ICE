@@ -15,54 +15,57 @@ class Synchronizer(
     suspend fun syncSubregion(
         subregionId: String,
         onSyncStart: (msg: String) -> Unit,
-        onSyncProgress: (done: Int, total: Int, msg: String?) -> Unit,
+        onSyncProgress: (done: Int, total: Int, msg: String?, downloadedBytes: Long) -> Unit,
         onSyncSuccess: () -> Unit,
         onSyncError: (Throwable) -> Unit
     ) {
 
         val total = RoomRepository.SUBREGION_SYNC_STEPS + EXTRA_STEPS
         var done = 0
+        var downloadedBytes = 0L
 
         try {
 
             // ----------- 1. TÉCNICOS ----------------
             onSyncStart("Descargando técnicos…")
             try {
-                repository.syncTecnicos()
-                onSyncProgress(++done, total, "Descargando técnicos…")
+                downloadedBytes += repository.syncTecnicos()
+                onSyncProgress(++done, total, "Descargando técnicos…", downloadedBytes)
             } catch (e: Exception) {
                 throw Exception("Error en syncTecnicos(): ${e.message}", e)
             }
 
             // ----------- 2. MATERIALES ----------------
-            onSyncProgress(++done, total, "Descargando materiales…")
             try {
-                repository.syncMateriales()
+                downloadedBytes += repository.syncMateriales()
+                onSyncProgress(++done, total, "Descargando materiales…", downloadedBytes)
             } catch (e: Exception) {
                 throw Exception("Error en syncMateriales(): ${e.message}", e)
             }
 
             // ----------- 3. AVERÍAS ----------------
-            onSyncProgress(++done, total, "Descargando averías…")
             try {
                 averiasRepository.pullFromFirebaseOnce()
+                onSyncProgress(++done, total, "Descargando averías…", downloadedBytes)
             } catch (e: Exception) {
                 throw Exception("Error al cargar averías: ${e.message}", e)
             }
 
             // ----------- 4. INVENTARIO ----------------
-            onSyncProgress(++done, total, "Sincronizando inventario…")
             try {
-                repository.syncInventario()
+                downloadedBytes += repository.syncInventario()
+                onSyncProgress(++done, total, "Sincronizando inventario…", downloadedBytes)
             } catch (e: Exception) {
                 throw Exception("Error en syncInventario(): ${e.message}", e)
             }
 
             // ----------- 5. SUBREGIÓN COMPLETA ----------------
             try {
-                repository.syncSubregion(subregionId) { subDone, _, msg ->
+                val bytesBeforeSubregion = downloadedBytes
+                repository.syncSubregion(subregionId) { subDone, _, msg, bytes ->
+                    downloadedBytes = bytesBeforeSubregion + bytes
                     val adjustedDone = EXTRA_STEPS + subDone
-                    onSyncProgress(adjustedDone, total, msg)
+                    onSyncProgress(adjustedDone, total, msg, downloadedBytes)
                 }
             } catch (e: Exception) {
                 throw Exception("Error en syncSubregion(): ${e.message}", e)
