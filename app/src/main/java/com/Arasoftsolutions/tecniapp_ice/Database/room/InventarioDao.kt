@@ -67,12 +67,13 @@ interface InventarioDao {
 
     @Query(
         "SELECT * FROM luminaria_reparacion " +
-            "WHERE localizacion = :localizacion AND estado = :estado " +
+            "WHERE localizacion = :localizacion AND estado = :estado AND vehiculoId = :vehiculoId " +
             "ORDER BY fechaRegistro DESC LIMIT 1"
     )
     suspend fun obtenerReparacionPorLocalizacionYEstado(
         localizacion: String,
-        estado: String
+        estado: String,
+        vehiculoId: Int
     ): LuminariaReparacionEntity?
 
     @Update
