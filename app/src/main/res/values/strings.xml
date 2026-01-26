@@ -700,7 +700,14 @@ Cliente: %4$s</string>
     <string name="reportes_excel_col_material_resumen">Materiales resumen</string>
     <string name="reportes_excel_col_material_total">Unidades</string>
     <string name="reportes_excel_col_localizacion">Localización</string>
-    <string name="luminarias_importar_csv">Cargar CSV de luminarias</string>
+    <string name="luminarias_importar_excel">Cargar XLSX de luminarias</string>
+    <string name="luminarias_descargar_machote">Descargar machote de luminarias</string>
+    <string name="luminarias_filtro_camion">Filtrar por camión</string>
+    <string name="luminarias_camion_todos">Todos los camiones</string>
+    <string name="luminarias_camion_asignado">Camión asignado</string>
+    <string name="luminarias_excel_col_cliente">Cliente</string>
+    <string name="luminarias_excel_col_contacto">Contacto</string>
+    <string name="luminarias_excel_col_observaciones">Observaciones</string>
 
     <string name="inventario_gestion_titulo">Inventario por camión</string>
     <string name="inventario_gestion_descripcion">Carga un archivo CSV o PDF para reemplazar el inventario del camión seleccionado. La lista se actualizará automáticamente con los materiales usados.</string>
