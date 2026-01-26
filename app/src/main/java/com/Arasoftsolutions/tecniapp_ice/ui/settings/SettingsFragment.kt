@@ -508,17 +508,13 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
                         ?.takeIf { it.isNotEmpty() }
                 }
                 if (subregion != null) {
-                    synchronizer.syncSubregion(
-                        subregion,
-                        onSyncStart = { message ->
-                            if (isAdded) dialog.setHeader(message)
-                        },
-                        onSyncProgress = { subDone, _, msg ->
-                            if (isAdded) dialog.update(done + subDone, total, msg ?: "")
-                        },
-                        onSyncSuccess = { },
-                        onSyncError = { throw it }
-                    )
+                    withContext(Dispatchers.IO) {
+                        roomRepository.syncSubregion(subregion) { subDone, _, msg ->
+                            if (isAdded) {
+                                dialog.update(done + subDone, total, msg ?: "")
+                            }
+                        }
+                    }
                 }
                 AveriasSyncWorker.triggerNow(requireContext())
                 dataStore.markManualSyncNow()
