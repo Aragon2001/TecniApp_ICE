@@ -28,11 +28,19 @@ data class LuminariaUiState(
     val tecnicos: List<TecnicoEntity> = emptyList(),
     val reparacionesPendientes: List<LuminariaReparacionEntity> = emptyList(),
     val reparacionesReparadas: List<LuminariaReparacionEntity> = emptyList(),
+    val vehiculosAgencia: List<VehiculosEntity> = emptyList(),
     val vehiculoUsuarioId: Int? = null,
+    val vehiculoFiltroId: Int? = null,
     val agenciaUsuario: String? = null,
     val rolUsuario: String? = null,
     val esSupervisor: Boolean = false,
-    val puedeImportarCsv: Boolean = false,
+    val esAdministrador: Boolean = false,
+    val puedeImportarExcel: Boolean = false,
+    val puedeDescargarMachote: Boolean = false,
+    val puedeRegistrarReparacion: Boolean = true,
+    val puedeReasignarVehiculo: Boolean = false,
+    val puedeFiltrarVehiculo: Boolean = false,
+    val puedeEliminarLuminarias: Boolean = false,
     val localizacion: String = "",
     val materialesSeleccionados: List<LuminariaMaterialSeleccionado> = emptyList(),
     val estadoSeleccionado: LuminariaEstado = LuminariaEstado.REPARADA,
@@ -66,7 +74,7 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
     private val _mensaje = MutableStateFlow<LuminariaMensaje?>(null)
     val mensaje: StateFlow<LuminariaMensaje?> = _mensaje.asStateFlow()
 
-    private var reparacionesCache: List<LuminariaReparacionEntity> = emptyList()
+    private var reparacionesAgenciaCache: List<LuminariaReparacionEntity> = emptyList()
     private var vehiculoPreferidoId: Int? = null
 
     init {
@@ -92,12 +100,22 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
                         agencia.equals(agenciaUsuario, ignoreCase = true)
                     }
                 }
-                reparacionesCache = filtradasPorAgencia
-                val (pendientes, reparadas) = filtrarReparaciones(_uiState.value.busquedaLocalizacion)
+                reparacionesAgenciaCache = filtradasPorAgencia
+                val vehiculosAgencia = if (agenciaUsuario.isBlank()) {
+                    vehiculos
+                } else {
+                    vehiculos.filter { it.agencia.equals(agenciaUsuario, ignoreCase = true) }
+                }.sortedBy { it.placa }
+                val (pendientes, reparadas) = filtrarReparaciones(
+                    reparacionesAgenciaCache,
+                    _uiState.value.busquedaLocalizacion,
+                    _uiState.value.vehiculoFiltroId
+                )
                 _uiState.update {
                     it.copy(
                         materiales = materiales,
                         tecnicos = tecnicos,
+                        vehiculosAgencia = vehiculosAgencia,
                         reparacionesPendientes = pendientes,
                         reparacionesReparadas = reparadas
                     )
@@ -123,14 +141,24 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
             }
         }.ifBlank { usuario.nombre ?: "" }
         _uiState.update { current ->
+            val esSupervisor = rolLower == "supervisor"
+            val esAdministrador = rolLower == "administrador"
+            val puedeFiltrarVehiculo = esSupervisor || esAdministrador
             current.copy(
                 vehiculoUsuarioId = vehiculoPreferidoId,
+                vehiculoFiltroId = if (puedeFiltrarVehiculo) null else vehiculoPreferidoId,
                 ejecutorNombre = current.ejecutorNombre.ifBlank { nombre },
                 ejecutorCedula = current.ejecutorCedula ?: usuario.cedula,
                 agenciaUsuario = usuario.agencia?.trim()?.takeIf { it.isNotBlank() },
                 rolUsuario = rolNormalizado.ifBlank { null },
-                esSupervisor = rolLower == "supervisor",
-                puedeImportarCsv = rolLower == "administrador" || rolLower == "supervisor"
+                esSupervisor = esSupervisor,
+                esAdministrador = esAdministrador,
+                puedeImportarExcel = esSupervisor || esAdministrador,
+                puedeDescargarMachote = esSupervisor || esAdministrador,
+                puedeRegistrarReparacion = !esSupervisor,
+                puedeReasignarVehiculo = esSupervisor || esAdministrador,
+                puedeFiltrarVehiculo = puedeFiltrarVehiculo,
+                puedeEliminarLuminarias = esSupervisor || esAdministrador || rolLower == "tecnico"
             )
         }
     }
@@ -267,7 +295,26 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
 
     fun actualizarBusquedaLocalizacion(valor: String) {
         _uiState.update { it.copy(busquedaLocalizacion = valor) }
-        val (pendientes, reparadas) = filtrarReparaciones(valor)
+        val (pendientes, reparadas) = filtrarReparaciones(
+            reparacionesAgenciaCache,
+            valor,
+            _uiState.value.vehiculoFiltroId
+        )
+        _uiState.update {
+            it.copy(
+                reparacionesPendientes = pendientes,
+                reparacionesReparadas = reparadas
+            )
+        }
+    }
+
+    fun actualizarVehiculoFiltro(vehiculoId: Int?) {
+        _uiState.update { it.copy(vehiculoFiltroId = vehiculoId) }
+        val (pendientes, reparadas) = filtrarReparaciones(
+            reparacionesAgenciaCache,
+            _uiState.value.busquedaLocalizacion,
+            vehiculoId
+        )
         _uiState.update {
             it.copy(
                 reparacionesPendientes = pendientes,
@@ -286,107 +333,206 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun procesarCsv(uri: android.net.Uri) {
-        val vehiculoId = _uiState.value.vehiculoUsuarioId
-        if (vehiculoId == null) {
-            _mensaje.value = LuminariaMensaje.Error("No se encontró un vehículo asignado al usuario")
+    fun procesarExcel(uri: android.net.Uri) {
+        if (!_uiState.value.puedeImportarExcel) {
+            _mensaje.value = LuminariaMensaje.Error("No tienes permisos para cargar luminarias")
+            return
+        }
+        val vehiculos = _uiState.value.vehiculosAgencia
+        if (vehiculos.isEmpty()) {
+            _mensaje.value = LuminariaMensaje.Error("No se encontraron camiones disponibles para importar")
             return
         }
         _uiState.value = _uiState.value.copy(isProcessing = true)
         viewModelScope.launch {
-            val registros = leerCsvLuminarias(uri)
-            if (registros.isEmpty()) {
-                _mensaje.value = LuminariaMensaje.Error("El archivo está vacío")
+            try {
+                val resultado = leerXlsxLuminarias(uri, vehiculos)
+                if (resultado.registrosPorVehiculo.isEmpty()) {
+                    _mensaje.value = LuminariaMensaje.Error("El archivo XLSX está vacío")
+                    _uiState.value = _uiState.value.copy(isProcessing = false)
+                    return@launch
+                }
+                resultado.registrosPorVehiculo.forEach { (vehiculoId, registros) ->
+                    repository.registrarLuminariasPendientes(
+                        vehiculoId = vehiculoId,
+                        registros = registros,
+                        ejecutorNombre = _uiState.value.ejecutorNombre.trim(),
+                        ejecutorCedula = _uiState.value.ejecutorCedula
+                    )
+                }
                 _uiState.value = _uiState.value.copy(isProcessing = false)
-                return@launch
+                val resumen = buildString {
+                    append("Luminarias cargadas en ")
+                    append(resultado.registrosPorVehiculo.size)
+                    append(" camiones.")
+                    if (resultado.hojasIgnoradas.isNotEmpty()) {
+                        append(" Hojas ignoradas: ")
+                        append(resultado.hojasIgnoradas.joinToString())
+                    }
+                }
+                _mensaje.value = LuminariaMensaje.Exito(resumen)
+            } catch (t: Throwable) {
+                _uiState.value = _uiState.value.copy(isProcessing = false)
+                _mensaje.value = LuminariaMensaje.Error("No se pudo leer el archivo XLSX")
             }
-            repository.registrarLuminariasPendientes(
-                vehiculoId = vehiculoId,
-                registros = registros,
-                ejecutorNombre = _uiState.value.ejecutorNombre.trim(),
-                ejecutorCedula = _uiState.value.ejecutorCedula
-            )
-            _uiState.value = _uiState.value.copy(isProcessing = false)
-            _mensaje.value = LuminariaMensaje.Exito("Lista de luminarias cargada")
         }
     }
 
-    private suspend fun leerCsvLuminarias(uri: android.net.Uri): List<LuminariaCsvRegistro> =
+    private data class LuminariaXlsxResultado(
+        val registrosPorVehiculo: Map<Int, List<LuminariaCsvRegistro>>,
+        val hojasIgnoradas: List<String>
+    )
+
+    private suspend fun leerXlsxLuminarias(
+        uri: android.net.Uri,
+        vehiculos: List<VehiculosEntity>
+    ): LuminariaXlsxResultado =
         kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
             val resolver = getApplication<Application>().contentResolver
-            val input = resolver.openInputStream(uri) ?: return@withContext emptyList()
-            java.io.BufferedReader(java.io.InputStreamReader(input)).useLines { lines ->
-                val parsed = lines.mapNotNull { row ->
-                    if (row.isBlank()) return@mapNotNull null
-                    parseCsvRow(row)
-                }.toList()
-                if (parsed.isEmpty()) return@useLines emptyList()
-                val header = parsed.first().map { it.trim().lowercase() }
-                val hasHeader = header.any { it.contains("localizacion") || it.contains("localización") }
-                val startIndex = if (hasHeader) 1 else 0
-                val localizacionIndex = header.indexOfFirst {
-                    it.contains("localizacion") || it.contains("localización")
-                }.takeIf { it >= 0 } ?: 0
-                val clienteIndex = header.indexOfFirst { it.contains("cliente") }
-                val contactoIndex = header.indexOfFirst { it.contains("contacto") || it.contains("telefono") }
-                val observacionesIndex = header.indexOfFirst { it.contains("observacion") || it.contains("observaciones") }
-                val registros = linkedMapOf<String, LuminariaCsvRegistro>()
-                parsed.drop(startIndex).forEach { columns ->
-                    val localizacion = columns.getOrNull(localizacionIndex)?.trim().orEmpty()
-                    if (localizacion.isBlank()) return@forEach
-                    val cliente = columns.getOrNull(clienteIndex)?.trim().takeIf { !it.isNullOrEmpty() }
-                    val contacto = columns.getOrNull(contactoIndex)?.trim().takeIf { !it.isNullOrEmpty() }
-                    val observaciones = columns.getOrNull(observacionesIndex)?.trim().takeIf { !it.isNullOrEmpty() }
-                    val existente = registros[localizacion]
-                    registros[localizacion] = if (existente == null) {
-                        LuminariaCsvRegistro(localizacion, cliente, contacto, observaciones)
-                    } else {
-                        existente.copy(
-                            cliente = existente.cliente ?: cliente,
-                            contacto = existente.contacto ?: contacto,
-                            observaciones = existente.observaciones ?: observaciones
-                        )
+            val input = resolver.openInputStream(uri) ?: return@withContext LuminariaXlsxResultado(emptyMap(), emptyList())
+            input.use { stream ->
+                val workbook = org.apache.poi.xssf.usermodel.XSSFWorkbook(stream)
+                workbook.use { wb ->
+                    val formatter = org.apache.poi.ss.usermodel.DataFormatter()
+                    val vehiculosPorPlaca = construirIndiceVehiculos(vehiculos)
+                    val registrosPorVehiculo = linkedMapOf<Int, List<LuminariaCsvRegistro>>()
+                    val hojasIgnoradas = mutableListOf<String>()
+                    for (i in 0 until wb.numberOfSheets) {
+                        val sheet = wb.getSheetAt(i)
+                        val sheetName = sheet.sheetName
+                        val placaNormalizada = normalizarPlacaKey(sheetName)
+                        val placaSoloDigitos = placaNormalizada.filter(Char::isDigit)
+                        val placaSinCeros = placaSoloDigitos.trimStart('0')
+                        val vehiculo = listOf(placaNormalizada, placaSoloDigitos, placaSinCeros)
+                            .firstNotNullOfOrNull { key -> vehiculosPorPlaca[key] }
+                        if (vehiculo == null) {
+                            hojasIgnoradas.add(sheetName)
+                            continue
+                        }
+                        val registros = leerSheetLuminarias(sheet, formatter)
+                        if (registros.isNotEmpty()) {
+                            registrosPorVehiculo[vehiculo.id] = registros
+                        }
                     }
+                    LuminariaXlsxResultado(registrosPorVehiculo, hojasIgnoradas)
                 }
-                registros.values.toList()
             }
         }
 
-    private fun parseCsvRow(row: String): List<String> {
-        val result = mutableListOf<String>()
-        val buffer = StringBuilder()
-        var inQuotes = false
-        var index = 0
-        while (index < row.length) {
-            val char = row[index]
-            when {
-                char == '"' -> {
-                    val next = row.getOrNull(index + 1)
-                    if (inQuotes && next == '"') {
-                        buffer.append('"')
-                        index++
-                    } else {
-                        inQuotes = !inQuotes
-                    }
-                }
-                char == ',' && !inQuotes -> {
-                    result.add(buffer.toString())
-                    buffer.setLength(0)
-                }
-                else -> buffer.append(char)
+    private fun leerSheetLuminarias(
+        sheet: org.apache.poi.ss.usermodel.Sheet,
+        formatter: org.apache.poi.ss.usermodel.DataFormatter
+    ): List<LuminariaCsvRegistro> {
+        val lastRow = sheet.lastRowNum
+        if (lastRow < 0) return emptyList()
+        var headerRowIndex = 0
+        while (headerRowIndex <= lastRow) {
+            val row = sheet.getRow(headerRowIndex)
+            val rowValues = row?.let { extractRowValues(it, formatter) }.orEmpty()
+            if (rowValues.any { it.isNotBlank() }) {
+                break
             }
-            index++
+            headerRowIndex++
         }
-        result.add(buffer.toString())
-        return result
+        if (headerRowIndex > lastRow) return emptyList()
+        val headerRow = sheet.getRow(headerRowIndex)
+        val headerValues = headerRow?.let { extractRowValues(it, formatter) }.orEmpty()
+        val normalizedHeader = headerValues.map { normalizeHeader(it) }
+        val hasHeader = normalizedHeader.any { it.contains("localizacion") }
+        val localizacionIndex = normalizedHeader.indexOfFirst { it.contains("localizacion") }.takeIf { it >= 0 } ?: 0
+        val clienteIndex = normalizedHeader.indexOfFirst { it.contains("cliente") }
+        val contactoIndex = normalizedHeader.indexOfFirst { it.contains("contacto") || it.contains("telefono") }
+        val observacionesIndex = normalizedHeader.indexOfFirst { it.contains("observacion") }
+        val startIndex = if (hasHeader) headerRowIndex + 1 else headerRowIndex
+        val registros = linkedMapOf<String, LuminariaCsvRegistro>()
+        for (rowIndex in startIndex..lastRow) {
+            val row = sheet.getRow(rowIndex) ?: continue
+            val columns = extractRowValues(row, formatter)
+            if (columns.all { it.isBlank() }) continue
+            val localizacion = columns.getOrNull(localizacionIndex)?.trim().orEmpty()
+            if (localizacion.isBlank()) continue
+            val cliente = columns.getOrNull(clienteIndex)?.trim().takeIf { !it.isNullOrEmpty() }
+            val contacto = columns.getOrNull(contactoIndex)?.trim().takeIf { !it.isNullOrEmpty() }
+            val observaciones = columns.getOrNull(observacionesIndex)?.trim().takeIf { !it.isNullOrEmpty() }
+            val existente = registros[localizacion]
+            registros[localizacion] = if (existente == null) {
+                LuminariaCsvRegistro(localizacion, cliente, contacto, observaciones)
+            } else {
+                existente.copy(
+                    cliente = existente.cliente ?: cliente,
+                    contacto = existente.contacto ?: contacto,
+                    observaciones = existente.observaciones ?: observaciones
+                )
+            }
+        }
+        return registros.values.toList()
+    }
+
+    private fun extractRowValues(
+        row: org.apache.poi.ss.usermodel.Row,
+        formatter: org.apache.poi.ss.usermodel.DataFormatter
+    ): List<String> {
+        val lastCell = row.lastCellNum.toInt().takeIf { it >= 0 } ?: return emptyList()
+        return (0 until lastCell).map { index ->
+            formatter.formatCellValue(row.getCell(index)).trim()
+        }
+    }
+
+    private fun normalizeHeader(value: String): String {
+        val normalized = java.text.Normalizer.normalize(value.trim(), java.text.Normalizer.Form.NFD)
+        return normalized.replace("\\p{M}+".toRegex(), "").lowercase()
+    }
+
+    private fun construirIndiceVehiculos(vehiculos: List<VehiculosEntity>): Map<String, VehiculosEntity> {
+        val index = mutableMapOf<String, VehiculosEntity>()
+        vehiculos.forEach { vehiculo ->
+            val placaRaw = vehiculo.placa.toString()
+            val placaKey = normalizarPlacaKey(placaRaw)
+            val digits = placaKey.filter(Char::isDigit)
+            val digitsSinCeros = digits.trimStart('0')
+            listOf(placaKey, digits, digitsSinCeros)
+                .filter { it.isNotBlank() }
+                .forEach { key ->
+                    index.putIfAbsent(key, vehiculo)
+                }
+        }
+        return index
+    }
+
+    private fun normalizarPlacaKey(raw: String): String {
+        val normalized = java.text.Normalizer.normalize(raw.trim(), java.text.Normalizer.Form.NFD)
+        return normalized
+            .replace("\\p{M}+".toRegex(), "")
+            .uppercase()
+            .replace("[^A-Z0-9]".toRegex(), "")
+    }
+
+    fun enviarMensaje(texto: String, esError: Boolean = false) {
+        _mensaje.value = if (esError) LuminariaMensaje.Error(texto) else LuminariaMensaje.Exito(texto)
+    }
+
+    fun obtenerNombreMachote(): String {
+        val agencia = _uiState.value.agenciaUsuario?.trim().orEmpty()
+        val sufijo = if (agencia.isBlank()) "General" else agencia.replace("\\s+".toRegex(), "_")
+        val fecha = java.time.LocalDate.now()
+        return "Machote_Luminarias_${sufijo}_${fecha}.xlsx"
     }
 
     suspend fun buscarMedidorPorLocalizacion(localizacion: String) =
         localizacion.trim().toLongOrNull()?.let { repository.buscarMedidorPorLocalizacion(it) }
 
-    private fun filtrarReparaciones(busqueda: String): Pair<List<LuminariaReparacionEntity>, List<LuminariaReparacionEntity>> {
+    private fun filtrarReparaciones(
+        reparaciones: List<LuminariaReparacionEntity>,
+        busqueda: String,
+        vehiculoFiltroId: Int?
+    ): Pair<List<LuminariaReparacionEntity>, List<LuminariaReparacionEntity>> {
         val texto = busqueda.trim().lowercase()
-        val filtradas = reparacionesCache.filter { reparacion ->
+        val filtradasPorVehiculo = if (vehiculoFiltroId == null) {
+            reparaciones
+        } else {
+            reparaciones.filter { it.vehiculoId == vehiculoFiltroId }
+        }
+        val filtradas = filtradasPorVehiculo.filter { reparacion ->
             texto.isBlank() || reparacion.localizacion.lowercase().contains(texto)
         }
         val pendientes = filtradas
@@ -396,5 +542,49 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
             .filter { LuminariaEstado.fromRaw(it.estado) == LuminariaEstado.REPARADA }
             .sortedWith(compareBy({ it.localizacion.toLongOrNull() ?: Long.MAX_VALUE }, { it.localizacion }))
         return pendientes to reparadas
+    }
+
+    fun reasignarVehiculo(id: Long, nuevoVehiculoId: Int) {
+        viewModelScope.launch {
+            val reparacion = repository.obtenerReparacionLuminaria(id)
+            if (reparacion == null) {
+                _mensaje.value = LuminariaMensaje.Error("No se encontró la luminaria")
+                return@launch
+            }
+            val estado = LuminariaEstado.fromRaw(reparacion.estado)
+            if (estado != LuminariaEstado.PENDIENTE) {
+                _mensaje.value = LuminariaMensaje.Error("Solo puedes reasignar luminarias pendientes")
+                return@launch
+            }
+            repository.actualizarVehiculoLuminaria(id, nuevoVehiculoId)
+            _mensaje.value = LuminariaMensaje.Exito("Camión reasignado")
+        }
+    }
+
+    fun actualizarReparacion(
+        id: Long,
+        nuevaLocalizacion: String,
+        materiales: List<LuminariaMaterialSeleccionado>,
+        estado: LuminariaEstado,
+        ejecutorNombre: String,
+        ejecutorCedula: String?,
+        vehiculoIdSeleccionado: Int?
+    ) {
+        viewModelScope.launch {
+            val reparacion = repository.obtenerReparacionLuminaria(id)
+            if (reparacion != null && vehiculoIdSeleccionado != null && reparacion.vehiculoId != vehiculoIdSeleccionado) {
+                if (LuminariaEstado.fromRaw(reparacion.estado) == LuminariaEstado.PENDIENTE) {
+                    repository.actualizarVehiculoLuminaria(id, vehiculoIdSeleccionado)
+                }
+            }
+            actualizarReparacion(
+                id,
+                nuevaLocalizacion,
+                materiales,
+                estado,
+                ejecutorNombre,
+                ejecutorCedula
+            )
+        }
     }
 }
