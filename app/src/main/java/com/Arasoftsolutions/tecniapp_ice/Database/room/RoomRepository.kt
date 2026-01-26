@@ -383,6 +383,23 @@ class   RoomRepository(context: Context) {
         }
     }
 
+    suspend fun obtenerReparacionLuminaria(id: Long): LuminariaReparacionEntity? = withContext(Dispatchers.IO) {
+        inventarioDao.obtenerReparacion(id)
+    }
+
+    suspend fun actualizarVehiculoLuminaria(id: Long, nuevoVehiculoId: Int) = withContext(Dispatchers.IO) {
+        val reparacion = inventarioDao.obtenerReparacion(id) ?: return@withContext
+        if (reparacion.vehiculoId == nuevoVehiculoId) return@withContext
+        val agenciaAnterior = db.vehiculoDao().buscarPorId(reparacion.vehiculoId)?.agencia
+        val agenciaNueva = db.vehiculoDao().buscarPorId(nuevoVehiculoId)?.agencia
+        val actualizado = reparacion.copy(vehiculoId = nuevoVehiculoId)
+        inventarioDao.actualizarReparacion(actualizado)
+        if (!agenciaAnterior.equals(agenciaNueva, ignoreCase = true)) {
+            firebase.eliminarReparacionLuminaria(id, agenciaAnterior)
+        }
+        firebase.guardarReparacionLuminaria(actualizado, agenciaNueva)
+    }
+
     suspend fun actualizarReparacionLuminaria(
         id: Long,
         nuevaLocalizacion: String,
