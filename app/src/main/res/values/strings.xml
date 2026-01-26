@@ -127,7 +127,7 @@
     <string name="averia_materiales_label">Materiales: %1$s</string>
     <string name="averia_cliente_label">Cliente: %1$s</string>
     <string name="averia_localizacion_label">Localización: %1$s</string>
-    <string name="averia_localizacion_label_hint">Localización (opcional)</string>
+    <string name="averia_localizacion_label_hint">Localización</string>
     <string name="averia_direccion_label">Dirección: %1$s</string>
     <string name="averia_tecnicos_atendieron">Técnicos que atendieron</string>
     <string name="averia_tecnico_autocomplete_hint">Buscar técnico</string>
@@ -302,7 +302,12 @@ Cliente: %4$s</string>
     <string name="averia_medidor_dialog_cantidad_hint">Cantidad</string>
     <string name="averia_medidor_dialog_numero_hint">Número de medidor instalado</string>
     <string name="averia_medidor_dialog_lectura_hint">Lectura inicial</string>
-    <string name="averia_medidor_dialog_lectura_anterior_hint">Lectura anterior (opcional)</string>
+    <string name="averia_medidor_dialog_lectura_anterior_hint">Lectura anterior</string>
+    <string name="averia_medidor_dialog_no_cambios">No requiere cambios</string>
+    <string name="averia_medidor_dialog_lectura_anterior_no_visible">Lectura anterior no visible</string>
+    <string name="averia_medidor_dialog_lecturas_anteriores_no_visibles">Lecturas anteriores no visibles</string>
+    <string name="averia_medidor_error_lectura_anterior">Ingresa la lectura anterior o selecciona un motivo.</string>
+    <string name="averia_horas_kilometraje_title">Horas y kilometraje</string>
     <string name="averia_medidor_dialog_cancelar">Cancelar</string>
     <string name="averia_medidor_error_numero">Ingresa el número del medidor instalado.</string>
     <string name="averia_medidor_error_lectura">Ingresa la lectura inicial del medidor.</string>
@@ -700,7 +705,14 @@ Cliente: %4$s</string>
     <string name="reportes_excel_col_material_resumen">Materiales resumen</string>
     <string name="reportes_excel_col_material_total">Unidades</string>
     <string name="reportes_excel_col_localizacion">Localización</string>
-    <string name="luminarias_importar_csv">Cargar CSV de luminarias</string>
+    <string name="luminarias_importar_excel">Cargar XLSX de luminarias</string>
+    <string name="luminarias_descargar_machote">Descargar machote de luminarias</string>
+    <string name="luminarias_filtro_camion">Filtrar por camión</string>
+    <string name="luminarias_camion_todos">Todos los camiones</string>
+    <string name="luminarias_camion_asignado">Camión asignado</string>
+    <string name="luminarias_excel_col_cliente">Cliente</string>
+    <string name="luminarias_excel_col_contacto">Contacto</string>
+    <string name="luminarias_excel_col_observaciones">Observaciones</string>
 
     <string name="inventario_gestion_titulo">Inventario por camión</string>
     <string name="inventario_gestion_descripcion">Carga un archivo CSV o PDF para reemplazar el inventario del camión seleccionado. La lista se actualizará automáticamente con los materiales usados.</string>

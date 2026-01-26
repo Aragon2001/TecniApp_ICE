@@ -13,7 +13,40 @@
         android:textAppearance="?attr/textAppearanceTitleMedium"
         android:textStyle="bold" />
 
-    <!-- // TODO(Codex): Agregar campos estructurados para el material medidor -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/cardMedidorMotivos"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="1dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="12dp">
+
+            <com.google.android.material.materialswitch.MaterialSwitch
+                android:id="@+id/switchNoCambios"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/averia_medidor_dialog_no_cambios" />
+
+            <com.google.android.material.materialswitch.MaterialSwitch
+                android:id="@+id/switchLecturaAnteriorNoVisible"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/averia_medidor_dialog_lectura_anterior_no_visible" />
+
+            <com.google.android.material.materialswitch.MaterialSwitch
+                android:id="@+id/switchLecturasAnterioresNoVisibles"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/averia_medidor_dialog_lecturas_anteriores_no_visibles" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/tilCantidad"
         style="@style/Tecni.TextInput.Outlined.Dense"
