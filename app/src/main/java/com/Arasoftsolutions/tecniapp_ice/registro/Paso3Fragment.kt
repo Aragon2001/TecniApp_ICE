@@ -1,13 +1,13 @@
 package com.Arasoftsolutions.tecniapp_ice.registro
 
 import android.os.Bundle
-import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
+import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
@@ -34,13 +34,26 @@ class Paso3Fragment : Fragment() {
     private lateinit var tvLastNameError2: TextView
     private lateinit var tvIDError: TextView
 
+    private data class PersonalData(
+        val nombre: String,
+        val primerApellido: String,
+        val segundoApellido: String
+    )
+
     // RTDB users (mismo host que Paso1/2/4)
     private val usersDb: DatabaseReference by lazy {
         FirebaseDatabase.getInstance("https://tecniapp-ice-user.firebaseio.com").reference
     }
 
+    private val personalDb: DatabaseReference by lazy {
+        FirebaseDatabase.getInstance("https://tecniapp-ice-personal.firebaseio.com").reference
+    }
+
     // Solo dígitos, 9 posiciones (clave de índice)
     private fun cedulaKey(raw: String): String = raw.filter { it.isDigit() }
+
+    private var personalData: PersonalData? = null
+    private var lastLookupCedula: String? = null
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
@@ -62,6 +75,19 @@ class Paso3Fragment : Fragment() {
         tvLastNameError2 = view.findViewById(R.id.tvLastNameError2)
         tvIDError        = view.findViewById(R.id.tvIDError)
 
+        lockNameFields()
+
+        etID.doAfterTextChanged { text ->
+            val cedula = cedulaKey(text?.toString().orEmpty())
+            if (cedula.length == 9) {
+                lookupPersonalData(cedula)
+            } else {
+                personalData = null
+                lastLookupCedula = null
+                clearNameFields()
+            }
+        }
+
         btnContinueToStep4.setOnClickListener { onContinue() }
 
         return view
@@ -76,24 +102,18 @@ class Paso3Fragment : Fragment() {
     private fun onContinue() {
         clearErrors()
 
-        val firstName = etFirstName.text?.toString()?.trim().orEmpty()
-        val lastName  = etLastName.text?.toString()?.trim().orEmpty()
-        val lastName2  = etLastName2.text?.toString()?.trim().orEmpty()
         val cedulaRaw = etID.text?.toString()?.trim().orEmpty()
         val cedKey    = cedulaKey(cedulaRaw)
 
         // Validación local
-        if (firstName.isBlank()) return showFieldError(tvFirstNameError, "Por favor, ingresa tu nombre.")
-        if (!isValidName(firstName)) return showFieldError(tvFirstNameError, "El nombre solo debe contener letras.")
-        if (lastName.isBlank()) return showFieldError(tvLastNameError, "Por favor, ingresa tu primer apellido.")
-        if (!isValidName(lastName)) return showFieldError(tvLastNameError, "El apellido solo debe contener letras.")
-
-        if (lastName2.isBlank()) return showFieldError(tvLastNameError2, "Por favor, ingresa tu segundo apellido.")
-        if (!isValidName(lastName2)) return showFieldError(tvLastNameError2, "El apellido solo debe contener letras.")
-
         if (cedKey.isBlank()) return showFieldError(tvIDError, "Por favor, ingresa tu cédula.")
         if (!cedKey.all { it.isDigit() }) return showFieldError(tvIDError, "La cédula debe contener solo números.")
         if (cedKey.length != 9) return showFieldError(tvIDError, "La cédula debe tener exactamente 9 dígitos.")
+
+        if (personalData == null || lastLookupCedula != cedKey) {
+            showFieldError(tvIDError, "Primero valida la cédula para completar los datos.")
+            return
+        }
 
         // Verificar unicidad de cédula usando /idcards/{cedulaKey} (patrón PRO)
         setLoading(true)
@@ -106,7 +126,12 @@ class Paso3Fragment : Fragment() {
                 }
 
                 // OK → guarda en VM y avanza a Paso 4
-                viewModel.setDatosTecnico(firstName, lastName, lastName2, cedKey)
+                val data = personalData
+                if (data == null) {
+                    showFieldError(tvIDError, "No se encontraron datos del personal para esa cédula.")
+                    return@launch
+                }
+                viewModel.setDatosTecnico(data.nombre, data.primerApellido, data.segundoApellido, cedKey)
                 (activity as? RegistroActivity)?.goToNextStep(3)
 
             } catch (_: Throwable) {
@@ -134,6 +159,88 @@ class Paso3Fragment : Fragment() {
         tvIDError.visibility = View.GONE
     }
 
-    private fun isValidName(name: String): Boolean =
-        name.all { it.isLetter() || it.isWhitespace() }
+    private fun lockNameFields() {
+        etFirstName.isEnabled = false
+        etLastName.isEnabled = false
+        etLastName2.isEnabled = false
+    }
+
+    private fun clearNameFields() {
+        etFirstName.setText("")
+        etLastName.setText("")
+        etLastName2.setText("")
+    }
+
+    private fun lookupPersonalData(cedula: String) {
+        if (cedula == lastLookupCedula && personalData != null) return
+        lastLookupCedula = cedula
+        setLoading(true)
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val root = personalDb.get().await()
+                val base = if (root.hasChild("personal")) root.child("personal") else root
+                val person = base.child(cedula)
+                if (!person.exists()) {
+                    personalData = null
+                    clearNameFields()
+                    showFieldError(tvIDError, "La cédula no existe en el personal.")
+                    return@launch
+                }
+
+                val parsed = parsePersonalData(person)
+                if (parsed == null) {
+                    personalData = null
+                    clearNameFields()
+                    showFieldError(tvIDError, "No se encontraron nombre y apellidos en el personal.")
+                    return@launch
+                }
+
+                personalData = parsed
+                etFirstName.setText(parsed.nombre)
+                etLastName.setText(parsed.primerApellido)
+                etLastName2.setText(parsed.segundoApellido)
+                clearErrors()
+            } catch (_: Throwable) {
+                personalData = null
+                clearNameFields()
+                showFieldError(tvIDError, "No se pudo validar la cédula. Intenta de nuevo.")
+            } finally {
+                setLoading(false)
+            }
+        }
+    }
+
+    private fun parsePersonalData(snapshot: com.google.firebase.database.DataSnapshot): PersonalData? {
+        fun childValue(vararg keys: String): String? {
+            keys.forEach { key ->
+                val value = snapshot.child(key).getValue(String::class.java)?.trim()
+                if (!value.isNullOrBlank()) return value
+            }
+            return null
+        }
+
+        var nombre = childValue("nombre", "Nombre")?.trim().orEmpty()
+        var primerApellido = childValue("primer_apellido", "primerApellido", "apellido1", "primerapellido").orEmpty()
+        var segundoApellido = childValue("segundo_apellido", "segundoApellido", "apellido2", "segundoapellido").orEmpty()
+        val apellidos = childValue("apellidos", "Apellidos").orEmpty()
+
+        if (primerApellido.isBlank() && apellidos.isNotBlank()) {
+            val parts = apellidos.split(Regex("\\s+")).filter { it.isNotBlank() }
+            primerApellido = parts.getOrNull(0).orEmpty()
+            segundoApellido = parts.drop(1).joinToString(" ").trim()
+        }
+
+        if ((primerApellido.isBlank() || segundoApellido.isBlank()) && nombre.isNotBlank()) {
+            val parts = nombre.split(Regex("\\s+")).filter { it.isNotBlank() }
+            if (parts.size >= 3) {
+                nombre = parts.dropLast(2).joinToString(" ")
+                primerApellido = primerApellido.ifBlank { parts[parts.size - 2] }
+                segundoApellido = segundoApellido.ifBlank { parts.last() }
+            }
+        }
+
+        if (nombre.isBlank() || primerApellido.isBlank() || segundoApellido.isBlank()) return null
+
+        return PersonalData(nombre, primerApellido, segundoApellido)
+    }
 }
