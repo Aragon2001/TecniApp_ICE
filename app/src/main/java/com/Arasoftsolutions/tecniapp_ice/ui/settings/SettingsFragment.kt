@@ -439,8 +439,8 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
                     onSyncStart = { message ->
                         if (isAdded) dialog.setHeader(message)
                     },
-                    onSyncProgress = { done, total, msg ->
-                        if (isAdded) dialog.update(done, total, msg ?: "")
+                    onSyncProgress = { done, total, msg, downloadedBytes ->
+                        if (isAdded) dialog.update(done, total, msg ?: "", downloadedBytes)
                     },
                     onSyncSuccess = {
                         AveriasSyncWorker.triggerNow(requireContext())
@@ -488,30 +488,33 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
                 val uid = auth.currentUser?.uid ?: throw IllegalStateException("Sesión no disponible")
                 val total = RoomRepository.SUBREGION_SYNC_STEPS + 3
                 var done = 0
+                var downloadedBytes = 0L
                 if (isAdded) {
-                    dialog.update(done, total, getString(R.string.settings_clear_cache_step_clear))
+                    dialog.update(done, total, getString(R.string.settings_clear_cache_step_clear), downloadedBytes)
                 }
                 withContext(Dispatchers.IO) {
                     roomRepository.limpiarBaseLocal()
                 }
                 if (isAdded) {
-                    dialog.update(++done, total, getString(R.string.settings_clear_cache_step_catalogs))
+                    dialog.update(++done, total, getString(R.string.settings_clear_cache_step_catalogs), downloadedBytes)
                 }
                 withContext(Dispatchers.IO) {
-                    roomRepository.syncCatalogosGenerales()
+                    downloadedBytes += roomRepository.syncCatalogosGenerales()
                 }
                 if (isAdded) {
-                    dialog.update(++done, total, getString(R.string.settings_clear_cache_step_profile))
+                    dialog.update(++done, total, getString(R.string.settings_clear_cache_step_profile), downloadedBytes)
                 }
                 val subregion = withContext(Dispatchers.IO) {
                     roomRepository.upsertUserFromFirebase(uid).subregion?.trim()
                         ?.takeIf { it.isNotEmpty() }
                 }
                 if (subregion != null) {
+                    val baseBytes = downloadedBytes
                     withContext(Dispatchers.IO) {
-                        roomRepository.syncSubregion(subregion) { subDone, _, msg ->
+                        roomRepository.syncSubregion(subregion) { subDone, _, msg, bytes ->
+                            downloadedBytes = baseBytes + bytes
                             if (isAdded) {
-                                dialog.update(done + subDone, total, msg ?: "")
+                                dialog.update(done + subDone, total, msg ?: "", downloadedBytes)
                             }
                         }
                     }

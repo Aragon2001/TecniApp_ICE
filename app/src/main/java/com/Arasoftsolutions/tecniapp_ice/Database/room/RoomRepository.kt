@@ -451,26 +451,32 @@ class   RoomRepository(context: Context) {
     }
 
     // ----- Sincronización -----
-    suspend fun syncTecnicos() = withContext(Dispatchers.IO) {
+    suspend fun syncTecnicos(): Long = withContext(Dispatchers.IO) {
         val tecnicos = firebase.obtenerTecnicos()
+        val bytes = estimateBytes(tecnicos)
         if (tecnicos.isNotEmpty()) {
             db.tecnicoDao().insertAll(tecnicos)
         }
+        bytes
     }
 
-    suspend fun syncMateriales() = withContext(Dispatchers.IO) {
+    suspend fun syncMateriales(): Long = withContext(Dispatchers.IO) {
         val materiales = firebase.obtenerMaterialesCatalogo()
+        val bytes = estimateBytes(materiales)
         if (materiales.isNotEmpty()) {
             db.materialDao().insertAll(materiales)
         }
+        bytes
     }
 
-    suspend fun syncInventario() = withContext(Dispatchers.IO) {
+    suspend fun syncInventario(): Long = withContext(Dispatchers.IO) {
         val inventario = firebase.obtenerInventario()
+        val bytes = estimateBytes(inventario)
         inventarioDao.limpiarTodo()
         if (inventario.isNotEmpty()) {
             inventarioDao.insertAll(inventario)
         }
+        bytes
     }
 
     private suspend fun resolveVehiculoKey(vehiculoId: Int): String {
@@ -480,10 +486,11 @@ class   RoomRepository(context: Context) {
 
     suspend fun syncSubregion(
         subregionId: String,
-        progress: (done: Int, total: Int, msg: String?) -> Unit = { _, _, _ -> }
+        progress: (done: Int, total: Int, msg: String?, downloadedBytes: Long) -> Unit = { _, _, _, _ -> }
     ) = withContext(Dispatchers.IO) {
         val total = SUBREGION_SYNC_STEPS
         var done = 0
+        var downloadedBytes = 0L
 
         // Si quieres transacción atómica, descomenta y usa withTransaction:
         // db.withTransaction {
@@ -491,10 +498,13 @@ class   RoomRepository(context: Context) {
             ?: throw IllegalArgumentException("Subregión inválida: $subregionId")
 
         val agencias = firebase.obtenerAgencias(canonicalSubregion)
+            .ifEmpty { firebase.obtenerAgencias() }
+        downloadedBytes += estimateBytes(agencias)
         db.agenciaDao().insertAll(agencias)
-        progress(++done, total, "Descargando agencias…")
+        progress(++done, total, "Descargando agencias…", downloadedBytes)
 
         val pueblosRemotos = firebase.obtenerPueblos()
+        downloadedBytes += estimateBytes(pueblosRemotos)
         val pueblosNormalizados = pueblosRemotos.map { remoto ->
             val base = remoto.subregion_id_normalizado.takeIf { it.isNotBlank() } ?: remoto.subregion
             val canonico = SubregionNormalizer.canonicalIdOrSelf(base) ?: ""
@@ -506,7 +516,7 @@ class   RoomRepository(context: Context) {
             db.puebloDao().limpiarSubregion(canonicalSubregion)
             db.puebloDao().insertAll(pueblosFiltrados)
         }
-        progress(++done, total, "Descargando pueblos…")
+        progress(++done, total, "Descargando pueblos…", downloadedBytes)
 
         val idsPueblos = if (pueblosFiltrados.isNotEmpty()) {
             pueblosFiltrados.map { it.id }
@@ -515,20 +525,24 @@ class   RoomRepository(context: Context) {
         }
         val idsSet = idsPueblos.toSet()
         val localizacionesRemotas = firebase.obtenerLocalizaciones()
+        downloadedBytes += estimateBytes(localizacionesRemotas)
         val localizacionesFiltradas = localizacionesRemotas.filter { it.pueblo in idsSet }
         db.localizacionDao().limpiarTodo()
         if (localizacionesFiltradas.isNotEmpty()) {
             db.localizacionDao().insertAll(localizacionesFiltradas)
         }
-        progress(++done, total, "Descargando localizaciones…")
+        progress(++done, total, "Descargando localizaciones…", downloadedBytes)
 
         val vehiculos = firebase.obtenerVehiculos(canonicalSubregion)
+            .ifEmpty { firebase.obtenerVehiculos() }
+        downloadedBytes += estimateBytes(vehiculos)
         db.vehiculoDao().insertAll(vehiculos)
-        progress(++done, total, "Descargando vehículos…")
+        progress(++done, total, "Descargando vehículos…", downloadedBytes)
 
         val medidores = firebase.obtenerMedidores(canonicalSubregion)
+        downloadedBytes += estimateBytes(medidores)
         db.medidorDao().insertAll(medidores)
-        progress(++done, total, "Descargando medidores…")
+        progress(++done, total, "Descargando medidores…", downloadedBytes)
         // }
     }
 
@@ -539,29 +553,39 @@ class   RoomRepository(context: Context) {
         user
     }
 
-    suspend fun syncCatalogosGenerales() = withContext(Dispatchers.IO) {
+    suspend fun syncCatalogosGenerales(): Long = withContext(Dispatchers.IO) {
+        var downloadedBytes = 0L
         val regiones = firebase.obtenerRegiones()
+        downloadedBytes += estimateBytes(regiones)
         if (regiones.isNotEmpty()) {
             db.regionDao().insertAll(regiones)
         }
 
         val subregiones = firebase.obtenerSubregiones()
+        downloadedBytes += estimateBytes(subregiones)
         if (subregiones.isNotEmpty()) {
             db.subregionDao().insertAll(subregiones)
         }
 
         val agencias = firebase.obtenerAgencias()
+        downloadedBytes += estimateBytes(agencias)
         if (agencias.isNotEmpty()) {
             db.agenciaDao().insertAll(agencias)
         }
 
         val vehiculos = firebase.obtenerVehiculos()
+        downloadedBytes += estimateBytes(vehiculos)
         if (vehiculos.isNotEmpty()) {
             db.vehiculoDao().insertAll(vehiculos)
         }
 
         runCatching { syncTecnicos() }
         runCatching { syncMateriales() }
+        downloadedBytes
+    }
+
+    private fun estimateBytes(value: Any?): Long {
+        return value?.toString()?.toByteArray(Charsets.UTF_8)?.size?.toLong() ?: 0L
     }
 
     suspend fun limpiarBaseLocal() = withContext(Dispatchers.IO) {

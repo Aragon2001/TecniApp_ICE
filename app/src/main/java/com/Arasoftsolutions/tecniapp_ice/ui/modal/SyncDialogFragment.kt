@@ -8,17 +8,23 @@ import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.FragmentManager
 import com.Arasoftsolutions.tecniapp_ice.R
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.progressindicator.LinearProgressIndicator
+import java.util.Locale
 
 class SyncDialogFragment : DialogFragment() {
     private var tvHeader: TextView? = null
     private var tvMessage: TextView? = null
     private var tvCounter: TextView? = null
+    private var tvBytes: TextView? = null
+    private var progressBar: LinearProgressIndicator? = null
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val view = requireActivity().layoutInflater.inflate(R.layout.dialog_sync_progress, null)
         tvHeader = view.findViewById(R.id.tvHeader)
         tvMessage = view.findViewById(R.id.tvMessage)
         tvCounter = view.findViewById(R.id.tvCounter)
+        tvBytes = view.findViewById(R.id.tvBytes)
+        progressBar = view.findViewById(R.id.progressBar)
 
         val header = arguments?.getString(ARG_HEADER)
         val status = arguments?.getString(ARG_STATUS)
@@ -36,17 +42,22 @@ class SyncDialogFragment : DialogFragment() {
         tvHeader?.text = text
     }
 
-    fun update(done: Int, total: Int, msg: String?) {
+    fun update(done: Int, total: Int, msg: String?, downloadedBytes: Long = 0L) {
         tvMessage?.text = msg.orEmpty()
         val counter = if (total <= 0) {
             "—"
         } else {
             val safeTotal = total.coerceAtLeast(1)
             val safeDone = done.coerceAtLeast(0).coerceAtMost(safeTotal)
-            val percent = (safeDone * 100) / safeTotal
-            "$safeDone / $safeTotal • $percent%"
+            val percent = (safeDone.toDouble() / safeTotal.toDouble()) * 100
+            val percentLabel = String.format(Locale.getDefault(), "%.2f", percent)
+            val progressValue = (percent * 100).toInt().coerceIn(0, 10000)
+            progressBar?.setProgressCompat(progressValue, true)
+            "$safeDone / $safeTotal • $percentLabel%"
         }
         tvCounter?.text = counter
+        val mb = downloadedBytes.coerceAtLeast(0L).toDouble() / (1024 * 1024).toDouble()
+        tvBytes?.text = String.format(Locale.getDefault(), "%.2f MB", mb)
     }
 
     /**
