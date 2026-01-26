@@ -72,12 +72,21 @@
                     android:text="Registrar reparación" />
 
                 <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnImportarLuminariasCsv"
+                    android:id="@+id/btnImportarLuminariasExcel"
                     style="@style/Widget.Material3.Button.Outlined"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    android:text="@string/luminarias_importar_csv"
+                    android:text="@string/luminarias_importar_excel"
+                    android:visibility="gone" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnDescargarMachote"
+                    style="@style/Widget.Material3.Button.Outlined"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/luminarias_descargar_machote"
                     android:visibility="gone" />
 
                 <ProgressBar
@@ -106,6 +115,36 @@
                 android:layout_height="wrap_content"
                 android:inputType="text" />
         </com.google.android.material.textfield.TextInputLayout>
+
+        <LinearLayout
+            android:id="@+id/groupVehiculosFilter"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:orientation="vertical"
+            android:visibility="gone"
+            tools:visibility="visible">
+
+            <TextView
+                style="@style/TextAppearance.Material3.LabelLarge"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/luminarias_filtro_camion" />
+
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:scrollbars="none">
+
+                <com.google.android.material.button.MaterialButtonToggleGroup
+                    android:id="@+id/toggleGroupVehiculos"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:selectionRequired="false"
+                    app:singleSelection="true" />
+            </HorizontalScrollView>
+        </LinearLayout>
 
         <com.google.android.material.chip.ChipGroup
             android:id="@+id/chipGroupEstado"
