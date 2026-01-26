@@ -7,6 +7,7 @@ import android.os.Bundle
 import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.widget.ArrayAdapter
+import android.widget.TextView
 import android.widget.Toast
 import android.provider.Settings
 import androidx.appcompat.app.AlertDialog
@@ -59,6 +60,8 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
     private var availableNotificationAgencies: List<String> = emptyList()
     private var latestAutoSyncInfo: WorkInfo? = null
     private val updateDownloadManager by lazy { UpdateDownloadManager(requireContext()) }
+    private var manualSyncInProgress = false
+    private var cacheClearInProgress = false
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -141,9 +144,14 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
                 dataStore.markManualSyncNow()
             }
             setManualSyncInProgress(true)
-            showSyncDialog()
+            showProgressDialog(
+                R.string.settings_sync_in_progress_title,
+                R.string.settings_sync_in_progress_message
+            )
             Toast.makeText(requireContext(), R.string.settings_sync_triggered, Toast.LENGTH_SHORT).show()
         }
+
+        binding.btnClearCache.setOnClickListener { confirmClearCache() }
 
         WorkManager.getInstance(requireContext())
             .getWorkInfosForUniqueWorkLiveData(AveriasSyncWorker.UNIQUE_PERIODIC_WORK)
@@ -434,6 +442,46 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         }
     }
 
+    private fun confirmClearCache() {
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.settings_clear_cache_title)
+            .setMessage(R.string.settings_clear_cache_message)
+            .setPositiveButton(R.string.settings_clear_cache_confirm) { _, _ -> clearCacheAndResync() }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    private fun clearCacheAndResync() {
+        setCacheClearInProgress(true)
+        showProgressDialog(
+            R.string.settings_clear_cache_title,
+            R.string.settings_clear_cache_message_in_progress
+        )
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                withContext(Dispatchers.IO) {
+                    roomRepository.limpiarBaseLocal()
+                    roomRepository.syncCatalogosGenerales()
+                    val uid = auth.currentUser?.uid
+                        ?: throw IllegalStateException("Sesión no disponible")
+                    val user = roomRepository.upsertUserFromFirebase(uid)
+                    val subregion = user.subregion?.trim()?.takeIf { it.isNotEmpty() }
+                    if (subregion != null) {
+                        roomRepository.syncSubregion(subregion)
+                    }
+                }
+                AveriasSyncWorker.triggerNow(requireContext())
+                dataStore.markManualSyncNow()
+                Toast.makeText(requireContext(), R.string.settings_clear_cache_success, Toast.LENGTH_SHORT).show()
+            } catch (_: Exception) {
+                Toast.makeText(requireContext(), R.string.settings_clear_cache_failure, Toast.LENGTH_LONG).show()
+            } finally {
+                dismissSyncDialog()
+                setCacheClearInProgress(false)
+            }
+        }
+    }
+
     private fun signOut() {
         auth.signOut()
 
@@ -466,30 +514,61 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
     }
 
     private fun showSyncDialog() {
-        if (syncDialog?.isShowing == true) return
-        val dialogView = layoutInflater.inflate(R.layout.dialog_progress, null)
-        syncDialog = MaterialAlertDialogBuilder(requireContext())
-            .setTitle(R.string.settings_sync_in_progress_title)
-            .setView(dialogView)
-            .setCancelable(false)
-            .create()
-        syncDialog?.show()
+        showProgressDialog(
+            R.string.settings_sync_in_progress_title,
+            R.string.settings_sync_in_progress_message
+        )
     }
 
     private fun dismissSyncDialog() {
         syncDialog?.dismiss()
         syncDialog = null
         setManualSyncInProgress(false)
+        setCacheClearInProgress(false)
     }
 
     private fun setManualSyncInProgress(inProgress: Boolean) {
         if (_binding == null) return
-        binding.btnSincronizarAhora.isEnabled = !inProgress
-        binding.btnSincronizarAhora.alpha = if (inProgress) 0.6f else 1f
-        binding.btnSincronizarAhora.text = if (inProgress) {
+        manualSyncInProgress = inProgress
+        refreshSyncButtons()
+    }
+
+    private fun setCacheClearInProgress(inProgress: Boolean) {
+        if (_binding == null) return
+        cacheClearInProgress = inProgress
+        refreshSyncButtons()
+    }
+
+    private fun refreshSyncButtons() {
+        if (_binding == null) return
+        val manualSyncEnabled = !manualSyncInProgress && !cacheClearInProgress
+        binding.btnSincronizarAhora.isEnabled = manualSyncEnabled
+        binding.btnSincronizarAhora.alpha = if (manualSyncEnabled) 1f else 0.6f
+        binding.btnSincronizarAhora.text = if (manualSyncInProgress) {
             getString(R.string.settings_sync_in_progress_button)
         } else {
             getString(R.string.settings_sync_now)
         }
+
+        val clearEnabled = !cacheClearInProgress
+        binding.btnClearCache.isEnabled = clearEnabled
+        binding.btnClearCache.alpha = if (clearEnabled) 1f else 0.6f
+        binding.btnClearCache.text = if (cacheClearInProgress) {
+            getString(R.string.settings_clear_cache_in_progress)
+        } else {
+            getString(R.string.settings_clear_cache)
+        }
+    }
+
+    private fun showProgressDialog(titleRes: Int, messageRes: Int) {
+        if (syncDialog?.isShowing == true) return
+        val dialogView = layoutInflater.inflate(R.layout.dialog_progress, null)
+        dialogView.findViewById<TextView>(R.id.textProgressMessage)?.setText(messageRes)
+        syncDialog = MaterialAlertDialogBuilder(requireContext())
+            .setTitle(titleRes)
+            .setView(dialogView)
+            .setCancelable(false)
+            .create()
+        syncDialog?.show()
     }
 }
