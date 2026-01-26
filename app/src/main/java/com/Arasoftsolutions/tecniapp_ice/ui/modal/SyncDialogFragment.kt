@@ -41,8 +41,10 @@ class SyncDialogFragment : DialogFragment() {
         val counter = if (total <= 0) {
             "—"
         } else {
-            val percent = (done.coerceAtLeast(0) * 100) / total.coerceAtLeast(1)
-            "$done / $total • $percent%"
+            val safeTotal = total.coerceAtLeast(1)
+            val safeDone = done.coerceAtLeast(0).coerceAtMost(safeTotal)
+            val percent = (safeDone * 100) / safeTotal
+            "$safeDone / $safeTotal • $percent%"
         }
         tvCounter?.text = counter
     }
