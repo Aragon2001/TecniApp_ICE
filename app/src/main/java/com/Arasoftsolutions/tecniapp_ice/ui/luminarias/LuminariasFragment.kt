@@ -10,6 +10,7 @@ import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.widget.AppCompatEditText
+import androidx.core.view.children
 import androidx.core.view.isVisible
 import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.Fragment
@@ -36,9 +37,23 @@ class LuminariasFragment : Fragment() {
     private var materialesCatalogo = emptyList<com.Arasoftsolutions.tecniapp_ice.Database.entities.MaterialEntity>()
     private var tecnicosCatalogo = emptyList<com.Arasoftsolutions.tecniapp_ice.Database.entities.TecnicoEntity>()
 
-    private val csvLauncher = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
-        uri?.let { viewModel.procesarCsv(it) }
+    private val excelLauncher = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
+        uri?.let { viewModel.procesarExcel(it) }
     }
+
+    private var pendingMachoteVehiculos: List<com.Arasoftsolutions.tecniapp_ice.Database.entities.VehiculosEntity>? = null
+    private val machoteLauncher =
+        registerForActivityResult(ActivityResultContracts.CreateDocument(com.Arasoftsolutions.tecniapp_ice.ui.reportes.ExcelReportExporter.MIME_TYPE_XLSX)) { uri ->
+            val vehiculos = pendingMachoteVehiculos
+            pendingMachoteVehiculos = null
+            if (uri == null || vehiculos.isNullOrEmpty()) {
+                return@registerForActivityResult
+            }
+            exportarMachote(uri, vehiculos)
+        }
+
+    private var vehiculosFilterCache: List<Int> = emptyList()
+    private var isUpdatingVehiculoFilter = false
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -54,17 +69,15 @@ class LuminariasFragment : Fragment() {
         setupAdapters()
 
         binding.btnRegistrarLuminaria.setOnClickListener { mostrarRegistroBottomSheet() }
-        binding.btnImportarLuminariasCsv.setOnClickListener {
-            csvLauncher.launch(
+        binding.btnImportarLuminariasExcel.setOnClickListener {
+            excelLauncher.launch(
                 arrayOf(
-                    "text/csv",
-                    "text/comma-separated-values",
-                    "application/csv",
                     "application/vnd.ms-excel",
-                    "text/plain"
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                 )
             )
         }
+        binding.btnDescargarMachote.setOnClickListener { prepararMachote() }
         binding.etBuscarLocalizacion.doAfterTextChanged {
             viewModel.actualizarBusquedaLocalizacion(it?.toString().orEmpty())
         }
@@ -74,13 +87,21 @@ class LuminariasFragment : Fragment() {
         binding.chipPendientes.setOnCheckedChangeListener { _, _ -> actualizarVisibilidadListas() }
         binding.chipReparadas.setOnCheckedChangeListener { _, _ -> actualizarVisibilidadListas() }
 
+        binding.toggleGroupVehiculos.addOnButtonCheckedListener { group, checkedId, isChecked ->
+            if (!isChecked || isUpdatingVehiculoFilter) return@addOnButtonCheckedListener
+            val button = group.findViewById<com.google.android.material.button.MaterialButton>(checkedId)
+            val vehiculoId = button?.tag as? Int
+            viewModel.actualizarVehiculoFiltro(vehiculoId)
+        }
+
         observarEstado()
         actualizarVisibilidadListas()
     }
 
     private fun setupAdapters() {
         reparacionesPendientesAdapter = LuminariaReparacionAdapter(
-            showActions = false,
+            showEdit = false,
+            showDelete = false,
             onEdit = { reparacion -> mostrarDialogoEdicion(reparacion) },
             onDelete = { reparacion -> confirmarEliminacion(reparacion) },
             onSelect = { reparacion -> mostrarDetallePendiente(reparacion) }
@@ -93,7 +114,8 @@ class LuminariasFragment : Fragment() {
         }
 
         reparacionesReparadasAdapter = LuminariaReparacionAdapter(
-            showActions = true,
+            showEdit = true,
+            showDelete = true,
             onEdit = { reparacion -> mostrarDialogoEdicion(reparacion) },
             onDelete = { reparacion -> confirmarEliminacion(reparacion) }
         )
@@ -112,12 +134,23 @@ class LuminariasFragment : Fragment() {
                     binding.progressLuminaria.isVisible = state.isProcessing
                     materialesCatalogo = state.materiales
                     tecnicosCatalogo = state.tecnicos
-                    binding.btnImportarLuminariasCsv.isVisible = state.puedeImportarCsv
+                    binding.btnRegistrarLuminaria.isVisible = state.puedeRegistrarReparacion
+                    binding.btnImportarLuminariasExcel.isVisible = state.puedeImportarExcel
+                    binding.btnDescargarMachote.isVisible = state.puedeDescargarMachote
                     actualizarModoChip()
+                    renderVehiculoFilters(state)
 
+                    reparacionesPendientesAdapter.updatePermissions(
+                        showEdit = state.puedeReasignarVehiculo,
+                        showDelete = state.puedeEliminarLuminarias
+                    )
                     reparacionesPendientesAdapter.submitList(state.reparacionesPendientes)
                     binding.tvEmptyReparacionesPendientes.isVisible = state.reparacionesPendientes.isEmpty()
 
+                    reparacionesReparadasAdapter.updatePermissions(
+                        showEdit = !state.esSupervisor,
+                        showDelete = state.puedeEliminarLuminarias
+                    )
                     reparacionesReparadasAdapter.submitList(state.reparacionesReparadas)
                     binding.tvEmptyReparaciones.isVisible = state.reparacionesReparadas.isEmpty()
                 }
@@ -242,6 +275,7 @@ class LuminariasFragment : Fragment() {
         mostrarDetalle: Boolean,
         reparacion: com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaReparacionEntity?
     ) {
+        val estadoUi = viewModel.uiState.value
         binding.tvTituloBottomSheet.text = titulo
         binding.groupDetalle.isVisible = mostrarDetalle || reparacion != null
         binding.tvLocalizacionDetalle.text = reparacion?.localizacion?.let { "Localización #$it" } ?: "-"
@@ -326,6 +360,12 @@ class LuminariasFragment : Fragment() {
         val tecnicosAdapterDialog = ArrayAdapter(requireContext(), android.R.layout.simple_list_item_1, tecnicosLabel)
         binding.actEjecutorLuminaria.setAdapter(tecnicosAdapterDialog)
 
+        val vehiculosDisponibles = estadoUi.vehiculosAgencia
+        val vehiculosLabel = vehiculosDisponibles.map { it.placa.toString() }
+        val vehiculosAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_list_item_1, vehiculosLabel)
+        binding.actVehiculoLuminaria.setAdapter(vehiculosAdapter)
+        binding.actVehiculoLuminaria.keyListener = null
+
         val estadosLabel = listOf("Pendiente", "Reparada")
         val estadosAdapterDialog = ArrayAdapter(requireContext(), android.R.layout.simple_list_item_1, estadosLabel)
         binding.actEstadoLuminaria.setAdapter(estadosAdapterDialog)
@@ -335,7 +375,7 @@ class LuminariasFragment : Fragment() {
             if (com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado.fromRaw(it.estado) ==
                 com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado.PENDIENTE
             ) {
-                "Reparada"
+                "Pendiente"
             } else {
                 "Reparada"
             }
@@ -347,6 +387,12 @@ class LuminariasFragment : Fragment() {
             reparacion?.ejecutorNombre ?: viewModel.uiState.value.ejecutorNombre,
             false
         )
+        val vehiculoActualId = reparacion?.vehiculoId ?: estadoUi.vehiculoUsuarioId
+        val vehiculoActual = vehiculosDisponibles.firstOrNull { it.id == vehiculoActualId }
+        binding.actVehiculoLuminaria.setText(vehiculoActual?.placa?.toString().orEmpty(), false)
+        val puedeEditarVehiculo = estadoUi.puedeReasignarVehiculo && reparacion != null
+        binding.tilVehiculoLuminaria.isVisible = puedeEditarVehiculo
+        binding.actVehiculoLuminaria.isEnabled = puedeEditarVehiculo
 
         binding.etLocalizacion.doAfterTextChanged {
             if (reparacion == null) {
@@ -359,6 +405,14 @@ class LuminariasFragment : Fragment() {
                 viewModel.actualizarEjecutor(it?.toString().orEmpty())
             }
             binding.tilEjecutorLuminaria.error = null
+        }
+
+        if (estadoUi.esSupervisor) {
+            binding.tilMaterialLuminaria.isEnabled = false
+            binding.actMaterialLuminaria.isEnabled = false
+            binding.tilEjecutorLuminaria.isEnabled = false
+            binding.actEjecutorLuminaria.isEnabled = false
+            binding.actEstadoLuminaria.isEnabled = false
         }
 
         binding.btnGuardarReparacion.setOnClickListener {
@@ -375,21 +429,38 @@ class LuminariasFragment : Fragment() {
                     viewModel.registrarReparacion()
                 }
             } else {
-                val estado = obtenerEstado(binding.actEstadoLuminaria)
-                val ejecutorNombre = binding.actEjecutorLuminaria.text?.toString().orEmpty()
-                val ejecutorCedula = tecnicosCatalogo.firstOrNull {
-                    it.nombre.equals(ejecutorNombre, ignoreCase = true)
-                }?.cedula
-                val localizacion = binding.etLocalizacion.text?.toString().orEmpty()
-                if (validarFormularioRegistro(binding, materialesSeleccionados, ejecutorNombre, estado)) {
-                    viewModel.actualizarReparacion(
-                        reparacion.id,
-                        localizacion,
-                        materialesSeleccionados.toList(),
-                        estado,
-                        ejecutorNombre,
-                        ejecutorCedula
-                    )
+                if (estadoUi.esSupervisor) {
+                    val placaSeleccionada = binding.actVehiculoLuminaria.text?.toString().orEmpty()
+                    val vehiculoSeleccionado = vehiculosDisponibles.firstOrNull {
+                        it.placa.toString() == placaSeleccionada
+                    }
+                    if (vehiculoSeleccionado == null) {
+                        viewModel.enviarMensaje("Selecciona un camión válido", esError = true)
+                    } else {
+                        viewModel.reasignarVehiculo(reparacion.id, vehiculoSeleccionado.id)
+                    }
+                } else {
+                    val estado = obtenerEstado(binding.actEstadoLuminaria)
+                    val ejecutorNombre = binding.actEjecutorLuminaria.text?.toString().orEmpty()
+                    val ejecutorCedula = tecnicosCatalogo.firstOrNull {
+                        it.nombre.equals(ejecutorNombre, ignoreCase = true)
+                    }?.cedula
+                    val localizacion = binding.etLocalizacion.text?.toString().orEmpty()
+                    val placaSeleccionada = binding.actVehiculoLuminaria.text?.toString().orEmpty()
+                    val vehiculoSeleccionado = vehiculosDisponibles.firstOrNull {
+                        it.placa.toString() == placaSeleccionada
+                    }?.id
+                    if (validarFormularioRegistro(binding, materialesSeleccionados, ejecutorNombre, estado)) {
+                        viewModel.actualizarReparacion(
+                            reparacion.id,
+                            localizacion,
+                            materialesSeleccionados.toList(),
+                            estado,
+                            ejecutorNombre,
+                            ejecutorCedula,
+                            vehiculoSeleccionado
+                        )
+                    }
                 }
             }
         }
@@ -446,6 +517,100 @@ class LuminariasFragment : Fragment() {
         binding.chipGroupEstado.isSingleSelection = true
         if (binding.chipPendientes.isChecked && binding.chipReparadas.isChecked) {
             binding.chipReparadas.isChecked = false
+        }
+    }
+
+    private fun renderVehiculoFilters(state: LuminariaUiState) {
+        binding.groupVehiculosFilter.isVisible = state.puedeFiltrarVehiculo
+        if (!state.puedeFiltrarVehiculo) return
+        val vehiculos = state.vehiculosAgencia
+        val ids = vehiculos.map { it.id }
+        if (ids != vehiculosFilterCache) {
+            vehiculosFilterCache = ids
+            rebuildVehiculoFilters(vehiculos, state.vehiculoFiltroId)
+        } else {
+            updateVehiculoSelection(state.vehiculoFiltroId)
+        }
+    }
+
+    private fun rebuildVehiculoFilters(
+        vehiculos: List<com.Arasoftsolutions.tecniapp_ice.Database.entities.VehiculosEntity>,
+        selectedId: Int?
+    ) {
+        isUpdatingVehiculoFilter = true
+        binding.toggleGroupVehiculos.removeAllViews()
+        val context = requireContext()
+        val todosButton = com.google.android.material.button.MaterialButton(
+            context,
+            null,
+            com.google.android.material.R.attr.materialButtonOutlinedStyle
+        ).apply {
+            id = View.generateViewId()
+            text = getString(com.Arasoftsolutions.tecniapp_ice.R.string.luminarias_camion_todos)
+            tag = null
+            isCheckable = true
+        }
+        binding.toggleGroupVehiculos.addView(todosButton)
+        vehiculos.forEach { vehiculo ->
+            val button = com.google.android.material.button.MaterialButton(
+                context,
+                null,
+                com.google.android.material.R.attr.materialButtonOutlinedStyle
+            ).apply {
+                id = View.generateViewId()
+                text = vehiculo.placa.toString()
+                tag = vehiculo.id
+                isCheckable = true
+            }
+            binding.toggleGroupVehiculos.addView(button)
+        }
+        updateVehiculoSelection(selectedId)
+        isUpdatingVehiculoFilter = false
+    }
+
+    private fun updateVehiculoSelection(selectedId: Int?) {
+        isUpdatingVehiculoFilter = true
+        val group = binding.toggleGroupVehiculos
+        val toSelect = group.children.firstOrNull { child ->
+            (child.tag as? Int) == selectedId
+        } ?: group.children.firstOrNull { child ->
+            child.tag == null
+        }
+        val buttonId = toSelect?.id ?: View.NO_ID
+        if (buttonId != View.NO_ID && group.checkedButtonId != buttonId) {
+            group.check(buttonId)
+        }
+        isUpdatingVehiculoFilter = false
+    }
+
+    private fun prepararMachote() {
+        val vehiculos = viewModel.uiState.value.vehiculosAgencia
+        if (vehiculos.isEmpty()) {
+            viewModel.enviarMensaje("No hay camiones disponibles para generar el machote", esError = true)
+            return
+        }
+        pendingMachoteVehiculos = vehiculos
+        val fileName = viewModel.obtenerNombreMachote()
+        machoteLauncher.launch(fileName)
+    }
+
+    private fun exportarMachote(
+        uri: Uri,
+        vehiculos: List<com.Arasoftsolutions.tecniapp_ice.Database.entities.VehiculosEntity>
+    ) {
+        viewLifecycleOwner.lifecycleScope.launch {
+            val resolver = requireContext().contentResolver
+            try {
+                val workbook = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+                    LuminariaMachoteExporter.buildWorkbook(requireContext(), vehiculos)
+                }
+                resolver.openOutputStream(uri)?.use { output ->
+                    workbook.use { wb -> wb.write(output) }
+                }
+                viewModel.enviarMensaje("Machote descargado")
+            } catch (t: Throwable) {
+                viewModel.enviarMensaje("No se pudo generar el machote de luminarias", esError = true)
+            }
         }
     }
 
