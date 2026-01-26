@@ -237,8 +237,10 @@ class LoginActivity : AppCompatActivity() {
                     onSyncStart = { message ->
                         if (!isFinishing && !isDestroyed) runOnUiThread { dlg.setHeader(message) }
                     },
-                    onSyncProgress = { done, total, msg ->
-                        if (!isFinishing && !isDestroyed) runOnUiThread { dlg.update(done, total, msg ?: "") }
+                    onSyncProgress = { done, total, msg, downloadedBytes ->
+                        if (!isFinishing && !isDestroyed) {
+                            runOnUiThread { dlg.update(done, total, msg ?: "", downloadedBytes) }
+                        }
                     },
                     onSyncSuccess = {
                         if (!isFinishing && !isDestroyed) {
