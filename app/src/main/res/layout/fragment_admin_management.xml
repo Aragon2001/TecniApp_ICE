@@ -69,6 +69,15 @@
                             android:text="@string/admin_description"
                             android:textColor="@color/white_translucent"
                             android:textSize="14sp" />
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:id="@+id/textAdminSteps"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:text="@string/admin_overview_steps"
+                            android:textColor="@color/white_translucent"
+                            android:textSize="13sp" />
                     </LinearLayout>
                 </LinearLayout>
 
@@ -139,6 +148,15 @@
                     android:layout_height="wrap_content"
                     android:text="@string/admin_section_medidores_title"
                     android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+                    android:textColor="?attr/colorOnSurface" />
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/textAdminMedidorSteps"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/admin_section_medidores_steps"
+                    android:textAppearance="@style/TextAppearance.Material3.BodySmall"
                     android:textColor="?attr/colorOnSurface" />
 
                 <com.google.android.material.textfield.TextInputLayout
@@ -399,6 +417,15 @@
                     android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
                     android:textColor="?attr/colorOnSurface" />
 
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/textAdminVehiculoSteps"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/admin_section_vehiculos_steps"
+                    android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+                    android:textColor="?attr/colorOnSurface" />
+
                 <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/tilAdminVehiculoBuscar"
                     style="@style/Tecni.TextInput.Outlined.Dropdown"
@@ -582,6 +609,15 @@
                     android:layout_height="wrap_content"
                     android:text="@string/admin_section_localizaciones_title"
                     android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+                    android:textColor="?attr/colorOnSurface" />
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/textAdminLocalizacionSteps"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/admin_section_localizaciones_steps"
+                    android:textAppearance="@style/TextAppearance.Material3.BodySmall"
                     android:textColor="?attr/colorOnSurface" />
 
                 <com.google.android.material.textfield.TextInputLayout
