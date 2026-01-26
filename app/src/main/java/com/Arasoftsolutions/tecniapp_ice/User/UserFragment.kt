@@ -394,7 +394,7 @@ class UserFragment : Fragment() {
     }
 
     private fun updateAgencyDropdown() {
-        val targetSubregion = selectedSubregion
+        val targetSubregion = selectedSubregion ?: currentUserSubregion()
         val targetRegion = selectedRegion ?: currentUserRegion() ?: targetSubregion?.let { findRegion(it.regionId) }
         filteredAgencies = when {
             targetSubregion != null || targetRegion != null -> agencyItems.filter {
@@ -413,7 +413,7 @@ class UserFragment : Fragment() {
     }
 
     private fun updateVehicleDropdown() {
-        val targetAgency = selectedAgency
+        val targetAgency = selectedAgency ?: currentUserAgency()
         filteredVehicles = if (targetAgency != null) {
             vehicleItems.filter { vehicleMatchesAgency(it, targetAgency) }
         } else {
