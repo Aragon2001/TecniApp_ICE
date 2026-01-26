@@ -22,6 +22,7 @@ import com.Arasoftsolutions.tecniapp_ice.Database.entities.UserEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.VehiculosEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.apellidosCompletos
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
+import com.Arasoftsolutions.tecniapp_ice.Database.sync.SubregionNormalizer
 
 import com.Arasoftsolutions.tecniapp_ice.R
 import com.Arasoftsolutions.tecniapp_ice.databinding.FragmentUserBinding
@@ -393,26 +394,30 @@ class UserFragment : Fragment() {
     }
 
     private fun updateAgencyDropdown() {
-        val targetSubregion = selectedSubregion ?: currentUserSubregion()
+        val targetSubregion = selectedSubregion
+        val targetRegion = selectedRegion ?: currentUserRegion() ?: targetSubregion?.let { findRegion(it.regionId) }
         filteredAgencies = when {
-            targetSubregion != null -> agencyItems.filter { agencyMatchesSubregion(it, targetSubregion) }
+            targetSubregion != null || targetRegion != null -> agencyItems.filter {
+                agencyMatches(it, targetSubregion, targetRegion)
+            }
             else -> emptyList()
         }
         agencyAdapter.clear()
         agencyAdapter.addAll(filteredAgencies.map { formatAgency(it) })
         agencyAdapter.notifyDataSetChanged()
 
-        if (selectedAgency?.let { agencyMatchesSubregion(it, targetSubregion) } != true) {
+        if (selectedAgency?.let { agencyMatches(it, targetSubregion, targetRegion) } != true) {
             selectedAgency = null
             binding.actvAgency.setText("", false)
         }
     }
 
     private fun updateVehicleDropdown() {
-        val targetAgency = selectedAgency ?: currentUserAgency()
-        filteredVehicles = when {
-            targetAgency != null -> vehicleItems.filter { vehicleMatchesAgency(it, targetAgency) }
-            else -> emptyList()
+        val targetAgency = selectedAgency
+        filteredVehicles = if (targetAgency != null) {
+            vehicleItems.filter { vehicleMatchesAgency(it, targetAgency) }
+        } else {
+            emptyList()
         }
         vehicleAdapter.clear()
         vehicleAdapter.addAll(filteredVehicles.map { formatVehicle(it) })
@@ -584,8 +589,19 @@ class UserFragment : Fragment() {
     private fun findSubregion(value: String?): SubregionesEntity? {
         if (value.isNullOrBlank()) return null
         val normalized = value.trim().lowercase()
+        val canonicalTarget = SubregionNormalizer.canonicalIdOrSelf(value)
         return subregionItems.firstOrNull {
-            it.id.trim().lowercase() == normalized || it.nombre.trim().lowercase() == normalized
+            val idMatch = it.id.trim().lowercase() == normalized
+            val nameMatch = it.nombre.trim().lowercase() == normalized
+            if (idMatch || nameMatch) {
+                true
+            } else {
+                val canonicalId = SubregionNormalizer.canonicalIdOrSelf(it.id)
+                val canonicalNombre = SubregionNormalizer.canonicalIdOrSelf(it.nombre)
+                canonicalTarget != null && listOfNotNull(canonicalId, canonicalNombre).any { canon ->
+                    canon.equals(canonicalTarget, ignoreCase = true)
+                }
+            }
         }
     }
 
@@ -655,6 +671,12 @@ class UserFragment : Fragment() {
         if (agencySub.isEmpty()) return false
         val subId = subregion.id.trim()
         val subName = subregion.nombre.trim()
+        val agencyCanonical = SubregionNormalizer.canonicalIdOrSelf(agencySub)
+        val subregionCanonical = SubregionNormalizer.canonicalIdOrSelf(subId)
+            ?: SubregionNormalizer.canonicalIdOrSelf(subName)
+        if (agencyCanonical != null && subregionCanonical != null) {
+            return agencyCanonical.equals(subregionCanonical, ignoreCase = true)
+        }
         return agencySub.equals(subId, ignoreCase = true) || agencySub.equals(subName, ignoreCase = true)
     }
 
