@@ -9,7 +9,6 @@ import android.view.inputmethod.EditorInfo
 import android.widget.ArrayAdapter
 import android.widget.Toast
 import android.provider.Settings
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
@@ -24,12 +23,16 @@ import com.Arasoftsolutions.tecniapp_ice.LoginActivity
 import com.Arasoftsolutions.tecniapp_ice.R
 import com.Arasoftsolutions.tecniapp_ice.BuildConfig
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.apellidosCompletos
+import com.Arasoftsolutions.tecniapp_ice.Database.room.AppDatabase
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
+import com.Arasoftsolutions.tecniapp_ice.Database.sync.Synchronizer
 import com.Arasoftsolutions.tecniapp_ice.databinding.DialogNotificationFiltersBinding
 import com.Arasoftsolutions.tecniapp_ice.databinding.FragmentSettingsBinding
 import com.Arasoftsolutions.tecniapp_ice.preferences.DataStoreManager
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriaNotificationPreferences
+import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasRepository
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasSyncWorker
+import com.Arasoftsolutions.tecniapp_ice.ui.modal.SyncDialogFragment
 import com.Arasoftsolutions.tecniapp_ice.update.GithubUpdateChecker
 import com.Arasoftsolutions.tecniapp_ice.update.UpdateCheckResult
 import com.Arasoftsolutions.tecniapp_ice.update.UpdateDialog
@@ -52,13 +55,17 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
     private val binding get() = _binding!!
 
     private var notificationDialog: BottomSheetDialog? = null
-    private var syncDialog: AlertDialog? = null
+    private var syncDialog: SyncDialogFragment? = null
     private val auth by lazy { FirebaseAuth.getInstance() }
     private val dataStore by lazy { DataStoreManager.getInstance(requireContext()) }
     private val roomRepository by lazy { RoomRepository.getInstance(requireContext()) }
+    private val averiasRepository by lazy { AveriasRepository(AppDatabase.getInstance(requireContext())) }
+    private val synchronizer by lazy { Synchronizer(roomRepository, averiasRepository) }
     private var availableNotificationAgencies: List<String> = emptyList()
     private var latestAutoSyncInfo: WorkInfo? = null
     private val updateDownloadManager by lazy { UpdateDownloadManager(requireContext()) }
+    private var manualSyncInProgress = false
+    private var cacheClearInProgress = false
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -136,41 +143,16 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         }
 
         binding.btnSincronizarAhora.setOnClickListener {
-            AveriasSyncWorker.triggerNow(requireContext())
-            viewLifecycleOwner.lifecycleScope.launch {
-                dataStore.markManualSyncNow()
-            }
-            setManualSyncInProgress(true)
-            showSyncDialog()
-            Toast.makeText(requireContext(), R.string.settings_sync_triggered, Toast.LENGTH_SHORT).show()
+            launchManualSync()
         }
+
+        binding.btnClearCache.setOnClickListener { confirmClearCache() }
 
         WorkManager.getInstance(requireContext())
             .getWorkInfosForUniqueWorkLiveData(AveriasSyncWorker.UNIQUE_PERIODIC_WORK)
             .observe(viewLifecycleOwner) { infos ->
                 latestAutoSyncInfo = infos.firstOrNull()
                 updateAutoSyncSummary(binding.switchAutoSync.isChecked, latestAutoSyncInfo)
-            }
-
-        WorkManager.getInstance(requireContext())
-            .getWorkInfosForUniqueWorkLiveData(AveriasSyncWorker.UNIQUE_MANUAL_WORK)
-            .observe(viewLifecycleOwner) { infos ->
-                val info = infos.firstOrNull()
-                if (info == null) {
-                    dismissSyncDialog()
-                    return@observe
-                }
-
-                when {
-                    info.state == WorkInfo.State.RUNNING ||
-                        info.state == WorkInfo.State.ENQUEUED ||
-                        info.state == WorkInfo.State.BLOCKED -> {
-                        showSyncDialog()
-                        setManualSyncInProgress(true)
-                    }
-
-                    info.state.isFinished -> dismissSyncDialog()
-                }
             }
 
         viewLifecycleOwner.lifecycleScope.launch {
@@ -434,6 +416,117 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         }
     }
 
+    private fun launchManualSync() {
+        if (manualSyncInProgress || cacheClearInProgress) return
+        setManualSyncInProgress(true)
+        val dialog = showSyncDialog(
+            getString(R.string.settings_sync_in_progress_title),
+            getString(R.string.settings_sync_in_progress_message)
+        )
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val uid = auth.currentUser?.uid ?: throw IllegalStateException("Sesión no disponible")
+                val subregion = withContext(Dispatchers.IO) {
+                    roomRepository.obtenerUsuario(uid)?.subregion?.trim()
+                        ?.takeIf { it.isNotEmpty() }
+                        ?: roomRepository.upsertUserFromFirebase(uid).subregion?.trim()
+                            ?.takeIf { it.isNotEmpty() }
+                } ?: throw IllegalStateException("Subregión no disponible")
+
+                synchronizer.syncSubregion(
+                    subregion,
+                    onSyncStart = { message ->
+                        if (isAdded) dialog.setHeader(message)
+                    },
+                    onSyncProgress = { done, total, msg ->
+                        if (isAdded) dialog.update(done, total, msg ?: "")
+                    },
+                    onSyncSuccess = {
+                        AveriasSyncWorker.triggerNow(requireContext())
+                        viewLifecycleOwner.lifecycleScope.launch {
+                            dataStore.markManualSyncNow()
+                        }
+                        dismissSyncDialog()
+                        Toast.makeText(requireContext(), R.string.settings_sync_triggered, Toast.LENGTH_SHORT).show()
+                    },
+                    onSyncError = { error ->
+                        dismissSyncDialog()
+                        Toast.makeText(
+                            requireContext(),
+                            error.message ?: getString(R.string.settings_clear_cache_failure),
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+                )
+            } catch (_: Exception) {
+                dismissSyncDialog()
+                Toast.makeText(requireContext(), R.string.settings_clear_cache_failure, Toast.LENGTH_LONG).show()
+            } finally {
+                setManualSyncInProgress(false)
+            }
+        }
+    }
+
+    private fun confirmClearCache() {
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.settings_clear_cache_title)
+            .setMessage(R.string.settings_clear_cache_message)
+            .setPositiveButton(R.string.settings_clear_cache_confirm) { _, _ -> clearCacheAndResync() }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    private fun clearCacheAndResync() {
+        setCacheClearInProgress(true)
+        val dialog = showSyncDialog(
+            getString(R.string.settings_clear_cache_title),
+            getString(R.string.settings_clear_cache_message_in_progress)
+        )
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val uid = auth.currentUser?.uid ?: throw IllegalStateException("Sesión no disponible")
+                val total = RoomRepository.SUBREGION_SYNC_STEPS + 3
+                var done = 0
+                if (isAdded) {
+                    dialog.update(done, total, getString(R.string.settings_clear_cache_step_clear))
+                }
+                withContext(Dispatchers.IO) {
+                    roomRepository.limpiarBaseLocal()
+                }
+                if (isAdded) {
+                    dialog.update(++done, total, getString(R.string.settings_clear_cache_step_catalogs))
+                }
+                withContext(Dispatchers.IO) {
+                    roomRepository.syncCatalogosGenerales()
+                }
+                if (isAdded) {
+                    dialog.update(++done, total, getString(R.string.settings_clear_cache_step_profile))
+                }
+                val subregion = withContext(Dispatchers.IO) {
+                    roomRepository.upsertUserFromFirebase(uid).subregion?.trim()
+                        ?.takeIf { it.isNotEmpty() }
+                }
+                if (subregion != null) {
+                    withContext(Dispatchers.IO) {
+                        roomRepository.syncSubregion(subregion) { subDone, _, msg ->
+                            if (isAdded) {
+                                dialog.update(done + subDone, total, msg ?: "")
+                            }
+                        }
+                    }
+                }
+                AveriasSyncWorker.triggerNow(requireContext())
+                dataStore.markManualSyncNow()
+                Toast.makeText(requireContext(), R.string.settings_clear_cache_success, Toast.LENGTH_SHORT).show()
+            } catch (_: Exception) {
+                Toast.makeText(requireContext(), R.string.settings_clear_cache_failure, Toast.LENGTH_LONG).show()
+            } finally {
+                dismissSyncDialog()
+                setCacheClearInProgress(false)
+            }
+        }
+    }
+
     private fun signOut() {
         auth.signOut()
 
@@ -465,31 +558,52 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         _binding = null
     }
 
-    private fun showSyncDialog() {
-        if (syncDialog?.isShowing == true) return
-        val dialogView = layoutInflater.inflate(R.layout.dialog_progress, null)
-        syncDialog = MaterialAlertDialogBuilder(requireContext())
-            .setTitle(R.string.settings_sync_in_progress_title)
-            .setView(dialogView)
-            .setCancelable(false)
-            .create()
-        syncDialog?.show()
-    }
-
     private fun dismissSyncDialog() {
-        syncDialog?.dismiss()
+        syncDialog?.dismissAllowingStateLoss()
         syncDialog = null
         setManualSyncInProgress(false)
+        setCacheClearInProgress(false)
     }
 
     private fun setManualSyncInProgress(inProgress: Boolean) {
         if (_binding == null) return
-        binding.btnSincronizarAhora.isEnabled = !inProgress
-        binding.btnSincronizarAhora.alpha = if (inProgress) 0.6f else 1f
-        binding.btnSincronizarAhora.text = if (inProgress) {
+        manualSyncInProgress = inProgress
+        refreshSyncButtons()
+    }
+
+    private fun setCacheClearInProgress(inProgress: Boolean) {
+        if (_binding == null) return
+        cacheClearInProgress = inProgress
+        refreshSyncButtons()
+    }
+
+    private fun refreshSyncButtons() {
+        if (_binding == null) return
+        val manualSyncEnabled = !manualSyncInProgress && !cacheClearInProgress
+        binding.btnSincronizarAhora.isEnabled = manualSyncEnabled
+        binding.btnSincronizarAhora.alpha = if (manualSyncEnabled) 1f else 0.6f
+        binding.btnSincronizarAhora.text = if (manualSyncInProgress) {
             getString(R.string.settings_sync_in_progress_button)
         } else {
             getString(R.string.settings_sync_now)
         }
+
+        val clearEnabled = !cacheClearInProgress
+        binding.btnClearCache.isEnabled = clearEnabled
+        binding.btnClearCache.alpha = if (clearEnabled) 1f else 0.6f
+        binding.btnClearCache.text = if (cacheClearInProgress) {
+            getString(R.string.settings_clear_cache_in_progress)
+        } else {
+            getString(R.string.settings_clear_cache)
+        }
+    }
+
+    private fun showSyncDialog(header: String, status: String): SyncDialogFragment {
+        syncDialog?.let { return it }
+        val dialog = SyncDialogFragment.newInstance(header, status)
+        dialog.isCancelable = false
+        dialog.show(parentFragmentManager, "sync_dialog_settings")
+        syncDialog = dialog
+        return dialog
     }
 }

@@ -38,7 +38,14 @@ class SyncDialogFragment : DialogFragment() {
 
     fun update(done: Int, total: Int, msg: String?) {
         tvMessage?.text = msg.orEmpty()
-        val counter = if (total <= 0) "—" else "$done / $total"
+        val counter = if (total <= 0) {
+            "—"
+        } else {
+            val safeTotal = total.coerceAtLeast(1)
+            val safeDone = done.coerceAtLeast(0).coerceAtMost(safeTotal)
+            val percent = (safeDone * 100) / safeTotal
+            "$safeDone / $safeTotal • $percent%"
+        }
         tvCounter?.text = counter
     }
 
