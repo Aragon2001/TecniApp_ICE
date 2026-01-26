@@ -18,12 +18,16 @@ import com.Arasoftsolutions.tecniapp_ice.Database.entities.MedidorEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.PueblosEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.SubregionesEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.VehiculosEntity
+import com.Arasoftsolutions.tecniapp_ice.Database.sync.SubregionNormalizer
+import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
 import com.Arasoftsolutions.tecniapp_ice.ui.admin.MapCoordinatePickerBottomSheet
 import com.Arasoftsolutions.tecniapp_ice.databinding.FragmentAdminManagementBinding
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
+import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
 import java.util.Locale
+import androidx.navigation.fragment.findNavController
 
 class AdminManagementFragment : Fragment(R.layout.fragment_admin_management) {
 
@@ -62,6 +66,8 @@ class AdminManagementFragment : Fragment(R.layout.fragment_admin_management) {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         _binding = FragmentAdminManagementBinding.bind(view)
+
+        verificarAccesoAdmin()
 
         setupAdapters()
         setupToggle()
@@ -103,6 +109,24 @@ class AdminManagementFragment : Fragment(R.layout.fragment_admin_management) {
         binding.actvAdminMedidorSubregion.setAdapter(subregionAdapter)
         binding.actvAdminVehiculoSubregion.setAdapter(subregionAdapter)
         binding.actvAdminLocalizacionSubregion.setAdapter(subregionAdapter)
+    }
+
+    private fun verificarAccesoAdmin() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return@launch
+            val usuario = RoomRepository.getInstance(requireContext()).obtenerUsuario(uid)
+            val rol = usuario?.rol?.trim()?.lowercase(Locale.getDefault())
+            val permitido = rol == "administrador" || rol == "supervisor"
+            if (permitido) return@launch
+            binding.root.isVisible = false
+            MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.admin_access_denied_title)
+                .setMessage(R.string.admin_access_denied_message)
+                .setPositiveButton(R.string.admin_access_denied_action) { _, _ ->
+                    findNavController().navigateUp()
+                }
+                .show()
+        }
     }
 
     private fun setupToggle() {
@@ -476,12 +500,24 @@ class AdminManagementFragment : Fragment(R.layout.fragment_admin_management) {
         val subregionId = subregion?.id?.trim().orEmpty()
         val subregionNombre = subregion?.nombre?.trim().orEmpty()
         if (subregionId.isEmpty() && subregionNombre.isEmpty()) return false
+        val candidateCanonical = SubregionNormalizer.canonicalIdOrSelf(candidate)
+        val subregionCanonical = SubregionNormalizer.canonicalIdOrSelf(subregionId)
+            ?: SubregionNormalizer.canonicalIdOrSelf(subregionNombre)
+        if (candidateCanonical != null && subregionCanonical != null) {
+            return candidateCanonical.equals(subregionCanonical, ignoreCase = true)
+        }
         return candidate.equals(subregionId, ignoreCase = true) ||
             candidate.equals(subregionNombre, ignoreCase = true)
     }
 
     private fun matchesSubregionFiltro(value: String?, subregionId: String?, subregionNombre: String?): Boolean {
         val candidate = value?.trim().takeIf { it.isNotEmpty() } ?: return false
+        val candidateCanonical = SubregionNormalizer.canonicalIdOrSelf(candidate)
+        val subregionCanonical = SubregionNormalizer.canonicalIdOrSelf(subregionId)
+            ?: SubregionNormalizer.canonicalIdOrSelf(subregionNombre)
+        if (candidateCanonical != null && subregionCanonical != null) {
+            return candidateCanonical.equals(subregionCanonical, ignoreCase = true)
+        }
         val matchesId = subregionId?.equals(candidate, ignoreCase = true) == true
         val matchesNombre = subregionNombre?.equals(candidate, ignoreCase = true) == true
         return matchesId || matchesNombre

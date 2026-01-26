@@ -329,7 +329,8 @@ class   RoomRepository(context: Context) {
             .forEach { registro ->
                 val existente = inventarioDao.obtenerReparacionPorLocalizacionYEstado(
                     registro.localizacion,
-                    com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado.PENDIENTE.name
+                    com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado.PENDIENTE.name,
+                    vehiculoId
                 )
                 val cliente = registro.cliente?.trim().takeIf { !it.isNullOrEmpty() }
                 val contacto = registro.contacto?.trim().takeIf { !it.isNullOrEmpty() }
@@ -381,6 +382,23 @@ class   RoomRepository(context: Context) {
                 delta = material.cantidad
             )
         }
+    }
+
+    suspend fun obtenerReparacionLuminaria(id: Long): LuminariaReparacionEntity? = withContext(Dispatchers.IO) {
+        inventarioDao.obtenerReparacion(id)
+    }
+
+    suspend fun actualizarVehiculoLuminaria(id: Long, nuevoVehiculoId: Int) = withContext(Dispatchers.IO) {
+        val reparacion = inventarioDao.obtenerReparacion(id) ?: return@withContext
+        if (reparacion.vehiculoId == nuevoVehiculoId) return@withContext
+        val agenciaAnterior = db.vehiculoDao().buscarPorId(reparacion.vehiculoId)?.agencia
+        val agenciaNueva = db.vehiculoDao().buscarPorId(nuevoVehiculoId)?.agencia
+        val actualizado = reparacion.copy(vehiculoId = nuevoVehiculoId)
+        inventarioDao.actualizarReparacion(actualizado)
+        if (!agenciaAnterior.equals(agenciaNueva, ignoreCase = true)) {
+            firebase.eliminarReparacionLuminaria(id, agenciaAnterior)
+        }
+        firebase.guardarReparacionLuminaria(actualizado, agenciaNueva)
     }
 
     suspend fun actualizarReparacionLuminaria(

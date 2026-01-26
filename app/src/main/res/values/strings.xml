@@ -705,7 +705,14 @@ Cliente: %4$s</string>
     <string name="reportes_excel_col_material_resumen">Materiales resumen</string>
     <string name="reportes_excel_col_material_total">Unidades</string>
     <string name="reportes_excel_col_localizacion">Localización</string>
-    <string name="luminarias_importar_csv">Cargar CSV de luminarias</string>
+    <string name="luminarias_importar_excel">Cargar XLSX de luminarias</string>
+    <string name="luminarias_descargar_machote">Descargar machote de luminarias</string>
+    <string name="luminarias_filtro_camion">Filtrar por camión</string>
+    <string name="luminarias_camion_todos">Todos los camiones</string>
+    <string name="luminarias_camion_asignado">Camión asignado</string>
+    <string name="luminarias_excel_col_cliente">Cliente</string>
+    <string name="luminarias_excel_col_contacto">Contacto</string>
+    <string name="luminarias_excel_col_observaciones">Observaciones</string>
 
     <string name="inventario_gestion_titulo">Inventario por camión</string>
     <string name="inventario_gestion_descripcion">Carga un archivo CSV o PDF para reemplazar el inventario del camión seleccionado. La lista se actualizará automáticamente con los materiales usados.</string>
@@ -758,10 +765,12 @@ Cliente: %4$s</string>
     <string name="menu_admin">Administración</string>
     <string name="admin_title">Panel de administración</string>
     <string name="admin_description">Gestiona catálogos globales. Los cambios se sincronizan para todos los técnicos.</string>
+    <string name="admin_overview_steps">1) Elige la sección.\n2) Selecciona la subregión.\n3) Busca o registra la información.</string>
     <string name="admin_tab_medidores">Medidores</string>
     <string name="admin_tab_vehiculos">Vehículos</string>
     <string name="admin_tab_localizaciones">Localizaciones</string>
     <string name="admin_section_medidores_title">Gestión de medidores</string>
+    <string name="admin_section_medidores_steps">Paso 1: Busca un medidor existente o ingresa el número para crear uno nuevo.\nPaso 2: Elige subregión y pueblo.\nPaso 3: Completa calle, poste y metros para generar la localización.\nPaso 4: Guarda, modifica o elimina según corresponda.</string>
     <string name="admin_field_medidor_buscar_hint">Buscar por número</string>
     <string name="admin_field_medidor_numero">Número de medidor</string>
     <string name="admin_field_medidor_cliente">Nombre del cliente</string>
@@ -772,12 +781,14 @@ Cliente: %4$s</string>
     <string name="admin_field_medidor_pueblo">Pueblo</string>
     <string name="admin_field_medidor_subregion">Subregión</string>
     <string name="admin_section_vehiculos_title">Gestión de vehículos</string>
+    <string name="admin_section_vehiculos_steps">Paso 1: Selecciona la subregión para cargar agencias.\nPaso 2: Elige la agencia y revisa la lista de placas.\nPaso 3: Si la placa no existe, ingrésala para agregar.\nPaso 4: Si existe, modifica el tipo o elimina el vehículo.</string>
     <string name="admin_field_vehiculo_buscar_hint">Buscar por placa</string>
     <string name="admin_field_vehiculo_placa">Placa</string>
     <string name="admin_field_vehiculo_agencia">Agencia</string>
     <string name="admin_field_vehiculo_tipo">Tipo</string>
     <string name="admin_field_vehiculo_subregion">Subregión</string>
     <string name="admin_section_localizaciones_title">Gestión de localizaciones</string>
+    <string name="admin_section_localizaciones_steps">Paso 1: Selecciona subregión y pueblo.\nPaso 2: Busca la calle o selecciona una localización.\nPaso 3: Indica dirección y coordenadas con el mapa.\nPaso 4: Guarda los cambios o elimina la localización.</string>
     <string name="admin_field_localizacion_pueblo">Pueblo</string>
     <string name="admin_field_localizacion_calle">Calle</string>
     <string name="admin_field_localizacion_direccion">Dirección detallada</string>
@@ -796,6 +807,9 @@ Cliente: %4$s</string>
     <string name="admin_section_icon_medidores">Icono de medidores</string>
     <string name="admin_section_icon_vehiculos">Icono de vehículos</string>
     <string name="admin_section_icon_localizaciones">Icono de localizaciones</string>
+    <string name="admin_access_denied_title">Acceso restringido</string>
+    <string name="admin_access_denied_message">Este panel solo está disponible para supervisores y administradores. Si necesitas acceso, contacta a tu supervisor.</string>
+    <string name="admin_access_denied_action">Entendido</string>
     <string name="admin_medidor_error_numero">Ingresa el número del medidor.</string>
     <string name="admin_medidor_error_subregion">Selecciona una subregión válida.</string>
     <string name="admin_medidor_error_pueblo">Selecciona un pueblo existente.</string>
