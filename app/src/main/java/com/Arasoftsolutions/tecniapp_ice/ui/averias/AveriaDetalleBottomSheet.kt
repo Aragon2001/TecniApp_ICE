@@ -34,6 +34,8 @@ import com.google.android.material.textfield.TextInputLayout
 import androidx.navigation.findNavController
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
@@ -64,6 +66,8 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
     private var horaInicioEditable = false
     private var estadoActual: Estado = Estado.PENDIENTE
     private var persistDraftOnDestroy = true
+    private var medidorLookupJob: Job? = null
+    private var lastMedidorLookup: String? = null
 
     private enum class ValidationContext { NONE, INICIAR, RESOLVER }
 
@@ -568,11 +572,14 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
             }
             b.tilMedidor.error = null
             b.tilMedidor.helperText = null
+            lastMedidorLookup = numero
             vm.buscarMedidor(numero)
             // TODO(Codex): Validar estado del medidor antes de lanzar la búsqueda
         }
         b.etMedidor.doAfterTextChanged {
             if (it.isNullOrBlank()) {
+                medidorLookupJob?.cancel()
+                lastMedidorLookup = null
                 medidorSeleccionado = null
                 clienteSeleccionado = item.cliente
                 b.tilMedidor.error = null
@@ -580,6 +587,21 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
                 if (tipoSeleccionado == TipoAfectacion.CLIENTE) {
                     renderMedidorInfo(null)
                 }
+                return@doAfterTextChanged
+            }
+            if (!inputsEditable || tipoSeleccionado != TipoAfectacion.CLIENTE) return@doAfterTextChanged
+            val numero = it.toString().trim()
+            if (numero.isBlank() || numero == lastMedidorLookup) return@doAfterTextChanged
+            medidorLookupJob?.cancel()
+            medidorLookupJob = viewLifecycleOwner.lifecycleScope.launch {
+                delay(600)
+                val current = b.etMedidor.text?.toString()?.trim().orEmpty()
+                if (current.isBlank() || current != numero) return@launch
+                if (!inputsEditable || tipoSeleccionado != TipoAfectacion.CLIENTE) return@launch
+                lastMedidorLookup = current
+                b.tilMedidor.error = null
+                b.tilMedidor.helperText = null
+                vm.buscarMedidor(current)
             }
         }
 
@@ -608,6 +630,7 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
                             R.string.averia_medidor_encontrado,
                             state.medidor.medidorNumber
                         )
+                        lastMedidorLookup = state.medidor.medidorNumber.trim()
                         val numero = state.medidor.medidorNumber.takeIf { it.isNotBlank() }
                         if (!numero.isNullOrBlank()) {
                             b.etMedidor.setText(numero)
@@ -1060,10 +1083,36 @@ b.btnExportar.isEnabled = pertenece
         binding.etLecturaNueva.setText(lecturaNueva)
         binding.etLecturaAnterior.setText(lecturaAnterior)
 
+        fun updateLecturasEnabled() {
+            val sinCambios = binding.switchNoCambios.isChecked
+            binding.tilLecturaNueva.isEnabled = !sinCambios
+            binding.tilLecturaAnterior.isEnabled = !sinCambios
+            if (sinCambios) {
+                binding.tilLecturaNueva.error = null
+                binding.tilLecturaAnterior.error = null
+            }
+        }
+
+        binding.switchNoCambios.setOnCheckedChangeListener { _, isChecked ->
+            if (isChecked) {
+                binding.switchLecturaAnteriorNoVisible.isChecked = false
+                binding.switchLecturasAnterioresNoVisibles.isChecked = false
+            }
+            updateLecturasEnabled()
+        }
+        binding.switchLecturaAnteriorNoVisible.setOnCheckedChangeListener { _, _ ->
+            binding.tilLecturaAnterior.error = null
+        }
+        binding.switchLecturasAnterioresNoVisibles.setOnCheckedChangeListener { _, _ ->
+            binding.tilLecturaAnterior.error = null
+        }
+        updateLecturasEnabled()
+
         fun buildMetadata(cantidad: Int): Pair<Int, MedidorInstalacion?>? {
             binding.tilCantidad.error = null
             binding.tilNumero.error = null
             binding.tilLecturaNueva.error = null
+            binding.tilLecturaAnterior.error = null
 
             if (cantidad < 0) {
                 binding.tilCantidad.error = getString(R.string.averia_material_cantidad_error)
@@ -1076,15 +1125,22 @@ b.btnExportar.isEnabled = pertenece
             val numero = binding.etNumero.text?.toString()?.trim().orEmpty()
             val lecturaNuevaTexto = binding.etLecturaNueva.text?.toString()?.trim().orEmpty()
             val lecturaAnteriorTexto = binding.etLecturaAnterior.text?.toString()?.trim().orEmpty()
+            val sinCambios = binding.switchNoCambios.isChecked
+            val lecturaAnteriorNoVisible = binding.switchLecturaAnteriorNoVisible.isChecked
+            val lecturasAnterioresNoVisibles = binding.switchLecturasAnterioresNoVisibles.isChecked
             if (numero.isBlank()) {
                 binding.tilNumero.error = getString(R.string.averia_medidor_error_numero)
                 return null
             }
-            if (lecturaNuevaTexto.isBlank()) {
+            if (!sinCambios && lecturaNuevaTexto.isBlank()) {
                 binding.tilLecturaNueva.error = getString(R.string.averia_medidor_error_lectura)
                 return null
             }
-            val payload = buildLecturaPayload(lecturaNuevaTexto, lecturaAnteriorTexto)
+            if (!sinCambios && lecturaAnteriorTexto.isBlank() && !lecturaAnteriorNoVisible && !lecturasAnterioresNoVisibles) {
+                binding.tilLecturaAnterior.error = getString(R.string.averia_medidor_error_lectura_anterior)
+                return null
+            }
+            val payload = if (sinCambios) null else buildLecturaPayload(lecturaNuevaTexto, lecturaAnteriorTexto)
             val metadata = MedidorInstalacion(numero, payload)
             return cantidad to metadata
         }
@@ -1446,7 +1502,9 @@ b.btnExportar.isEnabled = pertenece
         fun TextInputEditText.readText(): String? =
             text?.toString()?.trim()?.takeIf { it.isNotBlank() }
 
-        val materiales = materialesSeleccionados.values.filter { it.cantidad > 0 }
+        val materiales = materialesSeleccionados.values.filter {
+            it.cantidad > 0 && it.medidorInstalado == null
+        }
         val tecnicos = tecnicosSeleccionados.values.toList()
         return AveriaDraft(
             localizacion = b.etLocalizacion.readText(),
@@ -1494,6 +1552,7 @@ b.btnExportar.isEnabled = pertenece
         } else {
             vm.clearDraft(item.id)
         }
+        medidorLookupJob?.cancel()
         vm.resetMedidorEstado()
         _b = null
         super.onDestroyView()
