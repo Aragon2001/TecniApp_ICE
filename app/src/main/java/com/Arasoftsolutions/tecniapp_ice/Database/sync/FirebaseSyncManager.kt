@@ -18,6 +18,8 @@ import java.util.Locale
  * - Agencias / Subregiones / Vehículos: https://tecniapp-ice-datosgenerales.firebaseio.com/
  * - Localizaciones / pueblos: https://tecniapp-ice.firebaseio.com/
  * - Medidores: https://tecniapp-ice-default-rtdb.firebaseio.com/
+ * - Luminarias: https://tecniapp-ice-default-rtdb.firebaseio.com/
+ * - Inventario: https://tecniapp-ice-inventario.firebaseio.com/
  */
 class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
 
@@ -34,6 +36,10 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
     }
 
     private val dbMedidores: DatabaseReference by lazy {
+        database("https://tecniapp-ice-default-rtdb.firebaseio.com")
+    }
+
+    private val dbLuminarias: DatabaseReference by lazy {
         database("https://tecniapp-ice-default-rtdb.firebaseio.com")
     }
 
