@@ -50,123 +50,145 @@
                 <!-- TODO(Codex): Integrar botón de cierre explícito para impedir cierres accidentales -->
         </LinearLayout>
 
-        <!-- DATOS PRINCIPALES -->
-        <TextView
-            android:id="@+id/tvNise"
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardDatosPrincipales"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:textAppearance="?attr/textAppearanceBodyMedium" />
-
-        <TextView
-            android:id="@+id/tvRegion"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:textAppearance="?attr/textAppearanceBodyMedium" />
-
-        <TextView
-            android:id="@+id/tvAgencia"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:textAppearance="?attr/textAppearanceBodyMedium" />
-
-        <TextView
-            android:id="@+id/tvTipoAfectacion"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:textAppearance="?attr/textAppearanceBodyMedium" />
-
-        <TextView
-            android:id="@+id/tvMedidorActual"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:textAppearance="?attr/textAppearanceBodyMedium" />
-
-        <TextView
-            android:id="@+id/tvMedidorResumen"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:textAppearance="?attr/textAppearanceBodySmall"
-            android:visibility="gone" />
-
-        <TextView
-            android:id="@+id/tvCliente"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:textAppearance="?attr/textAppearanceBodyMedium"
-            android:visibility="gone" />
-
-        <TextView
-            android:id="@+id/tvCoordenadas"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:textAppearance="?attr/textAppearanceBodySmall" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnDetalleVerMapa"
-            style="@style/Tecni.Button.Outlined"
-            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="@string/averia_ver_mapa"
-            app:icon="@drawable/ic_share_location24"
-            app:iconGravity="textStart"
-            app:iconPadding="4dp"
-            app:iconSize="18dp" />
+            app:cardCornerRadius="16dp"
+            app:cardElevation="1dp">
 
-        <TextView
-            android:id="@+id/tvDireccionGps"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:textAppearance="?attr/textAppearanceBodySmall"
-            android:textIsSelectable="true"
-            android:visibility="gone" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
 
-        <TextView
-    android:id="@+id/tvAsignado"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:layout_marginTop="8dp"
-    android:textAppearance="?attr/textAppearanceBodyMedium" />
+                <TextView
+                    android:id="@+id/tvNise"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="?attr/textAppearanceBodyMedium" />
 
+                <TextView
+                    android:id="@+id/tvRegion"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:textAppearance="?attr/textAppearanceBodyMedium" />
 
-        <TextView
-            android:id="@+id/tvFechaDetalle"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:textAppearance="?attr/textAppearanceBodySmall" />
+                <TextView
+                    android:id="@+id/tvAgencia"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:textAppearance="?attr/textAppearanceBodyMedium" />
 
-        <TextView
-            android:id="@+id/tvAtendido"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:textAppearance="?attr/textAppearanceBodyMedium" />
+                <TextView
+                    android:id="@+id/tvTipoAfectacion"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:textAppearance="?attr/textAppearanceBodyMedium" />
 
-        <TextView
-            android:id="@+id/tvVehiculo"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:textAppearance="?attr/textAppearanceBodyMedium" />
+                <TextView
+                    android:id="@+id/tvMedidorActual"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:textAppearance="?attr/textAppearanceBodyMedium" />
+
+                <TextView
+                    android:id="@+id/tvMedidorResumen"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:textAppearance="?attr/textAppearanceBodySmall"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/tvCliente"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:textAppearance="?attr/textAppearanceBodyMedium"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/tvCoordenadas"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:textAppearance="?attr/textAppearanceBodySmall" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnDetalleVerMapa"
+                    style="@style/Tecni.Button.Outlined"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/averia_ver_mapa"
+                    app:icon="@drawable/ic_share_location24"
+                    app:iconGravity="textStart"
+                    app:iconPadding="4dp"
+                    app:iconSize="18dp" />
+
+                <TextView
+                    android:id="@+id/tvDireccionGps"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:textAppearance="?attr/textAppearanceBodySmall"
+                    android:textIsSelectable="true"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/tvAsignado"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:textAppearance="?attr/textAppearanceBodyMedium" />
+
+                <TextView
+                    android:id="@+id/tvFechaDetalle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:textAppearance="?attr/textAppearanceBodySmall" />
+
+                <TextView
+                    android:id="@+id/tvAtendido"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:textAppearance="?attr/textAppearanceBodyMedium" />
+
+                <TextView
+                    android:id="@+id/tvVehiculo"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:textAppearance="?attr/textAppearanceBodyMedium" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
 
         <!-- LOCALIZACIÓN ACTUAL -->
-        <TextView
-            android:id="@+id/tvLocalizacionActual"
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardLocalizacionActual"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:textAppearance="?attr/textAppearanceBodyMedium"
-            android:textIsSelectable="true" />
+            app:cardCornerRadius="16dp"
+            app:cardElevation="1dp">
+
+            <TextView
+                android:id="@+id/tvLocalizacionActual"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="16dp"
+                android:textAppearance="?attr/textAppearanceBodyMedium"
+                android:textIsSelectable="true" />
+        </com.google.android.material.card.MaterialCardView>
 
         <!-- RESUMEN DE CAUSA / OBSERVACIONES (TÉCNICO) -->
         <com.google.android.material.card.MaterialCardView
@@ -508,113 +530,163 @@
                 android:paddingEnd="0dp" />
         </com.google.android.material.textfield.TextInputLayout>
 
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/tilHoraLlegada"
-            style="@style/Tecni.TextInput.Outlined"
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardHorarios"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:hint="@string/averia_hora_llegada_hint"
-            app:startIconDrawable="@drawable/ic_time"
-            app:startIconTint="?attr/colorOnSurfaceVariant">
+            android:layout_marginTop="16dp"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="1dp">
 
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/etHoraLlegada"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:focusable="false"
-                android:clickable="true"
-                android:inputType="none" />
-        </com.google.android.material.textfield.TextInputLayout>
+                android:orientation="vertical"
+                android:padding="16dp">
 
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/tilHoraInicio"
-            style="@style/Tecni.TextInput.Outlined"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:hint="@string/averia_hora_inicio_hint"
-            app:startIconDrawable="@drawable/ic_time"
-            app:startIconTint="?attr/colorOnSurfaceVariant">
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/averia_horas_kilometraje_title"
+                    android:textAppearance="?attr/textAppearanceTitleSmall"
+                    android:textStyle="bold" />
 
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/etHoraInicio"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:focusable="false"
-                android:clickable="true"
-                android:inputType="none" />
-        </com.google.android.material.textfield.TextInputLayout>
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:orientation="horizontal">
 
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/tilHoraFinal"
-            style="@style/Tecni.TextInput.Outlined"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:hint="@string/averia_hora_fin_hint"
-            app:startIconDrawable="@drawable/ic_time"
-            app:startIconTint="?attr/colorOnSurfaceVariant">
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tilHoraLlegada"
+                        style="@style/Tecni.TextInput.Outlined"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="8dp"
+                        android:layout_weight="1"
+                        android:hint="@string/averia_hora_llegada_hint"
+                        app:startIconDrawable="@drawable/ic_time"
+                        app:startIconTint="?attr/colorOnSurfaceVariant">
 
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/etHoraFin"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:focusable="false"
-                android:clickable="true"
-                android:inputType="none" />
-        </com.google.android.material.textfield.TextInputLayout>
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etHoraLlegada"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:focusable="false"
+                            android:clickable="true"
+                            android:inputType="none" />
+                    </com.google.android.material.textfield.TextInputLayout>
 
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/tilKmLlegada"
-            style="@style/Tecni.TextInput.Outlined"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:hint="@string/averia_km_llegada_hint"
-            app:startIconDrawable="@drawable/ic_speedometer"
-            app:startIconTint="?attr/colorOnSurfaceVariant">
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tilKmLlegada"
+                        style="@style/Tecni.TextInput.Outlined"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:layout_weight="1"
+                        android:hint="@string/averia_km_llegada_hint"
+                        app:startIconDrawable="@drawable/ic_speedometer"
+                        app:startIconTint="?attr/colorOnSurfaceVariant">
 
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/etKmLlegada"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="numberDecimal" />
-        </com.google.android.material.textfield.TextInputLayout>
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etKmLlegada"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="numberDecimal" />
+                    </com.google.android.material.textfield.TextInputLayout>
+                </LinearLayout>
 
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/tilKmInicio"
-            style="@style/Tecni.TextInput.Outlined"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:hint="@string/averia_km_inicio_hint"
-            app:startIconDrawable="@drawable/ic_speedometer"
-            app:startIconTint="?attr/colorOnSurfaceVariant">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:orientation="horizontal">
 
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/etKmInicio"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="numberDecimal" />
-        </com.google.android.material.textfield.TextInputLayout>
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tilHoraInicio"
+                        style="@style/Tecni.TextInput.Outlined"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="8dp"
+                        android:layout_weight="1"
+                        android:hint="@string/averia_hora_inicio_hint"
+                        app:startIconDrawable="@drawable/ic_time"
+                        app:startIconTint="?attr/colorOnSurfaceVariant">
 
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/tilKmFinal"
-            style="@style/Tecni.TextInput.Outlined"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:hint="@string/averia_km_fin_hint"
-            app:startIconDrawable="@drawable/ic_speedometer"
-            app:startIconTint="?attr/colorOnSurfaceVariant">
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etHoraInicio"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:focusable="false"
+                            android:clickable="true"
+                            android:inputType="none" />
+                    </com.google.android.material.textfield.TextInputLayout>
 
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/etKmFinal"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="numberDecimal" />
-        </com.google.android.material.textfield.TextInputLayout>
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tilKmInicio"
+                        style="@style/Tecni.TextInput.Outlined"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:layout_weight="1"
+                        android:hint="@string/averia_km_inicio_hint"
+                        app:startIconDrawable="@drawable/ic_speedometer"
+                        app:startIconTint="?attr/colorOnSurfaceVariant">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etKmInicio"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="numberDecimal" />
+                    </com.google.android.material.textfield.TextInputLayout>
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tilHoraFinal"
+                        style="@style/Tecni.TextInput.Outlined"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="8dp"
+                        android:layout_weight="1"
+                        android:hint="@string/averia_hora_fin_hint"
+                        app:startIconDrawable="@drawable/ic_time"
+                        app:startIconTint="?attr/colorOnSurfaceVariant">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etHoraFin"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:focusable="false"
+                            android:clickable="true"
+                            android:inputType="none" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tilKmFinal"
+                        style="@style/Tecni.TextInput.Outlined"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:layout_weight="1"
+                        android:hint="@string/averia_km_fin_hint"
+                        app:startIconDrawable="@drawable/ic_speedometer"
+                        app:startIconTint="?attr/colorOnSurfaceVariant">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etKmFinal"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="numberDecimal" />
+                    </com.google.android.material.textfield.TextInputLayout>
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
 
         <!-- BOTONES -->
         <LinearLayout
