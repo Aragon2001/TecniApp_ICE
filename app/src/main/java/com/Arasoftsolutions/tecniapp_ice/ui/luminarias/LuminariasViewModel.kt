@@ -394,18 +394,17 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
                 val workbook = org.apache.poi.xssf.usermodel.XSSFWorkbook(stream)
                 workbook.use { wb ->
                     val formatter = org.apache.poi.ss.usermodel.DataFormatter()
-                    val vehiculosPorPlaca = vehiculos.associateBy {
-                        com.Arasoftsolutions.tecniapp_ice.Database.entities.VehiculoKilometrajeEntity
-                            .normalizarPlaca(it.placa.toString()).orEmpty()
-                    }
+                    val vehiculosPorPlaca = construirIndiceVehiculos(vehiculos)
                     val registrosPorVehiculo = linkedMapOf<Int, List<LuminariaCsvRegistro>>()
                     val hojasIgnoradas = mutableListOf<String>()
                     for (i in 0 until wb.numberOfSheets) {
                         val sheet = wb.getSheetAt(i)
                         val sheetName = sheet.sheetName
-                        val placaNormalizada = com.Arasoftsolutions.tecniapp_ice.Database.entities.VehiculoKilometrajeEntity
-                            .normalizarPlaca(sheetName).orEmpty()
-                        val vehiculo = vehiculosPorPlaca[placaNormalizada]
+                        val placaNormalizada = normalizarPlacaKey(sheetName)
+                        val placaSoloDigitos = placaNormalizada.filter(Char::isDigit)
+                        val placaSinCeros = placaSoloDigitos.trimStart('0')
+                        val vehiculo = listOf(placaNormalizada, placaSoloDigitos, placaSinCeros)
+                            .firstNotNullOfOrNull { key -> vehiculosPorPlaca[key] }
                         if (vehiculo == null) {
                             hojasIgnoradas.add(sheetName)
                             continue
@@ -482,6 +481,30 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
     private fun normalizeHeader(value: String): String {
         val normalized = java.text.Normalizer.normalize(value.trim(), java.text.Normalizer.Form.NFD)
         return normalized.replace("\\p{M}+".toRegex(), "").lowercase()
+    }
+
+    private fun construirIndiceVehiculos(vehiculos: List<VehiculosEntity>): Map<String, VehiculosEntity> {
+        val index = mutableMapOf<String, VehiculosEntity>()
+        vehiculos.forEach { vehiculo ->
+            val placaRaw = vehiculo.placa.toString()
+            val placaKey = normalizarPlacaKey(placaRaw)
+            val digits = placaKey.filter(Char::isDigit)
+            val digitsSinCeros = digits.trimStart('0')
+            listOf(placaKey, digits, digitsSinCeros)
+                .filter { it.isNotBlank() }
+                .forEach { key ->
+                    index.putIfAbsent(key, vehiculo)
+                }
+        }
+        return index
+    }
+
+    private fun normalizarPlacaKey(raw: String): String {
+        val normalized = java.text.Normalizer.normalize(raw.trim(), java.text.Normalizer.Form.NFD)
+        return normalized
+            .replace("\\p{M}+".toRegex(), "")
+            .uppercase()
+            .replace("[^A-Z0-9]".toRegex(), "")
     }
 
     fun enviarMensaje(texto: String, esError: Boolean = false) {
