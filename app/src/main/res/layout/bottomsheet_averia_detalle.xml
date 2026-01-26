@@ -508,113 +508,163 @@
                 android:paddingEnd="0dp" />
         </com.google.android.material.textfield.TextInputLayout>
 
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/tilHoraLlegada"
-            style="@style/Tecni.TextInput.Outlined"
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardHorarios"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:hint="@string/averia_hora_llegada_hint"
-            app:startIconDrawable="@drawable/ic_time"
-            app:startIconTint="?attr/colorOnSurfaceVariant">
+            android:layout_marginTop="16dp"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="1dp">
 
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/etHoraLlegada"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:focusable="false"
-                android:clickable="true"
-                android:inputType="none" />
-        </com.google.android.material.textfield.TextInputLayout>
+                android:orientation="vertical"
+                android:padding="16dp">
 
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/tilHoraInicio"
-            style="@style/Tecni.TextInput.Outlined"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:hint="@string/averia_hora_inicio_hint"
-            app:startIconDrawable="@drawable/ic_time"
-            app:startIconTint="?attr/colorOnSurfaceVariant">
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/averia_horas_kilometraje_title"
+                    android:textAppearance="?attr/textAppearanceTitleSmall"
+                    android:textStyle="bold" />
 
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/etHoraInicio"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:focusable="false"
-                android:clickable="true"
-                android:inputType="none" />
-        </com.google.android.material.textfield.TextInputLayout>
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:orientation="horizontal">
 
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/tilHoraFinal"
-            style="@style/Tecni.TextInput.Outlined"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:hint="@string/averia_hora_fin_hint"
-            app:startIconDrawable="@drawable/ic_time"
-            app:startIconTint="?attr/colorOnSurfaceVariant">
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tilHoraLlegada"
+                        style="@style/Tecni.TextInput.Outlined"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="8dp"
+                        android:layout_weight="1"
+                        android:hint="@string/averia_hora_llegada_hint"
+                        app:startIconDrawable="@drawable/ic_time"
+                        app:startIconTint="?attr/colorOnSurfaceVariant">
 
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/etHoraFin"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:focusable="false"
-                android:clickable="true"
-                android:inputType="none" />
-        </com.google.android.material.textfield.TextInputLayout>
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etHoraLlegada"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:focusable="false"
+                            android:clickable="true"
+                            android:inputType="none" />
+                    </com.google.android.material.textfield.TextInputLayout>
 
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/tilKmLlegada"
-            style="@style/Tecni.TextInput.Outlined"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:hint="@string/averia_km_llegada_hint"
-            app:startIconDrawable="@drawable/ic_speedometer"
-            app:startIconTint="?attr/colorOnSurfaceVariant">
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tilKmLlegada"
+                        style="@style/Tecni.TextInput.Outlined"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:layout_weight="1"
+                        android:hint="@string/averia_km_llegada_hint"
+                        app:startIconDrawable="@drawable/ic_speedometer"
+                        app:startIconTint="?attr/colorOnSurfaceVariant">
 
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/etKmLlegada"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="numberDecimal" />
-        </com.google.android.material.textfield.TextInputLayout>
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etKmLlegada"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="numberDecimal" />
+                    </com.google.android.material.textfield.TextInputLayout>
+                </LinearLayout>
 
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/tilKmInicio"
-            style="@style/Tecni.TextInput.Outlined"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:hint="@string/averia_km_inicio_hint"
-            app:startIconDrawable="@drawable/ic_speedometer"
-            app:startIconTint="?attr/colorOnSurfaceVariant">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:orientation="horizontal">
 
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/etKmInicio"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="numberDecimal" />
-        </com.google.android.material.textfield.TextInputLayout>
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tilHoraInicio"
+                        style="@style/Tecni.TextInput.Outlined"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="8dp"
+                        android:layout_weight="1"
+                        android:hint="@string/averia_hora_inicio_hint"
+                        app:startIconDrawable="@drawable/ic_time"
+                        app:startIconTint="?attr/colorOnSurfaceVariant">
 
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/tilKmFinal"
-            style="@style/Tecni.TextInput.Outlined"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:hint="@string/averia_km_fin_hint"
-            app:startIconDrawable="@drawable/ic_speedometer"
-            app:startIconTint="?attr/colorOnSurfaceVariant">
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etHoraInicio"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:focusable="false"
+                            android:clickable="true"
+                            android:inputType="none" />
+                    </com.google.android.material.textfield.TextInputLayout>
 
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/etKmFinal"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="numberDecimal" />
-        </com.google.android.material.textfield.TextInputLayout>
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tilKmInicio"
+                        style="@style/Tecni.TextInput.Outlined"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:layout_weight="1"
+                        android:hint="@string/averia_km_inicio_hint"
+                        app:startIconDrawable="@drawable/ic_speedometer"
+                        app:startIconTint="?attr/colorOnSurfaceVariant">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etKmInicio"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="numberDecimal" />
+                    </com.google.android.material.textfield.TextInputLayout>
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tilHoraFinal"
+                        style="@style/Tecni.TextInput.Outlined"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="8dp"
+                        android:layout_weight="1"
+                        android:hint="@string/averia_hora_fin_hint"
+                        app:startIconDrawable="@drawable/ic_time"
+                        app:startIconTint="?attr/colorOnSurfaceVariant">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etHoraFin"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:focusable="false"
+                            android:clickable="true"
+                            android:inputType="none" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tilKmFinal"
+                        style="@style/Tecni.TextInput.Outlined"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:layout_weight="1"
+                        android:hint="@string/averia_km_fin_hint"
+                        app:startIconDrawable="@drawable/ic_speedometer"
+                        app:startIconTint="?attr/colorOnSurfaceVariant">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etKmFinal"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="numberDecimal" />
+                    </com.google.android.material.textfield.TextInputLayout>
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
 
         <!-- BOTONES -->
         <LinearLayout
