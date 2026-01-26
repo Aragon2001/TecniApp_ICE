@@ -492,7 +492,7 @@ class   RoomRepository(context: Context) {
 
         val agencias = firebase.obtenerAgencias(canonicalSubregion)
         db.agenciaDao().insertAll(agencias)
-        progress(++done, total, "Agencias")
+        progress(++done, total, "Descargando agencias…")
 
         val pueblosRemotos = firebase.obtenerPueblos()
         val pueblosNormalizados = pueblosRemotos.map { remoto ->
@@ -506,7 +506,7 @@ class   RoomRepository(context: Context) {
             db.puebloDao().limpiarSubregion(canonicalSubregion)
             db.puebloDao().insertAll(pueblosFiltrados)
         }
-        progress(++done, total, "Pueblos")
+        progress(++done, total, "Descargando pueblos…")
 
         val idsPueblos = if (pueblosFiltrados.isNotEmpty()) {
             pueblosFiltrados.map { it.id }
@@ -520,15 +520,15 @@ class   RoomRepository(context: Context) {
         if (localizacionesFiltradas.isNotEmpty()) {
             db.localizacionDao().insertAll(localizacionesFiltradas)
         }
-        progress(++done, total, "Localizaciones")
+        progress(++done, total, "Descargando localizaciones…")
 
         val vehiculos = firebase.obtenerVehiculos(canonicalSubregion)
         db.vehiculoDao().insertAll(vehiculos)
-        progress(++done, total, "Vehículos")
+        progress(++done, total, "Descargando vehículos…")
 
         val medidores = firebase.obtenerMedidores(canonicalSubregion)
         db.medidorDao().insertAll(medidores)
-        progress(++done, total, "Medidores")
+        progress(++done, total, "Descargando medidores…")
         // }
     }
 

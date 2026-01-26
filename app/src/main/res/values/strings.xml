@@ -384,6 +384,17 @@ Cliente: %4$s</string>
     <string name="settings_auto_sync_summary_disabled">No se programarán sincronizaciones automáticas hasta que las actives.</string>
     <string name="settings_auto_sync_summary_running">Sincronizando datos en segundo plano…</string>
     <string name="settings_sync_now">Sincronizar ahora</string>
+    <string name="settings_clear_cache">Borrar caché y recargar</string>
+    <string name="settings_clear_cache_in_progress">Borrando caché…</string>
+    <string name="settings_clear_cache_title">Actualizando caché</string>
+    <string name="settings_clear_cache_message">Se eliminarán los datos locales y se volverán a sincronizar sin cerrar sesión.</string>
+    <string name="settings_clear_cache_message_in_progress">Limpiando caché y recargando datos…</string>
+    <string name="settings_clear_cache_confirm">Borrar caché</string>
+    <string name="settings_clear_cache_success">Caché borrada. La sincronización ya está en marcha.</string>
+    <string name="settings_clear_cache_failure">No fue posible borrar la caché. Inténtalo más tarde.</string>
+    <string name="settings_clear_cache_step_clear">Borrando caché local…</string>
+    <string name="settings_clear_cache_step_catalogs">Descargando catálogos generales…</string>
+    <string name="settings_clear_cache_step_profile">Actualizando perfil del técnico…</string>
     <string name="settings_last_sync_never">Última sincronización manual: nunca</string>
     <string name="settings_last_sync_format">Última sincronización manual: %1$s</string>
     <string name="settings_sync_triggered">Sincronización solicitada</string>
