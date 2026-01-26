@@ -394,26 +394,30 @@ class UserFragment : Fragment() {
     }
 
     private fun updateAgencyDropdown() {
-        val targetSubregion = selectedSubregion ?: currentUserSubregion()
+        val targetSubregion = selectedSubregion
+        val targetRegion = selectedRegion ?: currentUserRegion() ?: targetSubregion?.let { findRegion(it.regionId) }
         filteredAgencies = when {
-            targetSubregion != null -> agencyItems.filter { agencyMatchesSubregion(it, targetSubregion) }
+            targetSubregion != null || targetRegion != null -> agencyItems.filter {
+                agencyMatches(it, targetSubregion, targetRegion)
+            }
             else -> emptyList()
         }
         agencyAdapter.clear()
         agencyAdapter.addAll(filteredAgencies.map { formatAgency(it) })
         agencyAdapter.notifyDataSetChanged()
 
-        if (selectedAgency?.let { agencyMatchesSubregion(it, targetSubregion) } != true) {
+        if (selectedAgency?.let { agencyMatches(it, targetSubregion, targetRegion) } != true) {
             selectedAgency = null
             binding.actvAgency.setText("", false)
         }
     }
 
     private fun updateVehicleDropdown() {
-        val targetAgency = selectedAgency ?: currentUserAgency()
-        filteredVehicles = when {
-            targetAgency != null -> vehicleItems.filter { vehicleMatchesAgency(it, targetAgency) }
-            else -> emptyList()
+        val targetAgency = selectedAgency
+        filteredVehicles = if (targetAgency != null) {
+            vehicleItems.filter { vehicleMatchesAgency(it, targetAgency) }
+        } else {
+            emptyList()
         }
         vehicleAdapter.clear()
         vehicleAdapter.addAll(filteredVehicles.map { formatVehicle(it) })
