@@ -40,12 +40,24 @@ object AveriaNotifications {
         }
     }
 
-    fun averiasPendingIntent(context: Context): PendingIntent =
-        NavDeepLinkBuilder(context)
+    fun averiasPendingIntent(
+        context: Context,
+        mutable: Boolean = false
+    ): PendingIntent {
+        val taskStackBuilder = NavDeepLinkBuilder(context)
             .setGraph(R.navigation.mobile_navigation)
             .setDestination(R.id.nav_averias)
             .setComponentName(ActivityMain::class.java)
-            .createPendingIntent()
+            .createTaskStackBuilder()
+        val mutabilityFlag = if (mutable && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            PendingIntent.FLAG_MUTABLE
+        } else {
+            PendingIntent.FLAG_IMMUTABLE
+        }
+        return requireNotNull(
+            taskStackBuilder.getPendingIntent(0, PendingIntent.FLAG_UPDATE_CURRENT or mutabilityFlag)
+        )
+    }
 
     fun notificationPreferencesPendingIntent(context: Context): PendingIntent =
         NavDeepLinkBuilder(context)
@@ -57,7 +69,7 @@ object AveriaNotifications {
 
     fun bubbleMetadata(context: Context): NotificationCompat.BubbleMetadata? {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return null
-        val intent = averiasPendingIntent(context)
+        val intent = averiasPendingIntent(context, mutable = true)
         val icon = IconCompat.createWithResource(context, R.drawable.ic_notification_bolt)
         return NotificationCompat.BubbleMetadata.Builder(intent, icon)
             .setDesiredHeight(context.resources.getDimensionPixelSize(R.dimen.averia_notification_map_height))
