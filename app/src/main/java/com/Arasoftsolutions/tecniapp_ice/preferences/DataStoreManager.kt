@@ -31,6 +31,9 @@ class DataStoreManager private constructor(private val appContext: Context) {
 
     val onboardingCompleted: Flow<Boolean> = booleanFlow(Keys.ONBOARDING_COMPLETED, default = false)
 
+    val adminPrivilegesEnabled: Flow<Boolean> =
+        booleanFlow(Keys.ADMIN_PRIVILEGES_ENABLED, default = true)
+
     val lastManualSyncMillis: Flow<Long?> = dataStore.data.map { preferences ->
         preferences[Keys.LAST_MANUAL_SYNC]
     }
@@ -68,6 +71,10 @@ class DataStoreManager private constructor(private val appContext: Context) {
 
     suspend fun setDarkThemeEnabled(value: Boolean) {
         dataStore.edit { prefs -> prefs[Keys.DARK_THEME_ENABLED] = value }
+    }
+
+    suspend fun setAdminPrivilegesEnabled(value: Boolean) {
+        dataStore.edit { prefs -> prefs[Keys.ADMIN_PRIVILEGES_ENABLED] = value }
     }
 
     suspend fun setOnboardingCompleted(value: Boolean) {
@@ -108,6 +115,7 @@ class DataStoreManager private constructor(private val appContext: Context) {
         val AUTO_SYNC_ENABLED = booleanPreferencesKey("auto_sync_enabled")
         val GPS_ENABLED = booleanPreferencesKey("gps_enabled")
         val DARK_THEME_ENABLED = booleanPreferencesKey("dark_theme_enabled")
+        val ADMIN_PRIVILEGES_ENABLED = booleanPreferencesKey("admin_privileges_enabled")
         val LAST_MANUAL_SYNC = longPreferencesKey("last_manual_sync")
         val ONBOARDING_COMPLETED = booleanPreferencesKey("onboarding_completed")
         val LAST_SCHEMA_VERSION_APPLIED = intPreferencesKey("last_schema_version_applied")
