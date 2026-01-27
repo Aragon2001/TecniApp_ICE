@@ -7,9 +7,12 @@ package com.Arasoftsolutions.tecniapp_ice
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.text.method.LinkMovementMethod
+import android.os.Environment
+import android.provider.Settings
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -58,14 +61,41 @@ class ActivityMain : AppCompatActivity() {
     private val dataStore by lazy { DataStoreManager.getInstance(applicationContext) }
     private val updateDownloadManager by lazy { UpdateDownloadManager(this) }
 
-    private val requestNotificationPermission =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-            val messageRes = if (granted) {
-                R.string.averia_notification_permission_granted
+    private val runtimePermissionsLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { results ->
+            val notificationGranted = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                results[Manifest.permission.POST_NOTIFICATIONS] == true ||
+                    ContextCompat.checkSelfPermission(
+                        this,
+                        Manifest.permission.POST_NOTIFICATIONS
+                    ) == PackageManager.PERMISSION_GRANTED
             } else {
-                R.string.averia_notification_permission_denied
+                true
             }
-            Toast.makeText(this, messageRes, Toast.LENGTH_LONG).show()
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !notificationGranted) {
+                Toast.makeText(
+                    this,
+                    R.string.averia_notification_permission_denied,
+                    Toast.LENGTH_LONG
+                ).show()
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                Toast.makeText(
+                    this,
+                    R.string.averia_notification_permission_granted,
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+            requestAllPermissionsOnLaunch()
+        }
+
+    private val backgroundLocationLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) {
+            requestAllPermissionsOnLaunch()
+        }
+
+    private val settingsLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+            requestAllPermissionsOnLaunch()
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -93,11 +123,11 @@ class ActivityMain : AppCompatActivity() {
             loadUserDataFromDatabase()
         }
          val currentUser = auth.currentUser
-    if (currentUser != null) {
-        AveriasSyncWorker.triggerNow(applicationContext)
-    }
+        if (currentUser != null) {
+            AveriasSyncWorker.triggerNow(applicationContext)
+        }
 
-        requestNotificationPermissionIfNeeded()
+        requestAllPermissionsOnLaunch()
 
         // Drawer + Navigation
         val drawerLayout: DrawerLayout = binding.drawerLayout
@@ -231,14 +261,82 @@ class ActivityMain : AppCompatActivity() {
         binding.drawerLayout.closeDrawer(GravityCompat.START)
     }
 
-    private fun requestNotificationPermissionIfNeeded() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
-        val granted = ContextCompat.checkSelfPermission(
-            this,
-            Manifest.permission.POST_NOTIFICATIONS
-        ) == PackageManager.PERMISSION_GRANTED
-        if (granted) return
-        requestNotificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
+    private fun requestAllPermissionsOnLaunch() {
+        val runtimePermissions = mutableListOf<String>()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            !hasPermission(Manifest.permission.POST_NOTIFICATIONS)
+        ) {
+            runtimePermissions += Manifest.permission.POST_NOTIFICATIONS
+        }
+
+        if (!hasAnyLocationPermission()) {
+            runtimePermissions += listOf(
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            )
+        }
+
+        if (runtimePermissions.isNotEmpty()) {
+            runtimePermissionsLauncher.launch(runtimePermissions.toTypedArray())
+            return
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && !hasBackgroundLocationPermission()) {
+            showPermissionRequiredDialog(
+                message = getString(R.string.permission_background_location_required)
+            ) {
+                backgroundLocationLauncher.launch(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+            }
+            return
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && !Environment.isExternalStorageManager()) {
+            showPermissionRequiredDialog(
+                message = getString(R.string.permission_all_files_required)
+            ) {
+                val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION).apply {
+                    data = Uri.fromParts("package", packageName, null)
+                }
+                settingsLauncher.launch(intent)
+            }
+            return
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !packageManager.canRequestPackageInstalls()) {
+            showPermissionRequiredDialog(
+                message = getString(R.string.permission_unknown_sources_required)
+            ) {
+                val intent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
+                    data = Uri.fromParts("package", packageName, null)
+                }
+                settingsLauncher.launch(intent)
+            }
+        }
+    }
+
+    private fun hasPermission(permission: String): Boolean =
+        ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
+
+    private fun hasAnyLocationPermission(): Boolean =
+        hasPermission(Manifest.permission.ACCESS_FINE_LOCATION) ||
+            hasPermission(Manifest.permission.ACCESS_COARSE_LOCATION)
+
+    private fun hasBackgroundLocationPermission(): Boolean =
+        hasPermission(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+
+    private fun showPermissionRequiredDialog(message: String, onConfirm: () -> Unit) {
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.permission_required_title)
+            .setMessage(message)
+            .setCancelable(false)
+            .setPositiveButton(R.string.permission_required_action) { dialog, _ ->
+                dialog.dismiss()
+                onConfirm()
+            }
+            .setNegativeButton(R.string.permission_required_exit) { _, _ ->
+                finishAffinity()
+            }
+            .show()
     }
 
     override fun onSupportNavigateUp(): Boolean {
@@ -249,6 +347,7 @@ class ActivityMain : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         lifecycleScope.launch { loadUserDataFromDatabase() }
+        requestAllPermissionsOnLaunch()
     }
 
     fun refreshNavHeader() {
