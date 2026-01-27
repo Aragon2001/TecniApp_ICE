@@ -84,60 +84,10 @@
             </com.google.android.material.card.MaterialCardView>
 
             <com.google.android.material.card.MaterialCardView
-                android:id="@+id/cardEstado"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="20dp"
-                app:cardBackgroundColor="@color/transparent"
-                app:cardCornerRadius="24dp"
-                app:cardElevation="0dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-
-                    android:orientation="vertical"
-                    android:padding="24dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            android:id="@+id/textEstadoTitle"
-                            style="@style/TextAppearance.Material3.TitleMedium"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:textColor="?attr/colorOnSurface"
-                            tools:text="Listo para consultar" />
-
-                        <com.google.android.material.progressindicator.CircularProgressIndicator
-                            android:id="@+id/progressIndicator"
-                            style="@style/Widget.Material3.CircularProgressIndicator.ExtraSmall"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:visibility="gone" />
-                    </LinearLayout>
-
-                    <TextView
-                        android:id="@+id/textEstadoMessage"
-                        style="@style/TextAppearance.Material3.BodyMedium"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:textColor="?attr/colorOnSurfaceVariant"
-                        tools:text="Consulta medidores incluso sin conexión." />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardResultado"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="20dp"
+                android:layout_marginBottom="16dp"
                 android:visibility="gone"
                 app:cardBackgroundColor="@color/transparent"
                 app:cardCornerRadius="26dp"
@@ -146,9 +96,8 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-
                     android:orientation="vertical"
-                    android:padding="24dp">
+                    android:padding="16dp">
 
                     <TextView
                         style="@style/TextAppearance.Material3.TitleMedium"
@@ -169,205 +118,90 @@
                     <com.google.android.material.divider.MaterialDivider
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="16dp"
-                        android:layout_marginBottom="16dp" />
+                        android:layout_marginTop="12dp"
+                        android:layout_marginBottom="12dp" />
 
-                    <LinearLayout
+                    <com.google.android.material.chip.ChipGroup
+                        android:id="@+id/groupMedidorDetalles"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="vertical">
+                        app:chipSpacingHorizontal="8dp"
+                        app:chipSpacingVertical="8dp"
+                        app:singleLine="false">
 
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="vertical">
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/chipNumero"
+                            style="@style/Tecni.Chip.Medidor"
+                            tools:text="Número: 714" />
 
-                            <TextView
-                                style="@style/TextAppearance.Material3.LabelSmall"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:text="@string/medidor_numero_label" />
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/chipCliente"
+                            style="@style/Tecni.Chip.Medidor"
+                            tools:text="Cliente: GAS NACIONAL ZETA S.A." />
 
-                            <TextView
-                                android:id="@+id/valueNumero"
-                                style="@style/TextAppearance.Material3.BodyLarge"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="2dp"
-                                android:textColor="?attr/colorOnSurface"
-                                tools:text="714" />
-                        </LinearLayout>
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/chipLocalizacion"
+                            style="@style/Tecni.Chip.Medidor"
+                            tools:text="Localización: 34095000114" />
 
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="vertical"
-                            android:paddingTop="12dp">
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/chipCalle"
+                            style="@style/Tecni.Chip.Medidor"
+                            tools:text="Calle: 950" />
 
-                            <TextView
-                                style="@style/TextAppearance.Material3.LabelSmall"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:text="@string/medidor_cliente_label" />
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/chipPoste"
+                            style="@style/Tecni.Chip.Medidor"
+                            tools:text="Poste: 001" />
 
-                            <TextView
-                                android:id="@+id/valueCliente"
-                                style="@style/TextAppearance.Material3.BodyLarge"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="2dp"
-                                android:textColor="?attr/colorOnSurface"
-                                tools:text="GAS NACIONAL ZETA S.A." />
-                        </LinearLayout>
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/chipMetros"
+                            style="@style/Tecni.Chip.Medidor"
+                            tools:text="Metros: 14" />
 
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="vertical"
-                            android:paddingTop="12dp">
-
-                            <TextView
-                                style="@style/TextAppearance.Material3.LabelSmall"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:text="@string/medidor_localizacion_label" />
-
-                            <TextView
-                                android:id="@+id/valueLocalizacion"
-                                style="@style/TextAppearance.Material3.BodyLarge"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="2dp"
-                                android:textColor="?attr/colorOnSurface"
-                                tools:text="34095000114" />
-                        </LinearLayout>
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="vertical"
-                            android:paddingTop="12dp">
-
-                            <TextView
-                                style="@style/TextAppearance.Material3.LabelSmall"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:text="@string/medidor_calle_label" />
-
-                            <TextView
-                                android:id="@+id/valueCalle"
-                                style="@style/TextAppearance.Material3.BodyLarge"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="2dp"
-                                android:textColor="?attr/colorOnSurface"
-                                tools:text="950" />
-                        </LinearLayout>
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="vertical"
-                            android:paddingTop="12dp">
-
-                            <TextView
-                                style="@style/TextAppearance.Material3.LabelSmall"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:text="@string/medidor_poste_label" />
-
-                            <TextView
-                                android:id="@+id/valuePoste"
-                                style="@style/TextAppearance.Material3.BodyLarge"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="2dp"
-                                android:textColor="?attr/colorOnSurface"
-                                tools:text="001" />
-                        </LinearLayout>
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="vertical"
-                            android:paddingTop="12dp">
-
-                            <TextView
-                                style="@style/TextAppearance.Material3.LabelSmall"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:text="@string/medidor_metros_label" />
-
-                            <TextView
-                                android:id="@+id/valueMetros"
-                                style="@style/TextAppearance.Material3.BodyLarge"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="2dp"
-                                android:textColor="?attr/colorOnSurface"
-                                tools:text="14" />
-                        </LinearLayout>
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="vertical"
-                            android:paddingTop="12dp">
-
-                            <TextView
-                                style="@style/TextAppearance.Material3.LabelSmall"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:text="@string/medidor_pueblo_label" />
-
-                            <TextView
-                                android:id="@+id/valuePueblo"
-                                style="@style/TextAppearance.Material3.BodyLarge"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="2dp"
-                                android:textColor="?attr/colorOnSurface"
-                                tools:text="La Argentina" />
-                        </LinearLayout>
-                    </LinearLayout>
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/chipPueblo"
+                            style="@style/Tecni.Chip.Medidor"
+                            tools:text="Pueblo: La Argentina" />
+                    </com.google.android.material.chip.ChipGroup>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
             <LinearLayout
-    android:id="@+id/layoutAcciones"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:layout_marginBottom="16dp"
-    android:gravity="center"
-    android:orientation="horizontal"
-    android:visibility="gone">
+                android:id="@+id/layoutAcciones"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:gravity="center"
+                android:orientation="horizontal"
+                android:visibility="gone">
 
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btnCopiar"
-        style="@style/Tecni.Button.Primary"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:text="@string/medidor_copiar"
-        app:icon="@drawable/ic_copy"
-        app:iconGravity="textStart"
-        app:iconPadding="8dp" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnCopiar"
+                    style="@style/Tecni.Button.Primary"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/medidor_copiar"
+                    app:icon="@drawable/ic_copy"
+                    app:iconGravity="textStart"
+                    app:iconPadding="8dp" />
 
-    <Space
-        android:layout_width="12dp"
-        android:layout_height="wrap_content" />
+                <Space
+                    android:layout_width="12dp"
+                    android:layout_height="wrap_content" />
 
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btnCompartir"
-        style="@style/Tecni.Button.Outlined"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:text="@string/medidor_compartir"
-        app:icon="@drawable/ic_share"
-        app:iconGravity="textStart"
-        app:iconPadding="8dp" />
-</LinearLayout>
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnCompartir"
+                    style="@style/Tecni.Button.Outlined"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/medidor_compartir"
+                    app:icon="@drawable/ic_share"
+                    app:iconGravity="textStart"
+                    app:iconPadding="8dp" />
+            </LinearLayout>
 
 
             <com.google.android.material.card.MaterialCardView

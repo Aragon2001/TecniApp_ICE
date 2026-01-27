@@ -19,9 +19,11 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.Arasoftsolutions.tecniapp_ice.R
 import com.Arasoftsolutions.tecniapp_ice.databinding.BottomsheetMedidorRegistroBinding
+import com.Arasoftsolutions.tecniapp_ice.databinding.DialogMedidorConsultaNubeBinding
 import com.Arasoftsolutions.tecniapp_ice.databinding.FragmentMedidorBinding
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import androidx.appcompat.app.AlertDialog
 import com.google.android.material.bottomsheet.BottomSheetDialog
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.launch
 
 class MedidorFragment : Fragment() {
@@ -39,6 +41,8 @@ class MedidorFragment : Fragment() {
     private val subregionDisplayToOption = mutableMapOf<String, SubregionOption>()
     private val puebloDisplayToOption = mutableMapOf<String, PuebloOption>()
     private var wasManualVisible = false
+    private var consultaNubeDialog: AlertDialog? = null
+    private var wasManualInfoShown = false
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -91,29 +95,11 @@ class MedidorFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.uiState.collect { estado ->
-                    binding.progressIndicator.isVisible = estado.isLoading
                     binding.btnConsultar.isEnabled = !estado.isLoading && !estado.isRegistering
                     binding.cardResultado.isVisible = estado.medidor != null
                     binding.layoutAcciones.isVisible = estado.medidor != null
                     binding.cardNoEncontrado.isVisible = estado.notFoundNumero != null && !estado.showManualForm
                     binding.btnMostrarRegistro.isEnabled = !estado.isRegistering
-
-                    val mensaje = estado.message ?: getString(R.string.medidor_estado_listo)
-                    val infoMessages = setOf(
-                        getString(R.string.medidor_estado_listo),
-                        getString(R.string.medidor_estado_instruccion),
-                        getString(R.string.medidor_estado_cargando_cache)
-                    )
-                    val tituloEstado = when {
-                        estado.isLoading || estado.isRegistering -> getString(R.string.medidor_estado_titulo_preparando)
-                        estado.medidor != null -> getString(R.string.medidor_estado_titulo_exito)
-                        estado.notFoundNumero != null -> getString(R.string.medidor_estado_titulo_no_encontrado)
-                        estado.message != null && estado.message !in infoMessages -> getString(R.string.medidor_estado_titulo_error)
-                        else -> getString(R.string.medidor_estado_titulo_listo)
-                    }
-                    binding.textEstadoTitle.text = tituloEstado
-                    binding.textEstadoMessage.text = mensaje
-                    binding.textEstadoMessage.isVisible = mensaje.isNotBlank() && mensaje !in infoMessages
 
                     actualizarSubregionAdapter(estado.subregionOptions)
                     actualizarPuebloAdapter(estado.puebloOptions)
@@ -140,6 +126,7 @@ class MedidorFragment : Fragment() {
                         showRegistroBottomSheet()
                         registroBinding?.let { updateRegistroContent(it, estado) }
                         actualizarLocalizacionSugerida()
+                        mostrarAvisoRegistroManual()
                     } else {
                         dismissRegistroBottomSheet()
                     }
@@ -151,52 +138,71 @@ class MedidorFragment : Fragment() {
                     }
                     wasManualVisible = estado.showManualForm
 
+                    if (estado.showCloudLookupDialog) {
+                        mostrarDialogoConsultaNube(estado.cloudLookupNumero.orEmpty())
+                    } else {
+                        ocultarDialogoConsultaNube()
+                    }
+
                     if (estado.showNotFoundDialog && estado.notFoundNumero != null) {
                         viewModel.onNotFoundDialogMostrado()
-                        val dialogMessage = if (estado.notFoundOffline) {
-                            getString(R.string.medidor_no_registrado_dialog_offline, estado.notFoundNumero)
+                        if (estado.notFoundOffline) {
+                            MaterialAlertDialogBuilder(requireContext())
+                                .setTitle(R.string.medidor_dialog_offline_title)
+                                .setMessage(getString(R.string.medidor_dialog_offline_message, estado.notFoundNumero))
+                                .setPositiveButton(android.R.string.ok, null)
+                                .show()
                         } else {
-                            getString(R.string.medidor_no_registrado_dialog_message, estado.notFoundNumero)
+                            MaterialAlertDialogBuilder(requireContext())
+                                .setTitle(R.string.medidor_no_registrado_dialog_title)
+                                .setMessage(getString(R.string.medidor_no_registrado_dialog_message, estado.notFoundNumero))
+                                .setPositiveButton(R.string.medidor_no_registrado_dialog_positive) { _, _ ->
+                                    viewModel.habilitarRegistroManual()
+                                }
+                                .setNegativeButton(R.string.medidor_no_registrado_dialog_negative, null)
+                                .show()
                         }
-                        MaterialAlertDialogBuilder(requireContext())
-                            .setTitle(R.string.medidor_no_registrado_dialog_title)
-                            .setMessage(dialogMessage)
-                            .setPositiveButton(R.string.medidor_no_registrado_dialog_positive) { _, _ ->
-                                viewModel.habilitarRegistroManual()
-                            }
-                            .setNegativeButton(R.string.medidor_no_registrado_dialog_negative, null)
-                            .show()
                     }
 
                     estado.medidor?.let { medidor ->
-                        binding.valueNumero.text = medidor.medidorNumber.ifBlank {
-                            getString(R.string.profile_summary_placeholder)
-                        }
-                        binding.valueCliente.text = medidor.cliente.orEmpty().ifBlank {
-                            getString(R.string.profile_summary_placeholder)
-                        }
-                        binding.valueCalle.text = medidor.calle.orEmpty().ifBlank {
-                            getString(R.string.profile_summary_placeholder)
-                        }
-                        binding.valuePoste.text = medidor.poste.orEmpty().ifBlank {
-                            getString(R.string.profile_summary_placeholder)
-                        }
-                        binding.valueMetros.text = medidor.metros.orEmpty().ifBlank {
-                            getString(R.string.profile_summary_placeholder)
-                        }
+                        val placeholder = getString(R.string.profile_summary_placeholder)
+                        binding.chipNumero.text = getString(
+                            R.string.medidor_chip_numero_format,
+                            medidor.medidorNumber.ifBlank { placeholder }
+                        )
+                        binding.chipCliente.text = getString(
+                            R.string.medidor_chip_cliente_format,
+                            medidor.cliente.orEmpty().ifBlank { placeholder }
+                        )
+                        binding.chipCalle.text = getString(
+                            R.string.medidor_chip_calle_format,
+                            medidor.calle.orEmpty().ifBlank { placeholder }
+                        )
+                        binding.chipPoste.text = getString(
+                            R.string.medidor_chip_poste_format,
+                            medidor.poste.orEmpty().ifBlank { placeholder }
+                        )
+                        binding.chipMetros.text = getString(
+                            R.string.medidor_chip_metros_format,
+                            medidor.metros.orEmpty().ifBlank { placeholder }
+                        )
                         val subregionDisplay = estado.subregionNombre
                             ?: medidor.subregion.orEmpty().ifBlank {
-                                getString(R.string.profile_summary_placeholder)
+                                placeholder
                             }
                         binding.valueSubregionHeader.text = subregionDisplay
-                        binding.valueLocalizacion.text = medidor.localizacion?.toString()
-                            ?: getString(R.string.profile_summary_placeholder)
+                        binding.chipLocalizacion.text = getString(
+                            R.string.medidor_chip_localizacion_format,
+                            medidor.localizacion?.toString() ?: placeholder
+                        )
 
                         viewLifecycleOwner.lifecycleScope.launch {
                             val descripcionPueblo = viewModel.obtenerDescripcionPueblo(medidor.pueblo)
-                            binding.valuePueblo.text = descripcionPueblo ?: medidor.pueblo.orEmpty().ifBlank {
-                                getString(R.string.profile_summary_placeholder)
-                            }
+                            val pueblo = descripcionPueblo ?: medidor.pueblo.orEmpty()
+                            binding.chipPueblo.text = getString(
+                                R.string.medidor_chip_pueblo_format,
+                                pueblo.ifBlank { placeholder }
+                            )
                         }
                     } ?: limpiarCampos()
                 }
@@ -205,13 +211,13 @@ class MedidorFragment : Fragment() {
     }
 
     private fun limpiarCampos() {
-        binding.valueNumero.text = ""
-        binding.valueCliente.text = ""
-        binding.valueCalle.text = ""
-        binding.valuePoste.text = ""
-        binding.valueMetros.text = ""
-        binding.valuePueblo.text = ""
-        binding.valueLocalizacion.text = ""
+        binding.chipNumero.text = ""
+        binding.chipCliente.text = ""
+        binding.chipCalle.text = ""
+        binding.chipPoste.text = ""
+        binding.chipMetros.text = ""
+        binding.chipPueblo.text = ""
+        binding.chipLocalizacion.text = ""
         binding.valueSubregionHeader.text = ""
     }
 
@@ -227,14 +233,14 @@ class MedidorFragment : Fragment() {
 
     private fun copiarInformacion() {
         val info = buildString {
-            appendLine("${getString(R.string.medidor_numero_label)}: ${binding.valueNumero.text}")
-            appendLine("${getString(R.string.medidor_cliente_label)}: ${binding.valueCliente.text}")
-            appendLine("${getString(R.string.medidor_calle_label)}: ${binding.valueCalle.text}")
-            appendLine("${getString(R.string.medidor_poste_label)}: ${binding.valuePoste.text}")
-            appendLine("${getString(R.string.medidor_metros_label)}: ${binding.valueMetros.text}")
-            appendLine("${getString(R.string.medidor_pueblo_label)}: ${binding.valuePueblo.text}")
+            appendLine(binding.chipNumero.text)
+            appendLine(binding.chipCliente.text)
+            appendLine(binding.chipCalle.text)
+            appendLine(binding.chipPoste.text)
+            appendLine(binding.chipMetros.text)
+            appendLine(binding.chipPueblo.text)
             appendLine("${getString(R.string.medidor_subregion_label)}: ${binding.valueSubregionHeader.text}")
-            append("${getString(R.string.medidor_localizacion_label)}: ${binding.valueLocalizacion.text}")
+            append(binding.chipLocalizacion.text)
         }
 
         val clipboard = ContextCompat.getSystemService(requireContext(), ClipboardManager::class.java)
@@ -242,16 +248,16 @@ class MedidorFragment : Fragment() {
     }
 
     private fun compartirInformacion() {
-        val medidor = viewModel.obtenerMedidorActual() ?: return
+        if (viewModel.obtenerMedidorActual() == null) return
         val info = buildString {
-            appendLine("${getString(R.string.medidor_numero_label)}: ${medidor.medidorNumber}")
-            appendLine("${getString(R.string.medidor_cliente_label)}: ${binding.valueCliente.text}")
-            appendLine("${getString(R.string.medidor_calle_label)}: ${binding.valueCalle.text}")
-            appendLine("${getString(R.string.medidor_poste_label)}: ${binding.valuePoste.text}")
-            appendLine("${getString(R.string.medidor_metros_label)}: ${binding.valueMetros.text}")
-            appendLine("${getString(R.string.medidor_pueblo_label)}: ${binding.valuePueblo.text}")
+            appendLine(binding.chipNumero.text)
+            appendLine(binding.chipCliente.text)
+            appendLine(binding.chipCalle.text)
+            appendLine(binding.chipPoste.text)
+            appendLine(binding.chipMetros.text)
+            appendLine(binding.chipPueblo.text)
             appendLine("${getString(R.string.medidor_subregion_label)}: ${binding.valueSubregionHeader.text}")
-            append("${getString(R.string.medidor_localizacion_label)}: ${binding.valueLocalizacion.text}")
+            append(binding.chipLocalizacion.text)
         }
 
         val shareIntent = Intent(Intent.ACTION_SEND).apply {
@@ -586,6 +592,34 @@ class MedidorFragment : Fragment() {
     override fun onDestroyView() {
         super.onDestroyView()
         dismissRegistroBottomSheet()
+        ocultarDialogoConsultaNube()
         _binding = null
+    }
+
+    private fun mostrarDialogoConsultaNube(numero: String) {
+        if (consultaNubeDialog?.isShowing == true) {
+            return
+        }
+        val bindingDialog = DialogMedidorConsultaNubeBinding.inflate(layoutInflater)
+        bindingDialog.textConsultaMensaje.text = getString(R.string.medidor_dialog_consulta_nube_message, numero)
+        consultaNubeDialog = MaterialAlertDialogBuilder(requireContext())
+            .setView(bindingDialog.root)
+            .setCancelable(false)
+            .show()
+    }
+
+    private fun ocultarDialogoConsultaNube() {
+        consultaNubeDialog?.dismiss()
+        consultaNubeDialog = null
+    }
+
+    private fun mostrarAvisoRegistroManual() {
+        if (wasManualInfoShown) return
+        wasManualInfoShown = true
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.medidor_registro_aviso_title)
+            .setMessage(R.string.medidor_registro_aviso_message)
+            .setPositiveButton(android.R.string.ok, null)
+            .show()
     }
 }
