@@ -1,8 +1,10 @@
 package com.Arasoftsolutions.tecniapp_ice.ui.settings
 
+import android.Manifest
 import android.content.ActivityNotFoundException
 import android.content.Context.MODE_PRIVATE
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Bundle
 import android.view.View
 import android.view.inputmethod.EditorInfo
@@ -10,7 +12,9 @@ import android.widget.ArrayAdapter
 import android.widget.TextView
 import android.widget.Toast
 import android.provider.Settings
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
@@ -67,6 +71,24 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
     private val updateDownloadManager by lazy { UpdateDownloadManager(requireContext()) }
     private var manualSyncInProgress = false
     private var cacheClearInProgress = false
+    private var updatingGpsToggle = false
+
+    private val gpsPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { results ->
+            val granted = results[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+                results[Manifest.permission.ACCESS_COARSE_LOCATION] == true ||
+                hasLocationPermission()
+            if (granted) {
+                setGpsPreference(true)
+            } else {
+                setGpsPreference(false)
+                Toast.makeText(
+                    requireContext(),
+                    R.string.settings_gps_permission_denied,
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -78,6 +100,7 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         setupSyncPreferences()
         setupLocationPreferences()
         setupAppearancePreferences()
+        setupAdminPreferences()
         setupAccountSection()
         setupUpdateSection()
     }
@@ -221,14 +244,21 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
 
     private fun setupLocationPreferences() {
         binding.switchGps.setOnCheckedChangeListener { _, isChecked ->
-            viewLifecycleOwner.lifecycleScope.launch {
-                dataStore.setGpsEnabled(isChecked)
+            if (updatingGpsToggle) return@setOnCheckedChangeListener
+            if (isChecked) {
+                if (hasLocationPermission()) {
+                    setGpsPreference(true)
+                } else {
+                    gpsPermissionLauncher.launch(
+                        arrayOf(
+                            Manifest.permission.ACCESS_FINE_LOCATION,
+                            Manifest.permission.ACCESS_COARSE_LOCATION
+                        )
+                    )
+                }
+            } else {
+                setGpsPreference(false)
             }
-            updateGpsSummary(isChecked)
-        }
-
-        binding.btnOpenMap.setOnClickListener {
-            findNavController().navigate(R.id.nav_localizacion)
         }
 
         binding.btnOpenLocationSettings.setOnClickListener {
@@ -242,14 +272,11 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 dataStore.gpsEnabled.collect { enabled ->
-                    if (binding.switchGps.isChecked != enabled) {
-                        binding.switchGps.isChecked = enabled
-                    }
-                    updateGpsSummary(enabled)
+                    updateGpsSwitch(enabled)
                 }
             }
         }
-        updateGpsSummary(binding.switchGps.isChecked)
+        updateGpsSwitch(binding.switchGps.isChecked)
     }
 
     private fun setupAppearancePreferences() {
@@ -270,6 +297,45 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
                 dataStore.darkThemeEnabled.collect { enabled ->
                     if (binding.switchDarkTheme.isChecked != enabled) {
                         binding.switchDarkTheme.isChecked = enabled
+                    }
+                    val mode = if (enabled) {
+                        AppCompatDelegate.MODE_NIGHT_YES
+                    } else {
+                        AppCompatDelegate.MODE_NIGHT_NO
+                    }
+                    AppCompatDelegate.setDefaultNightMode(mode)
+                }
+            }
+        }
+    }
+
+    private fun setupAdminPreferences() {
+        binding.groupAdminPrivileges.isVisible = false
+        viewLifecycleOwner.lifecycleScope.launch {
+            val user = withContext(Dispatchers.IO) {
+                auth.currentUser?.uid?.let { uid ->
+                    RoomRepository.getInstance(requireContext()).obtenerUsuario(uid)
+                }
+            }
+            val rol = user?.rol?.trim()?.lowercase(Locale.getDefault())
+            val isAdmin = rol == "administrador"
+            binding.groupAdminPrivileges.isVisible = isAdmin
+            if (!isAdmin) return@launch
+
+            binding.switchAdminPrivileges.setOnCheckedChangeListener { _, isChecked ->
+                viewLifecycleOwner.lifecycleScope.launch {
+                    dataStore.setAdminPrivilegesEnabled(isChecked)
+                }
+                updateAdminPrivilegesLabel(isChecked)
+            }
+
+            viewLifecycleOwner.lifecycleScope.launch {
+                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                    dataStore.adminPrivilegesEnabled.collect { enabled ->
+                        if (binding.switchAdminPrivileges.isChecked != enabled) {
+                            binding.switchAdminPrivileges.isChecked = enabled
+                        }
+                        updateAdminPrivilegesLabel(enabled)
                     }
                 }
             }
@@ -365,6 +431,13 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
             updateNotificationSummary()
         }
 
+        dialogBinding.btnGuardarNotificaciones.setOnClickListener {
+            updateNotificationSummary()
+            Toast.makeText(requireContext(), R.string.settings_notifications_saved, Toast.LENGTH_SHORT)
+                .show()
+            dialog.dismiss()
+        }
+
         fun addAgency(value: String) {
             if (value.isBlank()) return
             AveriaNotificationPreferences.addAgency(requireContext(), value)
@@ -415,6 +488,41 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         } else {
             getString(R.string.settings_gps_summary_off)
         }
+    }
+
+    private fun updateGpsSwitch(enabled: Boolean) {
+        updatingGpsToggle = true
+        binding.switchGps.isChecked = enabled
+        updateGpsSummary(enabled)
+        updatingGpsToggle = false
+    }
+
+    private fun setGpsPreference(enabled: Boolean) {
+        viewLifecycleOwner.lifecycleScope.launch {
+            dataStore.setGpsEnabled(enabled)
+        }
+        updateGpsSwitch(enabled)
+    }
+
+    private fun hasLocationPermission(): Boolean {
+        val fine = ContextCompat.checkSelfPermission(
+            requireContext(),
+            Manifest.permission.ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
+        val coarse = ContextCompat.checkSelfPermission(
+            requireContext(),
+            Manifest.permission.ACCESS_COARSE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
+        return fine || coarse
+    }
+
+    private fun updateAdminPrivilegesLabel(enabled: Boolean) {
+        binding.switchAdminPrivileges.text = if (enabled) {
+            getString(R.string.settings_admin_privileges_disable)
+        } else {
+            getString(R.string.settings_admin_privileges_enable)
+        }
+        binding.textAdminPrivilegesSummary.text = getString(R.string.settings_admin_privileges_summary)
     }
 
     private fun launchManualSync() {
