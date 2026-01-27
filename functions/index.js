@@ -1,56 +1,37 @@
 /* eslint-disable */
 
 const { onSchedule } = require("firebase-functions/v2/scheduler");
-const functions = require("firebase-functions"); // v1 para https.onCall
+const { onCall, HttpsError } = require("firebase-functions/v2/https");
+const { defineSecret } = require("firebase-functions/params");
+require("firebase-admin/database");
 const admin = require("firebase-admin");
 const axios = require("axios");
 const nodemailer = require("nodemailer");
 
+const MAIL_USER = defineSecret("MAIL_USER");
+const MAIL_PASS = defineSecret("MAIL_PASS");
+const DB_AVERIAS_URL = "https://tecniapp-ice-averias.firebaseio.com";
+const DB_USERS_URL = "https://tecniapp-ice-user.firebaseio.com";
+
 admin.initializeApp();
+const averiasApp = admin.initializeApp({ databaseURL: DB_AVERIAS_URL }, "averias");
+const usersApp = admin.initializeApp({ databaseURL: DB_USERS_URL }, "users");
 
-/* =========================================================
-   CONFIG MAIL (Firebase Functions Config)
-   =========================================================
-   Configure en consola:
-   firebase functions:config:set mail.user="tecniappice@gmail.com"
-   firebase functions:config:set mail.pass="CLAVE_APP_GMAIL"
-*/
-function getMailConfig() {
-  const cfg = functions.config();
-  const user =
-    cfg?.mail?.user ||
-    process.env.MAIL_USER ||
-    process.env.mail_user ||
-    process.env.SMTP_USER ||
-    "";
-  const pass =
-    cfg?.mail?.pass ||
-    process.env.MAIL_PASS ||
-    process.env.mail_pass ||
-    process.env.SMTP_PASS ||
-    "";
-  if (!user || !pass) {
-    throw new Error(
-      "Faltan credenciales. Configure con: firebase functions:config:set mail.user=... mail.pass=... o variables MAIL_USER/MAIL_PASS."
-    );
-  }
-  return { user, pass };
-}
+const dbAverias = admin.database(averiasApp);
+const dbUsers = admin.database(usersApp);
 
-function createTransporter() {
-  const { user, pass } = getMailConfig();
+function createTransporter({ user, pass }) {
   return nodemailer.createTransport({
     service: "gmail",
     auth: { user, pass },
   });
 }
 
-async function sendMail({ to, subject, html }) {
-  const transporter = createTransporter();
-  const fromUser = getMailConfig().user;
+async function sendMail({ to, subject, html, user, pass }) {
+  const transporter = createTransporter({ user, pass });
 
   await transporter.sendMail({
-    from: `"TecniApp ICE" <${fromUser}>`,
+    from: `"TecniApp ICE" <${user}>`,
     to,
     subject,
     html,
@@ -166,6 +147,25 @@ function shouldNotify(prevEstado, newEstado, isNew) {
 
 function generateCode() {
   return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+function extractEmail(data) {
+  if (typeof data === "string") {
+    return data;
+  }
+  const direct =
+    data?.email ||
+    data?.correo ||
+    data?.mail ||
+    data?.userEmail;
+  if (direct) return direct;
+
+  const nested =
+    data?.data?.email ||
+    data?.data?.correo ||
+    data?.data?.mail ||
+    data?.data?.userEmail;
+  return nested || "";
 }
 
 /* =========================================================
@@ -320,7 +320,8 @@ exports.syncAveriasYNotificar = onSchedule(
   { schedule: "every 5 minutes", timeZone: "America/Costa_Rica" },
   async () => {
     try {
-      const db = admin.database();
+      const dbA = dbAverias;
+      const dbU = dbUsers;
 
       // 1) Consultar API ICE (SIN TOKEN)
       const resp = await axios.get(ICE_URL, { timeout: 20000 });
@@ -329,7 +330,7 @@ exports.syncAveriasYNotificar = onSchedule(
       console.log("Averías recibidas:", averias.length);
 
       // 2) Leer snapshot previo (solo para decidir notificaciones)
-      const snapRef = db.ref("averias_last_snapshot");
+      const snapRef = dbA.ref("averias_last_snapshot");
       const snap = await snapRef.get();
       const last = snap.exists() ? snap.val() : {};
 
@@ -388,7 +389,7 @@ exports.syncAveriasYNotificar = onSchedule(
           payload.estado = "Resuelta";
         }
 
-        await db.ref("averias").child(caseId).update(payload);
+        await dbA.ref("averias").child(caseId).update(payload);
 
         // ✅ Decide si notifica (nueva PENDIENTE, o cambio a RESUELTA)
         if (!shouldNotify(prevEstado, estado, isNew)) continue;
@@ -431,7 +432,7 @@ exports.syncAveriasYNotificar = onSchedule(
       }
 
       // 4) Leer usuarios con FCM token
-      const usersSnap = await db.ref("usuarios").get();
+      const usersSnap = await dbU.ref("usuarios").get();
       const users = usersSnap.exists() ? usersSnap.val() : {};
 
       for (const item of toNotify) {
@@ -486,7 +487,7 @@ exports.syncAveriasYNotificar = onSchedule(
           const uid = tokenToUid.get(badToken);
           if (!uid) continue;
           console.log(`Eliminando token inválido uid=${uid}`);
-          await db.ref("usuarios").child(uid).child("fcmToken").remove();
+          await dbU.ref("usuarios").child(uid).child("fcmToken").remove();
         }
       }
     } catch (e) {
@@ -501,40 +502,48 @@ exports.syncAveriasYNotificar = onSchedule(
    Android hoy lee y verifica en:
    /verificationCodes/{emailKey(email)}
 */
-exports.sendVerificationCode = functions.https.onCall(async (data, context) => {
-  const email = String(data?.email || "").trim();
-  if (!email) {
-    throw new functions.https.HttpsError("invalid-argument", "Email requerido");
+exports.sendVerificationCode = onCall(
+  { region: "us-central1", secrets: [MAIL_USER, MAIL_PASS] },
+  async (request) => {
+    try {
+      const data = request.data;
+      const email = String(extractEmail(data)).trim();
+      if (!email) throw new HttpsError("invalid-argument", "Email requerido");
+
+      // (Opcional) forzar dominio institucional
+      // if (!email.toLowerCase().endsWith("@ice.go.cr")) {
+      //   throw new HttpsError("permission-denied", "Solo correos @ice.go.cr");
+      // }
+
+      const code = generateCode();
+      const now = Date.now();
+      const expiresAt = now + 5 * 60 * 1000; // 5 min
+
+      const key = emailKey(email);
+
+      // Guardar EXACTO como su app espera: { code, createdAt, expiresAt }
+      await dbUsers.ref("verificationCodes").child(key).set({
+        code,
+        createdAt: now,
+        expiresAt,
+      });
+
+      await sendMail({
+        to: email,
+        subject: "Código de verificación – TecniApp ICE",
+        html: verificationEmailHtml(code),
+        user: MAIL_USER.value(),
+        pass: MAIL_PASS.value(),
+      });
+
+      return { success: true };
+    } catch (e) {
+      console.error("sendVerificationCode ERROR:", e);
+      if (e instanceof HttpsError) throw e;
+      throw new HttpsError("internal", e?.message || "Error interno");
+    }
   }
-
-  // (Opcional) forzar dominio institucional
-  // if (!email.toLowerCase().endsWith("@ice.go.cr")) {
-  //   throw new functions.https.HttpsError("permission-denied", "Solo correos @ice.go.cr");
-  // }
-
-  const code = generateCode();
-  const now = Date.now();
-  const expiresAt = now + 5 * 60 * 1000; // 5 min
-
-  const key = emailKey(email);
-
-  // Guardar EXACTO como su app espera: { code, createdAt, expiresAt }
-  await admin.database().ref("verificationCodes").child(key).set({
-    code,
-    createdAt: now,
-    expiresAt,
-  });
-
-  const html = verificationEmailHtml(code);
-
-  await sendMail({
-    to: email,
-    subject: "Código de verificación – TecniApp ICE",
-    html,
-  });
-
-  return { success: true };
-});
+);
 
 /* =========================================================
    CALLABLE: ENVIAR REPORTE POR CORREO
@@ -544,23 +553,29 @@ exports.sendVerificationCode = functions.https.onCall(async (data, context) => {
    - Obtiene downloadUrl
    - Llama sendReport(email, reportName, downloadUrl, subtitle)
 */
-exports.sendReport = functions.https.onCall(async (data, context) => {
-  const email = String(data?.email || "").trim();
-  const reportName = String(data?.reportName || "Reporte").trim();
-  const downloadUrl = String(data?.downloadUrl || "").trim();
-  const subtitle = String(data?.subtitle || "").trim(); // ej: "Rango: 01–07 Dic 2025"
+exports.sendReport = onCall(
+  { region: "us-central1", secrets: [MAIL_USER, MAIL_PASS] },
+  async (request) => {
+    const data = request.data;
+    const email = String(extractEmail(data)).trim();
+    const reportName = String(data?.reportName || "Reporte").trim();
+    const downloadUrl = String(data?.downloadUrl || "").trim();
+    const subtitle = String(data?.subtitle || "").trim(); // ej: "Rango: 01–07 Dic 2025"
 
-  if (!email || !downloadUrl) {
-    throw new functions.https.HttpsError("invalid-argument", "Datos incompletos");
+    if (!email || !downloadUrl) {
+      throw new HttpsError("invalid-argument", "Datos incompletos");
+    }
+
+    const html = reportEmailHtml({ reportName, downloadUrl, subtitle });
+
+    await sendMail({
+      to: email,
+      subject: `Reporte ${reportName} – TecniApp ICE`,
+      html,
+      user: MAIL_USER.value(),
+      pass: MAIL_PASS.value(),
+    });
+
+    return { success: true };
   }
-
-  const html = reportEmailHtml({ reportName, downloadUrl, subtitle });
-
-  await sendMail({
-    to: email,
-    subject: `Reporte ${reportName} – TecniApp ICE`,
-    html,
-  });
-
-  return { success: true };
-});
+);
