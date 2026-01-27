@@ -1,7 +1,6 @@
 package com.Arasoftsolutions.tecniapp_ice.registro
 
-import com.google.firebase.functions.FirebaseFunctions
-
+import android.content.Context
 import android.os.Bundle
 import android.os.CountDownTimer
 import android.text.TextUtils
@@ -20,6 +19,7 @@ import com.Arasoftsolutions.tecniapp_ice.RegistroActivity
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
 import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.functions.FirebaseFunctions
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import java.util.Locale
@@ -28,7 +28,10 @@ import kotlin.random.Random
 class Paso2Fragment : Fragment() {
 
     private lateinit var viewModel: RegistroViewModel
-private val functions by lazy { FirebaseFunctions.getInstance() }
+    private val functions by lazy { FirebaseFunctions.getInstance() }
+    private val prefs by lazy {
+        requireContext().getSharedPreferences("registro_prefs", Context.MODE_PRIVATE)
+    }
 
     private lateinit var etVerificationCodeEmail: TextInputEditText
     private lateinit var btnVerifyCode: MaterialButton
@@ -92,10 +95,7 @@ private val functions by lazy { FirebaseFunctions.getInstance() }
 
     // ========= Verificación =========
     private fun verifyCode(emailCode: String) {
-        val email = viewModel.getEmail() ?: run {
-            showError("El correo electrónico no está disponible.")
-            return
-        }
+        val email = getEmailOrShowError() ?: return
 
         val ref = FirebaseDatabase
             .getInstance("https://tecniapp-ice-user.firebaseio.com/")
@@ -168,11 +168,7 @@ private val functions by lazy { FirebaseFunctions.getInstance() }
             return
         }
 
-        val email = viewModel.getEmail()?.trim()
-        if (email.isNullOrBlank()) {
-            showError("El correo electrónico no está disponible.")
-            return
-        }
+        val email = getEmailOrShowError() ?: return
 
         resendEmailAttempts++
         val remainingAttempts = maxResendAttempts - resendEmailAttempts
@@ -181,20 +177,20 @@ private val functions by lazy { FirebaseFunctions.getInstance() }
         // Cooldown de 60s entre reenvíos
         startResendCooldown()
 
-     functions
-    .getHttpsCallable("sendVerificationCode")
-    .call(mapOf("email" to email))
-    .addOnSuccessListener {
-        if (isAdded) {
-            Toast.makeText(requireContext(), "Reenviamos un código a $email", Toast.LENGTH_SHORT).show()
-        }
-    }
-    .addOnFailureListener { e ->
-        Log.e("Paso2Fragment", "Error reenviando código", e)
-        if (isAdded) {
-            Toast.makeText(requireContext(), "No se pudo reenviar el código.", Toast.LENGTH_LONG).show()
-        }
-    }
+        functions
+            .getHttpsCallable("sendVerificationCode")
+            .call(email)
+            .addOnSuccessListener {
+                if (isAdded) {
+                    Toast.makeText(requireContext(), "Reenviamos un código a $email", Toast.LENGTH_SHORT).show()
+                }
+            }
+            .addOnFailureListener { e ->
+                Log.e("Paso2Fragment", "Error reenviando código", e)
+                if (isAdded) {
+                    Toast.makeText(requireContext(), "No se pudo reenviar el código.", Toast.LENGTH_LONG).show()
+                }
+            }
 
     }
 
@@ -221,5 +217,24 @@ private val functions by lazy { FirebaseFunctions.getInstance() }
 
     private fun showToast(msg: String) {
         Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show()
+    }
+
+    private fun getEmailOrShowError(): String? {
+        val fromViewModel = viewModel.getEmail()?.trim().orEmpty()
+        val email = if (fromViewModel.isNotBlank()) {
+            fromViewModel
+        } else {
+            prefs.getString("registro_email", "")?.trim().orEmpty()
+        }
+
+        return if (email.isNotBlank()) {
+            if (fromViewModel.isBlank()) {
+                viewModel.setEmail(email)
+            }
+            email
+        } else {
+            showError("El correo electrónico no está disponible.")
+            null
+        }
     }
 }
