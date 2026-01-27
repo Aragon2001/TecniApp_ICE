@@ -207,7 +207,9 @@ class MedidorViewModel(app: Application) : AndroidViewModel(app) {
                     isRegistering = false,
                     notFoundNumero = null,
                     showManualForm = false,
-                    showNotFoundDialog = false
+                    showNotFoundDialog = false,
+                    showCloudLookupDialog = false,
+                    cloudLookupNumero = null
                 )
             }
 
@@ -225,7 +227,9 @@ class MedidorViewModel(app: Application) : AndroidViewModel(app) {
                             notFoundNumero = null,
                             showManualForm = false,
                             showNotFoundDialog = false,
-                            notFoundOffline = false
+                            notFoundOffline = false,
+                            showCloudLookupDialog = false,
+                            cloudLookupNumero = null
                         )
                     }
                     return@launch
@@ -240,10 +244,19 @@ class MedidorViewModel(app: Application) : AndroidViewModel(app) {
                             notFoundNumero = trimmed,
                             showManualForm = false,
                             showNotFoundDialog = true,
-                            notFoundOffline = true
+                            notFoundOffline = true,
+                            showCloudLookupDialog = false,
+                            cloudLookupNumero = null
                         )
                     }
                     return@launch
+                }
+
+                _uiState.update {
+                    it.copy(
+                        showCloudLookupDialog = true,
+                        cloudLookupNumero = trimmed
+                    )
                 }
 
                 val remoto = withContext(Dispatchers.IO) {
@@ -261,7 +274,9 @@ class MedidorViewModel(app: Application) : AndroidViewModel(app) {
                             notFoundNumero = null,
                             showManualForm = false,
                             showNotFoundDialog = false,
-                            notFoundOffline = false
+                            notFoundOffline = false,
+                            showCloudLookupDialog = false,
+                            cloudLookupNumero = null
                         )
                     }
                 } else {
@@ -273,7 +288,9 @@ class MedidorViewModel(app: Application) : AndroidViewModel(app) {
                             notFoundNumero = trimmed,
                             showManualForm = false,
                             showNotFoundDialog = true,
-                            notFoundOffline = false
+                            notFoundOffline = false,
+                            showCloudLookupDialog = false,
+                            cloudLookupNumero = null
                         )
                     }
                 }
@@ -287,7 +304,9 @@ class MedidorViewModel(app: Application) : AndroidViewModel(app) {
                         notFoundNumero = null,
                         showManualForm = false,
                         showNotFoundDialog = false,
-                        notFoundOffline = false
+                        notFoundOffline = false,
+                        showCloudLookupDialog = false,
+                        cloudLookupNumero = null
                     )
                 }
             }
@@ -300,7 +319,9 @@ class MedidorViewModel(app: Application) : AndroidViewModel(app) {
                 medidor = null,
                 notFoundNumero = null,
                 showManualForm = false,
-                showNotFoundDialog = false
+                showNotFoundDialog = false,
+                showCloudLookupDialog = false,
+                cloudLookupNumero = null
             )
         }
     }
@@ -572,11 +593,13 @@ data class MedidorUiState(
     val message: String? = null,
     val isReady: Boolean = false,
     val notFoundNumero: String? = null,
+    val cloudLookupNumero: String? = null,
     val showManualForm: Boolean = false,
     val isRegistering: Boolean = false,
     val subregionNombre: String? = null,
     val showNotFoundDialog: Boolean = false,
     val notFoundOffline: Boolean = false,
+    val showCloudLookupDialog: Boolean = false,
     val subregionOptions: List<SubregionOption> = emptyList(),
     val selectedSubregionId: String? = null,
     val selectedSubregionNombre: String? = null,
