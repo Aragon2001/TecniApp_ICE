@@ -417,6 +417,7 @@ Cliente: %4$s</string>
     <string name="settings_gps_summary">Guarda una preferencia local para habilitar el uso de ubicación en los módulos que la necesiten.</string>
     <string name="settings_gps_summary_on">TecniApp usará tu ubicación para mostrar rutas y mapas precisos.</string>
     <string name="settings_gps_summary_off">La aplicación no utilizará la ubicación del dispositivo.</string>
+    <string name="settings_gps_permission_denied">Permiso de ubicación denegado. El GPS seguirá desactivado.</string>
     <string name="settings_open_map">Abrir módulo de mapas</string>
     <string name="settings_open_location_settings">Abrir ajustes de ubicación del dispositivo</string>
     <string name="settings_location_settings_error">No fue posible abrir los ajustes de ubicación.</string>
@@ -434,6 +435,9 @@ Cliente: %4$s</string>
     <string name="settings_sign_out_confirm">Cerrar sesión</string>
     <string name="settings_section_advanced">Avanzado</string>
     <string name="settings_version_placeholder">Versión: %1$s</string>
+    <string name="settings_admin_privileges_disable">Desactivar privilegios de administrador</string>
+    <string name="settings_admin_privileges_enable">Activar privilegios de administrador</string>
+    <string name="settings_admin_privileges_summary">Usa esta opción de pruebas para permitir o bloquear el acceso a módulos administrativos.</string>
     <string name="settings_check_updates">Buscar actualizaciones</string>
     <string name="update_dialog_title">Nueva versión disponible</string>
     <string name="update_dialog_message">Hay una nueva versión (%1$s) disponible.</string>
