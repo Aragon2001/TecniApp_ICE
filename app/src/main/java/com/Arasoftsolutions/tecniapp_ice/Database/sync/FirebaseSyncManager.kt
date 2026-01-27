@@ -59,6 +59,15 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
             }
     }
 
+    private suspend fun resolveDatosGeneralesNode(vararg candidates: String): String {
+        for (name in candidates) {
+            if (dbDatosGenerales.child(name).get().await().exists()) {
+                return name
+            }
+        }
+        return candidates.first()
+    }
+
     // --- USUARIOS ---
     suspend fun obtenerUsuario(uid: String): UserEntity? {
         val snap = dbUsers.child("usuarios").child(uid).get().await()
@@ -102,7 +111,8 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
     }
 
     suspend fun obtenerAgencias(subregionId: String? = null): List<AgenciaEntity> {
-        val snap = dbDatosGenerales.child("agencias").get().await()
+        val nodeName = resolveDatosGeneralesNode("agencias", "Agencias")
+        val snap = dbDatosGenerales.child(nodeName).get().await()
         val filtroSubregion = subregionId?.trim()?.takeIf { it.isNotEmpty() }
         val regionPorSubregion = if (filtroSubregion != null) {
             runCatching {
@@ -139,7 +149,8 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
     }
 
     suspend fun obtenerVehiculos(subregionId: String? = null): List<VehiculosEntity> {
-        val snap = dbDatosGenerales.child("vehiculos").get().await()
+        val nodeName = resolveDatosGeneralesNode("vehiculos", "Vehiculos")
+        val snap = dbDatosGenerales.child(nodeName).get().await()
         val filtroSubregion = subregionId?.trim()?.takeIf { it.isNotEmpty() }
         return snap.children.mapNotNull { child ->
             val idValue = child.stringChild("id") ?: child.key

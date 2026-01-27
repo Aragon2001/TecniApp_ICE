@@ -51,6 +51,7 @@ class ActivityMain : AppCompatActivity() {
 
     private lateinit var appBarConfiguration: AppBarConfiguration
     private lateinit var binding: ActivityMainBinding
+    private lateinit var navView: NavigationView
     private lateinit var auth: FirebaseAuth
     private lateinit var repository: RoomRepository
     private lateinit var headerBinding: NavHeaderMainBinding
@@ -100,7 +101,7 @@ class ActivityMain : AppCompatActivity() {
 
         // Drawer + Navigation
         val drawerLayout: DrawerLayout = binding.drawerLayout
-        val navView: NavigationView = binding.navView
+        navView = binding.navView
         val navController = findNavController(R.id.nav_host_fragment_content_main)
 
         headerBinding = NavHeaderMainBinding.bind(navView.getHeaderView(0)).also { header ->
@@ -173,6 +174,7 @@ class ActivityMain : AppCompatActivity() {
                 .ifBlank { it.email ?: it.uid }
             Log.d("ActivityMain", "Usuario local: $nombreLog - ${it.email}")
             updateNavHeader(it)
+            updateAdminMenuVisibility(it)
         } ?: run {
             Log.e("ActivityMain", "No se encontró usuario en la base local.")
         }
@@ -212,6 +214,12 @@ class ActivityMain : AppCompatActivity() {
             .placeholder(R.drawable.default_profile_picture)
             .error(R.drawable.default_profile_picture)
             .into(headerBinding.imageViewProfile)
+    }
+
+    private fun updateAdminMenuVisibility(usuario: UserEntity) {
+        val rol = usuario.rol?.trim()?.lowercase()
+        val permitido = rol == "administrador" || rol == "supervisor"
+        navView.menu.findItem(R.id.nav_admin)?.isVisible = permitido
     }
 
     private fun displayValue(value: String?): String =
