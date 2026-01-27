@@ -159,12 +159,30 @@
                     android:textAppearance="@style/TextAppearance.Material3.BodySmall"
                     android:textColor="?attr/colorOnSurface" />
 
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/textAdminMedidorBuscarTitle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="20dp"
+                    android:text="@string/admin_section_medidor_buscar_title"
+                    android:textAppearance="@style/TextAppearance.Material3.TitleSmall"
+                    android:textColor="?attr/colorOnSurface" />
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/textAdminMedidorBuscarHint"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="@string/admin_section_medidor_buscar_hint"
+                    android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+                    android:textColor="?attr/colorOnSurface" />
+
                 <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/tilAdminMedidorBuscar"
                     style="@style/Tecni.TextInput.Outlined.Dropdown"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="20dp"
+                    android:layout_marginTop="12dp"
                     android:hint="@string/medidor_numero_hint"
                     app:startIconDrawable="@drawable/ic_round_search_24"
                     app:startIconTint="@color/admin_toggle_text">
@@ -196,12 +214,21 @@
                         app:iconPadding="8dp" />
                 </LinearLayout>
 
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/textAdminMedidorDetallesTitle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="20dp"
+                    android:text="@string/admin_section_medidor_detalles_title"
+                    android:textAppearance="@style/TextAppearance.Material3.TitleSmall"
+                    android:textColor="?attr/colorOnSurface" />
+
                 <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/tilAdminMedidorNumero"
                     style="@style/Tecni.TextInput.Outlined"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
+                    android:layout_marginTop="12dp"
                     android:hint="@string/admin_field_medidor_numero"
                     app:startIconDrawable="@drawable/ic_menu_medidor"
                     app:startIconTint="@color/admin_toggle_text">
@@ -426,12 +453,30 @@
                     android:textAppearance="@style/TextAppearance.Material3.BodySmall"
                     android:textColor="?attr/colorOnSurface" />
 
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/textAdminVehiculoBuscarTitle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="20dp"
+                    android:text="@string/admin_section_vehiculo_buscar_title"
+                    android:textAppearance="@style/TextAppearance.Material3.TitleSmall"
+                    android:textColor="?attr/colorOnSurface" />
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/textAdminVehiculoBuscarHint"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="@string/admin_section_vehiculo_buscar_hint"
+                    android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+                    android:textColor="?attr/colorOnSurface" />
+
                 <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/tilAdminVehiculoBuscar"
                     style="@style/Tecni.TextInput.Outlined.Dropdown"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
+                    android:layout_marginTop="12dp"
                     android:hint="@string/admin_field_vehiculo_buscar_hint"
                     app:endIconMode="clear_text"
                     app:startIconDrawable="@drawable/ic_round_search_24"
@@ -464,12 +509,21 @@
                         app:iconPadding="8dp" />
                 </LinearLayout>
 
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/textAdminVehiculoDetallesTitle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="20dp"
+                    android:text="@string/admin_section_vehiculo_detalles_title"
+                    android:textAppearance="@style/TextAppearance.Material3.TitleSmall"
+                    android:textColor="?attr/colorOnSurface" />
+
                 <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/tilAdminVehiculoSubregion"
                     style="@style/Tecni.TextInput.Outlined.Dropdown"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
+                    android:layout_marginTop="12dp"
                     android:hint="@string/admin_field_vehiculo_subregion"
                     app:endIconMode="dropdown_menu"
                     app:startIconDrawable="@drawable/ic_menu_localizacion"
@@ -620,12 +674,30 @@
                     android:textAppearance="@style/TextAppearance.Material3.BodySmall"
                     android:textColor="?attr/colorOnSurface" />
 
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/textAdminLocalizacionBuscarTitle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="20dp"
+                    android:text="@string/admin_section_localizacion_buscar_title"
+                    android:textAppearance="@style/TextAppearance.Material3.TitleSmall"
+                    android:textColor="?attr/colorOnSurface" />
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/textAdminLocalizacionBuscarHint"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="@string/admin_section_localizacion_buscar_hint"
+                    android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+                    android:textColor="?attr/colorOnSurface" />
+
                 <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/tilAdminLocalizacionSubregion"
                     style="@style/Tecni.TextInput.Outlined.Dropdown"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
+                    android:layout_marginTop="12dp"
                     android:hint="@string/admin_field_localizacion_subregion"
                     app:endIconMode="dropdown_menu"
                     app:startIconDrawable="@drawable/ic_menu_localizacion"
@@ -694,6 +766,15 @@
                         app:iconGravity="textStart"
                         app:iconPadding="8dp" />
                 </LinearLayout>
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/textAdminLocalizacionDetallesTitle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="20dp"
+                    android:text="@string/admin_section_localizacion_detalles_title"
+                    android:textAppearance="@style/TextAppearance.Material3.TitleSmall"
+                    android:textColor="?attr/colorOnSurface" />
 
                 <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/tilAdminLocalizacionDireccion"
