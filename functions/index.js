@@ -11,6 +11,11 @@ admin.initializeApp();
 
 const MAIL_USER = defineSecret("MAIL_USER");
 const MAIL_PASS = defineSecret("MAIL_PASS");
+const DB_AVERIAS_URL = "https://tecniapp-ice-averias.firebaseio.com";
+const DB_USERS_URL = "https://tecniapp-ice-user.firebaseio.com";
+
+const dbAverias = admin.database(DB_AVERIAS_URL);
+const dbUsers = admin.database(DB_USERS_URL);
 
 function createTransporter({ user, pass }) {
   return nodemailer.createTransport({
@@ -312,7 +317,8 @@ exports.syncAveriasYNotificar = onSchedule(
   { schedule: "every 5 minutes", timeZone: "America/Costa_Rica" },
   async () => {
     try {
-      const db = admin.database();
+      const dbA = dbAverias;
+      const dbU = dbUsers;
 
       // 1) Consultar API ICE (SIN TOKEN)
       const resp = await axios.get(ICE_URL, { timeout: 20000 });
@@ -321,7 +327,7 @@ exports.syncAveriasYNotificar = onSchedule(
       console.log("Averías recibidas:", averias.length);
 
       // 2) Leer snapshot previo (solo para decidir notificaciones)
-      const snapRef = db.ref("averias_last_snapshot");
+      const snapRef = dbA.ref("averias_last_snapshot");
       const snap = await snapRef.get();
       const last = snap.exists() ? snap.val() : {};
 
@@ -380,7 +386,7 @@ exports.syncAveriasYNotificar = onSchedule(
           payload.estado = "Resuelta";
         }
 
-        await db.ref("averias").child(caseId).update(payload);
+        await dbA.ref("averias").child(caseId).update(payload);
 
         // ✅ Decide si notifica (nueva PENDIENTE, o cambio a RESUELTA)
         if (!shouldNotify(prevEstado, estado, isNew)) continue;
@@ -423,7 +429,7 @@ exports.syncAveriasYNotificar = onSchedule(
       }
 
       // 4) Leer usuarios con FCM token
-      const usersSnap = await db.ref("usuarios").get();
+      const usersSnap = await dbU.ref("usuarios").get();
       const users = usersSnap.exists() ? usersSnap.val() : {};
 
       for (const item of toNotify) {
@@ -478,7 +484,7 @@ exports.syncAveriasYNotificar = onSchedule(
           const uid = tokenToUid.get(badToken);
           if (!uid) continue;
           console.log(`Eliminando token inválido uid=${uid}`);
-          await db.ref("usuarios").child(uid).child("fcmToken").remove();
+          await dbU.ref("usuarios").child(uid).child("fcmToken").remove();
         }
       }
     } catch (e) {
@@ -513,7 +519,7 @@ exports.sendVerificationCode = onCall(
       const key = emailKey(email);
 
       // Guardar EXACTO como su app espera: { code, createdAt, expiresAt }
-      await admin.database().ref("verificationCodes").child(key).set({
+      await dbUsers.ref("verificationCodes").child(key).set({
         code,
         createdAt: now,
         expiresAt,
