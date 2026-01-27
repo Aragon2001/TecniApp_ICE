@@ -19,19 +19,25 @@ function getMailConfig() {
   const cfg = functions.config();
   const user =
     cfg?.mail?.user ||
+    cfg?.email?.user ||
+    cfg?.email?.userEntity ||
     process.env.MAIL_USER ||
     process.env.mail_user ||
+    process.env.EMAIL_USER ||
+    process.env.EMAIL_USER_ENTITY ||
     process.env.SMTP_USER ||
     "";
   const pass =
     cfg?.mail?.pass ||
+    cfg?.email?.pass ||
     process.env.MAIL_PASS ||
     process.env.mail_pass ||
+    process.env.EMAIL_PASS ||
     process.env.SMTP_PASS ||
     "";
   if (!user || !pass) {
     throw new Error(
-      "Faltan credenciales. Configure con: firebase functions:config:set mail.user=... mail.pass=... o variables MAIL_USER/MAIL_PASS."
+      "Faltan credenciales. Configure con: firebase functions:config:set mail.user=... mail.pass=... (o email.userEntity/email.pass) o variables MAIL_USER/MAIL_PASS."
     );
   }
   return { user, pass };
@@ -166,6 +172,25 @@ function shouldNotify(prevEstado, newEstado, isNew) {
 
 function generateCode() {
   return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+function extractEmail(data) {
+  if (typeof data === "string") {
+    return data;
+  }
+  const direct =
+    data?.email ||
+    data?.correo ||
+    data?.mail ||
+    data?.userEmail;
+  if (direct) return direct;
+
+  const nested =
+    data?.data?.email ||
+    data?.data?.correo ||
+    data?.data?.mail ||
+    data?.data?.userEmail;
+  return nested || "";
 }
 
 /* =========================================================
@@ -502,7 +527,8 @@ exports.syncAveriasYNotificar = onSchedule(
    /verificationCodes/{emailKey(email)}
 */
 exports.sendVerificationCode = functions.https.onCall(async (data, context) => {
-  const email = String(data?.email || "").trim();
+  console.log("typeof data:", typeof data, "data:", data);
+  const email = String(extractEmail(data)).trim();
   if (!email) {
     throw new functions.https.HttpsError("invalid-argument", "Email requerido");
   }
@@ -545,7 +571,7 @@ exports.sendVerificationCode = functions.https.onCall(async (data, context) => {
    - Llama sendReport(email, reportName, downloadUrl, subtitle)
 */
 exports.sendReport = functions.https.onCall(async (data, context) => {
-  const email = String(data?.email || "").trim();
+  const email = String(extractEmail(data)).trim();
   const reportName = String(data?.reportName || "Reporte").trim();
   const downloadUrl = String(data?.downloadUrl || "").trim();
   const subtitle = String(data?.subtitle || "").trim(); // ej: "Rango: 01–07 Dic 2025"
