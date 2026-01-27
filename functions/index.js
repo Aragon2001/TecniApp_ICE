@@ -178,13 +178,19 @@ function extractEmail(data) {
   if (typeof data === "string") {
     return data;
   }
-  return (
+  const direct =
     data?.email ||
     data?.correo ||
     data?.mail ||
-    data?.userEmail ||
-    ""
-  );
+    data?.userEmail;
+  if (direct) return direct;
+
+  const nested =
+    data?.data?.email ||
+    data?.data?.correo ||
+    data?.data?.mail ||
+    data?.data?.userEmail;
+  return nested || "";
 }
 
 /* =========================================================
