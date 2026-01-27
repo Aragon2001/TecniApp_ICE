@@ -48,6 +48,7 @@ import com.Arasoftsolutions.tecniapp_ice.update.UpdateDialog
 import com.Arasoftsolutions.tecniapp_ice.update.UpdateDownloadManager
 import com.Arasoftsolutions.tecniapp_ice.update.UpdateInfo
 import java.util.Calendar
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
 
 class ActivityMain : AppCompatActivity() {
@@ -60,6 +61,8 @@ class ActivityMain : AppCompatActivity() {
     private lateinit var headerBinding: NavHeaderMainBinding
     private val dataStore by lazy { DataStoreManager.getInstance(applicationContext) }
     private val updateDownloadManager by lazy { UpdateDownloadManager(this) }
+    private var adminRoleEligible = false
+    private var adminPrivilegesEnabled = true
 
     private val runtimePermissionsLauncher =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { results ->
@@ -160,6 +163,13 @@ class ActivityMain : AppCompatActivity() {
 
         setupActionBarWithNavController(navController, appBarConfiguration)
         navView.setupWithNavController(navController)
+
+        lifecycleScope.launch {
+            dataStore.adminPrivilegesEnabled.collect { enabled ->
+                adminPrivilegesEnabled = enabled
+                applyAdminMenuVisibility()
+            }
+        }
     }
 
     private fun checkPendingUpdate() {
@@ -248,8 +258,13 @@ class ActivityMain : AppCompatActivity() {
 
     private fun updateAdminMenuVisibility(usuario: UserEntity) {
         val rol = usuario.rol?.trim()?.lowercase()
-        val permitido = rol == "administrador" || rol == "supervisor"
-        navView.menu.findItem(R.id.nav_admin)?.isVisible = permitido
+        adminRoleEligible = rol == "administrador" || rol == "supervisor"
+        applyAdminMenuVisibility()
+    }
+
+    private fun applyAdminMenuVisibility() {
+        if (!this::navView.isInitialized) return
+        navView.menu.findItem(R.id.nav_admin)?.isVisible = adminRoleEligible && adminPrivilegesEnabled
     }
 
     private fun displayValue(value: String?): String =

@@ -1,6 +1,7 @@
 package com.Arasoftsolutions.tecniapp_ice
 
 import android.app.Application
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.work.WorkManager
 import com.Arasoftsolutions.tecniapp_ice.Database.room.AppDatabase
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
@@ -26,6 +27,15 @@ class TecniApp : Application() {
         AveriaNotifications.ensureChannel(this)
         networkAlertManager.start()
         val dataStore = DataStoreManager.getInstance(this)
+        applicationScope.launch {
+            val darkThemeEnabled = dataStore.darkThemeEnabled.first()
+            val mode = if (darkThemeEnabled) {
+                AppCompatDelegate.MODE_NIGHT_YES
+            } else {
+                AppCompatDelegate.MODE_NIGHT_NO
+            }
+            AppCompatDelegate.setDefaultNightMode(mode)
+        }
         applicationScope.launch {
             val autoSyncEnabled = dataStore.autoSyncEnabled.first()
             if (autoSyncEnabled) {

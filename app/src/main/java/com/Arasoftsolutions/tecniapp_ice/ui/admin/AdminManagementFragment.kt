@@ -20,11 +20,13 @@ import com.Arasoftsolutions.tecniapp_ice.Database.entities.SubregionesEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.VehiculosEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.sync.SubregionNormalizer
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
+import com.Arasoftsolutions.tecniapp_ice.preferences.DataStoreManager
 import com.Arasoftsolutions.tecniapp_ice.ui.admin.MapCoordinatePickerBottomSheet
 import com.Arasoftsolutions.tecniapp_ice.databinding.FragmentAdminManagementBinding
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.util.Locale
 import androidx.navigation.fragment.findNavController
@@ -118,7 +120,10 @@ class AdminManagementFragment : Fragment(R.layout.fragment_admin_management) {
                 RoomRepository.getInstance(requireContext()).obtenerUsuario(uid)
             }
             val rol = usuario?.rol?.trim()?.lowercase(Locale.getDefault())
-            val permitido = rol == "administrador" || rol == "supervisor"
+            val adminEnabled = DataStoreManager.getInstance(requireContext())
+                .adminPrivilegesEnabled
+                .first()
+            val permitido = (rol == "administrador" || rol == "supervisor") && adminEnabled
             if (permitido) return@launch
             binding.root.isVisible = false
             MaterialAlertDialogBuilder(requireContext())
