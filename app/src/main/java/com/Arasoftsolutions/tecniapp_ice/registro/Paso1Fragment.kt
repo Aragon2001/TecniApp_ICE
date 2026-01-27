@@ -213,9 +213,10 @@ class Paso1Fragment : Fragment() {
                 prefs.edit().putString("registro_email", normalizedEmail).apply()
 
                 // Llamar Cloud Function: sendVerificationCode(email)
+                Log.d("Paso1Fragment", "Voy a pedir código para: '$normalizedEmail'")
                 functions
                     .getHttpsCallable("sendVerificationCode")
-                    .call(hashMapOf("email" to normalizedEmail))
+                    .call(normalizedEmail)
                     .addOnSuccessListener {
                         Toast.makeText(requireContext(), "Te enviamos un código a $normalizedEmail", Toast.LENGTH_SHORT).show()
                         (activity as? RegistroActivity)?.goToNextStep(1) // Paso 2

@@ -527,6 +527,7 @@ exports.syncAveriasYNotificar = onSchedule(
    /verificationCodes/{emailKey(email)}
 */
 exports.sendVerificationCode = functions.https.onCall(async (data, context) => {
+  console.log("typeof data:", typeof data, "data:", data);
   const email = String(extractEmail(data)).trim();
   if (!email) {
     throw new functions.https.HttpsError("invalid-argument", "Email requerido");

@@ -179,7 +179,7 @@ class Paso2Fragment : Fragment() {
 
         functions
             .getHttpsCallable("sendVerificationCode")
-            .call(mapOf("email" to email))
+            .call(email)
             .addOnSuccessListener {
                 if (isAdded) {
                     Toast.makeText(requireContext(), "Reenviamos un código a $email", Toast.LENGTH_SHORT).show()
