@@ -3,19 +3,22 @@
 const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const { defineSecret } = require("firebase-functions/params");
+require("firebase-admin/database");
 const admin = require("firebase-admin");
 const axios = require("axios");
 const nodemailer = require("nodemailer");
-
-admin.initializeApp();
 
 const MAIL_USER = defineSecret("MAIL_USER");
 const MAIL_PASS = defineSecret("MAIL_PASS");
 const DB_AVERIAS_URL = "https://tecniapp-ice-averias.firebaseio.com";
 const DB_USERS_URL = "https://tecniapp-ice-user.firebaseio.com";
 
-const dbAverias = admin.database(DB_AVERIAS_URL);
-const dbUsers = admin.database(DB_USERS_URL);
+admin.initializeApp();
+const averiasApp = admin.initializeApp({ databaseURL: DB_AVERIAS_URL }, "averias");
+const usersApp = admin.initializeApp({ databaseURL: DB_USERS_URL }, "users");
+
+const dbAverias = admin.database(averiasApp);
+const dbUsers = admin.database(usersApp);
 
 function createTransporter({ user, pass }) {
   return nodemailer.createTransport({
