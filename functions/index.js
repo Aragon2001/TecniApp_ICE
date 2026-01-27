@@ -174,6 +174,19 @@ function generateCode() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
+function extractEmail(data) {
+  if (typeof data === "string") {
+    return data;
+  }
+  return (
+    data?.email ||
+    data?.correo ||
+    data?.mail ||
+    data?.userEmail ||
+    ""
+  );
+}
+
 /* =========================================================
    HTML TEMPLATES (MISMA ESTÉTICA)
    ========================================================= */
@@ -508,7 +521,7 @@ exports.syncAveriasYNotificar = onSchedule(
    /verificationCodes/{emailKey(email)}
 */
 exports.sendVerificationCode = functions.https.onCall(async (data, context) => {
-  const email = String(data?.email || "").trim();
+  const email = String(extractEmail(data)).trim();
   if (!email) {
     throw new functions.https.HttpsError("invalid-argument", "Email requerido");
   }
@@ -551,7 +564,7 @@ exports.sendVerificationCode = functions.https.onCall(async (data, context) => {
    - Llama sendReport(email, reportName, downloadUrl, subtitle)
 */
 exports.sendReport = functions.https.onCall(async (data, context) => {
-  const email = String(data?.email || "").trim();
+  const email = String(extractEmail(data)).trim();
   const reportName = String(data?.reportName || "Reporte").trim();
   const downloadUrl = String(data?.downloadUrl || "").trim();
   const subtitle = String(data?.subtitle || "").trim(); // ej: "Rango: 01–07 Dic 2025"

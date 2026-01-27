@@ -180,7 +180,14 @@ class Paso1Fragment : Fragment() {
         // Verificar disponibilidad usando /emails y /phones (no /usuarios)
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                val eKey = emailKey(email)
+                val normalizedEmail = email.trim()
+                if (normalizedEmail.isBlank()) {
+                    Toast.makeText(requireContext(), "El correo electrónico no está disponible.", Toast.LENGTH_SHORT).show()
+                    setLoading(false)
+                    return@launch
+                }
+
+                val eKey = emailKey(normalizedEmail)
                 val pKey = phoneKey(phoneRaw)
 
                 val emailTaken = usersDb.child("emails").child(eKey).get().await().exists()
@@ -201,16 +208,16 @@ class Paso1Fragment : Fragment() {
 
                 // Guardar en VM
                 viewModel.setTelefono(phoneRaw)
-                viewModel.setEmail(email)
+                viewModel.setEmail(normalizedEmail)
                 viewModel.setPassword(password)
-                prefs.edit().putString("registro_email", email).apply()
+                prefs.edit().putString("registro_email", normalizedEmail).apply()
 
                 // Llamar Cloud Function: sendVerificationCode(email)
                 functions
                     .getHttpsCallable("sendVerificationCode")
-                    .call(mapOf("email" to email))
+                    .call(hashMapOf("email" to normalizedEmail))
                     .addOnSuccessListener {
-                        Toast.makeText(requireContext(), "Te enviamos un código a $email", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(requireContext(), "Te enviamos un código a $normalizedEmail", Toast.LENGTH_SHORT).show()
                         (activity as? RegistroActivity)?.goToNextStep(1) // Paso 2
                     }
                     .addOnFailureListener { e ->
