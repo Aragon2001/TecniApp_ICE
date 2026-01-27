@@ -1,12 +1,17 @@
 /* eslint-disable */
 
 const { onSchedule } = require("firebase-functions/v2/scheduler");
+const { onCall, HttpsError } = require("firebase-functions/v2/https");
+const { defineSecret } = require("firebase-functions/params");
 const functions = require("firebase-functions"); // v1 para https.onCall
 const admin = require("firebase-admin");
 const axios = require("axios");
 const nodemailer = require("nodemailer");
 
 admin.initializeApp();
+
+const MAIL_USER = defineSecret("MAIL_USER");
+const MAIL_PASS = defineSecret("MAIL_PASS");
 
 /* =========================================================
    CONFIG MAIL (Firebase Functions Config)
@@ -43,20 +48,18 @@ function getMailConfig() {
   return { user, pass };
 }
 
-function createTransporter() {
-  const { user, pass } = getMailConfig();
+function createTransporter({ user, pass }) {
   return nodemailer.createTransport({
     service: "gmail",
     auth: { user, pass },
   });
 }
 
-async function sendMail({ to, subject, html }) {
-  const transporter = createTransporter();
-  const fromUser = getMailConfig().user;
+async function sendMail({ to, subject, html, user, pass }) {
+  const transporter = createTransporter({ user, pass });
 
   await transporter.sendMail({
-    from: `"TecniApp ICE" <${fromUser}>`,
+    from: `"TecniApp ICE" <${user}>`,
     to,
     subject,
     html,
@@ -526,41 +529,48 @@ exports.syncAveriasYNotificar = onSchedule(
    Android hoy lee y verifica en:
    /verificationCodes/{emailKey(email)}
 */
-exports.sendVerificationCode = functions.https.onCall(async (data, context) => {
-  console.log("typeof data:", typeof data, "data:", data);
-  const email = String(extractEmail(data)).trim();
-  if (!email) {
-    throw new functions.https.HttpsError("invalid-argument", "Email requerido");
+exports.sendVerificationCode = onCall(
+  { region: "us-central1", secrets: [MAIL_USER, MAIL_PASS] },
+  async (request) => {
+    try {
+      const data = request.data;
+      const email = String(extractEmail(data)).trim();
+      if (!email) throw new HttpsError("invalid-argument", "Email requerido");
+
+      // (Opcional) forzar dominio institucional
+      // if (!email.toLowerCase().endsWith("@ice.go.cr")) {
+      //   throw new HttpsError("permission-denied", "Solo correos @ice.go.cr");
+      // }
+
+      const code = generateCode();
+      const now = Date.now();
+      const expiresAt = now + 5 * 60 * 1000; // 5 min
+
+      const key = emailKey(email);
+
+      // Guardar EXACTO como su app espera: { code, createdAt, expiresAt }
+      await admin.database().ref("verificationCodes").child(key).set({
+        code,
+        createdAt: now,
+        expiresAt,
+      });
+
+      await sendMail({
+        to: email,
+        subject: "Código de verificación – TecniApp ICE",
+        html: verificationEmailHtml(code),
+        user: MAIL_USER.value(),
+        pass: MAIL_PASS.value(),
+      });
+
+      return { success: true };
+    } catch (e) {
+      console.error("sendVerificationCode ERROR:", e);
+      if (e instanceof HttpsError) throw e;
+      throw new HttpsError("internal", e?.message || "Error interno");
+    }
   }
-
-  // (Opcional) forzar dominio institucional
-  // if (!email.toLowerCase().endsWith("@ice.go.cr")) {
-  //   throw new functions.https.HttpsError("permission-denied", "Solo correos @ice.go.cr");
-  // }
-
-  const code = generateCode();
-  const now = Date.now();
-  const expiresAt = now + 5 * 60 * 1000; // 5 min
-
-  const key = emailKey(email);
-
-  // Guardar EXACTO como su app espera: { code, createdAt, expiresAt }
-  await admin.database().ref("verificationCodes").child(key).set({
-    code,
-    createdAt: now,
-    expiresAt,
-  });
-
-  const html = verificationEmailHtml(code);
-
-  await sendMail({
-    to: email,
-    subject: "Código de verificación – TecniApp ICE",
-    html,
-  });
-
-  return { success: true };
-});
+);
 
 /* =========================================================
    CALLABLE: ENVIAR REPORTE POR CORREO
@@ -582,10 +592,13 @@ exports.sendReport = functions.https.onCall(async (data, context) => {
 
   const html = reportEmailHtml({ reportName, downloadUrl, subtitle });
 
+  const { user, pass } = getMailConfig();
   await sendMail({
     to: email,
     subject: `Reporte ${reportName} – TecniApp ICE`,
     html,
+    user,
+    pass,
   });
 
   return { success: true };
