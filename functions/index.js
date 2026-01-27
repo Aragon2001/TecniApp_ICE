@@ -3,7 +3,6 @@
 const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const { defineSecret } = require("firebase-functions/params");
-const functions = require("firebase-functions"); // v1 para https.onCall
 const admin = require("firebase-admin");
 const axios = require("axios");
 const nodemailer = require("nodemailer");
@@ -12,41 +11,6 @@ admin.initializeApp();
 
 const MAIL_USER = defineSecret("MAIL_USER");
 const MAIL_PASS = defineSecret("MAIL_PASS");
-
-/* =========================================================
-   CONFIG MAIL (Firebase Functions Config)
-   =========================================================
-   Configure en consola:
-   firebase functions:config:set mail.user="tecniappice@gmail.com"
-   firebase functions:config:set mail.pass="CLAVE_APP_GMAIL"
-*/
-function getMailConfig() {
-  const cfg = functions.config();
-  const user =
-    cfg?.mail?.user ||
-    cfg?.email?.user ||
-    cfg?.email?.userEntity ||
-    process.env.MAIL_USER ||
-    process.env.mail_user ||
-    process.env.EMAIL_USER ||
-    process.env.EMAIL_USER_ENTITY ||
-    process.env.SMTP_USER ||
-    "";
-  const pass =
-    cfg?.mail?.pass ||
-    cfg?.email?.pass ||
-    process.env.MAIL_PASS ||
-    process.env.mail_pass ||
-    process.env.EMAIL_PASS ||
-    process.env.SMTP_PASS ||
-    "";
-  if (!user || !pass) {
-    throw new Error(
-      "Faltan credenciales. Configure con: firebase functions:config:set mail.user=... mail.pass=... (o email.userEntity/email.pass) o variables MAIL_USER/MAIL_PASS."
-    );
-  }
-  return { user, pass };
-}
 
 function createTransporter({ user, pass }) {
   return nodemailer.createTransport({
@@ -580,26 +544,29 @@ exports.sendVerificationCode = onCall(
    - Obtiene downloadUrl
    - Llama sendReport(email, reportName, downloadUrl, subtitle)
 */
-exports.sendReport = functions.https.onCall(async (data, context) => {
-  const email = String(extractEmail(data)).trim();
-  const reportName = String(data?.reportName || "Reporte").trim();
-  const downloadUrl = String(data?.downloadUrl || "").trim();
-  const subtitle = String(data?.subtitle || "").trim(); // ej: "Rango: 01–07 Dic 2025"
+exports.sendReport = onCall(
+  { region: "us-central1", secrets: [MAIL_USER, MAIL_PASS] },
+  async (request) => {
+    const data = request.data;
+    const email = String(extractEmail(data)).trim();
+    const reportName = String(data?.reportName || "Reporte").trim();
+    const downloadUrl = String(data?.downloadUrl || "").trim();
+    const subtitle = String(data?.subtitle || "").trim(); // ej: "Rango: 01–07 Dic 2025"
 
-  if (!email || !downloadUrl) {
-    throw new functions.https.HttpsError("invalid-argument", "Datos incompletos");
+    if (!email || !downloadUrl) {
+      throw new HttpsError("invalid-argument", "Datos incompletos");
+    }
+
+    const html = reportEmailHtml({ reportName, downloadUrl, subtitle });
+
+    await sendMail({
+      to: email,
+      subject: `Reporte ${reportName} – TecniApp ICE`,
+      html,
+      user: MAIL_USER.value(),
+      pass: MAIL_PASS.value(),
+    });
+
+    return { success: true };
   }
-
-  const html = reportEmailHtml({ reportName, downloadUrl, subtitle });
-
-  const { user, pass } = getMailConfig();
-  await sendMail({
-    to: email,
-    subject: `Reporte ${reportName} – TecniApp ICE`,
-    html,
-    user,
-    pass,
-  });
-
-  return { success: true };
-});
+);
