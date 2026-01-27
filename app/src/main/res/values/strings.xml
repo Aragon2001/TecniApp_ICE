@@ -565,9 +565,12 @@ Cliente: %4$s</string>
     <string name="medidor_no_encontrado_descripcion">No encontramos el medidor %1$s. Puedes registrarlo manualmente y quedará disponible sin conexión.</string>
     <string name="medidor_no_encontrado_descripcion_vacia">Registra medidores manualmente para mantener tu catálogo actualizado.</string>
     <string name="medidor_no_encontrado_accion">Registrar manualmente</string>
-    <string name="medidor_no_registrado_dialog_title">Medidor no registrado</string>
-    <string name="medidor_no_registrado_dialog_message">Consultamos en la nube y no encontramos el medidor %1$s. ¿Deseas registrarlo manualmente?</string>
-    <string name="medidor_no_registrado_dialog_offline">No hay conexión para consultar el medidor %1$s. ¿Deseas registrarlo manualmente?</string>
+    <string name="medidor_no_registrado_dialog_title">Medidor no encontrado</string>
+    <string name="medidor_no_registrado_dialog_message">No encontramos el medidor %1$s en la nube. ¿Deseas registrarlo manualmente?</string>
+    <string name="medidor_dialog_consulta_nube_title">Medidor no encontrado</string>
+    <string name="medidor_dialog_consulta_nube_message">No encontramos el medidor %1$s. Espera un momento, consultando en la nube.</string>
+    <string name="medidor_dialog_offline_title">Medidor no encontrado</string>
+    <string name="medidor_dialog_offline_message">No hay conexión para consultar el medidor %1$s.</string>
     <string name="medidor_no_registrado_dialog_positive">Registrar</string>
     <string name="medidor_no_registrado_dialog_negative">Cancelar</string>
     <string name="medidor_registro_manual_titulo">Registrar medidor manualmente</string>
@@ -593,6 +596,15 @@ Cliente: %4$s</string>
     <string name="medidor_registro_confirm_title">Confirmar registro</string>
     <string name="medidor_registro_confirm_message">¿Estás seguro de registrar este medidor? Los datos se guardarán en la base global y solo un administrador del sistema podrá eliminarlos.</string>
     <string name="medidor_registro_confirm_positive">Registrar medidor</string>
+    <string name="medidor_registro_aviso_title">Verifica la información</string>
+    <string name="medidor_registro_aviso_message">Verifique que toda la información sea exacta y confiable. Para modificarla tendrá que contactar al supervisor.</string>
+    <string name="medidor_chip_numero_format">Número: %1$s</string>
+    <string name="medidor_chip_cliente_format">Cliente: %1$s</string>
+    <string name="medidor_chip_localizacion_format">Localización: %1$s</string>
+    <string name="medidor_chip_calle_format">Calle: %1$s</string>
+    <string name="medidor_chip_poste_format">Poste: %1$s</string>
+    <string name="medidor_chip_metros_format">Metros: %1$s</string>
+    <string name="medidor_chip_pueblo_format">Pueblo: %1$s</string>
 
     <!-- Localización -->
     <string name="localizacion_estado_sin_subregion">No se pudo determinar la subregión del usuario.</string>
