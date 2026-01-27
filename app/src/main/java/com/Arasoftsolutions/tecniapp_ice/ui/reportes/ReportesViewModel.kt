@@ -423,7 +423,7 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
         }
         val totalMateriales = materiales.sumOf { it.cantidad }
         val codigosDistintos = materiales.map { it.codigo }.filter { it.isNotBlank() }.distinct().size
-        return DatosLuminarias(reparaciones, totalMateriales, codigosDistintos)
+        return DatosLuminarias(reparacionesFiltradas, totalMateriales, codigosDistintos)
     }
 
     private suspend fun obtenerDatosBase(inicio: LocalDate, fin: LocalDate): DatosBase {

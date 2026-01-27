@@ -111,13 +111,14 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
             android:hint="Número de localización"
+            app:helperText="Formato 0000-000-00-00"
             app:startIconDrawable="@drawable/ic_location">
 
             <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/etLocalizacion"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="number" />
+            android:id="@+id/etLocalizacion"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="text" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout

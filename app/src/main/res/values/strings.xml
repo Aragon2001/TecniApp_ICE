@@ -707,6 +707,7 @@ Cliente: %4$s</string>
     <string name="reportes_excel_col_localizacion">Localización</string>
     <string name="luminarias_importar_excel">Cargar XLSX de luminarias</string>
     <string name="luminarias_descargar_machote">Descargar machote de luminarias</string>
+    <string name="luminarias_enviar_machote">Enviar machote por correo</string>
     <string name="luminarias_filtro_camion">Filtrar por camión</string>
     <string name="luminarias_camion_todos">Todos los camiones</string>
     <string name="luminarias_camion_asignado">Camión asignado</string>
