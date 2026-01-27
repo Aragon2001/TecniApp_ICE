@@ -114,7 +114,9 @@ class AdminManagementFragment : Fragment(R.layout.fragment_admin_management) {
     private fun verificarAccesoAdmin() {
         viewLifecycleOwner.lifecycleScope.launch {
             val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return@launch
-            val usuario = RoomRepository.getInstance(requireContext()).obtenerUsuario(uid)
+            val usuario = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                RoomRepository.getInstance(requireContext()).obtenerUsuario(uid)
+            }
             val rol = usuario?.rol?.trim()?.lowercase(Locale.getDefault())
             val permitido = rol == "administrador" || rol == "supervisor"
             if (permitido) return@launch
@@ -394,7 +396,9 @@ class AdminManagementFragment : Fragment(R.layout.fragment_admin_management) {
         val subregionNombre = resolveSubregionNombre(binding.actvAdminVehiculoSubregion.text?.toString())
             ?: subregionUsuario?.nombre
         val datos = if (subregionSeleccionada == null && subregionNombre == null) {
-            emptyList()
+            agenciasDisponibles
+                .sortedBy { it.nombre }
+                .map { it.nombre }
         } else {
             agenciasDisponibles
                 .filter { matchesSubregionFiltro(it.subregion, subregionSeleccionada, subregionNombre) }
@@ -420,22 +424,24 @@ class AdminManagementFragment : Fragment(R.layout.fragment_admin_management) {
         vehiculosDisponibles = filtrarPorSubregionUsuario(vehiculosCatalogo) { it.subregion }
             .filter {
                 if (subregionSeleccionada == null && subregionNombre == null) {
-                    false
+                    true
                 } else {
                     matchesSubregionFiltro(it.subregion, subregionSeleccionada, subregionNombre)
                 }
             }
             .filter { vehiculo ->
                 val agencia = agenciaSeleccionada?.trim().orEmpty()
-                agencia.isNotEmpty() && vehiculo.agencia.equals(agencia, ignoreCase = true)
+                agencia.isBlank() || vehiculo.agencia.equals(agencia, ignoreCase = true)
             }
 
         vehiculoDisplayToPlaca.clear()
-        val datos = vehiculosDisponibles.sortedBy { it.placa }.map { vehiculo ->
-            val display = "${vehiculo.placa} - ${vehiculo.agencia}"
-            vehiculoDisplayToPlaca[display] = vehiculo.placa
-            display
-        }
+        val datos = vehiculosDisponibles
+            .sortedBy { it.placa }
+            .map { vehiculo ->
+                val display = "${vehiculo.placa} - ${vehiculo.agencia}"
+                vehiculoDisplayToPlaca[display] = vehiculo.placa
+                display
+            }
         vehiculoAdapter.clear()
         vehiculoAdapter.addAll(datos)
         vehiculoAdapter.notifyDataSetChanged()
