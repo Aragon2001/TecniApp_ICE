@@ -52,6 +52,7 @@ class LuminariasFragment : Fragment() {
             exportarMachote(uri, vehiculos)
         }
 
+
     private var vehiculosFilterCache: List<Int> = emptyList()
     private var isUpdatingVehiculoFilter = false
 
@@ -78,6 +79,7 @@ class LuminariasFragment : Fragment() {
             )
         }
         binding.btnDescargarMachote.setOnClickListener { prepararMachote() }
+        binding.btnEnviarMachoteCorreo.setOnClickListener { prepararMachoteCorreo() }
         binding.etBuscarLocalizacion.doAfterTextChanged {
             viewModel.actualizarBusquedaLocalizacion(it?.toString().orEmpty())
         }
@@ -117,7 +119,8 @@ class LuminariasFragment : Fragment() {
             showEdit = true,
             showDelete = true,
             onEdit = { reparacion -> mostrarDialogoEdicion(reparacion) },
-            onDelete = { reparacion -> confirmarEliminacion(reparacion) }
+            onDelete = { reparacion -> confirmarEliminacion(reparacion) },
+            onSelect = { reparacion -> mostrarDetalleReparada(reparacion) }
         )
         binding.listReparacionesLuminaria.apply {
             layoutManager = LinearLayoutManager(requireContext())
@@ -137,6 +140,7 @@ class LuminariasFragment : Fragment() {
                     binding.btnRegistrarLuminaria.isVisible = state.puedeRegistrarReparacion
                     binding.btnImportarLuminariasExcel.isVisible = state.puedeImportarExcel
                     binding.btnDescargarMachote.isVisible = state.puedeDescargarMachote
+                    binding.btnEnviarMachoteCorreo.isVisible = state.puedeEnviarMachote
                     actualizarModoChip()
                     renderVehiculoFilters(state)
 
@@ -148,8 +152,8 @@ class LuminariasFragment : Fragment() {
                     binding.tvEmptyReparacionesPendientes.isVisible = state.reparacionesPendientes.isEmpty()
 
                     reparacionesReparadasAdapter.updatePermissions(
-                        showEdit = !state.esSupervisor,
-                        showDelete = state.puedeEliminarLuminarias && !state.esSupervisor
+                        showEdit = !state.esSupervisor && !state.esAdministrador,
+                        showDelete = state.puedeEliminarLuminarias && !state.esSupervisor && !state.esAdministrador
                     )
                     reparacionesReparadasAdapter.submitList(state.reparacionesReparadas)
                     binding.tvEmptyReparaciones.isVisible = state.reparacionesReparadas.isEmpty()
@@ -209,15 +213,22 @@ class LuminariasFragment : Fragment() {
             binding = sheetBinding,
             titulo = "Editar reparación",
             mostrarDetalle = false,
-            reparacion = reparacion
+            reparacion = reparacion,
+            onDone = { dialog.dismiss() }
         )
         dialog.show()
     }
 
     private fun confirmarEliminacion(reparacion: com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaReparacionEntity) {
+        val estado = com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado.fromRaw(reparacion.estado)
+        val mensaje = if (estado == com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado.REPARADA) {
+            "¿Deseas eliminar esta reparación? Se enviará nuevamente a pendientes."
+        } else {
+            "¿Deseas eliminar esta reparación? Esta acción no se puede deshacer."
+        }
         MaterialAlertDialogBuilder(requireContext())
             .setTitle("Eliminar reparación")
-            .setMessage("¿Deseas eliminar esta reparación? Esta acción no se puede deshacer.")
+            .setMessage(mensaje)
             .setPositiveButton("Eliminar") { _, _ -> viewModel.eliminarReparacion(reparacion.id) }
             .setNegativeButton("Cancelar", null)
             .show()
@@ -232,7 +243,8 @@ class LuminariasFragment : Fragment() {
             binding = sheetBinding,
             titulo = "Registrar reparación",
             mostrarDetalle = false,
-            reparacion = null
+            reparacion = null,
+            onDone = { dialog.dismiss() }
         )
         dialog.show()
     }
@@ -245,7 +257,23 @@ class LuminariasFragment : Fragment() {
             binding = sheetBinding,
             titulo = "Detalle de lámpara pendiente",
             mostrarDetalle = true,
-            reparacion = reparacion
+            reparacion = reparacion,
+            onDone = { dialog.dismiss() }
+        )
+        dialog.show()
+        cargarDetalleCliente(sheetBinding, reparacion)
+    }
+
+    private fun mostrarDetalleReparada(reparacion: com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaReparacionEntity) {
+        val sheetBinding = BottomSheetLuminariaReparacionBinding.inflate(layoutInflater)
+        val dialog = BottomSheetDialog(requireContext())
+        dialog.setContentView(sheetBinding.root)
+        configurarFormularioBottomSheet(
+            binding = sheetBinding,
+            titulo = "Detalle de lámpara reparada",
+            mostrarDetalle = true,
+            reparacion = reparacion,
+            onDone = { dialog.dismiss() }
         )
         dialog.show()
         cargarDetalleCliente(sheetBinding, reparacion)
@@ -273,7 +301,8 @@ class LuminariasFragment : Fragment() {
         binding: BottomSheetLuminariaReparacionBinding,
         titulo: String,
         mostrarDetalle: Boolean,
-        reparacion: com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaReparacionEntity?
+        reparacion: com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaReparacionEntity?,
+        onDone: () -> Unit
     ) {
         val estadoUi = viewModel.uiState.value
         binding.tvTituloBottomSheet.text = titulo
@@ -379,20 +408,42 @@ class LuminariasFragment : Fragment() {
             } else {
                 "Reparada"
             }
-        } ?: "Reparada"
+        } ?: if (estadoUi.esSupervisor || estadoUi.esAdministrador) {
+            "Pendiente"
+        } else {
+            "Reparada"
+        }
         binding.actEstadoLuminaria.setText(estadoInicial, false)
 
-        binding.etLocalizacion.setText(reparacion?.localizacion ?: viewModel.uiState.value.localizacion)
+        val localizacionInicial = viewModel.normalizarLocalizacion(
+            reparacion?.localizacion ?: viewModel.uiState.value.localizacion
+        )
+        binding.etLocalizacion.setText(localizacionInicial)
         binding.actEjecutorLuminaria.setText(
             reparacion?.ejecutorNombre ?: viewModel.uiState.value.ejecutorNombre,
             false
         )
-        val vehiculoActualId = reparacion?.vehiculoId ?: estadoUi.vehiculoUsuarioId
+        val vehiculoActualId = reparacion?.vehiculoId ?: estadoUi.vehiculoRegistroId ?: estadoUi.vehiculoUsuarioId
         val vehiculoActual = vehiculosDisponibles.firstOrNull { it.id == vehiculoActualId }
         binding.actVehiculoLuminaria.setText(vehiculoActual?.placa?.toString().orEmpty(), false)
-        val puedeEditarVehiculo = estadoUi.puedeReasignarVehiculo && reparacion != null
+        val estadoActual = reparacion?.let {
+            com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado.fromRaw(it.estado)
+        }
+        val esAdminSupervisor = estadoUi.esSupervisor || estadoUi.esAdministrador
+        val esRegistro = reparacion == null
+        val puedeEditarVehiculo = esAdminSupervisor && (
+            (reparacion != null && estadoActual == com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado.PENDIENTE) ||
+                esRegistro
+            )
         binding.tilVehiculoLuminaria.isVisible = puedeEditarVehiculo
         binding.actVehiculoLuminaria.isEnabled = puedeEditarVehiculo
+        if (puedeEditarVehiculo) {
+            binding.actVehiculoLuminaria.setOnItemClickListener { _, _, position, _ ->
+                val placa = vehiculosAdapter.getItem(position).orEmpty()
+                val vehiculoSeleccionado = vehiculosDisponibles.firstOrNull { it.placa.toString() == placa }
+                viewModel.actualizarVehiculoRegistro(vehiculoSeleccionado?.id)
+            }
+        }
 
         binding.etLocalizacion.doAfterTextChanged {
             if (reparacion == null) {
@@ -407,28 +458,49 @@ class LuminariasFragment : Fragment() {
             binding.tilEjecutorLuminaria.error = null
         }
 
-        if (estadoUi.esSupervisor) {
+        val formularioPendiente = estadoActual == com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado.PENDIENTE
+        val soloAsignacion = esAdminSupervisor && reparacion != null
+        val mostrarSoloReasignacion = esAdminSupervisor && reparacion != null &&
+            estadoActual == com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado.REPARADA
+        val ocultarMateriales = esAdminSupervisor
+        val ocultarEjecutor = esAdminSupervisor
+        binding.tilEstadoLuminaria.isVisible = !mostrarSoloReasignacion && !ocultarMateriales
+        binding.actEstadoLuminaria.isEnabled = !mostrarSoloReasignacion && !ocultarMateriales
+        if (ocultarMateriales) {
             binding.tilMaterialLuminaria.isEnabled = false
             binding.actMaterialLuminaria.isEnabled = false
-            binding.tilEjecutorLuminaria.isEnabled = false
-            binding.actEjecutorLuminaria.isEnabled = false
-            binding.actEstadoLuminaria.isEnabled = false
             binding.tilMaterialLuminaria.isVisible = false
             binding.listMaterialesLuminaria.isVisible = false
             binding.tvEmptyMateriales.isVisible = false
-            binding.tilEjecutorLuminaria.isVisible = false
-            binding.tilEstadoLuminaria.isVisible = false
         } else {
             binding.tilMaterialLuminaria.isVisible = true
             binding.listMaterialesLuminaria.isVisible = true
             binding.tvEmptyMateriales.isVisible = materialesSeleccionados.isEmpty()
+        }
+        if (mostrarSoloReasignacion || ocultarEjecutor) {
+            binding.tilEjecutorLuminaria.isEnabled = false
+            binding.actEjecutorLuminaria.isEnabled = false
+            binding.tilEjecutorLuminaria.isVisible = false
+        } else {
             binding.tilEjecutorLuminaria.isVisible = true
-            binding.tilEstadoLuminaria.isVisible = true
+        }
+        binding.etLocalizacion.isEnabled = !mostrarSoloReasignacion && !soloAsignacion
+
+        if (mostrarSoloReasignacion) {
+            binding.btnGuardarReparacion.text = "Cerrar"
         }
 
         binding.btnGuardarReparacion.setOnClickListener {
+            if (mostrarSoloReasignacion) {
+                onDone()
+                return@setOnClickListener
+            }
             if (reparacion == null) {
                 val estado = obtenerEstado(binding.actEstadoLuminaria)
+                val localizacionNormalizada = viewModel.normalizarLocalizacion(
+                    binding.etLocalizacion.text?.toString().orEmpty()
+                )
+                binding.etLocalizacion.setText(localizacionNormalizada)
                 val valido = validarFormularioRegistro(
                     binding,
                     materialesSeleccionados,
@@ -436,11 +508,16 @@ class LuminariasFragment : Fragment() {
                     estado
                 )
                 if (valido) {
+                    if (esAdminSupervisor && binding.actVehiculoLuminaria.text?.toString().isNullOrBlank()) {
+                        viewModel.enviarMensaje("Selecciona un camión válido", esError = true)
+                        return@setOnClickListener
+                    }
                     viewModel.actualizarEstado(estado)
                     viewModel.registrarReparacion()
+                    onDone()
                 }
             } else {
-                if (estadoUi.esSupervisor) {
+                if (esAdminSupervisor && formularioPendiente) {
                     val placaSeleccionada = binding.actVehiculoLuminaria.text?.toString().orEmpty()
                     val vehiculoSeleccionado = vehiculosDisponibles.firstOrNull {
                         it.placa.toString() == placaSeleccionada
@@ -449,14 +526,18 @@ class LuminariasFragment : Fragment() {
                         viewModel.enviarMensaje("Selecciona un camión válido", esError = true)
                     } else {
                         viewModel.reasignarVehiculo(reparacion.id, vehiculoSeleccionado.id)
+                        onDone()
                     }
-                } else {
+                } else if (!mostrarSoloReasignacion) {
                     val estado = obtenerEstado(binding.actEstadoLuminaria)
                     val ejecutorNombre = binding.actEjecutorLuminaria.text?.toString().orEmpty()
                     val ejecutorCedula = tecnicosCatalogo.firstOrNull {
                         it.nombre.equals(ejecutorNombre, ignoreCase = true)
                     }?.cedula
-                    val localizacion = binding.etLocalizacion.text?.toString().orEmpty()
+                    val localizacion = viewModel.normalizarLocalizacion(
+                        binding.etLocalizacion.text?.toString().orEmpty()
+                    )
+                    binding.etLocalizacion.setText(localizacion)
                     val placaSeleccionada = binding.actVehiculoLuminaria.text?.toString().orEmpty()
                     val vehiculoSeleccionado = vehiculosDisponibles.firstOrNull {
                         it.placa.toString() == placaSeleccionada
@@ -471,7 +552,10 @@ class LuminariasFragment : Fragment() {
                             ejecutorCedula,
                             vehiculoSeleccionado
                         )
+                        onDone()
                     }
+                } else {
+                    viewModel.enviarMensaje("Solo puedes editar luminarias pendientes", esError = true)
                 }
             }
         }
@@ -492,7 +576,9 @@ class LuminariasFragment : Fragment() {
             binding.tilLocalizacion.error = null
         }
 
-        if (estado == com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado.REPARADA && materiales.isEmpty()) {
+        val requiereMateriales = estado == com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado.REPARADA &&
+            (viewModel.uiState.value.esSupervisor || viewModel.uiState.value.esAdministrador)
+        if (requiereMateriales && materiales.isEmpty()) {
             binding.tilMaterialLuminaria.error = "Agrega al menos un material"
             valido = false
         } else {
@@ -605,6 +691,15 @@ class LuminariasFragment : Fragment() {
         machoteLauncher.launch(fileName)
     }
 
+    private fun prepararMachoteCorreo() {
+        val vehiculos = viewModel.uiState.value.vehiculosAgencia
+        if (vehiculos.isEmpty()) {
+            viewModel.enviarMensaje("No hay camiones disponibles para generar el machote", esError = true)
+            return
+        }
+        exportarMachoteParaCorreo(vehiculos)
+    }
+
     private fun exportarMachote(
         uri: Uri,
         vehiculos: List<com.Arasoftsolutions.tecniapp_ice.Database.entities.VehiculosEntity>
@@ -619,6 +714,42 @@ class LuminariasFragment : Fragment() {
                     workbook.use { wb -> wb.write(output) }
                 }
                 viewModel.enviarMensaje("Machote descargado")
+            } catch (t: Throwable) {
+                viewModel.enviarMensaje("No se pudo generar el machote de luminarias", esError = true)
+            }
+        }
+    }
+
+    private fun exportarMachoteParaCorreo(
+        vehiculos: List<com.Arasoftsolutions.tecniapp_ice.Database.entities.VehiculosEntity>
+    ) {
+        viewLifecycleOwner.lifecycleScope.launch {
+            val context = requireContext()
+            try {
+                val workbook = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+                    LuminariaMachoteExporter.buildWorkbook(context, vehiculos)
+                }
+                val parentDir = context.getExternalFilesDir(null) ?: context.filesDir
+                val reportsDir = java.io.File(parentDir, "TecniApp/Reportes")
+                if (!reportsDir.exists()) reportsDir.mkdirs()
+                val file = java.io.File(reportsDir, viewModel.obtenerNombreMachote())
+                java.io.FileOutputStream(file).use { output ->
+                    workbook.use { wb -> wb.write(output) }
+                }
+                val uri = androidx.core.content.FileProvider.getUriForFile(
+                    context,
+                    context.packageName + ".fileprovider",
+                    file
+                )
+                val intent = Intent(Intent.ACTION_SEND).apply {
+                    type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    putExtra(Intent.EXTRA_STREAM, uri)
+                    putExtra(Intent.EXTRA_SUBJECT, "Machote de luminarias")
+                    putExtra(Intent.EXTRA_TEXT, "Adjunto machote de luminarias para su revisión.")
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                }
+                startActivity(Intent.createChooser(intent, "Enviar machote"))
+                viewModel.enviarMensaje("Machote listo para enviar")
             } catch (t: Throwable) {
                 viewModel.enviarMensaje("No se pudo generar el machote de luminarias", esError = true)
             }

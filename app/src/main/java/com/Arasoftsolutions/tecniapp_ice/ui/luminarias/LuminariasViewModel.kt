@@ -31,12 +31,14 @@ data class LuminariaUiState(
     val vehiculosAgencia: List<VehiculosEntity> = emptyList(),
     val vehiculoUsuarioId: Int? = null,
     val vehiculoFiltroId: Int? = null,
+    val vehiculoRegistroId: Int? = null,
     val agenciaUsuario: String? = null,
     val rolUsuario: String? = null,
     val esSupervisor: Boolean = false,
     val esAdministrador: Boolean = false,
     val puedeImportarExcel: Boolean = false,
     val puedeDescargarMachote: Boolean = false,
+    val puedeEnviarMachote: Boolean = false,
     val puedeRegistrarReparacion: Boolean = true,
     val puedeReasignarVehiculo: Boolean = false,
     val puedeFiltrarVehiculo: Boolean = false,
@@ -76,6 +78,7 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
 
     private var reparacionesAgenciaCache: List<LuminariaReparacionEntity> = emptyList()
     private var vehiculoPreferidoId: Int? = null
+    private val localizacionRegex = Regex("^(\\d{4})-(\\d{3})-(\\d{2})-(\\d{2})$")
 
     init {
         viewModelScope.launch {
@@ -147,6 +150,7 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
             current.copy(
                 vehiculoUsuarioId = vehiculoPreferidoId,
                 vehiculoFiltroId = if (puedeFiltrarVehiculo) null else vehiculoPreferidoId,
+                vehiculoRegistroId = vehiculoPreferidoId,
                 ejecutorNombre = current.ejecutorNombre.ifBlank { nombre },
                 ejecutorCedula = current.ejecutorCedula ?: usuario.cedula,
                 agenciaUsuario = usuario.agencia?.trim()?.takeIf { it.isNotBlank() },
@@ -155,7 +159,8 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
                 esAdministrador = esAdministrador,
                 puedeImportarExcel = esSupervisor || esAdministrador,
                 puedeDescargarMachote = esSupervisor || esAdministrador,
-                puedeRegistrarReparacion = !esSupervisor,
+                puedeEnviarMachote = esSupervisor || esAdministrador,
+                puedeRegistrarReparacion = true,
                 puedeReasignarVehiculo = esSupervisor || esAdministrador,
                 puedeFiltrarVehiculo = puedeFiltrarVehiculo,
                 puedeEliminarLuminarias = esSupervisor || esAdministrador || rolLower == "tecnico"
@@ -164,7 +169,7 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun actualizarLocalizacion(valor: String) {
-        _uiState.value = _uiState.value.copy(localizacion = valor)
+        _uiState.value = _uiState.value.copy(localizacion = normalizarLocalizacion(valor))
     }
 
     fun actualizarEjecutor(nombre: String) {
@@ -207,22 +212,24 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun registrarReparacion() {
-        val vehiculoId = _uiState.value.vehiculoUsuarioId ?: run {
+        val estadoUi = _uiState.value
+        val vehiculoId = (estadoUi.vehiculoRegistroId ?: estadoUi.vehiculoUsuarioId) ?: run {
             _mensaje.value = LuminariaMensaje.Error("No se encontró un vehículo asignado al usuario")
             return
         }
-        val localizacion = _uiState.value.localizacion.trim()
+        val localizacion = normalizarLocalizacion(estadoUi.localizacion)
         if (localizacion.isBlank()) {
             _mensaje.value = LuminariaMensaje.Error("Ingresa el número de localización")
             return
         }
-        val materiales = _uiState.value.materialesSeleccionados
-        val estado = _uiState.value.estadoSeleccionado
-        if (estado == LuminariaEstado.REPARADA && materiales.isEmpty()) {
+        val materiales = estadoUi.materialesSeleccionados
+        val estado = estadoUi.estadoSeleccionado
+        val requiereMateriales = estado == LuminariaEstado.REPARADA && (estadoUi.esSupervisor || estadoUi.esAdministrador)
+        if (requiereMateriales && materiales.isEmpty()) {
             _mensaje.value = LuminariaMensaje.Error("Agrega al menos un material")
             return
         }
-        val ejecutorNombre = _uiState.value.ejecutorNombre.trim()
+        val ejecutorNombre = estadoUi.ejecutorNombre.trim()
         if (estado == LuminariaEstado.REPARADA && ejecutorNombre.isBlank()) {
             _mensaje.value = LuminariaMensaje.Error("Indica quién realizó la reparación")
             return
@@ -237,7 +244,7 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
                 },
                 estado = estado,
                 ejecutorNombre = ejecutorNombre,
-                ejecutorCedula = _uiState.value.ejecutorCedula
+                ejecutorCedula = estadoUi.ejecutorCedula
             )
             _uiState.value = _uiState.value.copy(
                 isProcessing = false,
@@ -251,8 +258,16 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
 
     fun eliminarReparacion(id: Long) {
         viewModelScope.launch {
-            repository.eliminarReparacionLuminaria(id)
-            _mensaje.value = LuminariaMensaje.Exito("Reparación eliminada")
+            val reparacion = repository.obtenerReparacionLuminaria(id)
+            if (reparacion != null &&
+                LuminariaEstado.fromRaw(reparacion.estado) == LuminariaEstado.REPARADA
+            ) {
+                repository.marcarReparacionLuminariaPendiente(id)
+                _mensaje.value = LuminariaMensaje.Exito("Reparación enviada a pendientes")
+            } else {
+                repository.eliminarReparacionLuminaria(id)
+                _mensaje.value = LuminariaMensaje.Exito("Reparación eliminada")
+            }
         }
     }
 
@@ -264,11 +279,14 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
         ejecutorNombre: String,
         ejecutorCedula: String?
     ) {
-        if (nuevaLocalizacion.isBlank()) {
+        val localizacionNormalizada = normalizarLocalizacion(nuevaLocalizacion)
+        if (localizacionNormalizada.isBlank()) {
             _mensaje.value = LuminariaMensaje.Error("Completa la localización")
             return
         }
-        if (estado == LuminariaEstado.REPARADA && materiales.isEmpty()) {
+        val requiereMateriales = estado == LuminariaEstado.REPARADA &&
+            (_uiState.value.esSupervisor || _uiState.value.esAdministrador)
+        if (requiereMateriales && materiales.isEmpty()) {
             _mensaje.value = LuminariaMensaje.Error("Agrega al menos un material")
             return
         }
@@ -279,7 +297,7 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             repository.actualizarReparacionLuminaria(
                 id,
-                nuevaLocalizacion,
+                localizacionNormalizada,
                 materiales.map { LuminariaMaterialUso(it.codigo, it.descripcion, it.cantidad) },
                 estado,
                 ejecutorNombre,
@@ -324,13 +342,23 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun prepararFormularioRegistro() {
-        _uiState.update {
-            it.copy(
+        _uiState.update { current ->
+            val estadoInicial = if (current.esSupervisor || current.esAdministrador) {
+                LuminariaEstado.PENDIENTE
+            } else {
+                LuminariaEstado.REPARADA
+            }
+            current.copy(
                 localizacion = "",
                 materialesSeleccionados = emptyList(),
-                estadoSeleccionado = LuminariaEstado.REPARADA
+                estadoSeleccionado = estadoInicial,
+                vehiculoRegistroId = current.vehiculoRegistroId ?: current.vehiculoUsuarioId
             )
         }
+    }
+
+    fun actualizarVehiculoRegistro(vehiculoId: Int?) {
+        _uiState.update { it.copy(vehiculoRegistroId = vehiculoId) }
     }
 
     fun procesarExcel(uri: android.net.Uri) {
@@ -355,7 +383,9 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
                 resultado.registrosPorVehiculo.forEach { (vehiculoId, registros) ->
                     repository.registrarLuminariasPendientes(
                         vehiculoId = vehiculoId,
-                        registros = registros,
+                        registros = registros.map { registro ->
+                            registro.copy(localizacion = normalizarLocalizacion(registro.localizacion))
+                        },
                         ejecutorNombre = _uiState.value.ejecutorNombre.trim(),
                         ejecutorCedula = _uiState.value.ejecutorCedula
                     )
@@ -516,6 +546,17 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
         val sufijo = if (agencia.isBlank()) "General" else agencia.replace("\\s+".toRegex(), "_")
         val fecha = java.time.LocalDate.now()
         return "Machote_Luminarias_${sufijo}_${fecha}.xlsx"
+    }
+
+    fun normalizarLocalizacion(valor: String): String {
+        val trimmed = valor.trim()
+        if (trimmed.isBlank()) return ""
+        if (localizacionRegex.matches(trimmed)) return trimmed
+        val digits = trimmed.filter(Char::isDigit)
+        if (digits.isBlank()) return ""
+        val padded = if (digits.length < 11) digits.padStart(11, '0') else digits
+        val finalDigits = padded.take(11)
+        return "${finalDigits.substring(0, 4)}-${finalDigits.substring(4, 7)}-${finalDigits.substring(7, 9)}-${finalDigits.substring(9, 11)}"
     }
 
     suspend fun buscarMedidorPorLocalizacion(localizacion: String) =
