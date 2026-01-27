@@ -400,7 +400,7 @@ class UserFragment : Fragment() {
             targetSubregion != null || targetRegion != null -> agencyItems.filter {
                 agencyMatches(it, targetSubregion, targetRegion)
             }
-            else -> emptyList()
+            else -> agencyItems
         }
         agencyAdapter.clear()
         agencyAdapter.addAll(filteredAgencies.map { formatAgency(it) })
