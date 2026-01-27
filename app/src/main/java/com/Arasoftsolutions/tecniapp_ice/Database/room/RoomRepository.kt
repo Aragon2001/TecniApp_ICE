@@ -384,6 +384,34 @@ class   RoomRepository(context: Context) {
         }
     }
 
+    suspend fun marcarReparacionLuminariaPendiente(id: Long) = withContext(Dispatchers.IO) {
+        val reparacion = inventarioDao.obtenerReparacion(id) ?: return@withContext
+        if (com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado.fromRaw(reparacion.estado) !=
+            com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado.REPARADA
+        ) {
+            return@withContext
+        }
+        val materialesPrevios = com.Arasoftsolutions.tecniapp_ice.ui.luminarias.LuminariaMaterialSerializer
+            .fromJson(reparacion.materialesJson)
+        val actualizado = reparacion.copy(
+            estado = com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado.PENDIENTE.name,
+            materialesJson = com.Arasoftsolutions.tecniapp_ice.ui.luminarias.LuminariaMaterialSerializer
+                .toJson(emptyList()),
+            fechaReparacion = null
+        )
+        inventarioDao.actualizarReparacion(actualizado)
+        val agencia = db.vehiculoDao().buscarPorId(reparacion.vehiculoId)?.agencia
+        firebase.guardarReparacionLuminaria(actualizado, agencia)
+        materialesPrevios.forEach { material ->
+            ajustarInventario(
+                vehiculoId = reparacion.vehiculoId,
+                codigo = material.codigo,
+                descripcion = material.descripcion,
+                delta = material.cantidad
+            )
+        }
+    }
+
     suspend fun obtenerReparacionLuminaria(id: Long): LuminariaReparacionEntity? = withContext(Dispatchers.IO) {
         inventarioDao.obtenerReparacion(id)
     }

@@ -418,12 +418,13 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
         }
         val reparacionesFiltradas = reparaciones.filter { it.fechaRegistro in inicioMillis until finExclusiveMillis }
             .sortedByDescending { it.fechaRegistro }
-        val materiales = reparaciones.flatMap {
+        val materiales = reparacionesFiltradas.flatMap {
             com.Arasoftsolutions.tecniapp_ice.ui.luminarias.LuminariaMaterialSerializer.fromJson(it.materialesJson)
         }
         val totalMateriales = materiales.sumOf { it.cantidad }
         val codigosDistintos = materiales.map { it.codigo }.filter { it.isNotBlank() }.distinct().size
-        return DatosLuminarias(reparaciones, totalMateriales, codigosDistintos)
+        val existenciasActuales = buildExistenciasActuales(inventario)
+        return DatosLuminarias(reparacionesFiltradas, totalMateriales, codigosDistintos, existenciasActuales)
     }
 
     private suspend fun obtenerDatosBase(inicio: LocalDate, fin: LocalDate): DatosBase {
