@@ -1,6 +1,7 @@
 package com.Arasoftsolutions.tecniapp_ice.registro
 
 
+import android.content.Context
 import android.os.Bundle
 import android.text.TextUtils
 import android.text.method.PasswordTransformationMethod
@@ -33,6 +34,9 @@ class Paso1Fragment : Fragment() {
 
     private lateinit var viewModel: RegistroViewModel
     private val functions by lazy { FirebaseFunctions.getInstance() }
+    private val prefs by lazy {
+        requireContext().getSharedPreferences("registro_prefs", Context.MODE_PRIVATE)
+    }
 
 
     // UI
@@ -176,7 +180,14 @@ class Paso1Fragment : Fragment() {
         // Verificar disponibilidad usando /emails y /phones (no /usuarios)
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                val eKey = emailKey(email)
+                val normalizedEmail = email.trim()
+                if (normalizedEmail.isBlank()) {
+                    Toast.makeText(requireContext(), "El correo electrónico no está disponible.", Toast.LENGTH_SHORT).show()
+                    setLoading(false)
+                    return@launch
+                }
+
+                val eKey = emailKey(normalizedEmail)
                 val pKey = phoneKey(phoneRaw)
 
                 val emailTaken = usersDb.child("emails").child(eKey).get().await().exists()
@@ -197,25 +208,23 @@ class Paso1Fragment : Fragment() {
 
                 // Guardar en VM
                 viewModel.setTelefono(phoneRaw)
-                viewModel.setEmail(email)
+                viewModel.setEmail(normalizedEmail)
                 viewModel.setPassword(password)
+                prefs.edit().putString("registro_email", normalizedEmail).apply()
 
-               // Llamar Cloud Function: sendVerificationCode(email)
-functions
-    .getHttpsCallable("sendVerificationCode")
-    .call(mapOf("email" to email))
-    .addOnSuccessListener {
-        Toast.makeText(requireContext(), "Te enviamos un código a $email", Toast.LENGTH_SHORT).show()
-        (activity as? RegistroActivity)?.goToNextStep(1) // Paso 2
-    }
-    .addOnFailureListener { e ->
-        Log.e("Paso1Fragment", "Error enviando correo de verificación", e)
-        Toast.makeText(requireContext(), "No se pudo enviar el código. Intenta de nuevo.", Toast.LENGTH_LONG).show()
-    }
-
-
-                Toast.makeText(requireContext(), "Te enviamos un código a $email", Toast.LENGTH_SHORT).show()
-                (activity as? RegistroActivity)?.goToNextStep(1) // avanza a Paso 2
+                // Llamar Cloud Function: sendVerificationCode(email)
+                Log.d("Paso1Fragment", "Voy a pedir código para: '$normalizedEmail'")
+                functions
+                    .getHttpsCallable("sendVerificationCode")
+                    .call(normalizedEmail)
+                    .addOnSuccessListener {
+                        Toast.makeText(requireContext(), "Te enviamos un código a $normalizedEmail", Toast.LENGTH_SHORT).show()
+                        (activity as? RegistroActivity)?.goToNextStep(1) // Paso 2
+                    }
+                    .addOnFailureListener { e ->
+                        Log.e("Paso1Fragment", "Error enviando correo de verificación", e)
+                        Toast.makeText(requireContext(), "No se pudo enviar el código. Intenta de nuevo.", Toast.LENGTH_LONG).show()
+                    }
 
             } catch (t: Throwable) {
                 Log.e("Paso1Fragment", "Validación falló: ${t.message}", t)
