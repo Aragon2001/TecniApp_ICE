@@ -56,14 +56,14 @@ class   RoomRepository(context: Context) {
     fun observarLocalizacionesDePueblos(puebloIds: List<Int>): Flow<List<LocalizacionesEntity>> =
         if (puebloIds.isEmpty()) flowOf(emptyList()) else db.localizacionDao().observarPorPueblos(puebloIds)
 
-    fun observarAgencias(subregionId: String): Flow<List<AgenciaEntity>> =
-        db.agenciaDao().observarPorSubregion(subregionId)
+    fun observarAgencias(regionId: String): Flow<List<AgenciaEntity>> =
+        db.agenciaDao().observarPorRegion(regionId)
 
     fun observarAgenciasCatalogo(): Flow<List<AgenciaEntity>> =
         db.agenciaDao().observarTodas()
 
-    fun observarVehiculos(subregionId: String): Flow<List<VehiculosEntity>> =
-        db.vehiculoDao().observarPorSubregion(subregionId)
+    fun observarVehiculos(agencia: String): Flow<List<VehiculosEntity>> =
+        db.vehiculoDao().observarPorAgencia(agencia)
 
     fun observarVehiculosCatalogo(): Flow<List<VehiculosEntity>> =
         db.vehiculoDao().observarTodos()

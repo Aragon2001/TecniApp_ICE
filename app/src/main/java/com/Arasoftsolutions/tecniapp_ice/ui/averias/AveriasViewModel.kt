@@ -231,13 +231,14 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
             usuarioActual
                 .filterNotNull()
                 .flatMapLatest { user ->
-                    val subregion = user.subregion
-                    if (subregion.isNullOrBlank()) flowOf(emptyList())
-                    else roomRepo.observarVehiculos(subregion)
+                    val agencia = user.agencia?.takeIf { it.isNotBlank() }
+                        ?: user.agenciaId?.takeIf { it.isNotBlank() }
+                    if (agencia.isNullOrBlank()) flowOf(emptyList())
+                    else roomRepo.observarVehiculos(agencia)
                 }
                 .collectLatest { vehiculos ->
                     val preferidoPlaca = _usuario.value?.placaVehiculo?.takeIf { !it.isNullOrBlank() }?.trim()
-                    val preferidoAgencia = _usuario.value?.subregionNombre?.trim().orEmpty()
+                    val preferidoAgencia = _usuario.value?.agencia?.trim().orEmpty()
                     val lista = buildList {
                         if (!preferidoPlaca.isNullOrBlank()) {
                             add(VehiculoUI(preferidoPlaca, preferidoAgencia))
