@@ -26,8 +26,10 @@ import com.Arasoftsolutions.tecniapp_ice.databinding.FragmentAdminManagementBind
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.Locale
 import androidx.navigation.fragment.findNavController
 
@@ -279,12 +281,19 @@ class AdminManagementFragment : Fragment(R.layout.fragment_admin_management) {
 
     private fun actualizarMedidores(lista: List<MedidorEntity>) {
         medidoresCatalogo = lista
-        medidoresDisponibles = filtrarPorSubregionUsuario(medidoresCatalogo) { it.subregion }
-        val datos = medidoresDisponibles.map { it.medidorNumber }.sorted()
-        medidorAdapter.clear()
-        medidorAdapter.addAll(datos)
-        medidorAdapter.notifyDataSetChanged()
-        actualizarEstadoBotonesMedidor()
+        viewLifecycleOwner.lifecycleScope.launch {
+            val (disponibles, datos) = withContext(Dispatchers.Default) {
+                val disponibles = filtrarPorSubregionUsuario(medidoresCatalogo) { it.subregion }
+                val datos = disponibles.map { it.medidorNumber }.sorted()
+                disponibles to datos
+            }
+            if (_binding == null) return@launch
+            medidoresDisponibles = disponibles
+            medidorAdapter.clear()
+            medidorAdapter.addAll(datos)
+            medidorAdapter.notifyDataSetChanged()
+            actualizarEstadoBotonesMedidor()
+        }
     }
 
     private fun actualizarVehiculos(lista: List<VehiculosEntity>) {
@@ -303,30 +312,49 @@ class AdminManagementFragment : Fragment(R.layout.fragment_admin_management) {
 
     private fun actualizarPueblos(lista: List<PueblosEntity>) {
         pueblosCatalogo = lista
-        pueblosDisponibles = filtrarPorSubregionUsuario(pueblosCatalogo) { it.subregion_id_normalizado }
-        actualizarPueblosMedidor()
-        actualizarPueblosLocalizacion()
+        viewLifecycleOwner.lifecycleScope.launch {
+            val disponibles = withContext(Dispatchers.Default) {
+                filtrarPorSubregionUsuario(pueblosCatalogo) { it.subregion_id_normalizado }
+            }
+            if (_binding == null) return@launch
+            pueblosDisponibles = disponibles
+            actualizarPueblosMedidor()
+            actualizarPueblosLocalizacion()
+        }
     }
 
     private fun actualizarSubregiones(lista: List<SubregionesEntity>) {
         subregionesCatalogo = lista
-        subregionesDisponibles = filtrarSubregionesUsuario(subregionesCatalogo)
-        val datos = subregionesDisponibles
-            .sortedBy { it.nombre.lowercase(Locale.getDefault()) }
-            .map { it.nombre }
-        subregionAdapter.clear()
-        subregionAdapter.addAll(datos)
-        subregionAdapter.notifyDataSetChanged()
-        aplicarSubregionPorDefecto()
-        actualizarPueblosMedidor()
-        actualizarPueblosLocalizacion()
-        actualizarAgenciasFiltradas()
+        viewLifecycleOwner.lifecycleScope.launch {
+            val (disponibles, datos) = withContext(Dispatchers.Default) {
+                val disponibles = filtrarSubregionesUsuario(subregionesCatalogo)
+                val datos = disponibles
+                    .sortedBy { it.nombre.lowercase(Locale.getDefault()) }
+                    .map { it.nombre }
+                disponibles to datos
+            }
+            if (_binding == null) return@launch
+            subregionesDisponibles = disponibles
+            subregionAdapter.clear()
+            subregionAdapter.addAll(datos)
+            subregionAdapter.notifyDataSetChanged()
+            aplicarSubregionPorDefecto()
+            actualizarPueblosMedidor()
+            actualizarPueblosLocalizacion()
+            actualizarAgenciasFiltradas()
+        }
     }
 
     private fun actualizarAgencias(lista: List<AgenciaEntity>) {
         agenciasCatalogo = lista
-        agenciasDisponibles = filtrarPorSubregionUsuario(agenciasCatalogo) { it.subregion }
-        actualizarAgenciasFiltradas()
+        viewLifecycleOwner.lifecycleScope.launch {
+            val disponibles = withContext(Dispatchers.Default) {
+                filtrarPorSubregionUsuario(agenciasCatalogo) { it.subregion }
+            }
+            if (_binding == null) return@launch
+            agenciasDisponibles = disponibles
+            actualizarAgenciasFiltradas()
+        }
     }
 
     private fun actualizarPueblosMedidor() {
@@ -334,18 +362,24 @@ class AdminManagementFragment : Fragment(R.layout.fragment_admin_management) {
             ?: subregionUsuario?.id
         val subregionNombre = resolveSubregionNombre(binding.actvAdminMedidorSubregion.text?.toString())
             ?: subregionUsuario?.nombre
-        val datos = pueblosDisponibles
-            .filter {
-                subregionSeleccionada == null && subregionNombre == null ||
-                    matchesSubregionFiltro(it.subregion_id_normalizado, subregionSeleccionada, subregionNombre)
+        val pueblos = pueblosDisponibles
+        viewLifecycleOwner.lifecycleScope.launch {
+            val datos = withContext(Dispatchers.Default) {
+                pueblos
+                    .filter {
+                        subregionSeleccionada == null && subregionNombre == null ||
+                            matchesSubregionFiltro(it.subregion_id_normalizado, subregionSeleccionada, subregionNombre)
+                    }
+                    .sortedBy { it.id }
+                    .map { "${it.id} - ${it.nombre}" }
             }
-            .sortedBy { it.id }
-            .map { "${it.id} - ${it.nombre}" }
-        medidorPuebloAdapter.clear()
-        medidorPuebloAdapter.addAll(datos)
-        medidorPuebloAdapter.notifyDataSetChanged()
-        if (!datos.contains(binding.actvAdminMedidorPueblo.text?.toString())) {
-            binding.actvAdminMedidorPueblo.setText("", false)
+            if (_binding == null) return@launch
+            medidorPuebloAdapter.clear()
+            medidorPuebloAdapter.addAll(datos)
+            medidorPuebloAdapter.notifyDataSetChanged()
+            if (!datos.contains(binding.actvAdminMedidorPueblo.text?.toString())) {
+                binding.actvAdminMedidorPueblo.setText("", false)
+            }
         }
     }
 
@@ -354,44 +388,57 @@ class AdminManagementFragment : Fragment(R.layout.fragment_admin_management) {
             ?: subregionUsuario?.id
         val subregionNombre = resolveSubregionNombre(binding.actvAdminLocalizacionSubregion.text?.toString())
             ?: subregionUsuario?.nombre
-        val datos = pueblosDisponibles
-            .filter {
-                subregionSeleccionada == null && subregionNombre == null ||
-                    matchesSubregionFiltro(it.subregion_id_normalizado, subregionSeleccionada, subregionNombre)
+        val pueblos = pueblosDisponibles
+        viewLifecycleOwner.lifecycleScope.launch {
+            val datos = withContext(Dispatchers.Default) {
+                pueblos
+                    .filter {
+                        subregionSeleccionada == null && subregionNombre == null ||
+                            matchesSubregionFiltro(it.subregion_id_normalizado, subregionSeleccionada, subregionNombre)
+                    }
+                    .sortedBy { it.id }
+                    .map { "${it.id} - ${it.nombre}" }
             }
-            .sortedBy { it.id }
-            .map { "${it.id} - ${it.nombre}" }
-        localizacionPuebloAdapter.clear()
-        localizacionPuebloAdapter.addAll(datos)
-        localizacionPuebloAdapter.notifyDataSetChanged()
-        if (!datos.contains(binding.actvAdminLocalizacionPueblo.text?.toString())) {
-            binding.actvAdminLocalizacionPueblo.setText("", false)
+            if (_binding == null) return@launch
+            localizacionPuebloAdapter.clear()
+            localizacionPuebloAdapter.addAll(datos)
+            localizacionPuebloAdapter.notifyDataSetChanged()
+            if (!datos.contains(binding.actvAdminLocalizacionPueblo.text?.toString())) {
+                binding.actvAdminLocalizacionPueblo.setText("", false)
+            }
+            actualizarCallesLocalizacion()
         }
-        actualizarCallesLocalizacion()
     }
 
     private fun actualizarCallesLocalizacion() {
         val puebloId = resolvePuebloId(binding.actvAdminLocalizacionPueblo.text?.toString())
-        localizacionCalleAdapter.clear()
-        localizacionDisplayToId.clear()
         if (puebloId == null) {
+            localizacionCalleAdapter.clear()
+            localizacionDisplayToId.clear()
             binding.actvAdminLocalizacionCalle.setText("", false)
             localizacionCalleAdapter.notifyDataSetChanged()
             return
         }
-        val datos = localizacionesDisponibles
-            .filter { it.pueblo == puebloId }
-            .sortedWith(compareBy<LocalizacionesEntity> { it.calle }.thenBy { it.delPoste }.thenBy { it.alPoste })
-            .map { entidad ->
-                val display = formatLocalizacionDisplay(entidad)
-                localizacionDisplayToId[display] = entidad.id
-                display
+        val localizaciones = localizacionesDisponibles
+        viewLifecycleOwner.lifecycleScope.launch {
+            val datos = withContext(Dispatchers.Default) {
+                localizaciones
+                    .filter { it.pueblo == puebloId }
+                    .sortedWith(compareBy<LocalizacionesEntity> { it.calle }.thenBy { it.delPoste }.thenBy { it.alPoste })
+                    .map { entidad ->
+                        formatLocalizacionDisplay(entidad) to entidad.id
+                    }
             }
-        localizacionCalleAdapter.addAll(datos)
-        localizacionCalleAdapter.notifyDataSetChanged()
-        val actual = binding.actvAdminLocalizacionCalle.text?.toString()
-        if (actual.isNullOrBlank() || !localizacionDisplayToId.containsKey(actual)) {
-            binding.actvAdminLocalizacionCalle.setText("", false)
+            if (_binding == null) return@launch
+            localizacionCalleAdapter.clear()
+            localizacionDisplayToId.clear()
+            localizacionCalleAdapter.addAll(datos.map { it.first })
+            datos.forEach { (display, id) -> localizacionDisplayToId[display] = id }
+            localizacionCalleAdapter.notifyDataSetChanged()
+            val actual = binding.actvAdminLocalizacionCalle.text?.toString()
+            if (actual.isNullOrBlank() || !localizacionDisplayToId.containsKey(actual)) {
+                binding.actvAdminLocalizacionCalle.setText("", false)
+            }
         }
     }
 
@@ -400,23 +447,29 @@ class AdminManagementFragment : Fragment(R.layout.fragment_admin_management) {
             ?: subregionUsuario?.id
         val subregionNombre = resolveSubregionNombre(binding.actvAdminVehiculoSubregion.text?.toString())
             ?: subregionUsuario?.nombre
-        val datos = if (subregionSeleccionada == null && subregionNombre == null) {
-            agenciasDisponibles
-                .sortedBy { it.nombre }
-                .map { it.nombre }
-        } else {
-            agenciasDisponibles
-                .filter { matchesSubregionFiltro(it.subregion, subregionSeleccionada, subregionNombre) }
-                .sortedBy { it.nombre }
-                .map { it.nombre }
+        val agencias = agenciasDisponibles
+        viewLifecycleOwner.lifecycleScope.launch {
+            val datos = withContext(Dispatchers.Default) {
+                if (subregionSeleccionada == null && subregionNombre == null) {
+                    agencias
+                        .sortedBy { it.nombre }
+                        .map { it.nombre }
+                } else {
+                    agencias
+                        .filter { matchesSubregionFiltro(it.subregion, subregionSeleccionada, subregionNombre) }
+                        .sortedBy { it.nombre }
+                        .map { it.nombre }
+                }
+            }
+            if (_binding == null) return@launch
+            vehiculoAgenciaAdapter.clear()
+            vehiculoAgenciaAdapter.addAll(datos)
+            vehiculoAgenciaAdapter.notifyDataSetChanged()
+            if (!datos.contains(binding.actvAdminVehiculoAgencia.text?.toString())) {
+                binding.actvAdminVehiculoAgencia.setText("", false)
+            }
+            actualizarVehiculosFiltrados()
         }
-        vehiculoAgenciaAdapter.clear()
-        vehiculoAgenciaAdapter.addAll(datos)
-        vehiculoAgenciaAdapter.notifyDataSetChanged()
-        if (!datos.contains(binding.actvAdminVehiculoAgencia.text?.toString())) {
-            binding.actvAdminVehiculoAgencia.setText("", false)
-        }
-        actualizarVehiculosFiltrados()
     }
 
     private fun actualizarVehiculosFiltrados() {
@@ -425,31 +478,37 @@ class AdminManagementFragment : Fragment(R.layout.fragment_admin_management) {
         val subregionNombre = resolveSubregionNombre(binding.actvAdminVehiculoSubregion.text?.toString())
             ?: subregionUsuario?.nombre
         val agenciaSeleccionada = resolveAgenciaNombre(binding.actvAdminVehiculoAgencia.text?.toString())
+        val vehiculos = vehiculosCatalogo
+        viewLifecycleOwner.lifecycleScope.launch {
+            val (disponibles, datos) = withContext(Dispatchers.Default) {
+                val disponibles = filtrarPorSubregionUsuario(vehiculos) { it.subregion }
+                    .filter {
+                        if (subregionSeleccionada == null && subregionNombre == null) {
+                            true
+                        } else {
+                            matchesSubregionFiltro(it.subregion, subregionSeleccionada, subregionNombre)
+                        }
+                    }
+                    .filter { vehiculo ->
+                        val agencia = agenciaSeleccionada?.trim().orEmpty()
+                        agencia.isBlank() || vehiculo.agencia.equals(agencia, ignoreCase = true)
+                    }
 
-        vehiculosDisponibles = filtrarPorSubregionUsuario(vehiculosCatalogo) { it.subregion }
-            .filter {
-                if (subregionSeleccionada == null && subregionNombre == null) {
-                    true
-                } else {
-                    matchesSubregionFiltro(it.subregion, subregionSeleccionada, subregionNombre)
-                }
+                val datos = disponibles
+                    .sortedBy { it.placa }
+                    .map { vehiculo ->
+                        "${vehiculo.placa} - ${vehiculo.agencia}" to vehiculo.placa
+                    }
+                disponibles to datos
             }
-            .filter { vehiculo ->
-                val agencia = agenciaSeleccionada?.trim().orEmpty()
-                agencia.isBlank() || vehiculo.agencia.equals(agencia, ignoreCase = true)
-            }
-
-        vehiculoDisplayToPlaca.clear()
-        val datos = vehiculosDisponibles
-            .sortedBy { it.placa }
-            .map { vehiculo ->
-                val display = "${vehiculo.placa} - ${vehiculo.agencia}"
-                vehiculoDisplayToPlaca[display] = vehiculo.placa
-                display
-            }
-        vehiculoAdapter.clear()
-        vehiculoAdapter.addAll(datos)
-        vehiculoAdapter.notifyDataSetChanged()
+            if (_binding == null) return@launch
+            vehiculosDisponibles = disponibles
+            vehiculoDisplayToPlaca.clear()
+            vehiculoAdapter.clear()
+            vehiculoAdapter.addAll(datos.map { it.first })
+            datos.forEach { (display, placa) -> vehiculoDisplayToPlaca[display] = placa }
+            vehiculoAdapter.notifyDataSetChanged()
+        }
     }
 
     private fun actualizarSubregionUsuario(subregion: AdminManagementViewModel.SubregionUsuario?) {
