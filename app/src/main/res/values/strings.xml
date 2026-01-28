@@ -792,6 +792,7 @@ Cliente: %4$s</string>
     <string name="admin_tab_medidores">Medidores</string>
     <string name="admin_tab_vehiculos">Vehículos</string>
     <string name="admin_tab_localizaciones">Localizaciones</string>
+    <string name="admin_tab_usuarios">Usuarios</string>
     <string name="admin_section_medidores_title">Gestión de medidores</string>
     <string name="admin_section_medidores_steps">Paso 1: Busca un medidor existente o ingresa el número para crear uno nuevo.\nPaso 2: Elige subregión y pueblo.\nPaso 3: Completa calle, poste y metros para generar la localización.\nPaso 4: Guarda, modifica o elimina según corresponda.</string>
     <string name="admin_section_medidor_buscar_title">Buscar medidor</string>
@@ -821,6 +822,11 @@ Cliente: %4$s</string>
     <string name="admin_section_localizacion_buscar_title">Buscar localización</string>
     <string name="admin_section_localizacion_buscar_hint">Selecciona subregión, pueblo y calle para encontrar la localización.</string>
     <string name="admin_section_localizacion_detalles_title">Detalles de la localización</string>
+    <string name="admin_section_usuarios_title">Gestión de usuarios</string>
+    <string name="admin_section_usuarios_steps">Paso 1: Busca el usuario por correo o cédula.\nPaso 2: Actualiza datos de contacto y rol.\nPaso 3: Guarda los cambios para sincronizarlos.</string>
+    <string name="admin_section_usuario_buscar_title">Buscar usuario</string>
+    <string name="admin_section_usuario_buscar_hint">Ingresa correo o cédula para cargar los datos del usuario.</string>
+    <string name="admin_section_usuario_detalles_title">Detalles del usuario</string>
     <string name="admin_field_localizacion_pueblo">Pueblo</string>
     <string name="admin_field_localizacion_calle">Calle</string>
     <string name="admin_field_localizacion_direccion">Dirección detallada</string>
@@ -829,6 +835,13 @@ Cliente: %4$s</string>
     <string name="admin_field_localizacion_del_poste">Del poste</string>
     <string name="admin_field_localizacion_al_poste">Al poste</string>
     <string name="admin_field_localizacion_subregion">Subregión</string>
+    <string name="admin_field_usuario_buscar_hint">Buscar por correo o cédula</string>
+    <string name="admin_field_usuario_email">Correo</string>
+    <string name="admin_field_usuario_nombre">Nombre</string>
+    <string name="admin_field_usuario_apellidos">Apellidos</string>
+    <string name="admin_field_usuario_cedula">Cédula</string>
+    <string name="admin_field_usuario_telefono">Teléfono</string>
+    <string name="admin_field_usuario_rol">Rol</string>
     <string name="admin_action_seleccionar_mapa">Seleccionar ubicación en el mapa</string>
     <string name="admin_action_cargar">Cargar</string>
     <string name="admin_action_limpiar">Limpiar</string>
@@ -839,6 +852,7 @@ Cliente: %4$s</string>
     <string name="admin_section_icon_medidores">Icono de medidores</string>
     <string name="admin_section_icon_vehiculos">Icono de vehículos</string>
     <string name="admin_section_icon_localizaciones">Icono de localizaciones</string>
+    <string name="admin_section_icon_usuarios">Icono de usuarios</string>
     <string name="admin_access_denied_title">Acceso restringido</string>
     <string name="admin_access_denied_message">Este panel solo está disponible para supervisores y administradores. Si necesitas acceso, contacta a tu supervisor.</string>
     <string name="admin_access_denied_action">Entendido</string>
@@ -876,6 +890,13 @@ Cliente: %4$s</string>
     <string name="admin_localizacion_error_relacion">El pueblo seleccionado no pertenece a la subregión.</string>
     <string name="admin_localizacion_error_mapa">Selecciona la ubicación en el mapa antes de continuar.</string>
     <string name="admin_localizacion_error_existente">Ya existe una localización con estos datos.</string>
+    <string name="admin_usuario_error_busqueda">Ingresa un correo o cédula válida.</string>
+    <string name="admin_usuario_no_encontrado">No se encontró el usuario indicado.</string>
+    <string name="admin_usuario_no_seleccionado">Selecciona un usuario antes de guardar.</string>
+    <string name="admin_usuario_guardar_exito">Usuario %1$s actualizado correctamente.</string>
+    <string name="admin_role_administrador">Administrador</string>
+    <string name="admin_role_supervisor">Supervisor</string>
+    <string name="admin_role_tecnico">Técnico</string>
     <string name="admin_confirm_accept">Confirmar</string>
     <string name="admin_confirm_cancel">Cancelar</string>
     <string name="admin_confirm_guardar_medidor_title">Guardar medidor</string>

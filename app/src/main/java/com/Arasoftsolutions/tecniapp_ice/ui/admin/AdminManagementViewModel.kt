@@ -7,6 +7,7 @@ import com.Arasoftsolutions.tecniapp_ice.Database.entities.AgenciaEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.LocalizacionesEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.MedidorEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.SubregionesEntity
+import com.Arasoftsolutions.tecniapp_ice.Database.entities.UserEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.VehiculosEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
 import com.Arasoftsolutions.tecniapp_ice.R
@@ -57,6 +58,9 @@ class AdminManagementViewModel(application: Application) : AndroidViewModel(appl
     private val _localizacionSeleccionada = MutableStateFlow<LocalizacionesEntity?>(null)
     val localizacionSeleccionada: StateFlow<LocalizacionesEntity?> = _localizacionSeleccionada.asStateFlow()
 
+    private val _usuarioSeleccionado = MutableStateFlow<UserEntity?>(null)
+    val usuarioSeleccionado: StateFlow<UserEntity?> = _usuarioSeleccionado.asStateFlow()
+
     private val _eventos = MutableSharedFlow<AdminEvent>()
     val eventos = _eventos.asSharedFlow()
 
@@ -95,6 +99,44 @@ class AdminManagementViewModel(application: Application) : AndroidViewModel(appl
 
     fun limpiarMedidor() {
         _medidorSeleccionado.value = null
+    }
+
+    fun buscarUsuario(entrada: String) {
+        viewModelScope.launch {
+            val query = entrada.trim()
+            if (query.isEmpty()) {
+                _eventos.emit(AdminEvent.Error(texto(R.string.admin_usuario_error_busqueda)))
+                return@launch
+            }
+            val usuario = if (query.contains("@")) {
+                repository.buscarUsuarioPorEmail(query)
+            } else {
+                repository.buscarUsuarioPorCedula(query)
+            }
+            if (usuario == null) {
+                _usuarioSeleccionado.value = null
+                _eventos.emit(AdminEvent.Error(texto(R.string.admin_usuario_no_encontrado)))
+                return@launch
+            }
+            _usuarioSeleccionado.value = usuario
+        }
+    }
+
+    fun limpiarUsuario() {
+        _usuarioSeleccionado.value = null
+    }
+
+    fun actualizarUsuario(usuario: UserEntity) {
+        viewModelScope.launch {
+            try {
+                repository.actualizarUsuarioAdmin(usuario)
+                _usuarioSeleccionado.value = usuario
+                val etiqueta = usuario.email ?: usuario.nombre ?: usuario.uid
+                _eventos.emit(AdminEvent.Success(texto(R.string.admin_usuario_guardar_exito, etiqueta)))
+            } catch (t: Throwable) {
+                _eventos.emit(AdminEvent.Error(errorMensaje(t)))
+            }
+        }
     }
 
     fun crearMedidor(
