@@ -1,0 +1,74 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "usuarios": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid",
+        ".validate": "newData.hasChild('uid') && newData.child('uid').val() === auth.uid",
+        "uid": { ".validate": "newData.isString() && newData.val() === auth.uid" },
+        "cedula": { ".validate": "newData.val() == null || (newData.isString() && newData.val().matches(/^[0-9]{9}$/))" },
+        "email": { ".validate": "newData.val() == null || (newData.isString() && newData.val().matches(/^.+@.+\\..+$/))" },
+        "email_lower": { ".validate": "newData.val() == null || newData.isString()" },
+        "nombre": { ".validate": "newData.val() == null || (newData.isString() && newData.val().length <= 100)" },
+        "apellidos": { ".validate": "newData.val() == null || (newData.isString() && newData.val().length <= 240)" },
+        "primer_apellido": { ".validate": "newData.val() == null || (newData.isString() && newData.val().length <= 120)" },
+        "segundo_apellido": { ".validate": "newData.val() == null || (newData.isString() && newData.val().length <= 120)" },
+        "telefono": { ".validate": "newData.val() == null || (newData.isString() && newData.val().matches(/^[0-9]{8,}$/))" },
+        "region": { ".validate": "newData.val() == null || newData.isString()" },
+        "region_nombre": { ".validate": "newData.val() == null || newData.isString()" },
+        "subregion": { ".validate": "newData.val() == null || newData.isString()" },
+        "subregion_nombre": { ".validate": "newData.val() == null || newData.isString()" },
+        "agencia": { ".validate": "newData.val() == null || newData.isString()" },
+        "agencia_id": { ".validate": "newData.val() == null || newData.isString()" },
+        "placaVehiculo": { ".validate": "newData.val() == null || newData.isString()" },
+        "createdAt": { ".validate": "newData.val() == null || newData.isNumber()" },
+        "fotoUrl": { ".validate": "newData.val() == null || newData.isString()" },
+        "rol": { ".validate": "newData.val() == null || newData.isString()" },
+        "password": { ".validate": "newData.val() == null || newData.isString()" },
+        "fcmToken": { ".validate": "newData.val() == null || newData.isString()" },
+        "notificationEnabled": { ".validate": "newData.val() == null || newData.isBoolean()" },
+        "notificationAgencies": {
+          ".validate": "newData.val() == null || newData.hasChildren()",
+          "$index": { ".validate": "newData.isString()" }
+        },
+        "$other": { ".validate": false }
+      }
+    },
+    "emails": {
+      "$emailKey": {
+        ".read": true,
+        ".write": "auth != null && !data.exists() && newData.child('uid').isString() && newData.child('uid').val() === auth.uid",
+        "uid": { ".validate": "newData.isString() && newData.val() === auth.uid" },
+        "$other": { ".validate": false }
+      }
+    },
+    "phones": {
+      "$phoneKey": {
+        ".read": true,
+        ".write": "auth != null && !data.exists() && newData.child('uid').isString() && newData.child('uid').val() === auth.uid",
+        "uid": { ".validate": "newData.isString() && newData.val() === auth.uid" },
+        "$other": { ".validate": false }
+      }
+    },
+    "idcards": {
+      "$cedulaKey": {
+        ".read": true,
+        ".write": "auth != null && !data.exists() && newData.child('uid').isString() && newData.child('uid').val() === auth.uid",
+        "uid": { ".validate": "newData.isString() && newData.val() === auth.uid" },
+        "$other": { ".validate": false }
+      }
+    },
+    "verificationCodes": {
+      "$emailKey": {
+        ".read": true,
+        ".write": "newData.val() == null || ( newData.hasChildren(['code','createdAt','expiresAt']) && newData.child('code').isString() && newData.child('code').val().matches(/^\\d{6}$/) && newData.child('createdAt').isNumber() && newData.child('expiresAt').isNumber() && (newData.child('expiresAt').val() - newData.child('createdAt').val() <= 300000) )",
+        "code": { ".validate": "newData.isString() && newData.val().matches(/^\\d{6}$/)" },
+        "createdAt": { ".validate": "newData.isNumber()" },
+        "expiresAt": { ".validate": "newData.isNumber()" },
+        "$other": { ".validate": false }
+      }
+    }
+  }
+}
