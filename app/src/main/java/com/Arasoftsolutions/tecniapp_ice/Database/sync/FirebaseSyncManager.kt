@@ -140,10 +140,8 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
             if (filtroSubregion == null) {
                 true
             } else {
-                val matchesSubregion = agency.subregion?.equals(filtroSubregion, ignoreCase = true) == true
                 val regionOfSub = regionPorSubregion[filtroSubregion.lowercase(Locale.getDefault())]
-                val matchesRegion = regionOfSub != null && agency.regionId?.equals(regionOfSub, ignoreCase = true) == true
-                matchesSubregion || matchesRegion
+                regionOfSub != null && agency.regionId?.equals(regionOfSub, ignoreCase = true) == true
             }
         }
     }

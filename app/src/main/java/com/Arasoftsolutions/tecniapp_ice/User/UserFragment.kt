@@ -397,16 +397,14 @@ class UserFragment : Fragment() {
         val targetSubregion = selectedSubregion ?: currentUserSubregion()
         val targetRegion = selectedRegion ?: currentUserRegion() ?: targetSubregion?.let { findRegion(it.regionId) }
         filteredAgencies = when {
-            targetSubregion != null || targetRegion != null -> agencyItems.filter {
-                agencyMatches(it, targetSubregion, targetRegion)
-            }
+            targetRegion != null -> agencyItems.filter { agencyMatches(it, null, targetRegion) }
             else -> agencyItems
         }
         agencyAdapter.clear()
         agencyAdapter.addAll(filteredAgencies.map { formatAgency(it) })
         agencyAdapter.notifyDataSetChanged()
 
-        if (selectedAgency?.let { agencyMatches(it, targetSubregion, targetRegion) } != true) {
+        if (selectedAgency?.let { agencyMatches(it, null, targetRegion) } != true) {
             selectedAgency = null
             binding.actvAgency.setText("", false)
         }
@@ -694,7 +692,7 @@ class UserFragment : Fragment() {
         subregion: SubregionesEntity?,
         region: RegionEntity?
     ): Boolean {
-        return agencyMatchesSubregion(agency, subregion) && agencyMatchesRegion(agency, region)
+        return agencyMatchesRegion(agency, region)
     }
 
     private fun subregionMatchesRegion(subregion: SubregionesEntity, region: RegionEntity?): Boolean {

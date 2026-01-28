@@ -325,7 +325,7 @@ class AdminManagementFragment : Fragment(R.layout.fragment_admin_management) {
 
     private fun actualizarAgencias(lista: List<AgenciaEntity>) {
         agenciasCatalogo = lista
-        agenciasDisponibles = filtrarPorSubregionUsuario(agenciasCatalogo) { it.subregion }
+        agenciasDisponibles = filtrarAgenciasPorRegionUsuario(agenciasCatalogo)
         actualizarAgenciasFiltradas()
     }
 
@@ -400,13 +400,14 @@ class AdminManagementFragment : Fragment(R.layout.fragment_admin_management) {
             ?: subregionUsuario?.id
         val subregionNombre = resolveSubregionNombre(binding.actvAdminVehiculoSubregion.text?.toString())
             ?: subregionUsuario?.nombre
-        val datos = if (subregionSeleccionada == null && subregionNombre == null) {
+        val regionId = resolveRegionIdFromSubregion(subregionSeleccionada ?: subregionNombre)
+        val datos = if (regionId.isNullOrBlank()) {
             agenciasDisponibles
                 .sortedBy { it.nombre }
                 .map { it.nombre }
         } else {
             agenciasDisponibles
-                .filter { matchesSubregionFiltro(it.subregion, subregionSeleccionada, subregionNombre) }
+                .filter { matchesAgenciaRegion(it, regionId) }
                 .sortedBy { it.nombre }
                 .map { it.nombre }
         }
@@ -420,20 +421,9 @@ class AdminManagementFragment : Fragment(R.layout.fragment_admin_management) {
     }
 
     private fun actualizarVehiculosFiltrados() {
-        val subregionSeleccionada = resolveSubregionId(binding.actvAdminVehiculoSubregion.text?.toString())
-            ?: subregionUsuario?.id
-        val subregionNombre = resolveSubregionNombre(binding.actvAdminVehiculoSubregion.text?.toString())
-            ?: subregionUsuario?.nombre
         val agenciaSeleccionada = resolveAgenciaNombre(binding.actvAdminVehiculoAgencia.text?.toString())
 
         vehiculosDisponibles = filtrarPorSubregionUsuario(vehiculosCatalogo) { it.subregion }
-            .filter {
-                if (subregionSeleccionada == null && subregionNombre == null) {
-                    true
-                } else {
-                    matchesSubregionFiltro(it.subregion, subregionSeleccionada, subregionNombre)
-                }
-            }
             .filter { vehiculo ->
                 val agencia = agenciaSeleccionada?.trim().orEmpty()
                 agencia.isBlank() || vehiculo.agencia.equals(agencia, ignoreCase = true)
@@ -500,6 +490,41 @@ class AdminManagementFragment : Fragment(R.layout.fragment_admin_management) {
         val subregionNombre = subregion?.nombre?.trim().orEmpty()
         if (subregionId.isEmpty() && subregionNombre.isEmpty()) return lista
         return lista.filter { item -> matchesSubregion(selector(item), subregion) }
+    }
+
+    private fun filtrarAgenciasPorRegionUsuario(lista: List<AgenciaEntity>): List<AgenciaEntity> {
+        val subregion = subregionUsuario ?: return lista
+        val regionId = resolveRegionIdFromSubregion(subregion.id ?: subregion.nombre).orEmpty()
+        if (regionId.isEmpty()) return lista
+        return lista.filter { matchesAgenciaRegion(it, regionId) }
+    }
+
+    private fun resolveRegionIdFromSubregion(value: String?): String? {
+        val raw = value?.trim().takeIf { !it.isNullOrEmpty() } ?: return null
+        val canonicalTarget = SubregionNormalizer.canonicalIdOrSelf(raw) ?: raw
+        val match = subregionesCatalogo.firstOrNull { subregion ->
+            val id = subregion.id.trim()
+            val nombre = subregion.nombre.trim()
+            val canonicalId = SubregionNormalizer.canonicalIdOrSelf(id) ?: id
+            val canonicalNombre = SubregionNormalizer.canonicalIdOrSelf(nombre) ?: nombre
+            canonicalId.equals(canonicalTarget, ignoreCase = true) ||
+                canonicalNombre.equals(canonicalTarget, ignoreCase = true) ||
+                id.equals(raw, ignoreCase = true) ||
+                nombre.equals(raw, ignoreCase = true)
+        }
+        return match?.regionId?.trim()?.takeIf { it.isNotEmpty() }
+    }
+
+    private fun matchesAgenciaRegion(agency: AgenciaEntity, regionId: String): Boolean {
+        val targetRegion = regionId.trim()
+        val agencyRegion = agency.regionId?.trim().orEmpty()
+        if (agencyRegion.isNotEmpty()) {
+            return agencyRegion.equals(targetRegion, ignoreCase = true)
+        }
+        val agencySubregion = agency.subregion?.trim().orEmpty()
+        if (agencySubregion.isEmpty()) return false
+        val resolvedRegion = resolveRegionIdFromSubregion(agencySubregion)
+        return resolvedRegion?.equals(targetRegion, ignoreCase = true) == true
     }
 
     private fun matchesSubregion(
