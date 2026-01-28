@@ -169,14 +169,32 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
         repo.observarReparaciones()
             .stateIn(viewModelScope, sharing, emptyList())
 
-    val luminariasPendientesCount: StateFlow<Int> =
-        reparacionesLuminarias
-            .map { reparaciones ->
-                reparaciones.count { reparacion ->
-                    LuminariaEstado.fromRaw(reparacion.estado) == LuminariaEstado.PENDIENTE
+    private val vehiculoUsuarioId: StateFlow<Int?> =
+        usuario
+            .flatMapLatest { user ->
+                flow {
+                    val placa = user?.placaVehiculo?.trim().orEmpty()
+                    val vehiculoId = placa.toLongOrNull()
+                        ?.let { repo.obtenerVehiculoPorPlaca(it)?.id }
+                    emit(vehiculoId)
                 }
             }
-            .stateIn(viewModelScope, sharing, 0)
+            .stateIn(viewModelScope, sharing, null)
+
+    val luminariasPendientesCount: StateFlow<Int> =
+        combine(reparacionesLuminarias, usuario, vehiculoUsuarioId) { reparaciones, user, vehiculoId ->
+            val rol = user?.rol?.trim()?.lowercase(Locale.getDefault())
+            val esSupervisor = rol == "supervisor"
+            val esAdministrador = rol == "administrador"
+            val visibles = if (esSupervisor || esAdministrador) {
+                reparaciones
+            } else {
+                reparaciones.filter { reparacion -> reparacion.vehiculoId == vehiculoId }
+            }
+            visibles.count { reparacion ->
+                    LuminariaEstado.fromRaw(reparacion.estado) == LuminariaEstado.PENDIENTE
+            }
+        }.stateIn(viewModelScope, sharing, 0)
 
     fun loadUsuarioActual() {
         viewModelScope.launch {
