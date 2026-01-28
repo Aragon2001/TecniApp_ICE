@@ -17,6 +17,7 @@ import com.Arasoftsolutions.tecniapp_ice.Database.entities.LocalizacionesEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.MedidorEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.PueblosEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.SubregionesEntity
+import com.Arasoftsolutions.tecniapp_ice.Database.entities.UserEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.VehiculosEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.sync.SubregionNormalizer
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
@@ -47,6 +48,7 @@ class AdminManagementFragment : Fragment(R.layout.fragment_admin_management) {
     private lateinit var localizacionPuebloAdapter: ArrayAdapter<String>
     private lateinit var localizacionCalleAdapter: ArrayAdapter<String>
     private lateinit var subregionAdapter: ArrayAdapter<String>
+    private lateinit var usuarioRolAdapter: ArrayAdapter<String>
 
     private var subregionUsuario: AdminManagementViewModel.SubregionUsuario? = null
 
@@ -66,6 +68,10 @@ class AdminManagementFragment : Fragment(R.layout.fragment_admin_management) {
 
     private val vehiculoDisplayToPlaca = mutableMapOf<String, Long>()
     private val localizacionDisplayToId = mutableMapOf<String, Int>()
+
+    private var usuarioSeleccionado: UserEntity? = null
+    private var opcionesRol: List<RoleOption> = emptyList()
+    private var esAdministrador: Boolean = false
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -113,6 +119,18 @@ class AdminManagementFragment : Fragment(R.layout.fragment_admin_management) {
         binding.actvAdminMedidorSubregion.setAdapter(subregionAdapter)
         binding.actvAdminVehiculoSubregion.setAdapter(subregionAdapter)
         binding.actvAdminLocalizacionSubregion.setAdapter(subregionAdapter)
+
+        opcionesRol = listOf(
+            RoleOption("administrador", getString(R.string.admin_role_administrador)),
+            RoleOption("supervisor", getString(R.string.admin_role_supervisor)),
+            RoleOption("tecnico", getString(R.string.admin_role_tecnico))
+        )
+        usuarioRolAdapter = ArrayAdapter(
+            context,
+            android.R.layout.simple_dropdown_item_1line,
+            opcionesRol.map { it.label }
+        )
+        binding.actvAdminUsuarioRol.setAdapter(usuarioRolAdapter)
     }
 
     private fun verificarAccesoAdmin() {
@@ -126,7 +144,11 @@ class AdminManagementFragment : Fragment(R.layout.fragment_admin_management) {
                 .adminPrivilegesEnabled
                 .first()
             val permitido = (rol == "administrador" || rol == "supervisor") && adminEnabled
-            if (permitido) return@launch
+            esAdministrador = rol == "administrador"
+            if (permitido) {
+                actualizarSeccionUsuarios()
+                return@launch
+            }
             binding.root.isVisible = false
             MaterialAlertDialogBuilder(requireContext())
                 .setTitle(R.string.admin_access_denied_title)
@@ -144,6 +166,7 @@ class AdminManagementFragment : Fragment(R.layout.fragment_admin_management) {
             binding.cardMedidores.isVisible = checkedId == R.id.btnAdminMedidores
             binding.cardVehiculos.isVisible = checkedId == R.id.btnAdminVehiculos
             binding.cardLocalizaciones.isVisible = checkedId == R.id.btnAdminLocalizaciones
+            binding.cardUsuarios.isVisible = checkedId == R.id.btnAdminUsuarios
             actualizarIconoSeccion(checkedId)
         }
         binding.toggleAdminSections.check(R.id.btnAdminMedidores)
@@ -154,6 +177,7 @@ class AdminManagementFragment : Fragment(R.layout.fragment_admin_management) {
             R.id.btnAdminMedidores -> R.drawable.ic_menu_medidor to R.string.admin_section_icon_medidores
             R.id.btnAdminVehiculos -> R.drawable.ic_menu_vehiculo to R.string.admin_section_icon_vehiculos
             R.id.btnAdminLocalizaciones -> R.drawable.ic_menu_localizacion to R.string.admin_section_icon_localizaciones
+            R.id.btnAdminUsuarios -> R.drawable.ic_menu_admin to R.string.admin_section_icon_usuarios
             else -> R.drawable.ic_menu_medidor to R.string.admin_section_icon_medidores
         }
         binding.imageAdminSectionIcon.setImageResource(iconRes)
@@ -251,6 +275,18 @@ class AdminManagementFragment : Fragment(R.layout.fragment_admin_management) {
         binding.btnAdminLocalizacionGuardar.setOnClickListener { guardarLocalizacion() }
         binding.btnAdminLocalizacionEliminar.setOnClickListener { eliminarLocalizacion() }
         binding.btnAdminLocalizacionMapa.setOnClickListener { abrirSelectorMapa() }
+
+        binding.btnAdminUsuarioBuscar.setOnClickListener { buscarUsuario() }
+        binding.actvAdminUsuarioBuscar.setOnEditorActionListener { _, _, _ ->
+            buscarUsuario()
+            true
+        }
+        binding.btnAdminUsuarioLimpiar.setOnClickListener {
+            limpiarFormularioUsuario()
+            viewModel.limpiarUsuario()
+        }
+        binding.btnAdminUsuarioGuardar.setOnClickListener { guardarUsuario() }
+        binding.actvAdminUsuarioRol.setOnClickListener { binding.actvAdminUsuarioRol.showDropDown() }
     }
 
     private fun observeViewModel() {
@@ -266,6 +302,7 @@ class AdminManagementFragment : Fragment(R.layout.fragment_admin_management) {
                 launch { viewModel.medidorSeleccionado.collect { mostrarMedidor(it) } }
                 launch { viewModel.vehiculoSeleccionado.collect { mostrarVehiculo(it) } }
                 launch { viewModel.localizacionSeleccionada.collect { mostrarLocalizacion(it) } }
+                launch { viewModel.usuarioSeleccionado.collect { mostrarUsuario(it) } }
                 launch {
                     viewModel.eventos.collect { evento ->
                         val mensaje = when (evento) {
@@ -277,6 +314,79 @@ class AdminManagementFragment : Fragment(R.layout.fragment_admin_management) {
                 }
             }
         }
+    }
+
+    private fun actualizarSeccionUsuarios() {
+        binding.btnAdminUsuarios.isVisible = esAdministrador
+        if (!esAdministrador) {
+            binding.cardUsuarios.isVisible = false
+            if (binding.toggleAdminSections.checkedButtonId == R.id.btnAdminUsuarios) {
+                binding.toggleAdminSections.check(R.id.btnAdminMedidores)
+            }
+        } else {
+            binding.cardUsuarios.isVisible = binding.toggleAdminSections.checkedButtonId == R.id.btnAdminUsuarios
+        }
+    }
+
+    private fun buscarUsuario() {
+        viewModel.buscarUsuario(binding.actvAdminUsuarioBuscar.text?.toString().orEmpty())
+    }
+
+    private fun mostrarUsuario(usuario: UserEntity?) {
+        usuarioSeleccionado = usuario
+        if (usuario == null) {
+            limpiarFormularioUsuario()
+            return
+        }
+        binding.inputAdminUsuarioEmail.setText(usuario.email.orEmpty())
+        binding.inputAdminUsuarioNombre.setText(usuario.nombre.orEmpty())
+        binding.inputAdminUsuarioApellidos.setText(usuario.apellidos.orEmpty())
+        binding.inputAdminUsuarioCedula.setText(usuario.cedula.orEmpty())
+        binding.inputAdminUsuarioTelefono.setText(usuario.telefono.orEmpty())
+        binding.actvAdminUsuarioRol.setText(resolveRoleLabel(usuario.rol), false)
+    }
+
+    private fun limpiarFormularioUsuario() {
+        usuarioSeleccionado = null
+        binding.actvAdminUsuarioBuscar.text?.clear()
+        binding.inputAdminUsuarioEmail.setText("")
+        binding.inputAdminUsuarioNombre.setText("")
+        binding.inputAdminUsuarioApellidos.setText("")
+        binding.inputAdminUsuarioCedula.setText("")
+        binding.inputAdminUsuarioTelefono.setText("")
+        binding.actvAdminUsuarioRol.setText("", false)
+    }
+
+    private fun guardarUsuario() {
+        val usuario = usuarioSeleccionado ?: run {
+            Snackbar.make(binding.root, R.string.admin_usuario_no_seleccionado, Snackbar.LENGTH_LONG).show()
+            return
+        }
+        val rol = resolveRoleValue(binding.actvAdminUsuarioRol.text?.toString())
+        val actualizado = usuario.copy(
+            nombre = normalizedOrNull(binding.inputAdminUsuarioNombre.text?.toString()),
+            apellidos = normalizedOrNull(binding.inputAdminUsuarioApellidos.text?.toString()),
+            cedula = normalizedOrNull(binding.inputAdminUsuarioCedula.text?.toString()),
+            telefono = normalizedOrNull(binding.inputAdminUsuarioTelefono.text?.toString()),
+            rol = rol
+        )
+        viewModel.actualizarUsuario(actualizado)
+    }
+
+    private fun normalizedOrNull(value: String?): String? = value?.trim()?.takeIf { it.isNotEmpty() }
+
+    private fun resolveRoleLabel(role: String?): String {
+        val trimmed = role?.trim().orEmpty()
+        if (trimmed.isEmpty()) return ""
+        return opcionesRol.firstOrNull { it.value.equals(trimmed, ignoreCase = true) }?.label ?: trimmed
+    }
+
+    private fun resolveRoleValue(raw: String?): String? {
+        val trimmed = raw?.trim()?.takeIf { it.isNotEmpty() } ?: return null
+        val match = opcionesRol.firstOrNull {
+            it.label.equals(trimmed, ignoreCase = true) || it.value.equals(trimmed, ignoreCase = true)
+        }
+        return match?.value ?: trimmed.lowercase(Locale.getDefault())
     }
 
     private fun actualizarMedidores(lista: List<MedidorEntity>) {
@@ -1316,6 +1426,8 @@ class AdminManagementFragment : Fragment(R.layout.fragment_admin_management) {
         val alPoste: Int,
         val subregionId: String,
     )
+
+    private data class RoleOption(val value: String, val label: String)
 
     override fun onDestroyView() {
         super.onDestroyView()
