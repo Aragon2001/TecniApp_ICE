@@ -98,6 +98,48 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
         return first.getValue(UserEntity::class.java)
     }
 
+    suspend fun buscarUsuarioPorCedula(cedula: String): UserEntity? {
+        val cedulaTrim = cedula.trim()
+        if (cedulaTrim.isEmpty()) return null
+        val snap = dbUsers.child("usuarios")
+            .orderByChild("cedula")
+            .equalTo(cedulaTrim)
+            .limitToFirst(1)
+            .get()
+            .await()
+
+        val first = snap.children.firstOrNull() ?: return null
+        return first.getValue(UserEntity::class.java)
+    }
+
+    suspend fun actualizarUsuarioAdmin(user: UserEntity) {
+        val uid = user.uid.trim()
+        require(uid.isNotEmpty()) { "UID vacío" }
+        val email = user.email?.trim()?.takeIf { it.isNotEmpty() }
+        val payload = buildMap<String, Any?> {
+            put("uid", uid)
+            if (email != null) {
+                put("email", email)
+                put("email_lower", email.lowercase())
+            }
+            user.nombre?.let { put("nombre", it) }
+            user.apellidos?.let { put("apellidos", it) }
+            user.primerApellido?.let { put("primer_apellido", it) }
+            user.segundoApellido?.let { put("segundo_apellido", it) }
+            user.cedula?.let { put("cedula", it) }
+            user.region?.let { put("region", it) }
+            user.regionNombre?.let { put("region_nombre", it) }
+            user.subregion?.let { put("subregion", it) }
+            user.subregionNombre?.let { put("subregion_nombre", it) }
+            user.agenciaId?.let { put("agencia_id", it) }
+            user.agencia?.let { put("agencia", it) }
+            user.placaVehiculo?.let { put("placaVehiculo", it) }
+            user.telefono?.let { put("telefono", it) }
+            user.rol?.let { put("rol", it) }
+        }
+        dbUsers.child("usuarios").child(uid).updateChildren(payload).await()
+    }
+
     // --- DATOS GENERALES (Regiones / Agencias / Subregiones / Vehículos) ---
     suspend fun obtenerRegiones(): List<RegionEntity> {
         val snap = dbDatosGenerales.child("regiones").get().await()
