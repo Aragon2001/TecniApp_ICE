@@ -56,14 +56,14 @@ class   RoomRepository(context: Context) {
     fun observarLocalizacionesDePueblos(puebloIds: List<Int>): Flow<List<LocalizacionesEntity>> =
         if (puebloIds.isEmpty()) flowOf(emptyList()) else db.localizacionDao().observarPorPueblos(puebloIds)
 
-    fun observarAgencias(subregionId: String): Flow<List<AgenciaEntity>> =
-        db.agenciaDao().observarPorSubregion(subregionId)
+    fun observarAgencias(regionId: String): Flow<List<AgenciaEntity>> =
+        db.agenciaDao().observarPorRegion(regionId)
 
     fun observarAgenciasCatalogo(): Flow<List<AgenciaEntity>> =
         db.agenciaDao().observarTodas()
 
-    fun observarVehiculos(subregionId: String): Flow<List<VehiculosEntity>> =
-        db.vehiculoDao().observarPorSubregion(subregionId)
+    fun observarVehiculos(agencia: String): Flow<List<VehiculosEntity>> =
+        db.vehiculoDao().observarPorAgencia(agencia)
 
     fun observarVehiculosCatalogo(): Flow<List<VehiculosEntity>> =
         db.vehiculoDao().observarTodos()
@@ -137,6 +137,19 @@ class   RoomRepository(context: Context) {
         db.usuarioDao().getByUid(uid)
 
     suspend fun saveUser(user: UserEntity) = withContext(Dispatchers.IO) {
+        db.usuarioDao().upsert(user)
+    }
+
+    suspend fun buscarUsuarioPorEmail(email: String): UserEntity? = withContext(Dispatchers.IO) {
+        firebase.buscarUsuarioPorEmail(email)
+    }
+
+    suspend fun buscarUsuarioPorCedula(cedula: String): UserEntity? = withContext(Dispatchers.IO) {
+        firebase.buscarUsuarioPorCedula(cedula)
+    }
+
+    suspend fun actualizarUsuarioAdmin(user: UserEntity) = withContext(Dispatchers.IO) {
+        firebase.actualizarUsuarioAdmin(user)
         db.usuarioDao().upsert(user)
     }
 
