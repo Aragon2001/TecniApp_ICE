@@ -140,6 +140,19 @@ class   RoomRepository(context: Context) {
         db.usuarioDao().upsert(user)
     }
 
+    suspend fun buscarUsuarioPorEmail(email: String): UserEntity? = withContext(Dispatchers.IO) {
+        firebase.buscarUsuarioPorEmail(email)
+    }
+
+    suspend fun buscarUsuarioPorCedula(cedula: String): UserEntity? = withContext(Dispatchers.IO) {
+        firebase.buscarUsuarioPorCedula(cedula)
+    }
+
+    suspend fun actualizarUsuarioAdmin(user: UserEntity) = withContext(Dispatchers.IO) {
+        firebase.actualizarUsuarioAdmin(user)
+        db.usuarioDao().upsert(user)
+    }
+
     suspend fun obtenerPuebloPorId(puebloId: Int): PueblosEntity? =
         db.puebloDao().buscarPorId(puebloId)
 
