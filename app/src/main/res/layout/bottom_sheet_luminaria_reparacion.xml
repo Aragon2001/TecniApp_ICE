@@ -98,10 +98,13 @@
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnLlamarContacto"
-                style="@style/Widget.Material3.Button.OutlinedButton"
+                style="@style/Widget.Material3.Button.TonalButton"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
+                android:icon="@drawable/ic_phone"
+                android:iconGravity="textStart"
+                android:iconPadding="8dp"
                 android:text="Llamar al contacto" />
         </LinearLayout>
 

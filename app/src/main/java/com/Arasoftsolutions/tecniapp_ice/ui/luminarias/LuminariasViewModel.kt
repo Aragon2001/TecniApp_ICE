@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaReparacionEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.MaterialEntity
+import com.Arasoftsolutions.tecniapp_ice.Database.entities.PueblosEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.TecnicoEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.VehiculosEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.apellidosCompletos
@@ -29,6 +30,7 @@ data class LuminariaUiState(
     val reparacionesPendientes: List<LuminariaReparacionEntity> = emptyList(),
     val reparacionesReparadas: List<LuminariaReparacionEntity> = emptyList(),
     val vehiculosAgencia: List<VehiculosEntity> = emptyList(),
+    val pueblos: List<PueblosEntity> = emptyList(),
     val vehiculoUsuarioId: Int? = null,
     val vehiculoFiltroId: Int? = null,
     val vehiculoRegistroId: Int? = null,
@@ -62,7 +64,8 @@ data class LuminariaCatalogoState(
     val materiales: List<MaterialEntity>,
     val tecnicos: List<TecnicoEntity>,
     val reparaciones: List<LuminariaReparacionEntity>,
-    val vehiculos: List<VehiculosEntity>
+    val vehiculos: List<VehiculosEntity>,
+    val pueblos: List<PueblosEntity>
 )
 
 class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
@@ -89,10 +92,11 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
                 repository.observarMateriales(),
                 repository.observarTecnicos(),
                 repository.observarReparaciones(),
-                repository.observarVehiculosCatalogo()
-            ) { materiales, tecnicos, reparaciones, vehiculos ->
-                LuminariaCatalogoState(materiales, tecnicos, reparaciones, vehiculos)
-            }.collect { (materiales, tecnicos, reparaciones, vehiculos) ->
+                repository.observarVehiculosCatalogo(),
+                repository.observarTodosLosPueblos()
+            ) { materiales, tecnicos, reparaciones, vehiculos, pueblos ->
+                LuminariaCatalogoState(materiales, tecnicos, reparaciones, vehiculos, pueblos)
+            }.collect { (materiales, tecnicos, reparaciones, vehiculos, pueblos) ->
                 val agenciaUsuario = _uiState.value.agenciaUsuario?.trim().orEmpty()
                 val vehiculosPorId = vehiculos.associateBy { it.id }
                 val filtradasPorAgencia = if (agenciaUsuario.isBlank()) {
@@ -120,7 +124,8 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
                         tecnicos = tecnicos,
                         vehiculosAgencia = vehiculosAgencia,
                         reparacionesPendientes = pendientes,
-                        reparacionesReparadas = reparadas
+                        reparacionesReparadas = reparadas,
+                        pueblos = pueblos
                     )
                 }
             }
@@ -134,7 +139,7 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
         val vehiculo = placa.toLongOrNull()?.let { repository.obtenerVehiculoPorPlaca(it) }
         vehiculoPreferidoId = vehiculo?.id
         val rolNormalizado = usuario.rol?.trim().orEmpty()
-        val rolLower = rolNormalizado.lowercase()
+        val rolLower = normalizarRol(rolNormalizado)
         val nombre = buildString {
             usuario.nombre?.trim()?.takeIf { it.isNotBlank() }?.let { append(it) }
             val apellidos = usuario.apellidosCompletos?.trim().orEmpty()
@@ -144,8 +149,8 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
             }
         }.ifBlank { usuario.nombre ?: "" }
         _uiState.update { current ->
-            val esSupervisor = rolLower == "supervisor"
-            val esAdministrador = rolLower == "administrador"
+            val esSupervisor = rolLower == "supervisor" || rolLower.contains("supervis")
+            val esAdministrador = rolLower == "administrador" || rolLower.contains("admin")
             val puedeFiltrarVehiculo = esSupervisor || esAdministrador
             current.copy(
                 vehiculoUsuarioId = vehiculoPreferidoId,
@@ -535,6 +540,13 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
             .replace("\\p{M}+".toRegex(), "")
             .uppercase()
             .replace("[^A-Z0-9]".toRegex(), "")
+    }
+
+    private fun normalizarRol(raw: String): String {
+        val normalized = java.text.Normalizer.normalize(raw.trim(), java.text.Normalizer.Form.NFD)
+        return normalized
+            .replace("\\p{M}+".toRegex(), "")
+            .lowercase()
     }
 
     fun enviarMensaje(texto: String, esError: Boolean = false) {
