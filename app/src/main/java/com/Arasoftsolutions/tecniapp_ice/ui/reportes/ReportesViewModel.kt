@@ -1183,4 +1183,7 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private fun getString(@StringRes resId: Int): String = getApplication<Application>().getString(resId)
+
+    private fun getString(@StringRes resId: Int, vararg args: Any): String =
+        getApplication<Application>().getString(resId, *args)
 }
