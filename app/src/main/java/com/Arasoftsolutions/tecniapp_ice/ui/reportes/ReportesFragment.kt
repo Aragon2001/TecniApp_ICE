@@ -10,6 +10,7 @@ import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.util.Pair
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -23,7 +24,6 @@ import com.Arasoftsolutions.tecniapp_ice.databinding.FragmentReportesBinding
 import com.Arasoftsolutions.tecniapp_ice.ui.reportes.ExcelReportExporter.ExportPayload
 import com.Arasoftsolutions.tecniapp_ice.ui.reportes.ExcelReportExporter.MIME_TYPE_XLSX
 import com.google.android.material.datepicker.MaterialDatePicker
-import androidx.core.util.Pair
 import com.google.android.material.snackbar.Snackbar
 import java.time.Instant
 import java.time.LocalDate
@@ -40,10 +40,12 @@ class ReportesFragment : Fragment() {
     private val binding get() = _binding!!
 
     private val viewModel: ReportesViewModel by viewModels()
-    private lateinit var averiasAdapter: AveriasReportAdapter
-    private lateinit var materialesPorAveriaAdapter: MaterialesPorAveriaAdapter
-    private lateinit var materialTotalAdapter: MaterialTotalAdapter
-    private lateinit var luminariasAdapter: LuminariasReparadasAdapter
+    private lateinit var resumenAdapter: ResumenKpiAdapter
+    private lateinit var misAveriasAdapter: MisAveriasAdapter
+    private lateinit var misLuminariasAdapter: MisLuminariasAdapter
+    private lateinit var inventarioGeneralAdapter: InventarioReporteAdapter
+    private lateinit var inventarioCriticoAdapter: InventarioReporteAdapter
+    private lateinit var bitacoraAdapter: BitacoraEventosAdapter
     private lateinit var tiposAdapter: ArrayAdapter<String>
     private var isUpdatingTipoReporte = false
     private val locale = Locale.getDefault()
@@ -81,38 +83,53 @@ class ReportesFragment : Fragment() {
     }
 
     private fun setupAdapters() {
-        averiasAdapter = AveriasReportAdapter()
-        binding.recyclerAverias.apply {
+        resumenAdapter = ResumenKpiAdapter()
+        binding.recyclerMiResumen.apply {
             layoutManager = LinearLayoutManager(context)
-            adapter = averiasAdapter
+            adapter = resumenAdapter
             setHasFixedSize(false)
             isNestedScrollingEnabled = false
         }
 
-        materialesPorAveriaAdapter = MaterialesPorAveriaAdapter()
-        binding.recyclerMaterialPorAveria.apply {
+        misAveriasAdapter = MisAveriasAdapter()
+        binding.recyclerMisAverias.apply {
             layoutManager = LinearLayoutManager(context)
-            adapter = materialesPorAveriaAdapter
+            adapter = misAveriasAdapter
             setHasFixedSize(false)
             isNestedScrollingEnabled = false
         }
 
-        materialTotalAdapter = MaterialTotalAdapter()
-        binding.recyclerMaterialTotal.apply {
+        misLuminariasAdapter = MisLuminariasAdapter()
+        binding.recyclerMisLuminarias.apply {
             layoutManager = LinearLayoutManager(context)
-            adapter = materialTotalAdapter
+            adapter = misLuminariasAdapter
             setHasFixedSize(false)
             isNestedScrollingEnabled = false
         }
 
-        luminariasAdapter = LuminariasReparadasAdapter()
-        binding.recyclerLuminarias.apply {
+        inventarioGeneralAdapter = InventarioReporteAdapter()
+        binding.recyclerInventarioGeneral.apply {
             layoutManager = LinearLayoutManager(context)
-            adapter = luminariasAdapter
+            adapter = inventarioGeneralAdapter
             setHasFixedSize(false)
             isNestedScrollingEnabled = false
         }
 
+        inventarioCriticoAdapter = InventarioReporteAdapter()
+        binding.recyclerInventarioCritico.apply {
+            layoutManager = LinearLayoutManager(context)
+            adapter = inventarioCriticoAdapter
+            setHasFixedSize(false)
+            isNestedScrollingEnabled = false
+        }
+
+        bitacoraAdapter = BitacoraEventosAdapter()
+        binding.recyclerBitacora.apply {
+            layoutManager = LinearLayoutManager(context)
+            adapter = bitacoraAdapter
+            setHasFixedSize(false)
+            isNestedScrollingEnabled = false
+        }
     }
 
     private fun setupReportTypeSelector() {
@@ -177,6 +194,8 @@ class ReportesFragment : Fragment() {
                     binding.tvResumenTitulo.text = getString(seleccionado.titleRes)
                     binding.tvResumenRango.text = state.rangoTexto
 
+                    actualizarEtiquetasResumen(seleccionado)
+
                     val resumen = state.resumen
                     val hasResumen = resumen != null
                     binding.resumenCardsContainer.isVisible = hasResumen
@@ -193,49 +212,103 @@ class ReportesFragment : Fragment() {
                     val emptyRes: Int
 
                     when (seleccionado) {
-                        ReportType.AVERIAS -> {
-                            binding.cardAverias.isVisible = true
-                            binding.cardMaterialPorAveria.isVisible = false
-                            binding.cardMaterialTotal.isVisible = false
-                            binding.cardLuminariasReparadas.isVisible = false
-                            averiasAdapter.submitList(state.averiasState.items)
-                            section = state.averiasState
-                            recycler = binding.recyclerAverias
-                            emptyView = binding.tvAveriasVacio
-                            emptyRes = R.string.reportes_averias_vacio
+                        ReportType.MI_RESUMEN -> {
+                            binding.cardMiResumen.isVisible = true
+                            binding.cardMisAverias.isVisible = false
+                            binding.cardMisLuminarias.isVisible = false
+                            binding.cardMiInventario.isVisible = false
+                            binding.cardMiBitacora.isVisible = false
+                            resumenAdapter.submitList(state.resumenState.items)
+                            section = state.resumenState
+                            recycler = binding.recyclerMiResumen
+                            emptyView = binding.tvMiResumenVacio
+                            emptyRes = R.string.reportes_mi_resumen_vacio
                         }
-                        ReportType.MATERIALES_POR_AVERIA -> {
-                            binding.cardAverias.isVisible = false
-                            binding.cardMaterialPorAveria.isVisible = true
-                            binding.cardMaterialTotal.isVisible = false
-                            binding.cardLuminariasReparadas.isVisible = false
-                            materialesPorAveriaAdapter.submitList(state.materialesPorAveriaState.items)
-                            section = state.materialesPorAveriaState
-                            recycler = binding.recyclerMaterialPorAveria
-                            emptyView = binding.tvMaterialPorAveriaVacio
-                            emptyRes = R.string.reportes_material_por_averia_vacio
+                        ReportType.MIS_AVERIAS -> {
+                            binding.cardMiResumen.isVisible = false
+                            binding.cardMisAverias.isVisible = true
+                            binding.cardMisLuminarias.isVisible = false
+                            binding.cardMiInventario.isVisible = false
+                            binding.cardMiBitacora.isVisible = false
+                            misAveriasAdapter.submitList(state.misAveriasState.items)
+                            section = state.misAveriasState
+                            recycler = binding.recyclerMisAverias
+                            emptyView = binding.tvMisAveriasVacio
+                            emptyRes = R.string.reportes_mis_averias_vacio
                         }
-                        ReportType.MATERIALES_TOTALES -> {
-                            binding.cardAverias.isVisible = false
-                            binding.cardMaterialPorAveria.isVisible = false
-                            binding.cardMaterialTotal.isVisible = true
-                            binding.cardLuminariasReparadas.isVisible = false
-                            materialTotalAdapter.submitList(state.materialesTotalesState.items)
-                            section = state.materialesTotalesState
-                            recycler = binding.recyclerMaterialTotal
-                            emptyView = binding.tvMaterialTotalVacio
-                            emptyRes = R.string.reportes_material_total_vacio
+                        ReportType.MIS_LUMINARIAS -> {
+                            binding.cardMiResumen.isVisible = false
+                            binding.cardMisAverias.isVisible = false
+                            binding.cardMisLuminarias.isVisible = true
+                            binding.cardMiInventario.isVisible = false
+                            binding.cardMiBitacora.isVisible = false
+                            misLuminariasAdapter.submitList(state.misLuminariasState.items)
+                            section = state.misLuminariasState
+                            recycler = binding.recyclerMisLuminarias
+                            emptyView = binding.tvMisLuminariasVacio
+                            emptyRes = R.string.reportes_mis_luminarias_vacio
                         }
-                        ReportType.LUMINARIAS_REPARADAS -> {
-                            binding.cardAverias.isVisible = false
-                            binding.cardMaterialPorAveria.isVisible = false
-                            binding.cardMaterialTotal.isVisible = false
-                            binding.cardLuminariasReparadas.isVisible = true
-                            luminariasAdapter.submitList(state.luminariasState.items)
-                            section = state.luminariasState
-                            recycler = binding.recyclerLuminarias
-                            emptyView = binding.tvLuminariasVacio
-                            emptyRes = R.string.reportes_luminarias_vacio
+                        ReportType.MI_INVENTARIO -> {
+                            binding.cardMiResumen.isVisible = false
+                            binding.cardMisAverias.isVisible = false
+                            binding.cardMisLuminarias.isVisible = false
+                            binding.cardMiInventario.isVisible = true
+                            binding.cardMiBitacora.isVisible = false
+                            inventarioGeneralAdapter.submitList(state.miInventarioState.items)
+                            inventarioCriticoAdapter.submitList(state.miInventarioCriticoState.items)
+                            section = state.miInventarioState
+                            recycler = binding.recyclerInventarioGeneral
+                            emptyView = binding.tvInventarioGeneralVacio
+                            emptyRes = R.string.reportes_mi_inventario_vacio
+                            val movimientos = state.miInventarioMovimientos
+                            binding.tvInventarioMovimientosDetalle.text = if (movimientos != null) {
+                                getString(
+                                    R.string.reportes_inventario_movimientos_resumen,
+                                    movimientos.entradas,
+                                    movimientos.salidas,
+                                    movimientos.neto
+                                )
+                            } else {
+                                getString(R.string.reportes_inventario_movimientos_sin_datos)
+                            }
+                            binding.recyclerInventarioCritico.isVisible = state.miInventarioCriticoState.items.isNotEmpty()
+                            binding.tvInventarioCriticoVacio.isVisible = state.miInventarioCriticoState.items.isEmpty()
+                        }
+                        ReportType.MI_BITACORA -> {
+                            binding.cardMiResumen.isVisible = false
+                            binding.cardMisAverias.isVisible = false
+                            binding.cardMisLuminarias.isVisible = false
+                            binding.cardMiInventario.isVisible = false
+                            binding.cardMiBitacora.isVisible = true
+                            bitacoraAdapter.submitList(state.miBitacoraState.items)
+                            section = state.miBitacoraState
+                            recycler = binding.recyclerBitacora
+                            emptyView = binding.tvBitacoraVacio
+                            emptyRes = R.string.reportes_mi_bitacora_vacio
+                            val resumenBitacora = state.miBitacoraResumen
+                            if (resumenBitacora != null) {
+                                binding.tvBitacoraHoras.text = getString(
+                                    R.string.reportes_bitacora_horas,
+                                    resumenBitacora.horasTrabajadas
+                                )
+                                binding.tvBitacoraKm.text = getString(
+                                    R.string.reportes_bitacora_km,
+                                    resumenBitacora.kilometros
+                                )
+                                binding.tvBitacoraAverias.text = getString(
+                                    R.string.reportes_bitacora_averias,
+                                    resumenBitacora.averiasAtendidas
+                                )
+                                binding.tvBitacoraLuminarias.text = getString(
+                                    R.string.reportes_bitacora_luminarias,
+                                    resumenBitacora.luminariasReparadas
+                                )
+                                val topMateriales = resumenBitacora.materialTop.joinToString(", ") { it.descripcion }
+                                binding.tvBitacoraMaterial.text = getString(
+                                    R.string.reportes_bitacora_material_top,
+                                    topMateriales.ifBlank { "-" }
+                                )
+                            }
                         }
                     }
 
@@ -279,6 +352,36 @@ class ReportesFragment : Fragment() {
             viewModel.messages.collect { message ->
                 if (!isAdded) return@collect
                 Snackbar.make(binding.root, message, Snackbar.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    private fun actualizarEtiquetasResumen(tipo: ReportType) {
+        when (tipo) {
+            ReportType.MI_RESUMEN -> {
+                binding.tvResumenLabelAverias.text = getString(R.string.reportes_resumen_label_averias)
+                binding.tvResumenLabelMateriales.text = getString(R.string.reportes_resumen_label_material)
+                binding.tvResumenLabelCodigos.text = getString(R.string.reportes_resumen_label_luminarias)
+            }
+            ReportType.MIS_AVERIAS -> {
+                binding.tvResumenLabelAverias.text = getString(R.string.reportes_resumen_label_averias)
+                binding.tvResumenLabelMateriales.text = getString(R.string.reportes_resumen_label_material)
+                binding.tvResumenLabelCodigos.text = getString(R.string.reportes_resumen_label_materiales_distintos)
+            }
+            ReportType.MIS_LUMINARIAS -> {
+                binding.tvResumenLabelAverias.text = getString(R.string.reportes_resumen_label_luminarias)
+                binding.tvResumenLabelMateriales.text = getString(R.string.reportes_resumen_label_material)
+                binding.tvResumenLabelCodigos.text = getString(R.string.reportes_resumen_label_pendientes)
+            }
+            ReportType.MI_INVENTARIO -> {
+                binding.tvResumenLabelAverias.text = getString(R.string.reportes_resumen_label_items)
+                binding.tvResumenLabelMateriales.text = getString(R.string.reportes_resumen_label_criticos)
+                binding.tvResumenLabelCodigos.text = getString(R.string.reportes_resumen_label_disponibles)
+            }
+            ReportType.MI_BITACORA -> {
+                binding.tvResumenLabelAverias.text = getString(R.string.reportes_resumen_label_averias)
+                binding.tvResumenLabelMateriales.text = getString(R.string.reportes_resumen_label_material)
+                binding.tvResumenLabelCodigos.text = getString(R.string.reportes_resumen_label_luminarias)
             }
         }
     }
