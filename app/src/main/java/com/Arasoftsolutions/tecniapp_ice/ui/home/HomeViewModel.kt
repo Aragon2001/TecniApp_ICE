@@ -47,6 +47,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
 
     private val _usuario = MutableStateFlow<UserEntity?>(null)
     val usuario: StateFlow<UserEntity?> = _usuario.asStateFlow()
+    private var usuarioObserverStarted = false
 
     data class AveriasPendientesPorAgencia(val agencia: String, val pendientes: Int)
 
@@ -197,11 +198,17 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
         }.stateIn(viewModelScope, sharing, 0)
 
     fun loadUsuarioActual() {
+        if (usuarioObserverStarted) return
+        val uid = auth.currentUser?.uid ?: return
+        usuarioObserverStarted = true
         viewModelScope.launch {
-            val uid = auth.currentUser?.uid ?: return@launch
-            val user = repo.obtenerUsuario(uid)
-            _usuario.value = user
-            user?.subregion?.takeIf { it.isNotBlank() }?.let { setSubregion(it) }
+            launch {
+                repo.observarUsuario(uid).collect { user ->
+                    _usuario.value = user
+                    user?.subregion?.takeIf { it.isNotBlank() }?.let { setSubregion(it) }
+                }
+            }
+            repo.refreshUsuarioActual()
         }
     }
 
