@@ -81,7 +81,7 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
 
     private var reparacionesAgenciaCache: List<LuminariaReparacionEntity> = emptyList()
     private var vehiculoPreferidoId: Int? = null
-    private val localizacionRegex = Regex("^(\\d{4})-(\\d{3})-(\\d{3})-(\\d{2})$")
+    private val localizacionRegex = Regex("^\\d{12}$")
 
     init {
         viewModelScope.launch {
@@ -566,17 +566,7 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
         if (localizacionRegex.matches(trimmed)) return trimmed
         val digits = trimmed.filter(Char::isDigit)
         if (digits.isBlank()) return ""
-        val maxDigits = digits.take(12)
-        val partePueblo = maxDigits.take(4)
-        val parteCalle = maxDigits.drop(4).take(3)
-        val partePoste = maxDigits.drop(7).take(3)
-        val parteMetro = maxDigits.drop(10).take(2)
-        return buildString {
-            append(partePueblo)
-            if (parteCalle.isNotBlank()) append("-").append(parteCalle)
-            if (partePoste.isNotBlank()) append("-").append(partePoste)
-            if (parteMetro.isNotBlank()) append("-").append(parteMetro)
-        }
+        return digits.take(12)
     }
 
     suspend fun buscarMedidorPorLocalizacion(localizacion: String) =
