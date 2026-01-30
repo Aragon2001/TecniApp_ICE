@@ -7,6 +7,7 @@ import org.apache.poi.ss.usermodel.CellStyle
 import org.apache.poi.ss.usermodel.HorizontalAlignment
 import org.apache.poi.ss.usermodel.Workbook
 import org.apache.poi.ss.util.WorkbookUtil
+import org.apache.poi.xssf.usermodel.XSSFCellStyle
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
 
 object LuminariaMachoteExporter {
@@ -26,7 +27,7 @@ object LuminariaMachoteExporter {
             headers.forEachIndexed { index, title ->
                 val cell = headerRow.createCell(index)
                 cell.setCellValue(title)
-                cell.cellStyle = headerStyle
+                cell.cellStyle = headerStyle as XSSFCellStyle?
                 sheet.setColumnWidth(index, 20 * 256)
             }
         }

@@ -24,7 +24,7 @@
                 android:layout_height="32dp"
                 android:contentDescription="@string/inventario_icono_material"
                 android:src="@drawable/ic_summary_material"
-                android:tint="@color/ice_blue" />
+                app:tint="@color/ice_blue" />
 
             <LinearLayout
                 android:layout_width="0dp"
@@ -54,7 +54,7 @@
                 style="@style/TextAppearance.Material3.LabelLarge"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:background="@drawable/bg_report_material_badge"
+                android:background="@drawable/bg_admin_header"
                 android:paddingHorizontal="10dp"
                 android:paddingVertical="6dp"
                 android:text="@string/inventario_material_existencia_badge_placeholder"
@@ -87,15 +87,12 @@
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnSumar"
                 style="@style/Widget.Material3.Button.TonalButton"
-                android:layout_width="0dp"
+                android:layout_width="36dp"
                 android:layout_height="36dp"
-                android:layout_weight="1"
+
                 android:insetTop="0dp"
                 android:insetBottom="0dp"
-                android:paddingHorizontal="8dp"
-                android:text="@string/inventario_accion_sumar"
-                android:textSize="12sp"
-                android:textColor="@color/white"
+                android:paddingHorizontal="10dp"
                 app:backgroundTint="@color/success_500"
                 app:icon="@drawable/ic_add"
                 app:iconPadding="4dp"
@@ -106,18 +103,15 @@
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnRestar"
                 style="@style/Widget.Material3.Button.TonalButton"
-                android:layout_width="0dp"
+                android:layout_width="36dp"
                 android:layout_height="36dp"
                 android:layout_marginStart="8dp"
-                android:layout_weight="1"
+
                 android:insetTop="0dp"
                 android:insetBottom="0dp"
-                android:paddingHorizontal="8dp"
-                android:text="@string/inventario_accion_restar"
-                android:textSize="12sp"
-                android:textColor="@color/black"
+                android:paddingHorizontal="10dp"
                 app:backgroundTint="@color/ice_yellow"
-                app:icon="@drawable/ic_arrow_down"
+                app:icon="@drawable/baseline_horizontal_rule_24"
                 app:iconPadding="4dp"
                 app:iconSize="16dp"
                 app:iconTint="@color/black"
@@ -126,10 +120,9 @@
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnEliminar"
                 style="@style/Widget.Material3.Button.TonalButton"
-                android:layout_width="0dp"
+                android:layout_width="wrap_content"
                 android:layout_height="36dp"
                 android:layout_marginStart="8dp"
-                android:layout_weight="1"
                 android:insetTop="0dp"
                 android:insetBottom="0dp"
                 android:paddingHorizontal="8dp"

@@ -67,7 +67,7 @@ class TecniApp : Application() {
                     AveriasSyncWorker.triggerNow(this@TecniApp)
                     dataStore.setLastSchemaVersionApplied(currentSchemaVersion)
                 }.onFailure { error ->
-                    android.util.Log.e(\"TecniApp\", \"Error aplicando actualización de schema\", error)
+                   android.util.Log.e("TecniApp", "Error aplicando actualización de schema", error)
                 }
             }
         }

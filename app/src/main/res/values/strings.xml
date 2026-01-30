@@ -412,6 +412,7 @@ Cliente: %4$s</string>
     <string name="settings_sync_in_progress_title">Sincronizando datos</string>
     <string name="settings_sync_in_progress_message">Sincronizando con la base global. Esto puede tardar unos segundos…</string>
     <string name="settings_sync_in_progress_button">Sincronizando…</string>
+    <string name="settings_session_expired">Tu sesión ya no es válida. Vuelve a iniciar sesión.</string>
     <string name="settings_section_location">Localización y mapas</string>
     <string name="settings_gps_toggle">Activar soporte GPS desde TecniApp</string>
     <string name="settings_gps_summary">Guarda una preferencia local para habilitar el uso de ubicación en los módulos que la necesiten.</string>
@@ -792,7 +793,6 @@ Cliente: %4$s</string>
     <string name="inventario_confirmar_eliminar_no">Cancelar</string>
     <string name="inventario_error_seleccionar_camion">Selecciona un camión para cargar el inventario.</string>
     <string name="reportes_excel_col_codigo">Código</string>
-    <string name="reportes_excel_col_cantidad">Cantidad</string>
     <string name="reportes_excel_col_averias">Averías</string>
     <string name="reportes_correo_asunto">Reporte %1$s · %2$s</string>
     <string name="reportes_correo_saludo_generico">compañero ICE</string>
