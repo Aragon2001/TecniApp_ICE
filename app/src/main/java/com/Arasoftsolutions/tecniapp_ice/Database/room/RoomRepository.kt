@@ -518,7 +518,10 @@ class   RoomRepository(context: Context) {
         val tecnicos = firebase.obtenerTecnicos()
         val bytes = estimateBytes(tecnicos)
         if (tecnicos.isNotEmpty()) {
+            db.tecnicoDao().eliminarFueraDeCedulas(tecnicos.map { it.cedula })
             db.tecnicoDao().insertAll(tecnicos)
+        } else {
+            db.tecnicoDao().limpiarTodo()
         }
         bytes
     }
@@ -527,7 +530,10 @@ class   RoomRepository(context: Context) {
         val materiales = firebase.obtenerMaterialesCatalogo()
         val bytes = estimateBytes(materiales)
         if (materiales.isNotEmpty()) {
+            db.materialDao().eliminarFueraDeCodigos(materiales.map { it.codigo })
             db.materialDao().insertAll(materiales)
+        } else {
+            db.materialDao().limpiarTodo()
         }
         bytes
     }
@@ -560,9 +566,16 @@ class   RoomRepository(context: Context) {
         val canonicalSubregion = SubregionNormalizer.canonicalIdOrSelf(subregionId)
             ?: throw IllegalArgumentException("Subregión inválida: $subregionId")
 
-        val agencias = firebase.obtenerAgencias(canonicalSubregion)
-            .ifEmpty { firebase.obtenerAgencias() }
+        val agenciasPorSubregion = firebase.obtenerAgencias(canonicalSubregion)
+        val agencias = agenciasPorSubregion.ifEmpty { firebase.obtenerAgencias() }
         downloadedBytes += estimateBytes(agencias)
+        if (agenciasPorSubregion.isNotEmpty()) {
+            db.agenciaDao().eliminarPorSubregion(canonicalSubregion)
+        } else if (agencias.isNotEmpty()) {
+            db.agenciaDao().eliminarFueraDeIds(agencias.map { it.id })
+        } else {
+            db.agenciaDao().limpiarTodo()
+        }
         db.agenciaDao().insertAll(agencias)
         progress(++done, total, "Descargando agencias…", downloadedBytes)
 
@@ -596,14 +609,22 @@ class   RoomRepository(context: Context) {
         }
         progress(++done, total, "Descargando localizaciones…", downloadedBytes)
 
-        val vehiculos = firebase.obtenerVehiculos(canonicalSubregion)
-            .ifEmpty { firebase.obtenerVehiculos() }
+        val vehiculosPorSubregion = firebase.obtenerVehiculos(canonicalSubregion)
+        val vehiculos = vehiculosPorSubregion.ifEmpty { firebase.obtenerVehiculos() }
         downloadedBytes += estimateBytes(vehiculos)
+        if (vehiculosPorSubregion.isNotEmpty()) {
+            db.vehiculoDao().eliminarPorSubregion(canonicalSubregion)
+        } else if (vehiculos.isNotEmpty()) {
+            db.vehiculoDao().eliminarFueraDeIds(vehiculos.map { it.id })
+        } else {
+            db.vehiculoDao().limpiarTodo()
+        }
         db.vehiculoDao().insertAll(vehiculos)
         progress(++done, total, "Descargando vehículos…", downloadedBytes)
 
         val medidores = firebase.obtenerMedidores(canonicalSubregion)
         downloadedBytes += estimateBytes(medidores)
+        db.medidorDao().eliminarPorSubregion(canonicalSubregion)
         db.medidorDao().insertAll(medidores)
         progress(++done, total, "Descargando medidores…", downloadedBytes)
         // }
@@ -628,25 +649,37 @@ class   RoomRepository(context: Context) {
         val regiones = firebase.obtenerRegiones()
         downloadedBytes += estimateBytes(regiones)
         if (regiones.isNotEmpty()) {
+            db.regionDao().eliminarFueraDeIds(regiones.map { it.id })
             db.regionDao().insertAll(regiones)
+        } else {
+            db.regionDao().limpiarTodo()
         }
 
         val subregiones = firebase.obtenerSubregiones()
         downloadedBytes += estimateBytes(subregiones)
         if (subregiones.isNotEmpty()) {
+            db.subregionDao().eliminarFueraDeIds(subregiones.map { it.id })
             db.subregionDao().insertAll(subregiones)
+        } else {
+            db.subregionDao().limpiarTodo()
         }
 
         val agencias = firebase.obtenerAgencias()
         downloadedBytes += estimateBytes(agencias)
         if (agencias.isNotEmpty()) {
+            db.agenciaDao().eliminarFueraDeIds(agencias.map { it.id })
             db.agenciaDao().insertAll(agencias)
+        } else {
+            db.agenciaDao().limpiarTodo()
         }
 
         val vehiculos = firebase.obtenerVehiculos()
         downloadedBytes += estimateBytes(vehiculos)
         if (vehiculos.isNotEmpty()) {
+            db.vehiculoDao().eliminarFueraDeIds(vehiculos.map { it.id })
             db.vehiculoDao().insertAll(vehiculos)
+        } else {
+            db.vehiculoDao().limpiarTodo()
         }
 
         runCatching { syncTecnicos() }
