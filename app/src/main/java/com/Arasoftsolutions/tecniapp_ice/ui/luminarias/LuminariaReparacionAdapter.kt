@@ -76,10 +76,10 @@ class LuminariaReparacionAdapter(
             return "${finalDigits.substring(0, 4)}-${finalDigits.substring(4, 7)}-${finalDigits.substring(7, 9)}-${finalDigits.substring(9, 11)}"
         }
 
-        private fun obtenerPuebloId(localizacion: String): Int? {
+        private fun obtenerPuebloCodigo(localizacion: String): String? {
             val digits = localizacion.filter(Char::isDigit)
             if (digits.length < 4) return null
-            return digits.take(4).toIntOrNull()
+            return digits.take(4)
         }
 
         private fun formatFecha(timestamp: Long): String {
@@ -105,13 +105,19 @@ class LuminariaReparacionAdapter(
             val estado = LuminariaEstado.fromRaw(item.estado)
             val estadoTexto = if (estado == LuminariaEstado.PENDIENTE) "Pendiente" else "Reparada"
             val localizacionFormateada = formatLocalizacion(item.localizacion)
-            val puebloId = obtenerPuebloId(localizacionFormateada)
-            val puebloNombre = puebloId?.let { pueblosById[it] }?.takeIf { it.isNotBlank() } ?: "-"
+            val puebloCodigo = obtenerPuebloCodigo(localizacionFormateada)
+            val puebloId = puebloCodigo?.toIntOrNull()
+            val puebloNombre = puebloId?.let { pueblosById[it] }?.takeIf { it.isNotBlank() }
+            val puebloLabel = when {
+                puebloCodigo != null && puebloNombre != null -> "$puebloCodigo - $puebloNombre"
+                puebloCodigo != null -> puebloCodigo
+                else -> "-"
+            }
             val vehiculoPlaca = vehiculosById[item.vehiculoId]?.placa?.toString().orEmpty().ifBlank { "-" }
 
             binding.tvReparacionTitulo.text = "Localización $localizacionFormateada"
             binding.tvReparacionEstado.text = estadoTexto
-            binding.tvReparacionPueblo.text = "Pueblo: $puebloNombre"
+            binding.tvReparacionPueblo.text = "Pueblo: $puebloLabel"
 
             if (estado == LuminariaEstado.PENDIENTE) {
                 val cliente = item.cliente?.trim().orEmpty().ifBlank { "Sin datos" }

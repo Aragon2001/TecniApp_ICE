@@ -139,7 +139,7 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
         val vehiculo = placa.toLongOrNull()?.let { repository.obtenerVehiculoPorPlaca(it) }
         vehiculoPreferidoId = vehiculo?.id
         val rolNormalizado = usuario.rol?.trim().orEmpty()
-        val rolLower = rolNormalizado.lowercase()
+        val rolLower = normalizarRol(rolNormalizado)
         val nombre = buildString {
             usuario.nombre?.trim()?.takeIf { it.isNotBlank() }?.let { append(it) }
             val apellidos = usuario.apellidosCompletos?.trim().orEmpty()
@@ -149,8 +149,8 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
             }
         }.ifBlank { usuario.nombre ?: "" }
         _uiState.update { current ->
-            val esSupervisor = rolLower == "supervisor"
-            val esAdministrador = rolLower == "administrador"
+            val esSupervisor = rolLower == "supervisor" || rolLower.contains("supervis")
+            val esAdministrador = rolLower == "administrador" || rolLower.contains("admin")
             val puedeFiltrarVehiculo = esSupervisor || esAdministrador
             current.copy(
                 vehiculoUsuarioId = vehiculoPreferidoId,
@@ -540,6 +540,13 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
             .replace("\\p{M}+".toRegex(), "")
             .uppercase()
             .replace("[^A-Z0-9]".toRegex(), "")
+    }
+
+    private fun normalizarRol(raw: String): String {
+        val normalized = java.text.Normalizer.normalize(raw.trim(), java.text.Normalizer.Form.NFD)
+        return normalized
+            .replace("\\p{M}+".toRegex(), "")
+            .lowercase()
     }
 
     fun enviarMensaje(texto: String, esError: Boolean = false) {
