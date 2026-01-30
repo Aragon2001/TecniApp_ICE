@@ -17,11 +17,26 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.util.concurrent.TimeUnit
 import com.Arasoftsolutions.tecniapp_ice.Database.room.AppDatabase
+import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
+import com.Arasoftsolutions.tecniapp_ice.session.SessionManager
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseAuthInvalidUserException
+import kotlinx.coroutines.tasks.await
 
 
 class AveriasSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx, params) {
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
+        val auth = FirebaseAuth.getInstance()
+        val currentUser = auth.currentUser
+        if (currentUser != null) {
+            val reloadResult = runCatching { currentUser.reload().await() }
+            if (reloadResult.exceptionOrNull() is FirebaseAuthInvalidUserException) {
+                SessionManager.signOutAndClear(applicationContext)
+                return@withContext Result.success()
+            }
+        }
+
         runCatching {
             val db = AppDatabase.getInstance(applicationContext)
             val repo = AveriasRepository(db)
@@ -30,6 +45,11 @@ class AveriasSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorke
 
             // 2. Refresca Room desde Firebase cuando aplique
             repo.pullFromFirebaseOnce()
+
+            val uid = auth.currentUser?.uid
+            if (!uid.isNullOrBlank()) {
+                RoomRepository.getInstance(applicationContext).upsertUserFromFirebase(uid)
+            }
         }.onFailure { return@withContext Result.retry() }
         Result.success()
     }

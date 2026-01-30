@@ -4,6 +4,7 @@ import android.content.Context
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.*
 import com.Arasoftsolutions.tecniapp_ice.Database.sync.FirebaseSyncManager
 import com.Arasoftsolutions.tecniapp_ice.Database.sync.SubregionNormalizer
+import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -135,6 +136,9 @@ class   RoomRepository(context: Context) {
 
     suspend fun obtenerUsuario(uid: String): UserEntity? =
         db.usuarioDao().getByUid(uid)
+
+    fun observarUsuario(uid: String): Flow<UserEntity?> =
+        db.usuarioDao().observeByUid(uid)
 
     suspend fun saveUser(user: UserEntity) = withContext(Dispatchers.IO) {
         db.usuarioDao().upsert(user)
@@ -608,6 +612,13 @@ class   RoomRepository(context: Context) {
     suspend fun upsertUserFromFirebase(uid: String): UserEntity = withContext(Dispatchers.IO) {
         val user = firebase.obtenerUsuario(uid)
             ?: throw IllegalStateException("Usuario no encontrado en Firebase")
+        db.usuarioDao().upsert(user)
+        user
+    }
+
+    suspend fun refreshUsuarioActual(): UserEntity? = withContext(Dispatchers.IO) {
+        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return@withContext null
+        val user = firebase.obtenerUsuario(uid) ?: return@withContext null
         db.usuarioDao().upsert(user)
         user
     }
