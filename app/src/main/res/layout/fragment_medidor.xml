@@ -131,36 +131,49 @@
 
                         <com.google.android.material.chip.Chip
                             android:id="@+id/chipNumero"
+                             android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
                             style="@style/Tecni.Chip.Medidor"
                             tools:text="Número: 714" />
 
                         <com.google.android.material.chip.Chip
                             android:id="@+id/chipCliente"
+                             android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
                             style="@style/Tecni.Chip.Medidor"
                             tools:text="Cliente: GAS NACIONAL ZETA S.A." />
 
                         <com.google.android.material.chip.Chip
                             android:id="@+id/chipLocalizacion"
+                             android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
                             style="@style/Tecni.Chip.Medidor"
                             tools:text="Localización: 34095000114" />
 
                         <com.google.android.material.chip.Chip
-                            android:id="@+id/chipCalle"
+                            android:id="@+id/chipCalle" android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
                             style="@style/Tecni.Chip.Medidor"
                             tools:text="Calle: 950" />
 
                         <com.google.android.material.chip.Chip
                             android:id="@+id/chipPoste"
+                             android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
                             style="@style/Tecni.Chip.Medidor"
                             tools:text="Poste: 001" />
 
                         <com.google.android.material.chip.Chip
                             android:id="@+id/chipMetros"
+                             android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
                             style="@style/Tecni.Chip.Medidor"
                             tools:text="Metros: 14" />
 
                         <com.google.android.material.chip.Chip
                             android:id="@+id/chipPueblo"
+                             android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
                             style="@style/Tecni.Chip.Medidor"
                             tools:text="Pueblo: La Argentina" />
                     </com.google.android.material.chip.ChipGroup>

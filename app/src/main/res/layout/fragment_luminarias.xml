@@ -42,7 +42,7 @@
                             android:layout_height="match_parent"
                             android:padding="8dp"
                             android:src="@drawable/ic_menu_luminarias"
-                            android:tint="?attr/colorOnSurfaceVariant" />
+                            app:tint="?attr/colorOnSurfaceVariant" />
                     </com.google.android.material.card.MaterialCardView>
 
                     <TextView
@@ -73,7 +73,7 @@
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnImportarLuminariasExcel"
-                    style="@style/Widget.Material3.Button.Outlined"
+                    style="@style/Widget.Material3.Button"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
@@ -83,7 +83,7 @@
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnDescargarMachote"
-                    style="@style/Widget.Material3.Button.Outlined"
+                    style="@style/Widget.Material3.Button"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
@@ -93,7 +93,7 @@
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnEnviarMachoteCorreo"
-                    style="@style/Widget.Material3.Button.Outlined"
+                    style="@style/Widget.Material3.Button"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
@@ -215,7 +215,7 @@
                             android:layout_height="match_parent"
                             android:padding="8dp"
                             android:src="@drawable/ic_report_clock"
-                            android:tint="?attr/colorOnSurfaceVariant" />
+                            app:tint="?attr/colorOnSurfaceVariant" />
                     </com.google.android.material.card.MaterialCardView>
 
                     <TextView
@@ -279,7 +279,7 @@
                             android:layout_height="match_parent"
                             android:padding="8dp"
                             android:src="@drawable/ic_check"
-                            android:tint="?attr/colorOnSurfaceVariant" />
+                            app:tint="?attr/colorOnSurfaceVariant" />
                     </com.google.android.material.card.MaterialCardView>
 
                     <TextView

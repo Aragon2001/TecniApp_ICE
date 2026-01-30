@@ -793,7 +793,6 @@ Cliente: %4$s</string>
     <string name="inventario_confirmar_eliminar_no">Cancelar</string>
     <string name="inventario_error_seleccionar_camion">Selecciona un camión para cargar el inventario.</string>
     <string name="reportes_excel_col_codigo">Código</string>
-    <string name="reportes_excel_col_cantidad">Cantidad</string>
     <string name="reportes_excel_col_averias">Averías</string>
     <string name="reportes_correo_asunto">Reporte %1$s · %2$s</string>
     <string name="reportes_correo_saludo_generico">compañero ICE</string>
