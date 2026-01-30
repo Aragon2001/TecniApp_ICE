@@ -23,4 +23,10 @@ interface RegionDao {
 
     @Query("SELECT COUNT(*) FROM regiones")
     suspend fun count(): Int
+
+    @Query("DELETE FROM regiones WHERE id NOT IN (:ids)")
+    suspend fun eliminarFueraDeIds(ids: List<String>)
+
+    @Query("DELETE FROM regiones")
+    suspend fun limpiarTodo()
 }

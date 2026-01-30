@@ -22,4 +22,10 @@ interface SubregionDao {
 
     @Query("SELECT COUNT(*) FROM subregiones")
     suspend fun count(): Int
+
+    @Query("DELETE FROM subregiones WHERE id NOT IN (:ids)")
+    suspend fun eliminarFueraDeIds(ids: List<String>)
+
+    @Query("DELETE FROM subregiones")
+    suspend fun limpiarTodo()
 }

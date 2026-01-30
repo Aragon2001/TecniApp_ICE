@@ -47,8 +47,10 @@ import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.chip.Chip
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import java.text.DateFormat
 import java.util.Date
@@ -534,7 +536,7 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         )
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                val uid = auth.currentUser?.uid ?: throw IllegalStateException("Sesión no disponible")
+                val uid = requireActiveUser()
                 val subregion = withContext(Dispatchers.IO) {
                     roomRepository.obtenerUsuario(uid)?.subregion?.trim()
                         ?.takeIf { it.isNotEmpty() }
@@ -554,6 +556,11 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
                         AveriasSyncWorker.triggerNow(requireContext())
                         viewLifecycleOwner.lifecycleScope.launch {
                             dataStore.markManualSyncNow()
+                        }
+                        viewLifecycleOwner.lifecycleScope.launch {
+                            withContext(Dispatchers.IO) {
+                                roomRepository.refreshUsuarioActual()
+                            }
                         }
                         dismissSyncDialog()
                         Toast.makeText(requireContext(), R.string.settings_sync_triggered, Toast.LENGTH_SHORT).show()
@@ -593,7 +600,7 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         )
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                val uid = auth.currentUser?.uid ?: throw IllegalStateException("Sesión no disponible")
+                val uid = requireActiveUser()
                 val total = RoomRepository.SUBREGION_SYNC_STEPS + 3
                 var done = 0
                 var downloadedBytes = 0L
@@ -637,6 +644,19 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
                 setCacheClearInProgress(false)
             }
         }
+    }
+
+    private suspend fun requireActiveUser(): String {
+        val currentUser = auth.currentUser ?: throw IllegalStateException("Sesión no disponible")
+        val reloadResult = runCatching { currentUser.reload().await() }
+        if (reloadResult.exceptionOrNull() is FirebaseAuthInvalidUserException) {
+            if (isAdded) {
+                Toast.makeText(requireContext(), R.string.settings_session_expired, Toast.LENGTH_LONG).show()
+                signOut()
+            }
+            throw IllegalStateException("Usuario deshabilitado")
+        }
+        return currentUser.uid
     }
 
     private fun signOut() {
