@@ -35,4 +35,10 @@ interface MedidorDao {
 
     @Query("DELETE FROM medidores WHERE medidorNumber = :numero")
     suspend fun eliminarPorNumero(numero: String)
+
+    @Query("DELETE FROM medidores WHERE subregion = :subregionId COLLATE NOCASE")
+    suspend fun eliminarPorSubregion(subregionId: String)
+
+    @Query("DELETE FROM medidores WHERE medidorNumber NOT IN (:ids)")
+    suspend fun eliminarFueraDeIds(ids: List<String>)
 }
