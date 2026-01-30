@@ -55,7 +55,7 @@ class LuminariaReparacionAdapter(
         private val onDelete: (LuminariaReparacionEntity) -> Unit,
         private val onSelect: ((LuminariaReparacionEntity) -> Unit)?
     ) : RecyclerView.ViewHolder(binding.root) {
-        private val localizacionRegex = Regex("^(\\d{4})-(\\d{3})-(\\d{3})-(\\d{2})$")
+        private val localizacionRegex = Regex("^\\d{12}$")
 
         private fun formatCantidad(cantidad: Double): String {
             return if (cantidad % 1.0 == 0.0) {
@@ -71,17 +71,7 @@ class LuminariaReparacionAdapter(
             if (localizacionRegex.matches(trimmed)) return trimmed
             val digits = trimmed.filter(Char::isDigit)
             if (digits.isBlank()) return "-"
-            val maxDigits = digits.take(12)
-            val partePueblo = maxDigits.take(4)
-            val parteCalle = maxDigits.drop(4).take(3)
-            val partePoste = maxDigits.drop(7).take(3)
-            val parteMetro = maxDigits.drop(10).take(2)
-            return buildString {
-                append(partePueblo)
-                if (parteCalle.isNotBlank()) append("-").append(parteCalle)
-                if (partePoste.isNotBlank()) append("-").append(partePoste)
-                if (parteMetro.isNotBlank()) append("-").append(parteMetro)
-            }
+            return digits.take(12)
         }
 
         private fun obtenerPuebloCodigo(localizacion: String): String? {

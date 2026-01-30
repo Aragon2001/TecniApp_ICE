@@ -42,7 +42,7 @@
                             android:layout_height="match_parent"
                             android:padding="8dp"
                             android:src="@drawable/ic_menu_luminarias"
-                            app:tint="?attr/colorOnSurfaceVariant" />
+                            android:tint="?attr/colorOnSurfaceVariant" />
                     </com.google.android.material.card.MaterialCardView>
 
                     <TextView
@@ -215,7 +215,7 @@
                             android:layout_height="match_parent"
                             android:padding="8dp"
                             android:src="@drawable/ic_report_clock"
-                            app:tint="?attr/colorOnSurfaceVariant" />
+                            android:tint="?attr/colorOnSurfaceVariant" />
                     </com.google.android.material.card.MaterialCardView>
 
                     <TextView
@@ -279,7 +279,7 @@
                             android:layout_height="match_parent"
                             android:padding="8dp"
                             android:src="@drawable/ic_check"
-                            app:tint="?attr/colorOnSurfaceVariant" />
+                            android:tint="?attr/colorOnSurfaceVariant" />
                     </com.google.android.material.card.MaterialCardView>
 
                     <TextView
