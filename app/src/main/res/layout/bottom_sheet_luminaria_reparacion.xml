@@ -103,8 +103,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
                 android:icon="@drawable/ic_phone"
-                android:iconGravity="textStart"
-                android:iconPadding="8dp"
+
                 android:text="Llamar al contacto" />
         </LinearLayout>
 

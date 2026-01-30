@@ -45,8 +45,12 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
         database("https://tecniapp-ice-materiales.firebaseio.com/")
     }
 
-    private val dbInventario: DatabaseReference by lazy {
-        database("https://tecniapp-ice-inventario.firebaseio.com/").child("inventario")
+private val dbLuminarias: DatabaseReference by lazy {
+    database("https://tecniapp-ice-luminarias.firebaseio.com/")
+}
+
+      private val dbInventario: DatabaseReference by lazy {
+        database("https://tecniapp-ice-inventario.firebaseio.com/")
     }
 
     private val subregionNombreCache = mutableMapOf<String, String>()
@@ -57,6 +61,7 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
                 Log.e(TAG, "Error inicializando FirebaseDatabase", throwable)
                 throw IllegalStateException("No se pudo inicializar la base de datos en $url", throwable)
             }
+
     }
 
     private suspend fun resolveDatosGeneralesNode(vararg candidates: String): String {

@@ -4,6 +4,7 @@ import android.util.Log
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.AveriaEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.VehiculoKilometrajeEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.room.AppDatabase
+import com.Arasoftsolutions.tecniapp_ice.ui.admin.MapCoordinatePickerBottomSheet.Companion.TAG
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
@@ -31,7 +32,7 @@ class AveriasRepository(private val db: AppDatabase) {
     private val dao get() = db.averiaDao()
     private val kilometrajeDao get() = db.vehiculoKilometrajeDao()
     private val firebaseRef = FirebaseDatabase
-        .getInstance("https://tecniapp-ice-default-rtdb.firebaseio.com")
+        .getInstance("https://tecniapp-ice-averias.firebaseio.com/")
         .reference
         .child("averias")
 
@@ -152,11 +153,7 @@ class AveriasRepository(private val db: AppDatabase) {
         return n.split(" ").joinToString("") { titleCase(it) } // "Río Frío" -> "RioFrio"
     }
 
-    companion object {
-        private val DIACRITICS_REGEX = "\\p{InCombiningDiacriticalMarks}+".toRegex()
-        private val NON_ALNUM_SPACE_REGEX = "[^a-z0-9 ]".toRegex()
-        private val MULTI_SPACE_REGEX = "\\s+".toRegex()
-    }
+
 
     private fun mergeRemoteString(remote: String?, local: String?): String? {
         val trimmed = remote?.trim()
@@ -1005,6 +1002,8 @@ private fun AveriaEntity.toFirebaseAppPayload(): Map<String, Any?> = hashMapOf(
 
             if (removedIds.isNotEmpty()) {
                 dao.eliminarPorCaseIds(removedIds)
+            } else {
+
             }
         } catch (t: Throwable) {
             Log.e(TAG, "Firebase pull failed", t)
