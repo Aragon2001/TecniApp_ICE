@@ -137,6 +137,10 @@ class LuminariasFragment : Fragment() {
                     binding.progressLuminaria.isVisible = state.isProcessing
                     materialesCatalogo = state.materiales
                     tecnicosCatalogo = state.tecnicos
+                    val pueblosById = state.pueblos.associate { it.id to it.nombre }
+                    val vehiculosById = state.vehiculosAgencia.associateBy { it.id }
+                    reparacionesPendientesAdapter.updateCatalogs(pueblosById, vehiculosById)
+                    reparacionesReparadasAdapter.updateCatalogs(pueblosById, vehiculosById)
                     binding.btnRegistrarLuminaria.isVisible = state.puedeRegistrarReparacion
                     binding.btnImportarLuminariasExcel.isVisible = state.puedeImportarExcel
                     binding.btnDescargarMachote.isVisible = state.puedeDescargarMachote
@@ -307,7 +311,9 @@ class LuminariasFragment : Fragment() {
         val estadoUi = viewModel.uiState.value
         binding.tvTituloBottomSheet.text = titulo
         binding.groupDetalle.isVisible = mostrarDetalle || reparacion != null
-        binding.tvLocalizacionDetalle.text = reparacion?.localizacion?.let { "Localización #$it" } ?: "-"
+        binding.tvLocalizacionDetalle.text = reparacion?.localizacion?.let {
+            "Localización ${viewModel.normalizarLocalizacion(it)}"
+        } ?: "-"
         binding.btnGuardarReparacion.text = if (reparacion == null) {
             "Registrar reparación"
         } else {
@@ -445,9 +451,19 @@ class LuminariasFragment : Fragment() {
             }
         }
 
+        var isFormattingLocalizacion = false
         binding.etLocalizacion.doAfterTextChanged {
+            if (isFormattingLocalizacion) return@doAfterTextChanged
+            val rawText = it?.toString().orEmpty()
+            val formatted = viewModel.normalizarLocalizacion(rawText)
+            if (formatted.isNotBlank() && formatted != rawText) {
+                isFormattingLocalizacion = true
+                binding.etLocalizacion.setText(formatted)
+                binding.etLocalizacion.setSelection(formatted.length)
+                isFormattingLocalizacion = false
+            }
             if (reparacion == null) {
-                viewModel.actualizarLocalizacion(it?.toString().orEmpty())
+                viewModel.actualizarLocalizacion(formatted.ifBlank { rawText })
             }
             binding.tilLocalizacion.error = null
         }
