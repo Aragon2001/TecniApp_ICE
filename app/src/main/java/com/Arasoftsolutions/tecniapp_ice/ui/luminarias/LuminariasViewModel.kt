@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaReparacionEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.MaterialEntity
+import com.Arasoftsolutions.tecniapp_ice.Database.entities.PueblosEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.TecnicoEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.VehiculosEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.apellidosCompletos
@@ -29,6 +30,7 @@ data class LuminariaUiState(
     val reparacionesPendientes: List<LuminariaReparacionEntity> = emptyList(),
     val reparacionesReparadas: List<LuminariaReparacionEntity> = emptyList(),
     val vehiculosAgencia: List<VehiculosEntity> = emptyList(),
+    val pueblos: List<PueblosEntity> = emptyList(),
     val vehiculoUsuarioId: Int? = null,
     val vehiculoFiltroId: Int? = null,
     val vehiculoRegistroId: Int? = null,
@@ -62,7 +64,8 @@ data class LuminariaCatalogoState(
     val materiales: List<MaterialEntity>,
     val tecnicos: List<TecnicoEntity>,
     val reparaciones: List<LuminariaReparacionEntity>,
-    val vehiculos: List<VehiculosEntity>
+    val vehiculos: List<VehiculosEntity>,
+    val pueblos: List<PueblosEntity>
 )
 
 class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
@@ -78,7 +81,7 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
 
     private var reparacionesAgenciaCache: List<LuminariaReparacionEntity> = emptyList()
     private var vehiculoPreferidoId: Int? = null
-    private val localizacionRegex = Regex("^(\\d{4})-(\\d{3})-(\\d{2})-(\\d{2})$")
+    private val localizacionRegex = Regex("^(\\d{4})-(\\d{3})-(\\d{3})-(\\d{2})$")
 
     init {
         viewModelScope.launch {
@@ -89,10 +92,11 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
                 repository.observarMateriales(),
                 repository.observarTecnicos(),
                 repository.observarReparaciones(),
-                repository.observarVehiculosCatalogo()
-            ) { materiales, tecnicos, reparaciones, vehiculos ->
-                LuminariaCatalogoState(materiales, tecnicos, reparaciones, vehiculos)
-            }.collect { (materiales, tecnicos, reparaciones, vehiculos) ->
+                repository.observarVehiculosCatalogo(),
+                repository.observarTodosLosPueblos()
+            ) { materiales, tecnicos, reparaciones, vehiculos, pueblos ->
+                LuminariaCatalogoState(materiales, tecnicos, reparaciones, vehiculos, pueblos)
+            }.collect { (materiales, tecnicos, reparaciones, vehiculos, pueblos) ->
                 val agenciaUsuario = _uiState.value.agenciaUsuario?.trim().orEmpty()
                 val vehiculosPorId = vehiculos.associateBy { it.id }
                 val filtradasPorAgencia = if (agenciaUsuario.isBlank()) {
@@ -120,7 +124,8 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
                         tecnicos = tecnicos,
                         vehiculosAgencia = vehiculosAgencia,
                         reparacionesPendientes = pendientes,
-                        reparacionesReparadas = reparadas
+                        reparacionesReparadas = reparadas,
+                        pueblos = pueblos
                     )
                 }
             }
@@ -134,7 +139,7 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
         val vehiculo = placa.toLongOrNull()?.let { repository.obtenerVehiculoPorPlaca(it) }
         vehiculoPreferidoId = vehiculo?.id
         val rolNormalizado = usuario.rol?.trim().orEmpty()
-        val rolLower = rolNormalizado.lowercase()
+        val rolLower = normalizarRol(rolNormalizado)
         val nombre = buildString {
             usuario.nombre?.trim()?.takeIf { it.isNotBlank() }?.let { append(it) }
             val apellidos = usuario.apellidosCompletos?.trim().orEmpty()
@@ -144,8 +149,8 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
             }
         }.ifBlank { usuario.nombre ?: "" }
         _uiState.update { current ->
-            val esSupervisor = rolLower == "supervisor"
-            val esAdministrador = rolLower == "administrador"
+            val esSupervisor = rolLower == "supervisor" || rolLower.contains("supervis")
+            val esAdministrador = rolLower == "administrador" || rolLower.contains("admin")
             val puedeFiltrarVehiculo = esSupervisor || esAdministrador
             current.copy(
                 vehiculoUsuarioId = vehiculoPreferidoId,
@@ -537,6 +542,13 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
             .replace("[^A-Z0-9]".toRegex(), "")
     }
 
+    private fun normalizarRol(raw: String): String {
+        val normalized = java.text.Normalizer.normalize(raw.trim(), java.text.Normalizer.Form.NFD)
+        return normalized
+            .replace("\\p{M}+".toRegex(), "")
+            .lowercase()
+    }
+
     fun enviarMensaje(texto: String, esError: Boolean = false) {
         _mensaje.value = if (esError) LuminariaMensaje.Error(texto) else LuminariaMensaje.Exito(texto)
     }
@@ -554,9 +566,17 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
         if (localizacionRegex.matches(trimmed)) return trimmed
         val digits = trimmed.filter(Char::isDigit)
         if (digits.isBlank()) return ""
-        val padded = if (digits.length < 11) digits.padStart(11, '0') else digits
-        val finalDigits = padded.take(11)
-        return "${finalDigits.substring(0, 4)}-${finalDigits.substring(4, 7)}-${finalDigits.substring(7, 9)}-${finalDigits.substring(9, 11)}"
+        val maxDigits = digits.take(12)
+        val partePueblo = maxDigits.take(4)
+        val parteCalle = maxDigits.drop(4).take(3)
+        val partePoste = maxDigits.drop(7).take(3)
+        val parteMetro = maxDigits.drop(10).take(2)
+        return buildString {
+            append(partePueblo)
+            if (parteCalle.isNotBlank()) append("-").append(parteCalle)
+            if (partePoste.isNotBlank()) append("-").append(partePoste)
+            if (parteMetro.isNotBlank()) append("-").append(parteMetro)
+        }
     }
 
     suspend fun buscarMedidorPorLocalizacion(localizacion: String) =
