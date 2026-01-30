@@ -79,12 +79,22 @@ class Paso3Fragment : Fragment() {
 
         etID.doAfterTextChanged { text ->
             val cedula = cedulaKey(text?.toString().orEmpty())
-            if (cedula.length == 9) {
-                lookupPersonalData(cedula)
-            } else {
-                personalData = null
-                lastLookupCedula = null
-                clearNameFields()
+            when (cedula.length) {
+                9 -> {
+                    lockNameFields()
+                    lookupPersonalData(cedula)
+                }
+                12 -> {
+                    personalData = null
+                    lastLookupCedula = null
+                    unlockNameFields()
+                }
+                else -> {
+                    personalData = null
+                    lastLookupCedula = null
+                    clearNameFields()
+                    lockNameFields()
+                }
             }
         }
 
@@ -108,11 +118,24 @@ class Paso3Fragment : Fragment() {
         // Validación local
         if (cedKey.isBlank()) return showFieldError(tvIDError, "Por favor, ingresa tu cédula.")
         if (!cedKey.all { it.isDigit() }) return showFieldError(tvIDError, "La cédula debe contener solo números.")
-        if (cedKey.length != 9) return showFieldError(tvIDError, "La cédula debe tener exactamente 9 dígitos.")
+        if (cedKey.length != 9 && cedKey.length != 12) {
+            return showFieldError(tvIDError, "La cédula debe tener 9 o 12 dígitos.")
+        }
 
-        if (personalData == null || lastLookupCedula != cedKey) {
-            showFieldError(tvIDError, "Primero valida la cédula para completar los datos.")
-            return
+        if (cedKey.length == 9) {
+            if (personalData == null || lastLookupCedula != cedKey) {
+                showFieldError(tvIDError, "Primero valida la cédula para completar los datos.")
+                return
+            }
+        } else {
+            val nombre = etFirstName.text?.toString()?.trim().orEmpty()
+            val apellido1 = etLastName.text?.toString()?.trim().orEmpty()
+            val apellido2 = etLastName2.text?.toString()?.trim().orEmpty()
+            if (nombre.isBlank()) return showFieldError(tvFirstNameError, "Por favor, ingresa tu nombre.")
+            if (apellido1.isBlank()) return showFieldError(tvLastNameError, "Por favor, ingresa tu primer apellido.")
+            if (apellido2.isBlank()) return showFieldError(tvLastNameError2, "Por favor, ingresa tu segundo apellido.")
+            personalData = PersonalData(nombre, apellido1, apellido2)
+            lastLookupCedula = cedKey
         }
 
         // Verificar unicidad de cédula usando /idcards/{cedulaKey} (patrón PRO)
@@ -163,6 +186,12 @@ class Paso3Fragment : Fragment() {
         etFirstName.isEnabled = false
         etLastName.isEnabled = false
         etLastName2.isEnabled = false
+    }
+
+    private fun unlockNameFields() {
+        etFirstName.isEnabled = true
+        etLastName.isEnabled = true
+        etLastName2.isEnabled = true
     }
 
     private fun clearNameFields() {

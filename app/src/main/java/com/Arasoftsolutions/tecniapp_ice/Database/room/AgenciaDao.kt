@@ -27,4 +27,13 @@ interface AgenciaDao {
 
     @Query("SELECT COUNT(*) FROM agencias")
     suspend fun count(): Int
+
+    @Query("DELETE FROM agencias WHERE subregion = :subregionId COLLATE NOCASE")
+    suspend fun eliminarPorSubregion(subregionId: String)
+
+    @Query("DELETE FROM agencias WHERE id NOT IN (:ids)")
+    suspend fun eliminarFueraDeIds(ids: List<String>)
+
+    @Query("DELETE FROM agencias")
+    suspend fun limpiarTodo()
 }
