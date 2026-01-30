@@ -412,6 +412,7 @@ Cliente: %4$s</string>
     <string name="settings_sync_in_progress_title">Sincronizando datos</string>
     <string name="settings_sync_in_progress_message">Sincronizando con la base global. Esto puede tardar unos segundos…</string>
     <string name="settings_sync_in_progress_button">Sincronizando…</string>
+    <string name="settings_session_expired">Tu sesión ya no es válida. Vuelve a iniciar sesión.</string>
     <string name="settings_section_location">Localización y mapas</string>
     <string name="settings_gps_toggle">Activar soporte GPS desde TecniApp</string>
     <string name="settings_gps_summary">Guarda una preferencia local para habilitar el uso de ubicación en los módulos que la necesiten.</string>

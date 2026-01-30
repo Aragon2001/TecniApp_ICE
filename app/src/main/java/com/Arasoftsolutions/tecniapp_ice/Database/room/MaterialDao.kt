@@ -21,4 +21,10 @@ interface MaterialDao {
 
     @Query("SELECT codigo FROM materiales WHERE codigo IN (:codigos)")
     suspend fun obtenerCodigos(codigos: List<String>): List<String>
+
+    @Query("DELETE FROM materiales WHERE codigo NOT IN (:codigos)")
+    suspend fun eliminarFueraDeCodigos(codigos: List<String>)
+
+    @Query("DELETE FROM materiales")
+    suspend fun limpiarTodo()
 }
