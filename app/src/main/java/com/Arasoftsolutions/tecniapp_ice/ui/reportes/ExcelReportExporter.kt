@@ -2,7 +2,14 @@ package com.Arasoftsolutions.tecniapp_ice.ui.reportes
 
 import android.content.Context
 import com.Arasoftsolutions.tecniapp_ice.R
-import org.apache.poi.ss.usermodel.*
+import org.apache.poi.ss.usermodel.BorderStyle
+import org.apache.poi.ss.usermodel.CellStyle
+import org.apache.poi.ss.usermodel.FillPatternType
+import org.apache.poi.ss.usermodel.HorizontalAlignment
+import org.apache.poi.ss.usermodel.IndexedColors
+import org.apache.poi.ss.usermodel.Sheet
+import org.apache.poi.ss.usermodel.VerticalAlignment
+import org.apache.poi.ss.usermodel.Workbook
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
 
 object ExcelReportExporter {
@@ -21,28 +28,24 @@ object ExcelReportExporter {
         val workbook = XSSFWorkbook()
         val headerStyle = createHeaderStyle(workbook)
 
-        // Hoja de resumen
-        addResumenSheet(workbook, context, payload.resumen, payload.rango)
+        addResumenSheet(workbook, context, payload.tipo, payload.resumen, payload.rango)
 
-        // Hojas según tipo de reporte
         when (payload.data) {
-            is ReportExportData.Averias ->
-                addAveriasSheet(context, workbook, headerStyle, payload.data.items)
-
-            is ReportExportData.MaterialesPorAveria ->
-                addMaterialesPorAveriaSheet(context, workbook, headerStyle, payload.data.items)
-
-            is ReportExportData.MaterialesTotales ->
-                addMaterialesTotalesSheet(context, workbook, headerStyle, payload.data.items)
-
-            is ReportExportData.LuminariasReparadas ->
-                addLuminariasReparadasSheet(context, workbook, headerStyle, payload.data.items)
+            is ReportExportData.MiResumen ->
+                addMiResumenSheet(context, workbook, headerStyle, payload.data.items)
+            is ReportExportData.MisAverias ->
+                addMisAveriasSheet(context, workbook, headerStyle, payload.data.items)
+            is ReportExportData.MisLuminarias ->
+                addMisLuminariasSheet(context, workbook, headerStyle, payload.data.items)
+            is ReportExportData.MiInventario ->
+                addMiInventarioSheets(context, workbook, headerStyle, payload.data)
+            is ReportExportData.MiBitacora ->
+                addMiBitacoraSheets(context, workbook, headerStyle, payload.data)
         }
 
         return workbook
     }
 
-    // ---- Estilo de encabezados ----
     private fun createHeaderStyle(workbook: Workbook): CellStyle {
         val style = workbook.createCellStyle()
         val font = workbook.createFont()
@@ -60,71 +63,85 @@ object ExcelReportExporter {
         return style
     }
 
-    // ---- Hoja de resumen ----
     private fun addResumenSheet(
         workbook: Workbook,
         context: Context,
+        tipo: ReportType,
         resumen: ResumenTotales?,
         rango: String
     ) {
-        val sheet = workbook.createSheet(
-            context.getString(R.string.reportes_excel_resumen_sheet)
-        )
+        val sheet = workbook.createSheet(context.getString(R.string.reportes_excel_resumen_sheet))
         var rowIndex = 0
 
-        val rangoRow = sheet.createRow(rowIndex++)
-        rangoRow.createCell(0).setCellValue(
-            context.getString(R.string.reportes_excel_resumen_rango)
-        )
-        rangoRow.createCell(1).setCellValue(rango)
+        sheet.createRow(rowIndex++).apply {
+            createCell(0).setCellValue(context.getString(R.string.reportes_excel_resumen_tipo))
+            createCell(1).setCellValue(context.getString(tipo.titleRes))
+        }
+        sheet.createRow(rowIndex++).apply {
+            createCell(0).setCellValue(context.getString(R.string.reportes_excel_resumen_rango))
+            createCell(1).setCellValue(rango)
+        }
 
         if (resumen != null) {
             sheet.createRow(rowIndex++).apply {
-                createCell(0).setCellValue(
-                    context.getString(R.string.reportes_excel_resumen_total_averias)
-                )
+                createCell(0).setCellValue(context.getString(R.string.reportes_excel_resumen_total_averias))
                 createCell(1).setCellValue(resumen.totalAverias.toDouble())
             }
             sheet.createRow(rowIndex++).apply {
-                createCell(0).setCellValue(
-                    context.getString(R.string.reportes_excel_resumen_total_materiales)
-                )
+                createCell(0).setCellValue(context.getString(R.string.reportes_excel_resumen_total_materiales))
                 createCell(1).setCellValue(resumen.totalMateriales.toDouble())
             }
             sheet.createRow(rowIndex).apply {
-                createCell(0).setCellValue(
-                    context.getString(R.string.reportes_excel_resumen_total_codigos)
-                )
+                createCell(0).setCellValue(context.getString(R.string.reportes_excel_resumen_total_codigos))
                 createCell(1).setCellValue(resumen.totalMaterialesDistintos.toDouble())
             }
         } else {
             sheet.createRow(rowIndex).apply {
-                createCell(0).setCellValue(
-                    context.getString(R.string.reportes_excel_resumen_sin_datos)
-                )
+                createCell(0).setCellValue(context.getString(R.string.reportes_excel_resumen_sin_datos))
             }
         }
 
         autosize(sheet, 2)
     }
 
-    // ---- Hoja de Averías ----
-    private fun addAveriasSheet(
+    private fun addMiResumenSheet(
         context: Context,
         workbook: Workbook,
         headerStyle: CellStyle,
-        items: List<AveriaReportItem>
+        items: List<ResumenKpiItem>
     ) {
-        val sheet = workbook.createSheet(
-            context.getString(R.string.reportes_excel_averias_sheet)
+        val sheet = workbook.createSheet(context.getString(R.string.reportes_excel_mi_resumen_sheet))
+        val headers = listOf(
+            context.getString(R.string.reportes_excel_col_kpi),
+            context.getString(R.string.reportes_excel_col_valor),
+            context.getString(R.string.reportes_excel_col_detalle)
         )
+
+        var rowIndex = createHeader(sheet, headerStyle, headers)
+        items.forEach { item ->
+            val row = sheet.createRow(rowIndex++)
+            row.createCell(0).setCellValue(item.titulo)
+            row.createCell(1).setCellValue(item.valor)
+            row.createCell(2).setCellValue(item.detalle.orEmpty())
+        }
+
+        autosize(sheet, headers.size)
+    }
+
+    private fun addMisAveriasSheet(
+        context: Context,
+        workbook: Workbook,
+        headerStyle: CellStyle,
+        items: List<MisAveriaReportItem>
+    ) {
+        val sheet = workbook.createSheet(context.getString(R.string.reportes_excel_mis_averias_sheet))
         val headers = listOf(
             context.getString(R.string.reportes_excel_col_case),
-            context.getString(R.string.reportes_excel_col_fecha),
-            context.getString(R.string.reportes_excel_col_agencia),
+            context.getString(R.string.reportes_excel_col_nise),
+            context.getString(R.string.reportes_excel_col_ubicacion),
             context.getString(R.string.reportes_excel_col_estado),
-            context.getString(R.string.reportes_excel_col_atendido),
-            context.getString(R.string.reportes_excel_col_vehiculo),
+            context.getString(R.string.reportes_excel_col_fecha_reporte),
+            context.getString(R.string.reportes_excel_col_fecha_atencion),
             context.getString(R.string.reportes_excel_col_material_resumen),
             context.getString(R.string.reportes_excel_col_material_total)
         )
@@ -133,11 +150,11 @@ object ExcelReportExporter {
         items.forEach { item ->
             val row = sheet.createRow(rowIndex++)
             row.createCell(0).setCellValue(item.caseId)
-            row.createCell(1).setCellValue(item.fechaTexto)
-            row.createCell(2).setCellValue(item.agencia)
+            row.createCell(1).setCellValue(item.nise)
+            row.createCell(2).setCellValue(item.ubicacion)
             row.createCell(3).setCellValue(item.estado)
-            row.createCell(4).setCellValue(item.atendidoPor)
-            row.createCell(5).setCellValue(item.vehiculo.orEmpty())
+            row.createCell(4).setCellValue(item.fechaReporte)
+            row.createCell(5).setCellValue(item.fechaAtencion)
             row.createCell(6).setCellValue(item.materialesResumen)
             row.createCell(7).setCellValue(item.materialesCantidad.toDouble())
         }
@@ -145,116 +162,133 @@ object ExcelReportExporter {
         autosize(sheet, headers.size)
     }
 
-    // ---- Hoja Materiales por Avería ----
-    private fun addMaterialesPorAveriaSheet(
+    private fun addMisLuminariasSheet(
         context: Context,
         workbook: Workbook,
         headerStyle: CellStyle,
-        items: List<MaterialPorAveriaReportItem>
+        items: List<MisLuminariaReportItem>
     ) {
-        val sheet = workbook.createSheet(
-            context.getString(R.string.reportes_excel_materiales_por_averia_sheet)
-        )
+        val sheet = workbook.createSheet(context.getString(R.string.reportes_excel_mis_luminarias_sheet))
         val headers = listOf(
-            context.getString(R.string.reportes_excel_col_case),
+            context.getString(R.string.reportes_excel_col_localizacion),
+            context.getString(R.string.reportes_excel_col_estado),
             context.getString(R.string.reportes_excel_col_fecha),
-            context.getString(R.string.reportes_excel_col_agencia),
-            context.getString(R.string.reportes_excel_col_codigo),
-            context.getString(R.string.reportes_excel_col_descripcion),
-            context.getString(R.string.reportes_excel_col_cantidad)
+            context.getString(R.string.reportes_excel_col_vehiculo),
+            context.getString(R.string.reportes_excel_col_comunidad),
+            context.getString(R.string.reportes_excel_col_material_resumen)
         )
 
         var rowIndex = createHeader(sheet, headerStyle, headers)
         items.forEach { item ->
-            if (item.materiales.isEmpty()) {
-                val row = sheet.createRow(rowIndex++)
-                row.createCell(0).setCellValue(item.caseId)
-                row.createCell(1).setCellValue(item.fechaTexto)
-                row.createCell(2).setCellValue(item.agencia)
-                row.createCell(3).setCellValue("")
-                row.createCell(4).setCellValue("")
-                row.createCell(5).setCellValue(0.0)
-            } else {
-                item.materiales.forEach { material ->
-                    val row = sheet.createRow(rowIndex++)
-                    row.createCell(0).setCellValue(item.caseId)
-                    row.createCell(1).setCellValue(item.fechaTexto)
-                    row.createCell(2).setCellValue(item.agencia)
-                    row.createCell(3).setCellValue(material.codigo)
-                    row.createCell(4).setCellValue(material.descripcion)
-                    row.createCell(5).setCellValue(material.cantidad.toDouble())
-                }
-            }
+            val row = sheet.createRow(rowIndex++)
+            row.createCell(0).setCellValue(item.localizacion)
+            row.createCell(1).setCellValue(item.estado)
+            row.createCell(2).setCellValue(item.fecha)
+            row.createCell(3).setCellValue(item.vehiculo)
+            row.createCell(4).setCellValue(item.comunidad)
+            row.createCell(5).setCellValue(item.materialesResumen)
         }
 
         autosize(sheet, headers.size)
     }
 
-    // ---- Hoja Materiales Totales ----
-    private fun addMaterialesTotalesSheet(
+    private fun addMiInventarioSheets(
         context: Context,
         workbook: Workbook,
         headerStyle: CellStyle,
-        items: List<MaterialTotalItem>
+        data: ReportExportData.MiInventario
     ) {
-        val sheet = workbook.createSheet(
-            context.getString(R.string.reportes_excel_materiales_totales_sheet)
-        )
+        val sheet = workbook.createSheet(context.getString(R.string.reportes_excel_mi_inventario_sheet))
         val headers = listOf(
             context.getString(R.string.reportes_excel_col_codigo),
             context.getString(R.string.reportes_excel_col_descripcion),
-            context.getString(R.string.reportes_excel_col_material_total),
-            context.getString(R.string.reportes_excel_col_averias)
+            context.getString(R.string.reportes_excel_col_cantidad),
+            context.getString(R.string.reportes_excel_col_unidad)
         )
 
         var rowIndex = createHeader(sheet, headerStyle, headers)
-        items.forEach { item ->
+        data.generales.forEach { item ->
             val row = sheet.createRow(rowIndex++)
             row.createCell(0).setCellValue(item.codigo)
             row.createCell(1).setCellValue(item.descripcion)
-            row.createCell(2).setCellValue(item.total.toDouble())
-            row.createCell(3).setCellValue(item.averias.toDouble())
+            row.createCell(2).setCellValue(item.cantidad)
+            row.createCell(3).setCellValue(item.unidad)
         }
 
         autosize(sheet, headers.size)
+
+        val criticosSheet = workbook.createSheet(context.getString(R.string.reportes_excel_mi_inventario_critico_sheet))
+        rowIndex = createHeader(criticosSheet, headerStyle, headers)
+        data.criticos.forEach { item ->
+            val row = criticosSheet.createRow(rowIndex++)
+            row.createCell(0).setCellValue(item.codigo)
+            row.createCell(1).setCellValue(item.descripcion)
+            row.createCell(2).setCellValue(item.cantidad)
+            row.createCell(3).setCellValue(item.unidad)
+        }
+        autosize(criticosSheet, headers.size)
+
+        val movimientosSheet = workbook.createSheet(context.getString(R.string.reportes_excel_mi_inventario_mov_sheet))
+        movimientosSheet.createRow(0).apply {
+            createCell(0).setCellValue(context.getString(R.string.reportes_excel_col_mov_entradas))
+            createCell(1).setCellValue(data.movimientos.entradas)
+        }
+        movimientosSheet.createRow(1).apply {
+            createCell(0).setCellValue(context.getString(R.string.reportes_excel_col_mov_salidas))
+            createCell(1).setCellValue(data.movimientos.salidas)
+        }
+        movimientosSheet.createRow(2).apply {
+            createCell(0).setCellValue(context.getString(R.string.reportes_excel_col_mov_neto))
+            createCell(1).setCellValue(data.movimientos.neto)
+        }
+        autosize(movimientosSheet, 2)
     }
 
-    // ---- Hoja Luminarias Reparadas ----
-    private fun addLuminariasReparadasSheet(
+    private fun addMiBitacoraSheets(
         context: Context,
         workbook: Workbook,
         headerStyle: CellStyle,
-        items: List<LuminariaReparadaReportItem>
+        data: ReportExportData.MiBitacora
     ) {
-        val sheet = workbook.createSheet(
-            context.getString(R.string.reportes_excel_luminarias_sheet)
-        )
-        val headers = listOf(
-            context.getString(R.string.reportes_excel_col_fecha),
-            context.getString(R.string.reportes_excel_col_localizacion),
-            context.getString(R.string.reportes_excel_col_materiales),
-            context.getString(R.string.reportes_excel_col_cantidad),
-            context.getString(R.string.reportes_excel_col_estado),
-            context.getString(R.string.reportes_excel_col_ejecutor),
-            context.getString(R.string.reportes_excel_col_vehiculo)
-        )
-
-        var rowIndex = createHeader(sheet, headerStyle, headers)
-        items.forEach { item ->
-            val row = sheet.createRow(rowIndex++)
-            row.createCell(0).setCellValue(item.fechaTexto)
-            row.createCell(1).setCellValue(item.localizacion)
-            row.createCell(2).setCellValue(item.materialesTexto)
-            row.createCell(3).setCellValue(item.cantidadTotal)
-            row.createCell(4).setCellValue(item.estadoTexto)
-            row.createCell(5).setCellValue(item.ejecutorTexto)
-            row.createCell(6).setCellValue(item.vehiculoTexto)
+        val resumenSheet = workbook.createSheet(context.getString(R.string.reportes_excel_mi_bitacora_resumen_sheet))
+        resumenSheet.createRow(0).apply {
+            createCell(0).setCellValue(context.getString(R.string.reportes_excel_col_horas))
+            createCell(1).setCellValue(data.resumen.horasTrabajadas)
         }
+        resumenSheet.createRow(1).apply {
+            createCell(0).setCellValue(context.getString(R.string.reportes_excel_col_kilometros))
+            createCell(1).setCellValue(data.resumen.kilometros)
+        }
+        resumenSheet.createRow(2).apply {
+            createCell(0).setCellValue(context.getString(R.string.reportes_excel_col_averias))
+            createCell(1).setCellValue(data.resumen.averiasAtendidas.toDouble())
+        }
+        resumenSheet.createRow(3).apply {
+            createCell(0).setCellValue(context.getString(R.string.reportes_excel_col_luminarias))
+            createCell(1).setCellValue(data.resumen.luminariasReparadas.toDouble())
+        }
+        autosize(resumenSheet, 2)
 
-        autosize(sheet, headers.size)
+        val detallesSheet = workbook.createSheet(context.getString(R.string.reportes_excel_mi_bitacora_sheet))
+        val headers = listOf(
+            context.getString(R.string.reportes_excel_col_tipo),
+            context.getString(R.string.reportes_excel_col_referencia),
+            context.getString(R.string.reportes_excel_col_fecha),
+            context.getString(R.string.reportes_excel_col_descripcion),
+            context.getString(R.string.reportes_excel_col_cantidad)
+        )
+        var rowIndex = createHeader(detallesSheet, headerStyle, headers)
+        data.eventos.forEach { item ->
+            val row = detallesSheet.createRow(rowIndex++)
+            row.createCell(0).setCellValue(item.tipo)
+            row.createCell(1).setCellValue(item.referencia)
+            row.createCell(2).setCellValue(item.fecha)
+            row.createCell(3).setCellValue(item.descripcion)
+            row.createCell(4).setCellValue(item.cantidad)
+        }
+        autosize(detallesSheet, headers.size)
     }
 
-    // ---- Encabezados ----
     private fun createHeader(sheet: Sheet, headerStyle: CellStyle, headers: List<String>): Int {
         val headerRow = sheet.createRow(0)
         headers.forEachIndexed { index, title ->
@@ -265,11 +299,10 @@ object ExcelReportExporter {
         return 1
     }
 
-    // ---- Ajuste manual de columnas ----
     private fun autosize(sheet: Sheet, numColumns: Int) {
         for (i in 0 until numColumns) {
             try {
-                sheet.setColumnWidth(i, 20 * 256) // ancho fijo (20 caracteres aprox.)
+                sheet.setColumnWidth(i, 20 * 256)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
