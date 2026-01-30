@@ -1,33 +1,35 @@
 package com.Arasoftsolutions.tecniapp_ice.ui.reportes
 
 import android.app.Application
-import android.util.Log
 import android.text.TextUtils
+import android.util.Log
 import androidx.annotation.StringRes
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.google.firebase.functions.FirebaseFunctions
-import com.google.firebase.storage.FirebaseStorage
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.AveriaEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.InventarioConVehiculo
+import com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaReparacionEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.MaterialEntity
+import com.Arasoftsolutions.tecniapp_ice.Database.entities.UserEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.room.AppDatabase
+import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
 import com.Arasoftsolutions.tecniapp_ice.R
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.MaterialUso
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.MaterialesSerializer
-import com.Arasoftsolutions.tecniapp_ice.ui.reportes.ExcelReportExporter
 import com.Arasoftsolutions.tecniapp_ice.ui.reportes.ExcelReportExporter.ExportPayload
-import com.Arasoftsolutions.tecniapp_ice.ui.reportes.ExcelReportExporter.MIME_TYPE_XLSX
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.functions.FirebaseFunctions
+import com.google.firebase.storage.FirebaseStorage
 import java.io.ByteArrayOutputStream
+import java.text.DecimalFormat
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import kotlin.math.absoluteValue
 import kotlinx.coroutines.Dispatchers
-import kotlin.math.roundToInt
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -37,11 +39,10 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
-import java.text.DecimalFormat
+import kotlinx.coroutines.runBlocking
 
 private val functions by lazy { FirebaseFunctions.getInstance() }
 private val storage by lazy { FirebaseStorage.getInstance() }
-
 
 private data class AveriaReporteInterno(
     val entity: AveriaEntity,
@@ -56,42 +57,74 @@ private data class MaterialAcumulado(
     val averias: MutableSet<String>
 )
 
+private data class UserContext(
+    val user: UserEntity?,
+    val vehiculoId: Int?,
+    val placaVehiculo: String?,
+    val nombres: Set<String>
+)
+
 enum class ReportType(@StringRes val titleRes: Int, val fileNameKey: String) {
-    AVERIAS(R.string.reportes_chip_averias, "averias"),
-    MATERIALES_POR_AVERIA(R.string.reportes_chip_material_por_averia, "material_por_averia"),
-    MATERIALES_TOTALES(R.string.reportes_chip_material_total, "material_total"),
-    LUMINARIAS_REPARADAS(R.string.reportes_chip_luminarias, "luminarias_reparadas")
+    MI_RESUMEN(R.string.reportes_tipo_mi_resumen, "mi_resumen"),
+    MIS_AVERIAS(R.string.reportes_tipo_mis_averias, "mis_averias"),
+    MIS_LUMINARIAS(R.string.reportes_tipo_mis_luminarias, "mis_luminarias"),
+    MI_INVENTARIO(R.string.reportes_tipo_mi_inventario, "mi_inventario"),
+    MI_BITACORA(R.string.reportes_tipo_mi_bitacora, "mi_bitacora")
 }
 
-data class AveriaReportItem(
+data class ResumenKpiItem(
+    val titulo: String,
+    val valor: String,
+    val detalle: String? = null
+)
+
+data class MisAveriaReportItem(
     val caseId: String,
-    val fechaTexto: String,
-    val agencia: String,
+    val nise: String,
+    val ubicacion: String,
     val estado: String,
-    val atendidoPor: String,
-    val vehiculo: String?,
-    val materialesResumen: String,
+    val fechaReporte: String,
+    val fechaAtencion: String,
     val materialesCantidad: Int,
-    val tieneMateriales: Boolean
+    val materialesResumen: String
 )
 
-data class MaterialPorAveriaReportItem(
-    val caseId: String,
-    val fechaTexto: String,
-    val agencia: String,
-    val vehiculo: String?,
-    val materiales: List<MaterialUso>,
-    val materialesDetalle: List<MaterialDetalleReportItem>,
-    val resumen: String,
-    val tieneMateriales: Boolean
+data class MisLuminariaReportItem(
+    val localizacion: String,
+    val estado: String,
+    val fecha: String,
+    val vehiculo: String,
+    val comunidad: String,
+    val materialesResumen: String
 )
 
-data class MaterialDetalleReportItem(
+data class InventarioReportItem(
     val codigo: String,
     val descripcion: String,
-    val cantidad: Int,
-    val existenciaActual: Double,
-    val existenciaTexto: String
+    val cantidad: Double,
+    val unidad: String
+)
+
+data class InventarioMovimientoResumen(
+    val entradas: Double,
+    val salidas: Double,
+    val neto: Double
+)
+
+data class BitacoraResumen(
+    val horasTrabajadas: String,
+    val kilometros: String,
+    val averiasAtendidas: Int,
+    val luminariasReparadas: Int,
+    val materialTop: List<MaterialTotalItem>
+)
+
+data class BitacoraEventItem(
+    val tipo: String,
+    val referencia: String,
+    val fecha: String,
+    val descripcion: String,
+    val cantidad: String
 )
 
 data class MaterialTotalItem(
@@ -101,19 +134,6 @@ data class MaterialTotalItem(
     val averias: Int,
     val existenciaActual: Double,
     val existenciaTexto: String
-)
-
-data class LuminariaReparadaReportItem(
-    val id: Long,
-    val fechaTexto: String,
-    val localizacion: String,
-    val localizacionTexto: String,
-    val materialesTexto: String,
-    val cantidadTotal: Double,
-    val cantidadTexto: String,
-    val estadoTexto: String,
-    val ejecutorTexto: String,
-    val vehiculoTexto: String
 )
 
 data class ReportSectionState<T>(
@@ -129,39 +149,46 @@ data class ResumenTotales(
 )
 
 sealed class ReportExportData {
-    data class Averias(val items: List<AveriaReportItem>) : ReportExportData()
-    data class MaterialesPorAveria(val items: List<MaterialPorAveriaReportItem>) : ReportExportData()
-    data class MaterialesTotales(val items: List<MaterialTotalItem>) : ReportExportData()
-    data class LuminariasReparadas(val items: List<LuminariaReparadaReportItem>) : ReportExportData()
+    data class MiResumen(val items: List<ResumenKpiItem>) : ReportExportData()
+    data class MisAverias(val items: List<MisAveriaReportItem>) : ReportExportData()
+    data class MisLuminarias(val items: List<MisLuminariaReportItem>) : ReportExportData()
+    data class MiInventario(
+        val criticos: List<InventarioReportItem>,
+        val generales: List<InventarioReportItem>,
+        val movimientos: InventarioMovimientoResumen
+    ) : ReportExportData()
+
+    data class MiBitacora(
+        val resumen: BitacoraResumen,
+        val eventos: List<BitacoraEventItem>
+    ) : ReportExportData()
 }
 
 data class ReportesUiState(
     val fechaInicio: LocalDate,
     val fechaFin: LocalDate,
     val rangoTexto: String,
-    val reporteSeleccionado: ReportType = ReportType.AVERIAS,
+    val reporteSeleccionado: ReportType = ReportType.MI_RESUMEN,
     val resumen: ResumenTotales? = null,
     val isDefaultRange: Boolean = false,
     val isGlobalLoading: Boolean = false,
     val isEmailSending: Boolean = false,
-    val averiasState: ReportSectionState<AveriaReportItem> = ReportSectionState(),
-    val materialesPorAveriaState: ReportSectionState<MaterialPorAveriaReportItem> = ReportSectionState(),
-    val materialesTotalesState: ReportSectionState<MaterialTotalItem> = ReportSectionState(),
-    val luminariasState: ReportSectionState<LuminariaReparadaReportItem> = ReportSectionState()
+    val resumenState: ReportSectionState<ResumenKpiItem> = ReportSectionState(),
+    val misAveriasState: ReportSectionState<MisAveriaReportItem> = ReportSectionState(),
+    val misLuminariasState: ReportSectionState<MisLuminariaReportItem> = ReportSectionState(),
+    val miInventarioState: ReportSectionState<InventarioReportItem> = ReportSectionState(),
+    val miInventarioCriticoState: ReportSectionState<InventarioReportItem> = ReportSectionState(),
+    val miBitacoraState: ReportSectionState<BitacoraEventItem> = ReportSectionState(),
+    val miBitacoraResumen: BitacoraResumen? = null,
+    val miInventarioMovimientos: InventarioMovimientoResumen? = null
 )
 
 private data class DatosBase(
     val averias: List<AveriaReporteInterno>,
     val materialesTotales: List<MaterialTotalItem>,
     val totalMateriales: Int,
-    val existenciasActuales: Map<String, Double>
-)
-
-private data class DatosLuminarias(
-    val reparaciones: List<LuminariaReparacionEntity>,
-    val totalMateriales: Double,
-    val codigosDistintos: Int,
-    val existenciasActuales: Map<String, Double>
+    val existenciasActuales: Map<String, Double>,
+    val pendientes: List<AveriaEntity>
 )
 
 class ReportesViewModel(app: Application) : AndroidViewModel(app) {
@@ -172,6 +199,7 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private val database = AppDatabase.getInstance(app)
+    private val repository = RoomRepository.getInstance(app)
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
 
     private val locale: Locale = Locale.getDefault()
@@ -244,45 +272,56 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             try {
                 when (tipo) {
-                    ReportType.AVERIAS -> {
-                        val base = obtenerDatosBase(state.fechaInicio, state.fechaFin)
-                        val resumen = ResumenTotales(
-                            totalAverias = base.averias.size,
-                            totalMateriales = base.totalMateriales,
-                            totalMaterialesDistintos = base.materialesTotales.size
+                    ReportType.MI_RESUMEN -> {
+                        val resumen = construirResumenKpis(state.fechaInicio, state.fechaFin)
+                        val resumenCards = ResumenTotales(
+                            totalAverias = resumen.firstOrNull {
+                                it.titulo == getString(R.string.reportes_kpi_averias_atendidas)
+                            }?.valor?.toIntOrNull() ?: 0,
+                            totalMateriales = resumen.firstOrNull {
+                                it.titulo == getString(R.string.reportes_kpi_material_consumido)
+                            }?.valor?.toIntOrNull() ?: 0,
+                            totalMaterialesDistintos = resumen.firstOrNull {
+                                it.titulo == getString(R.string.reportes_kpi_luminarias_reparadas)
+                            }?.valor?.toIntOrNull() ?: 0
                         )
-                        val items = mapAverias(base)
-                        setAveriasSuccess(items, resumen)
+                        setResumenSuccess(resumen, resumenCards)
                     }
-                    ReportType.MATERIALES_POR_AVERIA -> {
-                        val base = obtenerDatosBase(state.fechaInicio, state.fechaFin)
+                    ReportType.MIS_AVERIAS -> {
+                        val datos = construirMisAverias(state.fechaInicio, state.fechaFin)
                         val resumen = ResumenTotales(
-                            totalAverias = base.averias.size,
-                            totalMateriales = base.totalMateriales,
-                            totalMaterialesDistintos = base.materialesTotales.size
+                            totalAverias = datos.size,
+                            totalMateriales = datos.sumOf { it.materialesCantidad },
+                            totalMaterialesDistintos = datos.count { it.materialesCantidad > 0 }
                         )
-                        val items = mapMaterialesPorAveria(base)
-                        setMaterialesPorAveriaSuccess(items, resumen)
+                        setMisAveriasSuccess(datos, resumen)
                     }
-                    ReportType.MATERIALES_TOTALES -> {
-                        val base = obtenerDatosBase(state.fechaInicio, state.fechaFin)
+                    ReportType.MIS_LUMINARIAS -> {
+                        val datos = construirMisLuminarias(state.fechaInicio, state.fechaFin)
                         val resumen = ResumenTotales(
-                            totalAverias = base.averias.size,
-                            totalMateriales = base.totalMateriales,
-                            totalMaterialesDistintos = base.materialesTotales.size
+                            totalAverias = datos.size,
+                            totalMateriales = datos.count { it.materialesResumen.isNotBlank() },
+                            totalMaterialesDistintos = datos.count { it.estado.contains("pend", true) }
                         )
-                        val items = base.materialesTotales
-                        setMaterialesTotalesSuccess(items, resumen)
+                        setMisLuminariasSuccess(datos, resumen)
                     }
-                    ReportType.LUMINARIAS_REPARADAS -> {
-                        val base = obtenerDatosLuminarias(state.fechaInicio, state.fechaFin)
+                    ReportType.MI_INVENTARIO -> {
+                        val inventario = construirMiInventario(state.fechaInicio, state.fechaFin)
                         val resumen = ResumenTotales(
-                            totalAverias = base.reparaciones.size,
-                            totalMateriales = base.totalMateriales.roundToInt(),
-                            totalMaterialesDistintos = base.codigosDistintos
+                            totalAverias = inventario.generales.size,
+                            totalMateriales = inventario.criticos.size,
+                            totalMaterialesDistintos = inventario.generales.count { it.cantidad > 0 }
                         )
-                        val items = mapLuminarias(base)
-                        setLuminariasSuccess(items, resumen)
+                        setMiInventarioSuccess(inventario, resumen)
+                    }
+                    ReportType.MI_BITACORA -> {
+                        val bitacora = construirBitacora(state.fechaInicio, state.fechaFin)
+                        val resumen = ResumenTotales(
+                            totalAverias = bitacora.resumen.averiasAtendidas,
+                            totalMateriales = bitacora.resumen.materialTop.sumOf { it.total },
+                            totalMaterialesDistintos = bitacora.resumen.luminariasReparadas
+                        )
+                        setMiBitacoraSuccess(bitacora, resumen)
                     }
                 }
             } catch (t: Throwable) {
@@ -317,7 +356,6 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
         val nombreReporte = getApplication<Application>().getString(tipo.titleRes)
         val totalRegistros = contarRegistros(datos)
 
-        // (Opcional) lo dejas si lo sigues usando en UI o logs
         val cuerpo = construirCuerpoCorreo(
             saludo = saludo,
             nombreReporte = nombreReporte,
@@ -330,7 +368,6 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
 
         viewModelScope.launch {
             try {
-                // 1) Generar Excel (como ya lo tenías)
                 val exportPayload = ExportPayload(
                     tipo = tipo,
                     data = datos,
@@ -349,7 +386,6 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
                     }
                 }
 
-                // 2) Subir a Firebase Storage
                 val fileName = generarNombreArchivo(tipo, state.fechaInicio, state.fechaFin)
                 val uid = auth.currentUser?.uid ?: "anon"
 
@@ -361,8 +397,7 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
                 ref.putBytes(bytes).await()
                 val downloadUrl = ref.downloadUrl.await().toString()
 
-                // 3) Llamar Cloud Function para enviar el correo con link
-                val result = functions
+                functions
                     .getHttpsCallable("sendReport")
                     .call(
                         mapOf(
@@ -384,47 +419,35 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-
     fun obtenerDatosParaExportar(tipo: ReportType): ReportExportData? {
         val state = uiState.value
         return when (tipo) {
-            ReportType.AVERIAS -> {
-                if (!state.averiasState.hasContent) return null
-                ReportExportData.Averias(state.averiasState.items)
+            ReportType.MI_RESUMEN -> {
+                if (!state.resumenState.hasContent) return null
+                ReportExportData.MiResumen(state.resumenState.items)
             }
-            ReportType.MATERIALES_POR_AVERIA -> {
-                if (!state.materialesPorAveriaState.hasContent) return null
-                ReportExportData.MaterialesPorAveria(state.materialesPorAveriaState.items)
+            ReportType.MIS_AVERIAS -> {
+                if (!state.misAveriasState.hasContent) return null
+                ReportExportData.MisAverias(state.misAveriasState.items)
             }
-            ReportType.MATERIALES_TOTALES -> {
-                if (!state.materialesTotalesState.hasContent) return null
-                ReportExportData.MaterialesTotales(state.materialesTotalesState.items)
+            ReportType.MIS_LUMINARIAS -> {
+                if (!state.misLuminariasState.hasContent) return null
+                ReportExportData.MisLuminarias(state.misLuminariasState.items)
             }
-            ReportType.LUMINARIAS_REPARADAS -> {
-                if (!state.luminariasState.hasContent) return null
-                ReportExportData.LuminariasReparadas(state.luminariasState.items)
+            ReportType.MI_INVENTARIO -> {
+                if (!state.miInventarioState.hasContent && !state.miInventarioCriticoState.hasContent) return null
+                ReportExportData.MiInventario(
+                    criticos = state.miInventarioCriticoState.items,
+                    generales = state.miInventarioState.items,
+                    movimientos = state.miInventarioMovimientos ?: InventarioMovimientoResumen(0.0, 0.0, 0.0)
+                )
+            }
+            ReportType.MI_BITACORA -> {
+                val resumen = state.miBitacoraResumen ?: return null
+                if (!state.miBitacoraState.hasContent) return null
+                ReportExportData.MiBitacora(resumen, state.miBitacoraState.items)
             }
         }
-    }
-
-    private suspend fun obtenerDatosLuminarias(inicio: LocalDate, fin: LocalDate): DatosLuminarias {
-        val zona = ZoneId.systemDefault()
-        val inicioMillis = inicio.atStartOfDay(zona).toInstant().toEpochMilli()
-        val finExclusiveMillis = fin.plusDays(1).atStartOfDay(zona).toInstant().toEpochMilli()
-        val (reparaciones, inventario) = withContext(Dispatchers.IO) {
-            val reparaciones = database.inventarioDao().observarReparaciones().first()
-            val inventario = database.inventarioDao().observarInventarioGeneral().first()
-            reparaciones to inventario
-        }
-        val reparacionesFiltradas = reparaciones.filter { it.fechaRegistro in inicioMillis until finExclusiveMillis }
-            .sortedByDescending { it.fechaRegistro }
-        val materiales = reparacionesFiltradas.flatMap {
-            com.Arasoftsolutions.tecniapp_ice.ui.luminarias.LuminariaMaterialSerializer.fromJson(it.materialesJson)
-        }
-        val totalMateriales = materiales.sumOf { it.cantidad }
-        val codigosDistintos = materiales.map { it.codigo }.filter { it.isNotBlank() }.distinct().size
-        val existenciasActuales = buildExistenciasActuales(inventario)
-        return DatosLuminarias(reparacionesFiltradas, totalMateriales, codigosDistintos, existenciasActuales)
     }
 
     private suspend fun obtenerDatosBase(inicio: LocalDate, fin: LocalDate): DatosBase {
@@ -458,6 +481,7 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
         val finExclusiveMillis = fin.plusDays(1).atStartOfDay(zona).toInstant().toEpochMilli()
         val currentUid = auth.currentUser?.uid?.takeIf { it.isNotBlank() }
         val currentNombre = auth.currentUser?.displayName?.trim()?.lowercase(locale)
+        val placaVehiculo = runBlockingUserContext()?.placaVehiculo?.trim()?.takeIf { it.isNotBlank() }
 
         val catalogoPorCodigo = catalogo.associateBy { it.codigo }
         val catalogoPorDescripcion = catalogo.associateBy { it.descripcion.trim().lowercase(locale) }
@@ -465,16 +489,18 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
         val atendidas = averias.mapNotNull { entity ->
             val finalMillis = obtenerFechaAtencion(entity) ?: return@mapNotNull null
             if (finalMillis < inicioMillis || finalMillis >= finExclusiveMillis) return@mapNotNull null
-            if (currentUid != null || currentNombre != null) {
-                val uid = entity.atendidoPorUid
-                val nombre = entity.atendidoPorNombre?.trim()?.lowercase(locale)
-                val matchesUid = currentUid != null && uid != null && uid.equals(currentUid, ignoreCase = true)
-                val matchesNombre = currentNombre != null && nombre != null && nombre == currentNombre
-                if (!matchesUid && !matchesNombre) return@mapNotNull null
-            }
+            if (!coincideConUsuario(entity, currentUid, currentNombre)) return@mapNotNull null
+            if (!coincideConVehiculo(entity, placaVehiculo)) return@mapNotNull null
             val materiales = obtenerMateriales(entity, catalogoPorCodigo, catalogoPorDescripcion)
             AveriaReporteInterno(entity, finalMillis, materiales)
         }.sortedByDescending { it.finalMillis }
+
+        val pendientes = averias.filter { entity ->
+            entity.estado.isNotBlank() && !entity.estado.equals("Resuelta", ignoreCase = true) &&
+                entity.fechaInicioMillis in inicioMillis until finExclusiveMillis &&
+                coincideConUsuarioAsignado(entity, currentUid, currentNombre) &&
+                coincideConVehiculo(entity, placaVehiculo)
+        }
 
         val acumulados = mutableMapOf<String, MaterialAcumulado>()
         var totalMateriales = 0
@@ -530,202 +556,275 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
             averias = atendidas,
             materialesTotales = materialesTotales,
             totalMateriales = totalMateriales,
-            existenciasActuales = existenciasActuales
+            existenciasActuales = existenciasActuales,
+            pendientes = pendientes
         )
     }
 
-    private fun mapAverias(base: DatosBase): List<AveriaReportItem> {
+    private suspend fun construirResumenKpis(inicio: LocalDate, fin: LocalDate): List<ResumenKpiItem> {
+        val base = obtenerDatosBase(inicio, fin)
+        val luminarias = construirMisLuminarias(inicio, fin)
+        val totalMaterialesLuminarias = luminarias.count { it.materialesResumen.isNotBlank() }
+        val horas = calcularHorasTrabajadas(base.averias)
+        val horasTexto = if (horas > 0.0) {
+            formatCantidad(horas)
+        } else {
+            getString(R.string.reportes_kpi_horas_trabajadas_sin_datos)
+        }
+        val materialesTotales = base.totalMateriales + totalMaterialesLuminarias
+        val pendientes = base.pendientes.size
+        val luminariasPendientes = luminarias.count { it.estado.contains("pend", true) }
+
+        return listOf(
+            ResumenKpiItem(
+                titulo = getString(R.string.reportes_kpi_averias_atendidas),
+                valor = base.averias.size.toString(),
+                detalle = getString(R.string.reportes_kpi_detalle_rango)
+            ),
+            ResumenKpiItem(
+                titulo = getString(R.string.reportes_kpi_averias_pendientes),
+                valor = pendientes.toString(),
+                detalle = getString(R.string.reportes_kpi_detalle_pendientes)
+            ),
+            ResumenKpiItem(
+                titulo = getString(R.string.reportes_kpi_luminarias_reparadas),
+                valor = luminarias.count { it.estado.contains("repar", true) }.toString(),
+                detalle = getString(R.string.reportes_kpi_detalle_luminarias)
+            ),
+            ResumenKpiItem(
+                titulo = getString(R.string.reportes_kpi_luminarias_pendientes),
+                valor = luminariasPendientes.toString(),
+                detalle = getString(R.string.reportes_kpi_detalle_luminarias_pendientes)
+            ),
+            ResumenKpiItem(
+                titulo = getString(R.string.reportes_kpi_material_consumido),
+                valor = materialesTotales.toString(),
+                detalle = getString(R.string.reportes_kpi_detalle_material)
+            ),
+            ResumenKpiItem(
+                titulo = getString(R.string.reportes_kpi_horas_trabajadas),
+                valor = horasTexto,
+                detalle = getString(R.string.reportes_kpi_detalle_horas)
+            )
+        )
+    }
+
+    private suspend fun construirMisAverias(inicio: LocalDate, fin: LocalDate): List<MisAveriaReportItem> {
+        val base = obtenerDatosBase(inicio, fin)
         return base.averias.map { raw ->
             val entidad = raw.entity
             val resumen = MaterialesSerializer.toSummary(raw.materiales)
             val totalMateriales = raw.materiales.sumOf { it.cantidad }
-            AveriaReportItem(
+            MisAveriaReportItem(
                 caseId = entidad.caseId,
-                fechaTexto = formatDateTime(raw.finalMillis),
-                agencia = obtenerAgencia(entidad),
+                nise = entidad.nise?.trim().orEmpty(),
+                ubicacion = entidad.localizacion?.trim().orEmpty().ifBlank {
+                    entidad.direccion?.trim().orEmpty()
+                },
                 estado = entidad.estado.trim(),
-                atendidoPor = obtenerAtendido(entidad),
-                vehiculo = entidad.vehiculoAsignado?.trim()?.takeIf { it.isNotEmpty() },
-                materialesResumen = resumen,
+                fechaReporte = formatDateTime(entidad.fechaInicioMillis),
+                fechaAtencion = formatDateTime(raw.finalMillis),
                 materialesCantidad = totalMateriales,
-                tieneMateriales = raw.materiales.isNotEmpty()
+                materialesResumen = resumen
             )
         }
     }
 
-    private fun mapMaterialesPorAveria(base: DatosBase): List<MaterialPorAveriaReportItem> {
-        return base.averias.map { raw ->
-            val entidad = raw.entity
-            val resumen = MaterialesSerializer.toSummary(raw.materiales)
-            val materialesDetalle = raw.materiales.map { uso ->
-                val existencia = buscarExistenciaActual(base.existenciasActuales, uso.codigo, uso.descripcion)
-                MaterialDetalleReportItem(
-                    codigo = uso.codigo,
-                    descripcion = uso.descripcion,
-                    cantidad = uso.cantidad,
-                    existenciaActual = existencia,
-                    existenciaTexto = formatCantidad(existencia)
-                )
-            }
-            MaterialPorAveriaReportItem(
-                caseId = entidad.caseId,
-                fechaTexto = formatDateTime(raw.finalMillis),
-                agencia = obtenerAgencia(entidad),
-                vehiculo = entidad.vehiculoAsignado?.trim()?.takeIf { it.isNotEmpty() },
-                materiales = raw.materiales,
-                materialesDetalle = materialesDetalle,
-                resumen = resumen,
-                tieneMateriales = raw.materiales.isNotEmpty()
-            )
+    private suspend fun construirMisLuminarias(inicio: LocalDate, fin: LocalDate): List<MisLuminariaReportItem> {
+        val contexto = obtenerUserContext()
+        val zona = ZoneId.systemDefault()
+        val inicioMillis = inicio.atStartOfDay(zona).toInstant().toEpochMilli()
+        val finExclusiveMillis = fin.plusDays(1).atStartOfDay(zona).toInstant().toEpochMilli()
+        val (reparaciones, vehiculos) = withContext(Dispatchers.IO) {
+            val reparaciones = database.inventarioDao().observarReparaciones().first()
+            val vehiculos = database.vehiculoDao().getAll()
+            reparaciones to vehiculos
         }
-    }
-
-    private suspend fun mapLuminarias(base: DatosLuminarias): List<LuminariaReparadaReportItem> {
-        val vehiculos = withContext(Dispatchers.IO) { database.vehiculoDao().getAll() }
         val vehiculosPorId = vehiculos.associateBy { it.id }
-        return base.reparaciones.map { reparacion ->
+        val filtradas = reparaciones.filter { reparacion ->
+            reparacion.fechaRegistro in inicioMillis until finExclusiveMillis &&
+                coincideConVehiculo(reparacion, contexto.vehiculoId) &&
+                coincideConEjecutor(reparacion, contexto.nombres)
+        }.sortedByDescending { it.fechaRegistro }
+
+        return filtradas.map { reparacion ->
             val vehiculo = vehiculosPorId[reparacion.vehiculoId]
-            val vehiculoTexto = buildString {
-                append(getApplication<Application>().getString(R.string.reportes_luminarias_vehiculo))
-                append(" ")
-                append(vehiculo?.placa?.toString().orEmpty().ifBlank { "-" })
-                val agencia = vehiculo?.agencia?.trim().orEmpty()
-                if (agencia.isNotBlank()) {
-                    append(" · ")
-                    append(agencia)
-                }
-            }
             val materiales = com.Arasoftsolutions.tecniapp_ice.ui.luminarias.LuminariaMaterialSerializer
                 .fromJson(reparacion.materialesJson)
             val resumenMateriales = com.Arasoftsolutions.tecniapp_ice.ui.luminarias.LuminariaMaterialSerializer
                 .toSummary(materiales)
                 .ifBlank { desconocidoMaterial }
-            val total = materiales.sumOf { it.cantidad }
-            val estadoTexto = if (com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado.fromRaw(reparacion.estado) ==
-                com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado.PENDIENTE
-            ) {
-                getApplication<Application>().getString(R.string.reportes_luminarias_estado_pendiente)
-            } else {
-                getApplication<Application>().getString(R.string.reportes_luminarias_estado_reparada)
+            val estado = when (LuminariaEstado.fromRaw(reparacion.estado)) {
+                LuminariaEstado.PENDIENTE -> getString(R.string.reportes_estado_luminaria_pendiente)
+                LuminariaEstado.REPARADA -> getString(R.string.reportes_estado_luminaria_reparada)
             }
-            LuminariaReparadaReportItem(
-                id = reparacion.id,
-                fechaTexto = formatDateTime(reparacion.fechaRegistro),
+            MisLuminariaReportItem(
                 localizacion = reparacion.localizacion,
-                localizacionTexto = getApplication<Application>().getString(
-                    R.string.reportes_luminarias_localizacion,
-                    reparacion.localizacion
-                ),
-                materialesTexto = resumenMateriales,
-                cantidadTotal = total,
-                cantidadTexto = getApplication<Application>().getString(
-                    R.string.reportes_luminarias_cantidad,
-                    total
-                ),
-                estadoTexto = estadoTexto,
-                ejecutorTexto = if (reparacion.ejecutorNombre.isNotBlank()) {
-                    getApplication<Application>().getString(
-                        R.string.reportes_luminarias_ejecutor,
-                        reparacion.ejecutorNombre
-                    )
-                } else {
-                    getApplication<Application>().getString(R.string.reportes_luminarias_ejecutor_sin_datos)
-                },
-                vehiculoTexto = vehiculoTexto
+                estado = estado,
+                fecha = formatDateTime(reparacion.fechaRegistro),
+                vehiculo = vehiculo?.placa?.toString().orEmpty().ifBlank { "-" },
+                comunidad = reparacion.cliente?.trim().orEmpty().ifBlank { "-" },
+                materialesResumen = resumenMateriales
             )
         }
+    }
+
+    private suspend fun construirMiInventario(inicio: LocalDate, fin: LocalDate): ReportExportData.MiInventario {
+        val contexto = obtenerUserContext()
+        val vehiculoId = contexto.vehiculoId
+        val inventario = withContext(Dispatchers.IO) {
+            if (vehiculoId != null) {
+                database.inventarioDao().observarInventarioPorVehiculo(vehiculoId).first()
+            } else {
+                database.inventarioDao().observarInventarioGeneral().first()
+            }
+        }
+        val criticoLimite = 2.0
+        val criticos = inventario.filter { it.item.cantidadDisponible <= criticoLimite }
+        val mappedCriticos = criticos.map { item ->
+            InventarioReportItem(
+                codigo = item.item.codigoMaterial,
+                descripcion = item.item.descripcionMaterial,
+                cantidad = item.item.cantidadDisponible,
+                unidad = getString(R.string.reportes_inventario_unidad_default)
+            )
+        }
+        val mappedGenerales = inventario.map { item ->
+            InventarioReportItem(
+                codigo = item.item.codigoMaterial,
+                descripcion = item.item.descripcionMaterial,
+                cantidad = item.item.cantidadDisponible,
+                unidad = getString(R.string.reportes_inventario_unidad_default)
+            )
+        }
+        val movimientos = calcularMovimientosInventario(inicio, fin, contexto)
+        return ReportExportData.MiInventario(mappedCriticos, mappedGenerales, movimientos)
+    }
+
+    private suspend fun construirBitacora(inicio: LocalDate, fin: LocalDate): ReportExportData.MiBitacora {
+        val base = obtenerDatosBase(inicio, fin)
+        val luminarias = construirMisLuminarias(inicio, fin)
+        val horasTrabajadas = calcularHorasTrabajadas(base.averias)
+        val kilometros = calcularKilometros(base.averias)
+        val materialesTop = base.materialesTotales.take(5)
+        val resumen = BitacoraResumen(
+            horasTrabajadas = formatCantidad(horasTrabajadas),
+            kilometros = formatCantidad(kilometros),
+            averiasAtendidas = base.averias.size,
+            luminariasReparadas = luminarias.count { it.estado.contains("repar", true) },
+            materialTop = materialesTop
+        )
+        val eventos = buildBitacoraEventos(base, luminarias)
+        return ReportExportData.MiBitacora(resumen, eventos)
     }
 
     private fun setSectionLoading(tipo: ReportType) {
         _uiState.update { current ->
             when (tipo) {
-                ReportType.AVERIAS -> current.copy(
+                ReportType.MI_RESUMEN -> current.copy(
                     isGlobalLoading = true,
-                    averiasState = current.averiasState.copy(isLoading = true),
-                    materialesPorAveriaState = current.materialesPorAveriaState.copy(isLoading = false),
-                    materialesTotalesState = current.materialesTotalesState.copy(isLoading = false),
-                    luminariasState = current.luminariasState.copy(isLoading = false)
+                    resumenState = current.resumenState.copy(isLoading = true),
+                    misAveriasState = current.misAveriasState.copy(isLoading = false),
+                    misLuminariasState = current.misLuminariasState.copy(isLoading = false),
+                    miInventarioState = current.miInventarioState.copy(isLoading = false),
+                    miBitacoraState = current.miBitacoraState.copy(isLoading = false)
                 )
-                ReportType.MATERIALES_POR_AVERIA -> current.copy(
+                ReportType.MIS_AVERIAS -> current.copy(
                     isGlobalLoading = true,
-                    materialesPorAveriaState = current.materialesPorAveriaState.copy(isLoading = true),
-                    averiasState = current.averiasState.copy(isLoading = false),
-                    materialesTotalesState = current.materialesTotalesState.copy(isLoading = false),
-                    luminariasState = current.luminariasState.copy(isLoading = false)
+                    misAveriasState = current.misAveriasState.copy(isLoading = true),
+                    resumenState = current.resumenState.copy(isLoading = false),
+                    misLuminariasState = current.misLuminariasState.copy(isLoading = false),
+                    miInventarioState = current.miInventarioState.copy(isLoading = false),
+                    miBitacoraState = current.miBitacoraState.copy(isLoading = false)
                 )
-                ReportType.MATERIALES_TOTALES -> current.copy(
+                ReportType.MIS_LUMINARIAS -> current.copy(
                     isGlobalLoading = true,
-                    materialesTotalesState = current.materialesTotalesState.copy(isLoading = true),
-                    averiasState = current.averiasState.copy(isLoading = false),
-                    materialesPorAveriaState = current.materialesPorAveriaState.copy(isLoading = false),
-                    luminariasState = current.luminariasState.copy(isLoading = false)
+                    misLuminariasState = current.misLuminariasState.copy(isLoading = true),
+                    resumenState = current.resumenState.copy(isLoading = false),
+                    misAveriasState = current.misAveriasState.copy(isLoading = false),
+                    miInventarioState = current.miInventarioState.copy(isLoading = false),
+                    miBitacoraState = current.miBitacoraState.copy(isLoading = false)
                 )
-                ReportType.LUMINARIAS_REPARADAS -> current.copy(
+                ReportType.MI_INVENTARIO -> current.copy(
                     isGlobalLoading = true,
-                    luminariasState = current.luminariasState.copy(isLoading = true),
-                    averiasState = current.averiasState.copy(isLoading = false),
-                    materialesPorAveriaState = current.materialesPorAveriaState.copy(isLoading = false),
-                    materialesTotalesState = current.materialesTotalesState.copy(isLoading = false)
+                    miInventarioState = current.miInventarioState.copy(isLoading = true),
+                    miInventarioCriticoState = current.miInventarioCriticoState.copy(isLoading = true),
+                    resumenState = current.resumenState.copy(isLoading = false),
+                    misAveriasState = current.misAveriasState.copy(isLoading = false),
+                    misLuminariasState = current.misLuminariasState.copy(isLoading = false),
+                    miBitacoraState = current.miBitacoraState.copy(isLoading = false)
+                )
+                ReportType.MI_BITACORA -> current.copy(
+                    isGlobalLoading = true,
+                    miBitacoraState = current.miBitacoraState.copy(isLoading = true),
+                    resumenState = current.resumenState.copy(isLoading = false),
+                    misAveriasState = current.misAveriasState.copy(isLoading = false),
+                    misLuminariasState = current.misLuminariasState.copy(isLoading = false),
+                    miInventarioState = current.miInventarioState.copy(isLoading = false)
                 )
             }
         }
     }
 
-    private fun setAveriasSuccess(items: List<AveriaReportItem>, resumen: ResumenTotales) {
+    private fun setResumenSuccess(items: List<ResumenKpiItem>, resumen: ResumenTotales) {
         _uiState.update { current ->
             current.copy(
                 isGlobalLoading = false,
                 resumen = resumen,
-                averiasState = ReportSectionState(isLoading = false, items = items, hasContent = true),
-                materialesPorAveriaState = current.materialesPorAveriaState.copy(isLoading = false),
-                materialesTotalesState = current.materialesTotalesState.copy(isLoading = false)
+                resumenState = ReportSectionState(isLoading = false, items = items, hasContent = true),
+                misAveriasState = current.misAveriasState.copy(isLoading = false),
+                misLuminariasState = current.misLuminariasState.copy(isLoading = false),
+                miInventarioState = current.miInventarioState.copy(isLoading = false),
+                miBitacoraState = current.miBitacoraState.copy(isLoading = false)
             )
         }
     }
 
-    private fun setMaterialesPorAveriaSuccess(
-        items: List<MaterialPorAveriaReportItem>,
-        resumen: ResumenTotales
-    ) {
+    private fun setMisAveriasSuccess(items: List<MisAveriaReportItem>, resumen: ResumenTotales) {
         _uiState.update { current ->
             current.copy(
                 isGlobalLoading = false,
                 resumen = resumen,
-                materialesPorAveriaState = ReportSectionState(isLoading = false, items = items, hasContent = true),
-                averiasState = current.averiasState.copy(isLoading = false),
-                materialesTotalesState = current.materialesTotalesState.copy(isLoading = false)
+                misAveriasState = ReportSectionState(isLoading = false, items = items, hasContent = true),
+                resumenState = current.resumenState.copy(isLoading = false),
+                misLuminariasState = current.misLuminariasState.copy(isLoading = false)
             )
         }
     }
 
-    private fun setMaterialesTotalesSuccess(
-        items: List<MaterialTotalItem>,
-        resumen: ResumenTotales
-    ) {
+    private fun setMisLuminariasSuccess(items: List<MisLuminariaReportItem>, resumen: ResumenTotales) {
         _uiState.update { current ->
             current.copy(
                 isGlobalLoading = false,
                 resumen = resumen,
-                materialesTotalesState = ReportSectionState(isLoading = false, items = items, hasContent = true),
-                averiasState = current.averiasState.copy(isLoading = false),
-                materialesPorAveriaState = current.materialesPorAveriaState.copy(isLoading = false),
-                luminariasState = current.luminariasState.copy(isLoading = false)
+                misLuminariasState = ReportSectionState(isLoading = false, items = items, hasContent = true),
+                resumenState = current.resumenState.copy(isLoading = false),
+                misAveriasState = current.misAveriasState.copy(isLoading = false)
             )
         }
     }
 
-    private fun setLuminariasSuccess(
-        items: List<LuminariaReparadaReportItem>,
-        resumen: ResumenTotales
-    ) {
+    private fun setMiInventarioSuccess(inventario: ReportExportData.MiInventario, resumen: ResumenTotales) {
         _uiState.update { current ->
             current.copy(
                 isGlobalLoading = false,
                 resumen = resumen,
-                luminariasState = ReportSectionState(isLoading = false, items = items, hasContent = true),
-                averiasState = current.averiasState.copy(isLoading = false),
-                materialesPorAveriaState = current.materialesPorAveriaState.copy(isLoading = false),
-                materialesTotalesState = current.materialesTotalesState.copy(isLoading = false)
+                miInventarioState = ReportSectionState(isLoading = false, items = inventario.generales, hasContent = true),
+                miInventarioCriticoState = ReportSectionState(isLoading = false, items = inventario.criticos, hasContent = true),
+                miInventarioMovimientos = inventario.movimientos,
+                resumenState = current.resumenState.copy(isLoading = false)
+            )
+        }
+    }
+
+    private fun setMiBitacoraSuccess(bitacora: ReportExportData.MiBitacora, resumen: ResumenTotales) {
+        _uiState.update { current ->
+            current.copy(
+                isGlobalLoading = false,
+                resumen = resumen,
+                miBitacoraState = ReportSectionState(isLoading = false, items = bitacora.eventos, hasContent = true),
+                miBitacoraResumen = bitacora.resumen,
+                resumenState = current.resumenState.copy(isLoading = false)
             )
         }
     }
@@ -733,21 +832,26 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
     private fun setSectionFailure(tipo: ReportType) {
         _uiState.update { current ->
             when (tipo) {
-                ReportType.AVERIAS -> current.copy(
+                ReportType.MI_RESUMEN -> current.copy(
                     isGlobalLoading = false,
-                    averiasState = current.averiasState.copy(isLoading = false)
+                    resumenState = current.resumenState.copy(isLoading = false)
                 )
-                ReportType.MATERIALES_POR_AVERIA -> current.copy(
+                ReportType.MIS_AVERIAS -> current.copy(
                     isGlobalLoading = false,
-                    materialesPorAveriaState = current.materialesPorAveriaState.copy(isLoading = false)
+                    misAveriasState = current.misAveriasState.copy(isLoading = false)
                 )
-                ReportType.MATERIALES_TOTALES -> current.copy(
+                ReportType.MIS_LUMINARIAS -> current.copy(
                     isGlobalLoading = false,
-                    materialesTotalesState = current.materialesTotalesState.copy(isLoading = false)
+                    misLuminariasState = current.misLuminariasState.copy(isLoading = false)
                 )
-                ReportType.LUMINARIAS_REPARADAS -> current.copy(
+                ReportType.MI_INVENTARIO -> current.copy(
                     isGlobalLoading = false,
-                    luminariasState = current.luminariasState.copy(isLoading = false)
+                    miInventarioState = current.miInventarioState.copy(isLoading = false),
+                    miInventarioCriticoState = current.miInventarioCriticoState.copy(isLoading = false)
+                )
+                ReportType.MI_BITACORA -> current.copy(
+                    isGlobalLoading = false,
+                    miBitacoraState = current.miBitacoraState.copy(isLoading = false)
                 )
             }
         }
@@ -825,18 +929,6 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
             }
     }
 
-    private fun obtenerAgencia(entity: AveriaEntity): String {
-        return entity.nombreAgencia?.trim()?.takeIf { it.isNotEmpty() }
-            ?: entity.agencia?.trim()?.takeIf { it.isNotEmpty() }
-            ?: ""
-    }
-
-    private fun obtenerAtendido(entity: AveriaEntity): String {
-        return entity.atendidoPorNombre?.trim()?.takeIf { it.isNotEmpty() }
-            ?: entity.tecnicoAsignadoNombre?.trim()?.takeIf { it.isNotEmpty() }
-            ?: ""
-    }
-
     private fun buildExistenciasActuales(items: List<InventarioConVehiculo>): Map<String, Double> {
         val acumulado = mutableMapOf<String, Double>()
         items.forEach { item ->
@@ -873,6 +965,156 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun buildRangeText(inicio: LocalDate, fin: LocalDate): String {
         return "${inicio.format(rangeFormatter)} – ${fin.format(rangeFormatter)}"
+    }
+
+    private fun calcularHorasTrabajadas(averias: List<AveriaReporteInterno>): Double {
+        val millis = averias.sumOf { raw ->
+            val start = raw.entity.atencionHoraInicioMillis ?: raw.entity.horaInicioMillis
+            val end = raw.entity.atencionHoraFinalMillis ?: raw.entity.horaFinalMillis
+            if (start != null && end != null && end > start) {
+                end - start
+            } else {
+                0L
+            }
+        }
+        return millis / 3_600_000.0
+    }
+
+    private fun calcularKilometros(averias: List<AveriaReporteInterno>): Double {
+        return averias.sumOf { raw ->
+            val start = raw.entity.kilometrajeInicio
+            val end = raw.entity.kilometrajeFinal
+            if (start != null && end != null && end > start) {
+                end - start
+            } else {
+                0.0
+            }
+        }.absoluteValue
+    }
+
+    private suspend fun obtenerUserContext(): UserContext {
+        val uid = auth.currentUser?.uid
+        val user = if (uid != null) repository.obtenerUsuario(uid) else null
+        val placa = user?.placaVehiculo?.trim()?.takeIf { it.isNotBlank() }
+        val vehiculoId = placa?.toLongOrNull()?.let { repository.obtenerVehiculoPorPlaca(it)?.id }
+        val nombres = buildSet {
+            auth.currentUser?.displayName?.trim()?.takeIf { it.isNotBlank() }?.let { add(it.lowercase(locale)) }
+            user?.nombre?.trim()?.takeIf { it.isNotBlank() }?.let { add(it.lowercase(locale)) }
+            user?.apellidos?.trim()?.takeIf { it.isNotBlank() }?.let { add(it.lowercase(locale)) }
+            val nombreCompleto = listOfNotNull(user?.nombre, user?.apellidos)
+                .joinToString(" ") { it.trim() }
+                .trim()
+            if (nombreCompleto.isNotBlank()) {
+                add(nombreCompleto.lowercase(locale))
+            }
+        }
+        return UserContext(user, vehiculoId, placa, nombres)
+    }
+
+    private fun runBlockingUserContext(): UserContext? {
+        return try {
+            runBlocking { obtenerUserContext() }
+        } catch (_: Throwable) {
+            null
+        }
+    }
+
+    private fun coincideConUsuario(entity: AveriaEntity, uid: String?, nombre: String?): Boolean {
+        if (uid == null && nombre == null) return true
+        val matchesUid = uid != null && entity.atendidoPorUid?.equals(uid, ignoreCase = true) == true
+        val matchesNombre = nombre != null && entity.atendidoPorNombre?.trim()?.lowercase(locale) == nombre
+        return matchesUid || matchesNombre
+    }
+
+    private fun coincideConUsuarioAsignado(entity: AveriaEntity, uid: String?, nombre: String?): Boolean {
+        if (uid == null && nombre == null) return true
+        val matchesUid = uid != null && entity.tecnicoAsignadoUid?.equals(uid, ignoreCase = true) == true
+        val matchesNombre = nombre != null && entity.tecnicoAsignadoNombre?.trim()?.lowercase(locale) == nombre
+        return matchesUid || matchesNombre
+    }
+
+    private fun coincideConVehiculo(entity: AveriaEntity, placa: String?): Boolean {
+        if (placa.isNullOrBlank()) return true
+        return entity.vehiculoAsignado?.trim()?.equals(placa, ignoreCase = true) == true
+    }
+
+    private fun coincideConVehiculo(reparacion: LuminariaReparacionEntity, vehiculoId: Int?): Boolean {
+        if (vehiculoId == null) return true
+        return reparacion.vehiculoId == vehiculoId
+    }
+
+    private fun coincideConEjecutor(reparacion: LuminariaReparacionEntity, nombres: Set<String>): Boolean {
+        if (nombres.isEmpty()) return true
+        val ejecutor = reparacion.ejecutorNombre.trim().lowercase(locale)
+        return nombres.contains(ejecutor)
+    }
+
+    private suspend fun calcularMovimientosInventario(
+        inicio: LocalDate,
+        fin: LocalDate,
+        contexto: UserContext
+    ): InventarioMovimientoResumen {
+        val zona = ZoneId.systemDefault()
+        val inicioMillis = inicio.atStartOfDay(zona).toInstant().toEpochMilli()
+        val finExclusiveMillis = fin.plusDays(1).atStartOfDay(zona).toInstant().toEpochMilli()
+        val averias = withContext(Dispatchers.IO) { database.averiaDao().all() }
+        val consumoAverias = averias.filter { entity ->
+            val fecha = obtenerFechaAtencion(entity) ?: return@filter false
+            fecha in inicioMillis until finExclusiveMillis &&
+                coincideConVehiculo(entity, contexto.placaVehiculo)
+        }.sumOf { entity ->
+            obtenerMateriales(entity, emptyMap(), emptyMap()).sumOf { it.cantidad }.toDouble()
+        }
+        val luminarias = withContext(Dispatchers.IO) { database.inventarioDao().observarReparaciones().first() }
+        val consumoLuminarias = luminarias.filter { reparacion ->
+            reparacion.fechaRegistro in inicioMillis until finExclusiveMillis &&
+                coincideConVehiculo(reparacion, contexto.vehiculoId)
+        }.sumOf { reparacion ->
+            com.Arasoftsolutions.tecniapp_ice.ui.luminarias.LuminariaMaterialSerializer
+                .fromJson(reparacion.materialesJson)
+                .sumOf { it.cantidad }
+        }
+        val salidas = consumoAverias + consumoLuminarias
+        val entradas = 0.0
+        val neto = entradas - salidas
+        return InventarioMovimientoResumen(entradas, salidas, neto)
+    }
+
+    private fun buildBitacoraEventos(
+        base: DatosBase,
+        luminarias: List<MisLuminariaReportItem>
+    ): List<BitacoraEventItem> {
+        val eventos = mutableListOf<BitacoraEventItem>()
+        base.averias.forEach { raw ->
+            val entidad = raw.entity
+            eventos += BitacoraEventItem(
+                tipo = getString(R.string.reportes_bitacora_tipo_averia),
+                referencia = entidad.caseId,
+                fecha = formatDateTime(raw.finalMillis),
+                descripcion = entidad.causa?.takeIf { it.isNotBlank() }
+                    ?: getString(R.string.reportes_bitacora_sin_descripcion),
+                cantidad = getString(R.string.reportes_bitacora_material_cantidad, raw.materiales.sumOf { it.cantidad })
+            )
+            raw.materiales.forEach { material ->
+                eventos += BitacoraEventItem(
+                    tipo = getString(R.string.reportes_bitacora_tipo_material),
+                    referencia = entidad.caseId,
+                    fecha = formatDateTime(raw.finalMillis),
+                    descripcion = material.descripcion,
+                    cantidad = material.cantidad.toString()
+                )
+            }
+        }
+        luminarias.forEach { luminaria ->
+            eventos += BitacoraEventItem(
+                tipo = getString(R.string.reportes_bitacora_tipo_luminaria),
+                referencia = luminaria.localizacion,
+                fecha = luminaria.fecha,
+                descripcion = luminaria.estado,
+                cantidad = luminaria.materialesResumen
+            )
+        }
+        return eventos.sortedByDescending { it.fecha }
     }
 
     private fun construirCuerpoCorreo(
@@ -926,10 +1168,11 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun contarRegistros(data: ReportExportData): Int {
         return when (data) {
-            is ReportExportData.Averias -> data.items.size
-            is ReportExportData.MaterialesPorAveria -> data.items.size
-            is ReportExportData.MaterialesTotales -> data.items.size
-            is ReportExportData.LuminariasReparadas -> data.items.size
+            is ReportExportData.MiResumen -> data.items.size
+            is ReportExportData.MisAverias -> data.items.size
+            is ReportExportData.MisLuminarias -> data.items.size
+            is ReportExportData.MiInventario -> data.generales.size
+            is ReportExportData.MiBitacora -> data.eventos.size
         }
     }
 
@@ -938,4 +1181,6 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
         val finTexto = fin.format(fileNameFormatter)
         return "Reporte_${tipo.fileNameKey}_${inicioTexto}_${finTexto}.xlsx"
     }
+
+    private fun getString(@StringRes resId: Int): String = getApplication<Application>().getString(resId)
 }

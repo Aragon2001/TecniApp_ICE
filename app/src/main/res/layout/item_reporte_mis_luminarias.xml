@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="12dp">
+
+    <TextView
+        android:id="@+id/tvLuminariaLocalizacion"
+        style="@style/TextAppearance.Material3.BodyLarge"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textStyle="bold"
+        android:text="Localización" />
+
+    <TextView
+        android:id="@+id/tvLuminariaEstado"
+        style="@style/TextAppearance.Material3.BodyMedium"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:text="Estado" />
+
+    <TextView
+        android:id="@+id/tvLuminariaFecha"
+        style="@style/TextAppearance.Material3.BodySmall"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:textColor="@color/dark_gray"
+        android:text="Fecha" />
+
+    <TextView
+        android:id="@+id/tvLuminariaVehiculo"
+        style="@style/TextAppearance.Material3.BodySmall"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:textColor="@color/dark_gray"
+        android:text="Vehículo" />
+
+    <TextView
+        android:id="@+id/tvLuminariaComunidad"
+        style="@style/TextAppearance.Material3.BodySmall"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:textColor="@color/dark_gray"
+        android:text="Comunidad" />
+
+    <TextView
+        android:id="@+id/tvLuminariaMateriales"
+        style="@style/TextAppearance.Material3.BodySmall"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:textColor="@color/dark_gray"
+        android:text="Material" />
+</LinearLayout>

@@ -59,7 +59,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:textStyle="bold"
-                        tools:text="Averías atendidas" />
+                        tools:text="Mi resumen" />
 
                     <TextView
                         android:id="@+id/tvResumenRango"
@@ -107,12 +107,13 @@
                                 tools:text="5" />
 
                             <TextView
+                                android:id="@+id/tvResumenLabelAverias"
                                 style="@style/TextAppearance.Material3.BodySmall"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="2dp"
-                                android:text="@string/reportes_resumen_card_averias"
-                                android:textColor="@color/dark_gray" />
+                                android:textColor="@color/dark_gray"
+                                tools:text="Averías" />
                         </LinearLayout>
 
                         <LinearLayout
@@ -141,12 +142,13 @@
                                 tools:text="12" />
 
                             <TextView
+                                android:id="@+id/tvResumenLabelMateriales"
                                 style="@style/TextAppearance.Material3.BodySmall"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="2dp"
-                                android:text="@string/reportes_resumen_card_material"
-                                android:textColor="@color/dark_gray" />
+                                android:textColor="@color/dark_gray"
+                                tools:text="Materiales" />
                         </LinearLayout>
 
                         <LinearLayout
@@ -174,12 +176,13 @@
                                 tools:text="3" />
 
                             <TextView
+                                android:id="@+id/tvResumenLabelCodigos"
                                 style="@style/TextAppearance.Material3.BodySmall"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="2dp"
-                                android:text="@string/reportes_resumen_card_codigos"
-                                android:textColor="@color/dark_gray" />
+                                android:textColor="@color/dark_gray"
+                                tools:text="Códigos" />
                         </LinearLayout>
                     </LinearLayout>
 
@@ -303,7 +306,7 @@
             </com.google.android.material.card.MaterialCardView>
 
             <com.google.android.material.card.MaterialCardView
-                android:id="@+id/cardAverias"
+                android:id="@+id/cardMiResumen"
                 style="@style/Tecni.Card"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -317,25 +320,25 @@
                     android:padding="16dp">
 
                     <TextView
-                        android:id="@+id/tvTituloAverias"
+                        android:id="@+id/tvTituloMiResumen"
                         style="@style/TextAppearance.Material3.TitleMedium"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="@string/reportes_averias_titulo"
+                        android:text="@string/reportes_mi_resumen_titulo"
                         android:textStyle="bold" />
 
                     <androidx.recyclerview.widget.RecyclerView
-                        android:id="@+id/recyclerAverias"
+                        android:id="@+id/recyclerMiResumen"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="12dp"
                         android:nestedScrollingEnabled="false"
                         android:overScrollMode="never"
-                        tools:listitem="@layout/item_reporte_averia"
+                        tools:listitem="@layout/item_reporte_kpi"
                         tools:visibility="gone" />
 
                     <TextView
-                        android:id="@+id/tvAveriasVacio"
+                        android:id="@+id/tvMiResumenVacio"
                         style="@style/TextAppearance.Material3.BodyMedium"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -347,7 +350,7 @@
             </com.google.android.material.card.MaterialCardView>
 
             <com.google.android.material.card.MaterialCardView
-                android:id="@+id/cardMaterialPorAveria"
+                android:id="@+id/cardMisAverias"
                 style="@style/Tecni.Card"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -361,25 +364,25 @@
                     android:padding="16dp">
 
                     <TextView
-                        android:id="@+id/tvTituloMaterialPorAveria"
+                        android:id="@+id/tvTituloMisAverias"
                         style="@style/TextAppearance.Material3.TitleMedium"
-                        android:layout_width="match_parent"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="@string/reportes_material_por_averia_titulo"
+                        android:text="@string/reportes_mis_averias_titulo"
                         android:textStyle="bold" />
 
                     <androidx.recyclerview.widget.RecyclerView
-                        android:id="@+id/recyclerMaterialPorAveria"
+                        android:id="@+id/recyclerMisAverias"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="12dp"
                         android:nestedScrollingEnabled="false"
                         android:overScrollMode="never"
-                        tools:listitem="@layout/item_reporte_material_por_averia"
+                        tools:listitem="@layout/item_reporte_mis_averias"
                         tools:visibility="gone" />
 
                     <TextView
-                        android:id="@+id/tvMaterialPorAveriaVacio"
+                        android:id="@+id/tvMisAveriasVacio"
                         style="@style/TextAppearance.Material3.BodyMedium"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -391,7 +394,7 @@
             </com.google.android.material.card.MaterialCardView>
 
             <com.google.android.material.card.MaterialCardView
-                android:id="@+id/cardMaterialTotal"
+                android:id="@+id/cardMisLuminarias"
                 style="@style/Tecni.Card"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -405,25 +408,25 @@
                     android:padding="16dp">
 
                     <TextView
-                        android:id="@+id/tvTituloMaterialTotal"
+                        android:id="@+id/tvTituloMisLuminarias"
                         style="@style/TextAppearance.Material3.TitleMedium"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="@string/reportes_material_total_titulo"
+                        android:text="@string/reportes_mis_luminarias_titulo"
                         android:textStyle="bold" />
 
                     <androidx.recyclerview.widget.RecyclerView
-                        android:id="@+id/recyclerMaterialTotal"
+                        android:id="@+id/recyclerMisLuminarias"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="12dp"
                         android:nestedScrollingEnabled="false"
                         android:overScrollMode="never"
-                        tools:listitem="@layout/item_reporte_material_total"
+                        tools:listitem="@layout/item_reporte_mis_luminarias"
                         tools:visibility="gone" />
 
                     <TextView
-                        android:id="@+id/tvMaterialTotalVacio"
+                        android:id="@+id/tvMisLuminariasVacio"
                         style="@style/TextAppearance.Material3.BodyMedium"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -435,7 +438,7 @@
             </com.google.android.material.card.MaterialCardView>
 
             <com.google.android.material.card.MaterialCardView
-                android:id="@+id/cardLuminariasReparadas"
+                android:id="@+id/cardMiInventario"
                 style="@style/Tecni.Card"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -449,25 +452,168 @@
                     android:padding="16dp">
 
                     <TextView
-                        android:id="@+id/tvTituloLuminarias"
+                        android:id="@+id/tvTituloMiInventario"
                         style="@style/TextAppearance.Material3.TitleMedium"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="@string/reportes_luminarias_titulo"
+                        android:text="@string/reportes_mi_inventario_titulo"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvInventarioCriticoTitulo"
+                        style="@style/TextAppearance.Material3.BodyLarge"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:text="@string/reportes_inventario_critico_titulo"
                         android:textStyle="bold" />
 
                     <androidx.recyclerview.widget.RecyclerView
-                        android:id="@+id/recyclerLuminarias"
+                        android:id="@+id/recyclerInventarioCritico"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:nestedScrollingEnabled="false"
+                        android:overScrollMode="never"
+                        tools:listitem="@layout/item_reporte_inventario"
+                        tools:visibility="gone" />
+
+                    <TextView
+                        android:id="@+id/tvInventarioCriticoVacio"
+                        style="@style/TextAppearance.Material3.BodyMedium"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:gravity="center"
+                        android:text="@string/reportes_inventario_critico_vacio"
+                        tools:visibility="visible" />
+
+                    <TextView
+                        android:id="@+id/tvInventarioGeneralTitulo"
+                        style="@style/TextAppearance.Material3.BodyLarge"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:text="@string/reportes_inventario_general_titulo"
+                        android:textStyle="bold" />
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/recyclerInventarioGeneral"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:nestedScrollingEnabled="false"
+                        android:overScrollMode="never"
+                        tools:listitem="@layout/item_reporte_inventario"
+                        tools:visibility="gone" />
+
+                    <TextView
+                        android:id="@+id/tvInventarioGeneralVacio"
+                        style="@style/TextAppearance.Material3.BodyMedium"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:gravity="center"
+                        android:text="@string/reportes_inventario_general_vacio"
+                        tools:visibility="visible" />
+
+                    <TextView
+                        android:id="@+id/tvInventarioMovimientosTitulo"
+                        style="@style/TextAppearance.Material3.BodyLarge"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:text="@string/reportes_inventario_movimientos_titulo"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvInventarioMovimientosDetalle"
+                        style="@style/TextAppearance.Material3.BodyMedium"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:textColor="@color/dark_gray"
+                        tools:text="Entradas: 0 • Salidas: 4 • Neto: -4" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardMiBitacora"
+                style="@style/Tecni.Card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:id="@+id/tvTituloMiBitacora"
+                        style="@style/TextAppearance.Material3.TitleMedium"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/reportes_mi_bitacora_titulo"
+                        android:textStyle="bold" />
+
+                    <LinearLayout
+                        android:id="@+id/bitacoraResumenContainer"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/tvBitacoraHoras"
+                            style="@style/TextAppearance.Material3.BodyMedium"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            tools:text="Horas trabajadas: 12" />
+
+                        <TextView
+                            android:id="@+id/tvBitacoraKm"
+                            style="@style/TextAppearance.Material3.BodyMedium"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            tools:text="Km: 80" />
+
+                        <TextView
+                            android:id="@+id/tvBitacoraAverias"
+                            style="@style/TextAppearance.Material3.BodyMedium"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            tools:text="Averías atendidas: 5" />
+
+                        <TextView
+                            android:id="@+id/tvBitacoraLuminarias"
+                            style="@style/TextAppearance.Material3.BodyMedium"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            tools:text="Luminarias reparadas: 4" />
+
+                        <TextView
+                            android:id="@+id/tvBitacoraMaterial"
+                            style="@style/TextAppearance.Material3.BodyMedium"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            tools:text="Material top 5: Cable, Fusible" />
+                    </LinearLayout>
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/recyclerBitacora"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="12dp"
                         android:nestedScrollingEnabled="false"
                         android:overScrollMode="never"
-                        tools:listitem="@layout/item_reporte_luminaria_reparada"
+                        tools:listitem="@layout/item_reporte_bitacora_evento"
                         tools:visibility="gone" />
 
                     <TextView
-                        android:id="@+id/tvLuminariasVacio"
+                        android:id="@+id/tvBitacoraVacio"
                         style="@style/TextAppearance.Material3.BodyMedium"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
