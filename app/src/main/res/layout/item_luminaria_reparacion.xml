@@ -5,75 +5,127 @@
     android:layout_height="wrap_content"
     android:layout_marginBottom="12dp"
     app:cardBackgroundColor="?attr/colorSurface"
-    app:cardCornerRadius="16dp"
-    app:strokeColor="?attr/colorOutline">
+    app:cardCornerRadius="20dp"
+    app:cardElevation="2dp"
+    app:strokeColor="?attr/colorOutlineVariant"
+    app:strokeWidth="1dp">
 
-    <LinearLayout
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:padding="12dp">
+        android:padding="14dp">
 
         <com.google.android.material.card.MaterialCardView
-            android:layout_width="36dp"
-            android:layout_height="36dp"
-            app:cardBackgroundColor="?attr/colorPrimaryContainer"
-            app:cardCornerRadius="12dp">
+            android:id="@+id/cardIconLuminaria"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            app:cardBackgroundColor="?attr/colorSurfaceVariant"
+            app:cardCornerRadius="12dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
 
             <ImageView
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:padding="8dp"
+                android:padding="9dp"
                 android:src="@drawable/ic_menu_luminarias"
-                android:tint="?attr/colorOnPrimaryContainer" />
+                android:tint="?attr/colorOnSurfaceVariant" />
         </com.google.android.material.card.MaterialCardView>
 
-        <LinearLayout
+        <TextView
+            android:id="@+id/tvReparacionTitulo"
+            style="@style/TextAppearance.Material3.TitleMedium"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="12dp"
-            android:layout_weight="1"
-            android:orientation="vertical">
+            android:text="Localización"
+            android:textColor="?attr/colorOnSurface"
+            app:layout_constraintEnd_toStartOf="@+id/cardEstadoLuminaria"
+            app:layout_constraintStart_toEndOf="@id/cardIconLuminaria"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardEstadoLuminaria"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:cardBackgroundColor="?attr/colorSurfaceVariant"
+            app:cardCornerRadius="12dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
 
             <TextView
-                android:id="@+id/tvReparacionMaterial"
-                style="@style/TextAppearance.Material3.TitleSmall"
-                android:layout_width="match_parent"
+                android:id="@+id/tvReparacionEstado"
+                style="@style/TextAppearance.Material3.LabelMedium"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Material" />
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="4dp"
+                android:text="Estado"
+                android:textColor="?attr/colorOnSurfaceVariant" />
+        </com.google.android.material.card.MaterialCardView>
 
-            <TextView
-                android:id="@+id/tvReparacionDetalle"
-                style="@style/TextAppearance.Material3.BodySmall"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Localización # - Cantidad" />
+        <TextView
+            android:id="@+id/tvReparacionPueblo"
+            style="@style/TextAppearance.Material3.BodySmall"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:layout_marginTop="2dp"
+            android:text="Pueblo"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@id/cardIconLuminaria"
+            app:layout_constraintTop_toBottomOf="@id/tvReparacionTitulo" />
 
-            <TextView
-                android:id="@+id/tvReparacionEjecutor"
-                style="@style/TextAppearance.Material3.BodySmall"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Ejecutor" />
-        </LinearLayout>
+        <TextView
+            android:id="@+id/tvReparacionDetalle"
+            style="@style/TextAppearance.Material3.BodyMedium"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:lineSpacingExtra="2dp"
+            android:text="Detalle"
+            android:textColor="?attr/colorOnSurface"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tvReparacionPueblo" />
+
+        <TextView
+            android:id="@+id/tvReparacionExtra"
+            style="@style/TextAppearance.Material3.BodySmall"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:lineSpacingExtra="2dp"
+            android:text="Extra"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tvReparacionDetalle" />
 
         <ImageButton
             android:id="@+id/btnEditarReparacion"
             android:layout_width="36dp"
             android:layout_height="36dp"
+            android:layout_marginTop="8dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="Editar reparación"
             android:src="@drawable/ic_edit"
-            android:tint="?attr/colorPrimary" />
+            android:tint="?attr/colorPrimary"
+            app:layout_constraintEnd_toStartOf="@+id/btnEliminarReparacion"
+            app:layout_constraintTop_toBottomOf="@id/tvReparacionExtra" />
 
         <ImageButton
             android:id="@+id/btnEliminarReparacion"
             android:layout_width="36dp"
             android:layout_height="36dp"
+            android:layout_marginTop="8dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="Eliminar reparación"
             android:src="@drawable/ic_delete"
-            android:tint="?attr/colorError" />
-    </LinearLayout>
+            android:tint="?attr/colorError"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tvReparacionExtra" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
 </com.google.android.material.card.MaterialCardView>
