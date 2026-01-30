@@ -1,12 +1,12 @@
 {
   "formatVersion": 1,
   "database": {
-    "version": 16,
-    "identityHash": "583fbb08461434eeac346925ff5a1b53",
+    "version": 18,
+    "identityHash": "779be1094c30fc73e0d905c22052bef5",
     "entities": [
       {
         "tableName": "usuarios",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`uid` TEXT NOT NULL, `email` TEXT, `email_lower` TEXT, `nombre` TEXT, `apellidos` TEXT, `primerApellido` TEXT, `segundoApellido` TEXT, `cedula` TEXT, `region` TEXT, `regionNombre` TEXT, `subregion` TEXT, `subregionNombre` TEXT, `agenciaId` TEXT, `agencia` TEXT, `placaVehiculo` TEXT, `telefono` TEXT, `password` TEXT, `fotoUrl` TEXT, PRIMARY KEY(`uid`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`uid` TEXT NOT NULL, `email` TEXT, `email_lower` TEXT, `nombre` TEXT, `apellidos` TEXT, `primerApellido` TEXT, `segundoApellido` TEXT, `cedula` TEXT, `region` TEXT, `regionNombre` TEXT, `subregion` TEXT, `subregionNombre` TEXT, `agenciaId` TEXT, `agencia` TEXT, `placaVehiculo` TEXT, `telefono` TEXT, `password` TEXT, `fotoUrl` TEXT, `rol` TEXT, PRIMARY KEY(`uid`))",
         "fields": [
           {
             "fieldPath": "uid",
@@ -97,6 +97,11 @@
           {
             "fieldPath": "fotoUrl",
             "columnName": "fotoUrl",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "rol",
+            "columnName": "rol",
             "affinity": "TEXT"
           }
         ],
@@ -907,7 +912,7 @@
       },
       {
         "tableName": "luminaria_reparacion",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `vehiculoId` INTEGER NOT NULL, `localizacion` TEXT NOT NULL, `materialesJson` TEXT, `estado` TEXT NOT NULL, `ejecutorNombre` TEXT NOT NULL, `ejecutorCedula` TEXT, `fechaRegistro` INTEGER NOT NULL)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `vehiculoId` INTEGER NOT NULL, `localizacion` TEXT NOT NULL, `cliente` TEXT, `contacto` TEXT, `observaciones` TEXT, `materialesJson` TEXT, `estado` TEXT NOT NULL, `ejecutorNombre` TEXT NOT NULL, `ejecutorCedula` TEXT, `fechaRegistro` INTEGER NOT NULL)",
         "fields": [
           {
             "fieldPath": "id",
@@ -926,6 +931,21 @@
             "columnName": "localizacion",
             "affinity": "TEXT",
             "notNull": true
+          },
+          {
+            "fieldPath": "cliente",
+            "columnName": "cliente",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "contacto",
+            "columnName": "contacto",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "observaciones",
+            "columnName": "observaciones",
+            "affinity": "TEXT"
           },
           {
             "fieldPath": "materialesJson",
@@ -966,7 +986,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '583fbb08461434eeac346925ff5a1b53')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '779be1094c30fc73e0d905c22052bef5')"
     ]
   }
 }

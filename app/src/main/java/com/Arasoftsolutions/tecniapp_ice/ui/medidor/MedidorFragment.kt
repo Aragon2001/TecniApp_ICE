@@ -131,11 +131,11 @@ class MedidorFragment : Fragment() {
                         dismissRegistroBottomSheet()
                     }
 
-                    if (estado.showManualForm && !wasManualVisible) {
-                        binding.scrollMedidor.post {
-                            binding.scrollMedidor.smoothScrollTo(0, binding.cardRegistroManual.top)
-                        }
-                    }
+                            // if (estado.showManualForm && !wasManualVisible) {
+                           // binding.scrollMedidor.post {
+                           //     binding.scrollMedidor.smoothScrollTo(0, binding.cardRegistroManual.top)
+                          //  }
+                    //}
                     wasManualVisible = estado.showManualForm
 
                     if (estado.showCloudLookupDialog) {
