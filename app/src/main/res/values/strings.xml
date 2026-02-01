@@ -20,6 +20,12 @@
     <string name="menu_averias">Averías</string>
     <string name="menu_luminarias">Luminarias</string>
     <string name="menu_inventario">Inventario</string>
+    <string name="menu_mi_vehiculo">Mi Vehículo</string>
+    <string name="mi_vehiculo_titulo">Mi Vehículo</string>
+    <string name="mi_vehiculo_registrar_inicial">Registrar valor inicial del día</string>
+    <string name="mi_vehiculo_registrar_final">Registrar valor final del día</string>
+    <string name="mi_vehiculo_historial">Historial ETM</string>
+    <string name="mi_vehiculo_sin_asignar">Actualiza tu perfil con una placa asignada para usar este módulo.</string>
     <string name="menu_reportes">Reportes</string>
     <string name="menu_programacion">Programación</string>
     <string name="menu_settings">Ajustes</string>
@@ -1052,4 +1058,21 @@ Cliente: %4$s</string>
     <string name="averia_notificacion_action_asignar">Asignarme</string>
     <string name="averia_notificacion_action_atender">Atender</string>
     <string name="averia_notificacion_bubble_title">Averías ICE</string>
+
+    <!-- Registro de usuario - Paso 3 -->
+    <string name="registro_paso3_tipo_id">Tipo de identificación</string>
+    <string name="registro_paso3_cedula">Cédula de identidad (9 dígitos)</string>
+    <string name="registro_paso3_dimex">DIMEX (12 dígitos)</string>
+    <string name="registro_paso3_instrucciones">Selecciona el tipo de identificación e ingresa el número. El nombre y apellidos se completan automáticamente.</string>
+    <string name="registro_paso3_hint_cedula">Ingresa tu cédula (9 dígitos)</string>
+    <string name="registro_paso3_hint_dimex">Ingresa tu DIMEX (12 dígitos)</string>
+    <string name="registro_paso3_label_numero">Número de identificación</string>
+    <string name="registro_paso3_error_vacio">Por favor, ingresa tu número de identificación.</string>
+    <string name="registro_paso3_error_solo_numeros">El número debe contener solo dígitos.</string>
+    <string name="registro_paso3_error_cedula_9">La cédula debe tener 9 dígitos.</string>
+    <string name="registro_paso3_error_dimex_12">El DIMEX debe tener 12 dígitos.</string>
+    <string name="registro_paso3_hint_auto">Se completa automáticamente</string>
+    <string name="registro_paso3_hint_nombre_manual">Ingresa tu nombre</string>
+    <string name="registro_paso3_hint_apellido1_manual">Ingresa tu primer apellido</string>
+    <string name="registro_paso3_hint_apellido2_manual">Ingresa tu segundo apellido</string>
 </resources>

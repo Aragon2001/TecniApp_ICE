@@ -53,6 +53,13 @@
         android:label="@string/menu_inventario"
         tools:layout="@layout/fragment_inventario" />
 
+    <!-- Fragmento Mi Vehículo -->
+    <fragment
+        android:id="@+id/nav_mi_vehiculo"
+        android:name="com.Arasoftsolutions.tecniapp_ice.ui.vehiculo.MiVehiculoFragment"
+        android:label="@string/menu_mi_vehiculo"
+        tools:layout="@layout/fragment_mi_vehiculo" />
+
     <!-- Fragmento de reportes -->
     <fragment
         android:id="@+id/nav_reportes"
