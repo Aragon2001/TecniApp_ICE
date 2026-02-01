@@ -41,6 +41,11 @@
             android:title="@string/menu_inventario"
             />
         <item
+            android:id="@+id/nav_mi_vehiculo"
+            android:icon="@drawable/ic_menu_vehiculo"
+            android:title="@string/menu_mi_vehiculo"
+            />
+        <item
             android:id="@+id/nav_reportes"
             android:icon="@drawable/ic_menu_reportes"
             android:title="@string/menu_reportes"

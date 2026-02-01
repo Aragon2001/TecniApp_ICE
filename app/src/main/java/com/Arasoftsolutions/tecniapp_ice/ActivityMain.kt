@@ -63,6 +63,11 @@ class ActivityMain : AppCompatActivity() {
     private val updateDownloadManager by lazy { UpdateDownloadManager(this) }
     private var adminRoleEligible = false
     private var adminPrivilegesEnabled = true
+    private val authStateListener = FirebaseAuth.AuthStateListener { firebaseAuth ->
+        if (firebaseAuth.currentUser == null) {
+            navigateToLogin()
+        }
+    }
 
     private val runtimePermissionsLauncher =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { results ->
@@ -125,6 +130,7 @@ class ActivityMain : AppCompatActivity() {
         lifecycleScope.launch {
             loadUserDataFromDatabase()
         }
+        observeUserUpdates()
          val currentUser = auth.currentUser
         if (currentUser != null) {
             AveriasSyncWorker.triggerNow(applicationContext)
@@ -151,6 +157,7 @@ class ActivityMain : AppCompatActivity() {
                 R.id.nav_averias,
                 R.id.nav_luminarias,
                 R.id.nav_inventario,
+                R.id.nav_mi_vehiculo,
                 R.id.nav_reportes,
                 R.id.nav_programacion,
                 R.id.nav_account,
@@ -361,8 +368,42 @@ class ActivityMain : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        if (auth.currentUser == null) {
+            navigateToLogin()
+            return
+        }
         lifecycleScope.launch { loadUserDataFromDatabase() }
         requestAllPermissionsOnLaunch()
+    }
+
+    override fun onStart() {
+        super.onStart()
+        auth.addAuthStateListener(authStateListener)
+    }
+
+    override fun onStop() {
+        super.onStop()
+        auth.removeAuthStateListener(authStateListener)
+    }
+
+    private fun observeUserUpdates() {
+        val uid = auth.currentUser?.uid ?: return
+        lifecycleScope.launch {
+            repository.observarUsuario(uid).collect { usuario ->
+                if (usuario != null) {
+                    updateNavHeader(usuario)
+                    updateAdminMenuVisibility(usuario)
+                }
+            }
+        }
+    }
+
+    private fun navigateToLogin() {
+        if (isFinishing) return
+        startActivity(Intent(this, LoginActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        })
+        finish()
     }
 
     fun refreshNavHeader() {

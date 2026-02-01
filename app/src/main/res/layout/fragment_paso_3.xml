@@ -70,28 +70,65 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:text="Ingresa tu cédula para validar el personal. El nombre y apellidos se completan automáticamente."
+        android:text="@string/registro_paso3_instrucciones"
         android:textSize="14sp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/tvStep" />
 
-    <!-- Layout para el Paso 3: Validación de datos (nombre, apellido, cédula) -->
+    <!-- Layout para el Paso 3: Validación de datos (nombre, apellido, identificación) -->
     <LinearLayout
         android:id="@+id/step3Layout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="40dp"
+        android:layout_marginTop="24dp"
         android:orientation="vertical"
         android:visibility="visible"
         app:layout_constraintTop_toBottomOf="@id/tvInstructions">
 
-        <!-- Campo para ingresar la cédula -->
+        <!-- Selector de tipo de identificación -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp"
+            android:text="@string/registro_paso3_tipo_id"
+            android:textColor="@color/ice_blue_dark"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/chipGroupTipoId"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:singleSelection="true"
+            app:selectionRequired="true">
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipCedula"
+                style="@style/Tecni.Chip.Base"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/registro_paso3_cedula"
+                android:checked="true"
+                app:checkedIconVisible="true" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipDimex"
+                style="@style/Tecni.Chip.Base"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/registro_paso3_dimex"
+                app:checkedIconVisible="true" />
+        </com.google.android.material.chip.ChipGroup>
+
+        <!-- Campo para ingresar el número de identificación -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="0dp"
             android:layout_marginBottom="4dp"
-            android:text="Cédula"
+            android:text="@string/registro_paso3_label_numero"
             android:textColor="@color/ice_blue_dark"
             android:textSize="18sp"
             android:textStyle="bold" />
@@ -101,12 +138,12 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="@drawable/rounded_bg_f0f2f4"
-            android:hint="Ingresa tu cédula"
+            android:hint="@string/registro_paso3_hint_cedula"
             android:inputType="number"
-            android:maxLength="9"
+            android:maxLength="12"
             android:padding="12dp"
             android:textColor="@color/dark_gray"
-            android:textColorHint="@color/light_gray" /> <!-- Solo permite números -->
+            android:textColorHint="@color/light_gray" />
 
 
         <!-- Mensaje de error para la cédula -->
@@ -135,7 +172,7 @@
             android:layout_height="wrap_content"
             android:background="@drawable/rounded_bg_f0f2f4"
             android:enabled="false"
-            android:hint="Se completa automáticamente"
+            android:hint="@string/registro_paso3_hint_auto"
             android:padding="12dp"
             android:textColor="@color/dark_gray"
             android:textColorHint="@color/light_gray" />
@@ -166,7 +203,7 @@
             android:layout_height="wrap_content"
             android:background="@drawable/rounded_bg_f0f2f4"
             android:enabled="false"
-            android:hint="Se completa automáticamente"
+            android:hint="@string/registro_paso3_hint_auto"
             android:padding="12dp"
             android:textColor="@color/dark_gray"
             android:textColorHint="@color/light_gray" />
@@ -197,7 +234,7 @@
             android:layout_height="wrap_content"
             android:background="@drawable/rounded_bg_f0f2f4"
             android:enabled="false"
-            android:hint="Se completa automáticamente"
+            android:hint="@string/registro_paso3_hint_auto"
             android:padding="12dp"
             android:textColor="@color/dark_gray"
             android:textColorHint="@color/light_gray" />

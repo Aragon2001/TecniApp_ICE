@@ -35,4 +35,13 @@ interface VehiculoDao {
 
     @Query("DELETE FROM vehiculos WHERE id = :id")
     suspend fun eliminarPorId(id: Int)
+
+    @Query("DELETE FROM vehiculos WHERE subregion = :subregionId COLLATE NOCASE")
+    suspend fun eliminarPorSubregion(subregionId: String)
+
+    @Query("DELETE FROM vehiculos WHERE id NOT IN (:ids)")
+    suspend fun eliminarFueraDeIds(ids: List<Int>)
+
+    @Query("DELETE FROM vehiculos")
+    suspend fun limpiarTodo()
 }

@@ -1,12 +1,12 @@
 {
   "formatVersion": 1,
   "database": {
-    "version": 16,
-    "identityHash": "583fbb08461434eeac346925ff5a1b53",
+    "version": 20,
+    "identityHash": "6da1d9e98d418495ff14604191ff8810",
     "entities": [
       {
         "tableName": "usuarios",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`uid` TEXT NOT NULL, `email` TEXT, `email_lower` TEXT, `nombre` TEXT, `apellidos` TEXT, `primerApellido` TEXT, `segundoApellido` TEXT, `cedula` TEXT, `region` TEXT, `regionNombre` TEXT, `subregion` TEXT, `subregionNombre` TEXT, `agenciaId` TEXT, `agencia` TEXT, `placaVehiculo` TEXT, `telefono` TEXT, `password` TEXT, `fotoUrl` TEXT, PRIMARY KEY(`uid`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`uid` TEXT NOT NULL, `email` TEXT, `email_lower` TEXT, `nombre` TEXT, `apellidos` TEXT, `primerApellido` TEXT, `segundoApellido` TEXT, `cedula` TEXT, `region` TEXT, `regionNombre` TEXT, `subregion` TEXT, `subregionNombre` TEXT, `agenciaId` TEXT, `agencia` TEXT, `placaVehiculo` TEXT, `telefono` TEXT, `password` TEXT, `fotoUrl` TEXT, `rol` TEXT, PRIMARY KEY(`uid`))",
         "fields": [
           {
             "fieldPath": "uid",
@@ -97,6 +97,11 @@
           {
             "fieldPath": "fotoUrl",
             "columnName": "fotoUrl",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "rol",
+            "columnName": "rol",
             "affinity": "TEXT"
           }
         ],
@@ -907,7 +912,7 @@
       },
       {
         "tableName": "luminaria_reparacion",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `vehiculoId` INTEGER NOT NULL, `localizacion` TEXT NOT NULL, `materialesJson` TEXT, `estado` TEXT NOT NULL, `ejecutorNombre` TEXT NOT NULL, `ejecutorCedula` TEXT, `fechaRegistro` INTEGER NOT NULL)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `vehiculoId` INTEGER NOT NULL, `localizacion` TEXT NOT NULL, `cliente` TEXT, `contacto` TEXT, `observaciones` TEXT, `materialesJson` TEXT, `estado` TEXT NOT NULL, `ejecutorNombre` TEXT NOT NULL, `ejecutorCedula` TEXT, `fechaRegistro` INTEGER NOT NULL, `fechaCarga` INTEGER NOT NULL, `fechaReparacion` INTEGER)",
         "fields": [
           {
             "fieldPath": "id",
@@ -926,6 +931,21 @@
             "columnName": "localizacion",
             "affinity": "TEXT",
             "notNull": true
+          },
+          {
+            "fieldPath": "cliente",
+            "columnName": "cliente",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "contacto",
+            "columnName": "contacto",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "observaciones",
+            "columnName": "observaciones",
+            "affinity": "TEXT"
           },
           {
             "fieldPath": "materialesJson",
@@ -954,6 +974,17 @@
             "columnName": "fechaRegistro",
             "affinity": "INTEGER",
             "notNull": true
+          },
+          {
+            "fieldPath": "fechaCarga",
+            "columnName": "fechaCarga",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fechaReparacion",
+            "columnName": "fechaReparacion",
+            "affinity": "INTEGER"
           }
         ],
         "primaryKey": {
@@ -962,11 +993,183 @@
             "id"
           ]
         }
+      },
+      {
+        "tableName": "etm_registros",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `placa` TEXT NOT NULL, `vehiculoId` INTEGER NOT NULL, `fecha` TEXT NOT NULL, `valorInicial` REAL NOT NULL, `valorFinal` REAL, `tecnicoUid` TEXT NOT NULL, `tecnicoNombre` TEXT, `observaciones` TEXT, `cerrado` INTEGER NOT NULL, `registradoEn` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "placa",
+            "columnName": "placa",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "vehiculoId",
+            "columnName": "vehiculoId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fecha",
+            "columnName": "fecha",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "valorInicial",
+            "columnName": "valorInicial",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "valorFinal",
+            "columnName": "valorFinal",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "tecnicoUid",
+            "columnName": "tecnicoUid",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tecnicoNombre",
+            "columnName": "tecnicoNombre",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "observaciones",
+            "columnName": "observaciones",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "cerrado",
+            "columnName": "cerrado",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "registradoEn",
+            "columnName": "registradoEn",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_etm_registros_placa_fecha",
+            "unique": true,
+            "columnNames": [
+              "placa",
+              "fecha"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_etm_registros_placa_fecha` ON `${TABLE_NAME}` (`placa`, `fecha`)"
+          }
+        ]
+      },
+      {
+        "tableName": "vehiculo_mantenimientos",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `placa` TEXT NOT NULL, `vehiculoId` INTEGER NOT NULL, `tipo` TEXT NOT NULL, `fecha` TEXT NOT NULL, `valorAlMomento` REAL NOT NULL, `observaciones` TEXT, `proximoKm` REAL, `proximoHoras` REAL, `proximoFecha` TEXT, `registradoEn` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "placa",
+            "columnName": "placa",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "vehiculoId",
+            "columnName": "vehiculoId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tipo",
+            "columnName": "tipo",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fecha",
+            "columnName": "fecha",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "valorAlMomento",
+            "columnName": "valorAlMomento",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "observaciones",
+            "columnName": "observaciones",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "proximoKm",
+            "columnName": "proximoKm",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "proximoHoras",
+            "columnName": "proximoHoras",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "proximoFecha",
+            "columnName": "proximoFecha",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "registradoEn",
+            "columnName": "registradoEn",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_vehiculo_mantenimientos_placa",
+            "unique": false,
+            "columnNames": [
+              "placa"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_vehiculo_mantenimientos_placa` ON `${TABLE_NAME}` (`placa`)"
+          }
+        ]
       }
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '583fbb08461434eeac346925ff5a1b53')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '6da1d9e98d418495ff14604191ff8810')"
     ]
   }
 }

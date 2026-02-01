@@ -61,6 +61,7 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
                 Log.e(TAG, "Error inicializando FirebaseDatabase", throwable)
                 throw IllegalStateException("No se pudo inicializar la base de datos en $url", throwable)
             }
+
     }
 
     private suspend fun resolveDatosGeneralesNode(vararg candidates: String): String {
