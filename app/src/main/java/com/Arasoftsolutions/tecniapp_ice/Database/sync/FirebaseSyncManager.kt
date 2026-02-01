@@ -45,12 +45,12 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
         database("https://tecniapp-ice-materiales.firebaseio.com/")
     }
 
-private val dbLuminarias: DatabaseReference by lazy {
-    database("https://tecniapp-ice-luminarias.firebaseio.com/")
-}
-
-      private val dbInventario: DatabaseReference by lazy {
+    private val dbInventario: DatabaseReference by lazy {
         database("https://tecniapp-ice-inventario.firebaseio.com/")
+    }
+
+    private val dbLuminarias: DatabaseReference by lazy {
+        dbLocal
     }
 
     private val subregionNombreCache = mutableMapOf<String, String>()
@@ -555,7 +555,8 @@ private val dbLuminarias: DatabaseReference by lazy {
 
     // --- INVENTARIO ---
     suspend fun obtenerInventario(): List<InventarioItemEntity> {
-        val snap = dbInventario.get().await()
+        val root = inventarioRoot()
+        val snap = root.get().await()
         if (!snap.exists()) return emptyList()
         return snap.children.flatMap { vehiculoNode ->
             vehiculoNode.children.mapNotNull { itemNode ->
@@ -599,7 +600,8 @@ private val dbLuminarias: DatabaseReference by lazy {
                 "cantidadDisponible" to item.cantidadDisponible
             )
         }
-        dbInventario.child(vehiculoKey).setValue(payload).await()
+        val root = inventarioRoot()
+        root.child(vehiculoKey).setValue(payload).await()
     }
 
     suspend fun guardarInventarioItem(vehiculoKey: String, item: InventarioItemEntity) {
@@ -612,17 +614,46 @@ private val dbLuminarias: DatabaseReference by lazy {
             "descripcionMaterial" to item.descripcionMaterial,
             "cantidadDisponible" to item.cantidadDisponible
         )
-        dbInventario.child(vehiculoKey).child(codigo).setValue(payload).await()
+        val root = inventarioRoot()
+        root.child(vehiculoKey).child(codigo).setValue(payload).await()
     }
 
     suspend fun eliminarInventarioItem(vehiculoKey: String, codigoMaterial: String) {
         val codigo = codigoMaterial.trim()
         if (codigo.isEmpty()) return
-        dbInventario.child(vehiculoKey).child(codigo).removeValue().await()
+        val root = inventarioRoot()
+        root.child(vehiculoKey).child(codigo).removeValue().await()
     }
 
     suspend fun eliminarInventarioVehiculo(vehiculoKey: String) {
-        dbInventario.child(vehiculoKey).removeValue().await()
+        val root = inventarioRoot()
+        root.child(vehiculoKey).removeValue().await()
+    }
+
+    suspend fun obtenerLuminarias(agencia: String?): List<LuminariaReparacionEntity> {
+        val base = luminariasBase()
+        val agencias = if (agencia.isNullOrBlank()) {
+            base.get().await().children.mapNotNull { it.key }
+        } else {
+            listOf(normalizarClave(agencia) ?: agencia)
+        }
+
+        val reparaciones = mutableListOf<LuminariaReparacionEntity>()
+        agencias.forEach { agenciaKey ->
+            val root = base.child(agenciaKey)
+            val snap = root.get().await()
+            if (!snap.exists()) return@forEach
+
+            val pendientesNode = snap.child("pendientes")
+            val reparadasNode = snap.child("reparadas")
+            if (pendientesNode.exists() || reparadasNode.exists()) {
+                reparaciones += pendientesNode.children.mapNotNull { parseLuminariaSnapshot(it, LuminariaEstado.PENDIENTE) }
+                reparaciones += reparadasNode.children.mapNotNull { parseLuminariaSnapshot(it, LuminariaEstado.REPARADA) }
+            } else {
+                reparaciones += snap.children.mapNotNull { parseLuminariaSnapshot(it, null) }
+            }
+        }
+        return reparaciones
     }
 
     suspend fun eliminarLocalizacion(id: Int) {
@@ -736,9 +767,73 @@ private val dbLuminarias: DatabaseReference by lazy {
 
     private suspend fun luminariasRoot(agencia: String?): DatabaseReference {
         val agenciaKey = normalizarClave(agencia)?.takeIf { it.isNotBlank() } ?: "sin_agencia"
-        val root = dbLuminarias.child(agenciaKey)
+        val root = luminariasBase().child(agenciaKey)
         val exists = runCatching { root.get().await().exists() }.getOrDefault(false)
         return if (exists) root else root
+    }
+
+    private suspend fun luminariasBase(): DatabaseReference {
+        val lower = dbLuminarias.child("luminarias")
+        val upper = dbLuminarias.child("Luminarias")
+        val lowerExists = runCatching { lower.get().await().exists() }.getOrDefault(false)
+        val upperExists = runCatching { upper.get().await().exists() }.getOrDefault(false)
+        return when {
+            lowerExists -> lower
+            upperExists -> upper
+            else -> lower
+        }
+    }
+
+    private suspend fun inventarioRoot(): DatabaseReference {
+        val lower = dbInventario.child("inventario")
+        val upper = dbInventario.child("Inventario")
+        val lowerExists = runCatching { lower.get().await().exists() }.getOrDefault(false)
+        val upperExists = runCatching { upper.get().await().exists() }.getOrDefault(false)
+        return when {
+            lowerExists -> lower
+            upperExists -> upper
+            else -> dbInventario
+        }
+    }
+
+    private fun parseLuminariaSnapshot(
+        snapshot: DataSnapshot,
+        estadoFallback: LuminariaEstado?
+    ): LuminariaReparacionEntity? {
+        if (!snapshot.exists()) return null
+        val id = snapshot.longChildAny("id") ?: snapshot.key?.toLongOrNull() ?: return null
+        val vehiculoId = snapshot.intValueAny("vehiculoId", "vehiculo_id") ?: 0
+        val localizacion = snapshot.stringChildAny("localizacion", "Localizacion", "Localización").orEmpty()
+        val cliente = snapshot.stringChildAny("cliente", "Cliente")
+        val contacto = snapshot.stringChildAny("contacto", "Contacto")
+        val observaciones = snapshot.stringChildAny("observaciones", "Observaciones")
+        val materialesJson = snapshot.stringChildAny("materialesJson", "materiales")
+        val estadoRaw = snapshot.stringChildAny("estado", "Estado")
+        val estado = when {
+            estadoRaw.isNullOrBlank() -> estadoFallback ?: LuminariaEstado.REPARADA
+            else -> LuminariaEstado.fromRaw(estadoRaw)
+        }
+        val ejecutorNombre = snapshot.stringChildAny("ejecutorNombre", "ejecutor", "Ejecutor").orEmpty()
+        val ejecutorCedula = snapshot.stringChildAny("ejecutorCedula", "ejecutor_cedula")
+        val fechaRegistro = snapshot.longChildAny("fechaRegistro", "fecha_registro") ?: System.currentTimeMillis()
+        val fechaCarga = snapshot.longChildAny("fechaCarga", "fecha_carga") ?: fechaRegistro
+        val fechaReparacion = snapshot.longChildAny("fechaReparacion", "fecha_reparacion")
+
+        return LuminariaReparacionEntity(
+            id = id,
+            vehiculoId = vehiculoId,
+            localizacion = localizacion,
+            cliente = cliente,
+            contacto = contacto,
+            observaciones = observaciones,
+            materialesJson = materialesJson,
+            estado = estado.name,
+            ejecutorNombre = ejecutorNombre,
+            ejecutorCedula = ejecutorCedula,
+            fechaRegistro = fechaRegistro,
+            fechaCarga = fechaCarga,
+            fechaReparacion = fechaReparacion
+        )
     }
 
     private fun esNodoMedidor(node: DataSnapshot): Boolean {

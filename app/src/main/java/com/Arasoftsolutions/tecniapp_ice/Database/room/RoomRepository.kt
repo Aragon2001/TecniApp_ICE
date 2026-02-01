@@ -558,6 +558,16 @@ class   RoomRepository(context: Context) {
         bytes
     }
 
+    suspend fun syncLuminarias(agencia: String? = null): Long = withContext(Dispatchers.IO) {
+        val reparaciones = firebase.obtenerLuminarias(agencia)
+        val bytes = estimateBytes(reparaciones)
+        inventarioDao.limpiarReparaciones()
+        if (reparaciones.isNotEmpty()) {
+            inventarioDao.insertarReparaciones(reparaciones)
+        }
+        bytes
+    }
+
     private suspend fun resolveVehiculoKey(vehiculoId: Int): String {
         val vehiculo = db.vehiculoDao().buscarPorId(vehiculoId)
         return vehiculo?.placa?.toString() ?: vehiculoId.toString()
