@@ -23,6 +23,7 @@ class   RoomRepository(context: Context) {
     private val firebase = FirebaseSyncManager(context.applicationContext)
     private val kilometrajeDao = db.vehiculoKilometrajeDao()
     private val inventarioDao = db.inventarioDao()
+    private val etmRegistroDao = db.etmRegistroDao()
 
     companion object {
         const val SUBREGION_SYNC_STEPS = 5
@@ -88,6 +89,15 @@ class   RoomRepository(context: Context) {
 
     fun observarInventarioGeneral(): Flow<List<InventarioConVehiculo>> =
         inventarioDao.observarInventarioGeneral()
+
+    fun observarRegistrosEtm(placa: String, limite: Int = 30): Flow<List<EtmRegistroEntity>> =
+        etmRegistroDao.observarUltimos(placa, limite)
+
+    suspend fun obtenerRegistroEtmHoy(placa: String, fecha: String): EtmRegistroEntity? =
+        etmRegistroDao.obtenerPorPlacaYFecha(placa, fecha)
+
+    suspend fun guardarRegistroEtm(registro: EtmRegistroEntity) =
+        etmRegistroDao.insertar(registro)
 
     fun observarReparaciones(): Flow<List<LuminariaReparacionEntity>> =
         inventarioDao.observarReparaciones()
