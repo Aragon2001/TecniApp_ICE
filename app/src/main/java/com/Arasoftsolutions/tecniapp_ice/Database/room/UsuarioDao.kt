@@ -5,6 +5,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.UserEntity
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface UsuarioDao {
@@ -14,6 +15,9 @@ interface UsuarioDao {
 
     @Query("SELECT * FROM usuarios WHERE uid = :uid LIMIT 1")
     suspend fun getByUid(uid: String): UserEntity?
+
+    @Query("SELECT * FROM usuarios WHERE uid = :uid LIMIT 1")
+    fun observeByUid(uid: String): Flow<UserEntity?>
 
     @Query("SELECT * FROM usuarios ORDER BY nombre")
     suspend fun getAll(): List<UserEntity>
@@ -28,6 +32,6 @@ interface UsuarioDao {
     suspend fun clear()
 
     @Query("SELECT * FROM usuarios WHERE uid = :uid LIMIT 1")
-suspend fun get(uid: String): UserEntity?
+    suspend fun get(uid: String): UserEntity?
 
 }

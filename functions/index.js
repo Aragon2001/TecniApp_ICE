@@ -20,23 +20,41 @@ const usersApp = admin.initializeApp({ databaseURL: DB_USERS_URL }, "users");
 const dbAverias = admin.database(averiasApp);
 const dbUsers = admin.database(usersApp);
 
-function createTransporter({ user, pass }) {
-  return nodemailer.createTransport({
+let cachedTransporter = null;
+let cachedAuthKey = null;
+
+function getTransporter(user, pass) {
+  const key = `${user}:${pass}`;
+  if (cachedTransporter && cachedAuthKey === key) return cachedTransporter;
+
+  cachedAuthKey = key;
+  cachedTransporter = nodemailer.createTransport({
     service: "gmail",
     auth: { user, pass },
+    // pool ayuda a reutilizar conexiones
+    pool: true,
+    maxConnections: 1,
+    maxMessages: 50,
   });
+
+  return cachedTransporter;
 }
 
 async function sendMail({ to, subject, html, user, pass }) {
-  const transporter = createTransporter({ user, pass });
+  const transporter = getTransporter(user, pass);
 
-  await transporter.sendMail({
+  const t = Date.now();
+  const info = await transporter.sendMail({
     from: `"TecniApp ICE" <${user}>`,
     to,
     subject,
     html,
   });
+
+  console.log("sendMail ms:", Date.now() - t, "messageId:", info?.messageId);
+  return info;
 }
+
 
 /* =========================================================
    HELPERS
@@ -150,9 +168,16 @@ function generateCode() {
 }
 
 function extractEmail(data) {
-  if (typeof data === "string") {
-    return data;
-  }
+  // 1) string directo
+  if (typeof data === "string") return data;
+
+  // 2) Firebase a veces envuelve string como { data: "email@..." }
+  if (typeof data?.data === "string") return data.data;
+
+  // 3) doble envoltorio raro: { data: { data: "email@..." } }
+  if (typeof data?.data?.data === "string") return data.data.data;
+
+  // 4) formatos normales {email:""} o {data:{email:""}}
   const direct =
     data?.email ||
     data?.correo ||
@@ -165,6 +190,7 @@ function extractEmail(data) {
     data?.data?.correo ||
     data?.data?.mail ||
     data?.data?.userEmail;
+
   return nested || "";
 }
 

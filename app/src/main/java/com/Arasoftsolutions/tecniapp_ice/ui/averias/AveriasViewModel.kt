@@ -142,6 +142,7 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
     private var cachedAgencias: List<AgenciaEntity> = emptyList()
     private val regionKeywords = MutableStateFlow<Map<String, List<String>>>(emptyMap())
     private var pendingUser: UserEntity? = null
+    private var usuarioObserverStarted = false
     private var pendingRegionId: String? = prefs.getString(PREF_REGION_ID, null)
     private var pendingRegionName: String? = prefs.getString(PREF_REGION_NAME, null)
     private var pendingAgencyId: String? = prefs.getString(PREF_AGENCIA_ID, null)
@@ -215,6 +216,7 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
         })
         AveriaNotifications.ensureChannel(app)
         observeCatalogos()
+        observeUsuarioActual()
         viewModelScope.launch { loadUsuarioActual() }
         viewModelScope.launch { syncCatalogosGenerales() }
         viewModelScope.launch {
@@ -269,6 +271,25 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
                     tecnicosSyncAttempted = false
                 }
                 _tecnicos.value = lista
+            }
+        }
+    }
+
+    private fun observeUsuarioActual() {
+        if (usuarioObserverStarted) return
+        val uid = auth.currentUser?.uid ?: return
+        usuarioObserverStarted = true
+        viewModelScope.launch {
+            roomRepo.observarUsuario(uid).collectLatest { user ->
+                _usuario.value = user
+                if (user != null) {
+                    pendingUser = user
+                    refreshPendingSelection()
+                    val regionItems = _regiones.value
+                    if (regionItems.isNotEmpty()) {
+                        applyPendingSelectionsIfPossible(regionItems)
+                    }
+                }
             }
         }
     }
@@ -810,6 +831,7 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
             try {
                 repo.pullFromFirebaseOnce()
                 repo.syncPendientesConFirebase()
+                roomRepo.refreshUsuarioActual()
             } finally {
                 isLoading.emit(false)
             }

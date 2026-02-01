@@ -202,6 +202,7 @@ override fun onStop() {
                     EN_ATENCION -> b.chipEnAtencion.id
                     RESUELTA -> b.chipResuelta.id
                     PENDIENTE -> b.chipPendiente.id
+
                     ANULADA -> TODO()
                 }
                 b.chipGroupEstado.check(chipId)

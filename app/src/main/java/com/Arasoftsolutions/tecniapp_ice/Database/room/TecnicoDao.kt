@@ -18,4 +18,10 @@ interface TecnicoDao {
 
     @Query("SELECT * FROM tecnicos WHERE cedula = :cedula LIMIT 1")
     suspend fun obtenerPorCedula(cedula: String): TecnicoEntity?
+
+    @Query("DELETE FROM tecnicos WHERE cedula NOT IN (:cedulas)")
+    suspend fun eliminarFueraDeCedulas(cedulas: List<String>)
+
+    @Query("DELETE FROM tecnicos")
+    suspend fun limpiarTodo()
 }

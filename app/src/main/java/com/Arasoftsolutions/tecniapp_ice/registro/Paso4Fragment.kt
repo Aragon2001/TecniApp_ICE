@@ -10,6 +10,7 @@ import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.ImageView
 import android.widget.Spinner
+import java.text.Normalizer
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
@@ -62,6 +63,17 @@ class Paso4Fragment : Fragment() {
     private var selectedAgencyItem: AgencyItem? = null
 
     // ---------- Helpers para claves seguras ----------
+
+  private fun normTag(x: String): String {
+    val upper = x.trim().uppercase(Locale.ROOT)
+    val noAccents = Normalizer.normalize(upper, Normalizer.Form.NFD)
+        .replace(Regex("\\p{Mn}+"), "") // quita tildes/diacríticos
+
+    return noAccents
+        .replace(Regex("[^A-Z0-9]+"), "_")
+        .replace(Regex("^_+|_+$"), "")
+}
+
     private fun emailKey(email: String): String =
         email.trim().lowercase(Locale.ROOT)
             .replace(".", ",")
@@ -340,10 +352,17 @@ class Paso4Fragment : Fragment() {
                 vehicles = mutableListOf("Seleccione un Vehículo")
                 for (snap in ds.children) {
                     val agencyValues = listOfNotNull(
-                        snap.child("agencia").getValue(String::class.java)?.trim(),
-                        snap.child("agencia_id").getValue(String::class.java)?.trim(),
-                        snap.child("agenciaId").getValue(String::class.java)?.trim()
-                    ).filter { it.isNotEmpty() }
+    snap.child("agencia").getValue(String::class.java),
+    snap.child("agencia_id").getValue(String::class.java),
+    snap.child("agenciaId").getValue(String::class.java),
+
+    // ✅ extras comunes en datasets reales
+    snap.child("agenciaNombre").getValue(String::class.java),
+    snap.child("agencia_nombre").getValue(String::class.java),
+    snap.child("agenciaTag").getValue(String::class.java),
+    snap.child("agencia_tag").getValue(String::class.java)
+).map { it.trim() }.filter { it.isNotEmpty() }
+
 
                     if (agencyValues.isEmpty()) continue
 
@@ -383,22 +402,31 @@ class Paso4Fragment : Fragment() {
         })
     }
 
-    private fun agencyMatchesSubregion(value: String?, subregion: SubregionItem): Boolean {
-        val normalized = value?.trim().orEmpty()
-        if (normalized.isEmpty()) return false
-        return normalized.equals(subregion.id, ignoreCase = true) ||
-                normalized.equals(subregion.nombre, ignoreCase = true)
-    }
+private fun agencyMatchesSubregion(value: String?, subregion: SubregionItem): Boolean {
+    val normalized = value?.trim().orEmpty()
+    if (normalized.isEmpty()) return true   // ✅ sin subregión => permitir (filtrará por región)
+    return normalized.equals(subregion.id, ignoreCase = true) ||
+           normalized.equals(subregion.nombre, ignoreCase = true)
+}
 
-    private fun vehicleMatchesAgency(values: List<String>, agency: AgencyItem): Boolean {
-        if (values.isEmpty()) return false
-        val agencyId = agency.id?.trim()
-        val agencyName = agency.nombre.trim()
-        return values.any { value ->
-            value.equals(agencyName, ignoreCase = true) ||
-                    (agencyId != null && value.equals(agencyId, ignoreCase = true))
-        }
+
+ private fun vehicleMatchesAgency(values: List<String>, agency: AgencyItem): Boolean {
+    if (values.isEmpty()) return false
+
+    val agencyId = agency.id?.trim().orEmpty()
+    val agencyName = agency.nombre.trim()
+    val agencyTag = normTag(agencyName)
+
+    return values.any { v ->
+        val raw = v.trim()
+        if (raw.isEmpty()) return@any false
+
+        raw.equals(agencyName, ignoreCase = true) ||
+        (agencyId.isNotEmpty() && raw.equals(agencyId, ignoreCase = true)) ||
+        normTag(raw) == agencyTag
     }
+}
+
 
     // ---------- 4) Finalizar registro ----------
     private fun finalizeRegistration() {

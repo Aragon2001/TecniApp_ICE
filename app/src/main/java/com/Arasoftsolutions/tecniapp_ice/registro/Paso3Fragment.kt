@@ -1,6 +1,7 @@
 package com.Arasoftsolutions.tecniapp_ice.registro
 
 import android.os.Bundle
+import android.text.InputFilter
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -14,6 +15,8 @@ import androidx.lifecycle.lifecycleScope
 import com.Arasoftsolutions.tecniapp_ice.R
 import com.Arasoftsolutions.tecniapp_ice.RegistroActivity
 import com.google.android.material.button.MaterialButton
+import com.google.android.material.chip.Chip
+import com.google.android.material.chip.ChipGroup
 import com.google.android.material.textfield.TextInputEditText
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
@@ -28,11 +31,18 @@ class Paso3Fragment : Fragment() {
     private lateinit var etLastName2: TextInputEditText
     private lateinit var etID: TextInputEditText
     private lateinit var btnContinueToStep4: MaterialButton
+    private lateinit var chipCedula: Chip
+    private lateinit var chipDimex: Chip
 
     private lateinit var tvFirstNameError: TextView
     private lateinit var tvLastNameError: TextView
     private lateinit var tvLastNameError2: TextView
     private lateinit var tvIDError: TextView
+
+    private val CEDULA_DIGITS = 9
+    private val DIMEX_DIGITS = 12
+
+    private fun isCedulaSelected(): Boolean = chipCedula.isChecked
 
     private data class PersonalData(
         val nombre: String,
@@ -69,28 +79,55 @@ class Paso3Fragment : Fragment() {
         etLastName2 = view.findViewById(R.id.etLastName2)
         etID        = view.findViewById(R.id.etID)
         btnContinueToStep4 = view.findViewById(R.id.btnContinueToStep4)
+        chipCedula = view.findViewById(R.id.chipCedula)
+        chipDimex  = view.findViewById(R.id.chipDimex)
+        val chipGroupTipoId = view.findViewById<ChipGroup>(R.id.chipGroupTipoId)
 
         tvFirstNameError = view.findViewById(R.id.tvFirstNameError)
         tvLastNameError  = view.findViewById(R.id.tvLastNameError)
         tvLastNameError2 = view.findViewById(R.id.tvLastNameError2)
         tvIDError        = view.findViewById(R.id.tvIDError)
 
+        applyTipoIdSelection()
+        chipGroupTipoId.setOnCheckedStateChangeListener { _, _ ->
+            applyTipoIdSelection()
+        }
+
         lockNameFields()
 
         etID.doAfterTextChanged { text ->
-            val cedula = cedulaKey(text?.toString().orEmpty())
-            if (cedula.length == 9) {
-                lookupPersonalData(cedula)
-            } else {
-                personalData = null
-                lastLookupCedula = null
-                clearNameFields()
+            val digits = cedulaKey(text?.toString().orEmpty())
+            val expectedLen = if (isCedulaSelected()) CEDULA_DIGITS else DIMEX_DIGITS
+            when {
+                digits.length == expectedLen -> {
+                    lockNameFields()
+                    lookupPersonalData(digits)
+                }
+                else -> {
+                    personalData = null
+                    lastLookupCedula = null
+                    clearNameFields()
+                    lockNameFields()
+                }
             }
         }
 
         btnContinueToStep4.setOnClickListener { onContinue() }
 
         return view
+    }
+
+    private fun applyTipoIdSelection() {
+        val isCedula = isCedulaSelected()
+        val maxLen = if (isCedula) CEDULA_DIGITS else DIMEX_DIGITS
+        etID.filters = arrayOf(InputFilter.LengthFilter(maxLen))
+        etID.hint = if (isCedula) getString(R.string.registro_paso3_hint_cedula) else getString(R.string.registro_paso3_hint_dimex)
+        etID.setText("")
+        personalData = null
+        lastLookupCedula = null
+        clearNameFields()
+        lockNameFields()
+        clearErrors()
     }
 
     private fun setNavigationListeners(view: View) {
@@ -104,14 +141,19 @@ class Paso3Fragment : Fragment() {
 
         val cedulaRaw = etID.text?.toString()?.trim().orEmpty()
         val cedKey    = cedulaKey(cedulaRaw)
+        val expectedLen = if (isCedulaSelected()) CEDULA_DIGITS else DIMEX_DIGITS
 
         // Validación local
-        if (cedKey.isBlank()) return showFieldError(tvIDError, "Por favor, ingresa tu cédula.")
-        if (!cedKey.all { it.isDigit() }) return showFieldError(tvIDError, "La cédula debe contener solo números.")
-        if (cedKey.length != 9) return showFieldError(tvIDError, "La cédula debe tener exactamente 9 dígitos.")
+        if (cedKey.isBlank()) return showFieldError(tvIDError, getString(R.string.registro_paso3_error_vacio))
+        if (!cedKey.all { it.isDigit() }) return showFieldError(tvIDError, getString(R.string.registro_paso3_error_solo_numeros))
+        if (cedKey.length != expectedLen) {
+            val msg = if (isCedulaSelected()) getString(R.string.registro_paso3_error_cedula_9) else getString(R.string.registro_paso3_error_dimex_12)
+            return showFieldError(tvIDError, msg)
+        }
 
         if (personalData == null || lastLookupCedula != cedKey) {
-            showFieldError(tvIDError, "Primero valida la cédula para completar los datos.")
+            val tipo = if (isCedulaSelected()) "cédula" else "DIMEX"
+            showFieldError(tvIDError, "Primero valida el $tipo para completar los datos.")
             return
         }
 
@@ -163,6 +205,18 @@ class Paso3Fragment : Fragment() {
         etFirstName.isEnabled = false
         etLastName.isEnabled = false
         etLastName2.isEnabled = false
+        etFirstName.hint = getString(R.string.registro_paso3_hint_auto)
+        etLastName.hint = getString(R.string.registro_paso3_hint_auto)
+        etLastName2.hint = getString(R.string.registro_paso3_hint_auto)
+    }
+
+    private fun unlockNameFields() {
+        etFirstName.isEnabled = true
+        etLastName.isEnabled = true
+        etLastName2.isEnabled = true
+        etFirstName.hint = getString(R.string.registro_paso3_hint_nombre_manual)
+        etLastName.hint = getString(R.string.registro_paso3_hint_apellido1_manual)
+        etLastName2.hint = getString(R.string.registro_paso3_hint_apellido2_manual)
     }
 
     private fun clearNameFields() {
