@@ -9,7 +9,7 @@ class Synchronizer(
 ) {
 
     companion object {
-        private const val EXTRA_STEPS = 4
+        private const val EXTRA_STEPS = 5
     }
 
     suspend fun syncSubregion(
@@ -59,7 +59,15 @@ class Synchronizer(
                 throw Exception("Error en syncInventario(): ${e.message}", e)
             }
 
-            // ----------- 5. SUBREGIÓN COMPLETA ----------------
+            // ----------- 5. LUMINARIAS ----------------
+            try {
+                downloadedBytes += repository.syncLuminarias()
+                onSyncProgress(++done, total, "Sincronizando luminarias…", downloadedBytes)
+            } catch (e: Exception) {
+                throw Exception("Error en syncLuminarias(): ${e.message}", e)
+            }
+
+            // ----------- 6. SUBREGIÓN COMPLETA ----------------
             try {
                 val bytesBeforeSubregion = downloadedBytes
                 repository.syncSubregion(subregionId) { subDone, _, msg, bytes ->

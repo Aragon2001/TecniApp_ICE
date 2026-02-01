@@ -16,8 +16,8 @@
             style="@style/Tecni.Card"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:cardBackgroundColor="?attr/colorPrimaryContainer"
-            app:strokeColor="?attr/colorPrimary">
+            app:cardBackgroundColor="?attr/colorSurface"
+            app:strokeColor="?attr/colorOutline">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -34,7 +34,7 @@
                     <com.google.android.material.card.MaterialCardView
                         android:layout_width="40dp"
                         android:layout_height="40dp"
-                        app:cardBackgroundColor="?attr/colorSecondaryContainer"
+                        app:cardBackgroundColor="?attr/colorSurfaceVariant"
                         app:cardCornerRadius="12dp">
 
                         <ImageView
@@ -42,7 +42,7 @@
                             android:layout_height="match_parent"
                             android:padding="8dp"
                             android:src="@drawable/ic_menu_luminarias"
-                            android:tint="?attr/colorOnSecondaryContainer" />
+                            android:tint="?attr/colorOnSurfaceVariant" />
                     </com.google.android.material.card.MaterialCardView>
 
                     <TextView
@@ -60,7 +60,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
                     android:text="Registra una reparación espontánea desde el botón y completa los detalles en el panel."
-                    android:textColor="?attr/colorOnPrimaryContainer" />
+                    android:textColor="?attr/colorOnSurfaceVariant" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnRegistrarLuminaria"
@@ -189,8 +189,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            app:cardBackgroundColor="?attr/colorSecondaryContainer"
-            app:strokeColor="?attr/colorSecondary">
+            app:cardBackgroundColor="?attr/colorSurface"
+            app:strokeColor="?attr/colorOutline">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -207,7 +207,7 @@
                     <com.google.android.material.card.MaterialCardView
                         android:layout_width="40dp"
                         android:layout_height="40dp"
-                        app:cardBackgroundColor="?attr/colorSecondary"
+                        app:cardBackgroundColor="?attr/colorSurfaceVariant"
                         app:cardCornerRadius="12dp">
 
                         <ImageView
@@ -215,7 +215,7 @@
                             android:layout_height="match_parent"
                             android:padding="8dp"
                             android:src="@drawable/ic_report_clock"
-                            android:tint="?attr/colorOnSecondary" />
+                            android:tint="?attr/colorOnSurfaceVariant" />
                     </com.google.android.material.card.MaterialCardView>
 
                     <TextView
@@ -234,13 +234,14 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
                     android:text="No hay reparaciones pendientes."
-                    android:textColor="?attr/colorOnSecondaryContainer" />
+                    android:textColor="?attr/colorOnSurfaceVariant" />
 
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/listReparacionesPendientes"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
+                    android:layoutAnimation="@anim/layout_fade_in"
                     android:nestedScrollingEnabled="false"
                     tools:listitem="@layout/item_luminaria_reparacion" />
             </LinearLayout>
@@ -252,8 +253,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            app:cardBackgroundColor="?attr/colorTertiaryContainer"
-            app:strokeColor="?attr/colorTertiary">
+            app:cardBackgroundColor="?attr/colorSurface"
+            app:strokeColor="?attr/colorOutline">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -270,7 +271,7 @@
                     <com.google.android.material.card.MaterialCardView
                         android:layout_width="40dp"
                         android:layout_height="40dp"
-                        app:cardBackgroundColor="?attr/colorPrimary"
+                        app:cardBackgroundColor="?attr/colorSurfaceVariant"
                         app:cardCornerRadius="12dp">
 
                         <ImageView
@@ -278,7 +279,7 @@
                             android:layout_height="match_parent"
                             android:padding="8dp"
                             android:src="@drawable/ic_check"
-                            android:tint="?attr/colorOnPrimary" />
+                            android:tint="?attr/colorOnSurfaceVariant" />
                     </com.google.android.material.card.MaterialCardView>
 
                     <TextView
@@ -297,13 +298,14 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
                     android:text="Aún no hay reparaciones registradas."
-                    android:textColor="?attr/colorOnTertiaryContainer" />
+                    android:textColor="?attr/colorOnSurfaceVariant" />
 
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/listReparacionesLuminaria"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
+                    android:layoutAnimation="@anim/layout_fade_in"
                     android:nestedScrollingEnabled="false"
                     tools:listitem="@layout/item_luminaria_reparacion" />
             </LinearLayout>
