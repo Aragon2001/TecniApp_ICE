@@ -58,6 +58,9 @@ interface InventarioDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun registrarReparacion(entity: LuminariaReparacionEntity): Long
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertarReparaciones(items: List<LuminariaReparacionEntity>)
+
     @Transaction
     @Query("SELECT * FROM luminaria_reparacion ORDER BY fechaRegistro DESC")
     fun observarReparaciones(): Flow<List<LuminariaReparacionEntity>>
@@ -81,4 +84,7 @@ interface InventarioDao {
 
     @Query("DELETE FROM luminaria_reparacion WHERE id = :id")
     suspend fun eliminarReparacion(id: Long)
+
+    @Query("DELETE FROM luminaria_reparacion")
+    suspend fun limpiarReparaciones()
 }
