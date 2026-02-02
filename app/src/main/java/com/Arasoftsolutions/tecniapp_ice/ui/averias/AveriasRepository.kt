@@ -30,7 +30,7 @@ class AveriasRepository(private val db: AppDatabase) {
     )
 
     private val dao get() = db.averiaDao()
-    private val kilometrajeDao get() = db.vehiculoKilometrajeDao()
+    private val vehiculoDao get() = db.vehiculoDao()
     private val firebaseRef = FirebaseDatabase
         .getInstance("https://tecniapp-ice-averias.firebaseio.com/")
         .reference
@@ -758,7 +758,7 @@ return AveriaEntity(
                 vehiculo.replace("ICE", "", ignoreCase = true)
             )
             ?: return
-        kilometrajeDao.insertar(
+        vehiculoDao.insertarKilometraje(
             VehiculoKilometrajeEntity(
                 placa = vehiculo.trim(),
                 placaNormalizada = normalizada,

@@ -21,9 +21,8 @@ class   RoomRepository(context: Context) {
 
     private val db = AppDatabase.getInstance(context.applicationContext)
     private val firebase = FirebaseSyncManager(context.applicationContext)
-    private val kilometrajeDao = db.vehiculoKilometrajeDao()
+    private val vehiculoDao = db.vehiculoDao()
     private val inventarioDao = db.inventarioDao()
-    private val etmRegistroDao = db.etmRegistroDao()
 
     companion object {
         const val SUBREGION_SYNC_STEPS = 5
@@ -73,7 +72,7 @@ class   RoomRepository(context: Context) {
     fun observarUltimoKilometraje(placa: String): Flow<VehiculoKilometrajeEntity?> {
         val normalizada = VehiculoKilometrajeEntity.normalizarPlaca(placa)
             ?: return flowOf(null)
-        return kilometrajeDao.observarUltimo(normalizada)
+        return vehiculoDao.observarUltimoKilometraje(normalizada)
     }
 
     fun observarTodosLosPueblos(): Flow<List<PueblosEntity>> = db.puebloDao().observarTodos()
@@ -91,13 +90,26 @@ class   RoomRepository(context: Context) {
         inventarioDao.observarInventarioGeneral()
 
     fun observarRegistrosEtm(placa: String, limite: Int = 30): Flow<List<EtmRegistroEntity>> =
-        etmRegistroDao.observarUltimos(placa, limite)
+        vehiculoDao.observarEtmUltimos(placa, limite)
 
     suspend fun obtenerRegistroEtmHoy(placa: String, fecha: String): EtmRegistroEntity? =
-        etmRegistroDao.obtenerPorPlacaYFecha(placa, fecha)
+        vehiculoDao.obtenerEtmPorPlacaYFecha(placa, fecha)
 
-    suspend fun guardarRegistroEtm(registro: EtmRegistroEntity) =
-        etmRegistroDao.insertar(registro)
+    suspend fun obtenerUltimoRegistroEtm(placa: String): EtmRegistroEntity? =
+        vehiculoDao.obtenerUltimoEtm(placa)
+
+    suspend fun guardarRegistroEtm(registro: EtmRegistroEntity) = withContext(Dispatchers.IO) {
+        runCatching { firebase.guardarEtmRegistro(registro) }
+        vehiculoDao.insertarEtmRegistro(registro)
+    }
+
+    suspend fun syncEtmRegistros(placa: String, limite: Int = 30) = withContext(Dispatchers.IO) {
+        val registros = runCatching { firebase.obtenerEtmRegistros(placa, limite) }
+            .getOrDefault(emptyList())
+        if (registros.isNotEmpty()) {
+            vehiculoDao.insertarEtmRegistros(registros)
+        }
+    }
 
     fun observarReparaciones(): Flow<List<LuminariaReparacionEntity>> =
         inventarioDao.observarReparaciones()
@@ -218,7 +230,7 @@ class   RoomRepository(context: Context) {
     ) = withContext(Dispatchers.IO) {
         val normalizada = VehiculoKilometrajeEntity.normalizarPlaca(placa)
             ?: return@withContext
-        kilometrajeDao.insertar(
+        vehiculoDao.insertarKilometraje(
             VehiculoKilometrajeEntity(
                 placa = placa.trim(),
                 placaNormalizada = normalizada,

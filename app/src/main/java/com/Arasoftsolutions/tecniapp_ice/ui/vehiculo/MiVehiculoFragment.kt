@@ -4,7 +4,6 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -45,27 +44,27 @@ class MiVehiculoFragment : Fragment() {
     }
 
     private fun setupListeners() {
-        binding.btnRegistrarInicial.setOnClickListener { mostrarDialogoRegistrarInicial() }
+        binding.btnRegistrarInicial.setOnClickListener { registrarInicialDesdeCampo() }
         binding.btnRegistrarFinal.setOnClickListener { mostrarDialogoRegistrarFinal() }
+        binding.btnNoVehiculo.setOnClickListener {
+            MaterialAlertDialogBuilder(requireContext())
+                .setMessage(getString(R.string.mi_vehiculo_sin_vehiculo_info))
+                .setPositiveButton(android.R.string.ok, null)
+                .show()
+        }
     }
 
-    private fun mostrarDialogoRegistrarInicial() {
-        val state = viewModel.uiState.value
-        val unidad = state.tipoVehiculo.unidadTexto
-        val input = TextInputEditText(requireContext()).apply {
-            hint = "Valor inicial ($unidad)"
-            inputType = android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL
+    private fun registrarInicialDesdeCampo() {
+        val input = binding.etRegistroInicial.text?.toString()?.trim()
+        val valor = input?.replace(",", ".")?.toDoubleOrNull()
+        if (valor == null || valor < 0) {
+            MaterialAlertDialogBuilder(requireContext())
+                .setMessage(getString(R.string.mi_vehiculo_valor_invalido))
+                .setPositiveButton(android.R.string.ok, null)
+                .show()
+            return
         }
-        MaterialAlertDialogBuilder(requireContext())
-            .setTitle(getString(R.string.mi_vehiculo_registrar_inicial))
-            .setView(input)
-            .setPositiveButton(getString(android.R.string.ok)) { _, _ ->
-                val v = input.text?.toString()?.toDoubleOrNull()
-                if (v != null && v >= 0) viewModel.registrarInicial(v)
-                else Toast.makeText(requireContext(), "Ingresa un valor válido", Toast.LENGTH_SHORT).show()
-            }
-            .setNegativeButton(android.R.string.cancel, null)
-            .show()
+        viewModel.registrarInicial(valor)
     }
 
     private fun mostrarDialogoRegistrarFinal() {
@@ -81,7 +80,10 @@ class MiVehiculoFragment : Fragment() {
             .setPositiveButton(getString(android.R.string.ok)) { _, _ ->
                 val v = input.text?.toString()?.toDoubleOrNull()
                 if (v != null && v >= 0) viewModel.registrarFinal(v)
-                else Toast.makeText(requireContext(), "Ingresa un valor válido", Toast.LENGTH_SHORT).show()
+                else MaterialAlertDialogBuilder(requireContext())
+                    .setMessage(getString(R.string.mi_vehiculo_valor_invalido))
+                    .setPositiveButton(android.R.string.ok, null)
+                    .show()
             }
             .setNegativeButton(android.R.string.cancel, null)
             .show()
@@ -90,30 +92,89 @@ class MiVehiculoFragment : Fragment() {
     private fun observarEstado() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.uiState.collect { state ->
+                launch {
+                    viewModel.eventos.collect { mensaje ->
+                        MaterialAlertDialogBuilder(requireContext())
+                            .setMessage(mensaje)
+                            .setPositiveButton(android.R.string.ok, null)
+                            .show()
+                    }
+                }
+                launch {
+                    viewModel.uiState.collect { state ->
                     val vehiculo = state.vehiculo
                     binding.tvSinVehiculo.isVisible = vehiculo == null
-                    binding.btnRegistrarInicial.isVisible = vehiculo != null
+                    binding.cardRegistroPendiente.isVisible = vehiculo != null && state.registroHoy == null
+                    binding.cardRegistroHoy.isVisible = vehiculo != null
+                    binding.btnRegistrarInicial.isVisible = vehiculo != null && state.registroHoy == null
                     binding.btnRegistrarFinal.isVisible = false
 
                     if (vehiculo != null) {
-                        binding.tvVehiculoAsignado.text = "Placa: ${vehiculo.placa} - ${vehiculo.tipo}"
-                        binding.tvTipoControl.text = if (state.tipoVehiculo.usaKilometraje) {
-                            "Control por kilometraje (km)"
+                        val tipoLabel = when (state.tipoVehiculo) {
+                            TipoVehiculo.CAMION_GRUA -> getString(R.string.mi_vehiculo_tipo_grua)
+                            TipoVehiculo.MAQUINARIA_PESADA -> getString(R.string.mi_vehiculo_tipo_maquinaria)
+                            TipoVehiculo.LIVIANO -> getString(R.string.mi_vehiculo_tipo_liviano)
+                        }
+                        binding.tvVehiculoPlaca.text = getString(
+                            R.string.mi_vehiculo_placa_format,
+                            vehiculo.placa
+                        )
+                        binding.tvVehiculoTipo.text = tipoLabel
+                        binding.tvVehiculoAgencia.text = vehiculo.agencia
+                        binding.ivVehiculoTipo.setImageResource(
+                            when (state.tipoVehiculo) {
+                                TipoVehiculo.CAMION_GRUA -> R.drawable.grua
+                                TipoVehiculo.MAQUINARIA_PESADA -> R.drawable.maquinaria
+                                TipoVehiculo.LIVIANO -> R.drawable.liviano
+                            }
+                        )
+                        binding.chipEstadoRegistro.text = if (state.registroHoy != null) {
+                            getString(R.string.mi_vehiculo_estado_al_dia)
                         } else {
-                            "Control por orímetro (horas)"
+                            getString(R.string.mi_vehiculo_estado_pendiente)
                         }
 
+                        binding.tvValorActualLabel.text = if (state.tipoVehiculo.usaKilometraje) {
+                            getString(R.string.mi_vehiculo_kilometraje_actual)
+                        } else {
+                            getString(R.string.mi_vehiculo_orimetro_actual)
+                        }
+                        binding.tilRegistroInicial.hint = getString(
+                            R.string.mi_vehiculo_registro_inicial_hint_format,
+                            state.tipoVehiculo.unidadTexto
+                        )
+
                         val reg = state.registroHoy
+                        val ultimo = state.ultimoRegistro
+                        val valorActual = reg?.valorFinal ?: reg?.valorInicial ?: ultimo?.valorFinal ?: ultimo?.valorInicial
+                        binding.tvValorActual.text = valorActual?.let {
+                            getString(
+                                R.string.mi_vehiculo_valor_actual_format,
+                                it,
+                                state.tipoVehiculo.unidadTexto
+                            )
+                        } ?: getString(R.string.mi_vehiculo_valor_actual_placeholder)
+
                         if (reg != null) {
                             val u = state.tipoVehiculo.unidadTexto
-                            binding.tvEstadoHoy.text = "Hoy: ${reg.valorInicial} $u inicial" +
-                                (reg.valorFinal?.let { " • $it $u final" } ?: "")
+                            binding.tvEstadoHoy.text = getString(
+                                R.string.mi_vehiculo_registro_hoy_format,
+                                reg.valorInicial,
+                                u,
+                                reg.valorFinal?.let { "$it $u" } ?: getString(R.string.mi_vehiculo_valor_pendiente)
+                            )
                             binding.btnRegistrarInicial.isVisible = false
                             binding.btnRegistrarFinal.isVisible = reg.valorFinal == null
+                            binding.etRegistroInicial.setText("")
                         } else {
-                            binding.tvEstadoHoy.text = "Registra el valor inicial del día"
+                            binding.tvEstadoHoy.text = getString(R.string.mi_vehiculo_registro_pendiente)
                             binding.btnRegistrarInicial.isVisible = true
+                            if (binding.etRegistroInicial.text.isNullOrBlank()) {
+                                val sugerido = ultimo?.valorFinal ?: ultimo?.valorInicial
+                                binding.etRegistroInicial.setText(
+                                    sugerido?.toString().orEmpty()
+                                )
+                            }
                         }
                     }
 
@@ -121,6 +182,7 @@ class MiVehiculoFragment : Fragment() {
                         state.registrosRecientes,
                         state.tipoVehiculo.unidadTexto
                     )
+                }
                 }
             }
         }
