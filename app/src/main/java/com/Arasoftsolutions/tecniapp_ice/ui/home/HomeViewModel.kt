@@ -16,6 +16,8 @@ import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasRepository
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasSyncWorker
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.normalizeAveriaText
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.shouldNotifyForAgency
+import com.Arasoftsolutions.tecniapp_ice.ui.vehiculo.TipoVehiculo
+import com.Arasoftsolutions.tecniapp_ice.ui.vehiculo.inferirTipoVehiculo
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -23,6 +25,7 @@ import java.text.Normalizer
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 /**
@@ -40,6 +43,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
 
     private val sharing = SharingStarted.WhileSubscribed(5_000)
+    private val formatoFechaEtm = DateTimeFormatter.ofPattern("yyyy-MM-dd", Locale.ROOT)
 
     // Subregión activa que define las consultas a Room
     private val _subregion = MutableStateFlow<String?>(null)
@@ -150,17 +154,47 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
             .map { it?.placaVehiculo?.takeIf { placa -> placa.isNotBlank() } }
             .stateIn(viewModelScope, sharing, null)
 
-    val kilometrajeFinalReciente: StateFlow<Double?> =
+    private val registrosEtm: StateFlow<List<com.Arasoftsolutions.tecniapp_ice.Database.entities.EtmRegistroEntity>> =
         placaVehiculo
             .flatMapLatest { placa ->
                 if (placa.isNullOrBlank()) {
-                    flowOf(null)
+                    flowOf(emptyList())
                 } else {
-                    repo.observarUltimoKilometraje(placa)
-                        .map { registro -> registro?.kilometrajeFinal }
+                    repo.observarRegistrosEtm(placa)
                 }
             }
+            .stateIn(viewModelScope, sharing, emptyList())
+
+    private val registroHoy: StateFlow<com.Arasoftsolutions.tecniapp_ice.Database.entities.EtmRegistroEntity?> =
+        registrosEtm
+            .map { registros ->
+                val hoy = LocalDate.now().format(formatoFechaEtm)
+                registros.firstOrNull { it.fecha == hoy }
+            }
             .stateIn(viewModelScope, sharing, null)
+
+    val registroEtmPendiente: StateFlow<Boolean> =
+        combine(placaVehiculo, registroHoy) { placa, registro ->
+            placa.isNullOrBlank() || registro == null
+        }.stateIn(viewModelScope, sharing, false)
+
+    val valorEtmActual: StateFlow<Double?> =
+        registrosEtm
+            .map { registros ->
+                registros.firstOrNull()?.let { it.valorFinal ?: it.valorInicial }
+            }
+            .stateIn(viewModelScope, sharing, null)
+
+    val tipoVehiculo: StateFlow<TipoVehiculo> =
+        placaVehiculo
+            .flatMapLatest { placa ->
+                flow {
+                    val tipo = placa?.toLongOrNull()
+                        ?.let { repo.obtenerVehiculoPorPlaca(it)?.tipo }
+                    emit(inferirTipoVehiculo(tipo))
+                }
+            }
+            .stateIn(viewModelScope, sharing, TipoVehiculo.LIVIANO)
 
     val lastManualSync: StateFlow<Long?> =
         dataStore.lastManualSyncMillis
@@ -206,6 +240,11 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
                 repo.observarUsuario(uid).collect { user ->
                     _usuario.value = user
                     user?.subregion?.takeIf { it.isNotBlank() }?.let { setSubregion(it) }
+                }
+            }
+            launch {
+                placaVehiculo.filterNotNull().collect { placa ->
+                    repo.syncEtmRegistros(placa)
                 }
             }
             repo.refreshUsuarioActual()

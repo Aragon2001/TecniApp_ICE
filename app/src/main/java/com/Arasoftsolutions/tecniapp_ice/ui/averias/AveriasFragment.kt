@@ -21,11 +21,14 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.Arasoftsolutions.tecniapp_ice.R
 import com.Arasoftsolutions.tecniapp_ice.databinding.FragmentAveriasBinding
 import com.Arasoftsolutions.tecniapp_ice.databinding.DialogNotificationFiltersBinding
+import com.Arasoftsolutions.tecniapp_ice.ui.vehiculo.RegistroVehiculoGate
+import com.Arasoftsolutions.tecniapp_ice.ui.vehiculo.showRegistroVehiculoPendienteDialog
 import com.google.android.material.datepicker.MaterialDatePicker
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.chip.Chip
@@ -118,6 +121,16 @@ override fun onStop() {
             if (vm.fechaFiltroState.value != null) {
                 vm.clearFechaFiltro()
                 Snackbar.make(b.root, R.string.averias_filtro_fecha_limpio, Snackbar.LENGTH_SHORT).show()
+            }
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            val gate = RegistroVehiculoGate.evaluar(requireContext())
+            if (gate.requiereRegistro) {
+                showRegistroVehiculoPendienteDialog(
+                    onRegistrar = { findNavController().navigate(R.id.nav_mi_vehiculo) },
+                    onNoVehiculo = { findNavController().popBackStack(R.id.nav_home, false) }
+                )
             }
         }
         // TODO(Codex): Proveer acción explícita para limpiar el filtro de fechas
