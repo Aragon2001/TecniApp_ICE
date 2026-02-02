@@ -44,9 +44,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun materialDao(): MaterialDao
     abstract fun tecnicoDao(): TecnicoDao
     abstract fun averiaDao(): AveriaDao
-    abstract fun vehiculoKilometrajeDao(): VehiculoKilometrajeDao
     abstract fun inventarioDao(): InventarioDao
-    abstract fun etmRegistroDao(): EtmRegistroDao
     abstract fun vehiculoMantenimientoDao(): VehiculoMantenimientoDao
 
     companion object {
