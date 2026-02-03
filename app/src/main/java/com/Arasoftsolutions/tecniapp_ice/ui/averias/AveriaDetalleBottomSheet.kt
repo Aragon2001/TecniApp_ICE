@@ -512,6 +512,15 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
         b.tvCoordenadas.text = coordsText
         val hasCoords = item.lat != 0.0 && item.lng != 0.0
         b.cardMapaDireccion.isVisible = hasCoords
+        if (hasCoords) {
+            val mapUrl = AveriaStaticMapProvider.buildUrl(
+                requireContext(),
+                item.lat,
+                item.lng,
+                item.descripcion.takeIf { it.isNotBlank() } ?: item.id
+            )
+            mapUrl?.let { AveriaStaticMapProvider.loadInto(requireContext(), b.ivMapaPreview, it) }
+        }
         b.btnDetalleVerMapa.apply {
             isVisible = hasCoords
             setOnClickListener {
