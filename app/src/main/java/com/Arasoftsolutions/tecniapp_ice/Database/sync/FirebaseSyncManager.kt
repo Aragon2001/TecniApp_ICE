@@ -53,6 +53,7 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
         dbLocal
     }
 
+
     private val subregionNombreCache = mutableMapOf<String, String>()
 
     private fun database(url: String): DatabaseReference {
@@ -226,6 +227,7 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
             filtroSubregion == null || vehiculo.subregion?.equals(filtroSubregion, ignoreCase = true) == true
         }
     }
+
 
     suspend fun obtenerSubregiones(): List<SubregionesEntity> {
         val snap = dbDatosGenerales.child("subregiones").get().await()

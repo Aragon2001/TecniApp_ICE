@@ -237,6 +237,7 @@
                                 tools:text="147 km" />
 
                             <TextView
+                                android:id="@+id/text_kilometraje_label"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="4dp"
