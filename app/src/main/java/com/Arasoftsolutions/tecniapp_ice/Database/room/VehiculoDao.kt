@@ -35,6 +35,9 @@ interface VehiculoDao {
     @Query("SELECT * FROM vehiculos WHERE placa = :placa LIMIT 1")
     suspend fun buscarPorPlaca(placa: Long): VehiculosEntity?
 
+    @Query("SELECT * FROM vehiculos WHERE placa = :placa LIMIT 1")
+    fun observarPorPlaca(placa: Long): Flow<VehiculosEntity?>
+
     @Query("DELETE FROM vehiculos WHERE id = :id")
     suspend fun eliminarPorId(id: Int)
 
@@ -47,39 +50,33 @@ interface VehiculoDao {
     @Query("DELETE FROM vehiculos")
     suspend fun limpiarTodo()
 
-    // --- Kilometraje ---
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertarKilometraje(registro: VehiculoKilometrajeEntity)
-
     @Query(
-        "SELECT * FROM vehiculo_kilometrajes WHERE placaNormalizada = :placaNormalizada ORDER BY registradoEn DESC LIMIT 1"
+        """
+        UPDATE vehiculos
+        SET registroFecha = :fecha,
+            registroInicial = :inicial,
+            registroFinal = :final,
+            registroCerrado = :cerrado,
+            kilometrajeActual = :kilometrajeActual,
+            orimetroActual = :orimetroActual,
+            registrosDiariosJson = :registrosJson
+        WHERE id = :vehiculoId
+        """
     )
-    fun observarUltimoKilometraje(placaNormalizada: String): Flow<VehiculoKilometrajeEntity?>
-
-    @Query(
-        "SELECT * FROM vehiculo_kilometrajes WHERE placaNormalizada = :placaNormalizada ORDER BY registradoEn DESC LIMIT 1"
+    suspend fun actualizarRegistroDiario(
+        vehiculoId: Int,
+        fecha: String,
+        inicial: Double,
+        final: Double?,
+        cerrado: Boolean,
+        kilometrajeActual: Double?,
+        orimetroActual: Double?,
+        registrosJson: String?
     )
-    suspend fun obtenerUltimoKilometraje(placaNormalizada: String): VehiculoKilometrajeEntity?
 
-    // --- ETM ---
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertarEtmRegistro(registro: EtmRegistroEntity): Long
+    @Query("UPDATE vehiculos SET kilometrajeActual = :kilometrajeActual WHERE placa = :placa")
+    suspend fun actualizarKilometrajeActual(placa: Long, kilometrajeActual: Double)
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertarEtmRegistros(registros: List<EtmRegistroEntity>)
-
-    @Query("SELECT * FROM etm_registros WHERE placa = :placa AND fecha = :fecha LIMIT 1")
-    suspend fun obtenerEtmPorPlacaYFecha(placa: String, fecha: String): EtmRegistroEntity?
-
-    @Query("SELECT * FROM etm_registros WHERE placa = :placa ORDER BY fecha DESC LIMIT :limite")
-    fun observarEtmUltimos(placa: String, limite: Int = 30): Flow<List<EtmRegistroEntity>>
-
-    @Query("SELECT * FROM etm_registros WHERE placa = :placa ORDER BY fecha DESC, registradoEn DESC LIMIT 1")
-    suspend fun obtenerUltimoEtm(placa: String): EtmRegistroEntity?
-
-    @Query("SELECT * FROM etm_registros WHERE placa = :placa AND fecha >= :fechaDesde AND fecha <= :fechaHasta ORDER BY fecha DESC")
-    fun observarEtmPorRango(placa: String, fechaDesde: String, fechaHasta: String): Flow<List<EtmRegistroEntity>>
-
-    @Query("SELECT * FROM etm_registros ORDER BY fecha DESC, registradoEn DESC LIMIT :limite")
-    fun observarEtmTodos(limite: Int = 100): Flow<List<EtmRegistroEntity>>
+    @Query("UPDATE vehiculos SET orimetroActual = :orimetroActual WHERE placa = :placa")
+    suspend fun actualizarOrimetroActual(placa: Long, orimetroActual: Double)
 }

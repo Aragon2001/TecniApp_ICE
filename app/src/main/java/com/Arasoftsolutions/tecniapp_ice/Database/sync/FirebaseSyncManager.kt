@@ -53,9 +53,6 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
         dbLocal
     }
 
-    private val dbEtmRegistros: DatabaseReference by lazy {
-        dbLocal.child("etm_registros")
-    }
 
     private val subregionNombreCache = mutableMapOf<String, String>()
 
@@ -231,61 +228,6 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
         }
     }
 
-    // --- ETM REGISTROS ---
-    suspend fun guardarEtmRegistro(registro: EtmRegistroEntity) {
-        val placa = registro.placa.trim()
-        val fecha = registro.fecha.trim()
-        if (placa.isEmpty() || fecha.isEmpty()) return
-        val payload = mapOf(
-            "placa" to registro.placa,
-            "vehiculoId" to registro.vehiculoId,
-            "fecha" to registro.fecha,
-            "valorInicial" to registro.valorInicial,
-            "valorFinal" to registro.valorFinal,
-            "tecnicoUid" to registro.tecnicoUid,
-            "tecnicoNombre" to registro.tecnicoNombre,
-            "observaciones" to registro.observaciones,
-            "cerrado" to registro.cerrado,
-            "registradoEn" to registro.registradoEn
-        )
-        dbEtmRegistros.child(placa).child(fecha).updateChildren(payload).await()
-    }
-
-    suspend fun obtenerEtmRegistros(placa: String, limite: Int = 30): List<EtmRegistroEntity> {
-        val placaKey = placa.trim()
-        if (placaKey.isEmpty()) return emptyList()
-        val snap = dbEtmRegistros
-            .child(placaKey)
-            .orderByChild("fecha")
-            .limitToLast(limite)
-            .get()
-            .await()
-        return snap.children.mapNotNull { child ->
-            val fecha = child.stringValueAny("fecha") ?: child.key ?: return@mapNotNull null
-            val valorInicial = child.doubleValueAny("valorInicial", "valor_inicial") ?: return@mapNotNull null
-            val valorFinal = child.doubleValueAny("valorFinal", "valor_final")
-            val vehiculoId = child.intValueAny("vehiculoId", "vehiculo_id") ?: 0
-            val tecnicoUid = child.stringValueAny("tecnicoUid", "tecnico_uid").orEmpty()
-            val cerrado = when (val raw = child.valueAny("cerrado")) {
-                is Boolean -> raw
-                is Number -> raw.toInt() != 0
-                is String -> raw.toBoolean()
-                else -> false
-            }
-            EtmRegistroEntity(
-                placa = placaKey,
-                vehiculoId = vehiculoId,
-                fecha = fecha,
-                valorInicial = valorInicial,
-                valorFinal = valorFinal,
-                tecnicoUid = tecnicoUid,
-                tecnicoNombre = child.stringValueAny("tecnicoNombre", "tecnico_nombre"),
-                observaciones = child.stringValueAny("observaciones", "observacion"),
-                cerrado = cerrado,
-                registradoEn = child.longChildAny("registradoEn", "registrado_en") ?: System.currentTimeMillis()
-            )
-        }
-    }
 
     suspend fun obtenerSubregiones(): List<SubregionesEntity> {
         val snap = dbDatosGenerales.child("subregiones").get().await()

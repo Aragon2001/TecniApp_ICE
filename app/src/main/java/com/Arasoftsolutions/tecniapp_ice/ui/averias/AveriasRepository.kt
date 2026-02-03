@@ -2,8 +2,8 @@ package com.Arasoftsolutions.tecniapp_ice.ui.averias
 
 import android.util.Log
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.AveriaEntity
-import com.Arasoftsolutions.tecniapp_ice.Database.entities.VehiculoKilometrajeEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.room.AppDatabase
+import com.Arasoftsolutions.tecniapp_ice.Database.utils.VehiculoPlacaUtils
 import com.Arasoftsolutions.tecniapp_ice.ui.admin.MapCoordinatePickerBottomSheet.Companion.TAG
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
@@ -753,17 +753,17 @@ return AveriaEntity(
 
     private suspend fun registrarKilometrajeFinal(vehiculo: String?, kilometraje: Double?, timestamp: Long) {
         if (kilometraje == null || vehiculo.isNullOrBlank()) return
-        val normalizada = VehiculoKilometrajeEntity.normalizarPlaca(vehiculo)
-            ?: VehiculoKilometrajeEntity.normalizarPlaca(
-                vehiculo.replace("ICE", "", ignoreCase = true)
-            )
+        val placaLong = VehiculoPlacaUtils.parsePlacaLong(vehiculo)
+            ?: VehiculoPlacaUtils.parsePlacaLong(vehiculo.replace("ICE", "", ignoreCase = true))
             ?: return
-        vehiculoDao.insertarKilometraje(
-            VehiculoKilometrajeEntity(
-                placa = vehiculo.trim(),
-                placaNormalizada = normalizada,
-                kilometrajeFinal = kilometraje,
-                registradoEn = timestamp
+        val actual = vehiculoDao.buscarPorPlaca(placaLong) ?: return
+        vehiculoDao.insertAll(
+            listOf(
+                actual.copy(
+                    kilometrajeActual = kilometraje,
+                    registroFinal = actual.registroFinal ?: kilometraje,
+                    registroCerrado = actual.registroCerrado
+                )
             )
         )
     }
