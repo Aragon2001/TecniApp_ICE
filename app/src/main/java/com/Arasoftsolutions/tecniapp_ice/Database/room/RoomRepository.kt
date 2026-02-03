@@ -264,6 +264,32 @@ class   RoomRepository(context: Context) {
         proximoFecha: Long?,
         registradoEn: Long = System.currentTimeMillis()
     ) = withContext(Dispatchers.IO) {
+        val mantenimientoUltimo = buildString {
+            append("Tipo: ").append(tipo.ifBlank { "N/A" })
+            fecha?.let { append(" · Fecha: ").append(it) }
+            valorAlMomento?.let { append(" · Valor: ").append(it) }
+            observaciones?.trim()?.takeIf { it.isNotBlank() }?.let { append(" · Obs: ").append(it) }
+        }
+        val mantenimientoProximo = listOfNotNull(
+            proximoKm?.let { "Próx km: $it" },
+            proximoHoras?.let { "Próx horas: $it" },
+            proximoFecha?.let { "Próx fecha: $it" }
+        ).joinToString(" · ")
+            .takeIf { it.isNotBlank() }
+        when {
+            vehiculoId != null -> vehiculoDao.actualizarMantenimiento(
+                vehiculoId = vehiculoId,
+                mantenimientoUltimo = mantenimientoUltimo,
+                mantenimientoProximo = mantenimientoProximo
+            )
+            else -> VehiculoPlacaUtils.parsePlacaLong(placa)?.let { placaLong ->
+                vehiculoDao.actualizarMantenimientoPorPlaca(
+                    placa = placaLong,
+                    mantenimientoUltimo = mantenimientoUltimo,
+                    mantenimientoProximo = mantenimientoProximo
+                )
+            }
+        }
         firebase.guardarMantenimientoVehicular(
             placa = placa.trim(),
             vehiculoId = vehiculoId,
