@@ -33,6 +33,9 @@ interface VehiculoDao {
     @Query("SELECT * FROM vehiculos WHERE placa = :placa LIMIT 1")
     suspend fun buscarPorPlaca(placa: Long): VehiculosEntity?
 
+    @Query("SELECT * FROM vehiculos WHERE placa = :placa LIMIT 1")
+    fun observarPorPlaca(placa: Long): Flow<VehiculosEntity?>
+
     @Query("DELETE FROM vehiculos WHERE id = :id")
     suspend fun eliminarPorId(id: Int)
 
@@ -44,4 +47,34 @@ interface VehiculoDao {
 
     @Query("DELETE FROM vehiculos")
     suspend fun limpiarTodo()
+
+    @Query(
+        """
+        UPDATE vehiculos
+        SET registroFecha = :fecha,
+            registroInicial = :inicial,
+            registroFinal = :final,
+            registroCerrado = :cerrado,
+            kilometrajeActual = :kilometrajeActual,
+            orimetroActual = :orimetroActual,
+            registrosDiariosJson = :registrosJson
+        WHERE id = :vehiculoId
+        """
+    )
+    suspend fun actualizarRegistroDiario(
+        vehiculoId: Int,
+        fecha: String,
+        inicial: Double,
+        final: Double?,
+        cerrado: Boolean,
+        kilometrajeActual: Double?,
+        orimetroActual: Double?,
+        registrosJson: String?
+    )
+
+    @Query("UPDATE vehiculos SET kilometrajeActual = :kilometrajeActual WHERE placa = :placa")
+    suspend fun actualizarKilometrajeActual(placa: Long, kilometrajeActual: Double)
+
+    @Query("UPDATE vehiculos SET orimetroActual = :orimetroActual WHERE placa = :placa")
+    suspend fun actualizarOrimetroActual(placa: Long, orimetroActual: Double)
 }
