@@ -247,6 +247,7 @@ Cliente: %4$s</string>
     <string name="averia_error_km_invalido">Ingresa un kilometraje válido.</string>
     <string name="averia_error_km_final_menor">El kilometraje final no puede ser menor al inicial.</string>
     <string name="averia_error_km_llegada_menor">El kilometraje de llegada no puede ser menor al inicial.</string>
+    <string name="averia_error_km_inicio_menor_ultimo">El kilometraje inicial no puede ser menor al último registrado (último: %1$s).</string>
     <string name="averia_error_localizacion_requerida">La localización es requerida.</string>
     <string name="averia_error_hora_inicio_requerida">Ingresa la hora de inicio.</string>
     <string name="averia_error_hora_fin_requerida">Ingresa la hora de fin.</string>
@@ -328,6 +329,8 @@ Cliente: %4$s</string>
     <string name="averia_material_cantidad_hint">Cantidad utilizada</string>
     <string name="averia_material_cantidad_error">Ingresa una cantidad válida.</string>
     <string name="averia_material_cantidad_guardar">Guardar</string>
+    <string name="averia_material_existencia_titulo">Material no disponible</string>
+    <string name="averia_material_existencia_mensaje">No dispone del material solicitado. Existencia: %1$s, solicitado: %2$s.</string>
     <string name="averia_anular">Anular avería</string>
     <string name="averia_eliminar">Eliminar avería</string>
     <string name="averia_iniciar_atencion">Iniciar</string>
