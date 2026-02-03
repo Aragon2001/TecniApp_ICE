@@ -78,4 +78,32 @@ interface VehiculoDao {
 
     @Query("UPDATE vehiculos SET orimetroActual = :orimetroActual WHERE placa = :placa")
     suspend fun actualizarOrimetroActual(placa: Long, orimetroActual: Double)
+
+    @Query(
+        """
+        UPDATE vehiculos
+        SET mantenimientoUltimo = :mantenimientoUltimo,
+            mantenimientoProximo = :mantenimientoProximo
+        WHERE id = :vehiculoId
+        """
+    )
+    suspend fun actualizarMantenimiento(
+        vehiculoId: Int,
+        mantenimientoUltimo: String?,
+        mantenimientoProximo: String?
+    )
+
+    @Query(
+        """
+        UPDATE vehiculos
+        SET mantenimientoUltimo = :mantenimientoUltimo,
+            mantenimientoProximo = :mantenimientoProximo
+        WHERE placa = :placa
+        """
+    )
+    suspend fun actualizarMantenimientoPorPlaca(
+        placa: Long,
+        mantenimientoUltimo: String?,
+        mantenimientoProximo: String?
+    )
 }

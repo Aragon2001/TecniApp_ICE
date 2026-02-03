@@ -27,8 +27,7 @@ class   RoomRepository(context: Context) {
 
     private val db = AppDatabase.getInstance(context.applicationContext)
     private val firebase = FirebaseSyncManager(context.applicationContext)
-    private val kilometrajeDao = db.vehiculoDao()
-    private val mantenimientoDao = db.vehiculoDao()
+    private val vehiculoDao = db.vehiculoDao()
     private val inventarioDao = db.inventarioDao()
 
     private val realtimeScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -244,24 +243,65 @@ class   RoomRepository(context: Context) {
         kilometrajeFinal: Double,
         timestamp: Long = System.currentTimeMillis()
     ) = withContext(Dispatchers.IO) {
-        val normalizada = VehiculoKilometrajeEntity.normalizarPlaca(placa)
-            ?: return@withContext
-        val registro = VehiculoKilometrajeEntity(
+        val placaLong = VehiculoPlacaUtils.parsePlacaLong(placa) ?: return@withContext
+        vehiculoDao.actualizarKilometrajeActual(placaLong, kilometrajeFinal)
+        firebase.guardarKilometrajeVehicular(
             placa = placa.trim(),
-            placaNormalizada = normalizada,
             kilometrajeFinal = kilometrajeFinal,
             registradoEn = timestamp
         )
-        kilometrajeDao.insertar(registro)
-        firebase.guardarKilometrajeVehicular(registro)
     }
 
     suspend fun registrarMantenimientoVehicular(
-        mantenimiento: VehiculoMantenimientoEntity
+        placa: String,
+        vehiculoId: Int?,
+        tipo: String,
+        fecha: Long?,
+        valorAlMomento: Double?,
+        observaciones: String?,
+        proximoKm: Double?,
+        proximoHoras: Double?,
+        proximoFecha: Long?,
+        registradoEn: Long = System.currentTimeMillis()
     ) = withContext(Dispatchers.IO) {
-        val id = mantenimientoDao.insertar(mantenimiento)
-        val saved = mantenimiento.copy(id = id)
-        firebase.guardarMantenimientoVehicular(saved)
+        val mantenimientoUltimo = buildString {
+            append("Tipo: ").append(tipo.ifBlank { "N/A" })
+            fecha?.let { append(" · Fecha: ").append(it) }
+            valorAlMomento?.let { append(" · Valor: ").append(it) }
+            observaciones?.trim()?.takeIf { it.isNotBlank() }?.let { append(" · Obs: ").append(it) }
+        }
+        val mantenimientoProximo = listOfNotNull(
+            proximoKm?.let { "Próx km: $it" },
+            proximoHoras?.let { "Próx horas: $it" },
+            proximoFecha?.let { "Próx fecha: $it" }
+        ).joinToString(" · ")
+            .takeIf { it.isNotBlank() }
+        when {
+            vehiculoId != null -> vehiculoDao.actualizarMantenimiento(
+                vehiculoId = vehiculoId,
+                mantenimientoUltimo = mantenimientoUltimo,
+                mantenimientoProximo = mantenimientoProximo
+            )
+            else -> VehiculoPlacaUtils.parsePlacaLong(placa)?.let { placaLong ->
+                vehiculoDao.actualizarMantenimientoPorPlaca(
+                    placa = placaLong,
+                    mantenimientoUltimo = mantenimientoUltimo,
+                    mantenimientoProximo = mantenimientoProximo
+                )
+            }
+        }
+        firebase.guardarMantenimientoVehicular(
+            placa = placa.trim(),
+            vehiculoId = vehiculoId,
+            tipo = tipo,
+            fecha = fecha,
+            valorAlMomento = valorAlMomento,
+            observaciones = observaciones,
+            proximoKm = proximoKm,
+            proximoHoras = proximoHoras,
+            proximoFecha = proximoFecha,
+            registradoEn = registradoEn
+        )
     }
 
     suspend fun eliminarVehiculo(id: Int) = withContext(Dispatchers.IO) {
@@ -675,7 +715,8 @@ class   RoomRepository(context: Context) {
         } else {
             db.vehiculoDao().limpiarTodo()
         }
-        db.vehiculoDao().insertAll(vehiculos)
+        val vehiculosCombinados = combinarVehiculosConLocales(vehiculos)
+        db.vehiculoDao().insertAll(vehiculosCombinados)
         progress(++done, total, "Descargando vehículos…", downloadedBytes)
 
         val medidores = firebase.obtenerMedidores(canonicalSubregion)
@@ -733,7 +774,8 @@ class   RoomRepository(context: Context) {
         downloadedBytes += estimateBytes(vehiculos)
         if (vehiculos.isNotEmpty()) {
             db.vehiculoDao().eliminarFueraDeIds(vehiculos.map { it.id })
-            db.vehiculoDao().insertAll(vehiculos)
+            val vehiculosCombinados = combinarVehiculosConLocales(vehiculos)
+            db.vehiculoDao().insertAll(vehiculosCombinados)
         } else {
             db.vehiculoDao().limpiarTodo()
         }
@@ -745,6 +787,32 @@ class   RoomRepository(context: Context) {
 
     private fun estimateBytes(value: Any?): Long {
         return value?.toString()?.toByteArray(Charsets.UTF_8)?.size?.toLong() ?: 0L
+    }
+
+    private suspend fun combinarVehiculosConLocales(remotos: List<VehiculosEntity>): List<VehiculosEntity> {
+        if (remotos.isEmpty()) return remotos
+        val locales = db.vehiculoDao().getAll()
+        if (locales.isEmpty()) return remotos
+        val localesPorId = locales.associateBy { it.id }
+        val localesPorPlaca = locales.associateBy { it.placa }
+        return remotos.map { remoto ->
+            val local = localesPorId[remoto.id] ?: localesPorPlaca[remoto.placa]
+            if (local == null) {
+                remoto
+            } else {
+                remoto.copy(
+                    kilometrajeActual = remoto.kilometrajeActual ?: local.kilometrajeActual,
+                    orimetroActual = remoto.orimetroActual ?: local.orimetroActual,
+                    registroFecha = remoto.registroFecha ?: local.registroFecha,
+                    registroInicial = remoto.registroInicial ?: local.registroInicial,
+                    registroFinal = remoto.registroFinal ?: local.registroFinal,
+                    registroCerrado = remoto.registroCerrado || local.registroCerrado,
+                    registrosDiariosJson = remoto.registrosDiariosJson ?: local.registrosDiariosJson,
+                    mantenimientoUltimo = remoto.mantenimientoUltimo ?: local.mantenimientoUltimo,
+                    mantenimientoProximo = remoto.mantenimientoProximo ?: local.mantenimientoProximo
+                )
+            }
+        }
     }
 
     suspend fun limpiarBaseLocal() = withContext(Dispatchers.IO) {

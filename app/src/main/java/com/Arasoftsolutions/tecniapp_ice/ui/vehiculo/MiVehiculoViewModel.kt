@@ -88,7 +88,15 @@ class MiVehiculoViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun registrarInicial(valor: Double) {
+    fun registrarInicial(
+        valor: Double,
+        circuito: String?,
+        actividad: String?,
+        cuenta: String?,
+        numeroCaso: String?,
+        lugar: String?,
+        horasLaboradas: Int?
+    ) {
         viewModelScope.launch {
             val state = _uiState.value
             val v = state.vehiculo ?: return@launch
@@ -106,7 +114,13 @@ class MiVehiculoViewModel(app: Application) : AndroidViewModel(app) {
                 fecha = fechaHoy(),
                 valorInicial = valor,
                 valorFinal = null,
-                cerrado = false
+                cerrado = false,
+                circuito = circuito,
+                actividad = actividad,
+                cuenta = cuenta,
+                numeroCaso = numeroCaso,
+                lugar = lugar,
+                horasLaboradas = horasLaboradas
             )
             val registrosActuales = state.registrosRecientes.filterNot { it.fecha == nuevoRegistro.fecha }
             val nuevos = listOf(nuevoRegistro) + registrosActuales
