@@ -30,6 +30,7 @@ import java.time.ZoneId
 import java.time.ZoneOffset
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -322,20 +323,20 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
 
     fun observarInventarioPorPlaca(placa: String?): Flow<List<InventarioConVehiculo>> {
         val texto = placa?.trim().orEmpty()
-        if (texto.isBlank()) return flowOf(emptyList())
+        if (texto.isBlank()) return flowOf(emptyList<InventarioConVehiculo>())
         val placaLong = VehiculoPlacaUtils.parsePlacaLong(texto)
             ?: VehiculoPlacaUtils.parsePlacaLong(texto.replace("ICE", "", ignoreCase = true))
-            ?: return flowOf(emptyList())
+            ?: return flowOf(emptyList<InventarioConVehiculo>())
         return roomRepo.observarVehiculoPorPlaca(placaLong)
             .flatMapLatest { vehiculo ->
-                if (vehiculo == null) flowOf(emptyList())
+                if (vehiculo == null) flowOf(emptyList<InventarioConVehiculo>())
                 else roomRepo.observarInventarioPorVehiculo(vehiculo.id)
             }
     }
 
     fun observarUltimoKilometrajePorPlaca(placa: String?): Flow<Double?> {
         val texto = placa?.trim().orEmpty()
-        if (texto.isBlank()) return flowOf(null)
+        if (texto.isBlank()) return flowOf<Double?>(null)
         val normalizado = if (VehiculoPlacaUtils.parsePlacaLong(texto) == null) {
             texto.replace("ICE", "", ignoreCase = true)
         } else {

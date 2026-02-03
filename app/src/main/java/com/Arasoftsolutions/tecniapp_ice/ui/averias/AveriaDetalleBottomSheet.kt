@@ -19,6 +19,7 @@ import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import com.Arasoftsolutions.tecniapp_ice.Database.entities.InventarioConVehiculo
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.InventarioItemEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.MaterialEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.MedidorEntity
@@ -394,7 +395,7 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
         fun actualizarInventario(placa: String?) {
             inventarioJob?.cancel()
             inventarioJob = viewLifecycleOwner.lifecycleScope.launch {
-                vm.observarInventarioPorPlaca(placa).collectLatest { lista ->
+                vm.observarInventarioPorPlaca(placa).collectLatest { lista: List<InventarioConVehiculo> ->
                     val items = lista.map { it.item }
                         .filter { it.cantidadDisponible > 0 }
                         .sortedBy { it.descripcionMaterial.ifBlank { it.codigoMaterial } }
@@ -424,7 +425,7 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
     private fun startKilometrajeObserver(placa: String?) {
         kilometrajeJob?.cancel()
         kilometrajeJob = viewLifecycleOwner.lifecycleScope.launch {
-            vm.observarUltimoKilometrajePorPlaca(placa).collectLatest { ultimo ->
+            vm.observarUltimoKilometrajePorPlaca(placa).collectLatest { ultimo: Double? ->
                 ultimoKmRegistrado = ultimo
                 if (ultimo != null && b.etKmInicio.text.isNullOrBlank()) {
                     val texto = formatKilometraje(ultimo)
