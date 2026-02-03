@@ -31,6 +31,13 @@
     <string name="mi_vehiculo_registro_obligatorio_alerta">Debes registrar el kilometraje inicial para continuar usando TecniApp ICE.</string>
     <string name="mi_vehiculo_registro_inicial_hint">Valor inicial</string>
     <string name="mi_vehiculo_registro_inicial_hint_format">Valor inicial (%1$s)</string>
+    <string name="mi_vehiculo_registro_circuito_hint">Circuito</string>
+    <string name="mi_vehiculo_registro_actividad_hint">Actividad</string>
+    <string name="mi_vehiculo_registro_cuenta_hint">Cuenta</string>
+    <string name="mi_vehiculo_registro_caso_hint">Número de caso o Aranda</string>
+    <string name="mi_vehiculo_registro_lugar_hint">Lugar</string>
+    <string name="mi_vehiculo_registro_horas_hint">Horas laboradas (1 a 10)</string>
+    <string name="mi_vehiculo_horas_invalidas">Las horas laboradas deben estar entre 1 y 10.</string>
     <string name="mi_vehiculo_no_dispongo">No dispongo de vehículo</string>
     <string name="mi_vehiculo_registro_hoy">Registro del día</string>
     <string name="mi_vehiculo_registro_hoy_format">Inicial: %1$.1f %2$s • Final: %3$s</string>

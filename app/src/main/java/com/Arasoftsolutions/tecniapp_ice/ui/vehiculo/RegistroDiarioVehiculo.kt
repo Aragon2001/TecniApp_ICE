@@ -8,7 +8,13 @@ data class RegistroDiarioVehiculo(
     val valorInicial: Double,
     val valorFinal: Double? = null,
     val cerrado: Boolean = false,
-    val registradoEn: Long = System.currentTimeMillis()
+    val registradoEn: Long = System.currentTimeMillis(),
+    val circuito: String? = null,
+    val actividad: String? = null,
+    val cuenta: String? = null,
+    val numeroCaso: String? = null,
+    val lugar: String? = null,
+    val horasLaboradas: Int? = null
 ) {
     val diferencia: Double?
         get() = valorFinal?.let { it - valorInicial }
@@ -25,7 +31,13 @@ fun parseRegistrosDiarios(json: String?): List<RegistroDiarioVehiculo> {
                 valorInicial = obj.optDouble("valorInicial"),
                 valorFinal = obj.optDouble("valorFinal").takeIf { !it.isNaN() },
                 cerrado = obj.optBoolean("cerrado"),
-                registradoEn = obj.optLong("registradoEn")
+                registradoEn = obj.optLong("registradoEn"),
+                circuito = obj.optString("circuito").takeIf { it.isNotBlank() },
+                actividad = obj.optString("actividad").takeIf { it.isNotBlank() },
+                cuenta = obj.optString("cuenta").takeIf { it.isNotBlank() },
+                numeroCaso = obj.optString("numeroCaso").takeIf { it.isNotBlank() },
+                lugar = obj.optString("lugar").takeIf { it.isNotBlank() },
+                horasLaboradas = obj.optInt("horasLaboradas").takeIf { it > 0 }
             )
         }.filter { it.fecha.isNotBlank() }
     }.getOrDefault(emptyList())
@@ -40,6 +52,12 @@ fun serializeRegistrosDiarios(registros: List<RegistroDiarioVehiculo>): String {
         obj.put("valorFinal", registro.valorFinal)
         obj.put("cerrado", registro.cerrado)
         obj.put("registradoEn", registro.registradoEn)
+        obj.put("circuito", registro.circuito)
+        obj.put("actividad", registro.actividad)
+        obj.put("cuenta", registro.cuenta)
+        obj.put("numeroCaso", registro.numeroCaso)
+        obj.put("lugar", registro.lugar)
+        obj.put("horasLaboradas", registro.horasLaboradas)
         array.put(obj)
     }
     return array.toString()
