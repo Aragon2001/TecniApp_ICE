@@ -28,7 +28,8 @@ android {
         buildConfigField(
             "String",
             "UPDATE_JSON_URL",
-            "\"https://github.com/ORG/REPO/releases/latest/download/update.json\""
+            "\"https://raw.githubusercontent.com/Aragon2001/TecniApp_ICE/master/updates/update.json\""
+
         )
 
         minSdk = 26
