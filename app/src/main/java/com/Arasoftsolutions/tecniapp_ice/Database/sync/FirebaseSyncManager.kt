@@ -224,12 +224,30 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
             val entityId = idValue?.toIntOrNull()
                 ?: idValue?.hashCode()
                 ?: "${agencia.trim()}_${placa}".hashCode()
+            val kilometrajeActual = child.doubleValueAny("kilometrajeActual", "kilometraje")
+            val orimetroActual = child.doubleValueAny("orimetroActual", "orimetro")
+            val registroFecha = child.stringValueAny("registroFecha", "registro_fecha")
+            val registroInicial = child.doubleValueAny("registroInicial", "registro_inicial")
+            val registroFinal = child.doubleValueAny("registroFinal", "registro_final")
+            val registroCerrado = child.booleanValueAny("registroCerrado", "registro_cerrado") ?: false
+            val registrosDiariosJson = child.stringValueAny("registrosDiariosJson", "registros_diarios_json")
+            val mantenimientoUltimo = child.stringValueAny("mantenimientoUltimo", "mantenimiento_ultimo")
+            val mantenimientoProximo = child.stringValueAny("mantenimientoProximo", "mantenimiento_proximo")
             VehiculosEntity(
                 id = entityId,
                 agencia = agencia.trim(),
                 placa = placa,
                 tipo = tipo.trim(),
-                subregion = subregion?.trim()
+                subregion = subregion?.trim(),
+                kilometrajeActual = kilometrajeActual,
+                orimetroActual = orimetroActual,
+                registroFecha = registroFecha,
+                registroInicial = registroInicial,
+                registroFinal = registroFinal,
+                registroCerrado = registroCerrado,
+                registrosDiariosJson = registrosDiariosJson,
+                mantenimientoUltimo = mantenimientoUltimo,
+                mantenimientoProximo = mantenimientoProximo
             )
         }.filter { vehiculo ->
             filtroSubregion == null || vehiculo.subregion?.equals(filtroSubregion, ignoreCase = true) == true
@@ -474,8 +492,9 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
 
     suspend fun guardarVehiculo(vehiculo: VehiculosEntity) {
         val root = dbDatosGenerales.child("vehiculos")
-        val key = vehiculo.id.takeIf { it != 0 }?.toString()
-            ?: vehiculo.placa.takeIf { it != 0L }?.toString()
+        val idKey = vehiculo.id.takeIf { it != 0 }?.toString()
+        val placaKey = vehiculo.placa.takeIf { it != 0L }?.toString()
+        val primaryKey = idKey ?: placaKey
             ?: throw IllegalArgumentException("Vehículo inválido, requiere id o placa")
 
         val payload = mapOf(
@@ -483,10 +502,23 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
             "agencia" to vehiculo.agencia,
             "placa" to vehiculo.placa,
             "tipo" to vehiculo.tipo,
-            "subregion" to vehiculo.subregion
+            "subregion" to vehiculo.subregion,
+            "kilometrajeActual" to vehiculo.kilometrajeActual,
+            "orimetroActual" to vehiculo.orimetroActual,
+            "registroFecha" to vehiculo.registroFecha,
+            "registroInicial" to vehiculo.registroInicial,
+            "registroFinal" to vehiculo.registroFinal,
+            "registroCerrado" to vehiculo.registroCerrado,
+            "registrosDiariosJson" to vehiculo.registrosDiariosJson,
+            "mantenimientoUltimo" to vehiculo.mantenimientoUltimo,
+            "mantenimientoProximo" to vehiculo.mantenimientoProximo
         )
 
-        root.child(key).updateChildren(payload).await()
+        val keys = linkedSetOf(primaryKey)
+        placaKey?.let { keys.add(it) }
+        keys.forEach { key ->
+            root.child(key).updateChildren(payload).await()
+        }
     }
 
     suspend fun eliminarVehiculo(id: Int) {
@@ -1176,6 +1208,22 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
             is Long -> value.toDouble()
             is String -> value.trim().replace(",", ".").toDoubleOrNull()
             else -> value.toString().toDoubleOrNull()
+        }
+    }
+
+    private fun DataSnapshot.booleanValueAny(vararg names: String): Boolean? {
+        val value = valueAny(*names) ?: return null
+        return when (value) {
+            is Boolean -> value
+            is Int -> value != 0
+            is Long -> value != 0L
+            is Double -> value != 0.0
+            is Float -> value != 0f
+            is String -> {
+                val normalized = value.trim().lowercase(Locale.getDefault())
+                normalized in setOf("true", "1", "si", "sí", "yes")
+            }
+            else -> value.toString().trim().lowercase(Locale.getDefault()) in setOf("true", "1", "si", "sí", "yes")
         }
     }
 
