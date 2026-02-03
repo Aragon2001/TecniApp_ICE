@@ -3,6 +3,7 @@ package com.Arasoftsolutions.tecniapp_ice.Database.sync
 import android.content.Context
 import android.util.Log
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.*
+import com.Arasoftsolutions.tecniapp_ice.Database.utils.VehiculoPlacaUtils
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
@@ -223,12 +224,30 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
             val entityId = idValue?.toIntOrNull()
                 ?: idValue?.hashCode()
                 ?: "${agencia.trim()}_${placa}".hashCode()
+            val kilometrajeActual = child.doubleValueAny("kilometrajeActual", "kilometraje")
+            val orimetroActual = child.doubleValueAny("orimetroActual", "orimetro")
+            val registroFecha = child.stringValueAny("registroFecha", "registro_fecha")
+            val registroInicial = child.doubleValueAny("registroInicial", "registro_inicial")
+            val registroFinal = child.doubleValueAny("registroFinal", "registro_final")
+            val registroCerrado = child.booleanValueAny("registroCerrado", "registro_cerrado") ?: false
+            val registrosDiariosJson = child.stringValueAny("registrosDiariosJson", "registros_diarios_json")
+            val mantenimientoUltimo = child.stringValueAny("mantenimientoUltimo", "mantenimiento_ultimo")
+            val mantenimientoProximo = child.stringValueAny("mantenimientoProximo", "mantenimiento_proximo")
             VehiculosEntity(
                 id = entityId,
                 agencia = agencia.trim(),
                 placa = placa,
                 tipo = tipo.trim(),
-                subregion = subregion?.trim()
+                subregion = subregion?.trim(),
+                kilometrajeActual = kilometrajeActual,
+                orimetroActual = orimetroActual,
+                registroFecha = registroFecha,
+                registroInicial = registroInicial,
+                registroFinal = registroFinal,
+                registroCerrado = registroCerrado,
+                registrosDiariosJson = registrosDiariosJson,
+                mantenimientoUltimo = mantenimientoUltimo,
+                mantenimientoProximo = mantenimientoProximo
             )
         }.filter { vehiculo ->
             filtroSubregion == null || vehiculo.subregion?.equals(filtroSubregion, ignoreCase = true) == true
@@ -473,8 +492,9 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
 
     suspend fun guardarVehiculo(vehiculo: VehiculosEntity) {
         val root = dbDatosGenerales.child("vehiculos")
-        val key = vehiculo.id.takeIf { it != 0 }?.toString()
-            ?: vehiculo.placa.takeIf { it != 0L }?.toString()
+        val idKey = vehiculo.id.takeIf { it != 0 }?.toString()
+        val placaKey = vehiculo.placa.takeIf { it != 0L }?.toString()
+        val primaryKey = idKey ?: placaKey
             ?: throw IllegalArgumentException("Vehículo inválido, requiere id o placa")
 
         val payload = mapOf(
@@ -482,10 +502,23 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
             "agencia" to vehiculo.agencia,
             "placa" to vehiculo.placa,
             "tipo" to vehiculo.tipo,
-            "subregion" to vehiculo.subregion
+            "subregion" to vehiculo.subregion,
+            "kilometrajeActual" to vehiculo.kilometrajeActual,
+            "orimetroActual" to vehiculo.orimetroActual,
+            "registroFecha" to vehiculo.registroFecha,
+            "registroInicial" to vehiculo.registroInicial,
+            "registroFinal" to vehiculo.registroFinal,
+            "registroCerrado" to vehiculo.registroCerrado,
+            "registrosDiariosJson" to vehiculo.registrosDiariosJson,
+            "mantenimientoUltimo" to vehiculo.mantenimientoUltimo,
+            "mantenimientoProximo" to vehiculo.mantenimientoProximo
         )
 
-        root.child(key).updateChildren(payload).await()
+        val keys = linkedSetOf(primaryKey)
+        placaKey?.let { keys.add(it) }
+        keys.forEach { key ->
+            root.child(key).updateChildren(payload).await()
+        }
     }
 
     suspend fun eliminarVehiculo(id: Int) {
@@ -629,39 +662,54 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
         return reparaciones
     }
 
-    suspend fun guardarKilometrajeVehicular(registro: VehiculoKilometrajeEntity) {
-        val placa = registro.placaNormalizada.trim().takeIf { it.isNotEmpty() } ?: return
+    suspend fun guardarKilometrajeVehicular(
+        placa: String,
+        kilometrajeFinal: Double,
+        registradoEn: Long
+    ) {
+        val placaNormalizada = VehiculoPlacaUtils.parsePlacaLong(placa)?.toString() ?: return
         val payload = mapOf(
-            "placa" to registro.placa.trim(),
-            "placaNormalizada" to placa,
-            "kilometrajeFinal" to registro.kilometrajeFinal,
-            "registradoEn" to registro.registradoEn
+            "placa" to placa.trim(),
+            "placaNormalizada" to placaNormalizada,
+            "kilometrajeFinal" to kilometrajeFinal,
+            "registradoEn" to registradoEn
         )
         vehiculoKilometrajesRoot()
-            .child(placa)
-            .child(registro.registradoEn.toString())
+            .child(placaNormalizada)
+            .child(registradoEn.toString())
             .setValue(payload)
             .await()
     }
 
-    suspend fun guardarMantenimientoVehicular(registro: VehiculoMantenimientoEntity) {
-        val placa = VehiculoKilometrajeEntity.normalizarPlaca(registro.placa) ?: return
+    suspend fun guardarMantenimientoVehicular(
+        placa: String,
+        vehiculoId: Int?,
+        tipo: String,
+        fecha: Long?,
+        valorAlMomento: Double?,
+        observaciones: String?,
+        proximoKm: Double?,
+        proximoHoras: Double?,
+        proximoFecha: Long?,
+        registradoEn: Long
+    ) {
+        val placaNormalizada = VehiculoPlacaUtils.parsePlacaLong(placa)?.toString() ?: return
         val payload = mapOf(
-            "placa" to registro.placa.trim(),
-            "placaNormalizada" to placa,
-            "vehiculoId" to registro.vehiculoId,
-            "tipo" to registro.tipo,
-            "fecha" to registro.fecha,
-            "valorAlMomento" to registro.valorAlMomento,
-            "observaciones" to registro.observaciones,
-            "proximoKm" to registro.proximoKm,
-            "proximoHoras" to registro.proximoHoras,
-            "proximoFecha" to registro.proximoFecha,
-            "registradoEn" to registro.registradoEn
+            "placa" to placa.trim(),
+            "placaNormalizada" to placaNormalizada,
+            "vehiculoId" to vehiculoId,
+            "tipo" to tipo,
+            "fecha" to fecha,
+            "valorAlMomento" to valorAlMomento,
+            "observaciones" to observaciones,
+            "proximoKm" to proximoKm,
+            "proximoHoras" to proximoHoras,
+            "proximoFecha" to proximoFecha,
+            "registradoEn" to registradoEn
         )
         vehiculoMantenimientosRoot()
-            .child(placa)
-            .child(registro.registradoEn.toString())
+            .child(placaNormalizada)
+            .child(registradoEn.toString())
             .setValue(payload)
             .await()
     }
@@ -1160,6 +1208,22 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
             is Long -> value.toDouble()
             is String -> value.trim().replace(",", ".").toDoubleOrNull()
             else -> value.toString().toDoubleOrNull()
+        }
+    }
+
+    private fun DataSnapshot.booleanValueAny(vararg names: String): Boolean? {
+        val value = valueAny(*names) ?: return null
+        return when (value) {
+            is Boolean -> value
+            is Int -> value != 0
+            is Long -> value != 0L
+            is Double -> value != 0.0
+            is Float -> value != 0f
+            is String -> {
+                val normalized = value.trim().lowercase(Locale.getDefault())
+                normalized in setOf("true", "1", "si", "sí", "yes")
+            }
+            else -> value.toString().trim().lowercase(Locale.getDefault()) in setOf("true", "1", "si", "sí", "yes")
         }
     }
 
