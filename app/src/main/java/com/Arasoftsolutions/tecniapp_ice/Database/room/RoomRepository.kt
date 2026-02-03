@@ -27,9 +27,10 @@ class   RoomRepository(context: Context) {
 
     private val db = AppDatabase.getInstance(context.applicationContext)
     private val firebase = FirebaseSyncManager(context.applicationContext)
-    private val vehiculoDao = db.vehiculoDao()
+    private val kilometrajeDao = db.vehiculoKilometrajeDao()
+    private val mantenimientoDao = db.vehiculoMantenimientoDao()
     private val inventarioDao = db.inventarioDao()
-    private val etmRegistroDao = db.etmRegistroDao()
+
     private val realtimeScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var inventarioRealtimeListener: ValueEventListener? = null
     private var luminariasRealtimeListener: ValueEventListener? = null
@@ -243,15 +244,24 @@ class   RoomRepository(context: Context) {
         kilometrajeFinal: Double,
         timestamp: Long = System.currentTimeMillis()
     ) = withContext(Dispatchers.IO) {
-        val placaLong = VehiculoPlacaUtils.parsePlacaLong(placa) ?: return@withContext
-        val vehiculo = vehiculoDao.buscarPorPlaca(placaLong) ?: return@withContext
-        val actualizado = vehiculo.copy(
-            kilometrajeActual = kilometrajeFinal,
-            registroFinal = vehiculo.registroFinal ?: kilometrajeFinal,
-            registroCerrado = vehiculo.registroCerrado
+        val normalizada = VehiculoKilometrajeEntity.normalizarPlaca(placa)
+            ?: return@withContext
+        val registro = VehiculoKilometrajeEntity(
+            placa = placa.trim(),
+            placaNormalizada = normalizada,
+            kilometrajeFinal = kilometrajeFinal,
+            registradoEn = timestamp
         )
-        firebase.guardarVehiculo(actualizado)
-        vehiculoDao.insertAll(listOf(actualizado))
+        kilometrajeDao.insertar(registro)
+        firebase.guardarKilometrajeVehicular(registro)
+    }
+
+    suspend fun registrarMantenimientoVehicular(
+        mantenimiento: VehiculoMantenimientoEntity
+    ) = withContext(Dispatchers.IO) {
+        val id = mantenimientoDao.insertar(mantenimiento)
+        val saved = mantenimiento.copy(id = id)
+        firebase.guardarMantenimientoVehicular(saved)
     }
 
     suspend fun eliminarVehiculo(id: Int) = withContext(Dispatchers.IO) {
