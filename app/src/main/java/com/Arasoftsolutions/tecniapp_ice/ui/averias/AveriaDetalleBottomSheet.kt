@@ -4,6 +4,7 @@ import android.app.Dialog
 import android.app.TimePickerDialog
 import android.content.res.ColorStateList
 import android.graphics.Color
+import android.os.Build
 import android.os.Bundle
 import android.text.InputType
 import android.view.LayoutInflater
@@ -153,6 +154,9 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         isCancelable = false
+        if (!::item.isInitialized) {
+            item = extractItem()
+        }
         // TODO(Codex): Inhabilitar cancelación por gestos o back del BottomSheet de detalle
     }
 
@@ -181,6 +185,10 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        if (!::item.isInitialized) {
+            dismissAllowingStateLoss()
+            return
+        }
         val bloqueadaPorClor = item.estadoClor.equals("RESUELTA", true)
 
         val estadoInicial = if (bloqueadaPorClor) {
@@ -1661,10 +1669,27 @@ b.btnExportar.isEnabled = pertenece
     }
 
     companion object {
+        private const val ARG_AVERIA = "arg_averia"
+
         fun newInstance(item: AveriaUI): AveriaDetalleBottomSheet {
             val bs = AveriaDetalleBottomSheet()
+            bs.arguments = Bundle().apply {
+                putSerializable(ARG_AVERIA, item)
+            }
             bs.item = item
             return bs
         }
+    }
+
+    private fun extractItem(): AveriaUI {
+        val args = arguments
+            ?: throw IllegalStateException("AveriaDetalleBottomSheet requires arguments.")
+        val value = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            args.getSerializable(ARG_AVERIA, AveriaUI::class.java)
+        } else {
+            @Suppress("DEPRECATION")
+            args.getSerializable(ARG_AVERIA) as? AveriaUI
+        }
+        return value ?: throw IllegalStateException("AveriaDetalleBottomSheet requires AveriaUI.")
     }
 }
