@@ -336,7 +336,11 @@ class AveriasRepository(private val db: AppDatabase) {
 private fun shouldProcessRemote(estadoApp: String?, estadoClor: String?): Boolean {
     val app = normalizeEstadoLabel(estadoApp)
     val clor = estadoClor?.trim()?.uppercase(Locale.getDefault())
-    return app == "Pendiente" || app == "Resuelta" || clor == "RESUELTA"
+    return app == "Pendiente" ||
+        app == "Asignada" ||
+        app == "En atención" ||
+        app == "Resuelta" ||
+        clor == "RESUELTA"
 }
 
 /**
@@ -391,11 +395,11 @@ private fun preferMeaningfulClor(remote: String?, existing: String?): String? {
     }
 
     private fun shouldCreateNewCase(estado: String?): Boolean =
-        normalizeEstadoLabel(estado) == "Pendiente"
+        normalizeEstadoLabel(estado) in setOf("Pendiente", "Asignada", "En atención", "Resuelta")
 
     private fun shouldProcessRemote(estado: String?): Boolean {
         val normalized = normalizeEstadoLabel(estado)
-        return normalized == "Pendiente" || normalized == "Resuelta"
+        return normalized in setOf("Pendiente", "Asignada", "En atención", "Resuelta")
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -1046,16 +1050,9 @@ private fun AveriaEntity.toFirebaseAppPayload(): Map<String, Any?> = hashMapOf(
             }
             if (updated.isNotEmpty()) dao.upsertAll(updated)
 
-            val removedIds = current.values
-                .filter { it.isSynced }
-                .map { it.caseId }
-                .filterNot { remoteIds.contains(it) }
-
-            if (removedIds.isNotEmpty()) {
-                dao.eliminarPorCaseIds(removedIds)
-            } else {
-
-            }
+            // Nota: no eliminamos localmente si el caso no viene en Firebase.
+            // La fuente ICE puede tener averías que aún no están replicadas en Firebase
+            // y eliminarlas provoca que desaparezcan (especialmente Pendientes/Asignadas).
         } catch (t: Throwable) {
             Log.e(TAG, "Firebase pull failed", t)
         }
@@ -1148,14 +1145,9 @@ private fun AveriaEntity.toFirebaseAppPayload(): Map<String, Any?> = hashMapOf(
                     }
                     if (toUpsert.isNotEmpty()) dao.upsertAll(toUpsert)
 
-                    val removedIds = current.values
-                        .filter { it.isSynced }
-                        .map { it.caseId }
-                        .filterNot { remoteIds.contains(it) }
-
-                    if (removedIds.isNotEmpty()) {
-                        dao.eliminarPorCaseIds(removedIds)
-                    }
+                    // Nota: no eliminamos localmente si el caso no viene en Firebase.
+                    // La fuente ICE puede tener averías que aún no están replicadas en Firebase
+                    // y eliminarlas provoca que desaparezcan (especialmente Pendientes/Asignadas).
 
                     val shouldNotify = realtimeEmittedOnce || !this@AveriasRepository.suppressInitialNotification
                     if (shouldNotify && newlyCreated.isNotEmpty()) {
