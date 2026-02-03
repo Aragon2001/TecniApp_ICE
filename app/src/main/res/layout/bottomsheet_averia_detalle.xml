@@ -51,6 +51,7 @@
 
         <!-- SECCIÓN: INFORMACIÓN PRINCIPAL -->
         <TextView
+            android:id="@+id/tvSeccionCaso"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
@@ -81,7 +82,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="NISE:"
+                        android:text="@string/averia_label_nise"
                         android:textStyle="bold"
                         android:textAppearance="?attr/textAppearanceBodyMedium" />
 
@@ -103,7 +104,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Región:"
+                        android:text="@string/averia_label_region"
                         android:textStyle="bold"
                         android:textAppearance="?attr/textAppearanceBodyMedium" />
 
@@ -125,7 +126,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Agencia:"
+                        android:text="@string/averia_label_agencia"
                         android:textStyle="bold"
                         android:textAppearance="?attr/textAppearanceBodyMedium" />
 
@@ -201,81 +202,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="8dp"
-                    android:textAppearance="?attr/textAppearanceBodySmall"
-                    android:visibility="gone" />
-
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:background="?attr/colorOutline"
-                    android:layout_marginBottom="8dp" />
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:layout_marginBottom="4dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Coordenadas:"
-                        android:textStyle="bold"
-                        android:textAppearance="?attr/textAppearanceBodyMedium" />
-
-                    <TextView
-                        android:id="@+id/tvCoordenadas"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:layout_marginStart="8dp"
-                        android:textAppearance="?attr/textAppearanceBodySmall" />
-                     <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/cardMapaDireccion"
-                    android:layout_width="match_parent"
-                    android:layout_height="160dp"
-                    android:layout_marginTop="8dp"
-                    app:cardCornerRadius="12dp"
-                    app:cardElevation="0dp">
-
-                    <FrameLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent">
-
-                        <ImageView
-                            android:id="@+id/ivMapaPreview"
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:background="?attr/colorSurfaceVariant"
-                            android:contentDescription="@string/averia_ver_mapa"
-                            android:scaleType="center"
-                            android:src="@drawable/ic_share_location24" />
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnDetalleVerMapa"
-                            style="@style/Tecni.Button.Outlined"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_gravity="top|end"
-                            android:layout_margin="8dp"
-                            android:text="@string/averia_ver_mapa"
-                            app:icon="@drawable/ic_share_location24"
-                            app:iconGravity="textStart"
-                            app:iconPadding="4dp"
-                            app:iconSize="18dp" />
-                    </FrameLayout>/>
-                </LinearLayout>
-
-
-
-
-                <TextView
-                    android:id="@+id/tvDireccionGps"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:textAppearance="?attr/textAppearanceBodySmall"
-                    android:textIsSelectable="true"
+                    android:textAppearance="?attr/textAppearanceBodyMedium"
                     android:visibility="gone" />
 
                 <View
@@ -294,7 +221,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Asignado a:"
+                        android:text="@string/averia_label_asignado"
                         android:textStyle="bold"
                         android:textAppearance="?attr/textAppearanceBodyMedium" />
 
@@ -316,7 +243,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Fecha:"
+                        android:text="@string/averia_label_evento"
                         android:textStyle="bold"
                         android:textAppearance="?attr/textAppearanceBodyMedium" />
 
@@ -326,7 +253,7 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:layout_marginStart="8dp"
-                        android:textAppearance="?attr/textAppearanceBodySmall" />
+                        android:textAppearance="?attr/textAppearanceBodyMedium" />
                 </LinearLayout>
 
                 <LinearLayout
@@ -338,7 +265,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Atendido por:"
+                        android:text="@string/averia_label_atendido"
                         android:textStyle="bold"
                         android:textAppearance="?attr/textAppearanceBodyMedium" />
 
@@ -359,7 +286,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Vehículo:"
+                        android:text="@string/averia_label_vehiculo"
                         android:textStyle="bold"
                         android:textAppearance="?attr/textAppearanceBodyMedium" />
 
@@ -376,6 +303,7 @@
 
         <!-- SECCIÓN: LOCALIZACIÓN Y OBSERVACIONES -->
         <TextView
+            android:id="@+id/tvSeccionLocalizacion"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
@@ -412,7 +340,81 @@
                     android:layout_height="wrap_content"
                     android:textAppearance="?attr/textAppearanceBodyMedium"
                     android:textIsSelectable="true" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="?attr/colorOutline"
+                    android:layout_marginBottom="8dp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginBottom="4dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Coordenadas:"
+                        android:textStyle="bold"
+                        android:textAppearance="?attr/textAppearanceBodyMedium" />
+
+                    <TextView
+                        android:id="@+id/tvCoordenadas"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="8dp"
+                        android:textAppearance="?attr/textAppearanceBodyMedium" />
+                </LinearLayout>
+
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardMapaDireccion"
+                    android:layout_width="match_parent"
+                    android:layout_height="160dp"
+                    android:layout_marginTop="8dp"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="0dp">
+
+                    <FrameLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent">
+
+                        <ImageView
+                            android:id="@+id/ivMapaPreview"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:background="?attr/colorSurfaceVariant"
+                            android:contentDescription="@string/averia_ver_mapa"
+                            android:scaleType="center"
+                            android:src="@drawable/ic_share_location24" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnDetalleVerMapa"
+                            style="@style/Tecni.Button.Outlined"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="top|end"
+                            android:layout_margin="8dp"
+                            android:text="@string/averia_ver_mapa"
+                            app:icon="@drawable/ic_share_location24"
+                            app:iconGravity="textStart"
+                            app:iconPadding="4dp"
+                            app:iconSize="18dp" />
+                    </FrameLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <TextView
+                    android:id="@+id/tvDireccionGps"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:textAppearance="?attr/textAppearanceBodyMedium"
+                    android:textIsSelectable="true"
+                    android:visibility="gone" />
             </LinearLayout>
+
         </com.google.android.material.card.MaterialCardView>
 
         <!-- RESUMEN DE CAUSA -->
@@ -480,7 +482,7 @@
 
         </com.google.android.material.card.MaterialCardView>
 
-                <!-- SECCIÓN: INFORMACIÓN CLOR -->
+        <!-- SECCIÓN: INFORMACIÓN CLOR -->
         <TextView
             android:id="@+id/tvSeccionClor"
             android:layout_width="match_parent"
@@ -559,6 +561,7 @@
 
         <!-- SECCIÓN: TÉCNICOS Y MATERIALES -->
         <TextView
+            android:id="@+id/tvSeccionTecnicos"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
@@ -568,6 +571,7 @@
 
         <!-- TÉCNICOS -->
         <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardTecnicos"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
@@ -619,6 +623,7 @@
 
         <!-- MATERIALES -->
         <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardMateriales"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
@@ -671,6 +676,7 @@
 
         <!-- SECCIÓN: REGISTRO DE ATENCIÓN -->
         <TextView
+            android:id="@+id/tvSeccionRegistro"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
@@ -680,6 +686,7 @@
 
         <!-- TIPO DE AFECTACIÓN -->
         <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardTipoAfectacion"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
@@ -729,6 +736,7 @@
 
         <!-- MEDIDOR -->
         <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardMedidorInput"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
@@ -793,6 +801,7 @@
 
         <!-- DATOS DE LOCALIZACIÓN Y CAUSA -->
         <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardDetallesAtencion"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
@@ -864,6 +873,7 @@
 
         <!-- SECCIÓN: HORARIOS Y KILOMETRAJE -->
         <TextView
+            android:id="@+id/tvSeccionHorarios"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
@@ -885,62 +895,9 @@
                 android:orientation="vertical"
                 android:padding="16dp">
 
-                <!-- LLEGADA -->
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Llegada al Sitio"
-                    android:textAppearance="?attr/textAppearanceBodyMedium"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="8dp" />
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:layout_marginBottom="16dp">
-
-                    <com.google.android.material.textfield.TextInputLayout
-                        android:id="@+id/tilHoraLlegada"
-                        style="@style/Tecni.TextInput.Outlined"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginEnd="8dp"
-                        android:layout_weight="1"
-                        android:hint="Hora de Llegada"
-                        app:startIconDrawable="@drawable/ic_time"
-                        app:startIconTint="?attr/colorOnSurfaceVariant">
-
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/etHoraLlegada"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:focusable="false"
-                            android:clickable="true"
-                            android:inputType="none" />
-                    </com.google.android.material.textfield.TextInputLayout>
-
-                    <com.google.android.material.textfield.TextInputLayout
-                        android:id="@+id/tilKmLlegada"
-                        style="@style/Tecni.TextInput.Outlined"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
-                        android:layout_weight="1"
-                        android:hint="KM de Llegada"
-                        app:startIconDrawable="@drawable/ic_speedometer"
-                        app:startIconTint="?attr/colorOnSurfaceVariant">
-
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/etKmLlegada"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:inputType="numberDecimal" />
-                    </com.google.android.material.textfield.TextInputLayout>
-                </LinearLayout>
-
                 <!-- INICIO -->
                 <TextView
+                    android:id="@+id/tvHorarioInicioLabel"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="Inicio de Trabajo"
@@ -949,6 +906,7 @@
                     android:layout_marginBottom="8dp" />
 
                 <LinearLayout
+                    android:id="@+id/rowHorarioInicio"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
@@ -993,8 +951,65 @@
                     </com.google.android.material.textfield.TextInputLayout>
                 </LinearLayout>
 
+                <!-- LLEGADA -->
+                <TextView
+                    android:id="@+id/tvHorarioLlegadaLabel"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Llegada al Sitio"
+                    android:textAppearance="?attr/textAppearanceBodyMedium"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="8dp" />
+
+                <LinearLayout
+                    android:id="@+id/rowHorarioLlegada"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginBottom="16dp">
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tilHoraLlegada"
+                        style="@style/Tecni.TextInput.Outlined"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="8dp"
+                        android:layout_weight="1"
+                        android:hint="Hora de Llegada"
+                        app:startIconDrawable="@drawable/ic_time"
+                        app:startIconTint="?attr/colorOnSurfaceVariant">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etHoraLlegada"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:focusable="false"
+                            android:clickable="true"
+                            android:inputType="none" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tilKmLlegada"
+                        style="@style/Tecni.TextInput.Outlined"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:layout_weight="1"
+                        android:hint="KM de Llegada"
+                        app:startIconDrawable="@drawable/ic_speedometer"
+                        app:startIconTint="?attr/colorOnSurfaceVariant">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etKmLlegada"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="numberDecimal" />
+                    </com.google.android.material.textfield.TextInputLayout>
+                </LinearLayout>
+
                 <!-- FINALIZACIÓN -->
                 <TextView
+                    android:id="@+id/tvHorarioFinalLabel"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="Finalización"
@@ -1003,6 +1018,7 @@
                     android:layout_marginBottom="8dp" />
 
                 <LinearLayout
+                    android:id="@+id/rowHorarioFinal"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal">
@@ -1038,18 +1054,19 @@
                         app:startIconDrawable="@drawable/ic_speedometer"
                         app:startIconTint="?attr/colorOnSurfaceVariant">
 
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/etKmFinal"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:inputType="numberDecimal" />
-                    </com.google.android.material.textfield.TextInputLayout>
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etKmFinal"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="numberDecimal" />
+                </com.google.android.material.textfield.TextInputLayout>
                 </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
         <!-- VEHÍCULO -->
         <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardVehiculo"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
@@ -1092,6 +1109,7 @@
 
         <!-- SECCIÓN: ACCIONES -->
         <TextView
+            android:id="@+id/tvSeccionAcciones"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
