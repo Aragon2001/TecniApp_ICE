@@ -8,6 +8,7 @@ import androidx.room.Transaction
 import androidx.room.Update
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.InventarioConVehiculo
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.InventarioItemEntity
+import com.Arasoftsolutions.tecniapp_ice.Database.entities.InventarioMovimientoAveriaEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaReparacionEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -87,4 +88,7 @@ interface InventarioDao {
 
     @Query("DELETE FROM luminaria_reparacion")
     suspend fun limpiarReparaciones()
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun registrarMovimientoAveria(entity: InventarioMovimientoAveriaEntity)
 }
