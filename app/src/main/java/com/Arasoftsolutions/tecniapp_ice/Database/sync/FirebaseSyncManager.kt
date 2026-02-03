@@ -235,6 +235,7 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
         }
     }
 
+
     suspend fun obtenerSubregiones(): List<SubregionesEntity> {
         val snap = dbDatosGenerales.child("subregiones").get().await()
         return snap.children.mapNotNull { child ->

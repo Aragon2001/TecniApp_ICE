@@ -4,6 +4,7 @@ import android.content.Context
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.*
 import com.Arasoftsolutions.tecniapp_ice.Database.sync.FirebaseSyncManager
 import com.Arasoftsolutions.tecniapp_ice.Database.sync.SubregionNormalizer
+import com.Arasoftsolutions.tecniapp_ice.Database.utils.VehiculoPlacaUtils
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.ValueEventListener
 import kotlinx.coroutines.Dispatchers
@@ -13,6 +14,7 @@ import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 // Si usas transacciones, habilita esto y agrega la dependencia de room-ktx:
 // import androidx.room.withTransaction
@@ -28,7 +30,7 @@ class   RoomRepository(context: Context) {
     private val kilometrajeDao = db.vehiculoKilometrajeDao()
     private val mantenimientoDao = db.vehiculoMantenimientoDao()
     private val inventarioDao = db.inventarioDao()
-    private val etmRegistroDao = db.etmRegistroDao()
+
     private val realtimeScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var inventarioRealtimeListener: ValueEventListener? = null
     private var luminariasRealtimeListener: ValueEventListener? = null
@@ -78,10 +80,10 @@ class   RoomRepository(context: Context) {
     fun observarVehiculosCatalogo(): Flow<List<VehiculosEntity>> =
         db.vehiculoDao().observarTodos()
 
-    fun observarUltimoKilometraje(placa: String): Flow<VehiculoKilometrajeEntity?> {
-        val normalizada = VehiculoKilometrajeEntity.normalizarPlaca(placa)
-            ?: return flowOf(null)
-        return kilometrajeDao.observarUltimo(normalizada)
+    fun observarUltimoKilometraje(placa: String): Flow<Double?> {
+        val placaLong = VehiculoPlacaUtils.parsePlacaLong(placa) ?: return flowOf(null)
+        return vehiculoDao.observarPorPlaca(placaLong)
+            .map { it?.kilometrajeActual }
     }
 
     fun observarTodosLosPueblos(): Flow<List<PueblosEntity>> = db.puebloDao().observarTodos()
@@ -98,14 +100,32 @@ class   RoomRepository(context: Context) {
     fun observarInventarioGeneral(): Flow<List<InventarioConVehiculo>> =
         inventarioDao.observarInventarioGeneral()
 
-    fun observarRegistrosEtm(placa: String, limite: Int = 30): Flow<List<EtmRegistroEntity>> =
-        etmRegistroDao.observarUltimos(placa, limite)
+    fun observarVehiculoPorPlaca(placa: Long): Flow<VehiculosEntity?> =
+        vehiculoDao.observarPorPlaca(placa)
 
-    suspend fun obtenerRegistroEtmHoy(placa: String, fecha: String): EtmRegistroEntity? =
-        etmRegistroDao.obtenerPorPlacaYFecha(placa, fecha)
-
-    suspend fun guardarRegistroEtm(registro: EtmRegistroEntity) =
-        etmRegistroDao.insertar(registro)
+    suspend fun actualizarRegistroDiarioVehiculo(
+        vehiculoId: Int,
+        fecha: String,
+        inicial: Double,
+        final: Double?,
+        cerrado: Boolean,
+        kilometrajeActual: Double?,
+        orimetroActual: Double?,
+        registrosJson: String?
+    ) = withContext(Dispatchers.IO) {
+        val vehiculo = vehiculoDao.buscarPorId(vehiculoId) ?: return@withContext
+        val actualizado = vehiculo.copy(
+            registroFecha = fecha,
+            registroInicial = inicial,
+            registroFinal = final,
+            registroCerrado = cerrado,
+            kilometrajeActual = kilometrajeActual ?: vehiculo.kilometrajeActual,
+            orimetroActual = orimetroActual ?: vehiculo.orimetroActual,
+            registrosDiariosJson = registrosJson
+        )
+        firebase.guardarVehiculo(actualizado)
+        vehiculoDao.insertAll(listOf(actualizado))
+    }
 
     fun observarReparaciones(): Flow<List<LuminariaReparacionEntity>> =
         inventarioDao.observarReparaciones()
