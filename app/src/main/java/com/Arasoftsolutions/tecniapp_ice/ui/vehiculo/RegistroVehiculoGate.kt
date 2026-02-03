@@ -2,6 +2,7 @@ package com.Arasoftsolutions.tecniapp_ice.ui.vehiculo
 
 import android.content.Context
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
+import com.Arasoftsolutions.tecniapp_ice.Database.utils.VehiculoPlacaUtils
 import com.google.firebase.auth.FirebaseAuth
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -29,11 +30,15 @@ object RegistroVehiculoGate {
         if (placa.isBlank()) {
             return RegistroVehiculoGateState(requiereRegistro = true, tieneVehiculo = false)
         }
-        repo.syncEtmRegistros(placa)
         val hoy = formatoFecha.format(Date())
-        val registroHoy = repo.obtenerRegistroEtmHoy(placa, hoy)
+        val placaLong = VehiculoPlacaUtils.parsePlacaLong(placa) ?: return RegistroVehiculoGateState(
+            requiereRegistro = true,
+            tieneVehiculo = false
+        )
+        val vehiculo = repo.obtenerVehiculoPorPlaca(placaLong)
+        val registroHoy = vehiculo?.registroFecha == hoy && vehiculo.registroInicial != null
         return RegistroVehiculoGateState(
-            requiereRegistro = registroHoy == null,
+            requiereRegistro = !registroHoy,
             tieneVehiculo = true
         )
     }

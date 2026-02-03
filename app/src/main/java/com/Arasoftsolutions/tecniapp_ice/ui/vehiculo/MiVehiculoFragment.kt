@@ -11,7 +11,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.Arasoftsolutions.tecniapp_ice.Database.entities.EtmRegistroEntity
 import com.Arasoftsolutions.tecniapp_ice.R
 import com.Arasoftsolutions.tecniapp_ice.databinding.FragmentMiVehiculoBinding
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -195,11 +194,11 @@ class MiVehiculoFragment : Fragment() {
 }
 
 private class EtmRegistroAdapter(
-    private var items: List<EtmRegistroEntity>,
+    private var items: List<RegistroDiarioVehiculo>,
     private var unidad: String = "km"
 ) : androidx.recyclerview.widget.RecyclerView.Adapter<EtmRegistroAdapter.VH>() {
 
-    fun updateList(list: List<EtmRegistroEntity>, u: String) {
+    fun updateList(list: List<RegistroDiarioVehiculo>, u: String) {
         items = list
         unidad = u
         notifyDataSetChanged()
@@ -221,7 +220,7 @@ private class EtmRegistroAdapter(
         private val tvFecha = view.findViewById<android.widget.TextView>(R.id.tvFecha)
         private val tvValores = view.findViewById<android.widget.TextView>(R.id.tvValores)
 
-        fun bind(item: EtmRegistroEntity, unidad: String) {
+        fun bind(item: RegistroDiarioVehiculo, unidad: String) {
             tvFecha.text = item.fecha
             val fin = item.valorFinal?.let { " • Final: $it $unidad" } ?: ""
             val diff = item.diferencia?.let { " • Diferencia: $it $unidad" } ?: ""
