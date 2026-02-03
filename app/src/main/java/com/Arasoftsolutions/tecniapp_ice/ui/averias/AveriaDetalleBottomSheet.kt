@@ -505,8 +505,9 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
             getString(R.string.averia_reporte_coordenadas_sin_datos)
         }
         b.tvCoordenadas.text = coordsText
+        val hasCoords = item.lat != 0.0 && item.lng != 0.0
+        b.cardMapaDireccion.isVisible = hasCoords
         b.btnDetalleVerMapa.apply {
-            val hasCoords = item.lat != 0.0 && item.lng != 0.0
             isVisible = hasCoords
             setOnClickListener {
                 AveriaMapLauncher.show(
