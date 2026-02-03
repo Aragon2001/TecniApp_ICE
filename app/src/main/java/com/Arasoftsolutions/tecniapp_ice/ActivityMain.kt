@@ -379,11 +379,15 @@ class ActivityMain : AppCompatActivity() {
     override fun onStart() {
         super.onStart()
         auth.addAuthStateListener(authStateListener)
+        if (auth.currentUser != null) {
+            repository.startRealtimeSync()
+        }
     }
 
     override fun onStop() {
         super.onStop()
         auth.removeAuthStateListener(authStateListener)
+        repository.stopRealtimeSync()
     }
 
     private fun observeUserUpdates() {

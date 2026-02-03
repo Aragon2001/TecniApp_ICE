@@ -11,6 +11,7 @@ import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasSyncWorker
 import com.Arasoftsolutions.tecniapp_ice.ui.common.NetworkAlertManager
 import com.Arasoftsolutions.tecniapp_ice.update.UpdateWorker
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.FirebaseDatabase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -26,6 +27,7 @@ class TecniApp : Application() {
         android.util.Log.d("TecniApp", "Application onCreate() ejecutado ✅")
         AveriaNotifications.ensureChannel(this)
         networkAlertManager.start()
+        enableFirebasePersistence()
         val dataStore = DataStoreManager.getInstance(this)
         applicationScope.launch {
             val darkThemeEnabled = dataStore.darkThemeEnabled.first()
@@ -69,6 +71,33 @@ class TecniApp : Application() {
                 }.onFailure { error ->
                    android.util.Log.e("TecniApp", "Error aplicando actualización de schema", error)
                 }
+            }
+        }
+    }
+
+    private fun enableFirebasePersistence() {
+        val urls = listOf(
+            "https://tecniapp-ice-user.firebaseio.com",
+            "https://tecniapp-ice-datosgenerales.firebaseio.com",
+            "https://tecniapp-ice.firebaseio.com",
+            "https://tecniapp-ice-default-rtdb.firebaseio.com",
+            "https://tecniapp-ice-personal.firebaseio.com/",
+            "https://tecniapp-ice-materiales.firebaseio.com/",
+            "https://tecniapp-ice-inventario.firebaseio.com/",
+            "https://tecniapp-ice-averias.firebaseio.com/"
+        )
+
+        runCatching {
+            FirebaseDatabase.getInstance().setPersistenceEnabled(true)
+        }.onFailure { error ->
+            android.util.Log.w("TecniApp", "No se pudo habilitar persistencia default", error)
+        }
+
+        urls.forEach { url ->
+            runCatching {
+                FirebaseDatabase.getInstance(url).setPersistenceEnabled(true)
+            }.onFailure { error ->
+                android.util.Log.w("TecniApp", "No se pudo habilitar persistencia en $url", error)
             }
         }
     }

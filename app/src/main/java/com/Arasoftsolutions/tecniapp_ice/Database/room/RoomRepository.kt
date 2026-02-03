@@ -5,7 +5,11 @@ import com.Arasoftsolutions.tecniapp_ice.Database.entities.*
 import com.Arasoftsolutions.tecniapp_ice.Database.sync.FirebaseSyncManager
 import com.Arasoftsolutions.tecniapp_ice.Database.sync.SubregionNormalizer
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.ValueEventListener
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOf
@@ -24,6 +28,9 @@ class   RoomRepository(context: Context) {
     private val kilometrajeDao = db.vehiculoKilometrajeDao()
     private val inventarioDao = db.inventarioDao()
     private val etmRegistroDao = db.etmRegistroDao()
+    private val realtimeScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private var inventarioRealtimeListener: ValueEventListener? = null
+    private var luminariasRealtimeListener: ValueEventListener? = null
 
     companion object {
         const val SUBREGION_SYNC_STEPS = 5
@@ -715,4 +722,43 @@ class   RoomRepository(context: Context) {
         db.clearAllTables()
     }
 
+    fun startRealtimeSync() {
+        if (inventarioRealtimeListener == null) {
+            inventarioRealtimeListener = firebase.startInventarioRealtime(
+                scope = realtimeScope,
+                onUpdate = { items ->
+                    inventarioDao.limpiarTodo()
+                    if (items.isNotEmpty()) {
+                        inventarioDao.insertAll(items)
+                    }
+                },
+                onError = { error ->
+                    android.util.Log.e("RoomRepository", "Inventario realtime cancelado", error.toException())
+                }
+            )
+        }
+
+        if (luminariasRealtimeListener == null) {
+            luminariasRealtimeListener = firebase.startLuminariasRealtime(
+                scope = realtimeScope,
+                onUpdate = { reparaciones ->
+                    inventarioDao.limpiarReparaciones()
+                    if (reparaciones.isNotEmpty()) {
+                        inventarioDao.insertarReparaciones(reparaciones)
+                    }
+                },
+                onError = { error ->
+                    android.util.Log.e("RoomRepository", "Luminarias realtime cancelado", error.toException())
+                }
+            )
+        }
+    }
+
+    fun stopRealtimeSync() {
+        inventarioRealtimeListener?.let { firebase.stopInventarioRealtime(it) }
+        luminariasRealtimeListener?.let { firebase.stopLuminariasRealtime(it) }
+        inventarioRealtimeListener = null
+        luminariasRealtimeListener = null
+        realtimeScope.coroutineContext.cancelChildren()
+    }
 }
