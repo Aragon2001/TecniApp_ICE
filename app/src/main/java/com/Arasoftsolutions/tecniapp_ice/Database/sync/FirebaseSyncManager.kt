@@ -3,6 +3,7 @@ package com.Arasoftsolutions.tecniapp_ice.Database.sync
 import android.content.Context
 import android.util.Log
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.*
+import com.Arasoftsolutions.tecniapp_ice.Database.utils.VehiculoPlacaUtils
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
@@ -629,39 +630,54 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
         return reparaciones
     }
 
-    suspend fun guardarKilometrajeVehicular(registro: VehiculoKilometrajeEntity) {
-        val placa = registro.placaNormalizada.trim().takeIf { it.isNotEmpty() } ?: return
+    suspend fun guardarKilometrajeVehicular(
+        placa: String,
+        kilometrajeFinal: Double,
+        registradoEn: Long
+    ) {
+        val placaNormalizada = VehiculoPlacaUtils.parsePlacaLong(placa)?.toString() ?: return
         val payload = mapOf(
-            "placa" to registro.placa.trim(),
-            "placaNormalizada" to placa,
-            "kilometrajeFinal" to registro.kilometrajeFinal,
-            "registradoEn" to registro.registradoEn
+            "placa" to placa.trim(),
+            "placaNormalizada" to placaNormalizada,
+            "kilometrajeFinal" to kilometrajeFinal,
+            "registradoEn" to registradoEn
         )
         vehiculoKilometrajesRoot()
-            .child(placa)
-            .child(registro.registradoEn.toString())
+            .child(placaNormalizada)
+            .child(registradoEn.toString())
             .setValue(payload)
             .await()
     }
 
-    suspend fun guardarMantenimientoVehicular(registro: VehiculoMantenimientoEntity) {
-        val placa = VehiculoKilometrajeEntity.normalizarPlaca(registro.placa) ?: return
+    suspend fun guardarMantenimientoVehicular(
+        placa: String,
+        vehiculoId: Int?,
+        tipo: String,
+        fecha: Long?,
+        valorAlMomento: Double?,
+        observaciones: String?,
+        proximoKm: Double?,
+        proximoHoras: Double?,
+        proximoFecha: Long?,
+        registradoEn: Long
+    ) {
+        val placaNormalizada = VehiculoPlacaUtils.parsePlacaLong(placa)?.toString() ?: return
         val payload = mapOf(
-            "placa" to registro.placa.trim(),
-            "placaNormalizada" to placa,
-            "vehiculoId" to registro.vehiculoId,
-            "tipo" to registro.tipo,
-            "fecha" to registro.fecha,
-            "valorAlMomento" to registro.valorAlMomento,
-            "observaciones" to registro.observaciones,
-            "proximoKm" to registro.proximoKm,
-            "proximoHoras" to registro.proximoHoras,
-            "proximoFecha" to registro.proximoFecha,
-            "registradoEn" to registro.registradoEn
+            "placa" to placa.trim(),
+            "placaNormalizada" to placaNormalizada,
+            "vehiculoId" to vehiculoId,
+            "tipo" to tipo,
+            "fecha" to fecha,
+            "valorAlMomento" to valorAlMomento,
+            "observaciones" to observaciones,
+            "proximoKm" to proximoKm,
+            "proximoHoras" to proximoHoras,
+            "proximoFecha" to proximoFecha,
+            "registradoEn" to registradoEn
         )
         vehiculoMantenimientosRoot()
-            .child(placa)
-            .child(registro.registradoEn.toString())
+            .child(placaNormalizada)
+            .child(registradoEn.toString())
             .setValue(payload)
             .await()
     }
