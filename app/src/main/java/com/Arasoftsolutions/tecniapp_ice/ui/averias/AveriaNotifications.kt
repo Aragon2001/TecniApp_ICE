@@ -4,9 +4,11 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
 import android.media.AudioAttributes
 import android.net.Uri
 import android.os.Build
+import android.provider.Settings
 import androidx.core.app.NotificationCompat
 import androidx.core.graphics.drawable.IconCompat
 import androidx.navigation.NavDeepLinkBuilder
@@ -59,13 +61,20 @@ object AveriaNotifications {
         )
     }
 
-    fun notificationPreferencesPendingIntent(context: Context): PendingIntent =
-        NavDeepLinkBuilder(context)
-            .setGraph(R.navigation.mobile_navigation)
-            .setDestination(R.id.nav_settings)
-            .setComponentName(ActivityMain::class.java)
-            .createPendingIntent()
-            // TODO(Codex): Definir intent directo a ajustes de notificaciones
+    fun notificationPreferencesPendingIntent(context: Context): PendingIntent {
+        val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                putExtra(Settings.EXTRA_CHANNEL_ID, CHANNEL_ID)
+            }
+        } else {
+            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                data = Uri.fromParts("package", context.packageName, null)
+            }
+        }
+        val flags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        return PendingIntent.getActivity(context, 0, intent, flags)
+    }
 
     fun bubbleMetadata(context: Context): NotificationCompat.BubbleMetadata? {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return null
