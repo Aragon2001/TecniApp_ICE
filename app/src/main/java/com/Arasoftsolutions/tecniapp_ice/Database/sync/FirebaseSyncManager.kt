@@ -85,7 +85,7 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
     // --- USUARIOS ---
     suspend fun obtenerUsuario(uid: String): UserEntity? {
         val snap = dbUsers.child("usuarios").child(uid).get().await()
-        return snap.getValue(UserEntity::class.java)
+        return snap.toUserEntity()
     }
 
     suspend fun upsertUsuarioConEmail(uid: String, email: String, otrosCampos: Map<String, Any?> = emptyMap()) {
@@ -109,7 +109,7 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
             .await()
 
         val first = snap.children.firstOrNull() ?: return null
-        return first.getValue(UserEntity::class.java)
+        return first.toUserEntity()
     }
 
     suspend fun buscarUsuarioPorCedula(cedula: String): UserEntity? {
@@ -123,7 +123,7 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
             .await()
 
         val first = snap.children.firstOrNull() ?: return null
-        return first.getValue(UserEntity::class.java)
+        return first.toUserEntity()
     }
 
     suspend fun actualizarUsuarioAdmin(user: UserEntity) {
@@ -1230,6 +1230,36 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
     private fun DataSnapshot.stringValueAny(vararg names: String): String? {
         val value = valueAny(*names) ?: return null
         return value.toString()
+    }
+
+    private fun DataSnapshot.stringValueAnyTrim(vararg names: String): String? {
+        return stringValueAny(*names)?.trim()?.takeIf { it.isNotEmpty() }
+    }
+
+    private fun DataSnapshot.toUserEntity(): UserEntity? {
+        val uid = stringValueAnyTrim("uid") ?: key?.trim().orEmpty()
+        if (uid.isBlank()) return null
+        return UserEntity(
+            uid = uid,
+            email = stringValueAnyTrim("email"),
+            email_lower = stringValueAnyTrim("email_lower", "emailLower"),
+            nombre = stringValueAnyTrim("nombre"),
+            apellidos = stringValueAnyTrim("apellidos"),
+            primerApellido = stringValueAnyTrim("primer_apellido", "primerApellido"),
+            segundoApellido = stringValueAnyTrim("segundo_apellido", "segundoApellido"),
+            cedula = stringValueAnyTrim("cedula"),
+            region = stringValueAnyTrim("region"),
+            regionNombre = stringValueAnyTrim("region_nombre", "regionNombre"),
+            subregion = stringValueAnyTrim("subregion"),
+            subregionNombre = stringValueAnyTrim("subregion_nombre", "subregionNombre"),
+            agenciaId = stringValueAnyTrim("agencia_id", "agenciaId"),
+            agencia = stringValueAnyTrim("agencia"),
+            placaVehiculo = stringValueAnyTrim("placaVehiculo", "placa_vehiculo", "placa"),
+            telefono = stringValueAnyTrim("telefono", "tel", "phone"),
+            password = stringValueAnyTrim("password"),
+            fotoUrl = stringValueAnyTrim("fotoUrl", "foto_url", "foto"),
+            rol = stringValueAnyTrim("rol")
+        )
     }
 
     private fun generarIdLocalizacion(
