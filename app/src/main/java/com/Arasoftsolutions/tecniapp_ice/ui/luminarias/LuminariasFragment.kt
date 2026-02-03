@@ -18,9 +18,13 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.Arasoftsolutions.tecniapp_ice.R
 import com.Arasoftsolutions.tecniapp_ice.databinding.FragmentLuminariasBinding
 import com.Arasoftsolutions.tecniapp_ice.databinding.BottomSheetLuminariaReparacionBinding
+import com.Arasoftsolutions.tecniapp_ice.ui.vehiculo.RegistroVehiculoGate
+import com.Arasoftsolutions.tecniapp_ice.ui.vehiculo.showRegistroVehiculoPendienteDialog
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.textfield.MaterialAutoCompleteTextView
@@ -94,6 +98,16 @@ class LuminariasFragment : Fragment() {
             val button = group.findViewById<com.google.android.material.button.MaterialButton>(checkedId)
             val vehiculoId = button?.tag as? Int
             viewModel.actualizarVehiculoFiltro(vehiculoId)
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            val gate = RegistroVehiculoGate.evaluar(requireContext())
+            if (gate.requiereRegistro) {
+                showRegistroVehiculoPendienteDialog(
+                    onRegistrar = { findNavController().navigate(R.id.nav_mi_vehiculo) },
+                    onNoVehiculo = { findNavController().popBackStack(R.id.nav_home, false) }
+                )
+            }
         }
 
         observarEstado()
