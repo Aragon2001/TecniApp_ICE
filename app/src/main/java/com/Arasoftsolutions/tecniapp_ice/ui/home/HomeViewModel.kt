@@ -165,26 +165,6 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
                     repo.observarVehiculoPorPlaca(placaLong)
                 }
             }
-            .stateIn(viewModelScope, sharing, emptyList())
-
-    private val registroHoy: StateFlow<com.Arasoftsolutions.tecniapp_ice.Database.entities.EtmRegistroEntity?> =
-        registrosEtm
-            .map { registros ->
-                val hoy = LocalDate.now().format(formatoFechaEtm)
-                registros.firstOrNull { it.fecha == hoy }
-            }
-            .stateIn(viewModelScope, sharing, null)
-
-    val registroEtmPendiente: StateFlow<Boolean> =
-        combine(placaVehiculo, registroHoy) { placa, registro ->
-            placa.isNullOrBlank() || registro == null
-        }.stateIn(viewModelScope, sharing, false)
-
-    val valorEtmActual: StateFlow<Double?> =
-        registrosEtm
-            .map { registros ->
-                registros.firstOrNull()?.let { it.valorFinal ?: it.valorInicial }
-            }
             .stateIn(viewModelScope, sharing, null)
 
     private val registroHoy: StateFlow<Boolean> =
@@ -265,11 +245,6 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
                 repo.observarUsuario(uid).collect { user ->
                     _usuario.value = user
                     user?.subregion?.takeIf { it.isNotBlank() }?.let { setSubregion(it) }
-                }
-            }
-            launch {
-                placaVehiculo.filterNotNull().collect { placa ->
-                    repo.syncEtmRegistros(placa)
                 }
             }
             repo.refreshUsuarioActual()
