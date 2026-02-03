@@ -57,6 +57,9 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
         dbLocal
     }
 
+    private val dbVehiculoOps: DatabaseReference by lazy {
+        dbLocal
+    }
 
     private val subregionNombreCache = mutableMapOf<String, String>()
 
@@ -626,6 +629,43 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
         return reparaciones
     }
 
+    suspend fun guardarKilometrajeVehicular(registro: VehiculoKilometrajeEntity) {
+        val placa = registro.placaNormalizada.trim().takeIf { it.isNotEmpty() } ?: return
+        val payload = mapOf(
+            "placa" to registro.placa.trim(),
+            "placaNormalizada" to placa,
+            "kilometrajeFinal" to registro.kilometrajeFinal,
+            "registradoEn" to registro.registradoEn
+        )
+        vehiculoKilometrajesRoot()
+            .child(placa)
+            .child(registro.registradoEn.toString())
+            .setValue(payload)
+            .await()
+    }
+
+    suspend fun guardarMantenimientoVehicular(registro: VehiculoMantenimientoEntity) {
+        val placa = VehiculoKilometrajeEntity.normalizarPlaca(registro.placa) ?: return
+        val payload = mapOf(
+            "placa" to registro.placa.trim(),
+            "placaNormalizada" to placa,
+            "vehiculoId" to registro.vehiculoId,
+            "tipo" to registro.tipo,
+            "fecha" to registro.fecha,
+            "valorAlMomento" to registro.valorAlMomento,
+            "observaciones" to registro.observaciones,
+            "proximoKm" to registro.proximoKm,
+            "proximoHoras" to registro.proximoHoras,
+            "proximoFecha" to registro.proximoFecha,
+            "registradoEn" to registro.registradoEn
+        )
+        vehiculoMantenimientosRoot()
+            .child(placa)
+            .child(registro.registradoEn.toString())
+            .setValue(payload)
+            .await()
+    }
+
     fun startInventarioRealtime(
         scope: CoroutineScope,
         onUpdate: suspend (List<InventarioItemEntity>) -> Unit,
@@ -816,6 +856,14 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
             upperExists -> upper
             else -> dbInventario
         }
+    }
+
+    private fun vehiculoKilometrajesRoot(): DatabaseReference {
+        return dbVehiculoOps.child("vehiculo_kilometrajes")
+    }
+
+    private fun vehiculoMantenimientosRoot(): DatabaseReference {
+        return dbVehiculoOps.child("vehiculo_mantenimientos")
     }
 
     private fun parseLuminariaSnapshot(

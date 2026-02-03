@@ -38,6 +38,11 @@ class AveriasRepository(private val db: AppDatabase) {
         .reference
         .child("averias")
 
+    private val vehiculoKilometrajesRef = FirebaseDatabase
+        .getInstance("https://tecniapp-ice.firebaseio.com/")
+        .reference
+        .child("vehiculo_kilometrajes")
+
     // Base de materiales usada por ICE
     private val materialesRef = FirebaseDatabase
         .getInstance("https://tecniapp-ice-materiales.firebaseio.com/")
@@ -758,16 +763,28 @@ return AveriaEntity(
         val placaLong = VehiculoPlacaUtils.parsePlacaLong(vehiculo)
             ?: VehiculoPlacaUtils.parsePlacaLong(vehiculo.replace("ICE", "", ignoreCase = true))
             ?: return
-        val actual = vehiculoDao.buscarPorPlaca(placaLong) ?: return
-        vehiculoDao.insertAll(
-            listOf(
-                actual.copy(
-                    kilometrajeActual = kilometraje,
-                    registroFinal = actual.registroFinal ?: kilometraje,
-                    registroCerrado = actual.registroCerrado
-                )
-            )
+        val registro = VehiculoKilometrajeEntity(
+            placa = vehiculo.trim(),
+            placaNormalizada = normalizada,
+            kilometrajeFinal = kilometraje,
+            registradoEn = timestamp
         )
+        kilometrajeDao.insertar(registro)
+        runCatching {
+            val payload = mapOf(
+                "placa" to registro.placa,
+                "placaNormalizada" to registro.placaNormalizada,
+                "kilometrajeFinal" to registro.kilometrajeFinal,
+                "registradoEn" to registro.registradoEn
+            )
+            vehiculoKilometrajesRef
+                .child(registro.placaNormalizada)
+                .child(registro.registradoEn.toString())
+                .updateChildren(payload)
+                .await()
+        }.onFailure { error ->
+            Log.w(TAG, "No se pudo subir kilometraje a Firebase", error)
+        }
     }
 
     private suspend fun syncSingle(caseId: String) {
