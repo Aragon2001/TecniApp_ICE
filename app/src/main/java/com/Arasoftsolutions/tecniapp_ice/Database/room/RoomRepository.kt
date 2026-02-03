@@ -27,8 +27,8 @@ class   RoomRepository(context: Context) {
 
     private val db = AppDatabase.getInstance(context.applicationContext)
     private val firebase = FirebaseSyncManager(context.applicationContext)
-    private val kilometrajeDao = db.vehiculoKilometrajeDao()
-    private val mantenimientoDao = db.vehiculoMantenimientoDao()
+    private val kilometrajeDao = db.vehiculoDao()
+    private val mantenimientoDao = db.vehiculoDao()
     private val inventarioDao = db.inventarioDao()
 
     private val realtimeScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)

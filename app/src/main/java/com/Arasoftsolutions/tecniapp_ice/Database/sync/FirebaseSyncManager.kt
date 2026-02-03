@@ -54,7 +54,7 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
     }
 
     private val dbLuminarias: DatabaseReference by lazy {
-        dbLocal
+        database("https://tecniapp-ice-luminarias.firebaseio.com/")
     }
 
     private val dbVehiculoOps: DatabaseReference by lazy {

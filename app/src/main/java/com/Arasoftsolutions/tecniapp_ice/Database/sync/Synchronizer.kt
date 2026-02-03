@@ -27,7 +27,7 @@ class Synchronizer(
         try {
 
             // ----------- 1. TÉCNICOS ----------------
-            onSyncStart("Descargando técnicos…")
+            onSyncStart("Descargando Datos…")
             try {
                 downloadedBytes += repository.syncTecnicos()
                 onSyncProgress(++done, total, "Descargando técnicos…", downloadedBytes)
