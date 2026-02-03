@@ -1,10 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+
+<androidx.core.widget.NestedScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="16dp"
+      android:clipToPadding="false"
+        android:paddingBottom="24dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
     tools:context=".ui.vehiculo.MiVehiculoFragment">
 
     <LinearLayout
@@ -20,11 +28,15 @@
             app:cardBackgroundColor="@color/ice_blue">
 
             <LinearLayout
+
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:background="@drawable/bg_home_header"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:paddingHorizontal="24dp"
+                android:paddingTop="48dp"
+                android:paddingBottom="32dp"
+                tools:ignore="UseCompoundDrawables">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -82,7 +94,7 @@
                         app:chipBackgroundColor="@color/success_500"
                         app:chipIconTint="@color/white"
                         app:chipStrokeWidth="0dp"
-                        app:textColor="@color/white" />
+                        android:textColor="@color/white" />
                 </LinearLayout>
 
                 <TextView
