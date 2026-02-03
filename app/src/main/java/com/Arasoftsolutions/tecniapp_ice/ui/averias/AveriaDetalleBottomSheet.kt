@@ -1068,15 +1068,14 @@ b.btnExportar.isEnabled = pertenece
         material: MaterialEntity,
         existente: MaterialUso?
     ) {
-        if (tipoSeleccionado != TipoAfectacion.CLIENTE) {
-            b.tilMedidor.error = getString(R.string.averia_medidor_error_tipo)
-            return
+        if (tipoSeleccionado != TipoAfectacion.CLIENTE && inputsEditable) {
+            suppressTipoListener = true
+            b.toggleTipoAfectacion.check(b.btnTipoCliente.id)
+            suppressTipoListener = false
+            tipoSeleccionado = TipoAfectacion.CLIENTE
+            updateTipoSection()
         }
-        val numeroActual = b.etMedidor.text?.toString()?.trim().orEmpty().ifBlank { item.numeroMedidor.orEmpty() }
-        if (numeroActual.isBlank()) {
-            b.tilMedidor.error = getString(R.string.averia_medidor_error_requerido)
-            return
-        }
+        b.tilMedidor.error = null
         val cantidadInicial = existente?.cantidad?.takeIf { it > 0 } ?: 1
         val metadataInicial = existente?.medidorInstalado
         mostrarDialogoMedidor(material, cantidadInicial, metadataInicial) { cantidad, metadata ->
@@ -1165,7 +1164,13 @@ b.btnExportar.isEnabled = pertenece
             binding.etCantidad.setText(cantidadInicial.toString())
             binding.etCantidad.setSelection(binding.etCantidad.text?.length ?: 0)
         }
-        binding.etNumero.setText(metadataInicial?.numero)
+        val numeroPrefill = metadataInicial?.numero
+            ?: medidorSeleccionado?.medidorNumber?.trim()
+            ?: b.etMedidor.text?.toString()?.trim().orEmpty().ifBlank { item.numeroMedidor?.trim() }
+        if (!numeroPrefill.isNullOrBlank()) {
+            binding.etNumero.setText(numeroPrefill)
+            binding.etNumero.setSelection(binding.etNumero.text?.length ?: 0)
+        }
         val (lecturaNueva, lecturaAnterior) = parseLecturas(metadataInicial?.lectura)
         binding.etLecturaNueva.setText(lecturaNueva)
         binding.etLecturaAnterior.setText(lecturaAnterior)
