@@ -20,7 +20,7 @@ import com.Arasoftsolutions.tecniapp_ice.ui.averias.MaterialesSerializer
 import com.Arasoftsolutions.tecniapp_ice.ui.reportes.ExcelReportExporter.ExportPayload
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.functions.FirebaseFunctions
-import com.google.firebase.storage.FirebaseStorage
+import android.util.Base64
 import java.io.ByteArrayOutputStream
 import java.text.DecimalFormat
 import java.time.Instant
@@ -42,7 +42,6 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.runBlocking
 
 private val functions by lazy { FirebaseFunctions.getInstance() }
-private val storage by lazy { FirebaseStorage.getInstance() }
 
 private data class AveriaReporteInterno(
     val entity: AveriaEntity,
@@ -387,15 +386,7 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
                 }
 
                 val fileName = generarNombreArchivo(tipo, state.fechaInicio, state.fechaFin)
-                val uid = auth.currentUser?.uid ?: "anon"
-
-                val ref = storage.reference
-                    .child("reportes")
-                    .child(uid)
-                    .child(fileName)
-
-                ref.putBytes(bytes).await()
-                val downloadUrl = ref.downloadUrl.await().toString()
+                val encoded = Base64.encodeToString(bytes, Base64.NO_WRAP)
 
                 functions
                     .getHttpsCallable("sendReport")
@@ -403,7 +394,8 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
                         mapOf(
                             "email" to destino,
                             "reportName" to nombreReporte,
-                            "downloadUrl" to downloadUrl,
+                            "fileName" to fileName,
+                            "fileBase64" to encoded,
                             "subtitle" to "Rango: ${state.rangoTexto}"
                         )
                     ).await()
