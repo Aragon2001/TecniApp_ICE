@@ -706,7 +706,8 @@ class   RoomRepository(context: Context) {
         progress(++done, total, "Descargando localizaciones…", downloadedBytes)
 
         val vehiculosPorSubregion = firebase.obtenerVehiculos(canonicalSubregion)
-        val vehiculos = vehiculosPorSubregion.ifEmpty { firebase.obtenerVehiculos() }
+        val vehiculosRemotos = vehiculosPorSubregion.ifEmpty { firebase.obtenerVehiculos() }
+        val vehiculos = deduplicarVehiculos(vehiculosRemotos)
         downloadedBytes += estimateBytes(vehiculos)
         if (vehiculosPorSubregion.isNotEmpty()) {
             db.vehiculoDao().eliminarPorSubregion(canonicalSubregion)
@@ -770,7 +771,8 @@ class   RoomRepository(context: Context) {
             db.agenciaDao().limpiarTodo()
         }
 
-        val vehiculos = firebase.obtenerVehiculos()
+        val vehiculosRemotos = firebase.obtenerVehiculos()
+        val vehiculos = deduplicarVehiculos(vehiculosRemotos)
         downloadedBytes += estimateBytes(vehiculos)
         if (vehiculos.isNotEmpty()) {
             db.vehiculoDao().eliminarFueraDeIds(vehiculos.map { it.id })
@@ -790,12 +792,13 @@ class   RoomRepository(context: Context) {
     }
 
     private suspend fun combinarVehiculosConLocales(remotos: List<VehiculosEntity>): List<VehiculosEntity> {
-        if (remotos.isEmpty()) return remotos
+        val remotosNormalizados = deduplicarVehiculos(remotos)
+        if (remotosNormalizados.isEmpty()) return remotosNormalizados
         val locales = db.vehiculoDao().getAll()
-        if (locales.isEmpty()) return remotos
+        if (locales.isEmpty()) return remotosNormalizados
         val localesPorId = locales.associateBy { it.id }
         val localesPorPlaca = locales.associateBy { it.placa }
-        return remotos.map { remoto ->
+        return remotosNormalizados.map { remoto ->
             val local = localesPorId[remoto.id] ?: localesPorPlaca[remoto.placa]
             if (local == null) {
                 remoto
@@ -813,6 +816,44 @@ class   RoomRepository(context: Context) {
                 )
             }
         }
+    }
+
+    private fun deduplicarVehiculos(vehiculos: List<VehiculosEntity>): List<VehiculosEntity> {
+        if (vehiculos.isEmpty()) return vehiculos
+        val deduplicados = linkedMapOf<String, VehiculosEntity>()
+        vehiculos.forEach { vehiculo ->
+            val key = if (vehiculo.placa != 0L) {
+                "placa:${vehiculo.placa}"
+            } else {
+                "id:${vehiculo.id}"
+            }
+            val existente = deduplicados[key]
+            deduplicados[key] = if (existente == null) {
+                vehiculo
+            } else {
+                fusionarVehiculos(existente, vehiculo)
+            }
+        }
+        return deduplicados.values.toList()
+    }
+
+    private fun fusionarVehiculos(base: VehiculosEntity, otro: VehiculosEntity): VehiculosEntity {
+        return base.copy(
+            id = if (base.id != 0) base.id else otro.id,
+            agencia = base.agencia.ifBlank { otro.agencia },
+            placa = if (base.placa != 0L) base.placa else otro.placa,
+            tipo = base.tipo.ifBlank { otro.tipo },
+            subregion = base.subregion ?: otro.subregion,
+            kilometrajeActual = base.kilometrajeActual ?: otro.kilometrajeActual,
+            orimetroActual = base.orimetroActual ?: otro.orimetroActual,
+            registroFecha = base.registroFecha ?: otro.registroFecha,
+            registroInicial = base.registroInicial ?: otro.registroInicial,
+            registroFinal = base.registroFinal ?: otro.registroFinal,
+            registroCerrado = base.registroCerrado || otro.registroCerrado,
+            registrosDiariosJson = base.registrosDiariosJson ?: otro.registrosDiariosJson,
+            mantenimientoUltimo = base.mantenimientoUltimo ?: otro.mantenimientoUltimo,
+            mantenimientoProximo = base.mantenimientoProximo ?: otro.mantenimientoProximo
+        )
     }
 
     suspend fun limpiarBaseLocal() = withContext(Dispatchers.IO) {
