@@ -377,12 +377,17 @@ private fun preferMeaningfulClor(remote: String?, existing: String?): String? {
         if (isClorResuelta(estadoClor)) return "Resuelta"
         val localNormalized = normalizeEstadoLabel(local)
         val remoteNormalized = normalizeEstadoLabel(remote)
-        return when {
-            localNormalized == "Anulada" -> "Anulada"
-            local.isNullOrBlank() -> remoteNormalized
-            remoteNormalized == "Resuelta" -> "Resuelta"
-            else -> localNormalized
-        }
+        if (localNormalized == "Anulada" || remoteNormalized == "Anulada") return "Anulada"
+        if (local.isNullOrBlank()) return remoteNormalized
+        val order = mapOf(
+            "Pendiente" to 1,
+            "Asignada" to 2,
+            "En atención" to 3,
+            "Resuelta" to 4
+        )
+        val localRank = order[localNormalized] ?: 1
+        val remoteRank = order[remoteNormalized] ?: 1
+        return if (remoteRank > localRank) remoteNormalized else localNormalized
     }
 
     private fun idEstadoFromLabel(label: String?): Int = when (normalizeEstadoLabel(label)) {
@@ -999,36 +1004,36 @@ private fun AveriaEntity.toFirebaseAppPayload(): Map<String, Any?> = hashMapOf(
         horaLlegadaMillis = existing.horaLlegadaMillis,
 
         // ==========================================================
-        // ✅ APP/TÉCNICO: NO se pisan con remote (CLOR no manda esto)
+        // ✅ APP/TÉCNICO: usar remoto si está más nuevo (sin borrar datos útiles)
         // ==========================================================
         estado = estadoElegido,
         idEstadoAve = idEstadoElegido,
         idEstadoAranda = remote.idEstadoAranda, // este sí puede venir de CLOR
-        causa = existing.causa,
-        observaciones = existing.observaciones,
+        causa = preferMeaningful(remote.causa, existing.causa),
+        observaciones = preferMeaningful(remote.observaciones, existing.observaciones),
 
-        atencionHoraInicioMillis = existing.atencionHoraInicioMillis,
-        atencionHoraFinalMillis = existing.atencionHoraFinalMillis,
-        kilometrajeInicio = existing.kilometrajeInicio,
-        kilometrajeLlegada = existing.kilometrajeLlegada,
-        kilometrajeFinal = existing.kilometrajeFinal,
-        vehiculoAsignado = existing.vehiculoAsignado,
-        tecnicoAsignadoUid = existing.tecnicoAsignadoUid,
-        tecnicoAsignadoNombre = existing.tecnicoAsignadoNombre,
-        atendidoPorUid = existing.atendidoPorUid,
-        atendidoPorNombre = existing.atendidoPorNombre,
-        materialesTexto = existing.materialesTexto,
-        materialesDetalleJson = existing.materialesDetalleJson,
-        tecnicosAtendieronJson = existing.tecnicosAtendieronJson,
-        cliente = existing.cliente,
-        localizacion = existing.localizacion,
-        direccion = existing.direccion,
-        tipoAfectacion = existing.tipoAfectacion,
-        numeroMedidor = existing.numeroMedidor,
-        medidorCalle = existing.medidorCalle,
-        medidorPueblo = existing.medidorPueblo,
-        medidorMetros = existing.medidorMetros,
-        medidorPoste = existing.medidorPoste,
+        atencionHoraInicioMillis = remote.atencionHoraInicioMillis,
+        atencionHoraFinalMillis = remote.atencionHoraFinalMillis,
+        kilometrajeInicio = remote.kilometrajeInicio,
+        kilometrajeLlegada = remote.kilometrajeLlegada,
+        kilometrajeFinal = remote.kilometrajeFinal,
+        vehiculoAsignado = remote.vehiculoAsignado,
+        tecnicoAsignadoUid = remote.tecnicoAsignadoUid,
+        tecnicoAsignadoNombre = remote.tecnicoAsignadoNombre,
+        atendidoPorUid = remote.atendidoPorUid,
+        atendidoPorNombre = remote.atendidoPorNombre,
+        materialesTexto = preferMeaningful(remote.materialesTexto, existing.materialesTexto),
+        materialesDetalleJson = preferMeaningful(remote.materialesDetalleJson, existing.materialesDetalleJson),
+        tecnicosAtendieronJson = mergeRemoteString(remote.tecnicosAtendieronJson, existing.tecnicosAtendieronJson),
+        cliente = preferMeaningful(remote.cliente, existing.cliente),
+        localizacion = preferMeaningful(remote.localizacion, existing.localizacion),
+        direccion = preferMeaningful(remote.direccion, existing.direccion),
+        tipoAfectacion = preferMeaningful(remote.tipoAfectacion, existing.tipoAfectacion),
+        numeroMedidor = preferMeaningful(remote.numeroMedidor, existing.numeroMedidor),
+        medidorCalle = preferMeaningful(remote.medidorCalle, existing.medidorCalle),
+        medidorPueblo = preferMeaningful(remote.medidorPueblo, existing.medidorPueblo),
+        medidorMetros = preferMeaningful(remote.medidorMetros, existing.medidorMetros),
+        medidorPoste = preferMeaningful(remote.medidorPoste, existing.medidorPoste),
         agenciaTag = remote.agenciaTag,
 
         // ==========================================================
