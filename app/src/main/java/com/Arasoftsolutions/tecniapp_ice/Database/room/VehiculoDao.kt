@@ -7,6 +7,8 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import com.Arasoftsolutions.tecniapp_ice.Database.entities.EtmRegistroEntity
+import com.Arasoftsolutions.tecniapp_ice.Database.entities.VehiculoKilometrajeEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.VehiculosEntity
 import kotlinx.coroutines.flow.Flow
 
