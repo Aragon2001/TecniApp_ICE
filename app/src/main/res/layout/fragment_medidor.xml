@@ -121,62 +121,176 @@
                         android:layout_marginTop="12dp"
                         android:layout_marginBottom="12dp" />
 
-                    <com.google.android.material.chip.ChipGroup
-                        android:id="@+id/groupMedidorDetalles"
+                    <com.google.android.material.card.MaterialCardView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        app:chipSpacingHorizontal="8dp"
-                        app:chipSpacingVertical="8dp"
-                        app:singleLine="false">
+                        android:layout_marginTop="4dp"
+                        app:cardBackgroundColor="@color/transparent"
+                        app:cardCornerRadius="20dp"
+                        app:cardElevation="0dp"
+                        app:strokeColor="?attr/colorOutlineVariant"
+                        app:strokeWidth="1dp">
 
-                        <com.google.android.material.chip.Chip
-                            android:id="@+id/chipNumero"
-                             android:layout_width="wrap_content"
+                        <androidx.gridlayout.widget.GridLayout
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            style="@style/Tecni.Chip.Medidor"
-                            tools:text="Número: 714" />
+                            android:padding="16dp"
+                            app:columnCount="2"
+                            app:rowCount="7">
 
-                        <com.google.android.material.chip.Chip
-                            android:id="@+id/chipCliente"
-                             android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            style="@style/Tecni.Chip.Medidor"
-                            tools:text="Cliente: GAS NACIONAL ZETA S.A." />
+                            <TextView
+                                style="@style/TextAppearance.Material3.LabelMedium"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginBottom="12dp"
+                                android:text="@string/medidor_numero_label"
+                                android:textColor="?attr/colorOnSurfaceVariant"
+                                app:layout_column="0"
+                                app:layout_row="0" />
 
-                        <com.google.android.material.chip.Chip
-                            android:id="@+id/chipLocalizacion"
-                             android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            style="@style/Tecni.Chip.Medidor"
-                            tools:text="Localización: 34095000114" />
+                            <TextView
+                                android:id="@+id/chipNumero"
+                                style="@style/TextAppearance.Material3.BodyMedium"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginBottom="12dp"
+                                android:textColor="?attr/colorOnSurface"
+                                app:layout_column="1"
+                                app:layout_row="0"
+                                app:layout_columnWeight="1"
+                                tools:text="714" />
 
-                        <com.google.android.material.chip.Chip
-                            android:id="@+id/chipCalle" android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            style="@style/Tecni.Chip.Medidor"
-                            tools:text="Calle: 950" />
+                            <TextView
+                                style="@style/TextAppearance.Material3.LabelMedium"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginBottom="12dp"
+                                android:text="@string/medidor_cliente_label"
+                                android:textColor="?attr/colorOnSurfaceVariant"
+                                app:layout_column="0"
+                                app:layout_row="1" />
 
-                        <com.google.android.material.chip.Chip
-                            android:id="@+id/chipPoste"
-                             android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            style="@style/Tecni.Chip.Medidor"
-                            tools:text="Poste: 001" />
+                            <TextView
+                                android:id="@+id/chipCliente"
+                                style="@style/TextAppearance.Material3.BodyMedium"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginBottom="12dp"
+                                android:textColor="?attr/colorOnSurface"
+                                app:layout_column="1"
+                                app:layout_row="1"
+                                app:layout_columnWeight="1"
+                                tools:text="GAS NACIONAL ZETA S.A." />
 
-                        <com.google.android.material.chip.Chip
-                            android:id="@+id/chipMetros"
-                             android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            style="@style/Tecni.Chip.Medidor"
-                            tools:text="Metros: 14" />
+                            <TextView
+                                style="@style/TextAppearance.Material3.LabelMedium"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginBottom="12dp"
+                                android:text="@string/medidor_localizacion_label"
+                                android:textColor="?attr/colorOnSurfaceVariant"
+                                app:layout_column="0"
+                                app:layout_row="2" />
 
-                        <com.google.android.material.chip.Chip
-                            android:id="@+id/chipPueblo"
-                             android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            style="@style/Tecni.Chip.Medidor"
-                            tools:text="Pueblo: La Argentina" />
-                    </com.google.android.material.chip.ChipGroup>
+                            <TextView
+                                android:id="@+id/chipLocalizacion"
+                                style="@style/TextAppearance.Material3.BodyMedium"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginBottom="12dp"
+                                android:textColor="?attr/colorOnSurface"
+                                app:layout_column="1"
+                                app:layout_row="2"
+                                app:layout_columnWeight="1"
+                                tools:text="34095000114" />
+
+                            <TextView
+                                style="@style/TextAppearance.Material3.LabelMedium"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginBottom="12dp"
+                                android:text="@string/medidor_calle_label"
+                                android:textColor="?attr/colorOnSurfaceVariant"
+                                app:layout_column="0"
+                                app:layout_row="3" />
+
+                            <TextView
+                                android:id="@+id/chipCalle"
+                                style="@style/TextAppearance.Material3.BodyMedium"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginBottom="12dp"
+                                android:textColor="?attr/colorOnSurface"
+                                app:layout_column="1"
+                                app:layout_row="3"
+                                app:layout_columnWeight="1"
+                                tools:text="950" />
+
+                            <TextView
+                                style="@style/TextAppearance.Material3.LabelMedium"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginBottom="12dp"
+                                android:text="@string/medidor_poste_label"
+                                android:textColor="?attr/colorOnSurfaceVariant"
+                                app:layout_column="0"
+                                app:layout_row="4" />
+
+                            <TextView
+                                android:id="@+id/chipPoste"
+                                style="@style/TextAppearance.Material3.BodyMedium"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginBottom="12dp"
+                                android:textColor="?attr/colorOnSurface"
+                                app:layout_column="1"
+                                app:layout_row="4"
+                                app:layout_columnWeight="1"
+                                tools:text="001" />
+
+                            <TextView
+                                style="@style/TextAppearance.Material3.LabelMedium"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginBottom="12dp"
+                                android:text="@string/medidor_metros_label"
+                                android:textColor="?attr/colorOnSurfaceVariant"
+                                app:layout_column="0"
+                                app:layout_row="5" />
+
+                            <TextView
+                                android:id="@+id/chipMetros"
+                                style="@style/TextAppearance.Material3.BodyMedium"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginBottom="12dp"
+                                android:textColor="?attr/colorOnSurface"
+                                app:layout_column="1"
+                                app:layout_row="5"
+                                app:layout_columnWeight="1"
+                                tools:text="14" />
+
+                            <TextView
+                                style="@style/TextAppearance.Material3.LabelMedium"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/medidor_pueblo_label"
+                                android:textColor="?attr/colorOnSurfaceVariant"
+                                app:layout_column="0"
+                                app:layout_row="6" />
+
+                            <TextView
+                                android:id="@+id/chipPueblo"
+                                style="@style/TextAppearance.Material3.BodyMedium"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:textColor="?attr/colorOnSurface"
+                                app:layout_column="1"
+                                app:layout_row="6"
+                                app:layout_columnWeight="1"
+                                tools:text="La Argentina" />
+                        </androidx.gridlayout.widget.GridLayout>
+                    </com.google.android.material.card.MaterialCardView>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
