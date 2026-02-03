@@ -63,7 +63,25 @@ class MiVehiculoFragment : Fragment() {
                 .show()
             return
         }
-        viewModel.registrarInicial(valor)
+        val horasLaboradas = binding.etRegistroHoras.text?.toString()?.trim()
+            ?.toIntOrNull()
+            ?.takeIf { it in 1..10 }
+        if (binding.etRegistroHoras.text?.isNotBlank() == true && horasLaboradas == null) {
+            MaterialAlertDialogBuilder(requireContext())
+                .setMessage(getString(R.string.mi_vehiculo_horas_invalidas))
+                .setPositiveButton(android.R.string.ok, null)
+                .show()
+            return
+        }
+        viewModel.registrarInicial(
+            valor = valor,
+            circuito = binding.etRegistroCircuito.text?.toString()?.trim().orEmpty().ifBlank { null },
+            actividad = binding.etRegistroActividad.text?.toString()?.trim().orEmpty().ifBlank { null },
+            cuenta = binding.etRegistroCuenta.text?.toString()?.trim().orEmpty().ifBlank { null },
+            numeroCaso = binding.etRegistroCaso.text?.toString()?.trim().orEmpty().ifBlank { null },
+            lugar = binding.etRegistroLugar.text?.toString()?.trim().orEmpty().ifBlank { null },
+            horasLaboradas = horasLaboradas
+        )
     }
 
     private fun mostrarDialogoRegistrarFinal() {
@@ -219,12 +237,23 @@ private class EtmRegistroAdapter(
     class VH(view: android.view.View) : androidx.recyclerview.widget.RecyclerView.ViewHolder(view) {
         private val tvFecha = view.findViewById<android.widget.TextView>(R.id.tvFecha)
         private val tvValores = view.findViewById<android.widget.TextView>(R.id.tvValores)
+        private val tvDetalle = view.findViewById<android.widget.TextView>(R.id.tvDetalle)
 
         fun bind(item: RegistroDiarioVehiculo, unidad: String) {
             tvFecha.text = item.fecha
             val fin = item.valorFinal?.let { " • Final: $it $unidad" } ?: ""
             val diff = item.diferencia?.let { " • Diferencia: $it $unidad" } ?: ""
             tvValores.text = "Inicial: ${item.valorInicial} $unidad$fin$diff"
+            val detalle = listOfNotNull(
+                item.circuito?.let { "Circuito: $it" },
+                item.actividad?.let { "Actividad: $it" },
+                item.cuenta?.let { "Cuenta: $it" },
+                item.numeroCaso?.let { "Caso: $it" },
+                item.lugar?.let { "Lugar: $it" },
+                item.horasLaboradas?.let { "Horas: $it" }
+            ).joinToString(" • ")
+            tvDetalle.text = detalle
+            tvDetalle.isVisible = detalle.isNotBlank()
         }
     }
 }
