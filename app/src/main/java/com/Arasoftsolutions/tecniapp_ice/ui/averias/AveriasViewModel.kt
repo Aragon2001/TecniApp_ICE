@@ -8,6 +8,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.AgenciaEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.AveriaEntity
+import com.Arasoftsolutions.tecniapp_ice.Database.entities.InventarioConVehiculo
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.MaterialEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.MedidorEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.RegionEntity
@@ -17,6 +18,7 @@ import com.Arasoftsolutions.tecniapp_ice.Database.entities.UserEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.apellidosCompletos
 import com.Arasoftsolutions.tecniapp_ice.Database.room.AppDatabase
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
+import com.Arasoftsolutions.tecniapp_ice.Database.utils.VehiculoPlacaUtils
 import com.Arasoftsolutions.tecniapp_ice.Database.sync.FirebaseSyncManager
 import com.Arasoftsolutions.tecniapp_ice.R
 import com.google.firebase.auth.FirebaseAuth
@@ -316,6 +318,30 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
 
     fun clearFechaFiltro() {
         fechaFiltro.value = null
+    }
+
+    fun observarInventarioPorPlaca(placa: String?): Flow<List<InventarioConVehiculo>> {
+        val texto = placa?.trim().orEmpty()
+        if (texto.isBlank()) return flowOf(emptyList())
+        val placaLong = VehiculoPlacaUtils.parsePlacaLong(texto)
+            ?: VehiculoPlacaUtils.parsePlacaLong(texto.replace("ICE", "", ignoreCase = true))
+            ?: return flowOf(emptyList())
+        return roomRepo.observarVehiculoPorPlaca(placaLong)
+            .flatMapLatest { vehiculo ->
+                if (vehiculo == null) flowOf(emptyList())
+                else roomRepo.observarInventarioPorVehiculo(vehiculo.id)
+            }
+    }
+
+    fun observarUltimoKilometrajePorPlaca(placa: String?): Flow<Double?> {
+        val texto = placa?.trim().orEmpty()
+        if (texto.isBlank()) return flowOf(null)
+        val normalizado = if (VehiculoPlacaUtils.parsePlacaLong(texto) == null) {
+            texto.replace("ICE", "", ignoreCase = true)
+        } else {
+            texto
+        }
+        return roomRepo.observarUltimoKilometraje(normalizado)
     }
 
     fun setNotificationsEnabled(enabled: Boolean) {

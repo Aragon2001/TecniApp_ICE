@@ -64,3 +64,17 @@ data class InventarioConVehiculo(
     @ColumnInfo(name = "vehiculoPlaca") val vehiculoPlaca: Long?,
     @ColumnInfo(name = "vehiculoAgencia") val vehiculoAgencia: String?
 )
+
+@Keep
+@IgnoreExtraProperties
+@Entity(tableName = "inventario_movimiento_averia")
+data class InventarioMovimientoAveriaEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0L,
+    val averiaId: String,
+    val vehiculoId: Int,
+    val materialCodigo: String,
+    val cantidad: Double,
+    val fechaRegistro: Long,
+    val tecnicoUid: String? = null,
+    val tecnicoNombre: String? = null
+)
