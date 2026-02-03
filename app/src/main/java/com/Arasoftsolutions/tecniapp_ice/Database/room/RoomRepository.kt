@@ -27,8 +27,7 @@ class   RoomRepository(context: Context) {
 
     private val db = AppDatabase.getInstance(context.applicationContext)
     private val firebase = FirebaseSyncManager(context.applicationContext)
-    private val kilometrajeDao = db.vehiculoDao()
-    private val mantenimientoDao = db.vehiculoDao()
+    private val vehiculoDao = db.vehiculoDao()
     private val inventarioDao = db.inventarioDao()
 
     private val realtimeScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -244,24 +243,65 @@ class   RoomRepository(context: Context) {
         kilometrajeFinal: Double,
         timestamp: Long = System.currentTimeMillis()
     ) = withContext(Dispatchers.IO) {
-        val normalizada = VehiculoKilometrajeEntity.normalizarPlaca(placa)
-            ?: return@withContext
-        val registro = VehiculoKilometrajeEntity(
+        val placaLong = VehiculoPlacaUtils.parsePlacaLong(placa) ?: return@withContext
+        vehiculoDao.actualizarKilometrajeActual(placaLong, kilometrajeFinal)
+        firebase.guardarKilometrajeVehicular(
             placa = placa.trim(),
-            placaNormalizada = normalizada,
             kilometrajeFinal = kilometrajeFinal,
             registradoEn = timestamp
         )
-        kilometrajeDao.insertar(registro)
-        firebase.guardarKilometrajeVehicular(registro)
     }
 
     suspend fun registrarMantenimientoVehicular(
-        mantenimiento: VehiculoMantenimientoEntity
+        placa: String,
+        vehiculoId: Int?,
+        tipo: String,
+        fecha: Long?,
+        valorAlMomento: Double?,
+        observaciones: String?,
+        proximoKm: Double?,
+        proximoHoras: Double?,
+        proximoFecha: Long?,
+        registradoEn: Long = System.currentTimeMillis()
     ) = withContext(Dispatchers.IO) {
-        val id = mantenimientoDao.insertar(mantenimiento)
-        val saved = mantenimiento.copy(id = id)
-        firebase.guardarMantenimientoVehicular(saved)
+        val mantenimientoUltimo = buildString {
+            append("Tipo: ").append(tipo.ifBlank { "N/A" })
+            fecha?.let { append(" · Fecha: ").append(it) }
+            valorAlMomento?.let { append(" · Valor: ").append(it) }
+            observaciones?.trim()?.takeIf { it.isNotBlank() }?.let { append(" · Obs: ").append(it) }
+        }
+        val mantenimientoProximo = listOfNotNull(
+            proximoKm?.let { "Próx km: $it" },
+            proximoHoras?.let { "Próx horas: $it" },
+            proximoFecha?.let { "Próx fecha: $it" }
+        ).joinToString(" · ")
+            .takeIf { it.isNotBlank() }
+        when {
+            vehiculoId != null -> vehiculoDao.actualizarMantenimiento(
+                vehiculoId = vehiculoId,
+                mantenimientoUltimo = mantenimientoUltimo,
+                mantenimientoProximo = mantenimientoProximo
+            )
+            else -> VehiculoPlacaUtils.parsePlacaLong(placa)?.let { placaLong ->
+                vehiculoDao.actualizarMantenimientoPorPlaca(
+                    placa = placaLong,
+                    mantenimientoUltimo = mantenimientoUltimo,
+                    mantenimientoProximo = mantenimientoProximo
+                )
+            }
+        }
+        firebase.guardarMantenimientoVehicular(
+            placa = placa.trim(),
+            vehiculoId = vehiculoId,
+            tipo = tipo,
+            fecha = fecha,
+            valorAlMomento = valorAlMomento,
+            observaciones = observaciones,
+            proximoKm = proximoKm,
+            proximoHoras = proximoHoras,
+            proximoFecha = proximoFecha,
+            registradoEn = registradoEn
+        )
     }
 
     suspend fun eliminarVehiculo(id: Int) = withContext(Dispatchers.IO) {
