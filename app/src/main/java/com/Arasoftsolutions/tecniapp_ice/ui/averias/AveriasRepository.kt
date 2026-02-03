@@ -2,8 +2,9 @@ package com.Arasoftsolutions.tecniapp_ice.ui.averias
 
 import android.util.Log
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.AveriaEntity
-import com.Arasoftsolutions.tecniapp_ice.Database.entities.VehiculoKilometrajeEntity
+import com.Arasoftsolutions.tecniapp_ice.Database.entities.InventarioMovimientoAveriaEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.room.AppDatabase
+import com.Arasoftsolutions.tecniapp_ice.Database.utils.VehiculoPlacaUtils
 import com.Arasoftsolutions.tecniapp_ice.ui.admin.MapCoordinatePickerBottomSheet.Companion.TAG
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
@@ -30,7 +31,8 @@ class AveriasRepository(private val db: AppDatabase) {
     )
 
     private val dao get() = db.averiaDao()
-    private val kilometrajeDao get() = db.vehiculoKilometrajeDao()
+    private val vehiculoDao get() = db.vehiculoDao()
+    private val inventarioDao get() = db.inventarioDao()
     private val firebaseRef = FirebaseDatabase
         .getInstance("https://tecniapp-ice-averias.firebaseio.com/")
         .reference
@@ -704,7 +706,7 @@ return AveriaEntity(
             nuevoEstado = "En atención"
         )
         syncSingle(caseId)
-        registrarMaterialesUsados(data.materiales)
+        registrarMaterialesUsados(caseId, data)
         registrarKilometrajeFinal(data.vehiculo, data.kilometrajeFinal, data.horaFinalMillis ?: now)
     }
 
@@ -752,16 +754,14 @@ return AveriaEntity(
             nuevoEstado = "Resuelta"
         )
         syncSingle(caseId)
-        registrarMaterialesUsados(data.materiales)
+        registrarMaterialesUsados(caseId, data)
         registrarKilometrajeFinal(data.vehiculo, data.kilometrajeFinal, data.horaFinalMillis ?: now)
     }
 
     private suspend fun registrarKilometrajeFinal(vehiculo: String?, kilometraje: Double?, timestamp: Long) {
         if (kilometraje == null || vehiculo.isNullOrBlank()) return
-        val normalizada = VehiculoKilometrajeEntity.normalizarPlaca(vehiculo)
-            ?: VehiculoKilometrajeEntity.normalizarPlaca(
-                vehiculo.replace("ICE", "", ignoreCase = true)
-            )
+        val placaLong = VehiculoPlacaUtils.parsePlacaLong(vehiculo)
+            ?: VehiculoPlacaUtils.parsePlacaLong(vehiculo.replace("ICE", "", ignoreCase = true))
             ?: return
         val registro = VehiculoKilometrajeEntity(
             placa = vehiculo.trim(),
@@ -905,15 +905,53 @@ private fun AveriaEntity.toFirebaseAppPayload(): Map<String, Any?> = hashMapOf(
     "isSynced" to true
 )
 
-    private suspend fun registrarMaterialesUsados(lista: List<MaterialUso>) {
-        lista.forEach { uso ->
+    private suspend fun registrarMaterialesUsados(caseId: String, data: AveriaActionData) {
+        val vehiculoId = resolveVehiculoId(data.vehiculo)
+        val now = System.currentTimeMillis()
+        data.materiales.filter { it.cantidad > 0 }.forEach { uso ->
             val ref = materialesRef.child(uso.codigo)
             val map = mapOf(
                 "Nombre" to uso.descripcion,
                 "Cantidad" to uso.cantidad
             )
             ref.setValue(map).await()
+
+            if (vehiculoId != null) {
+                val movimiento = InventarioMovimientoAveriaEntity(
+                    averiaId = caseId,
+                    vehiculoId = vehiculoId,
+                    materialCodigo = uso.codigo,
+                    cantidad = uso.cantidad.toDouble(),
+                    fechaRegistro = now,
+                    tecnicoUid = data.atendidoPorUid,
+                    tecnicoNombre = data.atendidoPorNombre
+                )
+                inventarioDao.registrarMovimientoAveria(movimiento)
+                ajustarInventarioLocal(vehiculoId, uso)
+            }
         }
+    }
+
+    private suspend fun ajustarInventarioLocal(vehiculoId: Int, uso: MaterialUso) {
+        val existente = inventarioDao.obtenerItem(vehiculoId, uso.codigo) ?: return
+        val nuevaCantidad = (existente.cantidadDisponible - uso.cantidad).coerceAtLeast(0.0)
+        if (nuevaCantidad == 0.0) {
+            inventarioDao.eliminarPorId(existente.id)
+        } else {
+            inventarioDao.upsert(
+                existente.copy(
+                    cantidadDisponible = nuevaCantidad
+                )
+            )
+        }
+    }
+
+    private suspend fun resolveVehiculoId(vehiculo: String?): Int? {
+        if (vehiculo.isNullOrBlank()) return null
+        val placaLong = VehiculoPlacaUtils.parsePlacaLong(vehiculo)
+            ?: VehiculoPlacaUtils.parsePlacaLong(vehiculo.replace("ICE", "", ignoreCase = true))
+            ?: return null
+        return vehiculoDao.buscarPorPlaca(placaLong)?.id
     }
 
     // ---------------------------------------------------------------------------------------------

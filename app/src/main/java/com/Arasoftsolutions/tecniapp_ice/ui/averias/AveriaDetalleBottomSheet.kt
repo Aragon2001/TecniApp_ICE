@@ -19,6 +19,8 @@ import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import com.Arasoftsolutions.tecniapp_ice.Database.entities.InventarioConVehiculo
+import com.Arasoftsolutions.tecniapp_ice.Database.entities.InventarioItemEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.MaterialEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.MedidorEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.TecnicoEntity
@@ -57,6 +59,7 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
     private var clienteSeleccionado: String? = null
     private var suppressTipoListener = false
     private var materialesCatalogo: List<MaterialEntity> = emptyList()
+    private var inventarioPorCodigo: Map<String, InventarioItemEntity> = emptyMap()
     private val materialesSeleccionados = linkedMapOf<String, MaterialUso>()
     private var tecnicosCatalogo: List<TecnicoEntity> = emptyList()
     private val tecnicosSeleccionados = linkedMapOf<String, TecnicoAtencion>()
@@ -68,8 +71,71 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
     private var persistDraftOnDestroy = true
     private var medidorLookupJob: Job? = null
     private var lastMedidorLookup: String? = null
+    private var inventarioJob: Job? = null
+    private var kilometrajeJob: Job? = null
+    private var ultimoKmRegistrado: Double? = null
 
     private enum class ValidationContext { NONE, INICIAR, RESOLVER }
+
+    private inner class MaterialAdapter(
+        items: List<MaterialEntity>
+    ) : ArrayAdapter<MaterialEntity>(requireContext(), android.R.layout.simple_dropdown_item_1line, items.toMutableList()) {
+        private var base = items.toMutableList()
+        private var filtrados = items.toMutableList()
+
+        override fun getCount(): Int = filtrados.size
+        override fun getItem(position: Int): MaterialEntity? = filtrados.getOrNull(position)
+        fun getObject(position: Int): MaterialEntity = filtrados[position]
+
+        fun updateData(nuevos: List<MaterialEntity>) {
+            base = nuevos.toMutableList()
+            filtrados = nuevos.toMutableList()
+            clear()
+            addAll(filtrados)
+            notifyDataSetChanged()
+        }
+
+        override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+            val view = super.getView(position, convertView, parent)
+            (view as TextView).text =
+                "${filtrados[position].codigo} - ${filtrados[position].descripcion}"
+            return view
+        }
+
+        override fun getFilter(): Filter {
+            return object : Filter() {
+                override fun performFiltering(prefix: CharSequence?): FilterResults {
+                    val query = prefix?.toString()?.trim()?.lowercase(Locale.getDefault()).orEmpty()
+                    filtrados = if (query.isBlank()) {
+                        base.toMutableList()
+                    } else {
+                        base.filter { m ->
+                            val texto = "${m.codigo} ${m.descripcion}".lowercase(Locale.getDefault())
+                            query.split("\\s+".toRegex()).all { texto.contains(it) }
+                        }.toMutableList()
+                    }
+                    return FilterResults().apply {
+                        values = filtrados
+                        count = filtrados.size
+                    }
+                }
+
+                override fun publishResults(constraint: CharSequence?, results: FilterResults?) {
+                    filtrados = when (val value = results?.values) {
+                        is Collection<*> -> value.filterIsInstance<MaterialEntity>().toMutableList()
+                        is Array<*> -> value.filterIsInstance<MaterialEntity>().toMutableList()
+                        else -> base.toMutableList()
+                    }
+                    notifyDataSetChanged()
+                }
+
+                override fun convertResultToString(resultValue: Any?): CharSequence {
+                    val mat = resultValue as? MaterialEntity
+                    return if (mat != null) "${mat.codigo} - ${mat.descripcion}" else ""
+                }
+            }
+        }
+    }
 
     private fun parseLecturas(raw: String?): Pair<String?, String?> {
         if (raw.isNullOrBlank()) return null to null
@@ -220,74 +286,7 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
             }
         }
 
-        // Materiales con búsqueda libre y selección precisa
-        viewLifecycleOwner.lifecycleScope.launch {
-            vm.materialesDisponibles.collectLatest { lista ->
-                materialesCatalogo = lista
-
-                val adapterMat = object : ArrayAdapter<MaterialEntity>(
-                    requireContext(),
-                    android.R.layout.simple_dropdown_item_1line,
-                    lista.toMutableList()
-                ) {
-                    private var filtrados = lista.toMutableList()
-
-                    override fun getCount(): Int = filtrados.size
-                    override fun getItem(position: Int): MaterialEntity? = filtrados.getOrNull(position)
-                    fun getObject(position: Int): MaterialEntity = filtrados[position]
-
-                    override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-                        val view = super.getView(position, convertView, parent)
-                        (view as TextView).text =
-                            "${filtrados[position].codigo} - ${filtrados[position].descripcion}"
-                        return view
-                    }
-
-                    override fun getFilter(): Filter {
-                        return object : Filter() {
-                            override fun performFiltering(prefix: CharSequence?): FilterResults {
-                                val query = prefix?.toString()?.trim()?.lowercase(Locale.getDefault()).orEmpty()
-                                filtrados = if (query.isBlank()) {
-                                    lista.toMutableList()
-                                } else {
-                                    lista.filter { m ->
-                                        val texto = "${m.codigo} ${m.descripcion}".lowercase(Locale.getDefault())
-                                        query.split("\\s+".toRegex()).all { texto.contains(it) }
-                                    }.toMutableList()
-                                }
-                                return FilterResults().apply {
-                                    values = filtrados
-                                    count = filtrados.size
-                                }
-                            }
-
-                            override fun publishResults(constraint: CharSequence?, results: FilterResults?) {
-                                filtrados = when (val value = results?.values) {
-                                    is Collection<*> -> value.filterIsInstance<MaterialEntity>().toMutableList()
-                                    is Array<*> -> value.filterIsInstance<MaterialEntity>().toMutableList()
-                                    else -> lista.toMutableList()
-                                }
-                                notifyDataSetChanged()
-                            }
-
-                            override fun convertResultToString(resultValue: Any?): CharSequence {
-                                val mat = resultValue as? MaterialEntity
-                                return if (mat != null) "${mat.codigo} - ${mat.descripcion}" else ""
-                            }
-                        }
-                    }
-                }
-
-                b.actvMaterial.setAdapter(adapterMat)
-                b.actvMaterial.threshold = 1
-
-                b.actvMaterial.setOnItemClickListener { _, _, position, _ ->
-                    val material = adapterMat.getObject(position)
-                    b.actvMaterial.setText("", false)
-                    manejarSeleccionMaterial(material)
-                }
-            }
-        }
+        setupMaterialesInventario()
 
 // Técnicos con búsqueda libre y selección precisa
         viewLifecycleOwner.lifecycleScope.launch {
@@ -381,6 +380,68 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
 
         renderState()
 
+    }
+
+    private fun setupMaterialesInventario() {
+        val adapterMat = MaterialAdapter(emptyList())
+        b.actvMaterial.setAdapter(adapterMat)
+        b.actvMaterial.threshold = 1
+        b.actvMaterial.setOnItemClickListener { _, _, position, _ ->
+            val material = adapterMat.getObject(position)
+            b.actvMaterial.setText("", false)
+            manejarSeleccionMaterial(material)
+        }
+
+        fun actualizarInventario(placa: String?) {
+            inventarioJob?.cancel()
+            inventarioJob = viewLifecycleOwner.lifecycleScope.launch {
+                vm.observarInventarioPorPlaca(placa).collectLatest { lista: List<InventarioConVehiculo> ->
+                    val items = lista.map { it.item }
+                        .filter { it.cantidadDisponible > 0 }
+                        .sortedBy { it.descripcionMaterial.ifBlank { it.codigoMaterial } }
+                    inventarioPorCodigo = items.associateBy { it.codigoMaterial }
+                    materialesCatalogo = items.map {
+                        MaterialEntity(
+                            codigo = it.codigoMaterial,
+                            descripcion = it.descripcionMaterial
+                        )
+                    }
+                    adapterMat.updateData(materialesCatalogo)
+                }
+            }
+        }
+
+        b.actvVehiculo.doAfterTextChanged {
+            val placa = it?.toString()
+            actualizarInventario(placa)
+            startKilometrajeObserver(placa)
+        }
+
+        val placaInicial = b.actvVehiculo.text?.toString()
+        actualizarInventario(placaInicial)
+        startKilometrajeObserver(placaInicial)
+    }
+
+    private fun startKilometrajeObserver(placa: String?) {
+        kilometrajeJob?.cancel()
+        kilometrajeJob = viewLifecycleOwner.lifecycleScope.launch {
+            vm.observarUltimoKilometrajePorPlaca(placa).collectLatest { ultimo: Double? ->
+                ultimoKmRegistrado = ultimo
+                if (ultimo != null && b.etKmInicio.text.isNullOrBlank()) {
+                    val texto = formatKilometraje(ultimo)
+                    b.etKmInicio.setText(texto)
+                    b.etKmInicio.setSelection(texto.length)
+                }
+            }
+        }
+    }
+
+    private fun formatKilometraje(value: Double): String {
+        return if (value % 1.0 == 0.0) {
+            value.toInt().toString()
+        } else {
+            value.toString()
+        }
     }
 
     private fun bindHeader(estado: Estado) {
@@ -980,6 +1041,29 @@ b.btnExportar.isEnabled = pertenece
         }
     }
 
+    private fun validarDisponibilidadMaterial(material: MaterialEntity, cantidad: Int): Boolean {
+        val disponible = inventarioPorCodigo[material.codigo]?.cantidadDisponible ?: 0.0
+        if (cantidad.toDouble() > disponible) {
+            mostrarAlertaMaterialInsuficiente(disponible, cantidad)
+            return false
+        }
+        return true
+    }
+
+    private fun mostrarAlertaMaterialInsuficiente(existencia: Double, solicitado: Int) {
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.averia_material_existencia_titulo)
+            .setMessage(
+                getString(
+                    R.string.averia_material_existencia_mensaje,
+                    formatKilometraje(existencia),
+                    solicitado
+                )
+            )
+            .setPositiveButton(android.R.string.ok, null)
+            .show()
+    }
+
     private fun solicitarMedidorMaterial(
         material: MaterialEntity,
         existente: MaterialUso?
@@ -1054,6 +1138,9 @@ b.btnExportar.isEnabled = pertenece
                     tilCantidad.error = getString(R.string.averia_material_cantidad_error)
                     return@setOnClickListener
                 }
+                if (!validarDisponibilidadMaterial(material, cantidadSeleccionada)) {
+                    return@setOnClickListener
+                }
                 onCantidadSeleccionada(cantidadSeleccionada)
                 dialog.dismiss()
             }
@@ -1120,6 +1207,9 @@ b.btnExportar.isEnabled = pertenece
             }
             if (cantidad == 0) {
                 return 0 to null
+            }
+            if (!validarDisponibilidadMaterial(material, cantidad)) {
+                return null
             }
 
             val numero = binding.etNumero.text?.toString()?.trim().orEmpty()
@@ -1424,6 +1514,13 @@ b.btnExportar.isEnabled = pertenece
         }
         if (kmLlegada != null && kmInicio != null && kmLlegada < kmInicio) {
             b.tilKmLlegada.error = getString(R.string.averia_error_km_llegada_menor)
+            return null
+        }
+        if (kmInicio != null && ultimoKmRegistrado != null && kmInicio < ultimoKmRegistrado!!) {
+            b.tilKmInicio.error = getString(
+                R.string.averia_error_km_inicio_menor_ultimo,
+                formatKilometraje(ultimoKmRegistrado!!)
+            )
             return null
         }
 

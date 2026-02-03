@@ -16,6 +16,9 @@ import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasRepository
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasSyncWorker
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.normalizeAveriaText
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.shouldNotifyForAgency
+import com.Arasoftsolutions.tecniapp_ice.ui.vehiculo.TipoVehiculo
+import com.Arasoftsolutions.tecniapp_ice.ui.vehiculo.inferirTipoVehiculo
+import com.Arasoftsolutions.tecniapp_ice.Database.utils.VehiculoPlacaUtils
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -23,6 +26,7 @@ import java.text.Normalizer
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 /**
@@ -40,6 +44,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
 
     private val sharing = SharingStarted.WhileSubscribed(5_000)
+    private val formatoFechaEtm = DateTimeFormatter.ofPattern("yyyy-MM-dd", Locale.ROOT)
 
     // Subregión activa que define las consultas a Room
     private val _subregion = MutableStateFlow<String?>(null)
@@ -150,17 +155,51 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
             .map { it?.placaVehiculo?.takeIf { placa -> placa.isNotBlank() } }
             .stateIn(viewModelScope, sharing, null)
 
-    val kilometrajeFinalReciente: StateFlow<Double?> =
+    private val vehiculoAsignado: StateFlow<com.Arasoftsolutions.tecniapp_ice.Database.entities.VehiculosEntity?> =
         placaVehiculo
             .flatMapLatest { placa ->
-                if (placa.isNullOrBlank()) {
+                val placaLong = VehiculoPlacaUtils.parsePlacaLong(placa)
+                if (placaLong == null) {
                     flowOf(null)
                 } else {
-                    repo.observarUltimoKilometraje(placa)
-                        .map { registro -> registro?.kilometrajeFinal }
+                    repo.observarVehiculoPorPlaca(placaLong)
                 }
             }
             .stateIn(viewModelScope, sharing, null)
+
+    private val registroHoy: StateFlow<Boolean> =
+        vehiculoAsignado
+            .map { vehiculo ->
+                val hoy = LocalDate.now().format(formatoFechaEtm)
+                vehiculo?.registroFecha == hoy && vehiculo.registroInicial != null
+            }
+            .stateIn(viewModelScope, sharing, false)
+
+    val registroEtmPendiente: StateFlow<Boolean> =
+        combine(placaVehiculo, registroHoy) { placa, registroOk ->
+            placa.isNullOrBlank() || !registroOk
+        }.stateIn(viewModelScope, sharing, false)
+
+    val valorEtmActual: StateFlow<Double?> =
+        vehiculoAsignado
+            .map { vehiculo ->
+                vehiculo?.registroFinal
+                    ?: vehiculo?.registroInicial
+                    ?: vehiculo?.kilometrajeActual
+                    ?: vehiculo?.orimetroActual
+            }
+            .stateIn(viewModelScope, sharing, null)
+
+    val tipoVehiculo: StateFlow<TipoVehiculo> =
+        placaVehiculo
+            .flatMapLatest { placa ->
+                flow {
+                    val placaLong = VehiculoPlacaUtils.parsePlacaLong(placa)
+                    val tipo = placaLong?.let { repo.obtenerVehiculoPorPlaca(it)?.tipo }
+                    emit(inferirTipoVehiculo(tipo))
+                }
+            }
+            .stateIn(viewModelScope, sharing, TipoVehiculo.LIVIANO)
 
     val lastManualSync: StateFlow<Long?> =
         dataStore.lastManualSyncMillis
@@ -175,8 +214,8 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
             .flatMapLatest { user ->
                 flow {
                     val placa = user?.placaVehiculo?.trim().orEmpty()
-                    val vehiculoId = placa.toLongOrNull()
-                        ?.let { repo.obtenerVehiculoPorPlaca(it)?.id }
+                    val placaLong = VehiculoPlacaUtils.parsePlacaLong(placa)
+                    val vehiculoId = placaLong?.let { repo.obtenerVehiculoPorPlaca(it)?.id }
                     emit(vehiculoId)
                 }
             }

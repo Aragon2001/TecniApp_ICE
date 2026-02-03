@@ -22,10 +22,13 @@ import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasFragment
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasSyncWorker
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.Estado
 import com.Arasoftsolutions.tecniapp_ice.ui.modal.SyncDialogFragment
+import com.Arasoftsolutions.tecniapp_ice.ui.vehiculo.TipoVehiculo
+import com.Arasoftsolutions.tecniapp_ice.ui.vehiculo.showRegistroVehiculoPendienteDialog
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.progressindicator.LinearProgressIndicator
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 import java.time.Duration
@@ -76,6 +79,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         val actionMedidor: View = view.findViewById(R.id.action_medidor)
         val actionReportes: View = view.findViewById(R.id.action_reportes)
         val actionSettings: View = view.findViewById(R.id.action_settings)
+        val kilometrajeLabel: TextView = view.findViewById(R.id.text_kilometraje_label)
         statusIndicator = view.findViewById(R.id.view_status_indicator)
 
         syncButton = syncActionButton
@@ -91,18 +95,24 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         syncActionButton.isEnabled = false
         syncActionButton.setOnClickListener { sincronizarConModal() }
         cardPending.setOnClickListener {
-            navigateTo(
-                R.id.nav_averias,
-                bundleOf(AveriasFragment.ARG_INITIAL_ESTADO to Estado.ASIGNADA.name)
-            )
+            ejecutarOperacionSiRegistroCompleto {
+                navigateTo(
+                    R.id.nav_averias,
+                    bundleOf(AveriasFragment.ARG_INITIAL_ESTADO to Estado.ASIGNADA.name)
+                )
+            }
         }
         cardAttended.setOnClickListener {
-            navigateTo(
-                R.id.nav_averias,
-                bundleOf(AveriasFragment.ARG_INITIAL_ESTADO to Estado.RESUELTA.name)
-            )
+            ejecutarOperacionSiRegistroCompleto {
+                navigateTo(
+                    R.id.nav_averias,
+                    bundleOf(AveriasFragment.ARG_INITIAL_ESTADO to Estado.RESUELTA.name)
+                )
+            }
         }
-        actionAverias.setOnClickListener { navigateTo(R.id.nav_averias) }
+        actionAverias.setOnClickListener {
+            ejecutarOperacionSiRegistroCompleto { navigateTo(R.id.nav_averias) }
+        }
         actionMedidor.setOnClickListener { navigateTo(R.id.nav_medidor) }
         actionReportes.setOnClickListener { navigateTo(R.id.nav_reportes) }
         actionSettings.setOnClickListener { navigateTo(R.id.nav_settings) }
@@ -149,11 +159,22 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                     }
                 }
                 launch {
-                    vm.kilometrajeFinalReciente.collect { kms ->
-                        kilometrajeValue.text = kms?.takeIf { it > 0.0 }?.let {
-                            getString(R.string.home_card_kilometraje_value, it)
-                        } ?: getString(R.string.home_cards_placeholder)
-                    }
+                    vm.valorEtmActual
+                        .combine(vm.tipoVehiculo) { valor, tipo -> valor to tipo }
+                        .collect { (valor, tipo) ->
+                            kilometrajeValue.text = valor?.takeIf { it >= 0.0 }?.let {
+                                val unidad = if (tipo.usaKilometraje) {
+                                    getString(R.string.home_unidad_km)
+                                } else {
+                                    getString(R.string.home_unidad_horas)
+                                }
+                                getString(R.string.home_card_medidor_value_format, it, unidad)
+                            } ?: getString(R.string.home_cards_placeholder)
+                            kilometrajeLabel.text = when (tipo) {
+                                TipoVehiculo.MAQUINARIA_PESADA -> getString(R.string.home_card_orimetro_title)
+                                else -> getString(R.string.home_card_kilometraje_title)
+                            }
+                        }
                 }
                 launch {
                     vm.luminariasPendientesCount.collect { count ->
@@ -218,6 +239,17 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         }
 
         vm.triggerManualSync()
+    }
+
+    private fun ejecutarOperacionSiRegistroCompleto(onContinue: () -> Unit) {
+        if (vm.registroEtmPendiente.value) {
+            showRegistroVehiculoPendienteDialog(
+                onRegistrar = { navigateTo(R.id.nav_mi_vehiculo) },
+                onNoVehiculo = { }
+            )
+            return
+        }
+        onContinue()
     }
 
 
