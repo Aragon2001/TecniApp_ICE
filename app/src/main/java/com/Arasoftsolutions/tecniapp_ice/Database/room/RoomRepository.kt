@@ -715,7 +715,8 @@ class   RoomRepository(context: Context) {
         } else {
             db.vehiculoDao().limpiarTodo()
         }
-        db.vehiculoDao().insertAll(vehiculos)
+        val vehiculosCombinados = combinarVehiculosConLocales(vehiculos)
+        db.vehiculoDao().insertAll(vehiculosCombinados)
         progress(++done, total, "Descargando vehículos…", downloadedBytes)
 
         val medidores = firebase.obtenerMedidores(canonicalSubregion)
@@ -773,7 +774,8 @@ class   RoomRepository(context: Context) {
         downloadedBytes += estimateBytes(vehiculos)
         if (vehiculos.isNotEmpty()) {
             db.vehiculoDao().eliminarFueraDeIds(vehiculos.map { it.id })
-            db.vehiculoDao().insertAll(vehiculos)
+            val vehiculosCombinados = combinarVehiculosConLocales(vehiculos)
+            db.vehiculoDao().insertAll(vehiculosCombinados)
         } else {
             db.vehiculoDao().limpiarTodo()
         }
@@ -785,6 +787,32 @@ class   RoomRepository(context: Context) {
 
     private fun estimateBytes(value: Any?): Long {
         return value?.toString()?.toByteArray(Charsets.UTF_8)?.size?.toLong() ?: 0L
+    }
+
+    private suspend fun combinarVehiculosConLocales(remotos: List<VehiculosEntity>): List<VehiculosEntity> {
+        if (remotos.isEmpty()) return remotos
+        val locales = db.vehiculoDao().getAll()
+        if (locales.isEmpty()) return remotos
+        val localesPorId = locales.associateBy { it.id }
+        val localesPorPlaca = locales.associateBy { it.placa }
+        return remotos.map { remoto ->
+            val local = localesPorId[remoto.id] ?: localesPorPlaca[remoto.placa]
+            if (local == null) {
+                remoto
+            } else {
+                remoto.copy(
+                    kilometrajeActual = remoto.kilometrajeActual ?: local.kilometrajeActual,
+                    orimetroActual = remoto.orimetroActual ?: local.orimetroActual,
+                    registroFecha = remoto.registroFecha ?: local.registroFecha,
+                    registroInicial = remoto.registroInicial ?: local.registroInicial,
+                    registroFinal = remoto.registroFinal ?: local.registroFinal,
+                    registroCerrado = remoto.registroCerrado || local.registroCerrado,
+                    registrosDiariosJson = remoto.registrosDiariosJson ?: local.registrosDiariosJson,
+                    mantenimientoUltimo = remoto.mantenimientoUltimo ?: local.mantenimientoUltimo,
+                    mantenimientoProximo = remoto.mantenimientoProximo ?: local.mantenimientoProximo
+                )
+            }
+        }
     }
 
     suspend fun limpiarBaseLocal() = withContext(Dispatchers.IO) {
