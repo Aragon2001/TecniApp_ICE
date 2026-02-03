@@ -16,6 +16,9 @@ import com.Arasoftsolutions.tecniapp_ice.databinding.FragmentMiVehiculoBinding
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.textfield.TextInputEditText
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class MiVehiculoFragment : Fragment() {
 
@@ -197,7 +200,8 @@ class MiVehiculoFragment : Fragment() {
 
                     (binding.rvRegistros.adapter as? EtmRegistroAdapter)?.updateList(
                         state.registrosRecientes,
-                        state.tipoVehiculo.unidadTexto
+                        state.tipoVehiculo.unidadTexto,
+                        state.nombreUsuario
                     )
                 }
                 }
@@ -213,12 +217,14 @@ class MiVehiculoFragment : Fragment() {
 
 private class EtmRegistroAdapter(
     private var items: List<RegistroDiarioVehiculo>,
-    private var unidad: String = "km"
+    private var unidad: String = "km",
+    private var nombreUsuario: String = ""
 ) : androidx.recyclerview.widget.RecyclerView.Adapter<EtmRegistroAdapter.VH>() {
 
-    fun updateList(list: List<RegistroDiarioVehiculo>, u: String) {
+    fun updateList(list: List<RegistroDiarioVehiculo>, u: String, nombre: String) {
         items = list
         unidad = u
+        nombreUsuario = nombre
         notifyDataSetChanged()
     }
 
@@ -229,18 +235,30 @@ private class EtmRegistroAdapter(
     }
 
     override fun onBindViewHolder(holder: VH, position: Int) {
-        holder.bind(items[position], unidad)
+        holder.bind(items[position], unidad, nombreUsuario)
     }
 
     override fun getItemCount() = items.size
 
     class VH(view: android.view.View) : androidx.recyclerview.widget.RecyclerView.ViewHolder(view) {
         private val tvFecha = view.findViewById<android.widget.TextView>(R.id.tvFecha)
+        private val tvMeta = view.findViewById<android.widget.TextView>(R.id.tvMeta)
         private val tvValores = view.findViewById<android.widget.TextView>(R.id.tvValores)
         private val tvDetalle = view.findViewById<android.widget.TextView>(R.id.tvDetalle)
+        private val formatoHora = SimpleDateFormat("HH:mm", Locale.getDefault())
 
-        fun bind(item: RegistroDiarioVehiculo, unidad: String) {
+        fun bind(item: RegistroDiarioVehiculo, unidad: String, nombreUsuario: String) {
             tvFecha.text = item.fecha
+            val nombre = item.registradoPor?.takeIf { it.isNotBlank() }
+                ?: nombreUsuario.takeIf { it.isNotBlank() }
+            val hora = item.registradoEn.takeIf { it > 0 }
+                ?.let { formatoHora.format(Date(it)) }
+            val meta = listOfNotNull(
+                nombre?.let { "Registrado por: $it" },
+                hora?.let { "Hora: $it" }
+            ).joinToString(" • ")
+            tvMeta.text = meta
+            tvMeta.isVisible = meta.isNotBlank()
             val fin = item.valorFinal?.let { " • Final: $it $unidad" } ?: ""
             val diff = item.diferencia?.let { " • Diferencia: $it $unidad" } ?: ""
             tvValores.text = "Inicial: ${item.valorInicial} $unidad$fin$diff"
