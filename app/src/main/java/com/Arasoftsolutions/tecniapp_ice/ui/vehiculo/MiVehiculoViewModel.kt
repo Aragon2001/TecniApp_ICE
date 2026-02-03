@@ -115,6 +115,8 @@ class MiVehiculoViewModel(app: Application) : AndroidViewModel(app) {
                 valorInicial = valor,
                 valorFinal = null,
                 cerrado = false,
+                registradoEn = System.currentTimeMillis(),
+                registradoPor = state.nombreUsuario.ifBlank { null },
                 circuito = circuito,
                 actividad = actividad,
                 cuenta = cuenta,
