@@ -40,7 +40,7 @@ function getTransporter(user, pass) {
   return cachedTransporter;
 }
 
-async function sendMail({ to, subject, html, user, pass }) {
+async function sendMail({ to, subject, html, user, pass, attachments }) {
   const transporter = getTransporter(user, pass);
 
   const t = Date.now();
@@ -49,6 +49,7 @@ async function sendMail({ to, subject, html, user, pass }) {
     to,
     subject,
     html,
+    attachments,
   });
 
   console.log("sendMail ms:", Date.now() - t, "messageId:", info?.messageId);
@@ -246,6 +247,7 @@ function verificationEmailHtml(code) {
 function reportEmailHtml({ reportName, downloadUrl, subtitle }) {
   const safeName = String(reportName || "Reporte").trim();
   const safeSubtitle = String(subtitle || "").trim();
+  const hasDownloadUrl = Boolean(downloadUrl);
 
   return `
   <html>
@@ -271,6 +273,9 @@ function reportEmailHtml({ reportName, downloadUrl, subtitle }) {
                 : `<p style="color:#555; font-size: 14px; margin: 0 0 18px;">Puedes descargarlo desde el siguiente botón.</p>`
             }
 
+            ${
+              hasDownloadUrl
+                ? `
             <div style="text-align:center; margin: 22px 0 8px;">
               <a href="${downloadUrl}"
                 style="display:inline-block; background-color:#0075C9; color:#ffffff; text-decoration:none;
@@ -284,6 +289,19 @@ function reportEmailHtml({ reportName, downloadUrl, subtitle }) {
               <br>
               <span style="word-break: break-all;">${downloadUrl}</span>
             </p>
+                `.trim()
+                : `
+            <div style="text-align:center; margin: 22px 0 8px;">
+              <span style="display:inline-block; background-color:#0075C9; color:#ffffff;
+                padding: 12px 18px; border-radius: 10px; font-weight: 600; font-size: 14px;">
+                Reporte adjunto
+              </span>
+            </div>
+            <p style="font-size: 12px; color: #777; margin-top: 16px;">
+              Adjuntamos el archivo del reporte en este correo.
+            </p>
+                `.trim()
+            }
           </td>
         </tr>
 
@@ -575,9 +593,9 @@ exports.sendVerificationCode = onCall(
    CALLABLE: ENVIAR REPORTE POR CORREO
    =========================================================
    Recomendado:
-   - Android genera el archivo (xlsx/pdf), lo sube a Storage
-   - Obtiene downloadUrl
-   - Llama sendReport(email, reportName, downloadUrl, subtitle)
+   - Android genera el archivo (xlsx/pdf) y lo envía en base64
+   - Llama sendReport(email, reportName, fileBase64, fileName, subtitle)
+   - (Opcional) downloadUrl si se desea incluir enlace
 */
 exports.sendReport = onCall(
   { region: "us-central1", secrets: [MAIL_USER, MAIL_PASS] },
@@ -587,12 +605,22 @@ exports.sendReport = onCall(
     const reportName = String(data?.reportName || "Reporte").trim();
     const downloadUrl = String(data?.downloadUrl || "").trim();
     const subtitle = String(data?.subtitle || "").trim(); // ej: "Rango: 01–07 Dic 2025"
+    const fileBase64 = String(data?.fileBase64 || "").trim();
+    const fileName = String(data?.fileName || "reporte.xlsx").trim();
 
-    if (!email || !downloadUrl) {
+    if (!email || (!downloadUrl && !fileBase64)) {
       throw new HttpsError("invalid-argument", "Datos incompletos");
     }
 
     const html = reportEmailHtml({ reportName, downloadUrl, subtitle });
+    const attachments = fileBase64
+      ? [
+          {
+            filename: fileName || "reporte.xlsx",
+            content: Buffer.from(fileBase64, "base64"),
+          },
+        ]
+      : undefined;
 
     await sendMail({
       to: email,
@@ -600,6 +628,7 @@ exports.sendReport = onCall(
       html,
       user: MAIL_USER.value(),
       pass: MAIL_PASS.value(),
+      attachments,
     });
 
     return { success: true };
