@@ -760,26 +760,20 @@ return AveriaEntity(
 
     private suspend fun registrarKilometrajeFinal(vehiculo: String?, kilometraje: Double?, timestamp: Long) {
         if (kilometraje == null || vehiculo.isNullOrBlank()) return
-        val placaLong = VehiculoPlacaUtils.parsePlacaLong(vehiculo)
+        val normalizada = VehiculoPlacaUtils.parsePlacaLong(vehiculo)
             ?: VehiculoPlacaUtils.parsePlacaLong(vehiculo.replace("ICE", "", ignoreCase = true))
             ?: return
-        val registro = VehiculoKilometrajeEntity(
-            placa = vehiculo.trim(),
-            placaNormalizada = normalizada,
-            kilometrajeFinal = kilometraje,
-            registradoEn = timestamp
-        )
-        kilometrajeDao.insertar(registro)
+        vehiculoDao.actualizarKilometrajeActual(normalizada, kilometraje)
         runCatching {
             val payload = mapOf(
-                "placa" to registro.placa,
-                "placaNormalizada" to registro.placaNormalizada,
-                "kilometrajeFinal" to registro.kilometrajeFinal,
-                "registradoEn" to registro.registradoEn
+                "placa" to vehiculo.trim(),
+                "placaNormalizada" to normalizada.toString(),
+                "kilometrajeFinal" to kilometraje,
+                "registradoEn" to timestamp
             )
             vehiculoKilometrajesRef
-                .child(registro.placaNormalizada)
-                .child(registro.registradoEn.toString())
+                .child(normalizada.toString())
+                .child(timestamp.toString())
                 .updateChildren(payload)
                 .await()
         }.onFailure { error ->
