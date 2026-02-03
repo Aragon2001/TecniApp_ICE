@@ -5,9 +5,9 @@
     "usuarios": {
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
-        ".write": "auth != null && (auth.uid === $uid || root.child('usuarios').child(auth.uid).child('rol').val() === 'admin')",
-        ".validate": "newData.hasChild('uid') && (newData.child('uid').val() === auth.uid || (root.child('usuarios').child(auth.uid).child('rol').val() === 'admin' && newData.child('uid').val() === $uid))",
-        "uid": { ".validate": "newData.isString() && newData.val() === auth.uid" },
+        ".write": "auth != null && (auth.uid === $uid || root.child('usuarios').child(auth.uid).child('rol').val() === 'admin' || root.child('usuarios').child(auth.uid).child('rol').val() === 'administrador')",
+        ".validate": "newData.hasChild('uid') && (newData.child('uid').val() === auth.uid || ((root.child('usuarios').child(auth.uid).child('rol').val() === 'admin' || root.child('usuarios').child(auth.uid).child('rol').val() === 'administrador') && newData.child('uid').val() === $uid))",
+        "uid": { ".validate": "newData.isString() && (newData.val() === auth.uid || ((root.child('usuarios').child(auth.uid).child('rol').val() === 'admin' || root.child('usuarios').child(auth.uid).child('rol').val() === 'administrador') && newData.val() === $uid))" },
         "cedula": { ".validate": "newData.val() == null || (newData.isString() && newData.val().matches(/^(?:[0-9]{9}|[0-9]{12})$/))" },
         "email": { ".validate": "newData.val() == null || (newData.isString() && newData.val().matches(/^.+@.+\\..+$/))" },
         "email_lower": { ".validate": "newData.val() == null || newData.isString()" },
