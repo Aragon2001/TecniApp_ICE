@@ -459,20 +459,18 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
         b.chipEstado.chipBackgroundColor = ColorStateList.valueOf(Color.parseColor(color))
         b.chipEstado.setTextColor(Color.WHITE)
 
-        b.tvNise.text = getString(R.string.averia_nise_format, item.nise.ifBlank { "—" })
-        b.tvRegion.text = getString(R.string.averia_region_label, item.region.ifBlank { "—" })
-        b.tvAgencia.text = getString(R.string.averia_agencia_label, item.agencia.ifBlank { "—" })
+        val emptyValue = getString(R.string.averia_pdf_empty_value)
+        b.tvNise.text = item.nise.ifBlank { emptyValue }
+        b.tvRegion.text = item.region.ifBlank { emptyValue }
+        b.tvAgencia.text = item.agencia.ifBlank { emptyValue }
 
         val tipoTexto = when (item.tipoAfectacion) {
             TipoAfectacion.CLIENTE -> getString(R.string.averia_tipo_cliente)
             TipoAfectacion.SECTOR -> getString(R.string.averia_tipo_sector)
         }
-        b.tvTipoAfectacion.text = getString(R.string.averia_tipo_actual_label, tipoTexto)
+        b.tvTipoAfectacion.text = tipoTexto
         val medidorNumero = item.numeroMedidor?.takeIf { it.isNotBlank() }
-        val medidorResumen = medidorNumero?.let {
-            getString(R.string.averia_medidor_actual_label, it)
-        } ?: getString(R.string.averia_medidor_sin_datos)
-        b.tvMedidorActual.text = medidorResumen
+        b.tvMedidorActual.text = medidorNumero ?: getString(R.string.averia_medidor_sin_datos)
         val detalleParts = buildList {
             item.medidorPueblo?.takeIf { it.isNotBlank() }?.let {
                 add(getString(R.string.averia_medidor_pueblo, it))
@@ -492,21 +490,21 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
             isVisible = detalleParts.isNotEmpty()
         }
 
-        val emptyValue = getString(R.string.averia_pdf_empty_value)
         val cliente = item.cliente?.takeIf { it.isNotBlank() } ?: emptyValue
         b.tvCliente.apply {
             isVisible = true
-            text = getString(R.string.averia_cliente_label, cliente)
+            text = cliente
         }
 
         val coordsText = if (item.lat != 0.0 && item.lng != 0.0) {
-            getString(R.string.averia_reporte_coordenadas, item.lat, item.lng)
+            String.format(Locale.getDefault(), "%.5f, %.5f", item.lat, item.lng)
         } else {
-            getString(R.string.averia_reporte_coordenadas_sin_datos)
+            emptyValue
         }
         b.tvCoordenadas.text = coordsText
+        val hasCoords = item.lat != 0.0 && item.lng != 0.0
+        b.cardMapaDireccion.isVisible = hasCoords
         b.btnDetalleVerMapa.apply {
-            val hasCoords = item.lat != 0.0 && item.lng != 0.0
             isVisible = hasCoords
             setOnClickListener {
                 AveriaMapLauncher.show(
@@ -522,19 +520,16 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
         val direccionGps = item.direccion?.takeIf { it.isNotBlank() }
         b.tvDireccionGps.apply {
             isVisible = !direccionGps.isNullOrBlank()
-            text = direccionGps?.let { getString(R.string.averia_direccion_label, it) }.orEmpty()
+            text = direccionGps.orEmpty()
         }
 
         val fechaEvento = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(item.fechaMillis)
-        b.tvFechaDetalle.text = getString(R.string.averia_fecha_evento_label, fechaEvento)
+        b.tvFechaDetalle.text = fechaEvento
 
-        b.tvAsignado.text = getString(
-            R.string.averia_asignado_a,
-            item.tecnico.ifBlank { getString(R.string.averia_sin_asignar) }
-        )
+        b.tvAsignado.text = item.tecnico.ifBlank { getString(R.string.averia_sin_asignar) }
         val atendidoDisplay = item.resolvedAtendidoDisplay(emptyValue)
-        b.tvAtendido.text = getString(R.string.averia_atendido_por_format, atendidoDisplay)
-        b.tvVehiculo.text = getString(R.string.averia_vehiculo_format, item.vehiculo ?: "—")
+        b.tvAtendido.text = atendidoDisplay
+        b.tvVehiculo.text = item.vehiculo ?: emptyValue
     }
 
     private fun bindResumenes() {
@@ -546,6 +541,7 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
         b.tvObservacionesActuales.text = obsDisplay.ifBlank { emptyValue }
         b.cardCausaClor.isVisible = true
         b.cardObservacionesClor.isVisible = true
+        b.tvSeccionClor.isVisible = true
         b.tvCausaClor.text = item.causaClor?.ifBlank { emptyValue } ?: emptyValue
         b.tvObservacionesClor.text = item.observacionesClor?.ifBlank { emptyValue } ?: emptyValue
 
@@ -564,15 +560,14 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
                 add(getString(R.string.averia_medidor_metros, it))
             }
         }
-        val baseLocalizacion = getString(R.string.averia_localizacion_label, localizacion)
         b.tvLocalizacionActual.text = if (detalleParts.isNotEmpty()) {
             getString(
                 R.string.averia_localizacion_detalle_format,
-                baseLocalizacion,
+                localizacion,
                 detalleParts.joinToString(" • ")
             )
         } else {
-            baseLocalizacion
+            localizacion
         }
     }
 
@@ -756,26 +751,23 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
             TipoAfectacion.CLIENTE -> getString(R.string.averia_tipo_cliente)
             TipoAfectacion.SECTOR -> getString(R.string.averia_tipo_sector)
         }
-        b.tvTipoAfectacion.text = getString(R.string.averia_tipo_actual_label, tipoLabel)
+        b.tvTipoAfectacion.text = tipoLabel
         val clienteTexto = when {
             medidor?.cliente?.isNotBlank() == true -> medidor.cliente!!.trim()
             clienteSeleccionado?.isNotBlank() == true -> clienteSeleccionado!!.trim()
             item.cliente?.isNotBlank() == true -> item.cliente!!.trim()
             else -> emptyValue
         }
-        b.tvCliente.text = getString(R.string.averia_cliente_label, clienteTexto.ifBlank { emptyValue })
+        b.tvCliente.text = clienteTexto.ifBlank { emptyValue }
         b.tvMedidorCliente.apply {
-            text = getString(R.string.averia_cliente_label, clienteTexto.ifBlank { emptyValue })
+            text = clienteTexto.ifBlank { emptyValue }
             isVisible = esCliente && clienteTexto.isNotBlank()
         }
         val localizacionTexto = medidor?.localizacion?.toString()?.takeIf { it.isNotBlank() }
             ?: b.etLocalizacion.text?.toString()?.trim()?.takeIf { it.isNotBlank() }
             ?: item.localizacion?.takeIf { it.isNotBlank() }
         b.tvMedidorLocalizacion.apply {
-            text = getString(
-                R.string.averia_localizacion_label,
-                localizacionTexto ?: emptyValue
-            )
+            text = localizacionTexto ?: emptyValue
             isVisible = esCliente && !localizacionTexto.isNullOrBlank()
         }
         val detalleParts = buildList {
@@ -789,10 +781,8 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
             if (!metros.isNullOrBlank()) add(getString(R.string.averia_medidor_metros, metros))
         }
         val numero = medidor?.medidorNumber?.takeIf { it.isNotBlank() } ?: item.numeroMedidor
-        val medidorLabel = numero?.takeIf { it.isNotBlank() }
-            ?.let { getString(R.string.averia_medidor_actual_label, it) }
+        b.tvMedidorActual.text = numero?.takeIf { it.isNotBlank() }
             ?: getString(R.string.averia_medidor_sin_datos)
-        b.tvMedidorActual.text = medidorLabel
         b.tvMedidorResumen.apply {
             text = detalleParts.joinToString(" • ")
             isVisible = text.isNotBlank()
@@ -847,6 +837,23 @@ private fun applyInputStateForRules(
     inputsEditable = puedeEditarCompleto
     finalInputsEnabled = puedeEditarCompleto
     horaInicioEditable = puedeEditarInicio
+
+    b.tvSeccionTecnicos.isVisible = showCompleto
+    b.cardTecnicos.isVisible = showCompleto
+    b.cardMateriales.isVisible = showCompleto
+    b.tvSeccionRegistro.isVisible = showCompleto
+    b.cardTipoAfectacion.isVisible = showCompleto
+    b.cardMedidorInput.isVisible = showCompleto
+    b.cardDetallesAtencion.isVisible = showCompleto
+    b.tvSeccionHorarios.isVisible = showInicio
+    b.cardHorarios.isVisible = showInicio
+    b.tvHorarioInicioLabel.isVisible = showInicio
+    b.rowHorarioInicio.isVisible = showInicio
+    b.tvHorarioLlegadaLabel.isVisible = showCompleto
+    b.rowHorarioLlegada.isVisible = showCompleto
+    b.tvHorarioFinalLabel.isVisible = showCompleto
+    b.rowHorarioFinal.isVisible = showCompleto
+    b.cardVehiculo.isVisible = showInicio
 
     b.toggleTipoAfectacion.isVisible = showCompleto
     b.toggleTipoAfectacion.isEnabled = puedeEditarCompleto
