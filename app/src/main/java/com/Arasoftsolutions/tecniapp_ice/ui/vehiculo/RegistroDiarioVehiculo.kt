@@ -9,6 +9,7 @@ data class RegistroDiarioVehiculo(
     val valorFinal: Double? = null,
     val cerrado: Boolean = false,
     val registradoEn: Long = System.currentTimeMillis(),
+    val registradoPor: String? = null,
     val circuito: String? = null,
     val actividad: String? = null,
     val cuenta: String? = null,
@@ -32,6 +33,7 @@ fun parseRegistrosDiarios(json: String?): List<RegistroDiarioVehiculo> {
                 valorFinal = obj.optDouble("valorFinal").takeIf { !it.isNaN() },
                 cerrado = obj.optBoolean("cerrado"),
                 registradoEn = obj.optLong("registradoEn"),
+                registradoPor = obj.optString("registradoPor").takeIf { it.isNotBlank() },
                 circuito = obj.optString("circuito").takeIf { it.isNotBlank() },
                 actividad = obj.optString("actividad").takeIf { it.isNotBlank() },
                 cuenta = obj.optString("cuenta").takeIf { it.isNotBlank() },
@@ -52,6 +54,7 @@ fun serializeRegistrosDiarios(registros: List<RegistroDiarioVehiculo>): String {
         obj.put("valorFinal", registro.valorFinal)
         obj.put("cerrado", registro.cerrado)
         obj.put("registradoEn", registro.registradoEn)
+        obj.put("registradoPor", registro.registradoPor)
         obj.put("circuito", registro.circuito)
         obj.put("actividad", registro.actividad)
         obj.put("cuenta", registro.cuenta)
