@@ -30,6 +30,7 @@ import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
+import androidx.work.getWorkInfosForUniqueWorkFlow
 import com.Arasoftsolutions.tecniapp_ice.BuildConfig
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.UserEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.apellidosCompletos
@@ -183,21 +184,19 @@ class ActivityMain : AppCompatActivity() {
 
     private fun triggerInitialAveriasSyncIfIdle() {
         val workManager = WorkManager.getInstance(applicationContext)
-        val future = workManager.getWorkInfosForUniqueWork(AveriasSyncWorker.UNIQUE_MANUAL_WORK)
-        future.addListener(
-            {
-                val infos = runCatching { future.get() }.getOrNull().orEmpty()
-                val hasActive = infos.any { info ->
-                    info.state == WorkInfo.State.ENQUEUED ||
-                        info.state == WorkInfo.State.RUNNING ||
-                        info.state == WorkInfo.State.BLOCKED
-                }
-                if (!hasActive) {
-                    AveriasSyncWorker.triggerNow(applicationContext)
-                }
-            },
-            ContextCompat.getMainExecutor(this)
-        )
+        lifecycleScope.launch {
+            val infos = workManager
+                .getWorkInfosForUniqueWorkFlow(AveriasSyncWorker.UNIQUE_MANUAL_WORK)
+                .first()
+            val hasActive = infos.any { info ->
+                info.state == WorkInfo.State.ENQUEUED ||
+                    info.state == WorkInfo.State.RUNNING ||
+                    info.state == WorkInfo.State.BLOCKED
+            }
+            if (!hasActive) {
+                AveriasSyncWorker.triggerNow(applicationContext)
+            }
+        }
     }
 
     private fun checkPendingUpdate() {
