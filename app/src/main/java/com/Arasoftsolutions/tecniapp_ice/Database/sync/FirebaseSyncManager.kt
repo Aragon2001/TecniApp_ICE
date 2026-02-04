@@ -494,7 +494,7 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
         val root = dbDatosGenerales.child("vehiculos")
         val idKey = vehiculo.id.takeIf { it != 0 }?.toString()
         val placaKey = vehiculo.placa.takeIf { it != 0L }?.toString()
-        val primaryKey = idKey ?: placaKey
+        val primaryKey = placaKey ?: idKey
             ?: throw IllegalArgumentException("Vehículo inválido, requiere id o placa")
 
         val payload = mapOf(
@@ -514,11 +514,7 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
             "mantenimientoProximo" to vehiculo.mantenimientoProximo
         )
 
-        val keys = linkedSetOf(primaryKey)
-        placaKey?.let { keys.add(it) }
-        keys.forEach { key ->
-            root.child(key).updateChildren(payload).await()
-        }
+        root.child(primaryKey).updateChildren(payload).await()
     }
 
     suspend fun eliminarVehiculo(id: Int) {
