@@ -28,6 +28,8 @@ import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.navigateUp
 import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
+import androidx.work.WorkInfo
+import androidx.work.WorkManager
 import com.Arasoftsolutions.tecniapp_ice.BuildConfig
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.UserEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.apellidosCompletos
@@ -133,7 +135,7 @@ class ActivityMain : AppCompatActivity() {
         observeUserUpdates()
          val currentUser = auth.currentUser
         if (currentUser != null) {
-            AveriasSyncWorker.triggerNow(applicationContext)
+            triggerInitialAveriasSyncIfIdle()
         }
 
         requestAllPermissionsOnLaunch()
@@ -177,6 +179,25 @@ class ActivityMain : AppCompatActivity() {
                 applyAdminMenuVisibility()
             }
         }
+    }
+
+    private fun triggerInitialAveriasSyncIfIdle() {
+        val workManager = WorkManager.getInstance(applicationContext)
+        val future = workManager.getWorkInfosForUniqueWork(AveriasSyncWorker.UNIQUE_MANUAL_WORK)
+        future.addListener(
+            {
+                val infos = runCatching { future.get() }.getOrNull().orEmpty()
+                val hasActive = infos.any { info ->
+                    info.state == WorkInfo.State.ENQUEUED ||
+                        info.state == WorkInfo.State.RUNNING ||
+                        info.state == WorkInfo.State.BLOCKED
+                }
+                if (!hasActive) {
+                    AveriasSyncWorker.triggerNow(applicationContext)
+                }
+            },
+            ContextCompat.getMainExecutor(this)
+        )
     }
 
     private fun checkPendingUpdate() {
