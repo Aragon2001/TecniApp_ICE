@@ -44,7 +44,21 @@ class AveriasSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorke
             repo.syncPendientesConFirebase()
 
             // 2. Refresca Room desde Firebase cuando aplique
-            repo.pullFromFirebaseOnce()
+            val pullResult = repo.pullFromFirebaseOnce()
+            if (pullResult.hadLocalData && pullResult.newCases.isNotEmpty()) {
+                if (!AveriasForegroundTracker.isAveriasVisible &&
+                    AveriaNotificationPreferences.areNotificationsEnabled(applicationContext)
+                ) {
+                    val agencyFilters =
+                        AveriaNotificationPreferences.normalizedAgencies(applicationContext)
+                    val filtered = pullResult.newCases.filter { averia ->
+                        shouldNotifyForAgency(averia, agencyFilters)
+                    }
+                    if (filtered.isNotEmpty()) {
+                        AveriaNotificationDispatcher.notifyNewCases(applicationContext, filtered)
+                    }
+                }
+            }
 
             val uid = auth.currentUser?.uid
             if (!uid.isNullOrBlank()) {
@@ -68,7 +82,7 @@ class AveriasSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorke
                 .build()
             WorkManager.getInstance(ctx).enqueueUniquePeriodicWork(
                 UNIQUE_PERIODIC_WORK,
-                ExistingPeriodicWorkPolicy.UPDATE,
+                ExistingPeriodicWorkPolicy.KEEP,
                 req
             )
         }

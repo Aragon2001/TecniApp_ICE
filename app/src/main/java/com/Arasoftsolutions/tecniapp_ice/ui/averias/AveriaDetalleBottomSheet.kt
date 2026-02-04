@@ -75,8 +75,83 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
     private var inventarioJob: Job? = null
     private var kilometrajeJob: Job? = null
     private var ultimoKmRegistrado: Double? = null
+    private var vehiculosAdapter: VehiculoAdapter? = null
+    private var tecnicosAdapter: TecnicoAdapter? = null
 
     private enum class ValidationContext { NONE, INICIAR, RESOLVER }
+
+    private inner class VehiculoAdapter(
+        items: List<String>
+    ) : ArrayAdapter<String>(requireContext(), android.R.layout.simple_dropdown_item_1line, items.toMutableList()) {
+        private var base = items.toMutableList()
+
+        fun updateData(nuevos: List<String>) {
+            base = nuevos.toMutableList()
+            clear()
+            addAll(base)
+            notifyDataSetChanged()
+        }
+    }
+
+    private inner class TecnicoAdapter(
+        items: List<TecnicoEntity>
+    ) : ArrayAdapter<TecnicoEntity>(requireContext(), android.R.layout.simple_dropdown_item_1line, items.toMutableList()) {
+        private var base = items.toMutableList()
+        private var filtrados = items.toMutableList()
+
+        override fun getCount(): Int = filtrados.size
+        override fun getItem(position: Int): TecnicoEntity? = filtrados.getOrNull(position)
+        fun getObject(position: Int): TecnicoEntity = filtrados[position]
+
+        fun updateData(nuevos: List<TecnicoEntity>) {
+            base = nuevos.toMutableList()
+            filtrados = nuevos.toMutableList()
+            clear()
+            addAll(filtrados)
+            notifyDataSetChanged()
+        }
+
+        override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+            val view = super.getView(position, convertView, parent)
+            (view as TextView).text =
+                "${filtrados[position].cedula} - ${filtrados[position].nombre}"
+            return view
+        }
+
+        override fun getFilter(): Filter {
+            return object : Filter() {
+                override fun performFiltering(prefix: CharSequence?): FilterResults {
+                    val query = prefix?.toString()?.trim()?.lowercase(Locale.getDefault()).orEmpty()
+                    filtrados = if (query.isBlank()) {
+                        base.toMutableList()
+                    } else {
+                        base.filter { t ->
+                            val texto = "${t.cedula} ${t.nombre}".lowercase(Locale.getDefault())
+                            query.split("\\s+".toRegex()).all { texto.contains(it) }
+                        }.toMutableList()
+                    }
+                    return FilterResults().apply {
+                        values = filtrados
+                        count = filtrados.size
+                    }
+                }
+
+                override fun publishResults(constraint: CharSequence?, results: FilterResults?) {
+                    filtrados = when (val value = results?.values) {
+                        is Collection<*> -> value.filterIsInstance<TecnicoEntity>().toMutableList()
+                        is Array<*> -> value.filterIsInstance<TecnicoEntity>().toMutableList()
+                        else -> base.toMutableList()
+                    }
+                    notifyDataSetChanged()
+                }
+
+                override fun convertResultToString(resultValue: Any?): CharSequence {
+                    val tecnico = resultValue as? TecnicoEntity
+                    return if (tecnico != null) "${tecnico.cedula} - ${tecnico.nombre}" else ""
+                }
+            }
+        }
+    }
 
     private inner class MaterialAdapter(
         items: List<MaterialEntity>
@@ -287,9 +362,11 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
                     val opciones = lista.mapNotNull { vehiculo ->
                         vehiculo.placa.trim().takeIf { it.isNotEmpty() }
                     }.distinct()
-                    b.actvVehiculo.setAdapter(
-                        ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, opciones)
-                    )
+                    val adapter = vehiculosAdapter ?: VehiculoAdapter(opciones).also {
+                        vehiculosAdapter = it
+                        b.actvVehiculo.setAdapter(it)
+                    }
+                    adapter.updateData(opciones)
                 }
             }
         }
@@ -300,61 +377,11 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             vm.tecnicosDisponibles.collectLatest { lista ->
                 tecnicosCatalogo = lista
-
-                val adapterTec = object : ArrayAdapter<TecnicoEntity>(
-                    requireContext(),
-                    android.R.layout.simple_dropdown_item_1line,
-                    lista.toMutableList()
-                ) {
-                    private var filtrados = lista.toMutableList()
-
-                    override fun getCount(): Int = filtrados.size
-                    override fun getItem(position: Int): TecnicoEntity? = filtrados.getOrNull(position)
-                    fun getObject(position: Int): TecnicoEntity = filtrados[position]
-
-                    override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-                        val view = super.getView(position, convertView, parent)
-                        (view as TextView).text =
-                            "${filtrados[position].cedula} - ${filtrados[position].nombre}"
-                        return view
-                    }
-
-                    override fun getFilter(): Filter {
-                        return object : Filter() {
-                            override fun performFiltering(prefix: CharSequence?): FilterResults {
-                                val query = prefix?.toString()?.trim()?.lowercase(Locale.getDefault()).orEmpty()
-                                filtrados = if (query.isBlank()) {
-                                    lista.toMutableList()
-                                } else {
-                                    lista.filter { t ->
-                                        val texto = "${t.cedula} ${t.nombre}".lowercase(Locale.getDefault())
-                                        query.split("\\s+".toRegex()).all { texto.contains(it) }
-                                    }.toMutableList()
-                                }
-                                return FilterResults().apply {
-                                    values = filtrados
-                                    count = filtrados.size
-                                }
-                            }
-
-                            override fun publishResults(constraint: CharSequence?, results: FilterResults?) {
-                                filtrados = when (val value = results?.values) {
-                                    is Collection<*> -> value.filterIsInstance<TecnicoEntity>().toMutableList()
-                                    is Array<*> -> value.filterIsInstance<TecnicoEntity>().toMutableList()
-                                    else -> lista.toMutableList()
-                                }
-                                notifyDataSetChanged()
-                            }
-
-                            override fun convertResultToString(resultValue: Any?): CharSequence {
-                                val tec = resultValue as? TecnicoEntity
-                                return if (tec != null) "${tec.cedula} - ${tec.nombre}" else ""
-                            }
-                        }
-                    }
+                val adapterTec = tecnicosAdapter ?: TecnicoAdapter(lista).also {
+                    tecnicosAdapter = it
+                    b.actvTecnico.setAdapter(it)
                 }
-
-                b.actvTecnico.setAdapter(adapterTec)
+                adapterTec.updateData(lista)
                 b.actvTecnico.threshold = 1
 
                 b.actvTecnico.setOnItemClickListener { _, _, position, _ ->

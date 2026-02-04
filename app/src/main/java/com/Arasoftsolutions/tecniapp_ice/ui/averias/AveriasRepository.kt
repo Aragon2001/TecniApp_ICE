@@ -961,12 +961,18 @@ private fun AveriaEntity.toFirebaseAppPayload(): Map<String, Any?> = hashMapOf(
     // Firebase: pull (una vez) y realtime
     // ---------------------------------------------------------------------------------------------
 
-    suspend fun pullFromFirebaseOnce() = withContext(Dispatchers.IO) {
+    data class PullResult(
+        val newCases: List<AveriaEntity>,
+        val hadLocalData: Boolean
+    )
+
+    suspend fun pullFromFirebaseOnce(): PullResult = withContext(Dispatchers.IO) {
+        val current = dao.all().associateBy { it.caseId }
+        val hadLocalData = current.isNotEmpty()
         try {
             val snapshot = firebaseRef.get().await()
-            val current = dao.all().associateBy { it.caseId }
-            val remoteIds = snapshot.children.mapNotNull { it.key?.trim() }.toSet()
             val updated = mutableListOf<AveriaEntity>()
+            val newlyCreated = mutableListOf<AveriaEntity>()
             snapshot.children.forEach { child ->
                 val remote0 = child.getAveriaEntitySafe() ?: return@forEach
                 val normalizedEstado = normalizeEstadoLabel(remote0.estado)
@@ -979,6 +985,7 @@ private fun AveriaEntity.toFirebaseAppPayload(): Map<String, Any?> = hashMapOf(
                 when {
                     existing == null -> if (shouldCreateNewCase(remote.estado)) {
                         updated += remote
+                        newlyCreated += remote
                     }
 
                    existing.isSynced && remote.lastUpdated >= existing.lastUpdated -> {
@@ -1058,8 +1065,10 @@ private fun AveriaEntity.toFirebaseAppPayload(): Map<String, Any?> = hashMapOf(
             // Nota: no eliminamos localmente si el caso no viene en Firebase.
             // La fuente ICE puede tener averías que aún no están replicadas en Firebase
             // y eliminarlas provoca que desaparezcan (especialmente Pendientes/Asignadas).
+            PullResult(newlyCreated, hadLocalData)
         } catch (t: Throwable) {
             Log.e(TAG, "Firebase pull failed", t)
+            PullResult(emptyList(), hadLocalData)
         }
     }
 
