@@ -25,7 +25,14 @@
     <string name="mi_vehiculo_registrar_inicial">Registrar valor inicial del día</string>
     <string name="mi_vehiculo_registrar_inicial_boton">Registrar</string>
     <string name="mi_vehiculo_registrar_final">Registrar valor final del día</string>
+    <string name="mi_vehiculo_registro_final_resumen">Confirma el valor final del día para cerrar el registro.</string>
+    <string name="mi_vehiculo_registro_final_hint">Ingresa el valor real al finalizar la jornada.</string>
+    <string name="mi_vehiculo_registro_final_valor_format">Valor final (%1$s)</string>
     <string name="mi_vehiculo_historial">Historial ETM</string>
+    <string name="mi_vehiculo_mantenimiento_titulo">Mantenimiento y ajustes</string>
+    <string name="mi_vehiculo_mantenimiento_ultimo">Último mantenimiento</string>
+    <string name="mi_vehiculo_mantenimiento_proximo">Próximo mantenimiento</string>
+    <string name="mi_vehiculo_mantenimiento_placeholder">Sin datos de mantenimiento</string>
     <string name="mi_vehiculo_registro_obligatorio">Registro obligatorio</string>
     <string name="mi_vehiculo_registro_obligatorio_detalle">Antes de continuar, debes registrar el kilometraje inicial de tu vehículo el día de hoy para poder usar la aplicación.</string>
     <string name="mi_vehiculo_registro_obligatorio_alerta">Debes registrar el kilometraje inicial para continuar usando TecniApp ICE.</string>
