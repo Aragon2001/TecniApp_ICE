@@ -384,8 +384,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
-                    android:text="@string/mi_vehiculo_mantenimiento_ultimo"
-                    android:textColor="@color/ice_gray" />
+                    android:text="@string/mi_vehiculo_mantenimiento_ultimo" />
 
                 <TextView
                     android:id="@+id/tvMantenimientoUltimo"
@@ -400,8 +399,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
-                    android:text="@string/mi_vehiculo_mantenimiento_proximo"
-                    android:textColor="@color/ice_gray" />
+                    android:text="@string/mi_vehiculo_mantenimiento_proximo"/>
 
                 <TextView
                     android:id="@+id/tvMantenimientoProximo"
