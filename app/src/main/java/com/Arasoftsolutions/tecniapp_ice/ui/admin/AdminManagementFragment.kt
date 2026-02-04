@@ -898,12 +898,22 @@ class AdminManagementFragment : Fragment(R.layout.fragment_admin_management) {
 
         val seleccionado = viewModel.vehiculoSeleccionado.value
         val existente = seleccionado ?: vehiculosDisponibles.firstOrNull { it.placa == form.placa }
-        val id = existente?.id ?: run {
-            binding.tilAdminVehiculoPlaca.error = getString(R.string.admin_vehiculo_error_no_existe)
+        if (existente == null) {
+            confirmarAccion(
+                getString(R.string.admin_confirm_agregar_vehiculo_title),
+                getString(R.string.admin_confirm_agregar_vehiculo_message, form.placa.toString())
+            ) {
+                viewModel.crearVehiculo(
+                    placa = form.placa,
+                    agencia = form.agencia,
+                    tipo = form.tipo,
+                    subregionId = form.subregionId
+                )
+            }
             return
         }
 
-        val placaEnUso = vehiculosDisponibles.any { it.placa == form.placa && it.id != id }
+        val placaEnUso = vehiculosDisponibles.any { it.placa == form.placa && it.id != existente.id }
         if (placaEnUso) {
             binding.tilAdminVehiculoPlaca.error = getString(R.string.admin_vehiculo_error_placa_existente)
             return
@@ -914,7 +924,7 @@ class AdminManagementFragment : Fragment(R.layout.fragment_admin_management) {
             getString(R.string.admin_confirm_guardar_vehiculo_message, form.placa.toString())
         ) {
             viewModel.actualizarVehiculo(
-                id = id,
+                id = existente.id,
                 placa = form.placa,
                 agencia = form.agencia,
                 tipo = form.tipo,
@@ -1471,4 +1481,3 @@ class AdminManagementFragment : Fragment(R.layout.fragment_admin_management) {
         _binding = null
     }
 }
-
