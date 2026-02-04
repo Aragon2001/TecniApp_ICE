@@ -90,15 +90,26 @@ class MiVehiculoFragment : Fragment() {
     private fun mostrarDialogoRegistrarFinal() {
         val state = viewModel.uiState.value
         val unidad = state.tipoVehiculo.unidadTexto
-        val input = TextInputEditText(requireContext()).apply {
-            hint = "Valor final ($unidad)"
-            inputType = android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL
+        val dialogView = layoutInflater.inflate(R.layout.dialog_registro_final, null)
+        val resumen = dialogView.findViewById<android.widget.TextView>(R.id.tvRegistroFinalResumen)
+        val til = dialogView.findViewById<com.google.android.material.textfield.TextInputLayout>(R.id.tilRegistroFinal)
+        val input = dialogView.findViewById<TextInputEditText>(R.id.etRegistroFinal)
+        til.hint = getString(R.string.mi_vehiculo_registro_final_valor_format, unidad)
+        input.inputType = android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL
+        val reg = state.registroHoy
+        if (reg != null) {
+            resumen.text = getString(
+                R.string.mi_vehiculo_registro_hoy_format,
+                reg.valorInicial,
+                unidad,
+                getString(R.string.mi_vehiculo_valor_pendiente)
+            )
         }
         MaterialAlertDialogBuilder(requireContext())
             .setTitle(getString(R.string.mi_vehiculo_registrar_final))
-            .setView(input)
+            .setView(dialogView)
             .setPositiveButton(getString(android.R.string.ok)) { _, _ ->
-                val v = input.text?.toString()?.toDoubleOrNull()
+                val v = input.text?.toString()?.replace(",", ".")?.toDoubleOrNull()
                 if (v != null && v >= 0) viewModel.registrarFinal(v)
                 else MaterialAlertDialogBuilder(requireContext())
                     .setMessage(getString(R.string.mi_vehiculo_valor_invalido))
@@ -126,6 +137,7 @@ class MiVehiculoFragment : Fragment() {
                     binding.tvSinVehiculo.isVisible = vehiculo == null
                     binding.cardRegistroPendiente.isVisible = vehiculo != null && state.registroHoy == null
                     binding.cardRegistroHoy.isVisible = vehiculo != null
+                    binding.cardMantenimiento.isVisible = vehiculo != null
                     binding.btnRegistrarInicial.isVisible = vehiculo != null && state.registroHoy == null
                     binding.btnRegistrarFinal.isVisible = false
 
@@ -203,6 +215,15 @@ class MiVehiculoFragment : Fragment() {
                         state.tipoVehiculo.unidadTexto,
                         state.nombreUsuario
                     )
+
+                    if (vehiculo != null) {
+                        binding.tvMantenimientoUltimo.text = vehiculo.mantenimientoUltimo
+                            ?.takeIf { it.isNotBlank() }
+                            ?: getString(R.string.mi_vehiculo_mantenimiento_placeholder)
+                        binding.tvMantenimientoProximo.text = vehiculo.mantenimientoProximo
+                            ?.takeIf { it.isNotBlank() }
+                            ?: getString(R.string.mi_vehiculo_mantenimiento_placeholder)
+                    }
                 }
                 }
             }
