@@ -207,7 +207,6 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
     init {
         repo.startRealtimeListener(onNewAverias = { nuevas ->
             viewModelScope.launch(Dispatchers.Default) {
-                if (AveriasForegroundTracker.isAveriasVisible) return@launch
                 if (!AveriaNotificationPreferences.areNotificationsEnabled(getApplication())) return@launch
 
                 val agencyFilters = AveriaNotificationPreferences.normalizedAgencies(getApplication())

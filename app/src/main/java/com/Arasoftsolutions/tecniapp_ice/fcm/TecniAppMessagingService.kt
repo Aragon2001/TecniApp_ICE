@@ -5,7 +5,6 @@ import com.Arasoftsolutions.tecniapp_ice.Database.entities.AveriaEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.room.AppDatabase
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriaNotificationDispatcher
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriaNotificationPreferences
-import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasForegroundTracker
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasRepository
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.shouldNotifyForAgency
 import com.google.firebase.auth.FirebaseAuth
@@ -63,19 +62,13 @@ class TecniAppMessagingService : FirebaseMessagingService() {
             scheduleFirebaseRefreshDebounced()
         }
 
-        // 3) Evitar duplicados: si el usuario está viendo Averías, no notificar
-        if (AveriasForegroundTracker.isAveriasVisible) {
-            Log.d(TAG, "Averías visible en foreground: se omite notificación local (solo persistencia)")
-            return
-        }
-
-        // 4) Respetar apagado global del usuario
+        // 3) Respetar apagado global del usuario
         if (!AveriaNotificationPreferences.areNotificationsEnabled(this)) {
             Log.d(TAG, "Notificaciones desactivadas por el usuario; se omite alerta local")
             return
         }
 
-        // 5) Aplicar filtros locales por agencias (preferencias)
+        // 4) Aplicar filtros locales por agencias (preferencias)
         val agencyFilters = AveriaNotificationPreferences.normalizedAgencies(this)
         if (!shouldNotifyForAgency(averia, agencyFilters)) {
             Log.d(TAG, "Mensaje FCM filtrado por agencia (${averia.agencia}/${averia.agenciaTag})")
