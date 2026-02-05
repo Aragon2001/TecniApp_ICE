@@ -3,8 +3,6 @@ package com.Arasoftsolutions.tecniapp_ice.ui.localizacion
 // ViewModel en su package correcto
 
 import android.Manifest
-import android.app.AlertDialog
-import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -15,7 +13,6 @@ import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.location.Location
-import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -45,6 +42,8 @@ import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.MapView
 import com.google.android.gms.maps.OnMapReadyCallback
+import com.google.android.gms.maps.StreetViewPanorama
+import com.google.android.gms.maps.StreetViewPanoramaView
 import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
@@ -55,7 +54,6 @@ import com.google.android.gms.tasks.CancellationTokenSource
 import java.lang.Math.toDegrees
 import kotlin.math.abs
 import kotlin.math.max
-import java.util.Locale
 
 /**
  * LocalizacionFragment
@@ -87,6 +85,8 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
     private var mostrarCalles = false
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private val CLAVE_MAPA_VISTA_BUNDLE = "ClaveMapaVistaBundle"
+    private val CLAVE_STREET_VIEW_BUNDLE = "ClaveStreetViewBundle"
+    private var streetViewPanorama: StreetViewPanorama? = null
 
     // --- Permisos (Activity Result API) ---
     private val locationPermissionLauncher =
@@ -123,18 +123,21 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
     // --- Ubicación del usuario ---
     private var followLocationEnabled = true
     private var hasCenteredOnUser = false
+    private var lastLocationReceivedAt = 0L
     private var lastLocationErrorAt = 0L
     private var singleLocationToken: CancellationTokenSource? = null
     private val LOCATION_ERROR_TOAST_INTERVAL_MS = 10_000L
+    private val LOCATION_STALE_THRESHOLD_MS = 5_000L
 
     // --- Requests de ubicación ---
     private val locationRequest = com.google.android.gms.location.LocationRequest.Builder(
         Priority.PRIORITY_HIGH_ACCURACY,
-        1000 // 1s entre updates
+        750 // updates frecuentes para seguimiento en tiempo real
     ).apply {
-        setMinUpdateIntervalMillis(1000)
-        setMaxUpdateDelayMillis(10_000)
-        setWaitForAccurateLocation(true)
+        setMinUpdateIntervalMillis(500)
+        setMaxUpdateDelayMillis(2_000)
+        setMinUpdateDistanceMeters(1f)
+        setWaitForAccurateLocation(false)
     }.build()
 
     private val locationCallback = object : LocationCallback() {
@@ -152,7 +155,11 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
 
         override fun onLocationAvailability(locationAvailability: LocationAvailability) {
             if (!locationAvailability.isLocationAvailable) {
-                mostrarToastUbicacionSiNecesario(getString(R.string.localizacion_toast_sin_disponibilidad))
+                val now = SystemClock.elapsedRealtime()
+                val isStale = now - lastLocationReceivedAt >= LOCATION_STALE_THRESHOLD_MS
+                if (isStale) {
+                    mostrarToastUbicacionSiNecesario(getString(R.string.localizacion_toast_sin_disponibilidad))
+                }
             } else {
                 lastLocationErrorAt = 0L
             }
@@ -179,6 +186,7 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
         configurarObservers()
         configurarControles()
         inicializarMapaVista(savedInstanceState)
+        inicializarStreetView(savedInstanceState)
 
         // Datos iniciales
         viewModel.prepararDatos()
@@ -236,6 +244,7 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
             val numeroPoste = loc.delPoste.toString()
 
             actualizarUbicacionMapa(loc.latitud, loc.longitud, codigoPueblo, codigoCalle, numeroPoste)
+            actualizarStreetView(loc.latitud, loc.longitud)
 
             binding.direccionTextView.text = "Dirección: ${loc.direccion}"
             binding.delposteTextView.text = "Del Poste: ${loc.delPoste}"
@@ -316,6 +325,23 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
         mapaVista.getMapAsync(this)
     }
 
+    private fun inicializarStreetView(savedInstanceState: Bundle?) {
+        val streetBundle = savedInstanceState?.getBundle(CLAVE_STREET_VIEW_BUNDLE)
+        binding.streetViewPanorama.onCreate(streetBundle)
+        binding.streetViewPanorama.getStreetViewPanoramaAsync { panorama ->
+            streetViewPanorama = panorama.apply {
+                setUserNavigationEnabled(true)
+                setPanningGesturesEnabled(true)
+                setZoomGesturesEnabled(true)
+                setStreetNamesEnabled(true)
+                setOnStreetViewPanoramaChangeListener { location ->
+                    binding.streetViewPanorama.visibility = if (location == null) View.GONE else View.VISIBLE
+                }
+            }
+        }
+        binding.streetViewPanorama.visibility = View.GONE
+    }
+
     override fun onMapReady(map: GoogleMap) {
         mapaGoogle = map
 
@@ -368,6 +394,7 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
         map.setOnCameraMoveStartedListener { reason ->
             if (reason == GoogleMap.OnCameraMoveStartedListener.REASON_GESTURE) {
                 userIsInteracting = true
+                followLocationEnabled = false
                 actualizarAutorrotacionRuntime(false)
                 userRotatedDuringGesture = false
                 lastCompassBearing = mapaGoogle?.cameraPosition?.bearing?.let { normalizeBearing(it) }
@@ -673,11 +700,13 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
     override fun onStart() {
         super.onStart()
         binding.mapView.onStart()
+        binding.streetViewPanorama.onStart()
     }
 
     override fun onResume() {
         super.onResume()
         binding.mapView.onResume()
+        binding.streetViewPanorama.onResume()
         rotationVectorSensor?.let { sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_UI) }
         // si ya teníamos permiso, asegúrate de que los updates sigan activos
         val fine = ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION)
@@ -690,6 +719,7 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
     override fun onPause() {
         super.onPause()
         binding.mapView.onPause()
+        binding.streetViewPanorama.onPause()
         stopLocationUpdates()
         sensorManager.unregisterListener(this)
     }
@@ -697,14 +727,17 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
     override fun onStop() {
         super.onStop()
         binding.mapView.onStop()
+        binding.streetViewPanorama.onStop()
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
         binding.mapView.onDestroy()
+        binding.streetViewPanorama.onDestroy()
         handler.removeCallbacksAndMessages(null)
         singleLocationToken?.cancel()
         singleLocationToken = null
+        streetViewPanorama = null
         _binding = null
         mapaGoogle = null
         marcadoresCalles.forEach { it.remove() }
@@ -715,6 +748,7 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
     override fun onLowMemory() {
         super.onLowMemory()
         binding.mapView.onLowMemory()
+        binding.streetViewPanorama.onLowMemory()
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -722,6 +756,14 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
         val mapaBundle = outState.getBundle(CLAVE_MAPA_VISTA_BUNDLE) ?: Bundle()
         binding.mapView.onSaveInstanceState(mapaBundle)
         outState.putBundle(CLAVE_MAPA_VISTA_BUNDLE, mapaBundle)
+        val streetBundle = outState.getBundle(CLAVE_STREET_VIEW_BUNDLE) ?: Bundle()
+        binding.streetViewPanorama.onSaveInstanceState(streetBundle)
+        outState.putBundle(CLAVE_STREET_VIEW_BUNDLE, streetBundle)
+    }
+
+    private fun actualizarStreetView(latitud: Double, longitud: Double) {
+        val panorama = streetViewPanorama ?: return
+        panorama.setPosition(LatLng(latitud, longitud), 50)
     }
 
     private fun actualizarAutorrotacionRuntime(enabled: Boolean) {
@@ -775,10 +817,10 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
 
     private fun manejarUbicacionUsuario(location: Location) {
         lastLocationErrorAt = 0L
+        lastLocationReceivedAt = SystemClock.elapsedRealtime()
         if (followLocationEnabled && !userIsInteracting) {
             moverCamaraAUbicacion(location, animate = hasCenteredOnUser)
             hasCenteredOnUser = true
-            followLocationEnabled = false
         }
     }
 

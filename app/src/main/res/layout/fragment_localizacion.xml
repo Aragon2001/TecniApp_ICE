@@ -183,6 +183,15 @@
             android:layout_marginTop="1dp"
             app:cameraZoom="10"
             app:uiRotateGestures="true"/>
+
+        <com.google.android.gms.maps.StreetViewPanoramaView
+            android:id="@+id/streetViewPanorama"
+            android:layout_width="160dp"
+            android:layout_height="120dp"
+            android:layout_margin="12dp"
+            android:visibility="gone"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 
     <!-- Contenedor de botones -->
