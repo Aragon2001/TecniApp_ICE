@@ -17,6 +17,7 @@ import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import com.Arasoftsolutions.tecniapp_ice.R
+import com.Arasoftsolutions.tecniapp_ice.ui.reportes.ReportDownloadNotifier
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -410,19 +411,25 @@ object PdfGenerator {
             FileOutputStream(file).use { output -> document.writeTo(output) }
 
             withContext(Dispatchers.Main) {
+                val fileUri: Uri = FileProvider.getUriForFile(
+                    context,
+                    context.packageName + ".fileprovider",
+                    file
+                )
+                ReportDownloadNotifier.show(
+                    context = context,
+                    fileName = fileName,
+                    fileUri = fileUri,
+                    locationUri = ReportDownloadNotifier.buildLocationUriForFile(context, file)
+                )
                 Toast.makeText(
                     context,
                     context.getString(R.string.averia_export_success, fileName),
                     Toast.LENGTH_LONG
                 ).show()
-                val uri: Uri = FileProvider.getUriForFile(
-                    context,
-                    context.packageName + ".fileprovider",
-                    file
-                )
                 val shareIntent = Intent(Intent.ACTION_SEND).apply {
                     type = "application/pdf"
-                    putExtra(Intent.EXTRA_STREAM, uri)
+                    putExtra(Intent.EXTRA_STREAM, fileUri)
                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 }
                 context.startActivity(
