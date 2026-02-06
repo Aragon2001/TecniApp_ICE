@@ -26,18 +26,33 @@ import kotlinx.coroutines.tasks.await
 class Paso3Fragment : Fragment() {
 
     private lateinit var viewModel: RegistroViewModel
-    private lateinit var etFirstName: TextInputEditText
-    private lateinit var etLastName: TextInputEditText
-    private lateinit var etLastName2: TextInputEditText
-    private lateinit var etID: TextInputEditText
-    private lateinit var btnContinueToStep4: MaterialButton
-    private lateinit var chipCedula: Chip
-    private lateinit var chipDimex: Chip
+    private var _etFirstName: TextInputEditText? = null
+    private var _etLastName: TextInputEditText? = null
+    private var _etLastName2: TextInputEditText? = null
+    private var _etID: TextInputEditText? = null
+    private var _btnContinueToStep4: MaterialButton? = null
+    private var _chipCedula: Chip? = null
+    private var _chipDimex: Chip? = null
+    private var _chipGroupTipoId: ChipGroup? = null
 
-    private lateinit var tvFirstNameError: TextView
-    private lateinit var tvLastNameError: TextView
-    private lateinit var tvLastNameError2: TextView
-    private lateinit var tvIDError: TextView
+    private var _tvFirstNameError: TextView? = null
+    private var _tvLastNameError: TextView? = null
+    private var _tvLastNameError2: TextView? = null
+    private var _tvIDError: TextView? = null
+
+    private val etFirstName get() = requireNotNull(_etFirstName)
+    private val etLastName get() = requireNotNull(_etLastName)
+    private val etLastName2 get() = requireNotNull(_etLastName2)
+    private val etID get() = requireNotNull(_etID)
+    private val btnContinueToStep4 get() = requireNotNull(_btnContinueToStep4)
+    private val chipCedula get() = requireNotNull(_chipCedula)
+    private val chipDimex get() = requireNotNull(_chipDimex)
+    private val chipGroupTipoId get() = requireNotNull(_chipGroupTipoId)
+
+    private val tvFirstNameError get() = requireNotNull(_tvFirstNameError)
+    private val tvLastNameError get() = requireNotNull(_tvLastNameError)
+    private val tvLastNameError2 get() = requireNotNull(_tvLastNameError2)
+    private val tvIDError get() = requireNotNull(_tvIDError)
 
     private val CEDULA_DIGITS = 9
     private val DIMEX_DIGITS = 12
@@ -74,19 +89,19 @@ class Paso3Fragment : Fragment() {
 
         viewModel = ViewModelProvider(requireActivity())[RegistroViewModel::class.java]
 
-        etFirstName = view.findViewById(R.id.etFirstName)
-        etLastName  = view.findViewById(R.id.etLastName)
-        etLastName2 = view.findViewById(R.id.etLastName2)
-        etID        = view.findViewById(R.id.etID)
-        btnContinueToStep4 = view.findViewById(R.id.btnContinueToStep4)
-        chipCedula = view.findViewById(R.id.chipCedula)
-        chipDimex  = view.findViewById(R.id.chipDimex)
-        val chipGroupTipoId = view.findViewById<ChipGroup>(R.id.chipGroupTipoId)
+        _etFirstName = view.findViewById(R.id.etFirstName)
+        _etLastName = view.findViewById(R.id.etLastName)
+        _etLastName2 = view.findViewById(R.id.etLastName2)
+        _etID = view.findViewById(R.id.etID)
+        _btnContinueToStep4 = view.findViewById(R.id.btnContinueToStep4)
+        _chipCedula = view.findViewById(R.id.chipCedula)
+        _chipDimex = view.findViewById(R.id.chipDimex)
+        _chipGroupTipoId = view.findViewById(R.id.chipGroupTipoId)
 
-        tvFirstNameError = view.findViewById(R.id.tvFirstNameError)
-        tvLastNameError  = view.findViewById(R.id.tvLastNameError)
-        tvLastNameError2 = view.findViewById(R.id.tvLastNameError2)
-        tvIDError        = view.findViewById(R.id.tvIDError)
+        _tvFirstNameError = view.findViewById(R.id.tvFirstNameError)
+        _tvLastNameError = view.findViewById(R.id.tvLastNameError)
+        _tvLastNameError2 = view.findViewById(R.id.tvLastNameError2)
+        _tvIDError = view.findViewById(R.id.tvIDError)
 
         applyTipoIdSelection()
         chipGroupTipoId.setOnCheckedStateChangeListener { _, _ ->
@@ -115,6 +130,24 @@ class Paso3Fragment : Fragment() {
         btnContinueToStep4.setOnClickListener { onContinue() }
 
         return view
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _btnContinueToStep4?.setOnClickListener(null)
+        _chipGroupTipoId?.setOnCheckedStateChangeListener(null)
+        _etFirstName = null
+        _etLastName = null
+        _etLastName2 = null
+        _etID = null
+        _btnContinueToStep4 = null
+        _chipCedula = null
+        _chipDimex = null
+        _chipGroupTipoId = null
+        _tvFirstNameError = null
+        _tvLastNameError = null
+        _tvLastNameError2 = null
+        _tvIDError = null
     }
 
     private fun applyTipoIdSelection() {
