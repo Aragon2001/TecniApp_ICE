@@ -6,7 +6,7 @@
     android:layout_height="wrap_content"
     android:layout_marginBottom="12dp"
     app:cardBackgroundColor="@color/white"
-    app:cardCornerRadius="20dp"
+    app:cardCornerRadius="18dp"
     app:cardElevation="0dp"
     app:strokeColor="@color/outline_variant_light"
     app:strokeWidth="1dp">
@@ -17,47 +17,112 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <TextView
-            android:id="@+id/tvTitulo"
-            style="@style/TextAppearance.Material3.TitleSmall"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textColor="@color/ice_blue_dark"
-            android:textStyle="bold"
-            tools:text="Caso IM-1265909-3-327186" />
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
-        <TextView
-            android:id="@+id/tvSubtitulo"
-            style="@style/TextAppearance.Material3.BodyMedium"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:drawableStart="@drawable/ic_report_clock"
-            android:drawablePadding="10dp"
-            android:textColor="@color/dark_gray"
-            tools:text="27 oct 2025 · 09:53" />
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                app:cardBackgroundColor="@color/blue_10"
+                app:cardElevation="0dp"
+                app:strokeColor="@color/outline_variant_light"
+                app:strokeWidth="1dp">
 
-        <TextView
-            android:id="@+id/tvAgencia"
-            style="@style/TextAppearance.Material3.BodyMedium"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:drawableStart="@drawable/ic_report_location"
-            android:drawablePadding="10dp"
-            android:textColor="@color/ice_blue_dark"
-            tools:text="Agencia: Guácimo" />
+                <ImageView
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:contentDescription="@null"
+                    android:padding="8dp"
+                    android:src="@drawable/ic_summary_material"
+                    android:tint="@color/ice_blue_dark" />
+            </com.google.android.material.card.MaterialCardView>
 
-        <TextView
-            android:id="@+id/tvVehiculo"
-            style="@style/TextAppearance.Material3.BodyMedium"
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/tvTitulo"
+                    style="@style/TextAppearance.Material3.TitleSmall"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textStyle="bold"
+                    tools:text="Caso IM-1265909-3-327186" />
+
+                <TextView
+                    android:id="@+id/tvSubtitulo"
+                    style="@style/TextAppearance.Material3.BodySmall"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:textColor="@color/dark_gray"
+                    tools:text="27 oct 2025 · 09:53" />
+            </LinearLayout>
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipEstado"
+                style="@style/Widget.Material3.Chip.Assist"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/reportes_estado_cerrada" />
+        </LinearLayout>
+
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:drawableStart="@drawable/ic_report_vehicle"
-            android:drawablePadding="10dp"
-            android:textColor="@color/dark_gray"
-            tools:text="Vehículo: 9559" />
+            android:layout_marginTop="12dp"
+            android:orientation="horizontal"
+            android:weightSum="2">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    style="@style/TextAppearance.Material3.LabelMedium"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/reportes_item_tecnico_label" />
+
+                <TextView
+                    android:id="@+id/tvTecnicos"
+                    style="@style/TextAppearance.Material3.BodyMedium"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    tools:text="Pérez, Salas" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    style="@style/TextAppearance.Material3.LabelMedium"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/reportes_item_agencia_label" />
+
+                <TextView
+                    android:id="@+id/tvAgencia"
+                    style="@style/TextAppearance.Material3.BodyMedium"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    tools:text="Guácimo" />
+            </LinearLayout>
+        </LinearLayout>
 
         <TextView
             android:id="@+id/tvMateriales"
@@ -65,14 +130,20 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:background="@drawable/bg_report_material_badge"
+            android:background="@drawable/bg_report_summary_card"
             android:drawableStart="@drawable/ic_summary_material"
             android:drawablePadding="8dp"
-            android:paddingStart="12dp"
-            android:paddingTop="10dp"
-            android:paddingEnd="12dp"
-            android:paddingBottom="10dp"
+            android:padding="12dp"
             android:textColor="@color/ice_blue_dark"
             tools:text="• 2x Cable #6\n• 3x Fusible" />
+
+        <TextView
+            android:id="@+id/tvTotalesCategoria"
+            style="@style/TextAppearance.Material3.BodySmall"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:textColor="@color/dark_gray"
+            tools:text="Totales: Fusibles 3 · Lámparas 1 · Conectores 2" />
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>
