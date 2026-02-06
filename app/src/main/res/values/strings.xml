@@ -108,6 +108,11 @@
     <string name="mi_vehiculo_mantenimiento_frenos_estado">Recomendado pronto</string>
     <string name="mi_vehiculo_mantenimiento_revision">Revisión general</string>
     <string name="mi_vehiculo_mantenimiento_revision_estado">Vencido</string>
+    <string name="vehiculo_registro_fecha">Fecha de registro</string>
+    <string name="vehiculo_registro_km_orimetro">Km / Orímetro</string>
+    <string name="vehiculo_registro_combustible">Combustible</string>
+    <string name="vehiculo_registro_observaciones">Observaciones</string>
+    <string name="etm_registro">Registro ETM</string>
     <string name="vehiculo_notificacion_channel_desc">Recordatorios de mantenimiento y registro diario.</string>
     <string name="registro_pendiente_title">Registro de vehículo pendiente</string>
     <string name="registro_pendiente_message">Para continuar con la atención de averías y reparación de luminarias, es necesario registrar el kilometraje inicial del día del vehículo asignado.</string>
