@@ -3,8 +3,10 @@ package com.Arasoftsolutions.tecniapp_ice.ui.averias
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Canvas
 import com.Arasoftsolutions.tecniapp_ice.R
 import com.bumptech.glide.Glide
+import androidx.appcompat.content.res.AppCompatResources
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 
@@ -46,6 +48,18 @@ object AveriaStaticMapProvider {
             }.getOrNull()
             if (preview != null) return preview
         }
-        return BitmapFactory.decodeResource(context.resources, R.drawable.ic_map_placeholder)
+        val fallbackBitmap = BitmapFactory.decodeResource(context.resources, R.drawable.ic_map_placeholder)
+        if (fallbackBitmap != null) return fallbackBitmap
+
+        val drawable = AppCompatResources.getDrawable(context, R.drawable.ic_map_placeholder)
+        val width = drawable?.intrinsicWidth?.takeIf { it > 0 } ?: DEFAULT_WIDTH
+        val height = drawable?.intrinsicHeight?.takeIf { it > 0 } ?: DEFAULT_HEIGHT
+        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        if (drawable != null) {
+            val canvas = Canvas(bitmap)
+            drawable.setBounds(0, 0, canvas.width, canvas.height)
+            drawable.draw(canvas)
+        }
+        return bitmap
     }
 }
