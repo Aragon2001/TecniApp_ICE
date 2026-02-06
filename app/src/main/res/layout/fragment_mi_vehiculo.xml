@@ -1,26 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
-
 <androidx.core.widget.NestedScrollView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:clipToPadding="false"
     android:padding="16dp"
-      android:clipToPadding="false"
-        android:paddingBottom="24dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
+    android:paddingBottom="32dp"
     tools:context=".ui.vehiculo.MiVehiculoFragment">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:animateLayoutChanges="true">
 
         <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardVehiculoHeader"
             style="@style/Tecni.Card"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -28,15 +25,11 @@
             app:cardBackgroundColor="@color/ice_blue">
 
             <LinearLayout
-
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:background="@drawable/bg_home_header"
                 android:orientation="vertical"
-                android:paddingHorizontal="24dp"
-                android:paddingTop="48dp"
-                android:paddingBottom="32dp"
-                tools:ignore="UseCompoundDrawables">
+                android:padding="24dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -46,8 +39,8 @@
 
                     <ImageView
                         android:id="@+id/ivVehiculoTipo"
-                        android:layout_width="44dp"
-                        android:layout_height="44dp"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
                         android:contentDescription="@string/mi_vehiculo_imagen_content"
                         android:src="@drawable/ic_car"
                         app:tint="@color/white" />
@@ -55,7 +48,7 @@
                     <LinearLayout
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="12dp"
+                        android:layout_marginStart="16dp"
                         android:layout_weight="1"
                         android:orientation="vertical">
 
@@ -64,7 +57,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:textColor="@color/white"
-                            android:textSize="18sp"
+                            android:textSize="20sp"
                             android:textStyle="bold"
                             tools:text="GPL-456" />
 
@@ -80,376 +73,156 @@
                             android:id="@+id/tvVehiculoAgencia"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:textColor="@color/white"
+                            android:textColor="@color/white_translucent"
                             android:textSize="12sp"
                             tools:text="Agencia Central" />
                     </LinearLayout>
 
                     <com.google.android.material.chip.Chip
-                        android:id="@+id/chipEstadoRegistro"
+                        android:id="@+id/chipEstadoHeader"
                         style="@style/Tecni.Chip"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="@string/mi_vehiculo_estado_al_dia"
-                        app:chipBackgroundColor="@color/success_500"
-                        app:chipIconTint="@color/white"
-                        app:chipStrokeWidth="0dp"
-                        android:textColor="@color/white" />
+                        android:textColor="@color/white"
+                        tools:text="Óptimo" />
                 </LinearLayout>
 
                 <TextView
-                    android:id="@+id/tvValorActualLabel"
-                    android:layout_width="wrap_content"
+                    android:id="@+id/tvEstadoMensaje"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="16dp"
                     android:textColor="@color/white"
                     android:textSize="14sp"
-                    tools:text="Kilometraje actual" />
+                    tools:text="Tu vehículo está en óptimas condiciones." />
 
-                <TextView
-                    android:id="@+id/tvValorActual"
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:textColor="@color/white"
-                    android:textSize="28sp"
-                    android:textStyle="bold"
-                    tools:text="75,320 km" />
+                    android:layout_marginTop="16dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/tvValorActualLabel"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/white_translucent"
+                        android:textSize="12sp"
+                        tools:text="Lectura actual" />
+
+                    <TextView
+                        android:id="@+id/tvValorActual"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:textColor="@color/white"
+                        android:textSize="22sp"
+                        android:textStyle="bold"
+                        tools:text="75,320 km" />
+                </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
         <com.google.android.material.card.MaterialCardView
-            android:id="@+id/cardRegistroPendiente"
+            android:id="@+id/cardMotivacion"
             style="@style/Tecni.Card"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
-            android:visibility="gone"
-            tools:visibility="visible">
+            app:cardBackgroundColor="@color/primary_container_light">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
                 android:padding="16dp">
 
                 <ImageView
                     android:layout_width="40dp"
                     android:layout_height="40dp"
-                    android:contentDescription="@string/mi_vehiculo_registro_obligatorio"
-                    android:src="@drawable/ic_warning"
-                    app:tint="@color/ice_yellow" />
+                    android:contentDescription="@string/mi_vehiculo_motivacion"
+                    android:src="@drawable/ic_check"
+                    app:tint="@color/ice_blue" />
 
                 <TextView
-                    style="@style/TextAppearance.Material3.TitleMedium"
-                    android:layout_width="wrap_content"
+                    android:id="@+id/tvMotivacion"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="@string/mi_vehiculo_registro_obligatorio"
-                    android:textStyle="bold" />
-
-                <TextView
-                    style="@style/TextAppearance.Material3.BodyMedium"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:text="@string/mi_vehiculo_registro_obligatorio_detalle" />
-
-                <com.google.android.material.textfield.TextInputLayout
-                    android:id="@+id/tilRegistroInicial"
-                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
-                    android:hint="@string/mi_vehiculo_registro_inicial_hint">
-
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/etRegistroInicial"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:inputType="numberDecimal" />
-                </com.google.android.material.textfield.TextInputLayout>
-
-                <com.google.android.material.textfield.TextInputLayout
-                    android:id="@+id/tilRegistroCircuito"
-                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:hint="@string/mi_vehiculo_registro_circuito_hint"
-                    app:endIconMode="dropdown_menu">
-
-                    <com.google.android.material.textfield.MaterialAutoCompleteTextView
-                        android:id="@+id/etRegistroCircuito"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:inputType="textCapWords" />
-                </com.google.android.material.textfield.TextInputLayout>
-
-                <com.google.android.material.textfield.TextInputLayout
-                    android:id="@+id/tilRegistroActividad"
-                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:hint="@string/mi_vehiculo_registro_actividad_hint"
-                    app:endIconMode="dropdown_menu">
-
-                    <com.google.android.material.textfield.MaterialAutoCompleteTextView
-                        android:id="@+id/etRegistroActividad"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:inputType="textCapSentences" />
-                </com.google.android.material.textfield.TextInputLayout>
-
-                <com.google.android.material.textfield.TextInputLayout
-                    android:id="@+id/tilRegistroCuenta"
-                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:hint="@string/mi_vehiculo_registro_cuenta_hint"
-                    app:endIconMode="dropdown_menu">
-
-                    <com.google.android.material.textfield.MaterialAutoCompleteTextView
-                        android:id="@+id/etRegistroCuenta"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:inputType="text" />
-                </com.google.android.material.textfield.TextInputLayout>
-
-                <com.google.android.material.textfield.TextInputLayout
-                    android:id="@+id/tilRegistroCaso"
-                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:hint="@string/mi_vehiculo_registro_caso_hint">
-
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/etRegistroCaso"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:inputType="text" />
-                </com.google.android.material.textfield.TextInputLayout>
-
-                <com.google.android.material.textfield.TextInputLayout
-                    android:id="@+id/tilRegistroLugar"
-                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:hint="@string/mi_vehiculo_registro_lugar_hint"
-                    app:endIconMode="dropdown_menu">
-
-                    <com.google.android.material.textfield.MaterialAutoCompleteTextView
-                        android:id="@+id/etRegistroLugar"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:inputType="textCapSentences" />
-                </com.google.android.material.textfield.TextInputLayout>
-
-                <com.google.android.material.textfield.TextInputLayout
-                    android:id="@+id/tilRegistroHoras"
-                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:hint="@string/mi_vehiculo_registro_horas_hint">
-
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/etRegistroHoras"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:inputType="number" />
-                </com.google.android.material.textfield.TextInputLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
-                    <ImageView
-                        android:layout_width="18dp"
-                        android:layout_height="18dp"
-                        android:contentDescription="@string/mi_vehiculo_registro_obligatorio"
-                        android:src="@drawable/ic_warning"
-                        app:tint="@color/ice_yellow" />
-
-                    <TextView
-                        style="@style/TextAppearance.Material3.BodySmall"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
-                        android:layout_weight="1"
-                        android:text="@string/mi_vehiculo_registro_obligatorio_alerta" />
-                </LinearLayout>
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnRegistrarInicial"
-                    style="@style/Tecni.Button"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
-                    android:text="@string/mi_vehiculo_registrar_inicial_boton" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnNoVehiculo"
-                    style="@style/Widget.Material3.Button.TextButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/mi_vehiculo_no_dispongo" />
+                    android:layout_marginStart="12dp"
+                    android:layout_weight="1"
+                    android:textColor="@color/on_primary_container_light"
+                    android:textSize="14sp"
+                    tools:text="Cuidar tu vehículo es cuidar tu seguridad." />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/cardRegistroHoy"
-            style="@style/Tecni.Card"
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnRegistrarMantenimiento"
+            style="@style/Widget.Material3.Button"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp">
+            android:layout_marginBottom="20dp"
+            android:icon="@drawable/ic_add"
+            android:text="@string/mi_vehiculo_cta_registrar"
+            app:iconTint="@color/white"
+            app:cornerRadius="14dp" />
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <TextView
-                    style="@style/TextAppearance.Material3.TitleSmall"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/mi_vehiculo_registro_hoy"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/tvEstadoHoy"
-                    style="@style/TextAppearance.Material3.BodyMedium"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    tools:text="Registro de hoy: 75,320 km inicial • 75,620 km final" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnRegistrarFinal"
-                    style="@style/Widget.Material3.Button.TonalButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:text="@string/mi_vehiculo_registrar_final"
-                    android:visibility="gone"
-                    tools:visibility="visible" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/cardMantenimiento"
-            style="@style/Tecni.Card"
+        <TextView
+            android:id="@+id/tvTituloMantenimientos"
+            style="@style/TextAppearance.Material3.TitleMedium"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp">
+            android:text="@string/mi_vehiculo_mantenimientos_titulo" />
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
-                    <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:contentDescription="@string/mi_vehiculo_mantenimiento_titulo"
-                        android:src="@drawable/ic_settings"
-                        app:tint="@color/ice_blue" />
-
-                    <TextView
-                        style="@style/TextAppearance.Material3.TitleSmall"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
-                        android:text="@string/mi_vehiculo_mantenimiento_titulo"
-                        android:textStyle="bold" />
-                </LinearLayout>
-
-                <TextView
-                    style="@style/TextAppearance.Material3.BodySmall"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:text="@string/mi_vehiculo_mantenimiento_ultimo"
-                    android:textColor="?attr/colorOnSurfaceVariant" />
-
-                <TextView
-                    android:id="@+id/tvMantenimientoUltimo"
-                    style="@style/TextAppearance.Material3.BodyMedium"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:text="@string/mi_vehiculo_mantenimiento_placeholder" />
-
-                <TextView
-                    style="@style/TextAppearance.Material3.BodySmall"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:text="@string/mi_vehiculo_mantenimiento_proximo"
-                    android:textColor="?attr/colorOnSurfaceVariant" />
-
-                <TextView
-                    android:id="@+id/tvMantenimientoProximo"
-                    style="@style/TextAppearance.Material3.BodyMedium"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:text="@string/mi_vehiculo_mantenimiento_placeholder" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <com.google.android.material.card.MaterialCardView
-            style="@style/Tecni.Card"
+        <LinearLayout
+            android:id="@+id/containerMantenimientos"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:orientation="vertical" />
 
-            <LinearLayout
+        <TextView
+            android:id="@+id/tvTituloUsoMensual"
+            style="@style/TextAppearance.Material3.TitleMedium"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:text="@string/mi_vehiculo_uso_mensual" />
+
+        <LinearLayout
+            android:id="@+id/containerUsoMensual"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:orientation="vertical" />
+
+        <LinearLayout
+            android:id="@+id/layoutSinVehiculo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:visibility="gone"
+            tools:visibility="visible">
+
+            <ImageView
+                android:layout_width="56dp"
+                android:layout_height="56dp"
+                android:contentDescription="@string/mi_vehiculo_sin_asignar"
+                android:src="@drawable/ic_warning"
+                app:tint="@color/ice_yellow" />
+
+            <TextView
+                android:id="@+id/tvSinVehiculo"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <TextView
-                    style="@style/TextAppearance.Material3.TitleSmall"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/mi_vehiculo_historial"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/tvSinVehiculo"
-                    style="@style/TextAppearance.Material3.BodyMedium"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="@string/mi_vehiculo_sin_asignar"
-                    android:visibility="gone"
-                    tools:visibility="visible" />
-
-                <androidx.recyclerview.widget.RecyclerView
-                    android:id="@+id/rvRegistros"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:nestedScrollingEnabled="false"
-                    tools:itemCount="5"
-                    tools:listitem="@layout/item_etm_registro" />
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
+                android:layout_marginTop="12dp"
+                android:gravity="center"
+                android:text="@string/mi_vehiculo_sin_asignar"
+                android:textAppearance="@style/TextAppearance.Material3.BodyMedium" />
+        </LinearLayout>
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>
