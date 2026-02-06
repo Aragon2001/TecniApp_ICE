@@ -19,11 +19,17 @@ import com.Arasoftsolutions.tecniapp_ice.R
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.UserEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.apellidosCompletos
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasFragment
+import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasRepository
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasSyncWorker
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.Estado
 import com.Arasoftsolutions.tecniapp_ice.ui.modal.SyncDialogFragment
 import com.Arasoftsolutions.tecniapp_ice.ui.vehiculo.TipoVehiculo
 import com.Arasoftsolutions.tecniapp_ice.ui.vehiculo.showRegistroVehiculoPendienteDialog
+import com.Arasoftsolutions.tecniapp_ice.Database.room.AppDatabase
+import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
+import com.Arasoftsolutions.tecniapp_ice.Database.sync.Synchronizer
+import com.Arasoftsolutions.tecniapp_ice.notifications.SyncStatusNotifications
+import com.Arasoftsolutions.tecniapp_ice.preferences.DataStoreManager
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.progressindicator.LinearProgressIndicator
 import androidx.work.WorkInfo
@@ -44,6 +50,13 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
     private val locale = Locale("es", "CR")
     private val dateFormatter = DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM", locale)
     private val timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss", locale)
+    private val dataStore by lazy { DataStoreManager.getInstance(requireContext().applicationContext) }
+    private val roomRepository by lazy { RoomRepository.getInstance(requireContext().applicationContext) }
+    private val averiasRepository by lazy {
+        AveriasRepository(AppDatabase.getInstance(requireContext().applicationContext))
+    }
+    private val synchronizer by lazy { Synchronizer(roomRepository, averiasRepository) }
+    private var manualSyncInProgress = false
 
     private var syncButton: MaterialButton? = null
     private var syncStatusText: TextView? = null
@@ -209,6 +222,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
 
     // HomeFragment
     private fun sincronizarConModal() {
+        if (manualSyncInProgress) return
         val usuarioActual = vm.usuario.value
         if (usuarioActual?.subregion.isNullOrBlank()) {
             syncStatusText?.text = getString(
@@ -218,6 +232,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             return
         }
 
+        manualSyncInProgress = true
         val dialog = SyncDialogFragment.newInstance(
             header = getString(R.string.home_sync_dialog_title),
             status = getString(R.string.home_sync_status_running)
@@ -238,7 +253,61 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             text = getString(R.string.home_sync_status_running)
         }
 
-        vm.triggerManualSync()
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val subregion = usuarioActual.subregion?.trim()
+                    ?.takeIf { it.isNotEmpty() }
+                    ?: throw IllegalStateException(getString(R.string.home_sync_unknown_error))
+                synchronizer.syncSubregion(
+                    subregion,
+                    onSyncStart = { message ->
+                        if (isAdded) dialog.setHeader(message)
+                    },
+                    onSyncProgress = { done, total, msg, downloadedBytes ->
+                        if (isAdded) {
+                            dialog.update(done, total, msg ?: "", downloadedBytes)
+                            updateSyncProgress(done, total, msg)
+                        }
+                    },
+                    onSyncSuccess = {
+                        if (!isAdded) return@syncSubregion
+                        syncStatusText?.text = getString(R.string.home_sync_status_success)
+                        viewLifecycleOwner.lifecycleScope.launch {
+                            dataStore.markManualSyncNow()
+                        }
+                        lastSyncValue?.text = formatRelativeSync(System.currentTimeMillis())
+                        SyncStatusNotifications.notifySynced(requireContext())
+                        dialog.dismissAllowingStateLoss()
+                    },
+                    onSyncError = { error ->
+                        if (!isAdded) return@syncSubregion
+                        syncStatusText?.text = getString(
+                            R.string.home_sync_status_error,
+                            error.message ?: getString(R.string.home_sync_unknown_error)
+                        )
+                        dialog.dismissWithError(error) {
+                            if (isAdded) sincronizarConModal()
+                        }
+                    }
+                )
+            } catch (error: Throwable) {
+                if (isAdded) {
+                    syncStatusText?.text = getString(
+                        R.string.home_sync_status_error,
+                        error.message ?: getString(R.string.home_sync_unknown_error)
+                    )
+                    dialog.dismissWithError(error) {
+                        if (isAdded) sincronizarConModal()
+                    }
+                }
+            } finally {
+                manualSyncInProgress = false
+                syncButton?.isEnabled = vm.usuario.value?.subregion?.isNullOrBlank() == false
+                syncProgressIndicator?.visibility = View.GONE
+                syncProgressLabel?.visibility = View.GONE
+                syncDialog = null
+            }
+        }
     }
 
     private fun ejecutarOperacionSiRegistroCompleto(onContinue: () -> Unit) {
@@ -360,6 +429,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         val manager = WorkManager.getInstance(requireContext())
         manager.getWorkInfosForUniqueWorkLiveData(AveriasSyncWorker.UNIQUE_MANUAL_WORK)
             .observe(viewLifecycleOwner) { infos ->
+                if (manualSyncInProgress) return@observe
                 val info = infos.firstOrNull()
                 when {
                     info == null -> {
