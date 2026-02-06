@@ -3,6 +3,7 @@ package com.Arasoftsolutions.tecniapp_ice.ui.vehiculo
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.Arasoftsolutions.tecniapp_ice.R
+import com.Arasoftsolutions.tecniapp_ice.Database.entities.RegistroDiarioEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
 import com.Arasoftsolutions.tecniapp_ice.Database.utils.VehiculoPlacaUtils
 import com.google.android.material.button.MaterialButton
@@ -12,6 +13,7 @@ import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import com.Arasoftsolutions.tecniapp_ice.ui.vehiculo.worker.VehiculoSyncWorker
 
 fun Fragment.showRegistroVehiculoPendienteDialog(
     onRegistroGuardado: () -> Unit,
@@ -79,6 +81,17 @@ fun Fragment.showRegistroVehiculoPendienteDialog(
                     orimetroActual = orimetroActual,
                     registrosJson = registroJson
                 )
+                repo.insertarRegistroDiario(
+                    RegistroDiarioEntity(
+                        vehiculoId = vehiculo.id,
+                        fecha = fecha,
+                        valor = valor,
+                        unidad = tipo.unidadTexto,
+                        registradoEn = System.currentTimeMillis(),
+                        registradoPor = usuario?.nombre
+                    )
+                )
+                VehiculoSyncWorker.triggerNow(requireContext())
             }
             dialog.dismiss()
             onRegistroGuardado()
