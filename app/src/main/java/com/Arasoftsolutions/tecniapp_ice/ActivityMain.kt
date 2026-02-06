@@ -24,6 +24,7 @@ import androidx.core.view.isVisible
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.findNavController
+import androidx.navigation.NavOptions
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.navigateUp
 import androidx.navigation.ui.setupActionBarWithNavController
@@ -170,6 +171,16 @@ class ActivityMain : AppCompatActivity() {
 
         setupActionBarWithNavController(navController, appBarConfiguration)
         navView.setupWithNavController(navController)
+        navView.setNavigationItemSelectedListener { item ->
+            val currentId = navController.currentDestination?.id
+            if (currentId == item.itemId) {
+                binding.drawerLayout.closeDrawer(GravityCompat.START)
+                return@setNavigationItemSelectedListener true
+            }
+            navController.navigate(item.itemId, null, buildDrawerNavOptions(navController.graph.startDestinationId))
+            binding.drawerLayout.closeDrawer(GravityCompat.START)
+            true
+        }
 
         lifecycleScope.launch {
             dataStore.adminPrivilegesEnabled.collect { enabled ->
@@ -296,9 +307,24 @@ class ActivityMain : AppCompatActivity() {
 
     private fun openUserFragment() {
         val navController = findNavController(R.id.nav_host_fragment_content_main)
-        navController.navigate(R.id.nav_account)
+        if (navController.currentDestination?.id == R.id.nav_account) {
+            binding.drawerLayout.closeDrawer(GravityCompat.START)
+            return
+        }
+        navController.navigate(
+            R.id.nav_account,
+            null,
+            buildDrawerNavOptions(navController.graph.startDestinationId)
+        )
         binding.drawerLayout.closeDrawer(GravityCompat.START)
     }
+
+    private fun buildDrawerNavOptions(startDestinationId: Int): NavOptions =
+        NavOptions.Builder()
+            .setLaunchSingleTop(true)
+            .setRestoreState(true)
+            .setPopUpTo(startDestinationId, inclusive = false, saveState = true)
+            .build()
 
     private fun requestAllPermissionsOnLaunch() {
         val runtimePermissions = mutableListOf<String>()
