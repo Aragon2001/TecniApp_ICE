@@ -744,8 +744,13 @@ Cliente: %4$s</string>
     <string name="localizacion_info_detalle">La localización corresponde al punto de inicio de cada calle.</string>
     <string name="localizacion_action_navegar">Navegar</string>
     <string name="localizacion_action_compartir">Compartir</string>
+    <string name="localizacion_action_center">Centrar</string>
+    <string name="localizacion_action_copy">Copiar coordenadas</string>
+    <string name="localizacion_coords_copied">Coordenadas copiadas.</string>
+    <string name="localizacion_overlay_title">Ubicación seleccionada</string>
     <string name="localizacion_street_view_action">Ver Street View</string>
     <string name="localizacion_street_view_title">Street View</string>
+    <string name="localizacion_street_view_expand">Expandir Street View</string>
     <string name="localizacion_street_view_minimize">Minimizar Street View</string>
     <string name="localizacion_street_view_close">Cerrar Street View</string>
     <string name="localizacion_street_view_loading">Cargando Street View…</string>
