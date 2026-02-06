@@ -120,6 +120,7 @@
     <string name="registro_pendiente_registrar">Registrar kilometraje</string>
     <string name="registro_pendiente_sin_vehiculo">No dispongo de vehículo</string>
     <string name="menu_reportes">Reportes</string>
+    <string name="menu_planillas">Planillas</string>
     <string name="menu_programacion">Programación</string>
     <string name="menu_settings">Ajustes</string>
     <string name="menu_help">Acerca de TecniApp</string>
