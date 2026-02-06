@@ -49,6 +49,8 @@ class TecniAppMessagingService : FirebaseMessagingService() {
         val caseId = data["caseId"]
         if (caseId.isNullOrBlank()) {
             Log.w(TAG, "Mensaje FCM ignorado: caseId faltante")
+            scope.launch { refreshFromFirebaseAndNotify() }
+            scheduleFirebaseRefreshDebounced()
             return
         }
 
@@ -76,6 +78,24 @@ class TecniAppMessagingService : FirebaseMessagingService() {
         }
 
         AveriaNotificationDispatcher.notifyNewCases(this, listOf(averia))
+    }
+
+    private suspend fun refreshFromFirebaseAndNotify() {
+        runCatching { repo.pullFromFirebaseOnce() }
+            .onSuccess { result ->
+                if (!result.hadLocalData || result.newCases.isEmpty()) return
+                if (!AveriaNotificationPreferences.areNotificationsEnabled(this)) return
+                val agencyFilters = AveriaNotificationPreferences.normalizedAgencies(this)
+                val filtered = result.newCases.filter { averia ->
+                    shouldNotifyForAgency(averia, agencyFilters)
+                }
+                if (filtered.isNotEmpty()) {
+                    AveriaNotificationDispatcher.notifyNewCases(this, filtered)
+                }
+            }
+            .onFailure { error ->
+                Log.w(TAG, "No se pudo refrescar Firebase tras push incompleto", error)
+            }
     }
 
     private fun scheduleFirebaseRefreshDebounced() {
