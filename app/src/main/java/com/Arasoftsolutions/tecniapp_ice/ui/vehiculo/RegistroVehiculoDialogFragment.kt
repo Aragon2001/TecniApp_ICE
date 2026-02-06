@@ -7,7 +7,7 @@ import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.fragment.app.DialogFragment
-import androidx.fragment.app.viewModels
+import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
 import com.Arasoftsolutions.tecniapp_ice.databinding.DialogRegistroVehiculoBinding
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -20,7 +20,7 @@ class RegistroVehiculoDialogFragment : DialogFragment() {
     private var _binding: DialogRegistroVehiculoBinding? = null
     private val binding get() = _binding!!
 
-    private val viewModel: MiVehiculoViewModel by viewModels({ requireParentFragment() })
+    private val viewModel: MiVehiculoViewModel by activityViewModels()
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         _binding = DialogRegistroVehiculoBinding.inflate(LayoutInflater.from(requireContext()))
