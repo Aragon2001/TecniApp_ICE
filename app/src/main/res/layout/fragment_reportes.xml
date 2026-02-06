@@ -84,7 +84,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="16dp"
-                        app:cardBackgroundColor="@color/blue_10"
+                        app:cardBackgroundColor="@color/bg_light"
                         app:strokeColor="@color/outline_variant_light"
                         app:strokeWidth="1dp">
 
@@ -384,7 +384,7 @@
                                 android:layout_height="20dp"
                                 android:contentDescription="@null"
                                 android:src="@drawable/ic_summary_case"
-                                android:tint="@color/ice_blue" />
+                                app:tint="@color/ice_blue" />
 
                             <TextView
                                 android:id="@+id/tvResumenTotalAverias"
@@ -419,7 +419,7 @@
                                 android:layout_height="20dp"
                                 android:contentDescription="@null"
                                 android:src="@drawable/ic_summary_material"
-                                android:tint="@color/success_500" />
+                                app:tint="@color/success_500" />
 
                             <TextView
                                 android:id="@+id/tvResumenTotalMateriales"
@@ -453,7 +453,7 @@
                                 android:layout_height="20dp"
                                 android:contentDescription="@null"
                                 android:src="@drawable/ic_summary_codes"
-                                android:tint="@color/ice_blue" />
+                                app:tint="@color/ice_blue" />
 
                             <TextView
                                 android:id="@+id/tvResumenTotalCodigos"

@@ -1,0 +1,794 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 1,
+    "identityHash": "6ada9a8a006f755f23d8609e629592f8",
+    "entities": [
+      {
+        "tableName": "ordenes_sap",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`ordenSap` INTEGER NOT NULL, `descripcion` TEXT NOT NULL, `regionKey` TEXT NOT NULL, `subregionKey` TEXT NOT NULL, `circuitoId` TEXT, `agenciaId` TEXT, `modulo` TEXT, `updatedAt` INTEGER NOT NULL, PRIMARY KEY(`ordenSap`))",
+        "fields": [
+          {
+            "fieldPath": "ordenSap",
+            "columnName": "ordenSap",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "descripcion",
+            "columnName": "descripcion",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "regionKey",
+            "columnName": "regionKey",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "subregionKey",
+            "columnName": "subregionKey",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "circuitoId",
+            "columnName": "circuitoId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "agenciaId",
+            "columnName": "agenciaId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "modulo",
+            "columnName": "modulo",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "ordenSap"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_ordenes_sap_descripcion",
+            "unique": false,
+            "columnNames": [
+              "descripcion"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_ordenes_sap_descripcion` ON `${TABLE_NAME}` (`descripcion`)"
+          },
+          {
+            "name": "index_ordenes_sap_regionKey_subregionKey",
+            "unique": false,
+            "columnNames": [
+              "regionKey",
+              "subregionKey"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_ordenes_sap_regionKey_subregionKey` ON `${TABLE_NAME}` (`regionKey`, `subregionKey`)"
+          },
+          {
+            "name": "index_ordenes_sap_agenciaId",
+            "unique": false,
+            "columnNames": [
+              "agenciaId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_ordenes_sap_agenciaId` ON `${TABLE_NAME}` (`agenciaId`)"
+          },
+          {
+            "name": "index_ordenes_sap_circuitoId",
+            "unique": false,
+            "columnNames": [
+              "circuitoId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_ordenes_sap_circuitoId` ON `${TABLE_NAME}` (`circuitoId`)"
+          },
+          {
+            "name": "index_ordenes_sap_modulo",
+            "unique": false,
+            "columnNames": [
+              "modulo"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_ordenes_sap_modulo` ON `${TABLE_NAME}` (`modulo`)"
+          },
+          {
+            "name": "index_ordenes_sap_updatedAt",
+            "unique": false,
+            "columnNames": [
+              "updatedAt"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_ordenes_sap_updatedAt` ON `${TABLE_NAME}` (`updatedAt`)"
+          }
+        ]
+      },
+      {
+        "tableName": "catalog_sync_meta",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`catalogId` TEXT NOT NULL, `remoteVersion` INTEGER NOT NULL, `lastSyncAt` INTEGER NOT NULL, PRIMARY KEY(`catalogId`))",
+        "fields": [
+          {
+            "fieldPath": "catalogId",
+            "columnName": "catalogId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "remoteVersion",
+            "columnName": "remoteVersion",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastSyncAt",
+            "columnName": "lastSyncAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "catalogId"
+          ]
+        }
+      },
+      {
+        "tableName": "pm_activity_groups",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`groupId` TEXT NOT NULL, `ordenSap` INTEGER NOT NULL, `ordenSapManual` TEXT, `descripcionOrden` TEXT, `regionKey` TEXT NOT NULL, `subregionKey` TEXT NOT NULL, `circuitoId` TEXT, `agenciaId` TEXT, `modulo` TEXT, `uidTecnico` TEXT NOT NULL, `fechaDia` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, `syncStatus` TEXT NOT NULL, `retryCount` INTEGER NOT NULL, `lastError` TEXT, PRIMARY KEY(`groupId`))",
+        "fields": [
+          {
+            "fieldPath": "groupId",
+            "columnName": "groupId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ordenSap",
+            "columnName": "ordenSap",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ordenSapManual",
+            "columnName": "ordenSapManual",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "descripcionOrden",
+            "columnName": "descripcionOrden",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "regionKey",
+            "columnName": "regionKey",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "subregionKey",
+            "columnName": "subregionKey",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "circuitoId",
+            "columnName": "circuitoId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "agenciaId",
+            "columnName": "agenciaId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "modulo",
+            "columnName": "modulo",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "uidTecnico",
+            "columnName": "uidTecnico",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fechaDia",
+            "columnName": "fechaDia",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "syncStatus",
+            "columnName": "syncStatus",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "retryCount",
+            "columnName": "retryCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastError",
+            "columnName": "lastError",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "groupId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_pm_activity_groups_ordenSap",
+            "unique": false,
+            "columnNames": [
+              "ordenSap"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_pm_activity_groups_ordenSap` ON `${TABLE_NAME}` (`ordenSap`)"
+          },
+          {
+            "name": "index_pm_activity_groups_regionKey_subregionKey",
+            "unique": false,
+            "columnNames": [
+              "regionKey",
+              "subregionKey"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_pm_activity_groups_regionKey_subregionKey` ON `${TABLE_NAME}` (`regionKey`, `subregionKey`)"
+          },
+          {
+            "name": "index_pm_activity_groups_fechaDia",
+            "unique": false,
+            "columnNames": [
+              "fechaDia"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_pm_activity_groups_fechaDia` ON `${TABLE_NAME}` (`fechaDia`)"
+          },
+          {
+            "name": "index_pm_activity_groups_syncStatus",
+            "unique": false,
+            "columnNames": [
+              "syncStatus"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_pm_activity_groups_syncStatus` ON `${TABLE_NAME}` (`syncStatus`)"
+          },
+          {
+            "name": "index_pm_activity_groups_updatedAt",
+            "unique": false,
+            "columnNames": [
+              "updatedAt"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_pm_activity_groups_updatedAt` ON `${TABLE_NAME}` (`updatedAt`)"
+          }
+        ]
+      },
+      {
+        "tableName": "pm_work_logs",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`logId` TEXT NOT NULL, `groupId` TEXT NOT NULL, `ordenSap` INTEGER NOT NULL, `ordenSapManual` TEXT, `regionKey` TEXT NOT NULL, `subregionKey` TEXT NOT NULL, `circuitoId` TEXT, `agenciaId` TEXT, `modulo` TEXT, `uidTecnico` TEXT NOT NULL, `fechaDia` TEXT NOT NULL, `horaEntraMin` INTEGER NOT NULL, `horaSaleMin` INTEGER NOT NULL, `pausaMin` INTEGER NOT NULL, `horasOrdMin` INTEGER NOT NULL, `observaciones` TEXT, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, `syncStatus` TEXT NOT NULL, `retryCount` INTEGER NOT NULL, `lastError` TEXT, PRIMARY KEY(`logId`))",
+        "fields": [
+          {
+            "fieldPath": "logId",
+            "columnName": "logId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "groupId",
+            "columnName": "groupId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ordenSap",
+            "columnName": "ordenSap",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ordenSapManual",
+            "columnName": "ordenSapManual",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "regionKey",
+            "columnName": "regionKey",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "subregionKey",
+            "columnName": "subregionKey",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "circuitoId",
+            "columnName": "circuitoId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "agenciaId",
+            "columnName": "agenciaId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "modulo",
+            "columnName": "modulo",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "uidTecnico",
+            "columnName": "uidTecnico",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fechaDia",
+            "columnName": "fechaDia",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "horaEntraMin",
+            "columnName": "horaEntraMin",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "horaSaleMin",
+            "columnName": "horaSaleMin",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pausaMin",
+            "columnName": "pausaMin",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "horasOrdMin",
+            "columnName": "horasOrdMin",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "observaciones",
+            "columnName": "observaciones",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "syncStatus",
+            "columnName": "syncStatus",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "retryCount",
+            "columnName": "retryCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastError",
+            "columnName": "lastError",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "logId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_pm_work_logs_groupId_uidTecnico_fechaDia",
+            "unique": true,
+            "columnNames": [
+              "groupId",
+              "uidTecnico",
+              "fechaDia"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_pm_work_logs_groupId_uidTecnico_fechaDia` ON `${TABLE_NAME}` (`groupId`, `uidTecnico`, `fechaDia`)"
+          },
+          {
+            "name": "index_pm_work_logs_ordenSap",
+            "unique": false,
+            "columnNames": [
+              "ordenSap"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_pm_work_logs_ordenSap` ON `${TABLE_NAME}` (`ordenSap`)"
+          },
+          {
+            "name": "index_pm_work_logs_regionKey_subregionKey",
+            "unique": false,
+            "columnNames": [
+              "regionKey",
+              "subregionKey"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_pm_work_logs_regionKey_subregionKey` ON `${TABLE_NAME}` (`regionKey`, `subregionKey`)"
+          },
+          {
+            "name": "index_pm_work_logs_syncStatus",
+            "unique": false,
+            "columnNames": [
+              "syncStatus"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_pm_work_logs_syncStatus` ON `${TABLE_NAME}` (`syncStatus`)"
+          },
+          {
+            "name": "index_pm_work_logs_updatedAt",
+            "unique": false,
+            "columnNames": [
+              "updatedAt"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_pm_work_logs_updatedAt` ON `${TABLE_NAME}` (`updatedAt`)"
+          }
+        ]
+      },
+      {
+        "tableName": "pm_planillas",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`planillaId` TEXT NOT NULL, `fechaDia` TEXT NOT NULL, `uidTecnico` TEXT NOT NULL, `regionKey` TEXT NOT NULL, `subregionKey` TEXT NOT NULL, `mode` TEXT NOT NULL, `totalHorasMin` INTEGER NOT NULL, `logIdsCsv` TEXT NOT NULL, `pdfLocalPath` TEXT NOT NULL, `pdfRemoteUrl` TEXT, `createdAt` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, `syncStatus` TEXT NOT NULL, `retryCount` INTEGER NOT NULL, `lastError` TEXT, PRIMARY KEY(`planillaId`))",
+        "fields": [
+          {
+            "fieldPath": "planillaId",
+            "columnName": "planillaId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fechaDia",
+            "columnName": "fechaDia",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "uidTecnico",
+            "columnName": "uidTecnico",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "regionKey",
+            "columnName": "regionKey",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "subregionKey",
+            "columnName": "subregionKey",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "mode",
+            "columnName": "mode",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "totalHorasMin",
+            "columnName": "totalHorasMin",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "logIdsCsv",
+            "columnName": "logIdsCsv",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pdfLocalPath",
+            "columnName": "pdfLocalPath",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pdfRemoteUrl",
+            "columnName": "pdfRemoteUrl",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "syncStatus",
+            "columnName": "syncStatus",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "retryCount",
+            "columnName": "retryCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastError",
+            "columnName": "lastError",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "planillaId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_pm_planillas_fechaDia",
+            "unique": false,
+            "columnNames": [
+              "fechaDia"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_pm_planillas_fechaDia` ON `${TABLE_NAME}` (`fechaDia`)"
+          },
+          {
+            "name": "index_pm_planillas_uidTecnico",
+            "unique": false,
+            "columnNames": [
+              "uidTecnico"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_pm_planillas_uidTecnico` ON `${TABLE_NAME}` (`uidTecnico`)"
+          },
+          {
+            "name": "index_pm_planillas_regionKey_subregionKey",
+            "unique": false,
+            "columnNames": [
+              "regionKey",
+              "subregionKey"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_pm_planillas_regionKey_subregionKey` ON `${TABLE_NAME}` (`regionKey`, `subregionKey`)"
+          },
+          {
+            "name": "index_pm_planillas_mode",
+            "unique": false,
+            "columnNames": [
+              "mode"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_pm_planillas_mode` ON `${TABLE_NAME}` (`mode`)"
+          },
+          {
+            "name": "index_pm_planillas_syncStatus",
+            "unique": false,
+            "columnNames": [
+              "syncStatus"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_pm_planillas_syncStatus` ON `${TABLE_NAME}` (`syncStatus`)"
+          }
+        ]
+      },
+      {
+        "tableName": "pm_sync_queue",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`queueId` TEXT NOT NULL, `type` TEXT NOT NULL, `entityId` TEXT NOT NULL, `status` TEXT NOT NULL, `retryCount` INTEGER NOT NULL, `lastError` TEXT, `createdAt` INTEGER NOT NULL, `availableAt` INTEGER NOT NULL, PRIMARY KEY(`queueId`))",
+        "fields": [
+          {
+            "fieldPath": "queueId",
+            "columnName": "queueId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "type",
+            "columnName": "type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "entityId",
+            "columnName": "entityId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "retryCount",
+            "columnName": "retryCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastError",
+            "columnName": "lastError",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "availableAt",
+            "columnName": "availableAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "queueId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_pm_sync_queue_type_entityId",
+            "unique": true,
+            "columnNames": [
+              "type",
+              "entityId"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_pm_sync_queue_type_entityId` ON `${TABLE_NAME}` (`type`, `entityId`)"
+          },
+          {
+            "name": "index_pm_sync_queue_status",
+            "unique": false,
+            "columnNames": [
+              "status"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_pm_sync_queue_status` ON `${TABLE_NAME}` (`status`)"
+          },
+          {
+            "name": "index_pm_sync_queue_availableAt",
+            "unique": false,
+            "columnNames": [
+              "availableAt"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_pm_sync_queue_availableAt` ON `${TABLE_NAME}` (`availableAt`)"
+          }
+        ]
+      },
+      {
+        "tableName": "pm_sync_errors",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`errorId` TEXT NOT NULL, `type` TEXT NOT NULL, `entityId` TEXT NOT NULL, `message` TEXT NOT NULL, `stacktrace` TEXT, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`errorId`))",
+        "fields": [
+          {
+            "fieldPath": "errorId",
+            "columnName": "errorId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "type",
+            "columnName": "type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "entityId",
+            "columnName": "entityId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "message",
+            "columnName": "message",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "stacktrace",
+            "columnName": "stacktrace",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "errorId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_pm_sync_errors_entityId_type",
+            "unique": false,
+            "columnNames": [
+              "entityId",
+              "type"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_pm_sync_errors_entityId_type` ON `${TABLE_NAME}` (`entityId`, `type`)"
+          },
+          {
+            "name": "index_pm_sync_errors_createdAt",
+            "unique": false,
+            "columnNames": [
+              "createdAt"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_pm_sync_errors_createdAt` ON `${TABLE_NAME}` (`createdAt`)"
+          }
+        ]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '6ada9a8a006f755f23d8609e629592f8')"
+    ]
+  }
+}
