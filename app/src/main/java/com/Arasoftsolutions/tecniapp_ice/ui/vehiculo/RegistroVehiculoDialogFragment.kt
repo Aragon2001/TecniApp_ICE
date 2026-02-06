@@ -41,7 +41,7 @@ class RegistroVehiculoDialogFragment : DialogFragment() {
     }
 
     private fun setupUi() {
-        binding.chipGeneral.isChecked = true
+        binding.chipOtros.isChecked = true
         binding.btnCancelar.setOnClickListener { dismiss() }
         binding.btnGuardar.setOnClickListener { guardarRegistro() }
 
@@ -75,8 +75,8 @@ class RegistroVehiculoDialogFragment : DialogFragment() {
             binding.chipAceite.id -> binding.chipAceite.text.toString()
             binding.chipFrenos.id -> binding.chipFrenos.text.toString()
             binding.chipRevision.id -> binding.chipRevision.text.toString()
-            binding.chipGeneral.id -> binding.chipGeneral.text.toString()
-            else -> binding.chipGeneral.text.toString()
+            binding.chipOtros.id -> binding.chipOtros.text.toString()
+            else -> binding.chipOtros.text.toString()
         }
         val observaciones = binding.etObservaciones.text?.toString()?.trim()?.ifBlank { null }
 
