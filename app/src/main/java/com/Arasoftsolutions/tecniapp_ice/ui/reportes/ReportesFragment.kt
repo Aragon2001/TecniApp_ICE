@@ -1,14 +1,12 @@
 package com.Arasoftsolutions.tecniapp_ice.ui.reportes
 
+import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
-import android.content.Intent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.AdapterView
-import android.widget.ArrayAdapter
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.util.Pair
@@ -23,12 +21,17 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.Arasoftsolutions.tecniapp_ice.R
 import com.Arasoftsolutions.tecniapp_ice.databinding.FragmentReportesBinding
+import com.Arasoftsolutions.tecniapp_ice.databinding.SheetReportHistoryBinding
 import com.Arasoftsolutions.tecniapp_ice.ui.reportes.ExcelReportExporter.ExportPayload
 import com.Arasoftsolutions.tecniapp_ice.ui.reportes.ExcelReportExporter.MIME_TYPE_XLSX
+import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.datepicker.MaterialDatePicker
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
+import java.io.File
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -48,14 +51,15 @@ class ReportesFragment : Fragment() {
     private lateinit var inventarioGeneralAdapter: InventarioReporteAdapter
     private lateinit var inventarioCriticoAdapter: InventarioReporteAdapter
     private lateinit var bitacoraAdapter: BitacoraEventosAdapter
-    private lateinit var tiposAdapter: ArrayAdapter<String>
-    private var isUpdatingTipoReporte = false
+    private lateinit var historyAdapter: ReportHistoryAdapter
     private val locale = Locale.getDefault()
     private val fileNameFormatter = DateTimeFormatter.ofPattern("yyyyMMdd")
+    private val historyFormatter = DateTimeFormatter.ofPattern("dd MMM yyyy · HH:mm", locale)
     private val zoneId: ZoneId = ZoneId.systemDefault()
 
     private var pendingExport: ExportPayload? = null
     private var pendingExportFileName: String? = null
+    private var speedDialExpanded = false
 
     private val exportLauncher =
         registerForActivityResult(ActivityResultContracts.CreateDocument(MIME_TYPE_XLSX)) { uri ->
@@ -80,8 +84,9 @@ class ReportesFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         setupAdapters()
-        setupReportTypeSelector()
+        setupTabs()
         setupListeners()
+        setupSpeedDial()
         observeState()
     }
 
@@ -133,49 +138,112 @@ class ReportesFragment : Fragment() {
             setHasFixedSize(false)
             isNestedScrollingEnabled = false
         }
+
+        historyAdapter = ReportHistoryAdapter(
+            onOpen = { item -> openReportUri(Uri.parse(item.uri)) },
+            onShare = { item -> shareReport(Uri.parse(item.uri)) },
+            onDelete = { item -> confirmarEliminarHistorial(item) }
+        )
     }
 
-    private fun setupReportTypeSelector() {
-        val labels = ReportType.values().map { getString(it.titleRes) }
-        tiposAdapter = ArrayAdapter(requireContext(), R.layout.item_dropdown_report_type, labels)
-        tiposAdapter.setDropDownViewResource(R.layout.item_dropdown_report_type)
-        binding.spinnerTipoReporte.adapter = tiposAdapter
-        binding.spinnerTipoReporte.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                if (isUpdatingTipoReporte) return
-                val tipo = ReportType.values().getOrNull(position) ?: return
-                viewModel.seleccionarTipo(tipo)
+    private fun setupTabs() {
+        binding.tabGroupReportes.addOnButtonCheckedListener { _, checkedId, isChecked ->
+            if (!isChecked) return@addOnButtonCheckedListener
+            val tab = when (checkedId) {
+                R.id.tabResumen -> ReportTab.RESUMEN
+                R.id.tabOperacion -> ReportTab.OPERACION
+                R.id.tabMateriales -> ReportTab.MATERIALES
+                R.id.tabInventario -> ReportTab.INVENTARIO
+                R.id.tabBitacora -> ReportTab.BITACORA
+                else -> ReportTab.RESUMEN
             }
-
-            override fun onNothingSelected(parent: AdapterView<*>?) = Unit
+            viewModel.seleccionarTab(tab)
         }
-        binding.selectorContainer.setOnClickListener { binding.spinnerTipoReporte.performClick() }
-        syncReportTypeSelection(viewModel.uiState.value.reporteSeleccionado)
+        syncTabSelection(viewModel.uiState.value.selectedTab)
     }
 
-    private fun syncReportTypeSelection(tipo: ReportType) {
-        if (!::tiposAdapter.isInitialized) return
-        val index = ReportType.values().indexOf(tipo)
-        if (index >= 0 && binding.spinnerTipoReporte.selectedItemPosition != index) {
-            isUpdatingTipoReporte = true
-            binding.spinnerTipoReporte.setSelection(index, false)
-            isUpdatingTipoReporte = false
+    private fun syncTabSelection(tab: ReportTab) {
+        val targetId = when (tab) {
+            ReportTab.RESUMEN -> R.id.tabResumen
+            ReportTab.OPERACION -> R.id.tabOperacion
+            ReportTab.MATERIALES -> R.id.tabMateriales
+            ReportTab.INVENTARIO -> R.id.tabInventario
+            ReportTab.BITACORA -> R.id.tabBitacora
+        }
+        if (binding.tabGroupReportes.checkedButtonId != targetId) {
+            binding.tabGroupReportes.check(targetId)
         }
     }
 
     private fun setupListeners() {
         binding.btnCambiarFechas.setOnClickListener { mostrarSelectorRango() }
         binding.btnGenerarReporte.setOnClickListener { viewModel.generarReporteSeleccionado() }
-        binding.btnExportarExcel.setOnClickListener { prepararExportacion() }
         binding.btnLimpiarFechas.setOnClickListener { viewModel.restablecerRango() }
-        binding.fabEnviarCorreo.setOnClickListener { viewModel.enviarReportePorCorreo() }
+        binding.chipFiltroFecha.setOnClickListener { mostrarSelectorRango() }
+        binding.chipFiltroTipo.setOnClickListener { viewModel.generarReporteSeleccionado() }
+        binding.chipFiltroSync.setOnClickListener {
+            Snackbar.make(binding.root, R.string.reportes_sync_info, Snackbar.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun setupSpeedDial() {
+        binding.fabSpeedDial.setOnClickListener {
+            if (speedDialExpanded) {
+                collapseSpeedDial()
+            } else {
+                expandSpeedDial()
+            }
+        }
+        binding.speedDialScrim.setOnClickListener { collapseSpeedDial() }
+        binding.actionExportExcel.setOnClickListener {
+            collapseSpeedDial()
+            prepararExportacion()
+        }
+        binding.actionExportPdf.setOnClickListener {
+            collapseSpeedDial()
+            exportarPdf()
+        }
+        binding.actionShareLast.setOnClickListener {
+            collapseSpeedDial()
+            compartirUltimoReporte()
+        }
+        binding.actionHistory.setOnClickListener {
+            collapseSpeedDial()
+            mostrarHistorial()
+        }
+        binding.actionConfig.setOnClickListener {
+            collapseSpeedDial()
+            Snackbar.make(binding.root, R.string.reportes_config_proximamente, Snackbar.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun expandSpeedDial() {
+        speedDialExpanded = true
+        binding.speedDialScrim.isVisible = true
+        binding.speedDialActions.apply {
+            isVisible = true
+            alpha = 0f
+            translationY = 20f
+            animate().alpha(1f).translationY(0f).setDuration(180).start()
+        }
+    }
+
+    private fun collapseSpeedDial() {
+        speedDialExpanded = false
+        binding.speedDialScrim.isVisible = false
+        binding.speedDialActions.animate()
+            .alpha(0f)
+            .translationY(20f)
+            .setDuration(150)
+            .withEndAction { binding.speedDialActions.isVisible = false }
+            .start()
     }
 
     private fun observeState() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.uiState.collect { state ->
-                    val isProcessing = state.isGlobalLoading || state.isEmailSending
+                    val isProcessing = state.isGlobalLoading || state.isEmailSending || state.loading
                     binding.progressIndicator.isVisible = isProcessing
                     binding.tvRangoFechas.text = state.rangoTexto
                     binding.btnLimpiarFechas.isVisible = !state.isDefaultRange
@@ -183,7 +251,7 @@ class ReportesFragment : Fragment() {
                     binding.btnCambiarFechas.isEnabled = !isProcessing
 
                     val seleccionado = state.reporteSeleccionado
-                    syncReportTypeSelection(seleccionado)
+                    syncTabSelection(state.selectedTab)
                     binding.btnGenerarReporte.text = getString(
                         R.string.reportes_btn_generar_tipo,
                         getString(seleccionado.titleRes).replaceFirstChar { char ->
@@ -191,8 +259,35 @@ class ReportesFragment : Fragment() {
                         }
                     )
                     binding.btnGenerarReporte.isEnabled = !isProcessing
-                    binding.spinnerTipoReporte.isEnabled = !isProcessing
-                    binding.selectorContainer.isEnabled = !isProcessing
+
+                    binding.tvReportesSubtitle.text = getString(R.string.reportes_header_rango, state.rangoTexto)
+                    binding.tvReportesContext.text = getString(
+                        R.string.reportes_header_contexto,
+                        state.filtrosSeleccionados.agencia ?: getString(R.string.reportes_filtro_agencia_default),
+                        state.filtrosSeleccionados.tecnico ?: getString(R.string.reportes_filtro_tecnico_default)
+                    )
+
+                    binding.chipFiltroFecha.text = getString(R.string.reportes_chip_fecha_resumen, state.rangoTexto)
+                    binding.chipFiltroAgencia.text = getString(
+                        R.string.reportes_chip_agencia_resumen,
+                        state.filtrosSeleccionados.agencia ?: getString(R.string.reportes_filtro_agencia_default)
+                    )
+                    binding.chipFiltroCamion.text = getString(
+                        R.string.reportes_chip_camion_resumen,
+                        state.filtrosSeleccionados.camion ?: getString(R.string.reportes_filtro_camion_default)
+                    )
+                    binding.chipFiltroTecnico.text = getString(
+                        R.string.reportes_chip_tecnico_resumen,
+                        state.filtrosSeleccionados.tecnico ?: getString(R.string.reportes_filtro_tecnico_default)
+                    )
+                    binding.chipFiltroTipo.text = getString(
+                        R.string.reportes_chip_tipo_resumen,
+                        getString(seleccionado.titleRes)
+                    )
+                    binding.chipFiltroSync.text = getString(
+                        R.string.reportes_chip_sync_resumen,
+                        state.filtrosSeleccionados.estadoSync ?: getString(R.string.reportes_filtro_sync_default)
+                    )
 
                     binding.tvResumenTitulo.text = getString(seleccionado.titleRes)
                     binding.tvResumenRango.text = state.rangoTexto
@@ -208,6 +303,21 @@ class ReportesFragment : Fragment() {
                         binding.tvResumenTotalMateriales.text = resumen.totalMateriales.toString()
                         binding.tvResumenTotalCodigos.text = resumen.totalMaterialesDistintos.toString()
                     }
+
+                    historyAdapter.submitList(state.historialExports)
+
+                    binding.tvInsight1.text = getString(
+                        R.string.reportes_insight_material,
+                        resumen?.totalMateriales ?: 0
+                    )
+                    binding.tvInsight2.text = getString(
+                        R.string.reportes_insight_averias,
+                        resumen?.totalAverias ?: 0
+                    )
+                    binding.tvInsight3.text = getString(
+                        R.string.reportes_insight_codigos,
+                        resumen?.totalMaterialesDistintos ?: 0
+                    )
 
                     val section: ReportSectionState<*>
                     val recycler: RecyclerView
@@ -334,18 +444,9 @@ class ReportesFragment : Fragment() {
                     }
 
                     val hasContent = section.hasContent
-                    binding.fabActionsGroup.isVisible = hasContent
-                    binding.btnExportarExcel.isVisible = hasContent
-                    binding.fabEnviarCorreo.isVisible = hasContent
-                    binding.btnExportarExcel.isEnabled = hasContent && !isProcessing
-                    binding.fabEnviarCorreo.isEnabled = hasContent && !isProcessing
-
-                    if (hasContent) {
-                        binding.btnExportarExcel.extend()
-                        binding.fabEnviarCorreo.extend()
-                    } else {
-                        binding.btnExportarExcel.shrink()
-                        binding.fabEnviarCorreo.shrink()
+                    binding.fabSpeedDial.isVisible = hasContent
+                    if (!hasContent) {
+                        collapseSpeedDial()
                     }
                 }
             }
@@ -437,21 +538,128 @@ class ReportesFragment : Fragment() {
         exportLauncher.launch(nombre)
     }
 
+    private fun exportarPdf() {
+        val state = viewModel.uiState.value
+        val tipo = state.reporteSeleccionado
+        val datos = viewModel.obtenerDatosParaExportar(tipo)
+        if (datos == null) {
+            Snackbar.make(binding.root, R.string.reportes_export_no_data, Snackbar.LENGTH_SHORT).show()
+            return
+        }
+        viewLifecycleOwner.lifecycleScope.launch {
+            val fileName = generarNombreArchivoPdf(tipo, state.fechaInicio, state.fechaFin)
+            val targetDir = requireContext().getExternalFilesDir("TecniApp/Reportes")
+            if (targetDir == null) {
+                Snackbar.make(binding.root, R.string.reportes_export_error, Snackbar.LENGTH_LONG).show()
+                return@launch
+            }
+            val file = File(targetDir, fileName)
+            val payload = PdfReportExporter.ExportPayload(
+                tipo = tipo,
+                data = datos,
+                resumen = state.resumen,
+                rango = state.rangoTexto
+            )
+            if (file.exists()) {
+                MaterialAlertDialogBuilder(requireContext())
+                    .setTitle(R.string.reportes_export_reemplazar_titulo)
+                    .setMessage(R.string.reportes_export_reemplazar_mensaje)
+                    .setPositiveButton(R.string.reportes_export_reemplazar_confirmar) { _, _ ->
+                        exportarPdfEnArchivo(file, payload)
+                    }
+                    .setNegativeButton(R.string.reportes_historial_cancelar, null)
+                    .show()
+            } else {
+                exportarPdfEnArchivo(file, payload)
+            }
+        }
+    }
+
+    private fun exportarPdfEnArchivo(file: File, payload: PdfReportExporter.ExportPayload) {
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                withContext(Dispatchers.IO) {
+                    PdfReportExporter.export(
+                        context = requireContext(),
+                        payload = payload,
+                        outputFile = file
+                    )
+                }
+                val uri = PdfReportExporter.buildContentUri(requireContext(), file)
+                Snackbar.make(
+                    binding.root,
+                    getString(R.string.reportes_export_success_file, file.name),
+                    Snackbar.LENGTH_LONG
+                ).setAction(R.string.reportes_export_action_view) {
+                    openReportUri(uri)
+                }.show()
+                ReportDownloadNotifier.show(
+                    context = requireContext(),
+                    fileName = file.name,
+                    fileUri = uri,
+                    locationUri = ReportDownloadNotifier.buildLocationUriForFile(requireContext(), file)
+                )
+                viewModel.agregarExportHistorial(
+                    ExportHistoryItem(
+                        id = file.name,
+                        fileName = file.name,
+                        fileType = ReportFileType.PDF,
+                        dateTime = historyFormatter.format(LocalDateTime.now()),
+                        fileSize = file.length().toString(),
+                        status = ReportExportStatus.OK,
+                        uri = uri.toString()
+                    )
+                )
+            } catch (t: Throwable) {
+                Log.e("ReportesFragment", "Error exportando PDF", t)
+                Snackbar.make(binding.root, R.string.reportes_export_error, Snackbar.LENGTH_LONG).show()
+            }
+        }
+    }
+
     private fun generarNombreArchivo(tipo: ReportType, inicio: LocalDate, fin: LocalDate): String {
         val inicioTexto = inicio.format(fileNameFormatter)
         val finTexto = fin.format(fileNameFormatter)
         return "Reporte_${tipo.fileNameKey}_${inicioTexto}_${finTexto}.xlsx"
     }
 
+    private fun generarNombreArchivoPdf(tipo: ReportType, inicio: LocalDate, fin: LocalDate): String {
+        val inicioTexto = inicio.format(fileNameFormatter)
+        val finTexto = fin.format(fileNameFormatter)
+        return "Reporte_${tipo.fileNameKey}_${inicioTexto}_${finTexto}.pdf"
+    }
+
     private fun exportToUri(uri: Uri, payload: ExportPayload) {
         viewLifecycleOwner.lifecycleScope.launch {
+            val progressSnackbar = Snackbar.make(
+                binding.root,
+                R.string.reportes_export_progress_preparar,
+                Snackbar.LENGTH_INDEFINITE
+            )
+            progressSnackbar.show()
             try {
                 val workbook = withContext(Dispatchers.Default) {
                     ExcelReportExporter.buildWorkbook(
                         context = requireContext(),
-                        payload = payload
+                        payload = payload,
+                        onProgress = { step ->
+                            val message = when (step) {
+                                ExcelReportExporter.ExportStep.PREPARAR ->
+                                    R.string.reportes_export_progress_preparar
+                                ExcelReportExporter.ExportStep.ESCRIBIR ->
+                                    R.string.reportes_export_progress_escribir
+                                ExcelReportExporter.ExportStep.CERRAR ->
+                                    R.string.reportes_export_progress_cerrar
+                                ExcelReportExporter.ExportStep.GUARDAR ->
+                                    R.string.reportes_export_progress_guardar
+                                ExcelReportExporter.ExportStep.INDEXAR ->
+                                    R.string.reportes_export_progress_indexar
+                            }
+                            progressSnackbar.setText(message)
+                        }
                     )
                 }
+                progressSnackbar.setText(R.string.reportes_export_progress_guardar)
                 withContext(Dispatchers.IO) {
                     requireContext().contentResolver.openOutputStream(uri)?.use { output ->
                         workbook.use { wb ->
@@ -460,9 +668,11 @@ class ReportesFragment : Fragment() {
                         }
                     } ?: throw IllegalStateException("Output stream is null")
                 }
+                progressSnackbar.dismiss()
                 val fileName = pendingExportFileName
                     ?: DocumentFile.fromSingleUri(requireContext(), uri)?.name
                     ?: getString(R.string.reportes_export_default_name)
+                val size = DocumentFile.fromSingleUri(requireContext(), uri)?.length()
                 Snackbar.make(
                     binding.root,
                     getString(R.string.reportes_export_success_file, fileName),
@@ -476,8 +686,20 @@ class ReportesFragment : Fragment() {
                     fileUri = uri,
                     locationUri = ReportDownloadNotifier.buildLocationUriForDocument(requireContext(), uri)
                 )
+                viewModel.agregarExportHistorial(
+                    ExportHistoryItem(
+                        id = fileName,
+                        fileName = fileName,
+                        fileType = ReportFileType.EXCEL,
+                        dateTime = historyFormatter.format(LocalDateTime.now()),
+                        fileSize = size?.toString(),
+                        status = ReportExportStatus.OK,
+                        uri = uri.toString()
+                    )
+                )
             } catch (t: Throwable) {
                 Log.e("ReportesFragment", "Error exportando Excel", t)
+                progressSnackbar.dismiss()
                 Snackbar.make(binding.root, R.string.reportes_export_error, Snackbar.LENGTH_LONG).show()
             } finally {
                 pendingExportFileName = null
@@ -494,6 +716,51 @@ class ReportesFragment : Fragment() {
         runCatching {
             startActivity(Intent.createChooser(intent, getString(R.string.reportes_export_open_title)))
         }
+    }
+
+    private fun shareReport(uri: Uri) {
+        val mimeType = requireContext().contentResolver.getType(uri) ?: "*/*"
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = mimeType
+            putExtra(Intent.EXTRA_STREAM, uri)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        startActivity(Intent.createChooser(intent, getString(R.string.reportes_export_share_title)))
+    }
+
+    private fun compartirUltimoReporte() {
+        val last = viewModel.uiState.value.historialExports.firstOrNull()
+        if (last == null) {
+            Snackbar.make(binding.root, R.string.reportes_historial_vacio, Snackbar.LENGTH_SHORT).show()
+            return
+        }
+        shareReport(Uri.parse(last.uri))
+    }
+
+    private fun mostrarHistorial() {
+        val dialog = BottomSheetDialog(requireContext())
+        val sheetBinding = SheetReportHistoryBinding.inflate(layoutInflater)
+        sheetBinding.recyclerHistory.apply {
+            layoutManager = LinearLayoutManager(context)
+            adapter = historyAdapter
+        }
+        val items = viewModel.uiState.value.historialExports
+        historyAdapter.submitList(items)
+        sheetBinding.tvHistoryEmpty.isVisible = items.isEmpty()
+        sheetBinding.btnCloseHistory.setOnClickListener { dialog.dismiss() }
+        dialog.setContentView(sheetBinding.root)
+        dialog.show()
+    }
+
+    private fun confirmarEliminarHistorial(item: ExportHistoryItem) {
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.reportes_historial_eliminar)
+            .setMessage(R.string.reportes_historial_confirmar_eliminar)
+            .setPositiveButton(R.string.reportes_historial_eliminar) { _, _ ->
+                viewModel.eliminarHistorial(item)
+            }
+            .setNegativeButton(R.string.reportes_historial_cancelar, null)
+            .show()
     }
 
     private fun LocalDate.toStartOfDayMillis(): Long =
