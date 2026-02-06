@@ -28,6 +28,7 @@ class   RoomRepository(context: Context) {
     private val db = AppDatabase.getInstance(context.applicationContext)
     private val firebase = FirebaseSyncManager(context.applicationContext)
     private val vehiculoDao = db.vehiculoDao()
+    private val registroVehiculoDao = db.registroVehiculoDao()
     private val inventarioDao = db.inventarioDao()
 
     private val realtimeScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -101,6 +102,69 @@ class   RoomRepository(context: Context) {
 
     fun observarVehiculoPorPlaca(placa: Long): Flow<VehiculosEntity?> =
         vehiculoDao.observarPorPlaca(placa)
+
+    fun observarRegistrosDiarios(vehiculoId: Int): Flow<List<RegistroDiarioEntity>> =
+        registroVehiculoDao.observarRegistrosDiarios(vehiculoId)
+
+    fun observarMantenimientos(vehiculoId: Int): Flow<List<RegistroMantenimientoEntity>> =
+        registroVehiculoDao.observarMantenimientos(vehiculoId)
+
+    suspend fun insertarRegistroDiario(registro: RegistroDiarioEntity) = withContext(Dispatchers.IO) {
+        registroVehiculoDao.insertRegistroDiario(registro)
+    }
+
+    suspend fun insertarRegistroMantenimiento(registro: RegistroMantenimientoEntity) = withContext(Dispatchers.IO) {
+        registroVehiculoDao.insertRegistroMantenimiento(registro)
+    }
+
+    suspend fun obtenerRegistroDiarioPorFecha(vehiculoId: Int, fecha: String): RegistroDiarioEntity? =
+        withContext(Dispatchers.IO) {
+            registroVehiculoDao.obtenerRegistroDiarioPorFecha(vehiculoId, fecha)
+        }
+
+    suspend fun obtenerUltimoRegistroDiario(vehiculoId: Int): RegistroDiarioEntity? =
+        withContext(Dispatchers.IO) {
+            registroVehiculoDao.obtenerUltimoRegistroDiario(vehiculoId)
+        }
+
+    suspend fun obtenerUltimoMantenimiento(vehiculoId: Int): RegistroMantenimientoEntity? =
+        withContext(Dispatchers.IO) {
+            registroVehiculoDao.obtenerUltimoMantenimiento(vehiculoId)
+        }
+
+    suspend fun obtenerMantenimientosPendientes(status: String): List<RegistroMantenimientoEntity> =
+        withContext(Dispatchers.IO) {
+            registroVehiculoDao.obtenerMantenimientosPendientes(status)
+        }
+
+    suspend fun obtenerRegistrosDiariosPendientes(status: String): List<RegistroDiarioEntity> =
+        withContext(Dispatchers.IO) {
+            registroVehiculoDao.obtenerRegistrosDiariosPendientes(status)
+        }
+
+    suspend fun actualizarMantenimientoSyncStatus(ids: List<Long>, status: String) = withContext(Dispatchers.IO) {
+        if (ids.isNotEmpty()) {
+            registroVehiculoDao.actualizarMantenimientoSyncStatus(ids, status)
+        }
+    }
+
+    suspend fun actualizarRegistroDiarioSyncStatus(ids: List<Long>, status: String) = withContext(Dispatchers.IO) {
+        if (ids.isNotEmpty()) {
+            registroVehiculoDao.actualizarRegistroDiarioSyncStatus(ids, status)
+        }
+    }
+
+    suspend fun actualizarMantenimiento(
+        vehiculoId: Int,
+        mantenimientoUltimo: String?,
+        mantenimientoProximo: String?
+    ) = withContext(Dispatchers.IO) {
+        vehiculoDao.actualizarMantenimiento(
+            vehiculoId = vehiculoId,
+            mantenimientoUltimo = mantenimientoUltimo,
+            mantenimientoProximo = mantenimientoProximo
+        )
+    }
 
     suspend fun actualizarRegistroDiarioVehiculo(
         vehiculoId: Int,

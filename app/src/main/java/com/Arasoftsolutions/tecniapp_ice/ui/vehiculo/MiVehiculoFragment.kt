@@ -4,20 +4,18 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.recyclerview.widget.LinearLayoutManager
 import com.Arasoftsolutions.tecniapp_ice.R
 import com.Arasoftsolutions.tecniapp_ice.databinding.FragmentMiVehiculoBinding
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.google.android.material.textfield.TextInputEditText
+import com.google.android.material.card.MaterialCardView
+import com.google.android.material.progressindicator.LinearProgressIndicator
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.Date
 import java.util.Locale
 
 class MiVehiculoFragment : Fragment() {
@@ -38,121 +36,36 @@ class MiVehiculoFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        binding.rvRegistros.layoutManager = LinearLayoutManager(requireContext())
-        binding.rvRegistros.adapter = EtmRegistroAdapter(emptyList())
-
-        setupListeners()
+        binding.btnRegistrarMantenimiento.setOnClickListener {
+            RegistroVehiculoDialogFragment().show(childFragmentManager, RegistroVehiculoDialogFragment.TAG)
+        }
         observarEstado()
-    }
-
-    private fun setupListeners() {
-        binding.btnRegistrarInicial.setOnClickListener { registrarInicialDesdeCampo() }
-        binding.btnRegistrarFinal.setOnClickListener { mostrarDialogoRegistrarFinal() }
-        binding.btnNoVehiculo.setOnClickListener {
-            MaterialAlertDialogBuilder(requireContext())
-                .setMessage(getString(R.string.mi_vehiculo_sin_vehiculo_info))
-                .setPositiveButton(android.R.string.ok, null)
-                .show()
-        }
-    }
-
-    private fun registrarInicialDesdeCampo() {
-        val input = binding.etRegistroInicial.text?.toString()?.trim()
-        val valor = input?.replace(",", ".")?.toDoubleOrNull()
-        if (valor == null || valor < 0) {
-            MaterialAlertDialogBuilder(requireContext())
-                .setMessage(getString(R.string.mi_vehiculo_valor_invalido))
-                .setPositiveButton(android.R.string.ok, null)
-                .show()
-            return
-        }
-        val horasLaboradas = binding.etRegistroHoras.text?.toString()?.trim()
-            ?.toIntOrNull()
-            ?.takeIf { it in 1..10 }
-        if (binding.etRegistroHoras.text?.isNotBlank() == true && horasLaboradas == null) {
-            MaterialAlertDialogBuilder(requireContext())
-                .setMessage(getString(R.string.mi_vehiculo_horas_invalidas))
-                .setPositiveButton(android.R.string.ok, null)
-                .show()
-            return
-        }
-        viewModel.registrarInicial(
-            valor = valor,
-            circuito = binding.etRegistroCircuito.text?.toString()?.trim().orEmpty().ifBlank { null },
-            actividad = binding.etRegistroActividad.text?.toString()?.trim().orEmpty().ifBlank { null },
-            cuenta = binding.etRegistroCuenta.text?.toString()?.trim().orEmpty().ifBlank { null },
-            numeroCaso = binding.etRegistroCaso.text?.toString()?.trim().orEmpty().ifBlank { null },
-            lugar = binding.etRegistroLugar.text?.toString()?.trim().orEmpty().ifBlank { null },
-            horasLaboradas = horasLaboradas
-        )
-    }
-
-    private fun mostrarDialogoRegistrarFinal() {
-        val state = viewModel.uiState.value
-        val unidad = state.tipoVehiculo.unidadTexto
-        val dialogView = layoutInflater.inflate(R.layout.dialog_registro_final, null)
-        val resumen = dialogView.findViewById<android.widget.TextView>(R.id.tvRegistroFinalResumen)
-        val til = dialogView.findViewById<com.google.android.material.textfield.TextInputLayout>(R.id.tilRegistroFinal)
-        val input = dialogView.findViewById<TextInputEditText>(R.id.etRegistroFinal)
-        til.hint = getString(R.string.mi_vehiculo_registro_final_valor_format, unidad)
-        input.inputType = android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL
-        val reg = state.registroHoy
-        if (reg != null) {
-            resumen.text = getString(
-                R.string.mi_vehiculo_registro_hoy_format,
-                reg.valorInicial,
-                unidad,
-                getString(R.string.mi_vehiculo_valor_pendiente)
-            )
-        }
-        MaterialAlertDialogBuilder(requireContext())
-            .setTitle(getString(R.string.mi_vehiculo_registrar_final))
-            .setView(dialogView)
-            .setPositiveButton(getString(android.R.string.ok)) { _, _ ->
-                val v = input.text?.toString()?.replace(",", ".")?.toDoubleOrNull()
-                if (v != null && v >= 0) viewModel.registrarFinal(v)
-                else MaterialAlertDialogBuilder(requireContext())
-                    .setMessage(getString(R.string.mi_vehiculo_valor_invalido))
-                    .setPositiveButton(android.R.string.ok, null)
-                    .show()
-            }
-            .setNegativeButton(android.R.string.cancel, null)
-            .show()
+        animateCta()
     }
 
     private fun observarEstado() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
-                    viewModel.eventos.collect { mensaje ->
-                        MaterialAlertDialogBuilder(requireContext())
-                            .setMessage(mensaje)
-                            .setPositiveButton(android.R.string.ok, null)
-                            .show()
-                    }
-                }
-                launch {
                     viewModel.uiState.collect { state ->
-                    val vehiculo = state.vehiculo
-                    binding.tvSinVehiculo.isVisible = vehiculo == null
-                    binding.cardRegistroPendiente.isVisible = vehiculo != null && state.registroHoy == null
-                    binding.cardRegistroHoy.isVisible = vehiculo != null
-                    binding.cardMantenimiento.isVisible = vehiculo != null
-                    binding.btnRegistrarInicial.isVisible = vehiculo != null && state.registroHoy == null
-                    binding.btnRegistrarFinal.isVisible = false
+                        val vehiculo = state.vehiculo
+                        val visible = vehiculo != null
+                        binding.layoutSinVehiculo.isVisible = !visible
+                        binding.btnRegistrarMantenimiento.isVisible = visible
+                        binding.cardVehiculoHeader.isVisible = visible
+                        binding.cardMotivacion.isVisible = visible
+                        binding.tvTituloMantenimientos.isVisible = visible
+                        binding.containerMantenimientos.isVisible = visible
+                        binding.tvTituloUsoMensual.isVisible = visible
+                        binding.containerUsoMensual.isVisible = visible
+                        if (!visible) return@collect
 
-                    if (vehiculo != null) {
-                        val tipoLabel = when (state.tipoVehiculo) {
+                        binding.tvVehiculoPlaca.text = vehiculo.placa.toString()
+                        binding.tvVehiculoTipo.text = when (state.tipoVehiculo) {
                             TipoVehiculo.CAMION_GRUA -> getString(R.string.mi_vehiculo_tipo_grua)
                             TipoVehiculo.MAQUINARIA_PESADA -> getString(R.string.mi_vehiculo_tipo_maquinaria)
                             TipoVehiculo.LIVIANO -> getString(R.string.mi_vehiculo_tipo_liviano)
                         }
-                        binding.tvVehiculoPlaca.text = getString(
-                            R.string.mi_vehiculo_placa_format,
-                            vehiculo.placa
-                        )
-                        binding.tvVehiculoTipo.text = tipoLabel
-                        binding.tvVehiculoAgencia.text = vehiculo.agencia
                         binding.ivVehiculoTipo.setImageResource(
                             when (state.tipoVehiculo) {
                                 TipoVehiculo.CAMION_GRUA -> R.drawable.grua
@@ -160,139 +73,127 @@ class MiVehiculoFragment : Fragment() {
                                 TipoVehiculo.LIVIANO -> R.drawable.liviano
                             }
                         )
-                        binding.chipEstadoRegistro.text = if (state.registroHoy != null) {
-                            getString(R.string.mi_vehiculo_estado_al_dia)
-                        } else {
-                            getString(R.string.mi_vehiculo_estado_pendiente)
-                        }
+                        binding.tvVehiculoAgencia.text = vehiculo.agencia ?: ""
 
-                        binding.tvValorActualLabel.text = if (state.tipoVehiculo.usaKilometraje) {
-                            getString(R.string.mi_vehiculo_kilometraje_actual)
-                        } else {
-                            getString(R.string.mi_vehiculo_orimetro_actual)
-                        }
-                        binding.tilRegistroInicial.hint = getString(
-                            R.string.mi_vehiculo_registro_inicial_hint_format,
-                            state.tipoVehiculo.unidadTexto
+                        binding.tvEstadoMensaje.text = state.estadoMensaje
+                        binding.tvMotivacion.text = state.motivacion
+                        binding.tvValorActualLabel.text = getString(
+                            R.string.mi_vehiculo_valor_actual_label,
+                            state.unidad
                         )
-
-                        val reg = state.registroHoy
-                        val ultimo = state.ultimoRegistro
-                        val valorActual = reg?.valorFinal ?: reg?.valorInicial ?: ultimo?.valorFinal ?: ultimo?.valorInicial
-                        binding.tvValorActual.text = valorActual?.let {
-                            getString(
-                                R.string.mi_vehiculo_valor_actual_format,
-                                it,
-                                state.tipoVehiculo.unidadTexto
-                            )
+                        binding.tvValorActual.text = state.valorActual?.let {
+                            String.format(Locale.getDefault(), "%.0f %s", it, state.unidad)
                         } ?: getString(R.string.mi_vehiculo_valor_actual_placeholder)
 
-                        if (reg != null) {
-                            val u = state.tipoVehiculo.unidadTexto
-                            binding.tvEstadoHoy.text = getString(
-                                R.string.mi_vehiculo_registro_hoy_format,
-                                reg.valorInicial,
-                                u,
-                                reg.valorFinal?.let { "$it $u" } ?: getString(R.string.mi_vehiculo_valor_pendiente)
-                            )
-                            binding.btnRegistrarInicial.isVisible = false
-                            binding.btnRegistrarFinal.isVisible = reg.valorFinal == null
-                            binding.etRegistroInicial.setText("")
-                        } else {
-                            binding.tvEstadoHoy.text = getString(R.string.mi_vehiculo_registro_pendiente)
-                            binding.btnRegistrarInicial.isVisible = true
-                            if (binding.etRegistroInicial.text.isNullOrBlank()) {
-                                val sugerido = ultimo?.valorFinal ?: ultimo?.valorInicial
-                                binding.etRegistroInicial.setText(
-                                    sugerido?.toString().orEmpty()
-                                )
-                            }
-                        }
-                    }
-
-                    (binding.rvRegistros.adapter as? EtmRegistroAdapter)?.updateList(
-                        state.registrosRecientes,
-                        state.tipoVehiculo.unidadTexto,
-                        state.nombreUsuario
-                    )
-
-                    if (vehiculo != null) {
-                        binding.tvMantenimientoUltimo.text = vehiculo.mantenimientoUltimo
-                            ?.takeIf { it.isNotBlank() }
-                            ?: getString(R.string.mi_vehiculo_mantenimiento_placeholder)
-                        binding.tvMantenimientoProximo.text = vehiculo.mantenimientoProximo
-                            ?.takeIf { it.isNotBlank() }
-                            ?: getString(R.string.mi_vehiculo_mantenimiento_placeholder)
+                        actualizarEstadoChip(state.estado)
+                        renderMantenimientos(state.mantenimientoCards)
+                        renderUsoMensual(state.usoMensual, state.unidad)
                     }
                 }
+                launch {
+                    viewModel.eventos.collect { mensaje ->
+                        com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+                            .setMessage(mensaje)
+                            .setPositiveButton(android.R.string.ok, null)
+                            .show()
+                    }
                 }
             }
+        }
+    }
+
+    private fun actualizarEstadoChip(estado: EstadoVehiculo) {
+        val (texto, color) = when (estado) {
+            EstadoVehiculo.OPTIMO -> getString(R.string.mi_vehiculo_estado_optimo) to R.color.success_500
+            EstadoVehiculo.ATENCION -> getString(R.string.mi_vehiculo_estado_atencion) to R.color.ice_yellow
+            EstadoVehiculo.VENCIDO -> getString(R.string.mi_vehiculo_estado_vencido) to R.color.error_500
+        }
+        binding.chipEstadoHeader.text = texto
+        binding.chipEstadoHeader.chipBackgroundColor = ContextCompat.getColorStateList(requireContext(), color)
+    }
+
+    private fun renderMantenimientos(cards: List<MantenimientoCardUi>) {
+        binding.containerMantenimientos.removeAllViews()
+        if (cards.isEmpty()) {
+            val empty = layoutInflater.inflate(R.layout.item_mantenimiento_card, binding.containerMantenimientos, false)
+            val card = empty as MaterialCardView
+            card.findViewById<android.widget.TextView>(R.id.tvMantenimientoTitulo)
+                .text = getString(R.string.mi_vehiculo_mantenimiento_placeholder)
+            card.findViewById<android.widget.TextView>(R.id.tvMantenimientoDetalle)
+                .text = getString(R.string.mi_vehiculo_mantenimiento_placeholder_detalle)
+            binding.containerMantenimientos.addView(card)
+            return
+        }
+        cards.forEachIndexed { index, item ->
+            val view = layoutInflater.inflate(R.layout.item_mantenimiento_card, binding.containerMantenimientos, false)
+            val card = view as MaterialCardView
+            val title = card.findViewById<android.widget.TextView>(R.id.tvMantenimientoTitulo)
+            val detail = card.findViewById<android.widget.TextView>(R.id.tvMantenimientoDetalle)
+            val icon = card.findViewById<android.widget.ImageView>(R.id.ivEstado)
+            title.text = item.titulo
+            detail.text = item.detalle
+            val color = when (item.estado) {
+                EstadoVehiculo.OPTIMO -> R.color.tertiary_container_light
+                EstadoVehiculo.ATENCION -> R.color.secondary_container_light
+                EstadoVehiculo.VENCIDO -> R.color.error_500
+            }
+            val iconRes = when (item.estado) {
+                EstadoVehiculo.OPTIMO -> R.drawable.ic_check
+                EstadoVehiculo.ATENCION -> R.drawable.ic_warning
+                EstadoVehiculo.VENCIDO -> R.drawable.ic_close_sheet
+            }
+            val iconColor = when (item.estado) {
+                EstadoVehiculo.OPTIMO -> R.color.on_tertiary_container_light
+                EstadoVehiculo.ATENCION -> R.color.on_secondary_container_light
+                EstadoVehiculo.VENCIDO -> R.color.white
+            }
+            card.setCardBackgroundColor(ContextCompat.getColor(requireContext(), color))
+            icon.setImageResource(iconRes)
+            icon.setColorFilter(ContextCompat.getColor(requireContext(), iconColor))
+            card.alpha = 0f
+            card.translationY = 16f
+            card.animate()
+                .alpha(1f)
+                .translationY(0f)
+                .setStartDelay((index * 60).toLong())
+                .setDuration(220)
+                .start()
+            binding.containerMantenimientos.addView(card)
+        }
+    }
+
+    private fun renderUsoMensual(items: List<UsoMensualUi>, unidad: String) {
+        binding.containerUsoMensual.removeAllViews()
+        if (items.isEmpty()) {
+            val empty = layoutInflater.inflate(R.layout.item_uso_mes, binding.containerUsoMensual, false)
+            empty.findViewById<android.widget.TextView>(R.id.tvMes).text = "—"
+            empty.findViewById<android.widget.TextView>(R.id.tvTotal)
+                .text = getString(R.string.mi_vehiculo_uso_mensual_placeholder)
+            empty.findViewById<LinearProgressIndicator>(R.id.progressUso).progress = 0
+            binding.containerUsoMensual.addView(empty)
+            return
+        }
+        items.forEach { item ->
+            val view = layoutInflater.inflate(R.layout.item_uso_mes, binding.containerUsoMensual, false)
+            view.findViewById<android.widget.TextView>(R.id.tvMes).text = item.mes
+            view.findViewById<android.widget.TextView>(R.id.tvTotal).text =
+                getString(R.string.mi_vehiculo_uso_mensual_total_format, item.total, unidad)
+            view.findViewById<LinearProgressIndicator>(R.id.progressUso).progress = item.porcentaje
+            binding.containerUsoMensual.addView(view)
+        }
+    }
+
+    private fun animateCta() {
+        binding.btnRegistrarMantenimiento.apply {
+            scaleX = 0.98f
+            scaleY = 0.98f
+            alpha = 0.9f
+            animate().scaleX(1f).scaleY(1f).alpha(1f).setDuration(220).start()
         }
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
-    }
-}
-
-private class EtmRegistroAdapter(
-    private var items: List<RegistroDiarioVehiculo>,
-    private var unidad: String = "km",
-    private var nombreUsuario: String = ""
-) : androidx.recyclerview.widget.RecyclerView.Adapter<EtmRegistroAdapter.VH>() {
-
-    fun updateList(list: List<RegistroDiarioVehiculo>, u: String, nombre: String) {
-        items = list
-        unidad = u
-        nombreUsuario = nombre
-        notifyDataSetChanged()
-    }
-
-    override fun onCreateViewHolder(parent: android.view.ViewGroup, viewType: Int): VH {
-        val v = android.view.LayoutInflater.from(parent.context)
-            .inflate(R.layout.item_etm_registro, parent, false)
-        return VH(v)
-    }
-
-    override fun onBindViewHolder(holder: VH, position: Int) {
-        holder.bind(items[position], unidad, nombreUsuario)
-    }
-
-    override fun getItemCount() = items.size
-
-    class VH(view: android.view.View) : androidx.recyclerview.widget.RecyclerView.ViewHolder(view) {
-        private val tvFecha = view.findViewById<android.widget.TextView>(R.id.tvFecha)
-        private val tvMeta = view.findViewById<android.widget.TextView>(R.id.tvMeta)
-        private val tvValores = view.findViewById<android.widget.TextView>(R.id.tvValores)
-        private val tvDetalle = view.findViewById<android.widget.TextView>(R.id.tvDetalle)
-        private val formatoHora = SimpleDateFormat("HH:mm", Locale.getDefault())
-
-        fun bind(item: RegistroDiarioVehiculo, unidad: String, nombreUsuario: String) {
-            tvFecha.text = item.fecha
-            val nombre = item.registradoPor?.takeIf { it.isNotBlank() }
-                ?: nombreUsuario.takeIf { it.isNotBlank() }
-            val hora = item.registradoEn.takeIf { it > 0 }
-                ?.let { formatoHora.format(Date(it)) }
-            val meta = listOfNotNull(
-                nombre?.let { "Registrado por: $it" },
-                hora?.let { "Hora: $it" }
-            ).joinToString(" • ")
-            tvMeta.text = meta
-            tvMeta.isVisible = meta.isNotBlank()
-            val fin = item.valorFinal?.let { " • Final: $it $unidad" } ?: ""
-            val diff = item.diferencia?.let { " • Diferencia: $it $unidad" } ?: ""
-            tvValores.text = "Inicial: ${item.valorInicial} $unidad$fin$diff"
-            val detalle = listOfNotNull(
-                item.circuito?.let { "Circuito: $it" },
-                item.actividad?.let { "Actividad: $it" },
-                item.cuenta?.let { "Cuenta: $it" },
-                item.numeroCaso?.let { "Caso: $it" },
-                item.lugar?.let { "Lugar: $it" },
-                item.horasLaboradas?.let { "Horas: $it" }
-            ).joinToString(" • ")
-            tvDetalle.text = detalle
-            tvDetalle.isVisible = detalle.isNotBlank()
-        }
     }
 }
