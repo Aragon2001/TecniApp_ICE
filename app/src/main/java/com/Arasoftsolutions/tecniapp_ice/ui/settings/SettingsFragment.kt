@@ -33,6 +33,7 @@ import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
 import com.Arasoftsolutions.tecniapp_ice.Database.sync.Synchronizer
 import com.Arasoftsolutions.tecniapp_ice.databinding.DialogNotificationFiltersBinding
 import com.Arasoftsolutions.tecniapp_ice.databinding.FragmentSettingsBinding
+import com.Arasoftsolutions.tecniapp_ice.notifications.SyncStatusNotifications
 import com.Arasoftsolutions.tecniapp_ice.preferences.DataStoreManager
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriaNotificationPreferences
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasRepository
@@ -550,9 +551,18 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
                         if (isAdded) dialog.setHeader(message)
                     },
                     onSyncProgress = { done, total, msg, downloadedBytes ->
-                        if (isAdded) dialog.update(done, total, msg ?: "", downloadedBytes)
+                        if (isAdded) {
+                            dialog.update(done, total, msg ?: "", downloadedBytes)
+                            SyncStatusNotifications.notifyProgress(
+                                requireContext(),
+                                done,
+                                total,
+                                msg
+                            )
+                        }
                     },
                     onSyncSuccess = {
+                        SyncStatusNotifications.dismissProgress(requireContext())
                         AveriasSyncWorker.triggerNow(requireContext())
                         viewLifecycleOwner.lifecycleScope.launch {
                             dataStore.markManualSyncNow()
@@ -562,10 +572,12 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
                                 roomRepository.refreshUsuarioActual()
                             }
                         }
+                        SyncStatusNotifications.notifySynced(requireContext())
                         dismissSyncDialog()
                         Toast.makeText(requireContext(), R.string.settings_sync_triggered, Toast.LENGTH_SHORT).show()
                     },
                     onSyncError = { error ->
+                        SyncStatusNotifications.dismissProgress(requireContext())
                         dismissSyncDialog()
                         Toast.makeText(
                             requireContext(),
@@ -630,14 +642,23 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
                             downloadedBytes = baseBytes + bytes
                             if (isAdded) {
                                 dialog.update(done + subDone, total, msg ?: "", downloadedBytes)
+                                SyncStatusNotifications.notifyProgress(
+                                    requireContext(),
+                                    done + subDone,
+                                    total,
+                                    msg
+                                )
                             }
                         }
                     }
                 }
                 AveriasSyncWorker.triggerNow(requireContext())
                 dataStore.markManualSyncNow()
+                SyncStatusNotifications.dismissProgress(requireContext())
+                SyncStatusNotifications.notifySynced(requireContext())
                 Toast.makeText(requireContext(), R.string.settings_clear_cache_success, Toast.LENGTH_SHORT).show()
             } catch (_: Exception) {
+                SyncStatusNotifications.dismissProgress(requireContext())
                 Toast.makeText(requireContext(), R.string.settings_clear_cache_failure, Toast.LENGTH_LONG).show()
             } finally {
                 dismissSyncDialog()

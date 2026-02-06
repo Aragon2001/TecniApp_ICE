@@ -41,6 +41,9 @@ interface LocalizacionDao {
     @Query("DELETE FROM localizaciones")
     suspend fun limpiarTodo()
 
+    @Query("DELETE FROM localizaciones WHERE pueblo IN (:puebloIds)")
+    suspend fun eliminarPorPueblos(puebloIds: List<Int>)
+
     @Query("DELETE FROM localizaciones WHERE id = :id")
     suspend fun eliminarPorId(id: Int)
 }
