@@ -17,6 +17,14 @@ object ExcelReportExporter {
     const val MIME_TYPE_XLSX =
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
+    enum class ExportStep {
+        PREPARAR,
+        ESCRIBIR,
+        CERRAR,
+        GUARDAR,
+        INDEXAR
+    }
+
     data class ExportPayload(
         val tipo: ReportType,
         val data: ReportExportData,
@@ -24,7 +32,12 @@ object ExcelReportExporter {
         val rango: String
     )
 
-    fun buildWorkbook(context: Context, payload: ExportPayload): Workbook {
+    fun buildWorkbook(
+        context: Context,
+        payload: ExportPayload,
+        onProgress: ((ExportStep) -> Unit)? = null
+    ): Workbook {
+        onProgress?.invoke(ExportStep.PREPARAR)
         val workbook = XSSFWorkbook()
         val headerStyle = createHeaderStyle(workbook)
 
@@ -43,6 +56,7 @@ object ExcelReportExporter {
                 addMiBitacoraSheets(context, workbook, headerStyle, payload.data)
         }
 
+        onProgress?.invoke(ExportStep.ESCRIBIR)
         return workbook
     }
 

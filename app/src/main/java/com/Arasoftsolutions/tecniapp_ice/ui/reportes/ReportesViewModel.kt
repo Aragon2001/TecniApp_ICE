@@ -71,6 +71,24 @@ enum class ReportType(@StringRes val titleRes: Int, val fileNameKey: String) {
     MI_BITACORA(R.string.reportes_tipo_mi_bitacora, "mi_bitacora")
 }
 
+enum class ReportTab {
+    RESUMEN,
+    OPERACION,
+    MATERIALES,
+    INVENTARIO,
+    BITACORA
+}
+
+enum class ReportFileType {
+    EXCEL,
+    PDF
+}
+
+enum class ReportExportStatus {
+    OK,
+    ERROR
+}
+
 data class ResumenKpiItem(
     val titulo: String,
     val valor: String,
@@ -101,7 +119,10 @@ data class InventarioReportItem(
     val codigo: String,
     val descripcion: String,
     val cantidad: Double,
-    val unidad: String
+    val unidad: String,
+    val minimo: Double? = null,
+    val origen: String? = null,
+    val fechaActualizacion: String? = null
 )
 
 data class InventarioMovimientoResumen(
@@ -124,6 +145,32 @@ data class BitacoraEventItem(
     val fecha: String,
     val descripcion: String,
     val cantidad: String
+)
+
+data class ReportFilterSelection(
+    val rango: String,
+    val tecnico: String? = null,
+    val camion: String? = null,
+    val agencia: String? = null,
+    val tipoReporte: String? = null,
+    val estadoSync: String? = null
+)
+
+data class ReportSectionSummary(
+    val type: ReportType,
+    val title: String,
+    val count: Int,
+    val summary: String? = null
+)
+
+data class ExportHistoryItem(
+    val id: String,
+    val fileName: String,
+    val fileType: ReportFileType,
+    val dateTime: String,
+    val fileSize: String? = null,
+    val status: ReportExportStatus = ReportExportStatus.OK,
+    val uri: String
 )
 
 data class MaterialTotalItem(
@@ -168,6 +215,12 @@ data class ReportesUiState(
     val fechaFin: LocalDate,
     val rangoTexto: String,
     val reporteSeleccionado: ReportType = ReportType.MI_RESUMEN,
+    val selectedTab: ReportTab = ReportTab.RESUMEN,
+    val loading: Boolean = false,
+    val error: String? = null,
+    val filtrosSeleccionados: ReportFilterSelection = ReportFilterSelection(rango = ""),
+    val secciones: List<ReportSectionSummary> = emptyList(),
+    val historialExports: List<ExportHistoryItem> = emptyList(),
     val resumen: ResumenTotales? = null,
     val isDefaultRange: Boolean = false,
     val isGlobalLoading: Boolean = false,
@@ -216,7 +269,10 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
             fechaInicio = initialRange.first,
             fechaFin = initialRange.second,
             rangoTexto = buildRangeText(initialRange.first, initialRange.second),
-            isDefaultRange = true
+            isDefaultRange = true,
+            filtrosSeleccionados = ReportFilterSelection(
+                rango = buildRangeText(initialRange.first, initialRange.second)
+            )
         )
     )
     val uiState = _uiState.asStateFlow()
@@ -225,6 +281,15 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
     val messages = _messages.asSharedFlow()
     private var cachedBase: DatosBase? = null
     private var cachedRange: Pair<LocalDate, LocalDate>? = null
+
+    init {
+        val tecnico = auth.currentUser?.displayName?.takeIf { it.isNotBlank() }
+        _uiState.update { state ->
+            state.copy(
+                filtrosSeleccionados = state.filtrosSeleccionados.copy(tecnico = tecnico)
+            )
+        }
+    }
 
     fun actualizarRangoFechas(inicio: LocalDate, fin: LocalDate) {
         val (nuevoInicio, nuevoFin) = if (inicio.isAfter(fin)) {
@@ -246,7 +311,13 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
                 fechaFin = nuevoFin,
                 rangoTexto = buildRangeText(nuevoInicio, nuevoFin),
                 reporteSeleccionado = it.reporteSeleccionado,
-                isDefaultRange = esRangoInicial
+                selectedTab = it.selectedTab,
+                isDefaultRange = esRangoInicial,
+                filtrosSeleccionados = it.filtrosSeleccionados.copy(
+                    rango = buildRangeText(nuevoInicio, nuevoFin)
+                ),
+                historialExports = it.historialExports,
+                secciones = it.secciones
             )
         }
     }
@@ -258,7 +329,31 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
 
     fun seleccionarTipo(tipo: ReportType) {
         if (uiState.value.reporteSeleccionado == tipo) return
-        _uiState.update { it.copy(reporteSeleccionado = tipo) }
+        _uiState.update {
+            it.copy(
+                reporteSeleccionado = tipo,
+                selectedTab = mapReportTypeToTab(tipo),
+                filtrosSeleccionados = it.filtrosSeleccionados.copy(
+                    tipoReporte = getApplication<Application>().getString(tipo.titleRes)
+                )
+            )
+        }
+    }
+
+    fun seleccionarTab(tab: ReportTab) {
+        if (uiState.value.selectedTab == tab) return
+        val tipo = mapTabToReportType(tab)
+        seleccionarTipo(tipo)
+    }
+
+    fun agregarExportHistorial(item: ExportHistoryItem) {
+        _uiState.update { it.copy(historialExports = listOf(item) + it.historialExports) }
+    }
+
+    fun eliminarHistorial(item: ExportHistoryItem) {
+        _uiState.update { state ->
+            state.copy(historialExports = state.historialExports.filterNot { it.id == item.id })
+        }
     }
 
     fun generarReporteSeleccionado() {
@@ -1173,6 +1268,24 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
         val finTexto = fin.format(fileNameFormatter)
         return "Reporte_${tipo.fileNameKey}_${inicioTexto}_${finTexto}.xlsx"
     }
+
+    private fun mapReportTypeToTab(tipo: ReportType): ReportTab =
+        when (tipo) {
+            ReportType.MI_RESUMEN -> ReportTab.RESUMEN
+            ReportType.MIS_AVERIAS -> ReportTab.OPERACION
+            ReportType.MIS_LUMINARIAS -> ReportTab.MATERIALES
+            ReportType.MI_INVENTARIO -> ReportTab.INVENTARIO
+            ReportType.MI_BITACORA -> ReportTab.BITACORA
+        }
+
+    private fun mapTabToReportType(tab: ReportTab): ReportType =
+        when (tab) {
+            ReportTab.RESUMEN -> ReportType.MI_RESUMEN
+            ReportTab.OPERACION -> ReportType.MIS_AVERIAS
+            ReportTab.MATERIALES -> ReportType.MIS_LUMINARIAS
+            ReportTab.INVENTARIO -> ReportType.MI_INVENTARIO
+            ReportTab.BITACORA -> ReportType.MI_BITACORA
+        }
 
     private fun getString(@StringRes resId: Int): String = getApplication<Application>().getString(resId)
 

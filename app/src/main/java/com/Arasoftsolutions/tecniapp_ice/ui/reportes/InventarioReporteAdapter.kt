@@ -38,6 +38,14 @@ class InventarioReporteAdapter : ListAdapter<InventarioReportItem, InventarioRep
                 item.cantidad,
                 item.unidad
             )
+            binding.tvInventarioOrigen.text = item.origen ?: context.getString(R.string.reportes_inventario_origen_sin)
+            binding.tvInventarioActualizacion.text = item.fechaActualizacion
+                ?: context.getString(R.string.reportes_inventario_actualizado_placeholder)
+
+            val isLow = item.minimo?.let { item.cantidad <= it } ?: false
+            binding.chipInventarioEstado.text = context.getString(
+                if (isLow) R.string.reportes_inventario_estado_bajo else R.string.reportes_inventario_estado_ok
+            )
         }
     }
 }
