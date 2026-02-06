@@ -548,42 +548,54 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
                 synchronizer.syncSubregion(
                     subregion,
                     onSyncStart = { message ->
-                        if (isAdded) dialog.setHeader(message)
+                        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Main) {
+                            if (isAdded) dialog.setHeader(message)
+                        }
                     },
                     onSyncProgress = { done, total, msg, downloadedBytes ->
-                        if (isAdded) {
-                            dialog.update(done, total, msg ?: "", downloadedBytes)
-                            SyncStatusNotifications.notifyProgress(
-                                requireContext(),
-                                done,
-                                total,
-                                msg
-                            )
+                        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Main) {
+                            if (isAdded) {
+                                dialog.update(done, total, msg ?: "", downloadedBytes)
+                                SyncStatusNotifications.notifyProgress(
+                                    requireContext(),
+                                    done,
+                                    total,
+                                    msg
+                                )
+                            }
                         }
                     },
                     onSyncSuccess = {
-                        SyncStatusNotifications.dismissProgress(requireContext())
-                        AveriasSyncWorker.triggerNow(requireContext())
-                        viewLifecycleOwner.lifecycleScope.launch {
-                            dataStore.markManualSyncNow()
-                        }
-                        viewLifecycleOwner.lifecycleScope.launch {
-                            withContext(Dispatchers.IO) {
-                                roomRepository.refreshUsuarioActual()
+                        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Main) {
+                            SyncStatusNotifications.dismissProgress(requireContext())
+                            AveriasSyncWorker.triggerNow(requireContext())
+                            viewLifecycleOwner.lifecycleScope.launch {
+                                dataStore.markManualSyncNow()
                             }
+                            viewLifecycleOwner.lifecycleScope.launch {
+                                withContext(Dispatchers.IO) {
+                                    roomRepository.refreshUsuarioActual()
+                                }
+                            }
+                            SyncStatusNotifications.notifySynced(requireContext())
+                            dismissSyncDialog()
+                            Toast.makeText(
+                                requireContext(),
+                                R.string.settings_sync_triggered,
+                                Toast.LENGTH_SHORT
+                            ).show()
                         }
-                        SyncStatusNotifications.notifySynced(requireContext())
-                        dismissSyncDialog()
-                        Toast.makeText(requireContext(), R.string.settings_sync_triggered, Toast.LENGTH_SHORT).show()
                     },
                     onSyncError = { error ->
-                        SyncStatusNotifications.dismissProgress(requireContext())
-                        dismissSyncDialog()
-                        Toast.makeText(
-                            requireContext(),
-                            error.message ?: getString(R.string.settings_clear_cache_failure),
-                            Toast.LENGTH_LONG
-                        ).show()
+                        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Main) {
+                            SyncStatusNotifications.dismissProgress(requireContext())
+                            dismissSyncDialog()
+                            Toast.makeText(
+                                requireContext(),
+                                error.message ?: getString(R.string.settings_clear_cache_failure),
+                                Toast.LENGTH_LONG
+                            ).show()
+                        }
                     }
                 )
             } catch (_: Exception) {
@@ -640,14 +652,16 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
                     withContext(Dispatchers.IO) {
                         roomRepository.syncSubregion(subregion) { subDone, _, msg, bytes ->
                             downloadedBytes = baseBytes + bytes
-                            if (isAdded) {
-                                dialog.update(done + subDone, total, msg ?: "", downloadedBytes)
-                                SyncStatusNotifications.notifyProgress(
-                                    requireContext(),
-                                    done + subDone,
-                                    total,
-                                    msg
-                                )
+                            viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Main) {
+                                if (isAdded) {
+                                    dialog.update(done + subDone, total, msg ?: "", downloadedBytes)
+                                    SyncStatusNotifications.notifyProgress(
+                                        requireContext(),
+                                        done + subDone,
+                                        total,
+                                        msg
+                                    )
+                                }
                             }
                         }
                     }
