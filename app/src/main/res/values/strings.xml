@@ -44,6 +44,7 @@
     <string name="mi_vehiculo_registro_caso_hint">Número de caso o Aranda</string>
     <string name="mi_vehiculo_registro_lugar_hint">Lugar</string>
     <string name="mi_vehiculo_registro_horas_hint">Horas laboradas (1 a 10)</string>
+    <string name="mi_vehiculo_registro_km_final_hint">Km final</string>
     <string name="mi_vehiculo_horas_invalidas">Las horas laboradas deben estar entre 1 y 10.</string>
     <string name="mi_vehiculo_no_dispongo">No dispongo de vehículo</string>
     <string name="mi_vehiculo_registro_hoy">Registro del día</string>

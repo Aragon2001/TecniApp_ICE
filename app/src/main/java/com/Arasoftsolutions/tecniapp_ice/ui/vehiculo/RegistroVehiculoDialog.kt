@@ -27,7 +27,13 @@ fun Fragment.showRegistroVehiculoPendienteDialog(
 
     val tilFecha = dialogView.findViewById<TextInputLayout>(R.id.tilRegistroFecha)
     val tilValor = dialogView.findViewById<TextInputLayout>(R.id.tilRegistroValor)
+    val tilKmFinal = dialogView.findViewById<TextInputLayout>(R.id.tilRegistroKmFinal)
     val tilCombustible = dialogView.findViewById<TextInputLayout>(R.id.tilRegistroCombustible)
+    val tilHoras = dialogView.findViewById<TextInputLayout>(R.id.tilRegistroHoras)
+    val tilActividad = dialogView.findViewById<TextInputLayout>(R.id.tilRegistroActividad)
+    val tilCuenta = dialogView.findViewById<TextInputLayout>(R.id.tilRegistroCuenta)
+    val tilCaso = dialogView.findViewById<TextInputLayout>(R.id.tilRegistroCaso)
+    val tilLugar = dialogView.findViewById<TextInputLayout>(R.id.tilRegistroLugar)
     val tilObservaciones = dialogView.findViewById<TextInputLayout>(R.id.tilRegistroObservaciones)
 
     dialogView.findViewById<MaterialButton>(R.id.btnRegistroDialogRegistrar).setOnClickListener {
@@ -39,6 +45,13 @@ fun Fragment.showRegistroVehiculoPendienteDialog(
             return@setOnClickListener
         }
         tilValor.error = null
+        val kmFinalTexto = tilKmFinal.editText?.text?.toString()?.trim().orEmpty()
+        val kmFinal = kmFinalTexto.takeIf { it.isNotBlank() }?.replace(",", ".")?.toDoubleOrNull()
+        if (kmFinalTexto.isNotBlank() && (kmFinal == null || kmFinal < valor)) {
+            tilKmFinal.error = getString(R.string.averia_error_km_final_menor)
+            return@setOnClickListener
+        }
+        tilKmFinal.error = null
 
         val fecha = if (fechaTexto.isBlank()) {
             LocalDate.now().format(DateTimeFormatter.ISO_DATE)
@@ -47,6 +60,17 @@ fun Fragment.showRegistroVehiculoPendienteDialog(
         }
 
         val combustible = tilCombustible.editText?.text?.toString()?.trim()?.ifBlank { null }
+        val horasTexto = tilHoras.editText?.text?.toString()?.trim().orEmpty()
+        val horasLaboradas = horasTexto.takeIf { it.isNotBlank() }?.toIntOrNull()
+        if (horasTexto.isNotBlank() && (horasLaboradas == null || horasLaboradas !in 1..10)) {
+            tilHoras.error = getString(R.string.mi_vehiculo_horas_invalidas)
+            return@setOnClickListener
+        }
+        tilHoras.error = null
+        val actividad = tilActividad.editText?.text?.toString()?.trim()?.ifBlank { null }
+        val cuenta = tilCuenta.editText?.text?.toString()?.trim()?.ifBlank { null }
+        val numeroCaso = tilCaso.editText?.text?.toString()?.trim()?.ifBlank { null }
+        val lugar = tilLugar.editText?.text?.toString()?.trim()?.ifBlank { null }
         val observaciones = tilObservaciones.editText?.text?.toString()?.trim()?.ifBlank { null }
 
         viewLifecycleOwner.lifecycleScope.launch {
@@ -61,22 +85,30 @@ fun Fragment.showRegistroVehiculoPendienteDialog(
                 val registro = RegistroDiarioVehiculo(
                     fecha = fecha,
                     valorInicial = valor,
+                    valorFinal = kmFinal,
+                    cerrado = kmFinal != null,
                     registradoPor = usuario?.nombre,
                     combustible = combustible,
-                    observaciones = observaciones
+                    observaciones = observaciones,
+                    actividad = actividad,
+                    cuenta = cuenta,
+                    numeroCaso = numeroCaso,
+                    lugar = lugar,
+                    horasLaboradas = horasLaboradas
                 )
                 val registrosActuales = parseRegistrosDiarios(vehiculo.registrosDiariosJson)
                     .filterNot { it.fecha == fecha }
                 val nuevos = listOf(registro) + registrosActuales
                 val registroJson = serializeRegistrosDiarios(nuevos)
-                val kilometrajeActual = if (tipo.usaKilometraje) valor else vehiculo.kilometrajeActual
-                val orimetroActual = if (tipo.usaOrimetro) valor else vehiculo.orimetroActual
+                val valorActualizado = kmFinal ?: valor
+                val kilometrajeActual = if (tipo.usaKilometraje) valorActualizado else vehiculo.kilometrajeActual
+                val orimetroActual = if (tipo.usaOrimetro) valorActualizado else vehiculo.orimetroActual
                 repo.actualizarRegistroDiarioVehiculo(
                     vehiculoId = vehiculo.id,
                     fecha = fecha,
                     inicial = valor,
-                    final = null,
-                    cerrado = false,
+                    final = kmFinal,
+                    cerrado = kmFinal != null,
                     kilometrajeActual = kilometrajeActual,
                     orimetroActual = orimetroActual,
                     registrosJson = registroJson
@@ -85,7 +117,7 @@ fun Fragment.showRegistroVehiculoPendienteDialog(
                     RegistroDiarioEntity(
                         vehiculoId = vehiculo.id,
                         fecha = fecha,
-                        valor = valor,
+                        valor = valorActualizado,
                         unidad = tipo.unidadTexto,
                         registradoEn = System.currentTimeMillis(),
                         registradoPor = usuario?.nombre
