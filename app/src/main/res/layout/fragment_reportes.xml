@@ -174,31 +174,43 @@
                             <com.google.android.material.chip.Chip
                                 android:id="@+id/chipFiltroFecha"
                                 style="@style/Widget.Material3.Chip.Assist"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
                                 android:text="@string/reportes_chip_fecha" />
 
                             <com.google.android.material.chip.Chip
                                 android:id="@+id/chipFiltroAgencia"
                                 style="@style/Widget.Material3.Chip.Assist"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
                                 android:text="@string/reportes_chip_agencia" />
 
                             <com.google.android.material.chip.Chip
                                 android:id="@+id/chipFiltroCamion"
                                 style="@style/Widget.Material3.Chip.Assist"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
                                 android:text="@string/reportes_chip_camion" />
 
                             <com.google.android.material.chip.Chip
                                 android:id="@+id/chipFiltroTecnico"
                                 style="@style/Widget.Material3.Chip.Assist"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
                                 android:text="@string/reportes_chip_tecnico" />
 
                             <com.google.android.material.chip.Chip
                                 android:id="@+id/chipFiltroTipo"
                                 style="@style/Widget.Material3.Chip.Assist"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
                                 android:text="@string/reportes_chip_tipo" />
 
                             <com.google.android.material.chip.Chip
                                 android:id="@+id/chipFiltroSync"
                                 style="@style/Widget.Material3.Chip.Assist"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
                                 android:text="@string/reportes_chip_sync" />
                         </com.google.android.material.chip.ChipGroup>
                     </HorizontalScrollView>
