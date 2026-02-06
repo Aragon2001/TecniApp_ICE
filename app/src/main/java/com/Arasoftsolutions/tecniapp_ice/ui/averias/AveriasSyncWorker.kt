@@ -13,6 +13,7 @@ import androidx.work.OutOfQuotaPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
+import androidx.work.workDataOf
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.util.concurrent.TimeUnit
@@ -22,11 +23,13 @@ import com.Arasoftsolutions.tecniapp_ice.session.SessionManager
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import kotlinx.coroutines.tasks.await
+import com.Arasoftsolutions.tecniapp_ice.notifications.SyncStatusNotifications
 
 
 class AveriasSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx, params) {
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
+        val shouldNotifySync = inputData.getBoolean(KEY_NOTIFY_SYNC, false)
         val auth = FirebaseAuth.getInstance()
         val currentUser = auth.currentUser
         if (currentUser != null) {
@@ -63,12 +66,16 @@ class AveriasSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorke
                 RoomRepository.getInstance(applicationContext).upsertUserFromFirebase(uid)
             }
         }.onFailure { return@withContext Result.retry() }
+        if (shouldNotifySync) {
+            SyncStatusNotifications.notifySynced(applicationContext)
+        }
         Result.success()
     }
 
     companion object {
         const val UNIQUE_PERIODIC_WORK = "averias_sync"
         const val UNIQUE_MANUAL_WORK = "averias_sync_now"
+        private const val KEY_NOTIFY_SYNC = "notify_sync"
 
         fun schedule(ctx: Context) {
             val constraints = Constraints.Builder()
@@ -85,12 +92,13 @@ class AveriasSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorke
             )
         }
 
-        fun triggerNow(ctx: Context) {
+        fun triggerNow(ctx: Context, showSyncNotification: Boolean = false) {
             val constraints = Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.CONNECTED)
                 .build()
             val request = OneTimeWorkRequestBuilder<AveriasSyncWorker>()
                 .setConstraints(constraints)
+                .setInputData(workDataOf(KEY_NOTIFY_SYNC to showSyncNotification))
                 .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
                 .build()
             WorkManager.getInstance(ctx).enqueueUniqueWork(
