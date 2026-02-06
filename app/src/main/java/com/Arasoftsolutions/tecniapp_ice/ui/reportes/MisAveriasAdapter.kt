@@ -2,6 +2,7 @@ package com.Arasoftsolutions.tecniapp_ice.ui.reportes
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.core.view.isVisible
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -9,6 +10,8 @@ import com.Arasoftsolutions.tecniapp_ice.R
 import com.Arasoftsolutions.tecniapp_ice.databinding.ItemReporteMisAveriasBinding
 
 class MisAveriasAdapter : ListAdapter<MisAveriaReportItem, MisAveriasAdapter.ViewHolder>(Diff) {
+
+    private val expandedIds = mutableSetOf<String>()
 
     object Diff : DiffUtil.ItemCallback<MisAveriaReportItem>() {
         override fun areItemsTheSame(oldItem: MisAveriaReportItem, newItem: MisAveriaReportItem): Boolean =
@@ -25,19 +28,25 @@ class MisAveriasAdapter : ListAdapter<MisAveriaReportItem, MisAveriasAdapter.Vie
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        holder.bind(getItem(position))
+        val item = getItem(position)
+        holder.bind(item, expandedIds.contains(item.caseId)) {
+            val isExpanded = expandedIds.contains(item.caseId)
+            if (isExpanded) {
+                expandedIds.remove(item.caseId)
+            } else {
+                expandedIds.add(item.caseId)
+            }
+            notifyItemChanged(position)
+        }
     }
 
     class ViewHolder(private val binding: ItemReporteMisAveriasBinding) : RecyclerView.ViewHolder(binding.root) {
-        fun bind(item: MisAveriaReportItem) {
+        fun bind(item: MisAveriaReportItem, expanded: Boolean, onToggle: () -> Unit) {
             val context = binding.root.context
             binding.tvAveriaCaso.text = context.getString(R.string.reportes_item_caso, item.caseId)
-            binding.tvAveriaNise.text = context.getString(R.string.reportes_item_nise, item.nise.ifBlank { "-" })
-            binding.tvAveriaUbicacion.text = context.getString(
-                R.string.reportes_item_ubicacion,
-                item.ubicacion.ifBlank { "-" }
-            )
-            binding.tvAveriaEstado.text = context.getString(R.string.reportes_item_estado, item.estado)
+            binding.tvAveriaNise.text = item.nise.ifBlank { "-" }
+            binding.tvAveriaUbicacion.text = item.ubicacion.ifBlank { "-" }
+            binding.chipAveriaEstado.text = item.estado
             binding.tvAveriaFechas.text = context.getString(
                 R.string.reportes_item_fechas,
                 item.fechaReporte,
@@ -48,6 +57,14 @@ class MisAveriasAdapter : ListAdapter<MisAveriaReportItem, MisAveriasAdapter.Vie
                 item.materialesCantidad,
                 item.materialesResumen.ifBlank { context.getString(R.string.reportes_item_materiales_sin) }
             )
+            binding.containerDetallesExtra.isVisible = expanded
+            binding.btnToggleDetalles.setIconResource(
+                if (expanded) R.drawable.ic_expand_less else R.drawable.ic_expand_more
+            )
+            binding.btnToggleDetalles.text = context.getString(
+                if (expanded) R.string.reportes_item_ver_menos else R.string.reportes_item_ver_mas
+            )
+            binding.btnToggleDetalles.setOnClickListener { onToggle() }
         }
     }
 }
