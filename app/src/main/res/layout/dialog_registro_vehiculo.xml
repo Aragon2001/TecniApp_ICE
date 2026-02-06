@@ -96,6 +96,8 @@
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chipAceite"
                     style="@style/Tecni.Chip"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
                     android:text="@string/mi_vehiculo_chip_aceite"
                     app:chipIcon="@drawable/ic_settings"
                     app:chipIconTint="@color/ice_yellow" />
@@ -103,6 +105,8 @@
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chipFrenos"
                     style="@style/Tecni.Chip"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
                     android:text="@string/mi_vehiculo_chip_frenos"
                     app:chipIcon="@drawable/ic_warning"
                     app:chipIconTint="@color/error_500" />
@@ -110,6 +114,8 @@
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chipRevision"
                     style="@style/Tecni.Chip"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
                     android:text="@string/mi_vehiculo_chip_revision"
                     app:chipIcon="@drawable/ic_check"
                     app:chipIconTint="@color/ice_blue" />
@@ -117,6 +123,8 @@
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chipLlantas"
                     style="@style/Tecni.Chip"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
                     android:text="@string/mi_vehiculo_chip_llantas"
                     app:chipIcon="@drawable/ic_layers"
                     app:chipIconTint="@color/ice_blue_dark" />
@@ -124,6 +132,8 @@
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chipFiltros"
                     style="@style/Tecni.Chip"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
                     android:text="@string/mi_vehiculo_chip_filtros"
                     app:chipIcon="@drawable/ic_filter_list"
                     app:chipIconTint="@color/tertiary_container_light" />
@@ -131,6 +141,8 @@
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chipOtros"
                     style="@style/Tecni.Chip"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
                     android:text="@string/mi_vehiculo_chip_otros"
                     app:chipIcon="@drawable/ic_car"
                     app:chipIconTint="@color/ice_blue_dark" />

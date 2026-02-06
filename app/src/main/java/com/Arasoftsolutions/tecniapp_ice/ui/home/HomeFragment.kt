@@ -341,7 +341,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
     private fun ejecutarOperacionSiRegistroCompleto(onContinue: () -> Unit) {
         if (vm.registroEtmPendiente.value) {
             showRegistroVehiculoPendienteDialog(
-                onRegistrar = { navigateTo(R.id.nav_mi_vehiculo) },
+                onRegistroGuardado = { onContinue() },
                 onNoVehiculo = { }
             )
             return
