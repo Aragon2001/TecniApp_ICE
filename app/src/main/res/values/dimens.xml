@@ -13,4 +13,8 @@
     <dimen name="averia_notification_line_spacing">2dp</dimen>
     <dimen name="notification_large_icon_width">420dp</dimen>
     <dimen name="notification_large_icon_height">240dp</dimen>
+    <dimen name="street_view_collapsed_width">180dp</dimen>
+    <dimen name="street_view_collapsed_height">120dp</dimen>
+    <dimen name="street_view_expanded_width">260dp</dimen>
+    <dimen name="street_view_expanded_height">180dp</dimen>
 </resources>
