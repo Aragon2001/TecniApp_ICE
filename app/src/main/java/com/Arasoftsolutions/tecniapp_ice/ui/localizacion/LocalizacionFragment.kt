@@ -43,7 +43,7 @@ import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.MapView
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.StreetViewPanorama
-import com.google.android.gms.maps.StreetViewPanoramaView
+import com.google.android.gms.maps.model.StreetViewSource
 import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
@@ -335,11 +335,11 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
                 setZoomGesturesEnabled(true)
                 setStreetNamesEnabled(true)
                 setOnStreetViewPanoramaChangeListener { location ->
-                    binding.streetViewPanorama.visibility = if (location == null) View.GONE else View.VISIBLE
+                    binding.streetViewContainer.visibility = if (location == null) View.INVISIBLE else View.VISIBLE
                 }
             }
         }
-        binding.streetViewPanorama.visibility = View.GONE
+        binding.streetViewContainer.visibility = View.INVISIBLE
     }
 
     override fun onMapReady(map: GoogleMap) {
@@ -763,7 +763,7 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
 
     private fun actualizarStreetView(latitud: Double, longitud: Double) {
         val panorama = streetViewPanorama ?: return
-        panorama.setPosition(LatLng(latitud, longitud), 50)
+        panorama.setPosition(LatLng(latitud, longitud), 50, StreetViewSource.OUTDOOR)
     }
 
     private fun actualizarAutorrotacionRuntime(enabled: Boolean) {
