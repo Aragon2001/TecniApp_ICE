@@ -1,85 +1,387 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    style="@style/Tecni.DialogCard"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:padding="16dp">
+    android:layout_margin="8dp">
 
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/tilLocalizacionReparacion"
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Número de localización">
+        android:animateLayoutChanges="true"
+        android:padding="16dp">
 
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/etLocalizacionReparacion"
-            android:layout_width="match_parent"
+        <!-- Header con icono + resumen rápido -->
+        <com.google.android.material.imageview.ShapeableImageView
+            android:id="@+id/ivLuminariaHeader"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:contentDescription="@string/app_name"
+            android:padding="12dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full"
+            app:srcCompat="@drawable/ic_report_location"
+            app:strokeColor="?attr/colorPrimary"
+            app:strokeWidth="1dp"
+            app:tint="?attr/colorPrimary" />
+
+        <TextView
+            android:id="@+id/tvLuminariaTitle"
+            style="@style/TextAppearance.Material3.TitleLarge"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:inputType="number" />
-    </com.google.android.material.textfield.TextInputLayout>
+            android:layout_marginStart="12dp"
+            android:text="Edición de luminaria"
+            android:textStyle="bold"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@id/ivLuminariaHeader"
+            app:layout_constraintTop_toTopOf="@id/ivLuminariaHeader" />
 
-    <com.google.android.material.textfield.TextInputLayout
-        style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
-        android:hint="Estado"
-        app:startIconDrawable="@drawable/ic_check">
-
-        <com.google.android.material.textfield.MaterialAutoCompleteTextView
-            android:id="@+id/actEstadoReparacion"
-            android:layout_width="match_parent"
+        <TextView
+            android:id="@+id/tvLuminariaSubtitle"
+            style="@style/TextAppearance.Material3.BodySmall"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:inputType="none" />
-    </com.google.android.material.textfield.TextInputLayout>
+            android:layout_marginStart="12dp"
+            android:text="Actualiza datos críticos en segundos"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@id/ivLuminariaHeader"
+            app:layout_constraintTop_toBottomOf="@id/tvLuminariaTitle" />
 
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/tilEjecutorReparacion"
-        style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
-        android:hint="Técnico ejecutor"
-        app:helperText="Puedes buscarlo en la lista de técnicos"
-        app:startIconDrawable="@drawable/ic_accounts">
-
-        <com.google.android.material.textfield.MaterialAutoCompleteTextView
-            android:id="@+id/actEjecutorReparacion"
-            android:layout_width="match_parent"
+        <!-- Mini resumen rápido -->
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/groupResumenLuminaria"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:inputType="text" />
-    </com.google.android.material.textfield.TextInputLayout>
+            android:layout_marginTop="12dp"
+            app:chipSpacing="8dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/ivLuminariaHeader"
+            app:singleLine="true">
 
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/tilMaterialReparacion"
-        style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
-        android:hint="Agregar material"
-        app:helperText="Selecciona un material para agregarlo"
-        app:startIconDrawable="@drawable/ic_summary_material">
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipCamion"
+                style="@style/Tecni.Chip.Medidor"
+                android:text="Camión #12"
+                app:chipIcon="@drawable/ic_car"
+                app:chipIconTint="?attr/colorOnSurfaceVariant" />
 
-        <com.google.android.material.textfield.MaterialAutoCompleteTextView
-            android:id="@+id/actMaterialReparacion"
-            android:layout_width="match_parent"
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipTecnico"
+                style="@style/Tecni.Chip.Medidor"
+                android:text="Téc. Carlos"
+                app:chipIcon="@drawable/ic_accounts"
+                app:chipIconTint="?attr/colorOnSurfaceVariant" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipFecha"
+                style="@style/Tecni.Chip.Medidor"
+                android:text="Hoy 08:30"
+                app:chipIcon="@drawable/ic_calendar"
+                app:chipIconTint="?attr/colorOnSurfaceVariant" />
+        </com.google.android.material.chip.ChipGroup>
+
+        <!-- Sección: Datos -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardDatosLuminaria"
+            style="@style/Tecni.SectionCard"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:inputType="text" />
-    </com.google.android.material.textfield.TextInputLayout>
+            android:layout_marginTop="16dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/groupResumenLuminaria">
 
-    <TextView
-        android:id="@+id/tvEmptyMaterialesReparacion"
-        style="@style/TextAppearance.Material3.BodyMedium"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
-        android:text="No hay materiales agregados." />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/listMaterialesReparacion"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:nestedScrollingEnabled="false" />
-</LinearLayout>
+                <TextView
+                    style="@style/TextAppearance.Material3.TitleSmall"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Datos"
+                    android:textStyle="bold" />
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilEjecutorReparacion"
+                    style="@style/Tecni.TextInput.Outlined.Dropdown"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:hint="Técnico ejecutor"
+                    app:helperText="Puedes buscarlo en la lista de técnicos"
+                    app:startIconDrawable="@drawable/ic_accounts">
+
+                    <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                        android:id="@+id/actEjecutorReparacion"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="text" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilMaterialReparacion"
+                    style="@style/Tecni.TextInput.Outlined.Dropdown"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:hint="Agregar material"
+                    app:helperText="Selecciona un material para agregarlo"
+                    app:startIconDrawable="@drawable/ic_summary_material">
+
+                    <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                        android:id="@+id/actMaterialReparacion"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="text" />
+                </com.google.android.material.textfield.TextInputLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Sección: Ubicación -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardUbicacionLuminaria"
+            style="@style/Tecni.SectionCard"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/cardDatosLuminaria">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    style="@style/TextAppearance.Material3.TitleSmall"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Ubicación"
+                    android:textStyle="bold" />
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilLocalizacionReparacion"
+                    style="@style/Tecni.TextInput.Outlined"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:hint="Número de localización"
+                    app:startIconDrawable="@drawable/ic_location">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etLocalizacionReparacion"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="number" />
+                </com.google.android.material.textfield.TextInputLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Sección: Estado -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardEstadoLuminaria"
+            style="@style/Tecni.SectionCard"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/cardUbicacionLuminaria">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    style="@style/TextAppearance.Material3.TitleSmall"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Estado"
+                    android:textStyle="bold" />
+
+                <!-- Chips de estado (selección rápida) -->
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/groupEstadoLuminaria"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    app:chipSpacing="8dp"
+                    app:singleLine="true">
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipEstadoPendiente"
+                        style="@style/Tecni.Chip.Status"
+                        android:text="Pendiente"
+                        app:chipBackgroundColor="?attr/colorSecondaryContainer"
+                        app:chipStrokeWidth="0dp"
+                        app:textColor="?attr/colorOnSecondaryContainer" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipEstadoProceso"
+                        style="@style/Tecni.Chip.Status"
+                        android:text="En proceso"
+                        app:chipBackgroundColor="?attr/colorPrimaryContainer"
+                        app:chipStrokeWidth="0dp"
+                        app:textColor="?attr/colorOnPrimaryContainer" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipEstadoReparada"
+                        style="@style/Tecni.Chip.Status"
+                        android:text="Reparada"
+                        app:chipBackgroundColor="?attr/colorTertiaryContainer"
+                        app:chipStrokeWidth="0dp"
+                        app:textColor="?attr/colorOnTertiaryContainer" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipEstadoNoAplica"
+                        style="@style/Tecni.Chip.Status"
+                        android:text="No aplica"
+                        app:chipBackgroundColor="?attr/colorSurfaceVariant"
+                        app:chipStrokeWidth="0dp"
+                        app:textColor="?attr/colorOnSurfaceVariant" />
+                </com.google.android.material.chip.ChipGroup>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/Tecni.TextInput.Outlined.Dropdown"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:hint="Estado"
+                    app:startIconDrawable="@drawable/ic_check">
+
+                    <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                        android:id="@+id/actEstadoReparacion"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="none" />
+                </com.google.android.material.textfield.TextInputLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Sección: Observaciones -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardObservacionesLuminaria"
+            style="@style/Tecni.SectionCard"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/cardEstadoLuminaria">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    style="@style/TextAppearance.Material3.TitleSmall"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Observaciones"
+                    android:textStyle="bold" />
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilObservacionesReparacion"
+                    style="@style/Tecni.TextInput.Outlined"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:hint="Notas para el equipo"
+                    app:helperText="Opcional">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etObservacionesReparacion"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textMultiLine"
+                        android:minLines="3" />
+                </com.google.android.material.textfield.TextInputLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Materiales agregados -->
+        <TextView
+            android:id="@+id/tvEmptyMaterialesReparacion"
+            style="@style/TextAppearance.Material3.BodyMedium"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="No hay materiales agregados."
+            android:textColor="?attr/colorOnSurfaceVariant"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/cardObservacionesLuminaria" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/listMaterialesReparacion"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:nestedScrollingEnabled="false"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tvEmptyMaterialesReparacion" />
+
+        <!-- Acciones principales -->
+        <LinearLayout
+            android:id="@+id/groupAccionesLuminaria"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:gravity="end"
+            android:orientation="horizontal"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/listMaterialesReparacion">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnCancelarLuminariaEdicion"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:layout_weight="1"
+                android:text="Cancelar" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnGuardarLuminariaEdicion"
+                style="@style/Widget.Material3.Button"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:icon="@drawable/ic_save"
+                android:text="Guardar"
+                app:iconGravity="textStart"
+                app:iconPadding="8dp" />
+        </LinearLayout>
+
+        <com.google.android.material.progressindicator.LinearProgressIndicator
+            android:id="@+id/progressGuardarLuminariaEdicion"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:indeterminate="true"
+            android:visibility="gone"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/groupAccionesLuminaria"
+            tools:visibility="visible" />
+
+        <!-- Nota UX: habilitar haptic feedback en acciones de guardado y chips -->
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</com.google.android.material.card.MaterialCardView>
