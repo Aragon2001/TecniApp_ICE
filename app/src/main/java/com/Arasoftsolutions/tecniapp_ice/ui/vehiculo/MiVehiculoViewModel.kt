@@ -3,174 +3,274 @@ package com.Arasoftsolutions.tecniapp_ice.ui.vehiculo
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.Arasoftsolutions.tecniapp_ice.Database.entities.VehiculosEntity
+import com.Arasoftsolutions.tecniapp_ice.Database.entities.RegistroDiarioEntity
+import com.Arasoftsolutions.tecniapp_ice.Database.entities.RegistroMantenimientoEntity
+import com.Arasoftsolutions.tecniapp_ice.Database.entities.VehiculoEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
+import com.Arasoftsolutions.tecniapp_ice.Database.utils.SyncStatus
 import com.Arasoftsolutions.tecniapp_ice.Database.utils.VehiculoPlacaUtils
+import com.Arasoftsolutions.tecniapp_ice.ui.vehiculo.worker.VehiculoReminderWorker
+import com.Arasoftsolutions.tecniapp_ice.ui.vehiculo.worker.VehiculoSyncWorker
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
-import java.util.Date
+import java.util.Calendar
 import java.util.Locale
 
+private const val INTERVALO_MANTENIMIENTO_KM = 5000.0
+private const val INTERVALO_MANTENIMIENTO_HORAS = 250.0
+private const val AVISO_MANTENIMIENTO_DELTA_KM = 500.0
+private const val AVISO_MANTENIMIENTO_DELTA_HORAS = 25.0
+
+
+data class MantenimientoCardUi(
+    val titulo: String,
+    val detalle: String,
+    val estado: EstadoVehiculo
+)
+
+data class UsoMensualUi(
+    val mes: String,
+    val porcentaje: Int,
+    val total: Double
+)
+
 data class MiVehiculoUiState(
-    val vehiculo: VehiculosEntity? = null,
+    val vehiculo: VehiculoEntity? = null,
     val tipoVehiculo: TipoVehiculo = TipoVehiculo.LIVIANO,
-    val registroHoy: RegistroDiarioVehiculo? = null,
-    val ultimoRegistro: RegistroDiarioVehiculo? = null,
-    val registrosRecientes: List<RegistroDiarioVehiculo> = emptyList(),
-    val nombreUsuario: String = "",
+    val estado: EstadoVehiculo = EstadoVehiculo.OPTIMO,
+    val estadoMensaje: String = "",
+    val valorActual: Double? = null,
+    val unidad: String = "km",
+    val mantenimientoCards: List<MantenimientoCardUi> = emptyList(),
+    val usoMensual: List<UsoMensualUi> = emptyList(),
+    val motivacion: String = "",
     val isLoading: Boolean = false
 )
+
+enum class EstadoVehiculo {
+    OPTIMO,
+    ATENCION,
+    VENCIDO
+}
 
 class MiVehiculoViewModel(app: Application) : AndroidViewModel(app) {
 
     private val repository = RoomRepository.getInstance(app)
     private val auth = FirebaseAuth.getInstance()
 
-    private val _uiState = MutableStateFlow(MiVehiculoUiState())
+    private val _uiState = MutableStateFlow(MiVehiculoUiState(isLoading = true))
     val uiState: StateFlow<MiVehiculoUiState> = _uiState.asStateFlow()
 
     private val _eventos = MutableSharedFlow<String>()
     val eventos: SharedFlow<String> = _eventos
 
     private val formatoFecha = SimpleDateFormat("yyyy-MM-dd", Locale.ROOT)
+    private val formatoMes = SimpleDateFormat("MMM", Locale.getDefault())
 
     init {
-        cargarDatos()
+        cargarDashboard()
     }
 
-    private fun fechaHoy(): String = formatoFecha.format(Date())
+    private fun fechaHoy(): String = formatoFecha.format(System.currentTimeMillis())
 
-    private fun cargarDatos() {
+    private fun cargarDashboard() {
         viewModelScope.launch {
             val uid = auth.currentUser?.uid ?: return@launch
             val usuario = repository.obtenerUsuario(uid) ?: return@launch
             val placaStr = usuario.placaVehiculo?.trim().orEmpty()
             if (placaStr.isBlank()) {
-                _uiState.value = _uiState.value.copy(vehiculo = null)
+                _uiState.value = MiVehiculoUiState(isLoading = false)
                 return@launch
             }
-
             val placaLong = VehiculoPlacaUtils.parsePlacaLong(placaStr) ?: return@launch
-            val nombre = usuario.nombre?.trim().orEmpty()
-            val hoy = fechaHoy()
 
-            repository.observarVehiculoPorPlaca(placaLong).collectLatest { vehiculo ->
-                if (vehiculo == null) {
-                    _uiState.value = _uiState.value.copy(vehiculo = null)
-                    return@collectLatest
+            repository.observarVehiculoPorPlaca(placaLong)
+                .filterNotNull()
+                .distinctUntilChanged()
+                .flatMapLatest { vehiculo ->
+                    val tipo = inferirTipoVehiculo(vehiculo.tipo)
+                    repository.observarRegistrosDiarios(vehiculo.id)
+                        .combine(repository.observarMantenimientos(vehiculo.id)) { registros, mantenimientos ->
+                            Triple(vehiculo, tipo, Pair(registros, mantenimientos))
+                        }
                 }
-                val tipo = inferirTipoVehiculo(vehiculo.tipo)
-                val registros = parseRegistrosDiarios(vehiculo.registrosDiariosJson)
-                val registroHoy = registros.firstOrNull { it.fecha == hoy }
-                val ultimoRegistro = registros.firstOrNull()
-                _uiState.value = _uiState.value.copy(
-                    vehiculo = vehiculo,
-                    tipoVehiculo = tipo,
-                    registroHoy = registroHoy,
-                    ultimoRegistro = ultimoRegistro,
-                    registrosRecientes = registros,
-                    nombreUsuario = nombre
-                )
-            }
+                .onStart { _uiState.value = _uiState.value.copy(isLoading = true) }
+                .collect { (vehiculo, tipo, data) ->
+                    val (registros, mantenimientos) = data
+                    val unidad = tipo.unidadTexto
+                    val valorActual = registros.firstOrNull()?.valor
+                        ?: if (tipo.usaKilometraje) vehiculo.kilometrajeActual else vehiculo.orimetroActual
+
+                    val ultimoMantenimiento = mantenimientos.firstOrNull()
+                    val estado = calcularEstado(valorActual, ultimoMantenimiento, tipo)
+                    val estadoMensaje = construirMensajeEstado(estado)
+                    val cards = construirCards(ultimoMantenimiento, valorActual, unidad, estado)
+                    val grafica = construirUsoMensual(registros)
+
+                    _uiState.value = MiVehiculoUiState(
+                        vehiculo = vehiculo,
+                        tipoVehiculo = tipo,
+                        estado = estado,
+                        estadoMensaje = estadoMensaje,
+                        valorActual = valorActual,
+                        unidad = unidad,
+                        mantenimientoCards = cards,
+                        usoMensual = grafica,
+                        motivacion = "Cuidar tu vehículo es cuidar tu seguridad.",
+                        isLoading = false
+                    )
+                }
         }
     }
 
-    fun refrescar() {
-        viewModelScope.launch {
-            cargarDatos()
-        }
-    }
-
-    fun registrarInicial(
-        valor: Double,
-        circuito: String?,
-        actividad: String?,
-        cuenta: String?,
-        numeroCaso: String?,
-        lugar: String?,
-        horasLaboradas: Int?
-    ) {
+    fun registrarMantenimiento(valor: Double, tipoMantenimiento: String, observaciones: String?) {
         viewModelScope.launch {
             val state = _uiState.value
-            val v = state.vehiculo ?: return@launch
-            if (state.registroHoy != null) {
-                _eventos.emit("Ya existe un registro para hoy.")
-                return@launch
-            }
-            val ultimoValor = state.ultimoRegistro?.valorFinal ?: state.ultimoRegistro?.valorInicial
-            if (ultimoValor != null && valor < ultimoValor) {
-                _eventos.emit("No se permiten valores regresivos.")
+            val vehiculo = state.vehiculo ?: return@launch
+            if (valor < 0) {
+                _eventos.emit("Ingresa un valor válido para continuar.")
                 return@launch
             }
 
-            val nuevoRegistro = RegistroDiarioVehiculo(
+            val unidad = state.unidad
+            val intervalo = if (state.tipoVehiculo.usaKilometraje) {
+                INTERVALO_MANTENIMIENTO_KM
+            } else {
+                INTERVALO_MANTENIMIENTO_HORAS
+            }
+            val proximo = valor + intervalo
+
+            val registroDiario = RegistroDiarioEntity(
+                vehiculoId = vehiculo.id,
                 fecha = fechaHoy(),
-                valorInicial = valor,
-                valorFinal = null,
-                cerrado = false,
+                valor = valor,
+                unidad = unidad,
                 registradoEn = System.currentTimeMillis(),
-                registradoPor = state.nombreUsuario.ifBlank { null },
-                circuito = circuito,
-                actividad = actividad,
-                cuenta = cuenta,
-                numeroCaso = numeroCaso,
-                lugar = lugar,
-                horasLaboradas = horasLaboradas
+                registradoPor = auth.currentUser?.displayName,
+                syncStatus = SyncStatus.PENDING
             )
-            val registrosActuales = state.registrosRecientes.filterNot { it.fecha == nuevoRegistro.fecha }
-            val nuevos = listOf(nuevoRegistro) + registrosActuales
-            val registroJson = serializeRegistrosDiarios(nuevos)
-            val kilometrajeActual = if (state.tipoVehiculo.usaKilometraje) valor else v.kilometrajeActual
-            val orimetroActual = if (state.tipoVehiculo.usaOrimetro) valor else v.orimetroActual
-            repository.actualizarRegistroDiarioVehiculo(
-                vehiculoId = v.id,
-                fecha = nuevoRegistro.fecha,
-                inicial = nuevoRegistro.valorInicial,
-                final = null,
-                cerrado = false,
-                kilometrajeActual = kilometrajeActual,
-                orimetroActual = orimetroActual,
-                registrosJson = registroJson
+            val registroMantenimiento = RegistroMantenimientoEntity(
+                vehiculoId = vehiculo.id,
+                tipoMantenimiento = tipoMantenimiento,
+                valorActual = valor,
+                unidad = unidad,
+                observaciones = observaciones,
+                proximoMantenimiento = proximo,
+                creadoEn = System.currentTimeMillis(),
+                syncStatus = SyncStatus.PENDING
             )
-            refrescar()
+
+            repository.insertarRegistroDiario(registroDiario)
+            repository.insertarRegistroMantenimiento(registroMantenimiento)
+            repository.actualizarMantenimiento(
+                vehiculoId = vehiculo.id,
+                mantenimientoUltimo = "${tipoMantenimiento} • ${formatearValor(valor, unidad)}",
+                mantenimientoProximo = "${formatearValor(proximo, unidad)}"
+            )
+
+            VehiculoSyncWorker.triggerNow(getApplication())
+            VehiculoReminderWorker.triggerNow(getApplication())
         }
     }
 
-    fun registrarFinal(valor: Double) {
-        viewModelScope.launch {
-            val state = _uiState.value
-            val reg = state.registroHoy ?: return@launch
-            if (valor < reg.valorInicial) {
-                _eventos.emit("El valor final no puede ser menor al inicial.")
-                return@launch
-            }
-            val actualizado = reg.copy(valorFinal = valor, cerrado = true)
-            val registrosActuales = state.registrosRecientes.map {
-                if (it.fecha == actualizado.fecha) actualizado else it
-            }
-            val registroJson = serializeRegistrosDiarios(registrosActuales)
-            val kilometrajeActual = if (state.tipoVehiculo.usaKilometraje) valor else state.vehiculo?.kilometrajeActual
-            val orimetroActual = if (state.tipoVehiculo.usaOrimetro) valor else state.vehiculo?.orimetroActual
-            repository.actualizarRegistroDiarioVehiculo(
-                vehiculoId = state.vehiculo?.id ?: return@launch,
-                fecha = actualizado.fecha,
-                inicial = actualizado.valorInicial,
-                final = actualizado.valorFinal,
-                cerrado = true,
-                kilometrajeActual = kilometrajeActual,
-                orimetroActual = orimetroActual,
-                registrosJson = registroJson
-            )
-            refrescar()
+    private fun calcularEstado(
+        valorActual: Double?,
+        ultimoMantenimiento: RegistroMantenimientoEntity?,
+        tipo: TipoVehiculo
+    ): EstadoVehiculo {
+        if (valorActual == null || ultimoMantenimiento == null) return EstadoVehiculo.ATENCION
+        val delta = ultimoMantenimiento.proximoMantenimiento - valorActual
+        val umbral = if (tipo.usaKilometraje) AVISO_MANTENIMIENTO_DELTA_KM else AVISO_MANTENIMIENTO_DELTA_HORAS
+        return when {
+            delta <= 0 -> EstadoVehiculo.VENCIDO
+            delta <= umbral -> EstadoVehiculo.ATENCION
+            else -> EstadoVehiculo.OPTIMO
         }
     }
 
-    fun obtenerPlaca(): String? = _uiState.value.vehiculo?.placa?.toString()
+    private fun construirMensajeEstado(estado: EstadoVehiculo): String = when (estado) {
+        EstadoVehiculo.OPTIMO -> "Tu vehículo está en óptimas condiciones."
+        EstadoVehiculo.ATENCION -> "Se acerca tu mantenimiento. Planea tu próxima parada."
+        EstadoVehiculo.VENCIDO -> "Tu mantenimiento está vencido. Prioriza esta tarea."
+    }
+
+    private fun construirCards(
+        ultimo: RegistroMantenimientoEntity?,
+        valorActual: Double?,
+        unidad: String,
+        estado: EstadoVehiculo
+    ): List<MantenimientoCardUi> {
+        val ultimaLinea = ultimo?.let {
+            "${it.tipoMantenimiento} • ${formatearValor(it.valorActual, unidad)}"
+        } ?: "Aún no registras mantenimientos"
+        val proximaLinea = ultimo?.let {
+            "Próximo: ${formatearValor(it.proximoMantenimiento, unidad)}"
+        } ?: "Agrega tu primer mantenimiento"
+        val estadoDetalle = valorActual?.let { "Actual: ${formatearValor(it, unidad)}" } ?: "Sin lectura reciente"
+
+        return listOf(
+            MantenimientoCardUi(
+                titulo = "Último mantenimiento",
+                detalle = ultimaLinea,
+                estado = estado
+            ),
+            MantenimientoCardUi(
+                titulo = "Próximo mantenimiento",
+                detalle = proximaLinea,
+                estado = estado
+            ),
+            MantenimientoCardUi(
+                titulo = "Lectura actual",
+                detalle = estadoDetalle,
+                estado = estado
+            )
+        )
+    }
+
+    private fun construirUsoMensual(registros: List<RegistroDiarioEntity>): List<UsoMensualUi> {
+        if (registros.isEmpty()) return emptyList()
+        val calendar = Calendar.getInstance()
+        val months = (0..5).map { offset ->
+            calendar.clone() as Calendar
+        }.mapIndexed { index, cal ->
+            cal.add(Calendar.MONTH, -index)
+            cal
+        }
+
+        return months.map { cal ->
+            val month = cal.get(Calendar.MONTH)
+            val year = cal.get(Calendar.YEAR)
+            val registrosMes = registros.filter { registro ->
+                val parsed = runCatching { formatoFecha.parse(registro.fecha) }.getOrNull()
+                val regCal = Calendar.getInstance().apply { if (parsed != null) time = parsed }
+                regCal.get(Calendar.MONTH) == month && regCal.get(Calendar.YEAR) == year
+            }.sortedBy { it.fecha }
+            val total = if (registrosMes.size >= 2) {
+                registrosMes.last().valor - registrosMes.first().valor
+            } else {
+                0.0
+            }
+            val porcentaje = ((total / 1000.0) * 100).coerceIn(0.0, 100.0).toInt()
+            UsoMensualUi(
+                mes = formatoMes.format(cal.time).uppercase(Locale.getDefault()),
+                porcentaje = porcentaje,
+                total = total
+            )
+        }.reversed()
+    }
+
+    private fun formatearValor(valor: Double, unidad: String): String {
+        return String.format(Locale.getDefault(), "%.0f %s", valor, unidad)
+    }
 }
