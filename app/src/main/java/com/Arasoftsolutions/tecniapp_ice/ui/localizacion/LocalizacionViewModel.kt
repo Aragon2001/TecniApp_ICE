@@ -40,6 +40,21 @@ class LocalizacionViewModel(app: Application) : AndroidViewModel(app) {
     private val _marcadoresCalles = MutableLiveData<List<MarcadorCalle>>(emptyList())
     val marcadoresCalles: LiveData<List<MarcadorCalle>> = _marcadoresCalles
 
+    private val _streetViewState = MutableLiveData(StreetViewState.CLOSED)
+    val streetViewState: LiveData<StreetViewState> = _streetViewState
+
+    enum class StreetViewState {
+        CLOSED,
+        FULLSCREEN,
+        MINIMIZED,
+        LOADING,
+        UNAVAILABLE
+    }
+
+    fun actualizarStreetViewEstado(estado: StreetViewState) {
+        _streetViewState.value = estado
+    }
+
     private var subregionActual: String? = null
     private var initialized = false
     private var pueblosJob: Job? = null
