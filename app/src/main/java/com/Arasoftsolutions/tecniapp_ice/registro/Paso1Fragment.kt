@@ -40,16 +40,27 @@ class Paso1Fragment : Fragment() {
 
 
     // UI
-    private lateinit var etPhoneNumber: TextInputEditText
-    private lateinit var etEmail: TextInputEditText
-    private lateinit var etPassword: TextInputEditText
-    private lateinit var etConfirmPassword: TextInputEditText
-    private lateinit var tvPhoneError: MaterialTextView
-    private lateinit var tvEmailError: MaterialTextView
-    private lateinit var tvPasswordError: MaterialTextView
-    private lateinit var tvConfirmPasswordError: MaterialTextView
-    private lateinit var checkBoxShowPassword: MaterialCheckBox
-    private lateinit var btnContinue: MaterialButton
+    private var _etPhoneNumber: TextInputEditText? = null
+    private var _etEmail: TextInputEditText? = null
+    private var _etPassword: TextInputEditText? = null
+    private var _etConfirmPassword: TextInputEditText? = null
+    private var _tvPhoneError: MaterialTextView? = null
+    private var _tvEmailError: MaterialTextView? = null
+    private var _tvPasswordError: MaterialTextView? = null
+    private var _tvConfirmPasswordError: MaterialTextView? = null
+    private var _checkBoxShowPassword: MaterialCheckBox? = null
+    private var _btnContinue: MaterialButton? = null
+
+    private val etPhoneNumber get() = requireNotNull(_etPhoneNumber)
+    private val etEmail get() = requireNotNull(_etEmail)
+    private val etPassword get() = requireNotNull(_etPassword)
+    private val etConfirmPassword get() = requireNotNull(_etConfirmPassword)
+    private val tvPhoneError get() = requireNotNull(_tvPhoneError)
+    private val tvEmailError get() = requireNotNull(_tvEmailError)
+    private val tvPasswordError get() = requireNotNull(_tvPasswordError)
+    private val tvConfirmPasswordError get() = requireNotNull(_tvConfirmPasswordError)
+    private val checkBoxShowPassword get() = requireNotNull(_checkBoxShowPassword)
+    private val btnContinue get() = requireNotNull(_btnContinue)
 
     // ---- Helpers de clave (coinciden con reglas RTDB) ----
     private fun emailKey(email: String) = email.trim().lowercase(Locale.ROOT)
@@ -93,16 +104,32 @@ class Paso1Fragment : Fragment() {
     }
 
     private fun initViews(view: View) {
-        etPhoneNumber = view.findViewById(R.id.etPhoneNumber)
-        etEmail = view.findViewById(R.id.etEmail)
-        etPassword = view.findViewById(R.id.etPassword)
-        etConfirmPassword = view.findViewById(R.id.etConfirmPassword)
-        tvPhoneError = view.findViewById(R.id.tvPhoneError)
-        tvEmailError = view.findViewById(R.id.tvEmailError)
-        tvPasswordError = view.findViewById(R.id.tvPasswordError)
-        tvConfirmPasswordError = view.findViewById(R.id.tvConfirmPasswordError)
-        checkBoxShowPassword = view.findViewById(R.id.ic_hide_password)
-        btnContinue = view.findViewById(R.id.btnContinueToStep2)
+        _etPhoneNumber = view.findViewById(R.id.etPhoneNumber)
+        _etEmail = view.findViewById(R.id.etEmail)
+        _etPassword = view.findViewById(R.id.etPassword)
+        _etConfirmPassword = view.findViewById(R.id.etConfirmPassword)
+        _tvPhoneError = view.findViewById(R.id.tvPhoneError)
+        _tvEmailError = view.findViewById(R.id.tvEmailError)
+        _tvPasswordError = view.findViewById(R.id.tvPasswordError)
+        _tvConfirmPasswordError = view.findViewById(R.id.tvConfirmPasswordError)
+        _checkBoxShowPassword = view.findViewById(R.id.ic_hide_password)
+        _btnContinue = view.findViewById(R.id.btnContinueToStep2)
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _checkBoxShowPassword?.setOnCheckedChangeListener(null)
+        _btnContinue?.setOnClickListener(null)
+        _etPhoneNumber = null
+        _etEmail = null
+        _etPassword = null
+        _etConfirmPassword = null
+        _tvPhoneError = null
+        _tvEmailError = null
+        _tvPasswordError = null
+        _tvConfirmPasswordError = null
+        _checkBoxShowPassword = null
+        _btnContinue = null
     }
 
     private fun setNavigationListeners(view: View) {

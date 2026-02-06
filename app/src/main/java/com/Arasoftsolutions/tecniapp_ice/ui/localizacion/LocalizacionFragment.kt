@@ -726,12 +726,22 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
 
     override fun onStop() {
         super.onStop()
+        stopLocationUpdates()
+        sensorManager.unregisterListener(this)
         binding.mapView.onStop()
         binding.streetViewPanorama.onStop()
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
+        stopLocationUpdates()
+        sensorManager.unregisterListener(this)
+        mapaGoogle?.setOnCameraMoveStartedListener(null)
+        mapaGoogle?.setOnCameraMoveListener(null)
+        mapaGoogle?.setOnCameraIdleListener(null)
+        mapaGoogle?.setOnMyLocationButtonClickListener(null)
+        mapaGoogle?.setOnMapClickListener(null)
+        mapaGoogle?.setInfoWindowAdapter(null)
         binding.mapView.onDestroy()
         binding.streetViewPanorama.onDestroy()
         handler.removeCallbacksAndMessages(null)
