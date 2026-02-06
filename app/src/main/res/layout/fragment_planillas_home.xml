@@ -57,16 +57,22 @@
 
                         <com.google.android.material.chip.Chip
                             android:id="@+id/circuitoChip"
+                            android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
                             style="@style/Widget.Material3.Chip.Filter"
                             android:text="Circuito" />
 
                         <com.google.android.material.chip.Chip
                             android:id="@+id/agenciaChip"
+                            android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
                             style="@style/Widget.Material3.Chip.Filter"
                             android:text="Agencia" />
 
                         <com.google.android.material.chip.Chip
                             android:id="@+id/moduloChip"
+                            android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
                             style="@style/Widget.Material3.Chip.Filter"
                             android:text="Módulo" />
                     </com.google.android.material.chip.ChipGroup>
@@ -81,17 +87,23 @@
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/segmentedPersona"
-                        style="@style/Widget.Material3.Button.SegmentedButton"
+                        android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                        style="@style/Widget.Material3.Button.ElevatedButton.Icon"
                         android:text="Persona" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/segmentedCuadrilla"
-                        style="@style/Widget.Material3.Button.SegmentedButton"
+                        android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                        style="@style/Widget.Material3.Button.ElevatedButton.Icon"
                         android:text="Cuadrilla" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/segmentedTodas"
-                        style="@style/Widget.Material3.Button.SegmentedButton"
+                        android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                        style="@style/Widget.Material3.Button.ElevatedButton.Icon"
                         android:text="Todas" />
                 </com.google.android.material.button.MaterialButtonToggleGroup>
 

@@ -26,7 +26,7 @@
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="40dp"
                 android:layout_height="40dp"
-                app:cardBackgroundColor="@color/blue_10"
+                app:cardBackgroundColor="@color/bg_light"
                 app:cardElevation="0dp"
                 app:strokeColor="@color/outline_variant_light"
                 app:strokeWidth="1dp">
@@ -37,7 +37,7 @@
                     android:contentDescription="@null"
                     android:padding="8dp"
                     android:src="@drawable/ic_summary_material"
-                    android:tint="@color/ice_blue_dark" />
+                    app:tint="@color/ice_blue_dark" />
             </com.google.android.material.card.MaterialCardView>
 
             <LinearLayout

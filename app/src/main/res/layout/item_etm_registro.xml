@@ -1,49 +1,333 @@
 <?xml version="1.0" encoding="utf-8"?>
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    style="@style/Widget.Material3.CardView.Outlined"
+    android:id="@+id/cardETM"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginVertical="4dp">
+    android:layout_marginHorizontal="12dp"
+    android:layout_marginVertical="6dp"
+    app:cardCornerRadius="18dp"
+    app:cardElevation="1dp"
+    app:strokeWidth="1dp"
+    app:strokeColor="?attr/colorOutline"
+    app:cardBackgroundColor="?attr/colorSurface">
 
-    <LinearLayout
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
         android:padding="16dp">
 
+        <!-- Icono + acento institucional -->
+        <com.google.android.material.imageview.ShapeableImageView
+            android:id="@+id/ivIcon"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:contentDescription="@string/etm_registro"
+            android:padding="10dp"
+            android:src="@drawable/edit_road_48px"
+            app:tint="?attr/colorPrimary"
+            app:backgroundTint="?attr/colorSurfaceVariant"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="@id/tvMeta" />
+
+        <!-- Fecha (título) -->
         <TextView
             android:id="@+id/tvFecha"
-            style="@style/TextAppearance.Material3.TitleSmall"
-            android:layout_width="wrap_content"
+            style="@style/TextAppearance.Material3.TitleMedium"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:ellipsize="end"
+            android:maxLines="1"
             android:textStyle="bold"
-            tools:text="2025-02-01" />
+            tools:text="Sábado 01 Feb, 2026"
+            app:layout_constraintStart_toEndOf="@id/ivIcon"
+            app:layout_constraintTop_toTopOf="@id/ivIcon"
+            app:layout_constraintEnd_toStartOf="@id/chipEstado" />
 
+        <!-- Estado -->
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chipEstado"
+            style="@style/Widget.Material3.Chip.Assist"
+            android:layout_width="wrap_content"
+            android:layout_height="32dp"
+            android:text="OK"
+            android:textStyle="bold"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            app:chipIcon="@drawable/ic_check"
+            app:chipIconSize="18dp"
+            app:chipStrokeWidth="0dp"
+            app:chipBackgroundColor="@color/chip_resuelta"
+            app:chipIconTint="?attr/colorOnSecondaryContainer"
+            android:textColor="?attr/colorOnSecondaryContainer"
+            app:layout_constraintTop_toTopOf="@id/tvFecha"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+        <!-- Meta: registrado por / hora -->
         <TextView
             android:id="@+id/tvMeta"
             style="@style/TextAppearance.Material3.BodySmall"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            tools:text="Registrado por: Ana Pérez • Hora: 08:32" />
+            android:layout_marginStart="12dp"
+            android:layout_marginTop="2dp"
+            android:alpha="0.85"
+            tools:text="Registrado por: Ana Pérez • 08:32"
+            app:layout_constraintStart_toEndOf="@id/ivIcon"
+            app:layout_constraintTop_toBottomOf="@id/tvFecha"
+            app:layout_constraintEnd_toEndOf="parent" />
 
-        <TextView
-            android:id="@+id/tvValores"
-            style="@style/TextAppearance.Material3.BodyMedium"
-            android:layout_width="wrap_content"
+        <!-- Separador suave -->
+        <View
+            android:id="@+id/divider"
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_marginTop="14dp"
+            android:background="?attr/colorOutline"
+            android:alpha="0.35"
+            app:layout_constraintTop_toBottomOf="@id/tvMeta"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+        <!-- Bloque de valores (serio: tipo “datos”) -->
+        <LinearLayout
+            android:id="@+id/rowValores"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:orientation="horizontal"
+            app:layout_constraintTop_toBottomOf="@id/divider"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent">
+
+            <!-- Inicial -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    style="@style/TextAppearance.Material3.LabelSmall"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:alpha="0.75"
+                    android:text="INICIAL" />
+
+                <TextView
+                    android:id="@+id/tvInicial"
+                    style="@style/TextAppearance.Material3.TitleSmall"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textStyle="bold"
+                    tools:text="45,200" />
+            </LinearLayout>
+
+            <!-- Final -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    style="@style/TextAppearance.Material3.LabelSmall"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:alpha="0.75"
+                    android:text="FINAL" />
+
+                <TextView
+                    android:id="@+id/tvFinal"
+                    style="@style/TextAppearance.Material3.TitleSmall"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textStyle="bold"
+                    tools:text="45,350" />
+            </LinearLayout>
+
+            <!-- Diferencia -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    style="@style/TextAppearance.Material3.LabelSmall"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:alpha="0.75"
+                    android:text="DIFERENCIA" />
+
+                <TextView
+                    android:id="@+id/tvDiferencia"
+                    style="@style/TextAppearance.Material3.TitleSmall"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textStyle="bold"
+                    tools:text="150 km" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- =========================
+             DETALLE OPERATIVO (más descriptivo, compilable)
+             ========================= -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardDetalleOperativo"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:lineSpacingExtra="2dp"
-            tools:text="Inicial: 45,200 • Final: 45,350 • Diferencia: 150 km" />
+            app:cardCornerRadius="14dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="1dp"
+            app:strokeColor="?attr/colorOutline"
+            app:cardBackgroundColor="?attr/colorSurfaceVariant"
+            app:layout_constraintTop_toBottomOf="@id/rowValores"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent">
 
-        <TextView
-            android:id="@+id/tvDetalle"
-            style="@style/TextAppearance.Material3.BodySmall"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:lineSpacingExtra="2dp"
-            tools:text="Actividad: inspección • Cuenta: 1234 • Lugar: Guápiles" />
-    </LinearLayout>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="14dp">
+
+                <TextView
+                    android:id="@+id/tvDetalleTitle"
+                    style="@style/TextAppearance.Material3.TitleSmall"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Detalle operativo"
+                    android:textStyle="bold" />
+
+                <TextView
+                    style="@style/TextAppearance.Material3.BodySmall"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:alpha="0.75"
+                    android:text="Registro para ETM, trazabilidad y auditoría." />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginTop="12dp"
+                    android:background="?attr/colorOutline"
+                    android:alpha="0.25" />
+
+                <!-- Actividad -->
+                <TextView
+                    style="@style/TextAppearance.Material3.LabelMedium"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:alpha="0.85"
+                    android:text="Actividad (qué se hizo)" />
+
+                <TextView
+                    android:id="@+id/tvActividad"
+                    style="@style/TextAppearance.Material3.BodyMedium"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textStyle="bold"
+                    tools:text="Inspección de ruta / traslado de cuadrilla / atención de avería / revisión de luminaria" />
+
+                <!-- Orden SAP -->
+                <TextView
+                    style="@style/TextAppearance.Material3.LabelMedium"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:alpha="0.85"
+                    android:text="Orden SAP (PM) / Referencia" />
+
+                <TextView
+                    android:id="@+id/tvOrdenSap"
+                    style="@style/TextAppearance.Material3.BodyMedium"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textStyle="bold"
+                    tools:text="PM-4500123897" />
+
+                <!-- Cuenta -->
+                <TextView
+                    style="@style/TextAppearance.Material3.LabelMedium"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:alpha="0.85"
+                    android:text="Cuenta / Centro de costo" />
+
+                <TextView
+                    android:id="@+id/tvCuenta"
+                    style="@style/TextAppearance.Material3.BodyMedium"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textStyle="bold"
+                    tools:text="5110-Transporte / Operación • CC-Guápiles" />
+
+                <!-- Ubicación -->
+                <TextView
+                    style="@style/TextAppearance.Material3.LabelMedium"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:alpha="0.85"
+                    android:text="Ubicación / Localización" />
+
+                <TextView
+                    android:id="@+id/tvUbicacion"
+                    style="@style/TextAppearance.Material3.BodyMedium"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textStyle="bold"
+                    android:maxLines="2"
+                    android:ellipsize="end"
+                    tools:text="Guápiles • La Emilia • Poste 421270302500" />
+
+                <!-- Observaciones -->
+                <TextView
+                    style="@style/TextAppearance.Material3.LabelMedium"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:alpha="0.85"
+                    android:text="Observaciones (detalle operativo)" />
+
+                <TextView
+                    android:id="@+id/tvObservaciones"
+                    style="@style/TextAppearance.Material3.BodyMedium"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:lineSpacingExtra="2dp"
+                    android:alpha="0.95"
+                    tools:text="Se realizó verificación del punto y traslado. Operación normal. Registro requerido para ETM. Sin novedades." />
+
+                <!-- Evidencia -->
+                <TextView
+                    style="@style/TextAppearance.Material3.LabelMedium"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:alpha="0.85"
+                    android:text="Evidencia / Adjuntos" />
+
+                <TextView
+                    android:id="@+id/tvEvidencia"
+                    style="@style/TextAppearance.Material3.BodyMedium"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textStyle="bold"
+                    tools:text="2 fotos • 1 firma" />
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
 </com.google.android.material.card.MaterialCardView>
