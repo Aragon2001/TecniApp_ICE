@@ -27,6 +27,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.ActivityCompat
+import androidx.core.view.updateLayoutParams
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import com.Arasoftsolutions.tecniapp_ice.R
@@ -87,6 +88,9 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
     private val CLAVE_MAPA_VISTA_BUNDLE = "ClaveMapaVistaBundle"
     private val CLAVE_STREET_VIEW_BUNDLE = "ClaveStreetViewBundle"
     private var streetViewPanorama: StreetViewPanorama? = null
+    private var streetViewHasPanorama = false
+    private var streetViewExpanded = false
+    private var streetViewUserHidden = false
 
     // --- Permisos (Activity Result API) ---
     private val locationPermissionLauncher =
@@ -294,7 +298,18 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
             actualizarEstadoBotonCalles()
             actualizarMarcadoresDeCalles(viewModel.marcadoresCalles.value.orEmpty())
         }
+        binding.fabStreetViewToggle.setOnClickListener {
+            streetViewUserHidden = !streetViewUserHidden
+            actualizarStreetViewUi()
+        }
+        binding.fabStreetViewSize.setOnClickListener {
+            streetViewExpanded = !streetViewExpanded
+            actualizarStreetViewSize()
+            actualizarStreetViewUi()
+        }
         actualizarEstadoBotonCalles()
+        actualizarStreetViewSize()
+        actualizarStreetViewUi()
     }
 
     // Reset de textos y cámara a vista país
@@ -335,11 +350,13 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
                 setZoomGesturesEnabled(true)
                 setStreetNamesEnabled(true)
                 setOnStreetViewPanoramaChangeListener { location ->
-                    binding.streetViewContainer.visibility = if (location == null) View.INVISIBLE else View.VISIBLE
+                    streetViewHasPanorama = location != null
+                    actualizarStreetViewUi()
                 }
             }
         }
-        binding.streetViewContainer.visibility = View.INVISIBLE
+        streetViewHasPanorama = false
+        actualizarStreetViewUi()
     }
 
     override fun onMapReady(map: GoogleMap) {
@@ -774,6 +791,41 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
     private fun actualizarStreetView(latitud: Double, longitud: Double) {
         val panorama = streetViewPanorama ?: return
         panorama.setPosition(LatLng(latitud, longitud), 50, StreetViewSource.OUTDOOR)
+    }
+
+    private fun actualizarStreetViewSize() {
+        val widthRes = if (streetViewExpanded) {
+            R.dimen.street_view_expanded_width
+        } else {
+            R.dimen.street_view_collapsed_width
+        }
+        val heightRes = if (streetViewExpanded) {
+            R.dimen.street_view_expanded_height
+        } else {
+            R.dimen.street_view_collapsed_height
+        }
+        val width = resources.getDimensionPixelSize(widthRes)
+        val height = resources.getDimensionPixelSize(heightRes)
+        binding.streetViewContainer.updateLayoutParams<ViewGroup.LayoutParams> {
+            this.width = width
+            this.height = height
+        }
+    }
+
+    private fun actualizarStreetViewUi() {
+        val visible = !streetViewUserHidden && streetViewHasPanorama
+        binding.streetViewContainer.visibility = when {
+            streetViewUserHidden -> View.GONE
+            streetViewHasPanorama -> View.VISIBLE
+            else -> View.INVISIBLE
+        }
+        binding.fabStreetViewSize.visibility = if (visible) View.VISIBLE else View.GONE
+        binding.fabStreetViewToggle.setImageResource(
+            if (streetViewUserHidden) R.drawable.ic_visibility else R.drawable.ic_visibility_off
+        )
+        binding.fabStreetViewSize.setImageResource(
+            if (streetViewExpanded) R.drawable.ic_fullscreen_exit else R.drawable.ic_fullscreen
+        )
     }
 
     private fun actualizarAutorrotacionRuntime(enabled: Boolean) {
