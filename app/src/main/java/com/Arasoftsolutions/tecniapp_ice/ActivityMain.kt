@@ -6,22 +6,22 @@
 package com.Arasoftsolutions.tecniapp_ice
 
 import android.Manifest
-import android.content.pm.PackageManager
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.provider.Settings
 import android.util.Log
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
-import androidx.drawerlayout.widget.DrawerLayout
 import androidx.core.view.GravityCompat
-import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasSyncWorker
 import androidx.core.view.isVisible
+import androidx.drawerlayout.widget.DrawerLayout
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
@@ -30,29 +30,26 @@ import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
-import androidx.work.getWorkInfosForUniqueWorkFlow
-import com.Arasoftsolutions.tecniapp_ice.BuildConfig
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.UserEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.apellidosCompletos
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
 import com.Arasoftsolutions.tecniapp_ice.databinding.ActivityMainBinding
 import com.Arasoftsolutions.tecniapp_ice.databinding.NavHeaderMainBinding
-import com.bumptech.glide.Glide
-import android.widget.TextView
-import com.google.android.material.navigation.NavigationView
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.google.firebase.auth.FirebaseAuth
-import kotlinx.coroutines.launch
+import com.Arasoftsolutions.tecniapp_ice.preferences.DataStoreManager
+import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasSyncWorker
 import com.Arasoftsolutions.tecniapp_ice.ui.legal.StructuredTextFormatter
 import com.Arasoftsolutions.tecniapp_ice.ui.legal.StructuredTextParser
 import com.Arasoftsolutions.tecniapp_ice.ui.legal.renderStructuredContent
-import com.Arasoftsolutions.tecniapp_ice.preferences.DataStoreManager
 import com.Arasoftsolutions.tecniapp_ice.update.UpdateDialog
 import com.Arasoftsolutions.tecniapp_ice.update.UpdateDownloadManager
 import com.Arasoftsolutions.tecniapp_ice.update.UpdateInfo
-import java.util.Calendar
-import kotlinx.coroutines.flow.collect
+import com.bumptech.glide.Glide
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.navigation.NavigationView
+import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import java.util.Calendar
 
 class ActivityMain : AppCompatActivity() {
 
