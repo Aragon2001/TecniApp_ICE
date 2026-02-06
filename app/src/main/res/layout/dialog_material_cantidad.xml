@@ -1,15 +1,134 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.google.android.material.textfield.TextInputLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    style="@style/Tecni.TextInput.Filled"
-    android:id="@+id/tilCantidad"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:hint="@string/averia_material_cantidad_hint">
+    android:animateLayoutChanges="true"
+    android:padding="20dp">
 
-    <com.google.android.material.textfield.TextInputEditText
-        android:id="@+id/etCantidad"
-        android:layout_width="match_parent"
+    <!-- Título + guía rápida -->
+    <TextView
+        android:id="@+id/tvMaterialCantidadTitulo"
+        style="@style/TextAppearance.Material3.TitleLarge"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:inputType="number"
-        android:maxLines="1" />
-</com.google.android.material.textfield.TextInputLayout>
+        android:text="Cantidad de material"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/tvMaterialCantidadSubtitulo"
+        style="@style/TextAppearance.Material3.BodySmall"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:text="Usa los controles para ajustar rápidamente"
+        android:textColor="?attr/colorOnSurfaceVariant"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tvMaterialCantidadTitulo" />
+
+    <LinearLayout
+        android:id="@+id/groupCantidadMaterial"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:gravity="center"
+        android:orientation="horizontal"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tvMaterialCantidadSubtitulo">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnMaterialMenos"
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:contentDescription="Disminuir cantidad"
+            android:icon="@drawable/ic_remove"
+            app:iconGravity="textStart" />
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilCantidad"
+            style="@style/Tecni.TextInput.Filled"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="12dp"
+            android:layout_weight="1"
+            android:hint="@string/averia_material_cantidad_hint">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etCantidad"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:inputType="number"
+                android:maxLines="1"
+                android:textAlignment="center"
+                android:textAppearance="@style/TextAppearance.Material3.HeadlineSmall" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnMaterialMas"
+            style="@style/Widget.Material3.Button"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:contentDescription="Aumentar cantidad"
+            android:icon="@drawable/ic_add"
+            app:iconGravity="textStart" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/tvMaterialDisponible"
+        style="@style/TextAppearance.Material3.LabelMedium"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Disponible: 10"
+        android:textColor="?attr/colorOnSurfaceVariant"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/groupCantidadMaterial" />
+
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/cardWarningMaterial"
+        style="@style/Tecni.SectionCard"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:visibility="gone"
+        app:cardBackgroundColor="?attr/colorErrorContainer"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tvMaterialDisponible"
+        tools:visibility="visible">
+
+        <TextView
+            android:id="@+id/tvWarningMaterial"
+            style="@style/TextAppearance.Material3.BodySmall"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="12dp"
+            android:text="La cantidad supera el stock disponible."
+            android:textColor="?attr/colorOnErrorContainer" />
+    </com.google.android.material.card.MaterialCardView>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnConfirmarMaterial"
+        style="@style/Widget.Material3.Button"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:icon="@drawable/ic_check"
+        android:text="Confirmar"
+        app:iconGravity="textStart"
+        app:iconPadding="8dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/cardWarningMaterial" />
+
+    <!-- Nota UX: aplicar haptic feedback en + / - y confirmar desde Kotlin. -->
+</androidx.constraintlayout.widget.ConstraintLayout>
