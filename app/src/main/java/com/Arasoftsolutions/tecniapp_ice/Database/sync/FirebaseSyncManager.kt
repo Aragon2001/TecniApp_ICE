@@ -319,6 +319,50 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
         }.distinctBy { it.id }
     }
 
+    suspend fun obtenerPueblosPorSubregion(subregionId: String): List<PueblosEntity> {
+        val node = if (dbLocal.child("pueblos").get().await().exists()) "pueblos" else "Pueblos"
+        val filtro = subregionId.trim().takeIf { it.isNotEmpty() } ?: return emptyList()
+        val snap = dbLocal.child(node)
+            .orderByChild("subregion")
+            .equalTo(filtro)
+            .get()
+            .await()
+        if (!snap.exists()) return emptyList()
+
+        return snap.children.mapNotNull { child ->
+            val id = child.key?.trim()?.toIntOrNull()
+                ?: child.intValueAny("id", "Id", "ID")
+                ?: return@mapNotNull null
+            val nombre = child.stringValueAny("nombre", "Nombre", "NOMBRE")?.trim()
+                ?: return@mapNotNull null
+            val remoteSubregion = child.stringValueAny("subregion", "Subregion", "SubRegión", "Subregión")?.trim()
+            val canonical = SubregionNormalizer.canonicalIdOrSelf(remoteSubregion) ?: ""
+
+            PueblosEntity(
+                id = id,
+                nombre = nombre,
+                subregion = remoteSubregion.orEmpty(),
+                subregion_id_normalizado = canonical
+            )
+        }.distinctBy { it.id }
+    }
+
+    suspend fun obtenerLocalizacionesPorPueblos(puebloIds: List<Int>): List<LocalizacionesEntity> {
+        if (puebloIds.isEmpty()) return emptyList()
+        val nodeName = if (dbLocal.child("Localizaciones").get().await().exists()) {
+            "Localizaciones"
+        } else {
+            "localizaciones"
+        }
+        val result = mutableListOf<LocalizacionesEntity>()
+        puebloIds.forEach { puebloId ->
+            val snapshot = dbLocal.child(nodeName).child(puebloId.toString()).get().await()
+            if (!snapshot.exists()) return@forEach
+            result += parseLocalizacionNode(snapshot)
+        }
+        return result.distinctBy { it.id }
+    }
+
     private fun parseLocalizacionNode(
         node: DataSnapshot
     ): List<LocalizacionesEntity> {
