@@ -67,6 +67,12 @@
         android:label="@string/menu_reportes"
         tools:layout="@layout/fragment_reportes" />
 
+    <fragment
+        android:id="@+id/nav_planillas"
+        android:name="com.Arasoftsolutions.tecniapp_ice.ui.planillas.PlanillasHomeFragment"
+        android:label="@string/menu_planillas"
+        tools:layout="@layout/fragment_planillas_home" />
+
     <!-- Fragmento de administración -->
     <fragment
         android:id="@+id/nav_admin"
