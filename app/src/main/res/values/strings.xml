@@ -107,6 +107,12 @@
     <string name="home_sync_unknown_error">Error desconocido</string>
     <string name="home_sync_progress_format">Paso %1$d de %2$d • %3$s</string>
     <string name="home_sync_dialog_title">Sincronizando…</string>
+    <string name="sync_notification_title">Sincronización completa</string>
+    <string name="sync_notification_message">Última actualización: %1$s</string>
+    <string name="sync_notification_channel_name">Estado de sincronización</string>
+    <string name="sync_notification_channel_description">Avisos cuando la app termina de sincronizar datos.</string>
+    <string name="sync_notification_progress_title">Sincronizando…</string>
+    <string name="sync_notification_progress_default">Sincronizando datos…</string>
     <string name="home_last_sync_never">Nunca</string>
     <string name="home_last_sync_just_now">Hace un momento</string>
     <string name="home_last_sync_minutes">Hace %1$d min</string>
@@ -760,7 +766,17 @@ Cliente: %4$s</string>
     </plurals>
     <string name="reportes_export_no_data">Genera el reporte antes de exportarlo.</string>
     <string name="reportes_export_success">Reporte exportado correctamente.</string>
+    <string name="reportes_export_success_file">Reporte descargado: %1$s</string>
+    <string name="reportes_export_action_view">Abrir archivo</string>
+    <string name="reportes_export_open_title">Abrir reporte</string>
+    <string name="reportes_export_default_name">reporte.xlsx</string>
     <string name="reportes_export_error">No se pudo exportar el archivo de Excel.</string>
+    <string name="reportes_download_notification_title">Reporte descargado</string>
+    <string name="reportes_download_notification_text">Archivo: %1$s</string>
+    <string name="reportes_download_action_view">Ver archivo</string>
+    <string name="reportes_download_action_location">Abrir ubicación</string>
+    <string name="reportes_download_channel_name">Descargas de reportes</string>
+    <string name="reportes_download_channel_description">Notificaciones cuando se descargan reportes.</string>
 
     <string name="reportes_excel_resumen_sheet">Resumen</string>
     <string name="reportes_excel_resumen_tipo">Tipo de reporte</string>

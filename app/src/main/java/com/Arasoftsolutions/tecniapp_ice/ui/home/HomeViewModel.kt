@@ -252,7 +252,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun triggerManualSync() {
-        AveriasSyncWorker.triggerNow(getApplication())
+        AveriasSyncWorker.triggerNow(getApplication(), showSyncNotification = true)
         viewModelScope.launch {
             dataStore.markManualSyncNow()
         }
