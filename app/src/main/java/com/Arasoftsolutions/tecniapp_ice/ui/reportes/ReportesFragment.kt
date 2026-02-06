@@ -3,6 +3,7 @@ package com.Arasoftsolutions.tecniapp_ice.ui.reportes
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
+import android.content.Intent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -12,6 +13,7 @@ import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.util.Pair
 import androidx.core.view.isVisible
+import androidx.documentfile.provider.DocumentFile
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
@@ -53,6 +55,7 @@ class ReportesFragment : Fragment() {
     private val zoneId: ZoneId = ZoneId.systemDefault()
 
     private var pendingExport: ExportPayload? = null
+    private var pendingExportFileName: String? = null
 
     private val exportLauncher =
         registerForActivityResult(ActivityResultContracts.CreateDocument(MIME_TYPE_XLSX)) { uri ->
@@ -430,6 +433,7 @@ class ReportesFragment : Fragment() {
         )
         pendingExport = payload
         val nombre = generarNombreArchivo(tipo, state.fechaInicio, state.fechaFin)
+        pendingExportFileName = nombre
         exportLauncher.launch(nombre)
     }
 
@@ -456,11 +460,39 @@ class ReportesFragment : Fragment() {
                         }
                     } ?: throw IllegalStateException("Output stream is null")
                 }
-                Snackbar.make(binding.root, R.string.reportes_export_success, Snackbar.LENGTH_LONG).show()
+                val fileName = pendingExportFileName
+                    ?: DocumentFile.fromSingleUri(requireContext(), uri)?.name
+                    ?: getString(R.string.reportes_export_default_name)
+                Snackbar.make(
+                    binding.root,
+                    getString(R.string.reportes_export_success_file, fileName),
+                    Snackbar.LENGTH_LONG
+                ).setAction(R.string.reportes_export_action_view) {
+                    openReportUri(uri)
+                }.show()
+                ReportDownloadNotifier.show(
+                    context = requireContext(),
+                    fileName = fileName,
+                    fileUri = uri,
+                    locationUri = ReportDownloadNotifier.buildLocationUriForDocument(requireContext(), uri)
+                )
             } catch (t: Throwable) {
                 Log.e("ReportesFragment", "Error exportando Excel", t)
                 Snackbar.make(binding.root, R.string.reportes_export_error, Snackbar.LENGTH_LONG).show()
+            } finally {
+                pendingExportFileName = null
             }
+        }
+    }
+
+    private fun openReportUri(uri: Uri) {
+        val mimeType = requireContext().contentResolver.getType(uri) ?: MIME_TYPE_XLSX
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(uri, mimeType)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        runCatching {
+            startActivity(Intent.createChooser(intent, getString(R.string.reportes_export_open_title)))
         }
     }
 
