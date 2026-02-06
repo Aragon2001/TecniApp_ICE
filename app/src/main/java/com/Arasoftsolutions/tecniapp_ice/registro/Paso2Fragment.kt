@@ -33,11 +33,17 @@ class Paso2Fragment : Fragment() {
         requireContext().getSharedPreferences("registro_prefs", Context.MODE_PRIVATE)
     }
 
-    private lateinit var etVerificationCodeEmail: TextInputEditText
-    private lateinit var btnVerifyCode: MaterialButton
-    private lateinit var tvResendEmail: TextView
-    private lateinit var resendEmailCountDown: TextView
-    private lateinit var tvVerificationError: TextView
+    private var _etVerificationCodeEmail: TextInputEditText? = null
+    private var _btnVerifyCode: MaterialButton? = null
+    private var _tvResendEmail: TextView? = null
+    private var _resendEmailCountDown: TextView? = null
+    private var _tvVerificationError: TextView? = null
+
+    private val etVerificationCodeEmail get() = requireNotNull(_etVerificationCodeEmail)
+    private val btnVerifyCode get() = requireNotNull(_btnVerifyCode)
+    private val tvResendEmail get() = requireNotNull(_tvResendEmail)
+    private val resendEmailCountDown get() = requireNotNull(_resendEmailCountDown)
+    private val tvVerificationError get() = requireNotNull(_tvVerificationError)
 
     private var resendEmailAttempts = 0
     private val maxResendAttempts = 3
@@ -61,11 +67,11 @@ class Paso2Fragment : Fragment() {
 
         viewModel = ViewModelProvider(requireActivity())[RegistroViewModel::class.java]
 
-        etVerificationCodeEmail = view.findViewById(R.id.etVerificationCodeEmail)
-        btnVerifyCode = view.findViewById(R.id.btnVerifyCode)
-        tvResendEmail = view.findViewById(R.id.tvResendEmail)
-        resendEmailCountDown = view.findViewById(R.id.resendEmailCountDown)
-        tvVerificationError = view.findViewById(R.id.tvVerificationError)
+        _etVerificationCodeEmail = view.findViewById(R.id.etVerificationCodeEmail)
+        _btnVerifyCode = view.findViewById(R.id.btnVerifyCode)
+        _tvResendEmail = view.findViewById(R.id.tvResendEmail)
+        _resendEmailCountDown = view.findViewById(R.id.resendEmailCountDown)
+        _tvVerificationError = view.findViewById(R.id.tvVerificationError)
 
         btnVerifyCode.setOnClickListener {
             val emailCode = etVerificationCodeEmail.text?.toString()?.trim().orEmpty()
@@ -85,6 +91,13 @@ class Paso2Fragment : Fragment() {
     override fun onDestroyView() {
         super.onDestroyView()
         cooldownTimer?.cancel()
+        _btnVerifyCode?.setOnClickListener(null)
+        _tvResendEmail?.setOnClickListener(null)
+        _etVerificationCodeEmail = null
+        _btnVerifyCode = null
+        _tvResendEmail = null
+        _resendEmailCountDown = null
+        _tvVerificationError = null
     }
 
     private fun setNavigationListeners(view: View) {
