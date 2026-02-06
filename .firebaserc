@@ -1,5 +1,17 @@
 {
   "projects": {
     "default": "tecniapp-ice"
+  },
+  "targets": {
+    "tecniapp-ice": {
+      "database": {
+        "default": [
+          "tecniapp-ice-default-rtdb"
+        ],
+        "localizaciones": [
+          "tecniapp-ice"
+        ]
+      }
+    }
   }
 }
