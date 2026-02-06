@@ -13,8 +13,8 @@
         style="@style/Widget.Material3.LinearProgressIndicator"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:visibility="gone"
         android:indeterminate="true"
+        android:visibility="gone"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
@@ -26,7 +26,7 @@
         android:clipToPadding="false"
         android:fillViewport="true"
         android:paddingStart="16dp"
-        android:paddingTop="12dp"
+        android:paddingTop="16dp"
         android:paddingEnd="16dp"
         android:paddingBottom="132dp"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -37,11 +37,288 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:paddingBottom="8dp">
+            android:orientation="vertical">
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardHeader"
+                style="@style/Tecni.Card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:id="@+id/tvReportesTitle"
+                        style="@style/TextAppearance.Material3.TitleLarge"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/reportes_title"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvReportesSubtitle"
+                        style="@style/TextAppearance.Material3.BodyMedium"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:textColor="@color/dark_gray"
+                        tools:text="Rango: 20 oct 2025 – 27 oct 2025" />
+
+                    <TextView
+                        android:id="@+id/tvReportesContext"
+                        style="@style/TextAppearance.Material3.BodySmall"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:textColor="@color/dark_gray"
+                        tools:text="Agencia: Guácimo · Técnico: Juan Pérez" />
+
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/cardInsights"
+                        style="@style/Tecni.Card"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        app:cardBackgroundColor="@color/blue_10"
+                        app:strokeColor="@color/outline_variant_light"
+                        app:strokeWidth="1dp">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:padding="14dp">
+
+                            <TextView
+                                android:id="@+id/tvInsightTitle"
+                                style="@style/TextAppearance.Material3.TitleSmall"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="@string/reportes_insight_title"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/tvInsight1"
+                                style="@style/TextAppearance.Material3.BodySmall"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="8dp"
+                                android:drawableStart="@drawable/ic_summary_material"
+                                android:drawablePadding="8dp"
+                                android:text="@string/reportes_insight_placeholder" />
+
+                            <TextView
+                                android:id="@+id/tvInsight2"
+                                style="@style/TextAppearance.Material3.BodySmall"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="6dp"
+                                android:drawableStart="@drawable/ic_summary_case"
+                                android:drawablePadding="8dp"
+                                android:text="@string/reportes_insight_placeholder" />
+
+                            <TextView
+                                android:id="@+id/tvInsight3"
+                                style="@style/TextAppearance.Material3.BodySmall"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="6dp"
+                                android:drawableStart="@drawable/ic_summary_codes"
+                                android:drawablePadding="8dp"
+                                android:text="@string/reportes_insight_placeholder" />
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardFiltro"
+                style="@style/Tecni.Card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:id="@+id/tvFiltroTitulo"
+                        style="@style/TextAppearance.Material3.TitleSmall"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/reportes_filtros_titulo"
+                        android:textStyle="bold" />
+
+                    <HorizontalScrollView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:scrollbars="none">
+
+                        <com.google.android.material.chip.ChipGroup
+                            android:id="@+id/chipGroupFiltros"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            app:chipSpacingHorizontal="8dp"
+                            app:chipSpacingVertical="8dp"
+                            app:singleLine="true">
+
+                            <com.google.android.material.chip.Chip
+                                android:id="@+id/chipFiltroFecha"
+                                style="@style/Widget.Material3.Chip.Assist"
+                                android:text="@string/reportes_chip_fecha" />
+
+                            <com.google.android.material.chip.Chip
+                                android:id="@+id/chipFiltroAgencia"
+                                style="@style/Widget.Material3.Chip.Assist"
+                                android:text="@string/reportes_chip_agencia" />
+
+                            <com.google.android.material.chip.Chip
+                                android:id="@+id/chipFiltroCamion"
+                                style="@style/Widget.Material3.Chip.Assist"
+                                android:text="@string/reportes_chip_camion" />
+
+                            <com.google.android.material.chip.Chip
+                                android:id="@+id/chipFiltroTecnico"
+                                style="@style/Widget.Material3.Chip.Assist"
+                                android:text="@string/reportes_chip_tecnico" />
+
+                            <com.google.android.material.chip.Chip
+                                android:id="@+id/chipFiltroTipo"
+                                style="@style/Widget.Material3.Chip.Assist"
+                                android:text="@string/reportes_chip_tipo" />
+
+                            <com.google.android.material.chip.Chip
+                                android:id="@+id/chipFiltroSync"
+                                style="@style/Widget.Material3.Chip.Assist"
+                                android:text="@string/reportes_chip_sync" />
+                        </com.google.android.material.chip.ChipGroup>
+                    </HorizontalScrollView>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/tvRangoFechas"
+                            style="@style/TextAppearance.Material3.BodyLarge"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:ellipsize="end"
+                            android:maxLines="1"
+                            tools:text="20 oct 2025 – 27 oct 2025" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnLimpiarFechas"
+                            style="@style/Widget.Material3.Button.TextButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:insetLeft="0dp"
+                            android:insetRight="0dp"
+                            android:text="@string/reportes_btn_limpiar_filtro"
+                            android:visibility="gone"
+                            app:icon="@drawable/ic_delete"
+                            app:iconPadding="8dp"
+                            app:iconTint="@color/ice_blue_dark"
+                            tools:visibility="visible" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnCambiarFechas"
+                            style="@style/Tecni.Button.Outlined"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/reportes_btn_rango"
+                            app:icon="@drawable/ic_calendar"
+                            app:iconGravity="textStart"
+                            app:iconPadding="8dp" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnGenerarReporte"
+                            style="@style/Tecni.Button.Primary"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="12dp"
+                            android:layout_weight="1"
+                            android:text="@string/reportes_btn_generar"
+                            app:icon="@drawable/ic_play_arrow"
+                            app:iconGravity="textStart"
+                            app:iconPadding="8dp" />
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.button.MaterialButtonToggleGroup
+                android:id="@+id/tabGroupReportes"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:singleSelection="true"
+                app:selectionRequired="true">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/tabResumen"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/reportes_tab_resumen" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/tabOperacion"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/reportes_tab_operacion" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/tabMateriales"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/reportes_tab_materiales" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/tabInventario"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/reportes_tab_inventario" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/tabBitacora"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/reportes_tab_bitacora" />
+            </com.google.android.material.button.MaterialButtonToggleGroup>
+
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardResumen"
                 style="@style/Tecni.Card"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -94,8 +371,8 @@
                                 android:layout_width="20dp"
                                 android:layout_height="20dp"
                                 android:contentDescription="@null"
-                                android:tint="@color/ice_blue"
-                                android:src="@drawable/ic_summary_case" />
+                                android:src="@drawable/ic_summary_case"
+                                android:tint="@color/ice_blue" />
 
                             <TextView
                                 android:id="@+id/tvResumenTotalAverias"
@@ -129,8 +406,8 @@
                                 android:layout_width="20dp"
                                 android:layout_height="20dp"
                                 android:contentDescription="@null"
-                                android:tint="@color/success_500"
-                                android:src="@drawable/ic_summary_material" />
+                                android:src="@drawable/ic_summary_material"
+                                android:tint="@color/success_500" />
 
                             <TextView
                                 android:id="@+id/tvResumenTotalMateriales"
@@ -163,8 +440,8 @@
                                 android:layout_width="20dp"
                                 android:layout_height="20dp"
                                 android:contentDescription="@null"
-                                android:tint="@color/ice_blue"
-                                android:src="@drawable/ic_summary_codes" />
+                                android:src="@drawable/ic_summary_codes"
+                                android:tint="@color/ice_blue" />
 
                             <TextView
                                 android:id="@+id/tvResumenTotalCodigos"
@@ -193,115 +470,14 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="12dp"
                         android:background="@drawable/bg_report_summary_card"
-                        android:gravity="center"
+                        android:drawableStart="@drawable/ic_report_placeholder"
+                        android:drawablePadding="12dp"
+                        android:gravity="center_vertical"
                         android:padding="16dp"
                         android:text="@string/reportes_resumen_empty"
                         android:textColor="@color/dark_gray"
                         android:visibility="gone"
                         tools:visibility="gone" />
-
-                    <View
-                        android:layout_width="match_parent"
-                        android:layout_height="1dp"
-                        android:layout_marginTop="16dp"
-                        android:background="@color/outline_variant_light"
-                        android:alpha="0.4" />
-
-                    <TextView
-                        android:id="@+id/tvTituloFiltro"
-                        style="@style/TextAppearance.Material3.BodyLarge"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="16dp"
-                        android:text="@string/reportes_filtro_rango"
-                        android:textStyle="bold" />
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            android:id="@+id/tvRangoFechas"
-                            style="@style/TextAppearance.Material3.BodyLarge"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:ellipsize="end"
-                            android:maxLines="1"
-                            tools:text="20 oct 2025 – 27 oct 2025" />
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnLimpiarFechas"
-                            style="@style/Widget.Material3.Button.TextButton"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:insetLeft="0dp"
-                            android:insetRight="0dp"
-                            android:text="@string/reportes_btn_limpiar_filtro"
-                            android:visibility="gone"
-                            app:icon="@drawable/ic_delete"
-                            app:iconPadding="8dp"
-                            app:iconTint="@color/ice_blue_dark"
-                            app:rippleColor="@color/ice_blue"
-                            tools:visibility="visible" />
-                    </LinearLayout>
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnCambiarFechas"
-                        style="@style/Tecni.Button.Outlined"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:text="@string/reportes_btn_rango"
-                        app:icon="@drawable/ic_calendar"
-                        app:iconGravity="textStart"
-                        app:iconPadding="8dp" />
-
-                    <TextView
-                        android:id="@+id/tvSelectorTitulo"
-                        style="@style/TextAppearance.Material3.BodyMedium"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="20dp"
-                        android:text="@string/reportes_selector_titulo"
-                        android:textAllCaps="false" />
-
-                    <com.google.android.material.card.MaterialCardView
-                        android:id="@+id/selectorContainer"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:backgroundTint="@color/white"
-                        app:cardElevation="0dp"
-                        app:strokeColor="@color/outline_variant_light"
-                        app:strokeWidth="1dp">
-
-                        <androidx.appcompat.widget.AppCompatSpinner
-                            android:id="@+id/spinnerTipoReporte"
-                            style="@style/TextAppearance.Material3.BodyLarge"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:paddingStart="16dp"
-                            android:paddingTop="12dp"
-                            android:paddingEnd="16dp"
-                            android:paddingBottom="12dp"
-                            android:spinnerMode="dropdown"
-                            android:popupBackground="@drawable/bg_report_spinner_popup" />
-                    </com.google.android.material.card.MaterialCardView>
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnGenerarReporte"
-                        style="@style/Tecni.Button.Primary"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="16dp"
-                        android:text="@string/reportes_btn_generar"
-                        app:icon="@drawable/ic_play_arrow"
-                        app:iconGravity="textStart"
-                        app:iconPadding="8dp" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
@@ -343,7 +519,9 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="12dp"
-                        android:gravity="center"
+                        android:drawableStart="@drawable/ic_report_placeholder"
+                        android:drawablePadding="12dp"
+                        android:gravity="center_vertical"
                         android:text="@string/reportes_estado_pendiente"
                         tools:visibility="visible" />
                 </LinearLayout>
@@ -387,7 +565,9 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="12dp"
-                        android:gravity="center"
+                        android:drawableStart="@drawable/ic_report_placeholder"
+                        android:drawablePadding="12dp"
+                        android:gravity="center_vertical"
                         android:text="@string/reportes_estado_pendiente"
                         tools:visibility="visible" />
                 </LinearLayout>
@@ -431,7 +611,9 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="12dp"
-                        android:gravity="center"
+                        android:drawableStart="@drawable/ic_report_placeholder"
+                        android:drawablePadding="12dp"
+                        android:gravity="center_vertical"
                         android:text="@string/reportes_estado_pendiente"
                         tools:visibility="visible" />
                 </LinearLayout>
@@ -484,7 +666,9 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
-                        android:gravity="center"
+                        android:drawableStart="@drawable/ic_report_placeholder"
+                        android:drawablePadding="12dp"
+                        android:gravity="center_vertical"
                         android:text="@string/reportes_inventario_critico_vacio"
                         tools:visibility="visible" />
 
@@ -513,7 +697,9 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
-                        android:gravity="center"
+                        android:drawableStart="@drawable/ic_report_placeholder"
+                        android:drawablePadding="12dp"
+                        android:gravity="center_vertical"
                         android:text="@string/reportes_inventario_general_vacio"
                         tools:visibility="visible" />
 
@@ -618,51 +804,101 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="12dp"
-                        android:gravity="center"
+                        android:drawableStart="@drawable/ic_report_placeholder"
+                        android:drawablePadding="12dp"
+                        android:gravity="center_vertical"
                         android:text="@string/reportes_estado_pendiente"
                         tools:visibility="visible" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
-
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 
+    <View
+        android:id="@+id/speedDialScrim"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:background="#80000000"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
     <LinearLayout
-        android:id="@+id/fabActionsGroup"
+        android:id="@+id/speedDialActions"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:gravity="end"
         android:orientation="vertical"
         android:padding="16dp"
         android:visibility="gone"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        tools:visibility="visible">
+        app:layout_constraintBottom_toTopOf="@id/fabSpeedDial"
+        app:layout_constraintEnd_toEndOf="parent">
 
-        <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
-            android:id="@+id/fabEnviarCorreo"
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/actionExportExcel"
+            style="@style/Widget.Material3.Button.OutlinedButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginBottom="12dp"
-            android:text="@string/reportes_fab_correo"
-            android:textAllCaps="false"
-            android:visibility="gone"
-            app:backgroundTint="@color/ice_blue"
-            app:icon="@drawable/ic_email_send"
-            app:iconTint="@color/white"
-            app:layout_anchorGravity="top"
-            tools:visibility="visible" />
+            android:text="@string/reportes_action_export_excel"
+            app:icon="@drawable/ic_excel"
+            app:iconGravity="textStart"
+            app:iconPadding="8dp" />
 
-        <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
-            android:id="@+id/btnExportarExcel"
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/actionExportPdf"
+            style="@style/Widget.Material3.Button.OutlinedButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/reportes_fab_exportar"
-            android:textAllCaps="false"
-            android:visibility="gone"
-            app:backgroundTint="@color/success_500"
-            app:icon="@drawable/ic_excel"
-            app:iconTint="@color/white"
-            tools:visibility="visible" />
+            android:layout_marginBottom="12dp"
+            android:text="@string/reportes_action_export_pdf"
+            app:icon="@drawable/ic_pdf"
+            app:iconGravity="textStart"
+            app:iconPadding="8dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/actionShareLast"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:text="@string/reportes_action_share_last"
+            app:icon="@drawable/ic_share"
+            app:iconGravity="textStart"
+            app:iconPadding="8dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/actionHistory"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:text="@string/reportes_action_history"
+            app:icon="@drawable/ic_history"
+            app:iconGravity="textStart"
+            app:iconPadding="8dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/actionConfig"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/reportes_action_config"
+            app:icon="@drawable/ic_settings"
+            app:iconGravity="textStart"
+            app:iconPadding="8dp" />
     </LinearLayout>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabSpeedDial"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:contentDescription="@string/reportes_action_fab"
+        android:layout_margin="16dp"
+        app:backgroundTint="@color/ice_blue"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:srcCompat="@drawable/ic_add" />
 </androidx.constraintlayout.widget.ConstraintLayout>
