@@ -198,6 +198,26 @@
         <item name="iconTint">@android:color/white</item>
     </style>
 
+    <!-- Tarjetas de sección para dialogs / bottom sheets -->
+    <style name="Tecni.SectionCard" parent="Widget.Material3.CardView.Elevated">
+        <item name="cardCornerRadius">20dp</item>
+        <item name="cardElevation">2dp</item>
+        <item name="strokeWidth">1dp</item>
+        <item name="strokeColor">?attr/colorOutlineVariant</item>
+        <item name="cardBackgroundColor">?attr/colorSurface</item>
+    </style>
+
+    <style name="Tecni.PlaceholderCard" parent="Tecni.SectionCard">
+        <item name="cardBackgroundColor">?attr/colorSurfaceVariant</item>
+        <item name="strokeColor">?attr/colorOutline</item>
+    </style>
+
+    <style name="Tecni.BottomActionBar" parent="Widget.Material3.CardView.Filled">
+        <item name="cardCornerRadius">24dp</item>
+        <item name="cardElevation">6dp</item>
+        <item name="cardBackgroundColor">?attr/colorSurface</item>
+    </style>
+
     <!-- Botones originales (para otros usos heredados) -->
     <style name="Tecni.Button.Primary.Original" parent="Widget.Material3.Button.TonalButton">
         <item name="android:minHeight">40dp</item>
