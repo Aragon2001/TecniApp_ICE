@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:clipToPadding="false"
+    android:fillViewport="true"
     android:padding="24dp">
 
     <LinearLayout
@@ -11,13 +12,20 @@
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
+        <View
+            android:layout_width="48dp"
+            android:layout_height="4dp"
+            android:layout_gravity="center_horizontal"
+            android:background="?attr/colorOutlineVariant" />
+
         <TextView
             android:id="@+id/textRegistroTitulo"
-            style="@style/TextAppearance.Material3.TitleMedium"
+            style="@style/TextAppearance.Material3.TitleLarge"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
             android:text="@string/medidor_registro_manual_titulo"
-            android:textColor="@color/ice_blue_dark" />
+            android:textColor="?attr/colorOnSurface" />
 
         <TextView
             android:id="@+id/textRegistroDescripcion"
@@ -28,142 +36,176 @@
             android:text="@string/medidor_registro_manual_subtitulo"
             android:textColor="?attr/colorOnSurfaceVariant" />
 
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/tilRegistroNumero"
-            style="@style/Tecni.TextInput.Outlined"
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
-            android:hint="@string/medidor_numero_hint"
-            app:startIconDrawable="@drawable/ic_round_search_24">
+            app:cardBackgroundColor="?attr/colorSurface"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="0dp"
+            app:strokeColor="?attr/colorOutlineVariant"
+            app:strokeWidth="1dp">
 
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/inputRegistroNumero"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="number"
-                android:maxLines="1" />
-        </com.google.android.material.textfield.TextInputLayout>
+                android:orientation="vertical"
+                android:padding="16dp">
 
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/tilRegistroSubregion"
-            style="@style/Tecni.TextInput.Outlined.Dropdown"
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilRegistroNumero"
+                    style="@style/Tecni.TextInput.Outlined"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/medidor_numero_hint"
+                    app:startIconDrawable="@drawable/ic_round_search_24">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/inputRegistroNumero"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="number"
+                        android:maxLines="1" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilRegistroSubregion"
+                    style="@style/Tecni.TextInput.Outlined.Dropdown"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:hint="@string/medidor_registro_subregion_hint"
+                    app:endIconMode="dropdown_menu">
+
+                    <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                        android:id="@+id/inputRegistroSubregion"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:focusable="false"
+                        android:hint="@string/medidor_registro_subregion_hint"
+                        android:importantForAutofill="no"
+                        android:inputType="none"
+                        android:singleLine="true" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilRegistroPueblo"
+                    style="@style/Tecni.TextInput.Outlined.Dropdown"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:hint="@string/medidor_registro_pueblo_hint"
+                    app:endIconMode="dropdown_menu">
+
+                    <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                        android:id="@+id/inputRegistroPueblo"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:focusable="false"
+                        android:hint="@string/medidor_registro_pueblo_hint"
+                        android:importantForAutofill="no"
+                        android:inputType="none"
+                        android:singleLine="true" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilRegistroCliente"
+                    style="@style/Tecni.TextInput.Outlined"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:hint="@string/medidor_registro_cliente_hint">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/inputRegistroCliente"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textCapWords" />
+                </com.google.android.material.textfield.TextInputLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
-            android:hint="@string/medidor_registro_subregion_hint"
-            app:endIconMode="dropdown_menu">
+            android:layout_marginTop="16dp"
+            app:cardBackgroundColor="?attr/colorSurface"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="0dp"
+            app:strokeColor="?attr/colorOutlineVariant"
+            app:strokeWidth="1dp">
 
-            <com.google.android.material.textfield.MaterialAutoCompleteTextView
-                android:id="@+id/inputRegistroSubregion"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:focusable="false"
-                android:hint="@string/medidor_registro_subregion_hint"
-                android:importantForAutofill="no"
-                android:inputType="none"
-                android:singleLine="true" />
-        </com.google.android.material.textfield.TextInputLayout>
+                android:orientation="vertical"
+                android:padding="16dp">
 
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/tilRegistroPueblo"
-            style="@style/Tecni.TextInput.Outlined.Dropdown"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
-            android:hint="@string/medidor_registro_pueblo_hint"
-            app:endIconMode="dropdown_menu">
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilRegistroCalle"
+                    style="@style/Tecni.TextInput.Outlined"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/medidor_calle_label">
 
-            <com.google.android.material.textfield.MaterialAutoCompleteTextView
-                android:id="@+id/inputRegistroPueblo"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:focusable="false"
-                android:hint="@string/medidor_registro_pueblo_hint"
-                android:importantForAutofill="no"
-                android:inputType="none"
-                android:singleLine="true" />
-        </com.google.android.material.textfield.TextInputLayout>
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/inputRegistroCalle"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textCapCharacters" />
+                </com.google.android.material.textfield.TextInputLayout>
 
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/tilRegistroCliente"
-            style="@style/Tecni.TextInput.Outlined"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
-            android:hint="@string/medidor_registro_cliente_hint">
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilRegistroPoste"
+                    style="@style/Tecni.TextInput.Outlined"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:hint="@string/medidor_poste_label">
 
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/inputRegistroCliente"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="textCapWords" />
-        </com.google.android.material.textfield.TextInputLayout>
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/inputRegistroPoste"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textCapCharacters" />
+                </com.google.android.material.textfield.TextInputLayout>
 
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/tilRegistroCalle"
-            style="@style/Tecni.TextInput.Outlined"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
-            android:hint="@string/medidor_calle_label">
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilRegistroMetros"
+                    style="@style/Tecni.TextInput.Outlined"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:hint="@string/medidor_metros_label">
 
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/inputRegistroCalle"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="textCapCharacters" />
-        </com.google.android.material.textfield.TextInputLayout>
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/inputRegistroMetros"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="number" />
+                </com.google.android.material.textfield.TextInputLayout>
 
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/tilRegistroPoste"
-            style="@style/Tecni.TextInput.Outlined"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
-            android:hint="@string/medidor_poste_label">
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilRegistroLocalizacion"
+                    style="@style/Tecni.TextInput.Outlined"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:hint="@string/medidor_registro_localizacion_hint"
+                    app:helperText="@string/medidor_registro_localizacion_helper">
 
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/inputRegistroPoste"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="textCapCharacters" />
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/tilRegistroMetros"
-            style="@style/Tecni.TextInput.Outlined"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
-            android:hint="@string/medidor_metros_label">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/inputRegistroMetros"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="number" />
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/tilRegistroLocalizacion"
-            style="@style/Tecni.TextInput.Outlined"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
-            android:hint="@string/medidor_registro_localizacion_hint"
-            app:helperText="@string/medidor_registro_localizacion_helper">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/inputRegistroLocalizacion"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:focusable="false"
-                android:focusableInTouchMode="false"
-                android:inputType="none"
-                android:longClickable="false"
-                android:textIsSelectable="false" />
-        </com.google.android.material.textfield.TextInputLayout>
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/inputRegistroLocalizacion"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:focusable="false"
+                        android:focusableInTouchMode="false"
+                        android:inputType="none"
+                        android:longClickable="false"
+                        android:textIsSelectable="false" />
+                </com.google.android.material.textfield.TextInputLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -199,4 +241,4 @@
                 android:visibility="gone" />
         </LinearLayout>
     </LinearLayout>
-</ScrollView>
+</androidx.core.widget.NestedScrollView>

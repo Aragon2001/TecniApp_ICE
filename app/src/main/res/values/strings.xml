@@ -640,6 +640,18 @@ Cliente: %4$s</string>
     <string name="nav_header_vehicle_placeholder">Sin vehículo asignado</string>
 
     <!-- Medidores -->
+    <string name="medidor_screen_title">Medidores</string>
+    <string name="medidor_estado_icon_description">Estado de sincronización de medidores</string>
+    <string name="medidor_chip_status_ok">OK</string>
+    <string name="medidor_chip_sync_ok">Sincronizado</string>
+    <string name="medidor_lecturas_title">Historial de lecturas</string>
+    <string name="medidor_lectura_actual_label">Lectura actual</string>
+    <string name="medidor_lectura_anterior_label">Lectura anterior</string>
+    <string name="medidor_lectura_fecha_label">Fecha de lectura</string>
+    <string name="medidor_registrar_lectura">Registrar lectura</string>
+    <string name="medidor_ver_detalles">Ver detalles</string>
+    <string name="medidor_sincronizar">Sincronizar</string>
+    <string name="medidor_dialog_consulta_icon">Consulta en la nube</string>
     <string name="medidor_numero_hint">Número de medidor</string>
     <string name="medidor_header_subtitle">Gestiona y consulta medidores incluso sin conexión.</string>
     <string name="medidor_consulta_title">Consulta de medidores</string>
