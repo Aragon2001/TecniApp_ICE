@@ -111,6 +111,8 @@
     <string name="sync_notification_message">Última actualización: %1$s</string>
     <string name="sync_notification_channel_name">Estado de sincronización</string>
     <string name="sync_notification_channel_description">Avisos cuando la app termina de sincronizar datos.</string>
+    <string name="sync_notification_progress_title">Sincronizando…</string>
+    <string name="sync_notification_progress_default">Sincronizando datos…</string>
     <string name="home_last_sync_never">Nunca</string>
     <string name="home_last_sync_just_now">Hace un momento</string>
     <string name="home_last_sync_minutes">Hace %1$d min</string>

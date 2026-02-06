@@ -231,6 +231,13 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             )
             return
         }
+        if (!isConnected()) {
+            syncStatusText?.text = getString(
+                R.string.home_sync_status_error,
+                getString(R.string.offline_alert_message)
+            )
+            return
+        }
 
         manualSyncInProgress = true
         val dialog = SyncDialogFragment.newInstance(
@@ -267,10 +274,17 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                         if (isAdded) {
                             dialog.update(done, total, msg ?: "", downloadedBytes)
                             updateSyncProgress(done, total, msg)
+                            SyncStatusNotifications.notifyProgress(
+                                requireContext(),
+                                done,
+                                total,
+                                msg
+                            )
                         }
                     },
                     onSyncSuccess = {
                         if (!isAdded) return@syncSubregion
+                        SyncStatusNotifications.dismissProgress(requireContext())
                         syncStatusText?.text = getString(R.string.home_sync_status_success)
                         viewLifecycleOwner.lifecycleScope.launch {
                             dataStore.markManualSyncNow()
@@ -281,6 +295,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                     },
                     onSyncError = { error ->
                         if (!isAdded) return@syncSubregion
+                        SyncStatusNotifications.dismissProgress(requireContext())
                         syncStatusText?.text = getString(
                             R.string.home_sync_status_error,
                             error.message ?: getString(R.string.home_sync_unknown_error)
@@ -292,6 +307,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                 )
             } catch (error: Throwable) {
                 if (isAdded) {
+                    SyncStatusNotifications.dismissProgress(requireContext())
                     syncStatusText?.text = getString(
                         R.string.home_sync_status_error,
                         error.message ?: getString(R.string.home_sync_unknown_error)
@@ -301,6 +317,9 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                     }
                 }
             } finally {
+                if (isAdded) {
+                    SyncStatusNotifications.dismissProgress(requireContext())
+                }
                 manualSyncInProgress = false
                 syncButton?.isEnabled = vm.usuario.value?.subregion?.isNullOrBlank() == false
                 syncProgressIndicator?.visibility = View.GONE

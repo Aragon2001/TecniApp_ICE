@@ -675,7 +675,7 @@ class   RoomRepository(context: Context) {
         db.agenciaDao().insertAll(agencias)
         progress(++done, total, "Descargando agencias…", downloadedBytes)
 
-        val pueblosRemotos = firebase.obtenerPueblos()
+        val pueblosRemotos = firebase.obtenerPueblosPorSubregion(canonicalSubregion)
         downloadedBytes += estimateBytes(pueblosRemotos)
         val pueblosNormalizados = pueblosRemotos.map { remoto ->
             val base = remoto.subregion_id_normalizado.takeIf { it.isNotBlank() } ?: remoto.subregion
@@ -683,7 +683,6 @@ class   RoomRepository(context: Context) {
             remoto.copy(subregion_id_normalizado = canonico)
         }
         val pueblosFiltrados = pueblosNormalizados.filter { it.subregion_id_normalizado == canonicalSubregion }
-        db.puebloDao().eliminarFueraDeSubregion(canonicalSubregion)
         if (pueblosFiltrados.isNotEmpty()) {
             db.puebloDao().limpiarSubregion(canonicalSubregion)
             db.puebloDao().insertAll(pueblosFiltrados)
@@ -696,11 +695,11 @@ class   RoomRepository(context: Context) {
             db.puebloDao().obtenerIdsPorSubregion(canonicalSubregion)
         }
         val idsSet = idsPueblos.toSet()
-        val localizacionesRemotas = firebase.obtenerLocalizaciones()
+        val localizacionesRemotas = firebase.obtenerLocalizacionesPorPueblos(idsPueblos)
         downloadedBytes += estimateBytes(localizacionesRemotas)
         val localizacionesFiltradas = localizacionesRemotas.filter { it.pueblo in idsSet }
-        db.localizacionDao().limpiarTodo()
         if (localizacionesFiltradas.isNotEmpty()) {
+            db.localizacionDao().eliminarPorPueblos(idsPueblos)
             db.localizacionDao().insertAll(localizacionesFiltradas)
         }
         progress(++done, total, "Descargando localizaciones…", downloadedBytes)
