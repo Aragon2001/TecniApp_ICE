@@ -17,4 +17,9 @@
     <dimen name="street_view_collapsed_height">120dp</dimen>
     <dimen name="street_view_expanded_width">260dp</dimen>
     <dimen name="street_view_expanded_height">180dp</dimen>
+    <dimen name="street_view_peek_height">140dp</dimen>
+    <dimen name="street_view_handle_width">32dp</dimen>
+    <dimen name="street_view_handle_height">4dp</dimen>
+    <dimen name="localizacion_card_radius">20dp</dimen>
+    <dimen name="localizacion_card_spacing">12dp</dimen>
 </resources>
