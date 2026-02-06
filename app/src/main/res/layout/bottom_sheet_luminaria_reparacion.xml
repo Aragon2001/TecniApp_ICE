@@ -40,7 +40,7 @@
         app:chipBackgroundColor="?attr/colorSecondaryContainer"
         app:layout_constraintBaseline_toBaselineOf="@id/tvTituloBottomSheet"
         app:layout_constraintEnd_toEndOf="parent"
-        app:textColor="?attr/colorOnSecondaryContainer" />
+        android:textColor="?attr/colorOnSecondaryContainer" />
 
     <TextView
         android:id="@+id/tvSubtitleBottomSheet"
