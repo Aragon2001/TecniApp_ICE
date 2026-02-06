@@ -7,7 +7,7 @@ import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.fragment.app.DialogFragment
-import androidx.fragment.app.viewModels
+import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
 import com.Arasoftsolutions.tecniapp_ice.databinding.DialogRegistroVehiculoBinding
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -20,7 +20,7 @@ class RegistroVehiculoDialogFragment : DialogFragment() {
     private var _binding: DialogRegistroVehiculoBinding? = null
     private val binding get() = _binding!!
 
-    private val viewModel: MiVehiculoViewModel by viewModels({ requireParentFragment() })
+    private val viewModel: MiVehiculoViewModel by activityViewModels()
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         _binding = DialogRegistroVehiculoBinding.inflate(LayoutInflater.from(requireContext()))
@@ -41,7 +41,7 @@ class RegistroVehiculoDialogFragment : DialogFragment() {
     }
 
     private fun setupUi() {
-        binding.chipGeneral.isChecked = true
+        binding.chipOtros.isChecked = true
         binding.btnCancelar.setOnClickListener { dismiss() }
         binding.btnGuardar.setOnClickListener { guardarRegistro() }
 
@@ -75,8 +75,8 @@ class RegistroVehiculoDialogFragment : DialogFragment() {
             binding.chipAceite.id -> binding.chipAceite.text.toString()
             binding.chipFrenos.id -> binding.chipFrenos.text.toString()
             binding.chipRevision.id -> binding.chipRevision.text.toString()
-            binding.chipGeneral.id -> binding.chipGeneral.text.toString()
-            else -> binding.chipGeneral.text.toString()
+            binding.chipOtros.id -> binding.chipOtros.text.toString()
+            else -> binding.chipOtros.text.toString()
         }
         val observaciones = binding.etObservaciones.text?.toString()?.trim()?.ifBlank { null }
 
