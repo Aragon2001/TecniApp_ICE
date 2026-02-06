@@ -31,11 +31,17 @@ class Paso4Fragment : Fragment() {
     private lateinit var viewModel: RegistroViewModel
 
     // UI
-    private lateinit var spinnerRegion: Spinner
-    private lateinit var spinnerSubregion: Spinner
-    private lateinit var spinnerAgencia: Spinner
-    private lateinit var spinnerVehiculo: Spinner
-    private lateinit var btnFinishRegistration: MaterialButton
+    private var _spinnerRegion: Spinner? = null
+    private var _spinnerSubregion: Spinner? = null
+    private var _spinnerAgencia: Spinner? = null
+    private var _spinnerVehiculo: Spinner? = null
+    private var _btnFinishRegistration: MaterialButton? = null
+
+    private val spinnerRegion get() = requireNotNull(_spinnerRegion)
+    private val spinnerSubregion get() = requireNotNull(_spinnerSubregion)
+    private val spinnerAgencia get() = requireNotNull(_spinnerAgencia)
+    private val spinnerVehiculo get() = requireNotNull(_spinnerVehiculo)
+    private val btnFinishRegistration get() = requireNotNull(_btnFinishRegistration)
 
     // Firebase (datos generales)
     private lateinit var regionsDatabase: DatabaseReference
@@ -98,11 +104,11 @@ class Paso4Fragment : Fragment() {
         viewModel = ViewModelProvider(requireActivity())[RegistroViewModel::class.java]
 
         // Bind UI
-        spinnerRegion   = view.findViewById(R.id.spinnerRegion)
-        spinnerSubregion = view.findViewById(R.id.spinnerSubregion)
-        spinnerAgencia   = view.findViewById(R.id.spinnerAgencia)
-        spinnerVehiculo  = view.findViewById(R.id.spinnerVehiculo)
-        btnFinishRegistration = view.findViewById(R.id.btnFinishRegistration)
+        _spinnerRegion = view.findViewById(R.id.spinnerRegion)
+        _spinnerSubregion = view.findViewById(R.id.spinnerSubregion)
+        _spinnerAgencia = view.findViewById(R.id.spinnerAgencia)
+        _spinnerVehiculo = view.findViewById(R.id.spinnerVehiculo)
+        _btnFinishRegistration = view.findViewById(R.id.btnFinishRegistration)
         btnFinishRegistration.isEnabled = false
 
         setupInitialSpinners()
@@ -166,6 +172,24 @@ class Paso4Fragment : Fragment() {
         btnFinishRegistration.setOnClickListener { finalizeRegistration() }
 
         return view
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _spinnerRegion?.onItemSelectedListener = null
+        _spinnerSubregion?.onItemSelectedListener = null
+        _spinnerAgencia?.onItemSelectedListener = null
+        _spinnerVehiculo?.onItemSelectedListener = null
+        _spinnerRegion?.adapter = null
+        _spinnerSubregion?.adapter = null
+        _spinnerAgencia?.adapter = null
+        _spinnerVehiculo?.adapter = null
+        _btnFinishRegistration?.setOnClickListener(null)
+        _spinnerRegion = null
+        _spinnerSubregion = null
+        _spinnerAgencia = null
+        _spinnerVehiculo = null
+        _btnFinishRegistration = null
     }
 
     private fun setNavigationListeners(view: View) {
