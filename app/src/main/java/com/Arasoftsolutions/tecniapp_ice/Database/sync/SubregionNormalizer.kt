@@ -64,8 +64,7 @@ object SubregionNormalizer {
     fun canonicalIdOrSelf(input: String?): String? {
         val canonical = canonicalIdOrNull(input)
         if (canonical != null) return canonical
-        val trimmed = input?.trim()?.takeIf { it.isNotEmpty() } ?: return null
-        return trimmed.takeIf { canonicalIds.contains(it) }
+        return input?.trim()?.takeIf { it.isNotEmpty() }
     }
 
     fun knownCanonicalIds(): Set<String> = canonicalIds
@@ -88,4 +87,3 @@ object SubregionNormalizer {
         return texto.takeIf { it.isNotBlank() }
     }
 }
-
