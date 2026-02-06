@@ -6,8 +6,6 @@ import android.Manifest
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
@@ -27,9 +25,10 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.ActivityCompat
-import androidx.core.view.updateLayoutParams
+import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.Arasoftsolutions.tecniapp_ice.R
 import com.Arasoftsolutions.tecniapp_ice.databinding.FragmentLocalizacionBinding
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriaMapLauncher
@@ -45,7 +44,6 @@ import com.google.android.gms.maps.MapView
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.StreetViewPanorama
 import com.google.android.gms.maps.model.StreetViewSource
-import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
@@ -89,8 +87,15 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
     private val CLAVE_STREET_VIEW_BUNDLE = "ClaveStreetViewBundle"
     private var streetViewPanorama: StreetViewPanorama? = null
     private var streetViewHasPanorama = false
-    private var streetViewExpanded = false
-    private var streetViewUserHidden = false
+    private var streetViewLoading = false
+    private var streetViewMode = StreetViewMode.HIDDEN
+    private var streetViewBehavior: BottomSheetBehavior<*>? = null
+
+    private enum class StreetViewMode {
+        HIDDEN,
+        COLLAPSED,
+        EXPANDED
+    }
 
     // --- Permisos (Activity Result API) ---
     private val locationPermissionLauncher =
@@ -100,7 +105,7 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
             if (granted) {
                 enableMyLocationAndStartUpdates()
             } else {
-                Toast.makeText(requireContext(), "Permiso de ubicación denegado", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), getString(R.string.localizacion_permiso_denegado), Toast.LENGTH_SHORT).show()
             }
         }
 
@@ -188,6 +193,7 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
         }
 
         configurarObservers()
+        configurarStreetViewSheet()
         configurarControles()
         inicializarMapaVista(savedInstanceState)
         inicializarStreetView(savedInstanceState)
@@ -250,9 +256,15 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
             actualizarUbicacionMapa(loc.latitud, loc.longitud, codigoPueblo, codigoCalle, numeroPoste)
             actualizarStreetView(loc.latitud, loc.longitud)
 
-            binding.direccionTextView.text = "Dirección: ${loc.direccion}"
-            binding.delposteTextView.text = "Del Poste: ${loc.delPoste}"
-            binding.alposteTextView.text = "Al Poste: ${loc.alPoste}"
+            binding.direccionTextView.text = loc.direccion
+            binding.delposteTextView.text = loc.delPoste.toString()
+            binding.alposteTextView.text = loc.alPoste.toString()
+            binding.coordenadasTextView.text = getString(
+                R.string.localizacion_coordenadas_format,
+                loc.latitud,
+                loc.longitud
+            )
+            binding.fabStreetView.isEnabled = true
         }
 
         viewModel.marcadoresCalles.observe(viewLifecycleOwner) { marcadores ->
@@ -298,28 +310,84 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
             actualizarEstadoBotonCalles()
             actualizarMarcadoresDeCalles(viewModel.marcadoresCalles.value.orEmpty())
         }
-        binding.fabStreetViewToggle.setOnClickListener {
-            streetViewUserHidden = !streetViewUserHidden
-            actualizarStreetViewUi()
-        }
-        binding.fabStreetViewSize.setOnClickListener {
-            streetViewExpanded = !streetViewExpanded
-            actualizarStreetViewSize()
-            actualizarStreetViewUi()
-        }
+        binding.fabStreetView.setOnClickListener { abrirStreetView() }
+        binding.streetViewActionMinimize.setOnClickListener { minimizarStreetView() }
+        binding.streetViewActionClose.setOnClickListener { cerrarStreetView() }
+        binding.fabStreetView.isEnabled = false
         actualizarEstadoBotonCalles()
-        actualizarStreetViewSize()
         actualizarStreetViewUi()
+    }
+
+    private fun configurarStreetViewSheet() {
+        val behavior = BottomSheetBehavior.from(binding.streetViewSheet).also { streetViewBehavior = it }
+        behavior.state = BottomSheetBehavior.STATE_HIDDEN
+        streetViewMode = StreetViewMode.HIDDEN
+        behavior.isHideable = true
+        behavior.skipCollapsed = false
+        behavior.isDraggable = true
+        behavior.addBottomSheetCallback(object : BottomSheetBehavior.BottomSheetCallback() {
+            override fun onStateChanged(bottomSheet: View, newState: Int) {
+                streetViewMode = when (newState) {
+                    BottomSheetBehavior.STATE_EXPANDED -> StreetViewMode.EXPANDED
+                    BottomSheetBehavior.STATE_COLLAPSED -> StreetViewMode.COLLAPSED
+                    BottomSheetBehavior.STATE_HIDDEN -> StreetViewMode.HIDDEN
+                    else -> streetViewMode
+                }
+                if (newState == BottomSheetBehavior.STATE_HIDDEN) {
+                    ensureStreetViewActive(false)
+                }
+                actualizarStreetViewUi()
+            }
+
+            override fun onSlide(bottomSheet: View, slideOffset: Float) {
+                // Mantén interacción suave mientras se desliza el bottom sheet.
+            }
+        })
+    }
+
+    private fun abrirStreetView() {
+        ensureStreetViewActive(true)
+        streetViewMode = StreetViewMode.EXPANDED
+        streetViewBehavior?.state = BottomSheetBehavior.STATE_EXPANDED
+        actualizarStreetViewUi()
+    }
+
+    private fun minimizarStreetView() {
+        streetViewMode = StreetViewMode.COLLAPSED
+        streetViewBehavior?.state = BottomSheetBehavior.STATE_COLLAPSED
+        actualizarStreetViewUi()
+    }
+
+    private fun cerrarStreetView() {
+        streetViewMode = StreetViewMode.HIDDEN
+        streetViewBehavior?.state = BottomSheetBehavior.STATE_HIDDEN
+        ensureStreetViewActive(false)
+        actualizarStreetViewUi()
+    }
+
+    private fun ensureStreetViewActive(active: Boolean) {
+        if (active) {
+            binding.streetViewPanorama.onStart()
+            binding.streetViewPanorama.onResume()
+        } else {
+            binding.streetViewPanorama.onPause()
+            binding.streetViewPanorama.onStop()
+        }
     }
 
     // Reset de textos y cámara a vista país
     private fun limpiarCamposDeTexto() {
-        binding.direccionTextView.text = "Dirección: N/A"
-        binding.delposteTextView.text = "Del Poste: 0"
-        binding.alposteTextView.text = "Al Poste: 0"
+        binding.direccionTextView.text = getString(R.string.localizacion_placeholder_direccion_no_disponible)
+        binding.delposteTextView.text = getString(R.string.localizacion_placeholder_del_poste)
+        binding.alposteTextView.text = getString(R.string.localizacion_placeholder_al_poste)
+        binding.coordenadasTextView.text = getString(R.string.localizacion_placeholder_coordenadas)
         centrarMapaEnCostaRica()
         hasCenteredOnUser = false
         mostrarCalles = false
+        binding.fabStreetView.isEnabled = false
+        streetViewHasPanorama = false
+        streetViewLoading = false
+        cerrarStreetView()
         actualizarEstadoBotonCalles()
         actualizarMarcadoresDeCalles(emptyList())
     }
@@ -351,11 +419,13 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
                 setStreetNamesEnabled(true)
                 setOnStreetViewPanoramaChangeListener { location ->
                     streetViewHasPanorama = location != null
+                    streetViewLoading = false
                     actualizarStreetViewUi()
                 }
             }
         }
         streetViewHasPanorama = false
+        streetViewLoading = false
         actualizarStreetViewUi()
     }
 
@@ -526,20 +596,17 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
             append("-00")
         }
 
-        val icono = redimensionarIcono(R.drawable.poste, 150, 150)
         if (marcador == null) {
             marcador = map.addMarker(
                 MarkerOptions()
                     .position(ubicacion)
-                    .title("Ubicación exacta")
+                    .title(getString(R.string.localizacion_marker_title))
                     .snippet(snippetInfo)
-                    .icon(icono)
             )
         } else {
             marcador?.apply {
                 position = ubicacion
                 snippet = snippetInfo
-                setIcon(icono)
                 showInfoWindow()
             }
         }
@@ -578,12 +645,6 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
         }
     }
 
-    private fun redimensionarIcono(drawableRes: Int, w: Int, h: Int): BitmapDescriptor {
-        val bmp = BitmapFactory.decodeResource(resources, drawableRes)
-        val scaled = Bitmap.createScaledBitmap(bmp, w, h, false)
-        return BitmapDescriptorFactory.fromBitmap(scaled)
-    }
-
     private fun normalizeBearing(raw: Float): Float {
         var value = raw
         while (value < 0f) value += 360f
@@ -620,7 +681,7 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
         val lng = loc?.longitud
 
         if (lat == null || lng == null) {
-            Toast.makeText(requireContext(), "La ubicación no está disponible", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), getString(R.string.localizacion_toast_sin_ubicacion_mapa), Toast.LENGTH_SHORT).show()
             return
         }
 
@@ -630,7 +691,7 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
             lng = lng,
             label = ""// o null si no tenés nombre
         ) {
-            Toast.makeText(requireContext(), "No hay apps de mapas disponibles.", Toast.LENGTH_LONG).show()
+            Toast.makeText(requireContext(), getString(R.string.localizacion_toast_sin_apps_mapa), Toast.LENGTH_LONG).show()
         }
     }
 
@@ -645,28 +706,29 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
         val poste = loc?.delPoste
 
         val parts = puebloStr.split(" - ")
-        if (lat == null || lng == null || calle == null || codigoCalle == null || parts.size != 2) {
-            Toast.makeText(requireContext(), "No se puede compartir la ubicación. Intente de nuevo.", Toast.LENGTH_SHORT).show()
+        if (lat == null || lng == null || calle == null || codigoCalle == null || poste == null || parts.size != 2) {
+            Toast.makeText(requireContext(), getString(R.string.localizacion_toast_no_compartir), Toast.LENGTH_SHORT).show()
             return
         }
         val codigoPueblo = parts[0]
         val nombrePueblo = parts[1]
 
-        val mensaje = """
-            Compartiendo la ubicación desde TecniApp ICE:
-            
-            - Pueblo: (Código: $codigoPueblo) "$nombrePueblo" 
-            - Calle: (Código: $codigoCalle) "$calle" 
-            - Poste: "$poste"
-            
-            https://maps.google.com/?q=$lat,$lng
-        """.trimIndent()
+        val mensaje = getString(
+            R.string.localizacion_share_message,
+            codigoPueblo,
+            nombrePueblo,
+            codigoCalle.toString(),
+            calle,
+            poste.toString(),
+            lat,
+            lng
+        )
 
         startActivity(Intent.createChooser(Intent().apply {
             action = Intent.ACTION_SEND
             type = "text/plain"
             putExtra(Intent.EXTRA_TEXT, mensaje)
-        }, "Compartir ubicación con"))
+        }, getString(R.string.localizacion_share_title)))
     }
 
     // ---------------------------------------------------------------------------------------------
@@ -717,13 +779,17 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
     override fun onStart() {
         super.onStart()
         binding.mapView.onStart()
-        binding.streetViewPanorama.onStart()
+        if (streetViewMode != StreetViewMode.HIDDEN) {
+            binding.streetViewPanorama.onStart()
+        }
     }
 
     override fun onResume() {
         super.onResume()
         binding.mapView.onResume()
-        binding.streetViewPanorama.onResume()
+        if (streetViewMode != StreetViewMode.HIDDEN) {
+            binding.streetViewPanorama.onResume()
+        }
         rotationVectorSensor?.let { sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_UI) }
         // si ya teníamos permiso, asegúrate de que los updates sigan activos
         val fine = ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION)
@@ -790,42 +856,19 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
 
     private fun actualizarStreetView(latitud: Double, longitud: Double) {
         val panorama = streetViewPanorama ?: return
+        streetViewLoading = true
+        actualizarStreetViewUi()
         panorama.setPosition(LatLng(latitud, longitud), 50, StreetViewSource.OUTDOOR)
     }
 
-    private fun actualizarStreetViewSize() {
-        val widthRes = if (streetViewExpanded) {
-            R.dimen.street_view_expanded_width
-        } else {
-            R.dimen.street_view_collapsed_width
-        }
-        val heightRes = if (streetViewExpanded) {
-            R.dimen.street_view_expanded_height
-        } else {
-            R.dimen.street_view_collapsed_height
-        }
-        val width = resources.getDimensionPixelSize(widthRes)
-        val height = resources.getDimensionPixelSize(heightRes)
-        binding.streetViewContainer.updateLayoutParams<ViewGroup.LayoutParams> {
-            this.width = width
-            this.height = height
-        }
-    }
-
     private fun actualizarStreetViewUi() {
-        val visible = !streetViewUserHidden && streetViewHasPanorama
-        binding.streetViewContainer.visibility = when {
-            streetViewUserHidden -> View.GONE
-            streetViewHasPanorama -> View.VISIBLE
-            else -> View.INVISIBLE
-        }
-        binding.fabStreetViewSize.visibility = if (visible) View.VISIBLE else View.GONE
-        binding.fabStreetViewToggle.setImageResource(
-            if (streetViewUserHidden) R.drawable.ic_visibility else R.drawable.ic_visibility_off
-        )
-        binding.fabStreetViewSize.setImageResource(
-            if (streetViewExpanded) R.drawable.ic_fullscreen_exit else R.drawable.ic_fullscreen
-        )
+        val hasPanorama = streetViewHasPanorama
+        val loading = streetViewLoading
+        binding.streetViewLoadingContainer.isVisible = loading
+        binding.streetViewEmptyState.isVisible = !loading && !hasPanorama
+        binding.streetViewPanorama.isVisible = hasPanorama
+        binding.streetViewActionMinimize.isVisible = streetViewMode == StreetViewMode.EXPANDED
+        binding.fabStreetView.isVisible = streetViewMode != StreetViewMode.EXPANDED
     }
 
     private fun actualizarAutorrotacionRuntime(enabled: Boolean) {
