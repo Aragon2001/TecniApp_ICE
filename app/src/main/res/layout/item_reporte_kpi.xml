@@ -1,32 +1,52 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:padding="12dp">
+    android:layout_marginBottom="12dp"
+    app:cardBackgroundColor="@color/white"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="0dp"
+    app:strokeColor="@color/outline_variant_light"
+    app:strokeWidth="1dp">
 
-    <TextView
-        android:id="@+id/tvKpiTitulo"
-        style="@style/TextAppearance.Material3.BodyLarge"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textStyle="bold"
-        android:text="KPI" />
+        android:orientation="vertical"
+        android:padding="14dp">
 
-    <TextView
-        android:id="@+id/tvKpiValor"
-        style="@style/TextAppearance.Material3.TitleMedium"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:text="0" />
+        <TextView
+            android:id="@+id/tvKpiTitulo"
+            style="@style/TextAppearance.Material3.LabelLarge"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="KPI" />
 
-    <TextView
-        android:id="@+id/tvKpiDetalle"
-        style="@style/TextAppearance.Material3.BodySmall"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="2dp"
-        android:textColor="@color/dark_gray"
-        android:text="Detalle" />
-</LinearLayout>
+        <TextView
+            android:id="@+id/tvKpiValor"
+            style="@style/TextAppearance.Material3.TitleLarge"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:textStyle="bold"
+            android:text="0" />
+
+        <TextView
+            android:id="@+id/tvKpiDetalle"
+            style="@style/TextAppearance.Material3.BodySmall"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:textColor="@color/dark_gray"
+            android:text="Detalle" />
+
+        <View
+            android:id="@+id/viewKpiTrend"
+            android:layout_width="match_parent"
+            android:layout_height="6dp"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/bg_report_kpi_trend" />
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

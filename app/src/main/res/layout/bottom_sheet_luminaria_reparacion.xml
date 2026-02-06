@@ -1,220 +1,504 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:fillViewport="true">
+    android:animateLayoutChanges="true">
 
-    <LinearLayout
-        android:layout_width="match_parent"
+    <!-- Handle del BottomSheet -->
+    <View
+        android:id="@+id/viewHandle"
+        android:layout_width="48dp"
+        android:layout_height="4dp"
+        android:layout_marginTop="8dp"
+        android:background="@drawable/bg_bottom_sheet_handle"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- Header principal -->
+    <TextView
+        android:id="@+id/tvTituloBottomSheet"
+        style="@style/TextAppearance.Material3.TitleLarge"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="16dp">
+        android:layout_marginTop="16dp"
+        android:text="Registrar reparación"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toStartOf="@id/chipEstadoReparacion"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/viewHandle" />
 
-        <TextView
-            android:id="@+id/tvTituloBottomSheet"
-            style="@style/TextAppearance.Material3.TitleMedium"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Registrar reparación"
-            android:textStyle="bold" />
+    <com.google.android.material.chip.Chip
+        android:id="@+id/chipEstadoReparacion"
+        style="@style/Tecni.Chip.Status"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:text="Pendiente"
+        app:chipBackgroundColor="?attr/colorSecondaryContainer"
+        app:layout_constraintBaseline_toBaselineOf="@id/tvTituloBottomSheet"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:textColor="?attr/colorOnSecondaryContainer" />
+
+    <TextView
+        android:id="@+id/tvSubtitleBottomSheet"
+        style="@style/TextAppearance.Material3.BodySmall"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:text="Completa los datos críticos y guarda"
+        android:textColor="?attr/colorOnSurfaceVariant"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tvTituloBottomSheet" />
+
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/scrollContent"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginTop="12dp"
+        android:fillViewport="true"
+        app:layout_constraintBottom_toTopOf="@id/bottomActionBar"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tvSubtitleBottomSheet">
 
         <LinearLayout
-            android:id="@+id/groupDetalle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
             android:orientation="vertical"
-            android:visibility="gone"
-            tools:visibility="visible">
+            android:padding="16dp">
 
-            <TextView
-                style="@style/TextAppearance.Material3.LabelLarge"
+            <!-- Sección 1: Detalles -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardDetalle"
+                style="@style/Tecni.SectionCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            style="@style/TextAppearance.Material3.TitleSmall"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Detalles"
+                            android:textStyle="bold" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnToggleDetalle"
+                            style="@style/Widget.Material3.Button.IconButton"
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:contentDescription="Expandir detalles"
+                            android:icon="@drawable/ic_arrow_down" />
+                    </LinearLayout>
+
+                    <!-- Grupo de detalle del cliente (existente) -->
+                    <LinearLayout
+                        android:id="@+id/groupDetalle"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:orientation="vertical"
+                        android:visibility="gone"
+                        tools:visibility="visible">
+
+                        <TextView
+                            style="@style/TextAppearance.Material3.LabelLarge"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Detalle del cliente"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            style="@style/TextAppearance.Material3.BodyMedium"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="6dp"
+                            android:text="Cliente:"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tvClienteDetalle"
+                            style="@style/TextAppearance.Material3.BodyMedium"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Sin datos" />
+
+                        <TextView
+                            style="@style/TextAppearance.Material3.BodyMedium"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="6dp"
+                            android:text="Contacto:"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tvContactoDetalle"
+                            style="@style/TextAppearance.Material3.BodyMedium"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Sin datos" />
+
+                        <TextView
+                            style="@style/TextAppearance.Material3.BodyMedium"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="6dp"
+                            android:text="Observaciones:"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tvObservacionesDetalle"
+                            style="@style/TextAppearance.Material3.BodyMedium"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Sin datos" />
+
+                        <TextView
+                            style="@style/TextAppearance.Material3.BodyMedium"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="6dp"
+                            android:text="Localización:"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tvLocalizacionDetalle"
+                            style="@style/TextAppearance.Material3.BodyMedium"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="-" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnLlamarContacto"
+                            style="@style/Widget.Material3.Button.TonalButton"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="12dp"
+                            android:icon="@drawable/ic_phone"
+                            android:text="Llamar al contacto"
+                            app:iconGravity="textStart"
+                            app:iconPadding="8dp" />
+                    </LinearLayout>
+
+                    <com.google.android.material.divider.MaterialDivider
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp" />
+
+                    <!-- Datos técnicos -->
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tilLocalizacion"
+                        style="@style/Tecni.TextInput.Outlined"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:hint="Número de localización"
+                        app:helperText="Formato 000000000000"
+                        app:startIconDrawable="@drawable/ic_location">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etLocalizacion"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="text" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tilVehiculoLuminaria"
+                        style="@style/Tecni.TextInput.Outlined.Dropdown"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:hint="@string/luminarias_camion_asignado"
+                        android:visibility="gone"
+                        tools:visibility="visible">
+
+                        <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                            android:id="@+id/actVehiculoLuminaria"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="none" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tilEstadoLuminaria"
+                        style="@style/Tecni.TextInput.Outlined.Dropdown"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:hint="Estado de la reparación"
+                        app:startIconDrawable="@drawable/ic_check">
+
+                        <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                            android:id="@+id/actEstadoLuminaria"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="none" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tilEjecutorLuminaria"
+                        style="@style/Tecni.TextInput.Outlined.Dropdown"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:hint="Técnico ejecutor"
+                        app:helperText="Puedes buscarlo en la lista de técnicos"
+                        app:startIconDrawable="@drawable/ic_accounts">
+
+                        <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                            android:id="@+id/actEjecutorLuminaria"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="text" />
+                    </com.google.android.material.textfield.TextInputLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Sección 2: Materiales usados -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardMateriales"
+                style="@style/Tecni.SectionCard"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Detalle del cliente"
-                android:textStyle="bold" />
+                android:layout_marginTop="12dp">
 
-            <TextView
-                style="@style/TextAppearance.Material3.BodyMedium"
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            style="@style/TextAppearance.Material3.TitleSmall"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Materiales usados"
+                            android:textStyle="bold" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnAgregarMaterial"
+                            style="@style/Widget.Material3.Button.TonalButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:icon="@drawable/ic_add"
+                            android:text="Agregar"
+                            app:iconGravity="textStart"
+                            app:iconPadding="8dp" />
+                    </LinearLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tilMaterialLuminaria"
+                        style="@style/Tecni.TextInput.Outlined.Dropdown"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:hint="Buscar material usado"
+                        app:helperText="Selecciona un material para agregarlo"
+                        app:startIconDrawable="@drawable/ic_summary_material">
+
+                        <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                            android:id="@+id/actMaterialLuminaria"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="text" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/cardEmptyMateriales"
+                        style="@style/Tecni.PlaceholderCard"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal"
+                            android:padding="12dp">
+
+                            <com.google.android.material.imageview.ShapeableImageView
+                                android:layout_width="40dp"
+                                android:layout_height="40dp"
+                                android:contentDescription="Sin materiales"
+                                android:padding="8dp"
+                                app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full"
+                                app:srcCompat="@drawable/ic_summary_material"
+                                app:tint="?attr/colorOnSurfaceVariant" />
+
+                            <TextView
+                                android:id="@+id/tvEmptyMateriales"
+                                style="@style/TextAppearance.Material3.BodyMedium"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="12dp"
+                                android:layout_weight="1"
+                                android:text="Aún no se han agregado materiales."
+                                android:textColor="?attr/colorOnSurfaceVariant" />
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/listMaterialesLuminaria"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:nestedScrollingEnabled="false"
+                        tools:listitem="@layout/item_luminaria_material" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Sección 3: Evidencia / Observaciones -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardEvidencia"
+                style="@style/Tecni.SectionCard"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:text="Cliente:"
-                android:textStyle="bold" />
+                android:layout_marginTop="12dp">
 
-            <TextView
-                android:id="@+id/tvClienteDetalle"
-                style="@style/TextAppearance.Material3.BodyMedium"
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        style="@style/TextAppearance.Material3.TitleSmall"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Evidencia / Observaciones"
+                        android:textStyle="bold" />
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tilObservacionesLuminaria"
+                        style="@style/Tecni.TextInput.Outlined"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:hint="Notas o evidencia de la reparación"
+                        app:helperText="Opcional">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etObservacionesLuminaria"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="textMultiLine"
+                            android:minLines="3" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnAgregarEvidencia"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:icon="@drawable/ic_camera"
+                        android:text="Agregar evidencia"
+                        app:iconGravity="textStart"
+                        app:iconPadding="8dp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+    <!-- Barra de acciones sticky -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/bottomActionBar"
+        style="@style/Tecni.BottomActionBar"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="12dp">
+
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Sin datos" />
+                android:orientation="horizontal">
 
-            <TextView
-                style="@style/TextAppearance.Material3.BodyMedium"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:text="Contacto:"
-                android:textStyle="bold" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnIniciarReparacion"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="8dp"
+                    android:layout_weight="1"
+                    android:text="Iniciar"
+                    android:visibility="gone"
+                    tools:visibility="visible" />
 
-            <TextView
-                android:id="@+id/tvContactoDetalle"
-                style="@style/TextAppearance.Material3.BodyMedium"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Sin datos" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnResolverReparacion"
+                    style="@style/Widget.Material3.Button"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="8dp"
+                    android:layout_weight="1"
+                    android:text="Resolver"
+                    android:visibility="gone"
+                    tools:visibility="visible" />
 
-            <TextView
-                style="@style/TextAppearance.Material3.BodyMedium"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:text="Observaciones:"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/tvObservacionesDetalle"
-                style="@style/TextAppearance.Material3.BodyMedium"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Sin datos" />
-
-            <TextView
-                style="@style/TextAppearance.Material3.BodyMedium"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:text="Localización:"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/tvLocalizacionDetalle"
-                style="@style/TextAppearance.Material3.BodyMedium"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="-" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnExportarReparacion"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Exportar"
+                    android:visibility="gone"
+                    tools:visibility="visible" />
+            </LinearLayout>
 
             <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnLlamarContacto"
-                style="@style/Widget.Material3.Button.TonalButton"
+                android:id="@+id/btnGuardarReparacion"
+                style="@style/Widget.Material3.Button"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:icon="@drawable/ic_phone"
-                app:iconGravity="textStart"
-                app:iconPadding="8dp"
-                android:text="Llamar al contacto" />
+                android:layout_marginTop="8dp"
+                android:icon="@drawable/ic_save"
+                android:text="Guardar reparación"
+                app:iconGravity="textStart" />
+
+            <com.google.android.material.progressindicator.LinearProgressIndicator
+                android:id="@+id/progressGuardarReparacion"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:indeterminate="true"
+                android:visibility="gone"
+                tools:visibility="visible" />
         </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
 
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/tilLocalizacion"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:hint="Número de localización"
-            app:helperText="Formato 000000000000"
-            app:startIconDrawable="@drawable/ic_location">
-
-            <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/etLocalizacion"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:inputType="text" />
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/tilVehiculoLuminaria"
-            style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:hint="@string/luminarias_camion_asignado"
-            android:visibility="gone"
-            tools:visibility="visible">
-
-            <com.google.android.material.textfield.MaterialAutoCompleteTextView
-                android:id="@+id/actVehiculoLuminaria"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="none" />
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/tilEstadoLuminaria"
-            style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:hint="Estado de la reparación"
-            app:startIconDrawable="@drawable/ic_check">
-
-            <com.google.android.material.textfield.MaterialAutoCompleteTextView
-                android:id="@+id/actEstadoLuminaria"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="none" />
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/tilEjecutorLuminaria"
-            style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:hint="Técnico ejecutor"
-            app:helperText="Puedes buscarlo en la lista de técnicos"
-            app:startIconDrawable="@drawable/ic_accounts">
-
-            <com.google.android.material.textfield.MaterialAutoCompleteTextView
-                android:id="@+id/actEjecutorLuminaria"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="text" />
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/tilMaterialLuminaria"
-            style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:hint="Buscar material usado"
-            app:helperText="Selecciona un material para agregarlo"
-            app:startIconDrawable="@drawable/ic_summary_material">
-
-            <com.google.android.material.textfield.MaterialAutoCompleteTextView
-                android:id="@+id/actMaterialLuminaria"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="text" />
-        </com.google.android.material.textfield.TextInputLayout>
-
-        <TextView
-            android:id="@+id/tvEmptyMateriales"
-            style="@style/TextAppearance.Material3.BodyMedium"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:text="Aún no se han agregado materiales."
-            android:textColor="?attr/colorOnSurfaceVariant" />
-
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/listMaterialesLuminaria"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:nestedScrollingEnabled="false"
-            tools:listitem="@layout/item_luminaria_material" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnGuardarReparacion"
-            style="@style/Widget.Material3.Button"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:icon="@drawable/ic_save"
-            android:text="Guardar reparación" />
-    </LinearLayout>
-</androidx.core.widget.NestedScrollView>
+    <!-- Nota UX: animar expand/collapse de secciones y listas desde Kotlin. -->
+</androidx.constraintlayout.widget.ConstraintLayout>
