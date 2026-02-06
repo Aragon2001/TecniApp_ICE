@@ -96,6 +96,7 @@ class OperacionRepository(
         )
 
         database.workLogDao().upsert(entity)
+        actualizarGrupoConActividad(input.groupId, now)
         enqueueSync(SyncQueueType.WORKLOG, logId, now)
         return entity
     }
@@ -103,78 +104,46 @@ class OperacionRepository(
     suspend fun syncPendingGroups(regionKey: String, subregionKey: String) {
         val pending = database.activityGroupDao().getBySyncStatus(SyncStatus.PENDING)
         pending.forEach { group ->
-            if (!shouldPushGroup(regionKey, subregionKey, group)) {
-                markGroupError(group, IllegalStateException("Conflicto de updatedAt en ActivityGroup"))
-                return@forEach
-            }
-            val dto = group.toDto()
-            val updates = mapOf(
-                groupPath(regionKey, subregionKey, group.groupId) to dto.toMap()
-            )
-            try {
-                markGroupSyncing(group)
-                planillasDb.updateChildren(updates).await()
-                markGroupSynced(group)
-                clearQueue(SyncQueueType.GROUP, group.groupId)
-            } catch (ex: Exception) {
-                markGroupError(group, ex)
-                throw ex
-            }
+            syncGroup(regionKey, subregionKey, group)
         }
     }
 
     suspend fun syncPendingWorkLogs(regionKey: String, subregionKey: String) {
         val pending = database.workLogDao().getBySyncStatus(SyncStatus.PENDING)
         pending.forEach { log ->
-            if (!shouldPushWorkLog(regionKey, subregionKey, log)) {
-                markWorkLogError(log, IllegalStateException("Conflicto de updatedAt en WorkLog"))
-                return@forEach
-            }
-            val dto = log.toDto()
-            val updates = buildWorkLogFanOut(regionKey, subregionKey, log, dto)
-            try {
-                markWorkLogSyncing(log)
-                planillasDb.updateChildren(updates).await()
-                markWorkLogSynced(log)
-                clearQueue(SyncQueueType.WORKLOG, log.logId)
-            } catch (ex: Exception) {
-                markWorkLogError(log, ex)
-                throw ex
-            }
+            syncWorkLog(regionKey, subregionKey, log)
         }
     }
 
     suspend fun syncPendingPlanillas(regionKey: String, subregionKey: String) {
         val pending = database.planillaDao().getBySyncStatus(SyncStatus.PENDING)
         pending.forEach { planilla ->
-            if (!shouldPushPlanilla(regionKey, subregionKey, planilla)) {
-                markPlanillaError(planilla, IllegalStateException("Conflicto de updatedAt en Planilla"))
-                return@forEach
-            }
-            val dto = PlanillaDto(
-                planillaId = planilla.planillaId,
-                fechaDia = planilla.fechaDia,
-                uidTecnico = planilla.uidTecnico,
-                regionKey = planilla.regionKey,
-                subregionKey = planilla.subregionKey,
-                mode = planilla.mode,
-                totalHorasMin = planilla.totalHorasMin,
-                logIds = planilla.logIdsCsv.split(',').filter { it.isNotBlank() },
-                pdfRemoteUrl = planilla.pdfRemoteUrl,
-                createdAt = planilla.createdAt,
-                updatedAt = planilla.updatedAt
-            )
-            val updates = buildPlanillaFanOut(regionKey, subregionKey, dto)
-            try {
-                markPlanillaSyncing(planilla)
-                planillasDb.updateChildren(updates).await()
-                markPlanillaSynced(planilla)
-                clearQueue(SyncQueueType.PLANILLA_PDF, planilla.planillaId)
-            } catch (ex: Exception) {
-                markPlanillaError(planilla, ex)
-                throw ex
-            }
+            syncPlanilla(regionKey, subregionKey, planilla)
         }
+    }
+
+    suspend fun syncGroupById(regionKey: String, subregionKey: String, groupId: String) {
+        val group = database.activityGroupDao().getById(groupId) ?: run {
+            clearQueue(SyncQueueType.GROUP, groupId)
+            return
+        }
+        syncGroup(regionKey, subregionKey, group)
+    }
+
+    suspend fun syncWorkLogById(regionKey: String, subregionKey: String, logId: String) {
+        val log = database.workLogDao().getById(logId) ?: run {
+            clearQueue(SyncQueueType.WORKLOG, logId)
+            return
+        }
+        syncWorkLog(regionKey, subregionKey, log)
+    }
+
+    suspend fun syncPlanillaById(regionKey: String, subregionKey: String, planillaId: String) {
+        val planilla = database.planillaDao().getById(planillaId) ?: run {
+            clearQueue(SyncQueueType.PLANILLA_PDF, planillaId)
+            return
+        }
+        syncPlanilla(regionKey, subregionKey, planilla)
     }
 
     suspend fun generatePlanillaPdf(
@@ -365,6 +334,77 @@ class OperacionRepository(
         return remoteUpdatedAt == null || planilla.updatedAt >= remoteUpdatedAt
     }
 
+    private suspend fun syncGroup(regionKey: String, subregionKey: String, group: ActivityGroupEntity) {
+        if (!shouldPushGroup(regionKey, subregionKey, group)) {
+            markGroupError(group, IllegalStateException("Conflicto de updatedAt en ActivityGroup"))
+            clearQueue(SyncQueueType.GROUP, group.groupId)
+            return
+        }
+        val dto = group.toDto()
+        val updates = mapOf(
+            groupPath(regionKey, subregionKey, group.groupId) to dto.toMap()
+        )
+        try {
+            markGroupSyncing(group)
+            planillasDb.updateChildren(updates).await()
+            markGroupSynced(group)
+            clearQueue(SyncQueueType.GROUP, group.groupId)
+        } catch (ex: Exception) {
+            markGroupError(group, ex)
+            throw ex
+        }
+    }
+
+    private suspend fun syncWorkLog(regionKey: String, subregionKey: String, log: WorkLogEntity) {
+        if (!shouldPushWorkLog(regionKey, subregionKey, log)) {
+            markWorkLogError(log, IllegalStateException("Conflicto de updatedAt en WorkLog"))
+            clearQueue(SyncQueueType.WORKLOG, log.logId)
+            return
+        }
+        val dto = log.toDto()
+        val updates = buildWorkLogFanOut(regionKey, subregionKey, log, dto)
+        try {
+            markWorkLogSyncing(log)
+            planillasDb.updateChildren(updates).await()
+            markWorkLogSynced(log)
+            clearQueue(SyncQueueType.WORKLOG, log.logId)
+        } catch (ex: Exception) {
+            markWorkLogError(log, ex)
+            throw ex
+        }
+    }
+
+    private suspend fun syncPlanilla(regionKey: String, subregionKey: String, planilla: PlanillaEntity) {
+        if (!shouldPushPlanilla(regionKey, subregionKey, planilla)) {
+            markPlanillaError(planilla, IllegalStateException("Conflicto de updatedAt en Planilla"))
+            clearQueue(SyncQueueType.PLANILLA_PDF, planilla.planillaId)
+            return
+        }
+        val dto = PlanillaDto(
+            planillaId = planilla.planillaId,
+            fechaDia = planilla.fechaDia,
+            uidTecnico = planilla.uidTecnico,
+            regionKey = planilla.regionKey,
+            subregionKey = planilla.subregionKey,
+            mode = planilla.mode,
+            totalHorasMin = planilla.totalHorasMin,
+            logIds = planilla.logIdsCsv.split(',').filter { it.isNotBlank() },
+            pdfRemoteUrl = planilla.pdfRemoteUrl,
+            createdAt = planilla.createdAt,
+            updatedAt = planilla.updatedAt
+        )
+        val updates = buildPlanillaFanOut(regionKey, subregionKey, dto)
+        try {
+            markPlanillaSyncing(planilla)
+            planillasDb.updateChildren(updates).await()
+            markPlanillaSynced(planilla)
+            clearQueue(SyncQueueType.PLANILLA_PDF, planilla.planillaId)
+        } catch (ex: Exception) {
+            markPlanillaError(planilla, ex)
+            throw ex
+        }
+    }
+
     private fun buildWorkLogFanOut(
         regionKey: String,
         subregionKey: String,
@@ -377,6 +417,7 @@ class OperacionRepository(
 
         return mapOf(
             basePath to dto.toMap(),
+            "${groupPath(regionKey, subregionKey, log.groupId)}/workLogs/${log.logId}" to true,
             "$indexBase/workLogsPorUsuarioDia/${log.uidTecnico}/$day/${log.logId}" to true,
             "$indexBase/workLogsPorOrdenDia/${log.ordenSap}/$day/${log.logId}" to true,
             "$indexBase/workLogsPorCircuitoDia/${log.circuitoId ?: "sin_circuito"}/$day/${log.logId}" to true,
@@ -422,6 +463,18 @@ class OperacionRepository(
 
     private fun indexPath(regionKey: String, subregionKey: String): String =
         "pm_operacion/$regionKey/$subregionKey/index"
+
+    private suspend fun actualizarGrupoConActividad(groupId: String, now: Long) {
+        val group = database.activityGroupDao().getById(groupId) ?: return
+        val updatedGroup = group.copy(
+            updatedAt = now,
+            syncStatus = SyncStatus.PENDING,
+            retryCount = 0,
+            lastError = null
+        )
+        database.activityGroupDao().update(updatedGroup)
+        enqueueSync(SyncQueueType.GROUP, groupId, now)
+    }
 
     companion object {
         const val PLANILLAS_DB_URL = "https://tecniapp-ice-planilla.firebaseio.com/"

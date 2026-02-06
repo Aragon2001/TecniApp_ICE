@@ -28,11 +28,10 @@ class PmSyncManager(
         for (item in pending) {
             try {
                 when (type) {
-                    SyncQueueType.GROUP -> operacionRepository.syncPendingGroups(regionKey, subregionKey)
-                    SyncQueueType.WORKLOG -> operacionRepository.syncPendingWorkLogs(regionKey, subregionKey)
-                    SyncQueueType.PLANILLA_PDF -> operacionRepository.syncPendingPlanillas(regionKey, subregionKey)
+                    SyncQueueType.GROUP -> operacionRepository.syncGroupById(regionKey, subregionKey, item.entityId)
+                    SyncQueueType.WORKLOG -> operacionRepository.syncWorkLogById(regionKey, subregionKey, item.entityId)
+                    SyncQueueType.PLANILLA_PDF -> operacionRepository.syncPlanillaById(regionKey, subregionKey, item.entityId)
                 }
-                queueDao.deleteById(item.queueId)
             } catch (ex: Exception) {
                 logError(item, ex)
                 val nextDelay = retryPolicy.nextDelay(item.retryCount)
