@@ -128,7 +128,7 @@ override fun onStop() {
             val gate = RegistroVehiculoGate.evaluar(requireContext())
             if (gate.requiereRegistro) {
                 showRegistroVehiculoPendienteDialog(
-                    onRegistrar = { findNavController().navigate(R.id.nav_mi_vehiculo) },
+                    onRegistroGuardado = { },
                     onNoVehiculo = { findNavController().popBackStack(R.id.nav_home, false) }
                 )
             }
