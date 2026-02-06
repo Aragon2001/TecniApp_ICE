@@ -22,7 +22,9 @@ import com.Arasoftsolutions.tecniapp_ice.Database.entities.*
         AveriaEntity::class,            // Averías
         InventarioItemEntity::class,    // Inventario por vehículo
         LuminariaReparacionEntity::class, // Reparaciones de luminarias
-        InventarioMovimientoAveriaEntity::class // Movimientos de inventario por avería
+        InventarioMovimientoAveriaEntity::class, // Movimientos de inventario por avería
+        RegistroDiarioEntity::class,    // Registros diarios (km/orímetro)
+        RegistroMantenimientoEntity::class // Mantenimientos
     ],
 
     version = AppDatabase.SCHEMA_VERSION,                        // ✅ mantener la versión más alta
@@ -39,13 +41,14 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun puebloDao(): PuebloDao
     abstract fun subregionDao(): SubregionDao
     abstract fun vehiculoDao(): VehiculoDao
+    abstract fun registroVehiculoDao(): RegistroVehiculoDao
     abstract fun materialDao(): MaterialDao
     abstract fun tecnicoDao(): TecnicoDao
     abstract fun averiaDao(): AveriaDao
     abstract fun inventarioDao(): InventarioDao
 
     companion object {
-        const val SCHEMA_VERSION = 22
+        const val SCHEMA_VERSION = 23
 
         @Volatile private var INSTANCE: AppDatabase? = null
 
