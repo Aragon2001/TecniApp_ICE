@@ -34,6 +34,7 @@ import com.google.android.material.button.MaterialButton
 import com.google.android.material.progressindicator.LinearProgressIndicator
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
@@ -268,40 +269,48 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                 synchronizer.syncSubregion(
                     subregion,
                     onSyncStart = { message ->
-                        if (isAdded) dialog.setHeader(message)
+                        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Main) {
+                            if (isAdded) dialog.setHeader(message)
+                        }
                     },
                     onSyncProgress = { done, total, msg, downloadedBytes ->
-                        if (isAdded) {
-                            dialog.update(done, total, msg ?: "", downloadedBytes)
-                            updateSyncProgress(done, total, msg)
-                            SyncStatusNotifications.notifyProgress(
-                                requireContext(),
-                                done,
-                                total,
-                                msg
-                            )
+                        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Main) {
+                            if (isAdded) {
+                                dialog.update(done, total, msg ?: "", downloadedBytes)
+                                updateSyncProgress(done, total, msg)
+                                SyncStatusNotifications.notifyProgress(
+                                    requireContext(),
+                                    done,
+                                    total,
+                                    msg
+                                )
+                            }
                         }
                     },
                     onSyncSuccess = {
-                        if (!isAdded) return@syncSubregion
-                        SyncStatusNotifications.dismissProgress(requireContext())
-                        syncStatusText?.text = getString(R.string.home_sync_status_success)
-                        viewLifecycleOwner.lifecycleScope.launch {
-                            dataStore.markManualSyncNow()
+                        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Main) {
+                            if (!isAdded) return@launch
+                            SyncStatusNotifications.dismissProgress(requireContext())
+                            syncStatusText?.text = getString(R.string.home_sync_status_success)
+                            viewLifecycleOwner.lifecycleScope.launch {
+                                dataStore.markManualSyncNow()
+                            }
+                            lastSyncValue?.text = formatRelativeSync(System.currentTimeMillis())
+                            SyncStatusNotifications.notifySynced(requireContext())
+                            dialog.dismissAllowingStateLoss()
                         }
-                        lastSyncValue?.text = formatRelativeSync(System.currentTimeMillis())
-                        SyncStatusNotifications.notifySynced(requireContext())
-                        dialog.dismissAllowingStateLoss()
                     },
                     onSyncError = { error ->
-                        if (!isAdded) return@syncSubregion
-                        SyncStatusNotifications.dismissProgress(requireContext())
-                        syncStatusText?.text = getString(
-                            R.string.home_sync_status_error,
-                            error.message ?: getString(R.string.home_sync_unknown_error)
-                        )
-                        dialog.dismissWithError(error) {
-                            if (isAdded) sincronizarConModal()
+                        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Main) {
+                            if (!isAdded) return@launch
+                            SyncStatusNotifications.dismissProgress(requireContext())
+                            syncStatusText?.text = getString(
+                                R.string.home_sync_status_error,
+                                error.message ?: getString(R.string.home_sync_unknown_error)
+                            )
+                            dialog.dismissWithError(error) {
+                                if (isAdded) sincronizarConModal()
+                            }
                         }
                     }
                 )
