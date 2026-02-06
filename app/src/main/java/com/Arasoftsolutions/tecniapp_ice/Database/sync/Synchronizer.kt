@@ -9,7 +9,7 @@ class Synchronizer(
 ) {
 
     companion object {
-        private const val EXTRA_STEPS = 5
+        private const val EXTRA_STEPS = 6
     }
 
     suspend fun syncSubregion(
@@ -25,6 +25,14 @@ class Synchronizer(
         var downloadedBytes = 0L
 
         try {
+            // ----------- 0. PENDIENTES ----------------
+            onSyncStart("Sincronizando pendientes…")
+            try {
+                averiasRepository.syncPendientesConFirebase()
+                onSyncProgress(++done, total, "Subiendo averías pendientes…", downloadedBytes)
+            } catch (e: Exception) {
+                throw Exception("Error en syncPendientesConFirebase(): ${e.message}", e)
+            }
 
             // ----------- 1. TÉCNICOS ----------------
             onSyncStart("Descargando Datos…")
