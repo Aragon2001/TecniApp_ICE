@@ -920,13 +920,13 @@
                         app:startIconDrawable="@drawable/ic_time"
                         app:startIconTint="?attr/colorOnSurfaceVariant">
 
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/etHoraFin"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:clickable="true"
-                        android:focusable="false"
-                        android:inputType="none" />
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etHoraFin"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:clickable="true"
+                            android:focusable="false"
+                            android:inputType="none" />
                     </com.google.android.material.textfield.TextInputLayout>
 
                     <com.google.android.material.textfield.TextInputLayout
