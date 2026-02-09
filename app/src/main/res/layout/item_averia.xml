@@ -3,244 +3,304 @@
     xmlns:tools="http://schemas.android.com/tools"
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    style="@style/Tecni.Glass.Card"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginHorizontal="12dp"
     android:layout_marginVertical="6dp"
-    app:cardBackgroundColor="@color/white"
-    app:cardCornerRadius="20dp"
-    app:cardElevation="2dp"
-    app:cardUseCompatPadding="true"
-    app:strokeColor="?attr/colorOutline"
-    app:strokeWidth="1dp">
+    app:cardUseCompatPadding="true">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="16dp">
+        android:minHeight="96dp"
+        android:padding="@dimen/glass_card_padding">
 
-        <!-- Header -->
-        <LinearLayout
-            android:id="@+id/headerLayout"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            app:layout_constraintEnd_toEndOf="parent"
+        <View
+            android:id="@+id/viewEstadoIndicator"
+            android:layout_width="3dp"
+            android:layout_height="0dp"
+            android:alpha="0.75"
+            android:background="@color/ice_cyan"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <FrameLayout
+            android:id="@+id/iconContainer"
+            android:layout_width="@dimen/glass_icon_main"
+            android:layout_height="@dimen/glass_icon_main"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/bg_glass"
+            android:foreground="?attr/selectableItemBackgroundBorderless"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent">
 
-            <TextView
-                android:id="@+id/tvTitulo"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:ellipsize="end"
-                android:maxLines="1"
-                android:textColor="@color/ice_blue"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                android:letterSpacing="0.02"
-                tools:text="Avería #IM-1253876-3-320502" />
+            <com.google.android.material.imageview.ShapeableImageView
+                android:id="@+id/ivTipoAveria"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:contentDescription="@string/averias_title"
+                android:padding="10dp"
+                android:src="@drawable/ic_outage_new"
+                app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full"
+                app:tint="@color/ice_blue" />
+        </FrameLayout>
 
-            <com.google.android.material.chip.Chip
-                android:id="@+id/chipEstado"
-                style="@style/Tecni.Chip.Base"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textAllCaps="true"
-                android:textSize="10sp"
-                android:textStyle="bold"
-                app:checkedIconVisible="false"
-                app:chipMinTouchTargetSize="0dp"
-                tools:text="Pendiente" />
-                <!-- TODO(Codex): Unificar estilo de chips en listado de averías -->
-        </LinearLayout>
-
-        <!-- Divisor -->
-        <View
-            android:id="@+id/divider"
-            android:layout_width="0dp"
-            android:layout_height="1dp"
-            android:layout_marginTop="8dp"
-            android:layout_marginBottom="12dp"
-            android:background="@color/outline_soft"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/headerLayout" />
-
-        <!-- Contenido IZQUIERDA (columna única) -->
         <LinearLayout
-            android:id="@+id/contentLayout"
+            android:id="@+id/infoContainer"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
             android:orientation="vertical"
-            android:layout_marginEnd="12dp"
-            app:layout_constraintEnd_toStartOf="@id/mapContainer"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/divider"
-            app:layout_goneMarginEnd="0dp">
+            app:layout_constraintEnd_toStartOf="@id/rightContainer"
+            app:layout_constraintStart_toEndOf="@id/iconContainer"
+            app:layout_constraintTop_toTopOf="@id/iconContainer">
 
             <TextView
-                android:id="@+id/tvCausa"
+                android:id="@+id/tvTitulo"
+                style="@style/Tecni.Text.Title"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:textColor="@color/on_light"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                android:lineSpacingExtra="2dp"
-                tools:text="Falla en transformador de distribución" />
+                android:ellipsize="end"
+                android:maxLines="1"
+                tools:text="Avería #IM-1253876" />
 
-            <TextView
-                android:id="@+id/tvObs"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:ellipsize="end"
-                android:maxLines="3"
-                android:textColor="@color/dark_gray"
-                android:textSize="13sp"
-                android:lineSpacingExtra="2dp"
-                tools:text="Se reporta olor a quemado y chispas intermitentes en el poste principal" />
-
-            <LinearLayout
-                android:id="@+id/infoList"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:orientation="vertical">
-
-                <TextView
-                    android:id="@+id/tvAsignado"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:textColor="@color/on_light"
-                    android:textSize="12sp"
-                    tools:text="Asignado a: Jostin Aragon" />
-
-                <TextView
-                    android:id="@+id/tvNise"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:textColor="@color/on_light"
-                    android:textSize="12sp"
-                    tools:text="NISE: 339589" />
-
-
-                <TextView
-    android:id="@+id/tvCliente"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:layout_marginTop="2dp"
-    android:textColor="@color/on_light"
-    android:textSize="12sp"
-
-    tools:text="Cliente:" />
-
-                <TextView
-                    android:id="@+id/tvLocalizacion"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:textColor="@color/on_light"
-                    android:textSize="12sp"
-                    tools:text="Localización:" />
-
-                <TextView
-                    android:id="@+id/tvDireccion"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:textColor="@color/on_light"
-                    android:textSize="12sp"
-                    android:visibility="gone"
-                    tools:text="Dirección: Calle 123, Ciudad" />
-
-                <TextView
-                    android:id="@+id/tvAtendido"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:textColor="@color/on_light"
-                    android:textSize="12sp"
-                    tools:text="Atendido por: Jostin Aragon" />
-
-                <TextView
-                    android:id="@+id/tvKilometraje"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:textColor="@color/on_light"
-                    android:textSize="12sp"
-                    tools:text="Kilometraje: 137352 → 337352" />
+                android:orientation="horizontal">
 
                 <TextView
                     android:id="@+id/tvRegion"
-                    android:layout_width="match_parent"
+                    style="@style/Tecni.Text.Subtitle"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:textColor="@color/on_light"
-                    android:textSize="12sp"
+                    android:ellipsize="end"
+                    android:maxLines="1"
                     tools:text="Región: Huetar Atlántica" />
 
                 <TextView
-                    android:id="@+id/tvAgencia"
-                    android:layout_width="match_parent"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:textColor="@color/on_light"
-                    android:textSize="12sp"
+                    android:layout_marginHorizontal="6dp"
+                    android:text="•"
+                    android:textColor="?attr/colorOnSurfaceVariant" />
+
+                <TextView
+                    android:id="@+id/tvAgencia"
+                    style="@style/Tecni.Text.Subtitle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:ellipsize="end"
+                    android:maxLines="1"
                     tools:text="Agencia: Guácimo" />
             </LinearLayout>
 
-            <TextView
-                android:id="@+id/tvVehiculo"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textColor="@color/on_light"
-                android:textSize="12sp"
-                tools:text="Vehículo: 9559 (Grúa pequeña)" />
-
-            <!-- Coords / Fecha -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
-
-
+                android:layout_marginTop="4dp"
+                android:orientation="horizontal">
 
                 <ImageView
                     android:layout_width="16dp"
                     android:layout_height="16dp"
-                    android:layout_marginStart="12dp"
-                    android:layout_marginEnd="4dp"
-                    android:src="@drawable/ic_calendar"
-                    app:tint="@color/dark_gray" />
+                    android:src="@drawable/ic_time"
+                    app:tint="@color/ice_cyan" />
 
                 <TextView
                     android:id="@+id/tvFecha"
+                    style="@style/Tecni.Text.Meta"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textColor="@color/dark_gray"
-                    android:textSize="11sp"
-                    tools:text="Evento: 4/10/2025 1:39 p.m." />
+                    android:layout_marginStart="6dp"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    tools:text="Hace 2h • GPS" />
             </LinearLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/rightContainer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipEstado"
+                style="@style/Tecni.StatusChip.Pending"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAllCaps="true"
+                app:checkedIconVisible="false"
+                app:chipMinTouchTargetSize="@dimen/glass_chip_height"
+                tools:text="Pendiente" />
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:orientation="horizontal">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnVerMapa"
+                    style="@style/Tecni.IconButton.Glass"
+                    android:contentDescription="@string/averia_ver_mapa"
+                    android:icon="@drawable/ic_share_location24"
+                    android:minWidth="0dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnAsignar"
+                    style="@style/Tecni.IconButton.Glass"
+                    android:layout_marginStart="6dp"
+                    android:contentDescription="@string/averia_asignar"
+                    android:icon="@drawable/ic_person"
+                    android:minWidth="0dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnAtender"
+                    style="@style/Tecni.IconButton.Glass"
+                    android:layout_marginStart="6dp"
+                    android:contentDescription="@string/averia_atender"
+                    android:icon="@drawable/ic_play_arrow"
+                    android:minWidth="0dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnResolver"
+                    style="@style/Tecni.IconButton.Glass"
+                    android:layout_marginStart="6dp"
+                    android:contentDescription="@string/averia_resolver"
+                    android:icon="@drawable/ic_check"
+                    android:minWidth="0dp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/detailStack"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:orientation="vertical"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="@id/infoContainer"
+            app:layout_constraintTop_toBottomOf="@id/infoContainer">
+
+            <TextView
+                android:id="@+id/tvCausa"
+                style="@style/Tecni.Text.Meta"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                tools:text="Causa: Falla en transformador" />
+
+            <TextView
+                android:id="@+id/tvObs"
+                style="@style/Tecni.Text.Meta"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:ellipsize="end"
+                android:maxLines="1"
+                tools:text="Observaciones: Olor a quemado" />
+
+            <TextView
+                android:id="@+id/tvAsignado"
+                style="@style/Tecni.Text.Meta"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:ellipsize="end"
+                android:maxLines="1"
+                tools:text="Asignado a: Jostin Aragon" />
+
+            <TextView
+                android:id="@+id/tvNise"
+                style="@style/Tecni.Text.Meta"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:ellipsize="end"
+                android:maxLines="1"
+                tools:text="NISE: 339589" />
+
+            <TextView
+                android:id="@+id/tvCliente"
+                style="@style/Tecni.Text.Meta"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:ellipsize="end"
+                android:maxLines="1"
+                tools:text="Cliente: Residencial" />
+
+            <TextView
+                android:id="@+id/tvLocalizacion"
+                style="@style/Tecni.Text.Meta"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:ellipsize="end"
+                android:maxLines="1"
+                tools:text="Localización: Poste 25" />
+
+            <TextView
+                android:id="@+id/tvDireccion"
+                style="@style/Tecni.Text.Meta"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:visibility="gone"
+                tools:text="Dirección: Calle 123" />
+
+            <TextView
+                android:id="@+id/tvAtendido"
+                style="@style/Tecni.Text.Meta"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:ellipsize="end"
+                android:maxLines="1"
+                tools:text="Atendido por: Jostin Aragon" />
+
+            <TextView
+                android:id="@+id/tvKilometraje"
+                style="@style/Tecni.Text.Meta"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:ellipsize="end"
+                android:maxLines="1"
+                tools:text="Kilometraje: 137352 → 337352" />
+
+            <TextView
+                android:id="@+id/tvVehiculo"
+                style="@style/Tecni.Text.Meta"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:ellipsize="end"
+                android:maxLines="1"
+                tools:text="Vehículo: 9559 (Grúa pequeña)" />
         </LinearLayout>
 
         <FrameLayout
             android:id="@+id/mapContainer"
-            android:layout_width="120dp"
-            android:layout_height="0dp"
+            android:layout_width="64dp"
+            android:layout_height="64dp"
             android:layout_marginStart="12dp"
+            android:background="@drawable/bg_glass"
             android:foreground="?attr/selectableItemBackground"
-            app:layout_constraintBottom_toBottomOf="@id/contentLayout"
-            app:layout_constraintDimensionRatio="1:1"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="@id/contentLayout">
+            app:layout_constraintTop_toBottomOf="@id/rightContainer"
+            app:layout_constraintBottom_toBottomOf="parent">
 
             <ImageView
                 android:id="@+id/imgMapa"
@@ -250,70 +310,6 @@
                 android:scaleType="centerCrop"
                 android:src="@drawable/ic_map_placeholder" />
         </FrameLayout>
-
-        <!-- Botones -->
-        <LinearLayout
-            android:id="@+id/buttonsLayout"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:gravity="end"
-            android:orientation="horizontal"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/contentLayout">
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnVerMapa"
-                style="@style/Tecni.Button.Outlined"
-                android:layout_width="wrap_content"
-                android:layout_height="32dp"
-                android:layout_marginEnd="4dp"
-                android:text="@string/averia_ver_mapa"
-                android:textSize="12sp"
-                app:icon="@drawable/ic_share_location24"
-                app:iconGravity="textStart"
-                app:iconPadding="0dp"
-                app:iconSize="16dp" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnAsignar"
-                style="@style/Tecni.Button.Outlined"
-                android:layout_width="wrap_content"
-                android:layout_height="32dp"
-                android:text="@string/averia_asignar"
-                android:textSize="12sp"
-                app:icon="@drawable/ic_person"
-                app:iconGravity="textStart"
-                app:iconPadding="0dp"
-                app:iconSize="16dp" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnAtender"
-                style="@style/Tecni.Button.Outlined"
-                android:layout_width="wrap_content"
-                android:layout_height="32dp"
-                android:layout_marginStart="4dp"
-                android:text="@string/averia_atender"
-                android:textSize="12sp"
-                app:icon="@drawable/ic_play_arrow"
-                app:iconGravity="textStart"
-                app:iconPadding="0dp"
-                app:iconSize="16dp" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnResolver"
-                style="@style/Tecni.Button.Primary"
-                android:layout_width="wrap_content"
-                android:layout_height="32dp"
-                android:layout_marginStart="4dp"
-                android:text="@string/averia_resolver"
-                android:textSize="12sp"
-                app:icon="@drawable/ic_check"
-                app:iconGravity="textStart"
-                app:iconPadding="0dp"
-                app:iconSize="16dp" />
-        </LinearLayout>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </com.google.android.material.card.MaterialCardView>
