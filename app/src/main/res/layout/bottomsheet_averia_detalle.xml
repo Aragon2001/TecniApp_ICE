@@ -920,13 +920,13 @@
                         app:startIconDrawable="@drawable/ic_time"
                         app:startIconTint="?attr/colorOnSurfaceVariant">
 
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/etHoraFin"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:focusable="false"
-                            android:clickable="true"
-                            android:inputType="none" />
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etHoraFin"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:clickable="true"
+                        android:focusable="false"
+                        android:inputType="none" />
                     </com.google.android.material.textfield.TextInputLayout>
 
                     <com.google.android.material.textfield.TextInputLayout
@@ -941,7 +941,7 @@
                         app:startIconTint="?attr/colorOnSurfaceVariant">
 
                         <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/etKmFin"
+                            android:id="@+id/etKmFinal"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:inputType="numberDecimal" />
@@ -950,14 +950,55 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <TextView
-            android:id="@+id/tvSeccionAcciones"
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardVehiculo"
+            style="@style/Tecni.Glass.Card"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="ACCIONES"
-            android:textAppearance="?attr/textAppearanceTitleSmall"
-            android:textStyle="bold" />
+            android:layout_marginTop="8dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="@dimen/glass_card_padding">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnAsignar"
+                    style="@style/Tecni.Button.Outlined"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/averia_asignar"
+                    app:icon="@drawable/ic_person"
+                    app:iconGravity="textStart" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnAtender"
+                    style="@style/Tecni.Button.Outlined"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/averia_atender"
+                    app:icon="@drawable/ic_play_arrow"
+                    app:iconGravity="textStart" />
+
+                    <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                        android:id="@+id/actvVehiculo"
+                        android:layout_width="match_parent"
+                        android:layout_height="60dp"
+                        android:inputType="textCapCharacters"
+                        android:paddingStart="16dp"
+                        android:paddingEnd="0dp" />
+                </com.google.android.material.textfield.TextInputLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <TextView
+            android:id="@+id/tvAsignado"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:textAppearance="?attr/textAppearanceBodyMedium" />
 
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardAcciones"
