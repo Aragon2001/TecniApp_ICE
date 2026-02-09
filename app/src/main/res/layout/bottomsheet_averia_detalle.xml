@@ -1,307 +1,280 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.core.widget.NestedScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="?attr/colorSurface">
+    android:background="@color/bg_light"
+    android:fillViewport="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="20dp">
+        android:padding="16dp">
 
-        <!-- ENCABEZADO -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:baselineAligned="false">
-
-            <TextView
-                android:id="@+id/tvCaso"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:textStyle="bold"
-                android:textSize="18sp" />
-
-            <com.google.android.material.chip.Chip
-                android:id="@+id/chipEstado"
-                style="@style/Tecni.Chip.Status"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:clickable="false"
-                android:checkable="false"
-                android:textColor="@android:color/white"
-                app:chipIconVisible="false" />
-
-            <ImageButton
-                android:id="@+id/btnCerrar"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:layout_marginStart="8dp"
-                android:background="@android:color/transparent"
-                android:contentDescription="@string/averia_detalle_cerrar"
-                android:padding="8dp"
-                android:src="@drawable/ic_close_sheet"
-                app:tint="?attr/colorOnSurface" />
-        </LinearLayout>
-
-        <!-- SECCIÓN: INFORMACIÓN PRINCIPAL -->
-        <TextView
-            android:id="@+id/tvSeccionCaso"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="INFORMACIÓN DEL CASO"
-            android:textAppearance="?attr/textAppearanceTitleSmall"
-            android:textStyle="bold" />
+        <View
+            android:layout_width="36dp"
+            android:layout_height="4dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="12dp"
+            android:background="@drawable/bg_bottom_sheet_handle" />
 
         <com.google.android.material.card.MaterialCardView
-            android:id="@+id/cardDatosPrincipales"
+            style="@style/Tecni.Glass.Card"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="1dp">
+            android:layout_height="wrap_content">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="@dimen/glass_card_padding">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:layout_marginBottom="4dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/averia_label_nise"
-                        android:textStyle="bold"
-                        android:textAppearance="?attr/textAppearanceBodyMedium" />
-
-                    <TextView
-                        android:id="@+id/tvNise"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:layout_marginStart="8dp"
-                        android:textAppearance="?attr/textAppearanceBodyMedium" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:layout_marginBottom="4dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/averia_label_region"
-                        android:textStyle="bold"
-                        android:textAppearance="?attr/textAppearanceBodyMedium" />
-
-                    <TextView
-                        android:id="@+id/tvRegion"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:layout_marginStart="8dp"
-                        android:textAppearance="?attr/textAppearanceBodyMedium" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:layout_marginBottom="4dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/averia_label_agencia"
-                        android:textStyle="bold"
-                        android:textAppearance="?attr/textAppearanceBodyMedium" />
-
-                    <TextView
-                        android:id="@+id/tvAgencia"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:layout_marginStart="8dp"
-                        android:textAppearance="?attr/textAppearanceBodyMedium" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:layout_marginBottom="8dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Tipo Afectación:"
-                        android:textStyle="bold"
-                        android:textAppearance="?attr/textAppearanceBodyMedium" />
-
-                    <TextView
-                        android:id="@+id/tvTipoAfectacion"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:layout_marginStart="8dp"
-                        android:textAppearance="?attr/textAppearanceBodyMedium" />
-                </LinearLayout>
-
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:background="?attr/colorOutline"
-                    android:layout_marginBottom="8dp" />
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:layout_marginBottom="4dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Medidor:"
-                        android:textStyle="bold"
-                        android:textAppearance="?attr/textAppearanceBodyMedium" />
-
-                    <TextView
-                        android:id="@+id/tvMedidorActual"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:layout_marginStart="8dp"
-                        android:textAppearance="?attr/textAppearanceBodyMedium" />
-                </LinearLayout>
-
-                <TextView
-                    android:id="@+id/tvMedidorResumen"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="4dp"
-                    android:textAppearance="?attr/textAppearanceBodySmall"
-                    android:visibility="gone" />
-
-                <TextView
-                    android:id="@+id/tvCliente"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="8dp"
-                    android:textAppearance="?attr/textAppearanceBodyMedium"
-                    android:visibility="gone" />
-
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:background="?attr/colorOutline"
-                    android:layout_marginTop="8dp"
-                    android:layout_marginBottom="8dp" />
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:layout_marginBottom="4dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/averia_label_asignado"
-                        android:textStyle="bold"
-                        android:textAppearance="?attr/textAppearanceBodyMedium" />
-
-                    <TextView
-                        android:id="@+id/tvAsignado"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:layout_marginStart="8dp"
-                        android:textAppearance="?attr/textAppearanceBodyMedium" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:layout_marginBottom="4dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/averia_label_evento"
-                        android:textStyle="bold"
-                        android:textAppearance="?attr/textAppearanceBodyMedium" />
-
-                    <TextView
-                        android:id="@+id/tvFechaDetalle"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:layout_marginStart="8dp"
-                        android:textAppearance="?attr/textAppearanceBodyMedium" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:layout_marginBottom="4dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/averia_label_atendido"
-                        android:textStyle="bold"
-                        android:textAppearance="?attr/textAppearanceBodyMedium" />
-
-                    <TextView
-                        android:id="@+id/tvAtendido"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:layout_marginStart="8dp"
-                        android:textAppearance="?attr/textAppearanceBodyMedium" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
                     android:orientation="horizontal">
 
                     <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/averia_label_vehiculo"
-                        android:textStyle="bold"
-                        android:textAppearance="?attr/textAppearanceBodyMedium" />
-
-                    <TextView
-                        android:id="@+id/tvVehiculo"
+                        android:id="@+id/tvCaso"
+                        style="@style/Tecni.Text.Title"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
+                        android:layout_weight="1" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipEstado"
+                        style="@style/Tecni.StatusChip.Pending"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:clickable="false"
+                        android:checkable="false"
+                        android:textColor="@android:color/white"
+                        app:chipIconVisible="false" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnCerrar"
+                        style="@style/Tecni.IconButton.Glass"
                         android:layout_marginStart="8dp"
-                        android:textAppearance="?attr/textAppearanceBodyMedium" />
+                        android:contentDescription="@string/averia_detalle_cerrar"
+                        android:icon="@drawable/ic_close_sheet" />
                 </LinearLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnPrimaryAction"
+                    style="@style/Tecni.Button.Primary"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="@string/averia_atender" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- SECCIÓN: LOCALIZACIÓN Y OBSERVACIONES -->
+        <TextView
+            android:id="@+id/tvSeccionCaso"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="@string/averias_title"
+            android:textAppearance="?attr/textAppearanceTitleSmall"
+            android:textStyle="bold" />
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardMapaDireccion"
+            style="@style/Tecni.Glass.Card"
+            android:layout_width="match_parent"
+            android:layout_height="220dp"
+            android:layout_marginTop="8dp">
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
+
+                <ImageView
+                    android:id="@+id/ivMapaPreview"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@color/surface_variant_light"
+                    android:contentDescription="@string/averia_ver_mapa"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/ic_share_location24" />
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="top|end"
+                    android:layout_margin="8dp"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnMapaFullscreen"
+                        style="@style/Tecni.IconButton.Glass"
+                        android:contentDescription="@string/averia_ver_mapa"
+                        android:icon="@drawable/ic_fullscreen" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnMapaMinimizar"
+                        style="@style/Tecni.IconButton.Glass"
+                        android:layout_marginStart="6dp"
+                        android:contentDescription="@string/averia_detalle_cerrar"
+                        android:icon="@drawable/ic_expand_less" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnMapaCerrar"
+                        style="@style/Tecni.IconButton.Glass"
+                        android:layout_marginStart="6dp"
+                        android:contentDescription="@string/averia_detalle_cerrar"
+                        android:icon="@drawable/ic_close_sheet" />
+                </LinearLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnDetalleVerMapa"
+                    style="@style/Tecni.Button.Outlined"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="bottom|end"
+                    android:layout_margin="12dp"
+                    android:text="@string/averia_ver_mapa"
+                    app:icon="@drawable/ic_share_location24"
+                    app:iconGravity="textStart"
+                    app:iconPadding="4dp"
+                    app:iconSize="18dp" />
+            </FrameLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardDatosPrincipales"
+            style="@style/Tecni.Glass.Card"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp">
+
+            <GridLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:columnCount="2"
+                android:padding="@dimen/glass_card_padding"
+                android:rowCount="4">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_columnWeight="1"
+                    android:layout_marginEnd="8dp"
+                    android:orientation="vertical">
+
+                    <TextView
+                        style="@style/Tecni.Text.Meta"
+                        android:text="@string/averia_label_nise" />
+
+                    <TextView
+                        android:id="@+id/tvNise"
+                        style="@style/Tecni.Text.Subtitle" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_columnWeight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        style="@style/Tecni.Text.Meta"
+                        android:text="@string/averia_label_region" />
+
+                    <TextView
+                        android:id="@+id/tvRegion"
+                        style="@style/Tecni.Text.Subtitle" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_columnWeight="1"
+                    android:layout_marginTop="12dp"
+                    android:layout_marginEnd="8dp"
+                    android:orientation="vertical">
+
+                    <TextView
+                        style="@style/Tecni.Text.Meta"
+                        android:text="@string/averia_label_agencia" />
+
+                    <TextView
+                        android:id="@+id/tvAgencia"
+                        style="@style/Tecni.Text.Subtitle" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_columnWeight="1"
+                    android:layout_marginTop="12dp"
+                    android:orientation="vertical">
+
+                    <TextView
+                        style="@style/Tecni.Text.Meta"
+                        android:text="@string/averia_label_evento" />
+
+                    <TextView
+                        android:id="@+id/tvFechaDetalle"
+                        style="@style/Tecni.Text.Subtitle" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_columnWeight="1"
+                    android:layout_marginTop="12dp"
+                    android:layout_marginEnd="8dp"
+                    android:orientation="vertical">
+
+                    <TextView
+                        style="@style/Tecni.Text.Meta"
+                        android:text="Tipo Afectación" />
+
+                    <TextView
+                        android:id="@+id/tvTipoAfectacion"
+                        style="@style/Tecni.Text.Subtitle" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_columnWeight="1"
+                    android:layout_marginTop="12dp"
+                    android:orientation="vertical">
+
+                    <TextView
+                        style="@style/Tecni.Text.Meta"
+                        android:text="Medidor" />
+
+                    <TextView
+                        android:id="@+id/tvMedidorActual"
+                        style="@style/Tecni.Text.Subtitle" />
+                </LinearLayout>
+            </GridLayout>
+
+            <TextView
+                android:id="@+id/tvMedidorResumen"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginBottom="8dp"
+                android:textAppearance="?attr/textAppearanceBodySmall"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/tvCliente"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginBottom="12dp"
+                android:textAppearance="?attr/textAppearanceBodyMedium"
+                android:visibility="gone" />
+        </com.google.android.material.card.MaterialCardView>
+
         <TextView
             android:id="@+id/tvSeccionLocalizacion"
             android:layout_width="match_parent"
@@ -311,20 +284,18 @@
             android:textAppearance="?attr/textAppearanceTitleSmall"
             android:textStyle="bold" />
 
-        <!-- LOCALIZACIÓN ACTUAL -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardLocalizacionActual"
+            style="@style/Tecni.Glass.Card"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="1dp">
+            android:layout_marginTop="8dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="@dimen/glass_card_padding">
 
                 <TextView
                     android:layout_width="match_parent"
@@ -341,69 +312,12 @@
                     android:textAppearance="?attr/textAppearanceBodyMedium"
                     android:textIsSelectable="true" />
 
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:background="?attr/colorOutline"
-                    android:layout_marginBottom="8dp" />
-
-                <LinearLayout
+                <TextView
+                    android:id="@+id/tvCoordenadas"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:layout_marginBottom="4dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Coordenadas:"
-                        android:textStyle="bold"
-                        android:textAppearance="?attr/textAppearanceBodyMedium" />
-
-                    <TextView
-                        android:id="@+id/tvCoordenadas"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:layout_marginStart="8dp"
-                        android:textAppearance="?attr/textAppearanceBodyMedium" />
-                </LinearLayout>
-
-                <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/cardMapaDireccion"
-                    android:layout_width="match_parent"
-                    android:layout_height="160dp"
                     android:layout_marginTop="8dp"
-                    app:cardCornerRadius="12dp"
-                    app:cardElevation="0dp">
-
-                    <FrameLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent">
-
-                        <ImageView
-                            android:id="@+id/ivMapaPreview"
-                            android:layout_width="match_parent"
-                            android:layout_height="match_parent"
-                            android:background="?attr/colorSurfaceVariant"
-                            android:contentDescription="@string/averia_ver_mapa"
-                            android:scaleType="center"
-                            android:src="@drawable/ic_share_location24" />
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnDetalleVerMapa"
-                            style="@style/Tecni.Button.Outlined"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_gravity="top|end"
-                            android:layout_margin="8dp"
-                            android:text="@string/averia_ver_mapa"
-                            app:icon="@drawable/ic_share_location24"
-                            app:iconGravity="textStart"
-                            app:iconPadding="4dp"
-                            app:iconSize="18dp" />
-                    </FrameLayout>
-                </com.google.android.material.card.MaterialCardView>
+                    android:textAppearance="?attr/textAppearanceBodyMedium" />
 
                 <TextView
                     android:id="@+id/tvDireccionGps"
@@ -414,23 +328,20 @@
                     android:textIsSelectable="true"
                     android:visibility="gone" />
             </LinearLayout>
-
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- RESUMEN DE CAUSA -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardCausa"
+            style="@style/Tecni.Glass.Card"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="1dp">
+            android:layout_marginTop="8dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="@dimen/glass_card_padding">
 
                 <TextView
                     android:layout_width="match_parent"
@@ -449,20 +360,18 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- OBSERVACIONES -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardObservaciones"
+            style="@style/Tecni.Glass.Card"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="1dp">
+            android:layout_marginTop="8dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="@dimen/glass_card_padding">
 
                 <TextView
                     android:layout_width="match_parent"
@@ -479,10 +388,8 @@
                     android:textAppearance="?attr/textAppearanceBodyMedium"
                     android:textIsSelectable="true" />
             </LinearLayout>
-
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- SECCIÓN: INFORMACIÓN CLOR -->
         <TextView
             android:id="@+id/tvSeccionClor"
             android:layout_width="match_parent"
@@ -493,21 +400,19 @@
             android:textStyle="bold"
             android:visibility="gone" />
 
-        <!-- CAUSA CLOR -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardCausaClor"
+            style="@style/Tecni.Glass.Card"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:visibility="gone"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="1dp">
+            android:visibility="gone">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="@dimen/glass_card_padding">
 
                 <TextView
                     android:layout_width="match_parent"
@@ -526,21 +431,19 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- OBSERVACIONES CLOR -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardObservacionesClor"
+            style="@style/Tecni.Glass.Card"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:visibility="gone"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="1dp">
+            android:visibility="gone">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="@dimen/glass_card_padding">
 
                 <TextView
                     android:layout_width="match_parent"
@@ -559,7 +462,6 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- SECCIÓN: TÉCNICOS Y MATERIALES -->
         <TextView
             android:id="@+id/tvSeccionTecnicos"
             android:layout_width="match_parent"
@@ -569,20 +471,18 @@
             android:textAppearance="?attr/textAppearanceTitleSmall"
             android:textStyle="bold" />
 
-        <!-- TÉCNICOS -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardTecnicos"
+            style="@style/Tecni.Glass.Card"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="1dp">
+            android:layout_marginTop="8dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="@dimen/glass_card_padding">
 
                 <TextView
                     android:id="@+id/tvTecnicosTitulo"
@@ -621,20 +521,18 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- MATERIALES -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardMateriales"
+            style="@style/Tecni.Glass.Card"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="1dp">
+            android:layout_marginTop="8dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="@dimen/glass_card_padding">
 
                 <TextView
                     android:id="@+id/tvMateriales"
@@ -674,7 +572,6 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- SECCIÓN: REGISTRO DE ATENCIÓN -->
         <TextView
             android:id="@+id/tvSeccionRegistro"
             android:layout_width="match_parent"
@@ -684,20 +581,18 @@
             android:textAppearance="?attr/textAppearanceTitleSmall"
             android:textStyle="bold" />
 
-        <!-- TIPO DE AFECTACIÓN -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardTipoAfectacion"
+            style="@style/Tecni.Glass.Card"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="1dp">
+            android:layout_marginTop="8dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="@dimen/glass_card_padding">
 
                 <TextView
                     android:layout_width="match_parent"
@@ -734,20 +629,18 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- MEDIDOR -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardMedidorInput"
+            style="@style/Tecni.Glass.Card"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="1dp">
+            android:layout_marginTop="8dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="@dimen/glass_card_padding">
 
                 <TextView
                     android:layout_width="match_parent"
@@ -799,20 +692,18 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- DATOS DE LOCALIZACIÓN Y CAUSA -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardDetallesAtencion"
+            style="@style/Tecni.Glass.Card"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="1dp">
+            android:layout_marginTop="8dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="@dimen/glass_card_padding">
 
                 <TextView
                     android:layout_width="match_parent"
@@ -871,7 +762,6 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- SECCIÓN: HORARIOS Y KILOMETRAJE -->
         <TextView
             android:id="@+id/tvSeccionHorarios"
             android:layout_width="match_parent"
@@ -883,19 +773,17 @@
 
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardHorarios"
+            style="@style/Tecni.Glass.Card"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="1dp">
+            android:layout_marginTop="8dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="@dimen/glass_card_padding">
 
-                <!-- INICIO -->
                 <TextView
                     android:id="@+id/tvHorarioInicioLabel"
                     android:layout_width="match_parent"
@@ -951,7 +839,6 @@
                     </com.google.android.material.textfield.TextInputLayout>
                 </LinearLayout>
 
-                <!-- LLEGADA -->
                 <TextView
                     android:id="@+id/tvHorarioLlegadaLabel"
                     android:layout_width="match_parent"
@@ -1007,12 +894,11 @@
                     </com.google.android.material.textfield.TextInputLayout>
                 </LinearLayout>
 
-                <!-- FINALIZACIÓN -->
                 <TextView
                     android:id="@+id/tvHorarioFinalLabel"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Finalización"
+                    android:text="Final de Trabajo"
                     android:textAppearance="?attr/textAppearanceBodyMedium"
                     android:textStyle="bold"
                     android:layout_marginBottom="8dp" />
@@ -1034,13 +920,13 @@
                         app:startIconDrawable="@drawable/ic_time"
                         app:startIconTint="?attr/colorOnSurfaceVariant">
 
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/etHoraFin"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:focusable="false"
-                            android:clickable="true"
-                            android:inputType="none" />
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etHoraFin"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:clickable="true"
+                        android:focusable="false"
+                        android:inputType="none" />
                     </com.google.android.material.textfield.TextInputLayout>
 
                     <com.google.android.material.textfield.TextInputLayout
@@ -1050,34 +936,32 @@
                         android:layout_height="wrap_content"
                         android:layout_marginStart="8dp"
                         android:layout_weight="1"
-                        android:hint="KM de Fin"
+                        android:hint="KM Final"
                         app:startIconDrawable="@drawable/ic_speedometer"
                         app:startIconTint="?attr/colorOnSurfaceVariant">
 
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/etKmFinal"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:inputType="numberDecimal" />
-                </com.google.android.material.textfield.TextInputLayout>
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etKmFinal"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="numberDecimal" />
+                    </com.google.android.material.textfield.TextInputLayout>
                 </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- VEHÍCULO -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardVehiculo"
+            style="@style/Tecni.Glass.Card"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="1dp">
+            android:layout_marginTop="8dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="@dimen/glass_card_padding">
 
                 <TextView
                     android:layout_width="match_parent"
@@ -1096,7 +980,7 @@
                     app:endIconDrawable="@drawable/ic_arrow_down"
                     app:endIconMode="custom">
 
-                    <AutoCompleteTextView
+                    <com.google.android.material.textfield.MaterialAutoCompleteTextView
                         android:id="@+id/actvVehiculo"
                         android:layout_width="match_parent"
                         android:layout_height="60dp"
@@ -1107,7 +991,6 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- SECCIÓN: ACCIONES -->
         <TextView
             android:id="@+id/tvSeccionAcciones"
             android:layout_width="match_parent"
@@ -1117,85 +1000,97 @@
             android:textAppearance="?attr/textAppearanceTitleSmall"
             android:textStyle="bold" />
 
-        <LinearLayout
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardAcciones"
+            style="@style/Tecni.Glass.Card"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:orientation="vertical">
+            android:layout_marginTop="8dp">
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnAsignar"
-                style="@style/Tecni.Button.Primary"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/averia_asignar"
-                android:textAllCaps="false"
-                app:icon="@drawable/ic_accounts"
-                app:iconGravity="textStart"
-                app:iconPadding="8dp" />
+                android:orientation="vertical"
+                android:padding="@dimen/glass_card_padding">
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnAtender"
-                style="@style/Tecni.Button.Primary"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="@string/averia_guardar_en_atencion"
-                android:textAllCaps="false"
-                app:backgroundTint="@color/success_500"
-                app:icon="@drawable/ic_refresh"
-                app:iconGravity="textStart"
-                app:iconPadding="8dp" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnAsignar"
+                    style="@style/Tecni.Button.Outlined"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/averia_asignar"
+                    app:icon="@drawable/ic_person"
+                    app:iconGravity="textStart" />
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnResolver"
-                style="@style/Tecni.Button.Primary"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="@string/averia_guardar_resolucion"
-                android:textAllCaps="false"
-                android:visibility="gone"
-                app:backgroundTint="@color/success_500"
-                app:icon="@drawable/ic_check"
-                app:iconGravity="textStart"
-                app:iconPadding="8dp" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnAtender"
+                    style="@style/Tecni.Button.Outlined"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/averia_atender"
+                    app:icon="@drawable/ic_play_arrow"
+                    app:iconGravity="textStart" />
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnExportar"
-                style="@style/Tecni.Button.Primary"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="@string/averia_exportar_pdf_button"
-                android:textAllCaps="false"
-                android:visibility="gone"
-                app:icon="@drawable/ic_share"
-                app:iconGravity="textStart"
-                app:iconPadding="8dp" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnResolver"
+                    style="@style/Tecni.Button.Primary"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/averia_resolver"
+                    app:icon="@drawable/ic_check"
+                    app:iconGravity="textStart" />
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnAnular"
-                style="@style/Tecni.Button.Outlined"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="@string/averia_anular"
-                app:backgroundTint="@color/error_500"
-                android:textAllCaps="false"
-                android:visibility="gone" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnExportar"
+                    style="@style/Tecni.Button.Outlined"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/averia_exportar_pdf"
+                    app:icon="@drawable/ic_pdf"
+                    app:iconGravity="textStart" />
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnEliminar"
-                style="@style/Tecni.Button.Outlined"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="@string/averia_eliminar"
-                app:backgroundTint="@color/error_500"
-                android:textAllCaps="false"
-                android:visibility="gone" />
-        </LinearLayout>
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnAnular"
+                    style="@style/Tecni.Button.Outlined.Danger"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/averia_anular"
+                    app:icon="@drawable/ic_warning"
+                    app:iconGravity="textStart" />
 
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnEliminar"
+                    style="@style/Tecni.Button.Outlined.Danger"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/averia_eliminar"
+                    app:icon="@drawable/ic_delete"
+                    app:iconGravity="textStart" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <TextView
+            android:id="@+id/tvAsignado"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:textAppearance="?attr/textAppearanceBodyMedium" />
+
+        <TextView
+            android:id="@+id/tvAtendido"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textAppearance="?attr/textAppearanceBodyMedium" />
+
+        <TextView
+            android:id="@+id/tvVehiculo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textAppearance="?attr/textAppearanceBodyMedium" />
     </LinearLayout>
-</ScrollView>
+</androidx.core.widget.NestedScrollView>
