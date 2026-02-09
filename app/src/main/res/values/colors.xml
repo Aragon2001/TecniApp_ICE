@@ -65,6 +65,9 @@
     <!-- Utilitarios glass -->
     <color name="glass_light">#E6FFFFFF</color>
     <color name="glass_dark">#4D1C1F26</color>
+    <color name="glass_surface">#E6FFFFFF</color>
+    <color name="glass_outline">#26FFFFFF</color>
+    <color name="glass_chip_surface">#D9FFFFFF</color>
 
     <!-- Chips -->
     <color name="chip_asignada">#FBC02D</color>
@@ -72,6 +75,18 @@
     <color name="chip_pendiente">#E53935</color>
     <color name="chip_resuelta">#43A047</color>
     <color name="chip_anulada">#546E7A</color>
+
+    <!-- Paleta ICE Glass -->
+    <color name="ice_cyan">#35C9FF</color>
+    <color name="success_green">#2EBE7E</color>
+    <color name="warning_yellow">#FFC857</color>
+    <color name="danger_red">#E5484D</color>
+    <color name="surface_neutral_light">#F6F8FB</color>
+    <color name="surface_neutral_dark">#1F242D</color>
+    <color name="status_pending">#E05A5A</color>
+    <color name="status_in_progress">#3D9CFF</color>
+    <color name="status_assigned">#FFB020</color>
+    <color name="status_done">#2EBE7E</color>
 
     <!-- Outline -->
     <color name="outline_soft">#1F000000</color>
