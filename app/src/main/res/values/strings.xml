@@ -250,6 +250,8 @@
     <string name="averia_kilometraje_label">Kilometraje: %1$s → %2$s</string>
     <string name="averia_fecha_evento_label">Evento: %1$s</string>
     <string name="averias_title">Averías</string>
+    <string name="averias_sync">Sincronizar</string>
+    <string name="mi_cuadrilla">Mi cuadrilla</string>
     <string name="averia_ver_detalle">Ver detalle</string>
     <string name="averia_fecha_atencion_inicio">Inicio: %1$s</string>
     <string name="averia_fecha_atencion_fin">Fin: %1$s</string>
