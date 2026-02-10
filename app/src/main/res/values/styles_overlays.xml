@@ -4,7 +4,7 @@
     <!-- Overlays y componentes Material 3 reutilizables                     -->
     <!-- Mantener cada sección documentada para facilitar el mantenimiento. -->
     <!-- ================================================================== -->
-
+ <style name="Widget.Material3.ExtendedFloatingActionButton" parent="Widget.MaterialComponents.ExtendedFloatingActionButton" />
     <!-- Toolbars y menús desplegados -->
     <style name="ThemeOverlay.Tecni.Toolbar" parent="ThemeOverlay.Material3.ActionBar">
         <item name="colorOnSurface">@color/on_light</item>
