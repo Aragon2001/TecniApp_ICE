@@ -968,9 +968,10 @@
                     style="@style/Tecni.Button.Outlined"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="@string/averia_asignar"
-                    app:icon="@drawable/ic_person"
-                    app:iconGravity="textStart" />
+                    android:layout_marginBottom="8dp"
+                    android:text="Vehículo Utilizado"
+                    android:textAppearance="?attr/textAppearanceBodyMedium"
+                    android:textStyle="bold" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnAtender"
