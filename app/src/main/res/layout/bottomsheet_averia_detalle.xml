@@ -898,7 +898,7 @@
                 </LinearLayout>
 
                 <TextView
-                    android:id="@+id/tvHorarioFinLabel"
+                    android:id="@+id/tvHorarioFinalLabel"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="Final de Trabajo"
@@ -907,13 +907,13 @@
                     android:layout_marginBottom="8dp" />
 
                 <LinearLayout
-                    android:id="@+id/rowHorarioFin"
+                    android:id="@+id/rowHorarioFinal"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal">
 
                     <com.google.android.material.textfield.TextInputLayout
-                        android:id="@+id/tilHoraFin"
+                        android:id="@+id/tilHoraFinal"
                         style="@style/Tecni.TextInput.Outlined"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
@@ -933,7 +933,7 @@
                     </com.google.android.material.textfield.TextInputLayout>
 
                     <com.google.android.material.textfield.TextInputLayout
-                        android:id="@+id/tilKmFin"
+                        android:id="@+id/tilKmFinal"
                         style="@style/Tecni.TextInput.Outlined"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
@@ -961,6 +961,7 @@
             android:layout_marginTop="8dp">
 
             <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilVehiculo"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
