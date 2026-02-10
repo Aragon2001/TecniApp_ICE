@@ -991,7 +991,6 @@
                         android:paddingStart="16dp"
                         android:paddingEnd="0dp" />
                 </com.google.android.material.textfield.TextInputLayout>
-            </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
         <TextView
@@ -1015,7 +1014,7 @@
                 android:padding="@dimen/glass_card_padding">
 
                 <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnAsignar"
+                    android:id="@+id/btnAsignar_alt"
                     style="@style/Tecni.Button.Outlined"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -1024,7 +1023,7 @@
                     app:iconGravity="textStart" />
 
                 <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnAtender"
+                    android:id="@+id/btnAtender_alt"
                     style="@style/Tecni.Button.Outlined"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -1076,7 +1075,7 @@
         </com.google.android.material.card.MaterialCardView>
 
         <TextView
-            android:id="@+id/tvAsignado"
+            android:id="@+id/tvAsignado_alt"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
@@ -1094,4 +1093,4 @@
             android:layout_height="wrap_content"
             android:textAppearance="?attr/textAppearanceBodyMedium" />
     </LinearLayout>
-</androidx.core.widget.NestedScrollView>
+</com.google.android.material.card.MaterialCardView>
