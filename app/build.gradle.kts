@@ -15,7 +15,7 @@ android {
     buildFeatures {
         // Binding / BuildConfig (ya los estás usando)
         viewBinding = true
-        dataBinding = true
+        dataBinding = false
         buildConfig = true
     }
 
