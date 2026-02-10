@@ -898,7 +898,7 @@
                 </LinearLayout>
 
                 <TextView
-                    android:id="@+id/tvHorarioFinLabel"
+                    android:id="@+id/tvHorarioFinalLabel"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="Final de Trabajo"
@@ -907,13 +907,13 @@
                     android:layout_marginBottom="8dp" />
 
                 <LinearLayout
-                    android:id="@+id/rowHorarioFin"
+                    android:id="@+id/rowHorarioFinal"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal">
 
                     <com.google.android.material.textfield.TextInputLayout
-                        android:id="@+id/tilHoraFin"
+                        android:id="@+id/tilHoraFinal"
                         style="@style/Tecni.TextInput.Outlined"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
@@ -933,7 +933,7 @@
                     </com.google.android.material.textfield.TextInputLayout>
 
                     <com.google.android.material.textfield.TextInputLayout
-                        android:id="@+id/tilKmFin"
+                        android:id="@+id/tilKmFinal"
                         style="@style/Tecni.TextInput.Outlined"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
@@ -961,13 +961,14 @@
             android:layout_marginTop="8dp">
 
             <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilVehiculo"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:padding="@dimen/glass_card_padding">
 
                 <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnAsignar"
+                    android:id="@+id/btnVehiculoTitulo"
                     style="@style/Tecni.Button.Outlined"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -977,7 +978,7 @@
                     android:textStyle="bold" />
 
                 <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnAtender"
+                    android:id="@+id/btnVehiculoSeleccionar"
                     style="@style/Tecni.Button.Outlined"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -997,7 +998,7 @@
         </com.google.android.material.card.MaterialCardView>
 
         <TextView
-            android:id="@+id/tvAsignado"
+            android:id="@+id/tvVehiculoAsignado"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
