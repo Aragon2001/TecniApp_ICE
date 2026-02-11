@@ -1149,7 +1149,7 @@ private fun AveriaEntity.toFirebaseAppPayload(): Map<String, Any?> = hashMapOf(
         }
     }
 
-    fun startRealtimeListener(
+    suspend fun startRealtimeListener(
         onNewAverias: ((List<AveriaEntity>) -> Unit)? = null,
         suppressInitialNotification: Boolean = onNewAverias != null
     ) {
