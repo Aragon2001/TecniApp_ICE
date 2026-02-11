@@ -111,6 +111,7 @@
     <string name="mi_vehiculo_mantenimiento_revision_estado">Vencido</string>
     <string name="vehiculo_registro_fecha">Fecha de registro</string>
     <string name="vehiculo_registro_km_orimetro">Km / Orímetro</string>
+    <string name="vehiculo_registro_km">Km</string>
     <string name="vehiculo_registro_combustible">Combustible</string>
     <string name="vehiculo_registro_observaciones">Observaciones</string>
     <string name="etm_registro">Registro ETM</string>
@@ -120,6 +121,10 @@
     <string name="registro_pendiente_info">Mientras no se complete este registro, estas funciones permanecerán bloqueadas.</string>
     <string name="registro_pendiente_registrar">Registrar kilometraje</string>
     <string name="registro_pendiente_sin_vehiculo">No dispongo de vehículo</string>
+    <string name="registro_pendiente_cerrar_label">Cerrar registro ahora</string>
+    <string name="registro_pendiente_modo_inicial_info">Modo rápido: solo registra el km/orímetro inicial para desbloquear la app. Podrás completar el cierre después.</string>
+    <string name="registro_pendiente_modo_cierre_info">Modo cierre: ingresa el km final y los datos de jornada para cerrar el registro.</string>
+    <string name="registro_pendiente_cierre_campos_requeridos">Para cerrar el registro completa: km final, horas laboradas, actividad y lugar.</string>
     <string name="menu_reportes">Reportes</string>
     <string name="menu_planillas">Planillas</string>
     <string name="menu_programacion">Programación</string>
