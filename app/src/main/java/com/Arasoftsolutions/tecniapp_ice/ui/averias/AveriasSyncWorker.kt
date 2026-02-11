@@ -19,6 +19,7 @@ import kotlinx.coroutines.withContext
 import java.util.concurrent.TimeUnit
 import com.Arasoftsolutions.tecniapp_ice.Database.room.AppDatabase
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
+import com.Arasoftsolutions.tecniapp_ice.Database.sync.AppSyncCoordinator
 import com.Arasoftsolutions.tecniapp_ice.session.SessionManager
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthInvalidUserException
@@ -41,6 +42,7 @@ class AveriasSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorke
         }
 
         runCatching {
+            AppSyncCoordinator.runExclusive {
             val db = AppDatabase.getInstance(applicationContext)
             val repo = AveriasRepository(db)
             // 1. Sube los pendientes a Firebase
@@ -64,6 +66,7 @@ class AveriasSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorke
             val uid = auth.currentUser?.uid
             if (!uid.isNullOrBlank()) {
                 RoomRepository.getInstance(applicationContext).upsertUserFromFirebase(uid)
+            }
             }
         }.onFailure { return@withContext Result.retry() }
         if (shouldNotifySync) {
