@@ -8,7 +8,9 @@ import com.Arasoftsolutions.tecniapp_ice.Database.utils.VehiculoPlacaUtils
 import com.Arasoftsolutions.tecniapp_ice.ui.admin.MapCoordinatePickerBottomSheet.Companion.TAG
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.ChildEventListener
 import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.Query
 import com.google.firebase.database.ValueEventListener
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -49,7 +51,8 @@ class AveriasRepository(private val db: AppDatabase) {
         .reference
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private var realtimeListener: ValueEventListener? = null
+    private var realtimeListener: ChildEventListener? = null
+    private var realtimeQuery: Query? = null
     private var realtimeCallback: ((List<AveriaEntity>) -> Unit)? = null
     private var suppressInitialNotification = false
     private var realtimeEmittedOnce = false
@@ -1080,107 +1083,136 @@ private fun AveriaEntity.toFirebaseAppPayload(): Map<String, Any?> = hashMapOf(
         realtimeCallback = onNewAverias
         this.suppressInitialNotification = suppressInitialNotification
         realtimeEmittedOnce = false
-        realtimeListener = object : ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
-                scope.launch {
-                    val current = dao.all().associateBy { it.caseId }
-                    val remoteIds = snapshot.children.mapNotNull { it.key?.trim() }.toSet()
-                    val toUpsert = mutableListOf<AveriaEntity>()
-                    val newlyCreated = mutableListOf<AveriaEntity>()
-                    snapshot.children.forEach { child ->
-                        val remote0 = child.getAveriaEntitySafe() ?: return@forEach
-                        val normalizedEstado = normalizeEstadoLabel(remote0.estado)
-                        val remoteBase = remote0.copy(estado = normalizedEstado, isSynced = true)
-                        val remote = canonicalizeAgenciaFields(remoteBase)
 
-                        val existing = current[remote.caseId]
-                        if (!shouldProcessRemote(remote.estado, remote.estadoClor)) return@forEach
+        val query = firebaseRef
+            .orderByChild("lastUpdated")
+            .limitToLast(REALTIME_MAX_ITEMS)
+        realtimeQuery = query
 
-
-                        when {
-                            existing == null -> if (shouldCreateNewCase(remote.estado)) {
-                                toUpsert += remote
-                                newlyCreated += remote
-                            }
-
-                            !existing.isSynced -> if (remote.lastUpdated > existing.lastUpdated) {
-                                toUpsert += remote
-                            }
-
-                            remote.lastUpdated >= existing.lastUpdated -> {
-                                val estadoElegido = pickEstadoPreferAdvanced(existing.estado, remote.estado, remote.estadoClor)
-                                val idEstadoElegido = idEstadoFromLabel(estadoElegido)
-                                toUpsert += existing.copy(
-                                    region = remote.region,
-                                    provincia = remote.provincia,
-                                    agencia = remote.agencia,
-                                    nombreAgencia = remote.nombreAgencia,
-                                    nise = remote.nise,
-                                    causa = preferMeaningful(remote.causa, existing.causa),
-                                    observaciones = preferMeaningful(remote.observaciones, existing.observaciones),
-                                    estado = estadoElegido,
-                                    idEstadoAve = idEstadoElegido,
-                                    idEstadoAranda = remote.idEstadoAranda,
-                                    lat = remote.lat,
-                                    lng = remote.lng,
-                                    clientesAfectados = remote.clientesAfectados,
-                                    fechaInicioMillis = remote.fechaInicioMillis,
-                                    horaInicioMillis = remote.horaInicioMillis,
-                                    horaFinalMillis = remote.horaFinalMillis,
-                                    atencionHoraInicioMillis = remote.atencionHoraInicioMillis,
-                                    atencionHoraFinalMillis = remote.atencionHoraFinalMillis,
-                                    horaLlegadaMillis = remote.horaLlegadaMillis,
-                                    kilometrajeInicio = remote.kilometrajeInicio,
-                                    kilometrajeLlegada = remote.kilometrajeLlegada,
-                                    kilometrajeFinal = remote.kilometrajeFinal,
-                                    vehiculoAsignado = remote.vehiculoAsignado,
-                                    tecnicoAsignadoUid = remote.tecnicoAsignadoUid,
-                                    tecnicoAsignadoNombre = remote.tecnicoAsignadoNombre,
-                                    atendidoPorUid = remote.atendidoPorUid,
-                                    atendidoPorNombre = remote.atendidoPorNombre,
-                                    materialesTexto = preferMeaningful(remote.materialesTexto, existing.materialesTexto),
-                                    materialesDetalleJson = preferMeaningful(remote.materialesDetalleJson, existing.materialesDetalleJson),
-                                    tecnicosAtendieronJson = mergeRemoteString(remote.tecnicosAtendieronJson, existing.tecnicosAtendieronJson),
-                                    cliente = preferMeaningful(remote.cliente, existing.cliente),
-                                    localizacion = preferMeaningful(remote.localizacion, existing.localizacion),
-                                    direccion = preferMeaningful(remote.direccion, existing.direccion),
-                                    tipoAfectacion = preferMeaningful(remote.tipoAfectacion, existing.tipoAfectacion),
-                                    numeroMedidor = preferMeaningful(remote.numeroMedidor, existing.numeroMedidor),
-                                    medidorCalle = preferMeaningful(remote.medidorCalle, existing.medidorCalle),
-                                    medidorPueblo = preferMeaningful(remote.medidorPueblo, existing.medidorPueblo),
-                                    medidorMetros = preferMeaningful(remote.medidorMetros, existing.medidorMetros),
-                                    medidorPoste = preferMeaningful(remote.medidorPoste, existing.medidorPoste),
-                                    agenciaTag = remote.agenciaTag,
-                                    lastUpdated = maxOf(existing.lastUpdated, remote.lastUpdated),
-                                    isSynced = true
-                                )
-                            }
-                        }
-                    }
-                    if (toUpsert.isNotEmpty()) dao.upsertAll(toUpsert)
-
-                    // Nota: no eliminamos localmente si el caso no viene en Firebase.
-                    // La fuente ICE puede tener averías que aún no están replicadas en Firebase
-                    // y eliminarlas provoca que desaparezcan (especialmente Pendientes/Asignadas).
-
-                    val shouldNotify = realtimeEmittedOnce || !this@AveriasRepository.suppressInitialNotification
-                    if (shouldNotify && newlyCreated.isNotEmpty()) {
-                        realtimeCallback?.invoke(newlyCreated)
-                    }
-                    realtimeEmittedOnce = true
-                }
+        realtimeListener = object : ChildEventListener {
+            override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
+                scope.launch { processRealtimeChild(snapshot) }
             }
+
+            override fun onChildChanged(snapshot: DataSnapshot, previousChildName: String?) {
+                scope.launch { processRealtimeChild(snapshot) }
+            }
+
+            override fun onChildRemoved(snapshot: DataSnapshot) {
+                // No eliminamos localmente cuando desaparece en Firebase para evitar pérdida de casos.
+            }
+
+            override fun onChildMoved(snapshot: DataSnapshot, previousChildName: String?) = Unit
 
             override fun onCancelled(error: DatabaseError) {
                 Log.e(TAG, "Realtime listener cancelled", error.toException())
             }
         }
-        firebaseRef.addValueEventListener(realtimeListener!!)
+
+        query.addChildEventListener(realtimeListener!!)
+        query.addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                realtimeEmittedOnce = true
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                Log.w(TAG, "No se pudo confirmar carga inicial realtime", error.toException())
+                realtimeEmittedOnce = true
+            }
+        })
+    }
+
+    private suspend fun processRealtimeChild(snapshot: DataSnapshot) {
+        val remote0 = snapshot.getAveriaEntitySafe() ?: return
+        val normalizedEstado = normalizeEstadoLabel(remote0.estado)
+        val remoteBase = remote0.copy(estado = normalizedEstado, isSynced = true)
+        val remote = canonicalizeAgenciaFields(remoteBase)
+        if (!shouldProcessRemote(remote.estado, remote.estadoClor)) return
+
+        val existing = dao.getByCaseId(remote.caseId)
+        when {
+            existing == null -> {
+                if (!shouldCreateNewCase(remote.estado)) return
+                dao.upsertAll(listOf(remote))
+                val shouldNotify = realtimeEmittedOnce || !suppressInitialNotification
+                if (shouldNotify) {
+                    realtimeCallback?.invoke(listOf(remote))
+                }
+            }
+
+            !existing.isSynced -> {
+                if (remote.lastUpdated > existing.lastUpdated) {
+                    dao.upsertAll(listOf(remote))
+                }
+            }
+
+            remote.lastUpdated >= existing.lastUpdated -> {
+                val estadoElegido = pickEstadoPreferAdvanced(existing.estado, remote.estado, remote.estadoClor)
+                val idEstadoElegido = idEstadoFromLabel(estadoElegido)
+                dao.upsertAll(
+                    listOf(
+                        existing.copy(
+                            region = remote.region,
+                            provincia = remote.provincia,
+                            agencia = remote.agencia,
+                            nombreAgencia = remote.nombreAgencia,
+                            nise = remote.nise,
+                            causa = preferMeaningful(remote.causa, existing.causa),
+                            observaciones = preferMeaningful(remote.observaciones, existing.observaciones),
+                            estado = estadoElegido,
+                            idEstadoAve = idEstadoElegido,
+                            idEstadoAranda = remote.idEstadoAranda,
+                            lat = remote.lat,
+                            lng = remote.lng,
+                            clientesAfectados = remote.clientesAfectados,
+                            fechaInicioMillis = remote.fechaInicioMillis,
+                            horaInicioMillis = remote.horaInicioMillis,
+                            horaFinalMillis = remote.horaFinalMillis,
+                            atencionHoraInicioMillis = remote.atencionHoraInicioMillis,
+                            atencionHoraFinalMillis = remote.atencionHoraFinalMillis,
+                            horaLlegadaMillis = remote.horaLlegadaMillis,
+                            kilometrajeInicio = remote.kilometrajeInicio,
+                            kilometrajeLlegada = remote.kilometrajeLlegada,
+                            kilometrajeFinal = remote.kilometrajeFinal,
+                            vehiculoAsignado = remote.vehiculoAsignado,
+                            tecnicoAsignadoUid = remote.tecnicoAsignadoUid,
+                            tecnicoAsignadoNombre = remote.tecnicoAsignadoNombre,
+                            atendidoPorUid = remote.atendidoPorUid,
+                            atendidoPorNombre = remote.atendidoPorNombre,
+                            materialesTexto = preferMeaningful(remote.materialesTexto, existing.materialesTexto),
+                            materialesDetalleJson = preferMeaningful(remote.materialesDetalleJson, existing.materialesDetalleJson),
+                            tecnicosAtendieronJson = mergeRemoteString(remote.tecnicosAtendieronJson, existing.tecnicosAtendieronJson),
+                            cliente = preferMeaningful(remote.cliente, existing.cliente),
+                            localizacion = preferMeaningful(remote.localizacion, existing.localizacion),
+                            direccion = preferMeaningful(remote.direccion, existing.direccion),
+                            tipoAfectacion = preferMeaningful(remote.tipoAfectacion, existing.tipoAfectacion),
+                            numeroMedidor = preferMeaningful(remote.numeroMedidor, existing.numeroMedidor),
+                            medidorCalle = preferMeaningful(remote.medidorCalle, existing.medidorCalle),
+                            medidorPueblo = preferMeaningful(remote.medidorPueblo, existing.medidorPueblo),
+                            medidorMetros = preferMeaningful(remote.medidorMetros, existing.medidorMetros),
+                            medidorPoste = preferMeaningful(remote.medidorPoste, existing.medidorPoste),
+                            agenciaTag = remote.agenciaTag,
+                            lastUpdated = maxOf(existing.lastUpdated, remote.lastUpdated),
+                            isSynced = true
+                        )
+                    )
+                )
+            }
+        }
     }
 
     fun stopRealtimeListener() {
-        realtimeListener?.let { firebaseRef.removeEventListener(it) }
+        val listener = realtimeListener
+        val query = realtimeQuery
+        if (listener != null) {
+            if (query != null) {
+                query.removeEventListener(listener)
+            } else {
+                firebaseRef.removeEventListener(listener)
+            }
+        }
         realtimeListener = null
+        realtimeQuery = null
         scope.coroutineContext.cancelChildren()
         realtimeCallback = null
         suppressInitialNotification = false
@@ -1189,6 +1221,7 @@ private fun AveriaEntity.toFirebaseAppPayload(): Map<String, Any?> = hashMapOf(
 
     companion object {
         private const val TAG = "AveriasRepo"
+        private const val REALTIME_MAX_ITEMS = 1200
         private val DIACRITICS_REGEX = "\\p{InCombiningDiacriticalMarks}+".toRegex()
         private val NON_ALNUM_SPACE_REGEX = "[^a-z0-9 ]".toRegex()
         private val MULTI_SPACE_REGEX = "\\s+".toRegex()
