@@ -8,6 +8,7 @@ import com.Arasoftsolutions.tecniapp_ice.Database.utils.VehiculoPlacaUtils
 import com.Arasoftsolutions.tecniapp_ice.ui.admin.MapCoordinatePickerBottomSheet.Companion.TAG
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.ChildEventListener
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.Query
@@ -50,12 +51,25 @@ class AveriasRepository(private val db: AppDatabase) {
         .getInstance("https://tecniapp-ice-materiales.firebaseio.com/")
         .reference
 
+    private val usersRef = FirebaseDatabase
+        .getInstance("https://tecniapp-ice-user.firebaseio.com/")
+        .reference
+        .child("usuarios")
+
+    private data class SyncScope(
+        val region: String?,
+        val agenciaTag: String?,
+        val agencia: String?
+    )
+
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var realtimeListener: ChildEventListener? = null
     private var realtimeQuery: Query? = null
     private var realtimeCallback: ((List<AveriaEntity>) -> Unit)? = null
     private var suppressInitialNotification = false
     private var realtimeEmittedOnce = false
+    private var cachedSyncScope: SyncScope? = null
+    private var cachedSyncScopeAt: Long = 0L
 
     fun observe(agencias: List<String>, estado: String, q: String, s: String): Flow<List<AveriaEntity>> =
         dao.observe(agencias, agencias.size, estado, q)
@@ -549,9 +563,69 @@ return AveriaEntity(
 
     }
 
+    private suspend fun resolveSyncScope(forceRefresh: Boolean = false): SyncScope {
+        val now = System.currentTimeMillis()
+        if (!forceRefresh && cachedSyncScope != null && (now - cachedSyncScopeAt) < SYNC_SCOPE_CACHE_MS) {
+            return cachedSyncScope ?: SyncScope(null, null, null)
+        }
+
+        val uid = FirebaseAuth.getInstance().currentUser?.uid
+        if (uid.isNullOrBlank()) {
+            val fallback = SyncScope(null, null, null)
+            cachedSyncScope = fallback
+            cachedSyncScopeAt = now
+            return fallback
+        }
+
+        val localUser = runCatching { db.usuarioDao().getByUid(uid) }.getOrNull()
+        val localRegion = canonicalRegion(localUser?.region ?: localUser?.regionNombre)
+        val localAgency = localUser?.agencia ?: localUser?.agenciaId
+        val localCanon = canonicalizeAgency(localRegion, localAgency, localUser?.agencia)
+        if (!localCanon.tag.isNullOrBlank() || !localRegion.isNullOrBlank()) {
+            val scope = SyncScope(
+                region = localRegion,
+                agenciaTag = localCanon.tag,
+                agencia = localCanon.agencia
+            )
+            cachedSyncScope = scope
+            cachedSyncScopeAt = now
+            return scope
+        }
+
+        val remoteSnap = runCatching { usersRef.child(uid).get().await() }.getOrNull()
+        val remoteRegionRaw = remoteSnap?.child("region")?.getValue(String::class.java)
+            ?: remoteSnap?.child("region_nombre")?.getValue(String::class.java)
+        val remoteAgency = remoteSnap?.child("agencia")?.getValue(String::class.java)
+            ?: remoteSnap?.child("agencia_id")?.getValue(String::class.java)
+        val remoteAgencyName = remoteSnap?.child("nombreAgencia")?.getValue(String::class.java)
+            ?: remoteAgency
+        val remoteRegion = canonicalRegion(remoteRegionRaw)
+        val remoteCanon = canonicalizeAgency(remoteRegion, remoteAgency, remoteAgencyName)
+
+        val scope = SyncScope(
+            region = remoteRegion,
+            agenciaTag = remoteCanon.tag,
+            agencia = remoteCanon.agencia
+        )
+        cachedSyncScope = scope
+        cachedSyncScopeAt = now
+        return scope
+    }
+
+    private suspend fun scopedAveriasQuery(limitToLast: Int? = null): Query {
+        val syncScope = resolveSyncScope()
+        val base = when {
+            !syncScope.agenciaTag.isNullOrBlank() -> firebaseRef.orderByChild("agenciaTag").equalTo(syncScope.agenciaTag)
+            !syncScope.agencia.isNullOrBlank() -> firebaseRef.orderByChild("agencia").equalTo(syncScope.agencia)
+            !syncScope.region.isNullOrBlank() -> firebaseRef.orderByChild("region").equalTo(syncScope.region)
+            else -> firebaseRef.orderByKey().limitToLast(FALLBACK_GLOBAL_LIMIT)
+        }
+        return if (limitToLast != null) base.limitToLast(limitToLast) else base
+    }
+
     private suspend fun loadFirebaseCases(): Map<String, AveriaEntity> =
         runCatching {
-            val snapshot = firebaseRef.get().await()
+            val snapshot = scopedAveriasQuery().get().await()
             snapshot.children.mapNotNull { child ->
                 val remote0 = child.getAveriaEntitySafe() ?: return@mapNotNull null
                 val normalizedEstado = normalizeEstadoLabel(remote0.estado)
@@ -973,7 +1047,7 @@ private fun AveriaEntity.toFirebaseAppPayload(): Map<String, Any?> = hashMapOf(
         val current = dao.all().associateBy { it.caseId }
         val hadLocalData = current.isNotEmpty()
         try {
-            val snapshot = firebaseRef.get().await()
+            val snapshot = scopedAveriasQuery().get().await()
             val updated = mutableListOf<AveriaEntity>()
             val newlyCreated = mutableListOf<AveriaEntity>()
             snapshot.children.forEach { child ->
@@ -1084,9 +1158,11 @@ private fun AveriaEntity.toFirebaseAppPayload(): Map<String, Any?> = hashMapOf(
         this.suppressInitialNotification = suppressInitialNotification
         realtimeEmittedOnce = false
 
-        val query = firebaseRef
-            .orderByChild("lastUpdated")
-            .limitToLast(REALTIME_MAX_ITEMS)
+        val query = runCatching { scopedAveriasQuery(limitToLast = REALTIME_MAX_ITEMS) }
+            .getOrElse {
+                Log.w(TAG, "No se pudo resolver ámbito realtime, usando fallback acotado", it)
+                firebaseRef.orderByKey().limitToLast(FALLBACK_GLOBAL_LIMIT)
+            }
         realtimeQuery = query
 
         realtimeListener = object : ChildEventListener {
@@ -1221,7 +1297,9 @@ private fun AveriaEntity.toFirebaseAppPayload(): Map<String, Any?> = hashMapOf(
 
     companion object {
         private const val TAG = "AveriasRepo"
-        private const val REALTIME_MAX_ITEMS = 1200
+        private const val REALTIME_MAX_ITEMS = 400
+        private const val FALLBACK_GLOBAL_LIMIT = 300
+        private const val SYNC_SCOPE_CACHE_MS = 60_000L
         private val DIACRITICS_REGEX = "\\p{InCombiningDiacriticalMarks}+".toRegex()
         private val NON_ALNUM_SPACE_REGEX = "[^a-z0-9 ]".toRegex()
         private val MULTI_SPACE_REGEX = "\\s+".toRegex()
