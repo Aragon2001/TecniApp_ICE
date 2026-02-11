@@ -1,46 +1,87 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Material 3 semantic tokens (light) -->
+    <color name="md_theme_light_primary">#005DAA</color>
+    <color name="md_theme_light_on_primary">#FFFFFF</color>
+    <color name="md_theme_light_primary_container">#D4E3FF</color>
+    <color name="md_theme_light_on_primary_container">#001C39</color>
 
-    <!-- Marca ICE -->
-    <color name="ice_blue">#0071CE</color>
+    <color name="md_theme_light_secondary">#705D00</color>
+    <color name="md_theme_light_on_secondary">#FFFFFF</color>
+    <color name="md_theme_light_secondary_container">#FFE17A</color>
+    <color name="md_theme_light_on_secondary_container">#231B00</color>
+
+    <color name="md_theme_light_tertiary">#206C2C</color>
+    <color name="md_theme_light_on_tertiary">#FFFFFF</color>
+    <color name="md_theme_light_tertiary_container">#C6EFCC</color>
+    <color name="md_theme_light_on_tertiary_container">#002106</color>
+
+    <color name="md_theme_light_error">#BA1A1A</color>
+    <color name="md_theme_light_on_error">#FFFFFF</color>
+
+    <color name="md_theme_light_background">#F8F9FF</color>
+    <color name="md_theme_light_on_background">#1A1B21</color>
+    <color name="md_theme_light_surface">#F8F9FF</color>
+    <color name="md_theme_light_on_surface">#1A1B21</color>
+    <color name="md_theme_light_surface_variant">#DFE2EB</color>
+    <color name="md_theme_light_on_surface_variant">#434750</color>
+    <color name="md_theme_light_outline">#737780</color>
+    <color name="md_theme_light_outline_variant">#C3C6CF</color>
+
+    <!-- Material 3 semantic aliases used by XML -->
+    <color name="primary">@color/md_theme_light_primary</color>
+    <color name="on_primary">@color/md_theme_light_on_primary</color>
+    <color name="primary_container">@color/md_theme_light_primary_container</color>
+    <color name="on_primary_container">@color/md_theme_light_on_primary_container</color>
+    <color name="secondary">@color/md_theme_light_secondary</color>
+    <color name="on_secondary">@color/md_theme_light_on_secondary</color>
+    <color name="secondary_container">@color/md_theme_light_secondary_container</color>
+    <color name="on_secondary_container">@color/md_theme_light_on_secondary_container</color>
+    <color name="tertiary">@color/md_theme_light_tertiary</color>
+    <color name="on_tertiary">@color/md_theme_light_on_tertiary</color>
+    <color name="tertiary_container">@color/md_theme_light_tertiary_container</color>
+    <color name="on_tertiary_container">@color/md_theme_light_on_tertiary_container</color>
+    <color name="error">@color/md_theme_light_error</color>
+    <color name="on_error">@color/md_theme_light_on_error</color>
+    <color name="background">@color/md_theme_light_background</color>
+    <color name="on_background">@color/md_theme_light_on_background</color>
+    <color name="surface">@color/md_theme_light_surface</color>
+    <color name="on_surface">@color/md_theme_light_on_surface</color>
+    <color name="surface_variant">@color/md_theme_light_surface_variant</color>
+    <color name="on_surface_variant">@color/md_theme_light_on_surface_variant</color>
+    <color name="outline">@color/md_theme_light_outline</color>
+    <color name="outline_variant">@color/md_theme_light_outline_variant</color>
+
+    <!-- Existing app colors kept for compatibility -->
+    <color name="white">#FFFFFFFF</color>
+    <color name="black">#FF000000</color>
+    <color name="transparent">#00000000</color>
+    <color name="ice_blue">@color/primary</color>
     <color name="ice_blue_dark">#004C8C</color>
     <color name="ice_yellow">#FFDD00</color>
     <color name="ice_yellow_dark">#CCAA00</color>
 
-    <!-- Neutrales base -->
-    <color name="white">#FFFFFFFF</color>
-    <color name="black">#FF000000</color>
-    <color name="transparent">#00000000</color>
-
-    <!-- Superficies claras (Material 3 light) -->
-    <color name="bg_light">#F5F7FB</color>
-    <color name="surface_light">#FDFEFF</color>
-    <color name="surface_variant_light">#E6EEF9</color>
-    <color name="on_surface_variant_light">#3C4758</color>
-    <color name="outline_variant_light">#C2CDD9</color>
-
-    <!-- Superficies oscuras (Material 3 night suavizado) -->
+    <color name="bg_light">@color/background</color>
+    <color name="surface_light">@color/surface</color>
+    <color name="surface_variant_light">@color/surface_variant</color>
+    <color name="on_surface_variant_light">@color/on_surface_variant</color>
+    <color name="outline_variant_light">@color/outline_variant</color>
     <color name="bg_dark">#1C1F26</color>
     <color name="surface_dark">#262B35</color>
     <color name="surface_variant_dark">#323845</color>
     <color name="on_surface_variant_dark">#C6CBD7</color>
     <color name="outline_variant_dark">#444A56</color>
-
-    <!-- Texto / estados -->
-    <color name="on_light">#0A0A0A</color>
+    <color name="on_light">@color/on_surface</color>
     <color name="on_dark">#F1F3F8</color>
     <color name="success_500">#4CAF50</color>
     <color name="error_500">#D32F2F</color>
 
-    <!-- Contenedores Material 3 (light) -->
-    <color name="primary_container_light">#D6E8FF</color>
-    <color name="on_primary_container_light">#001C38</color>
-    <color name="secondary_container_light">#FFF3B5</color>
-    <color name="on_secondary_container_light">#2F2600</color>
-    <color name="tertiary_container_light">#CBEFDB</color>
-    <color name="on_tertiary_container_light">#062717</color>
-
-    <!-- Contenedores Material 3 (dark) -->
+    <color name="primary_container_light">@color/primary_container</color>
+    <color name="on_primary_container_light">@color/on_primary_container</color>
+    <color name="secondary_container_light">@color/secondary_container</color>
+    <color name="on_secondary_container_light">@color/on_secondary_container</color>
+    <color name="tertiary_container_light">@color/tertiary_container</color>
+    <color name="on_tertiary_container_light">@color/on_tertiary_container</color>
     <color name="primary_container_dark">#004C8C</color>
     <color name="on_primary_container_dark">#B4DAFF</color>
     <color name="secondary_container_dark">#4C3C00</color>
@@ -48,7 +89,6 @@
     <color name="tertiary_container_dark">#0F3A1B</color>
     <color name="on_tertiary_container_dark">#B1F0BF</color>
 
-    <!-- Login -->
     <color name="login_background">#0071CE</color>
     <color name="login_card_background">#FFFFFFFF</color>
     <color name="login_text_primary">#004C8C</color>
@@ -56,27 +96,22 @@
     <color name="login_button_background">#FFDD00</color>
     <color name="login_button_text">#004C8C</color>
     <color name="login_hint_text">#B3B3B3</color>
-
-    <!-- Scrim / overlay -->
     <color name="scrim_light">#33000000</color>
     <color name="scrim_dark">#26FFFFFF</color>
     <color name="overlay_dark">#80000000</color>
 
-    <!-- Utilitarios glass -->
     <color name="glass_light">#E6FFFFFF</color>
     <color name="glass_dark">#4D1C1F26</color>
     <color name="glass_surface">#E6FFFFFF</color>
     <color name="glass_outline">#26FFFFFF</color>
     <color name="glass_chip_surface">#D9FFFFFF</color>
 
-    <!-- Chips -->
     <color name="chip_asignada">#FBC02D</color>
     <color name="chip_en_atencion">#1E88E5</color>
     <color name="chip_pendiente">#E53935</color>
     <color name="chip_resuelta">#43A047</color>
     <color name="chip_anulada">#546E7A</color>
 
-    <!-- Paleta ICE Glass -->
     <color name="ice_cyan">#35C9FF</color>
     <color name="success_green">#2EBE7E</color>
     <color name="warning_yellow">#FFC857</color>
@@ -88,10 +123,8 @@
     <color name="status_assigned">#FFB020</color>
     <color name="status_done">#2EBE7E</color>
 
-    <!-- Outline -->
     <color name="outline_soft">#1F000000</color>
 
-    <!-- Notificaciones averías -->
     <color name="averia_notification_glow">#332196F3</color>
     <color name="averia_notification_accent">#2196F3</color>
     <color name="averia_notification_resolved">#2E7D32</color>
@@ -101,7 +134,6 @@
     <color name="averia_notification_chip_bg">#142196F3</color>
     <color name="averia_notification_chip_text">#E3F2FD</color>
 
-    <!-- Utilitarios extra -->
     <color name="light_gray">#B3B3B3</color>
     <color name="dark_gray">#616161</color>
     <color name="red">#D32F2F</color>

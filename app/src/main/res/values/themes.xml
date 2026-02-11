@@ -1,86 +1,79 @@
 <resources xmlns:android="http://schemas.android.com/apk/res/android">
-    <style name="Theme.TecniAppICE" parent="Theme.Material3.Light.NoActionBar">
+    <style name="Theme.TecniAppICE" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorOnPrimary">@color/on_primary</item>
+        <item name="colorPrimaryContainer">@color/primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/on_primary_container</item>
+        <item name="colorSecondary">@color/secondary</item>
+        <item name="colorOnSecondary">@color/on_secondary</item>
+        <item name="colorSecondaryContainer">@color/secondary_container</item>
+        <item name="colorOnSecondaryContainer">@color/on_secondary_container</item>
+        <item name="colorTertiary">@color/tertiary</item>
+        <item name="colorOnTertiary">@color/on_tertiary</item>
+        <item name="colorTertiaryContainer">@color/tertiary_container</item>
+        <item name="colorOnTertiaryContainer">@color/on_tertiary_container</item>
+        <item name="colorError">@color/error</item>
+        <item name="colorOnError">@color/on_error</item>
 
-        <!-- Marca -->
-        <item name="colorPrimary">@color/ice_blue</item>
-        <item name="colorOnPrimary">@color/white</item>
-        <item name="colorSecondary">@color/ice_yellow</item>
-        <item name="colorOnSecondary">@color/black</item>
-        <item name="colorPrimaryContainer">@color/primary_container_light</item>
-        <item name="colorOnPrimaryContainer">@color/on_primary_container_light</item>
-        <item name="colorSecondaryContainer">@color/ice_yellow</item>
-        <item name="colorOnSecondaryContainer">@color/on_secondary_container_light</item>
-        <item name="colorTertiary">@color/success_500</item>
-        <item name="colorOnTertiary">@color/white</item>
-        <item name="colorTertiaryContainer">@color/tertiary_container_light</item>
-        <item name="colorOnTertiaryContainer">@color/on_tertiary_container_light</item>
+        <item name="android:colorBackground">@color/background</item>
+        <item name="android:windowBackground">@color/background</item>
+        <item name="colorSurface">@color/surface</item>
+        <item name="colorOnSurface">@color/on_surface</item>
+        <item name="colorSurfaceVariant">@color/surface_variant</item>
+        <item name="colorOnSurfaceVariant">@color/on_surface_variant</item>
+        <item name="colorOnBackground">@color/on_background</item>
+        <item name="colorOutline">@color/outline</item>
+        <item name="colorOutlineVariant">@color/outline_variant</item>
 
-        <!-- Superficies / fondos claros -->
-        <item name="android:colorBackground">@color/bg_light</item>
-        <item name="android:windowBackground">@color/bg_light</item>
-        <item name="colorSurface">@color/surface_light</item>
-        <item name="colorSurfaceVariant">@color/surface_variant_light</item>
-        <item name="colorOnSurface">@color/on_light</item>
-        <item name="colorOnSurfaceVariant">@color/on_surface_variant_light</item>
-        <item name="colorOnBackground">@color/on_light</item>
-        <item name="colorOutline">@color/outline_soft</item>
-        <item name="colorOutlineVariant">@color/outline_variant_light</item>
-
-        <!-- Estados -->
-        <item name="colorError">@color/error_500</item>
-
-        <!-- Window / barras -->
         <item name="android:statusBarColor">@android:color/transparent</item>
-        <item name="android:navigationBarColor">@color/bg_light</item>
-        <item name="android:windowLightStatusBar">true</item>
-        <item name="android:windowLightNavigationBar">true</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
 
-        <!-- Estética -->
+        <item name="shapeAppearanceSmallComponent">@style/ShapeAppearance.Tecni.Small</item>
+        <item name="shapeAppearanceMediumComponent">@style/ShapeAppearance.Tecni.Medium</item>
+        <item name="shapeAppearanceLargeComponent">@style/ShapeAppearance.Tecni.Large</item>
+
         <item name="materialCardViewStyle">@style/Tecni.Card</item>
         <item name="materialButtonStyle">@style/Tecni.Button</item>
         <item name="chipStyle">@style/Tecni.Chip</item>
         <item name="toolbarStyle">@style/Tecni.Toolbar</item>
+        <item name="bottomSheetDialogTheme">@style/ThemeOverlay.Tecni.BottomSheetDialog</item>
+        <item name="textAppearanceTitleLarge">@style/TextAppearance.Tecni.TitleLarge</item>
+        <item name="textAppearanceBodyMedium">@style/TextAppearance.Tecni.BodyMedium</item>
     </style>
+
+    <style name="ShapeAppearance.Tecni.Small" parent="ShapeAppearance.Material3.Corner.Small">
+        <item name="cornerSize">8dp</item>
+    </style>
+
+    <style name="ShapeAppearance.Tecni.Medium" parent="ShapeAppearance.Material3.Corner.Medium">
+        <item name="cornerSize">16dp</item>
+    </style>
+
+    <style name="ShapeAppearance.Tecni.Large" parent="ShapeAppearance.Material3.Corner.Large">
+        <item name="cornerSize">28dp</item>
+    </style>
+
+    <style name="TextAppearance.Tecni.TitleLarge" parent="TextAppearance.Material3.TitleLarge" />
+    <style name="TextAppearance.Tecni.BodyMedium" parent="TextAppearance.Material3.BodyMedium" />
 
     <style name="Tecni.Card" parent="Widget.Material3.CardView.Elevated">
-        <item name="cardCornerRadius">20dp</item>
-        <item name="cardElevation">3dp</item>
-        <item name="strokeWidth">0dp</item>
-    </style>
-
-    <style name="Tecni.DashboardCard" parent="Widget.Material3.CardView.Elevated">
-        <item name="cardCornerRadius">24dp</item>
-        <item name="cardElevation">6dp</item>
-        <item name="strokeWidth">0dp</item>
-    </style>
-
-    <style name="Tecni.DialogCard" parent="Widget.Material3.CardView.Elevated">
-        <item name="cardCornerRadius">22dp</item>
-        <item name="cardElevation">8dp</item>
-        <item name="strokeWidth">0dp</item>
-    </style>
-
-    <style name="Tecni.KpiCard" parent="Widget.Material3.CardView.Elevated">
-        <item name="cardCornerRadius">18dp</item>
-        <item name="cardElevation">4dp</item>
-        <item name="strokeWidth">0dp</item>
+        <item name="cardElevation">2dp</item>
+        <item name="cardCornerRadius">16dp</item>
     </style>
 
     <style name="Tecni.Button" parent="Widget.Material3.Button.TonalButton">
-        <item name="minHeight">44dp</item>
+        <item name="android:minHeight">44dp</item>
+        <item name="shapeAppearance">@style/ShapeAppearance.Tecni.Medium</item>
     </style>
 
     <style name="Tecni.Chip" parent="Widget.Material3.Chip.Filter">
-        <item name="minHeight">36dp</item>
-    </style>
-
-    <style name="Tecni.StatusChip" parent="Widget.Material3.Chip.Assist">
         <item name="chipMinHeight">36dp</item>
-        <item name="chipCornerRadius">12dp</item>
-        <item name="android:textStyle">bold</item>
+        <item name="chipCornerRadius">8dp</item>
     </style>
 
     <style name="Tecni.Toolbar" parent="Widget.Material3.Toolbar">
-        <item name="elevation">2dp</item>
+        <item name="android:elevation">0dp</item>
+        <item name="titleTextColor">?attr/colorOnSurface</item>
+        <item name="subtitleTextColor">?attr/colorOnSurfaceVariant</item>
     </style>
 </resources>
