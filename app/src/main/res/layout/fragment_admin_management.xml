@@ -86,7 +86,6 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
-            android:background="@drawable/bg_admin_toggle_group"
                     android:padding="6dp"
                     app:selectionRequired="true"
                     app:singleSelection="true">
@@ -149,7 +148,7 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="@drawable/bg_admin_section_card"
+
                 android:orientation="vertical"
                 android:padding="20dp">
 
@@ -240,7 +239,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
                     android:hint="@string/admin_field_medidor_numero"
-                    app:startIconDrawable="@drawable/ic_menu_medidor"
+                    app:startIconDrawable="@drawable/barcode_scanner_24px"
                     app:startIconTint="@color/admin_toggle_text">
 
                     <com.google.android.material.textfield.TextInputEditText
@@ -275,7 +274,7 @@
                     android:layout_marginTop="12dp"
                     android:hint="@string/admin_field_medidor_subregion"
                     app:endIconMode="dropdown_menu"
-                    app:startIconDrawable="@drawable/ic_menu_localizacion"
+                    app:startIconDrawable="@drawable/map_24px"
                     app:startIconTint="@color/admin_toggle_text">
 
                     <com.google.android.material.textfield.MaterialAutoCompleteTextView
@@ -295,7 +294,7 @@
                     android:layout_marginTop="12dp"
                     android:hint="@string/admin_field_medidor_pueblo"
                     app:endIconMode="dropdown_menu"
-                    app:startIconDrawable="@drawable/ic_menu_localizacion"
+                    app:startIconDrawable="@drawable/distance_24px"
                     app:startIconTint="@color/admin_toggle_text">
 
                     <com.google.android.material.textfield.MaterialAutoCompleteTextView
@@ -314,7 +313,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
                     android:hint="@string/admin_field_medidor_calle"
-                    app:startIconDrawable="@drawable/ic_menu_localizacion"
+                    app:startIconDrawable="@drawable/distance_24px"
                     app:startIconTint="@color/admin_toggle_text">
 
                     <com.google.android.material.textfield.TextInputEditText
@@ -331,7 +330,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
                     android:hint="@string/admin_field_medidor_poste"
-                    app:startIconDrawable="@drawable/ic_location"
+                    app:startIconDrawable="@drawable/distance_24px"
                     app:startIconTint="@color/admin_toggle_text">
 
                     <com.google.android.material.textfield.TextInputEditText
@@ -348,7 +347,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
                     android:hint="@string/admin_field_medidor_metros"
-                    app:startIconDrawable="@drawable/ic_menu_medidor"
+                    app:startIconDrawable="@drawable/distance_24px"
                     app:startIconTint="@color/admin_toggle_text">
 
                     <com.google.android.material.textfield.TextInputEditText
@@ -443,7 +442,6 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="@drawable/bg_admin_section_card"
                 android:orientation="vertical"
                 android:padding="20dp">
 
@@ -664,7 +662,7 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="@drawable/bg_admin_section_card"
+
                 android:orientation="vertical"
                 android:padding="20dp">
 
@@ -955,7 +953,7 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="@drawable/bg_admin_section_card"
+
                 android:orientation="vertical"
                 android:padding="20dp">
 

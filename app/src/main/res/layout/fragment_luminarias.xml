@@ -241,7 +241,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
-                    android:layoutAnimation="@anim/layout_fade_in"
+
                     android:nestedScrollingEnabled="false"
                     tools:listitem="@layout/item_luminaria_reparacion" />
             </LinearLayout>
@@ -305,7 +305,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
-                    android:layoutAnimation="@anim/layout_fade_in"
+
                     android:nestedScrollingEnabled="false"
                     tools:listitem="@layout/item_luminaria_reparacion" />
             </LinearLayout>

@@ -150,6 +150,8 @@
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnVerMapa"
                     style="@style/Tecni.IconButton.Glass"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
                     android:contentDescription="@string/averia_ver_mapa"
                     android:icon="@drawable/ic_share_location24"
                     android:minWidth="0dp" />
@@ -158,6 +160,8 @@
                     android:id="@+id/btnAsignar"
                     style="@style/Tecni.IconButton.Glass"
                     android:layout_marginStart="6dp"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
                     android:contentDescription="@string/averia_asignar"
                     android:icon="@drawable/ic_person"
                     android:minWidth="0dp" />
@@ -166,6 +170,8 @@
                     android:id="@+id/btnAtender"
                     style="@style/Tecni.IconButton.Glass"
                     android:layout_marginStart="6dp"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
                     android:contentDescription="@string/averia_atender"
                     android:icon="@drawable/ic_play_arrow"
                     android:minWidth="0dp" />
@@ -174,6 +180,8 @@
                     android:id="@+id/btnResolver"
                     style="@style/Tecni.IconButton.Glass"
                     android:layout_marginStart="6dp"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
                     android:contentDescription="@string/averia_resolver"
                     android:icon="@drawable/ic_check"
                     android:minWidth="0dp" />

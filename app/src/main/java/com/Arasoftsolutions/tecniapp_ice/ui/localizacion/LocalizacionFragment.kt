@@ -450,12 +450,8 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
                 setZoomGesturesEnabled(true)
                 setStreetNamesEnabled(true)
                 setOnStreetViewPanoramaChangeListener { location ->
-                    streetViewHasPanorama = location != null
-                    if (location == null) {
-                        viewModel.actualizarStreetViewEstado(LocalizacionViewModel.StreetViewState.UNAVAILABLE)
-                    } else {
-                        actualizarStreetViewEstadoDesdeSheet()
-                    }
+                    streetViewHasPanorama = true
+                    actualizarStreetViewEstadoDesdeSheet()
                     actualizarStreetViewUi()
                 }
             }
