@@ -110,7 +110,7 @@
                         android:clickable="true"
                         android:focusable="true"
                         android:foreground="?attr/selectableItemBackground"
-                        app:cardBackgroundColor="@color/white"
+                        app:cardBackgroundColor="?attr/colorSurface"
                         app:cardCornerRadius="20dp"
                         app:cardElevation="1dp">
 
@@ -133,7 +133,7 @@
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="12dp"
                                 android:fontFamily="sans-serif-medium"
-                                android:textColor="@color/on_light"
+                                android:textColor="?attr/colorOnSurface"
                                 android:textSize="28sp"
                                 android:textStyle="bold"
                                 tools:text="5" />
@@ -143,7 +143,7 @@
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="4dp"
                                 android:text="@string/home_card_pending_title"
-                                android:textColor="@color/dark_gray"
+                                android:textColor="?attr/colorOnSurfaceVariant"
                                 android:textSize="14sp" />
                         </LinearLayout>
                     </com.google.android.material.card.MaterialCardView>
@@ -190,7 +190,7 @@
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="4dp"
                                 android:text="@string/home_card_attended_title"
-                                android:textColor="@color/dark_gray"
+                                android:textColor="?attr/colorOnSurfaceVariant"
                                 android:textSize="14sp" />
                         </LinearLayout>
                     </com.google.android.material.card.MaterialCardView>
@@ -469,7 +469,7 @@
 
                     <com.google.android.material.progressindicator.LinearProgressIndicator
                         android:id="@+id/progress_sync"
-                        style="@style/Widget.MaterialComponents.LinearProgressIndicator"
+                        style="@style/Widget.Material3.LinearProgressIndicator"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="16dp"
@@ -488,7 +488,7 @@
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/button_sync_now"
-                        style="@style/Widget.MaterialComponents.Button"
+                        style="@style/Widget.Material3.Button"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="20dp"
