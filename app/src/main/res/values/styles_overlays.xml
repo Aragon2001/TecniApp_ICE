@@ -5,7 +5,7 @@
     <!-- Mantener cada sección documentada para facilitar el mantenimiento. -->
     <!-- ================================================================== -->
     <!-- Toolbars y menús desplegados -->
-    <style name="ThemeOverlay.Tecni.Toolbar" parent="ThemeOverlay.Material3.Toolbar">
+    <style name="ThemeOverlay.Tecni.Toolbar" parent="ThemeOverlay.Material3.Toolbar.Surface">
         <item name="colorSurface">?attr/colorSurface</item>
         <item name="colorOnSurface">?attr/colorOnSurface</item>
     </style>
@@ -21,7 +21,7 @@
 
     <!-- Search pill (ovalado) -->
 <style name="Tecni.Search.Pill" parent="Widget.Material3.TextInputLayout.OutlinedBox">
-    <item name="boxBackgroundColor">@android:color/transparent</item>
+    <item name="boxBackgroundColor">@color/transparent</item>
     <item name="boxStrokeWidth">1dp</item>
     <item name="boxStrokeWidthFocused">1.5dp</item>
     <item name="boxCornerRadiusTopStart">28dp</item>
@@ -34,7 +34,7 @@
 
 <!-- Dropdown pill (ovalado + compacto) -->
 <style name="Tecni.Dropdown.Pill" parent="Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
-    <item name="boxBackgroundColor">@android:color/transparent</item>
+    <item name="boxBackgroundColor">@color/transparent</item>
     <item name="boxStrokeWidth">1dp</item>
     <item name="boxStrokeWidthFocused">1.5dp</item>
     <item name="boxCornerRadiusTopStart">22dp</item>
@@ -103,17 +103,12 @@
         <item name="startIconTint">?attr/colorOnSurfaceVariant</item>
         <item name="startIconCheckable">false</item>
         <item name="boxCollapsedPaddingTop">6dp</item>
-
         <item name="shapeAppearance">@style/ShapeAppearance.Material3.Corner.None</item>
-        <!-- TODO(Codex): Ajustar esquinas cuadradas segun feedback de tamaño de los dropdowns -->
-        <!-- TODO(Codex): Ajustar estilo para autocompletes con icono de búsqueda y evitar encogimiento -->
     </style>
 
     <style name="Tecni.TextInput.Outlined.Dense.Dropdown" parent="Tecni.TextInput.Outlined.Dropdown">
         <item name="android:paddingStart">12dp</item>
         <item name="android:paddingEnd">12dp</item>
-
-        <!-- TODO(Codex): Mantener espaciamiento consistente en dropdowns densos -->
     </style>
 
     <style name="Tecni.TextInput.Filled" parent="Widget.Material3.TextInputLayout.FilledBox">
@@ -198,7 +193,7 @@
         <item name="shapeAppearance">@style/ShapeAppearance.Material3.Corner.Full</item>
         <item name="iconPadding">0dp</item>
         <item name="iconSize">16dp</item>
-        <item name="iconTint">@android:color/white</item>
+        <item name="iconTint">@color/white</item>
     </style>
 
     <style name="Tecni.Button.Outlined" parent="Widget.Material3.Button.OutlinedButton">
@@ -251,7 +246,7 @@
         <item name="shapeAppearance">@style/ShapeAppearance.Material3.Corner.Full</item>
         <item name="android:textColor">@android:color/white</item>
         <item name="backgroundTint">?attr/colorPrimary</item>
-        <item name="iconTint">@android:color/white</item>
+        <item name="iconTint">@color/white</item>
     </style>
 
     <!-- Tarjetas de sección para dialogs / bottom sheets -->
@@ -350,7 +345,7 @@
         <item name="android:textColor">?attr/colorOnSurface</item>
     </style>
 
-    <style name="Tecni.Glass.Fab" parent="Widget.Material3.ExtendedFloatingActionButton">
+    <style name="Tecni.Glass.Fab" parent="Widget.Material3.ExtendedFloatingActionButton.Primary">
         <item name="backgroundTint">@color/glass_surface</item>
         <item name="iconTint">@color/ice_blue</item>
         <item name="android:textColor">@color/ice_blue</item>
