@@ -280,7 +280,7 @@ class LoginActivity : AppCompatActivity() {
         .addOnSuccessListener { token ->
             if (token.isNullOrBlank()) return@addOnSuccessListener
 
-            FirebaseDatabase.getInstance()
+            FirebaseDatabase.getInstance(DATABASE_URL_USERS)
                 .getReference("usuarios")
                 .child(uid)
                 .child("fcmToken")
