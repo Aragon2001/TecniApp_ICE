@@ -4,12 +4,19 @@
     <!-- Overlays y componentes Material 3 reutilizables                     -->
     <!-- Mantener cada sección documentada para facilitar el mantenimiento. -->
     <!-- ================================================================== -->
- <style name="Widget.Material3.ExtendedFloatingActionButton" parent="Widget.MaterialComponents.ExtendedFloatingActionButton" />
     <!-- Toolbars y menús desplegados -->
-    <style name="ThemeOverlay.Tecni.Toolbar" parent="ThemeOverlay.Material3.ActionBar">
-        <item name="colorOnSurface">@color/on_light</item>
-        <item name="android:textColor">@color/on_light</item>
-        <item name="android:navigationBarColor">@android:color/transparent</item>
+    <style name="ThemeOverlay.Tecni.Toolbar" parent="ThemeOverlay.Material3.Toolbar">
+        <item name="colorSurface">?attr/colorSurface</item>
+        <item name="colorOnSurface">?attr/colorOnSurface</item>
+    </style>
+
+    <style name="ThemeOverlay.Tecni.BottomSheetDialog" parent="ThemeOverlay.Material3.BottomSheetDialog">
+        <item name="colorSurface">?attr/colorSurface</item>
+        <item name="bottomSheetStyle">@style/Widget.Tecni.BottomSheet</item>
+    </style>
+
+    <style name="Widget.Tecni.BottomSheet" parent="Widget.Material3.BottomSheet">
+        <item name="shapeAppearance">@style/ShapeAppearance.Tecni.Large</item>
     </style>
 
     <!-- Search pill (ovalado) -->
