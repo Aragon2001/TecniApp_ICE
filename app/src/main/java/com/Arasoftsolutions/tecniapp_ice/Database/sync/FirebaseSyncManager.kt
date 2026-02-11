@@ -63,6 +63,8 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
     }
 
     private val subregionNombreCache = mutableMapOf<String, String>()
+    private var inventarioRealtimeRef: DatabaseReference? = null
+    private var luminariasRealtimeRef: DatabaseReference? = null
 
     private fun database(url: String): DatabaseReference {
         return runCatching { FirebaseDatabase.getInstance(url).reference }
@@ -772,12 +774,17 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
                 onError(error)
             }
         }
-        dbInventario.addValueEventListener(listener)
+        scope.launch {
+            val target = selectInventarioRealtimeRef()
+            inventarioRealtimeRef = target
+            target.addValueEventListener(listener)
+        }
         return listener
     }
 
     fun stopInventarioRealtime(listener: ValueEventListener) {
-        dbInventario.removeEventListener(listener)
+        (inventarioRealtimeRef ?: dbInventario).removeEventListener(listener)
+        inventarioRealtimeRef = null
     }
 
     fun startLuminariasRealtime(
@@ -798,12 +805,17 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
                 onError(error)
             }
         }
-        dbLuminarias.addValueEventListener(listener)
+        scope.launch {
+            val target = selectLuminariasRealtimeRef()
+            luminariasRealtimeRef = target
+            target.addValueEventListener(listener)
+        }
         return listener
     }
 
     fun stopLuminariasRealtime(listener: ValueEventListener) {
-        dbLuminarias.removeEventListener(listener)
+        (luminariasRealtimeRef ?: dbLuminarias).removeEventListener(listener)
+        luminariasRealtimeRef = null
     }
 
     suspend fun eliminarLocalizacion(id: Int) {
@@ -901,6 +913,31 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
             }
         }
         return result
+    }
+
+
+    private suspend fun selectInventarioRealtimeRef(): DatabaseReference {
+        val lower = dbInventario.child("inventario")
+        val upper = dbInventario.child("Inventario")
+        val lowerExists = runCatching { lower.get().await().exists() }.getOrDefault(false)
+        val upperExists = runCatching { upper.get().await().exists() }.getOrDefault(false)
+        return when {
+            lowerExists -> lower
+            upperExists -> upper
+            else -> lower
+        }
+    }
+
+    private suspend fun selectLuminariasRealtimeRef(): DatabaseReference {
+        val lower = dbLuminarias.child("luminarias")
+        val upper = dbLuminarias.child("Luminarias")
+        val lowerExists = runCatching { lower.get().await().exists() }.getOrDefault(false)
+        val upperExists = runCatching { upper.get().await().exists() }.getOrDefault(false)
+        return when {
+            lowerExists -> lower
+            upperExists -> upper
+            else -> lower
+        }
     }
 
     private suspend fun localizacionesRoot(): DatabaseReference {
