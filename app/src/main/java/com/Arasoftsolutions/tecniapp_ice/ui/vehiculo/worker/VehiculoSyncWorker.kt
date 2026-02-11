@@ -13,6 +13,7 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
+import com.Arasoftsolutions.tecniapp_ice.Database.sync.AppSyncCoordinator
 import com.Arasoftsolutions.tecniapp_ice.Database.sync.RtdbInstances
 import com.Arasoftsolutions.tecniapp_ice.Database.utils.SyncStatus
 import com.google.firebase.auth.FirebaseAuth
@@ -39,7 +40,8 @@ class VehiculoSyncWorker(
 
         val database = RtdbInstances.datosGenerales().reference.child("vehiculos")
         return try {
-            mantenimientoPendientes.forEach { registro ->
+            AppSyncCoordinator.runExclusive {
+                mantenimientoPendientes.forEach { registro ->
                 val payload = mapOf(
                     "vehiculoId" to registro.vehiculoId,
                     "tipoMantenimiento" to registro.tipoMantenimiento,
@@ -74,8 +76,9 @@ class VehiculoSyncWorker(
                     .setValue(payload)
                     .await()
             }
-            repository.actualizarMantenimientoSyncStatus(mantenimientoPendientes.map { it.id }, SyncStatus.SYNCED)
-            repository.actualizarRegistroDiarioSyncStatus(registrosPendientes.map { it.id }, SyncStatus.SYNCED)
+                repository.actualizarMantenimientoSyncStatus(mantenimientoPendientes.map { it.id }, SyncStatus.SYNCED)
+                repository.actualizarRegistroDiarioSyncStatus(registrosPendientes.map { it.id }, SyncStatus.SYNCED)
+            }
             Result.success()
         } catch (error: Exception) {
             Result.retry()
