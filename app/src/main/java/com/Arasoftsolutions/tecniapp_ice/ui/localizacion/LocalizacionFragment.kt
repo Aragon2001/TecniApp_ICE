@@ -21,6 +21,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.AdapterView
+import android.widget.FrameLayout
 import android.widget.ArrayAdapter
 import android.widget.TextView
 import android.widget.Toast
@@ -45,6 +46,7 @@ import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.MapView
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.StreetViewPanorama
+import com.google.android.gms.maps.StreetViewPanoramaView
 import com.google.android.gms.maps.model.StreetViewSource
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
@@ -84,10 +86,19 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private val CLAVE_MAPA_VISTA_BUNDLE = "ClaveMapaVistaBundle"
     private val CLAVE_STREET_VIEW_BUNDLE = "ClaveStreetViewBundle"
+    private var streetViewPanoramaView: StreetViewPanoramaView? = null
+    private var streetViewContainer: FrameLayout? = null
     private var streetViewPanorama: StreetViewPanorama? = null
     private var streetViewHasPanorama = false
     private var streetViewMode = StreetViewMode.HIDDEN
     private var streetViewBehavior: BottomSheetBehavior<*>? = null
+    private var pendingStreetViewLatLng: LatLng? = null
+    private var streetViewSavedState: Bundle? = null
+    private var streetViewCreated = false
+    private var streetViewStarted = false
+    private var streetViewResumed = false
+    private var locationUpdatesActive = false
+    private var infoWindowAdapterConfigured = false
 
     private enum class StreetViewMode {
         HIDDEN,
@@ -193,8 +204,8 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
         configurarObservers()
         configurarStreetViewSheet()
         configurarControles()
+        streetViewSavedState = savedInstanceState?.getBundle(CLAVE_STREET_VIEW_BUNDLE)
         inicializarMapaVista(savedInstanceState)
-        inicializarStreetView(savedInstanceState)
 
         // Datos iniciales
         viewModel.prepararDatos()
@@ -252,7 +263,8 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
             val numeroPoste = loc.delPoste.toString()
 
             actualizarUbicacionMapa(loc.latitud, loc.longitud, codigoPueblo, codigoCalle, numeroPoste)
-            actualizarStreetView(loc.latitud, loc.longitud)
+            pendingStreetViewLatLng = LatLng(loc.latitud, loc.longitud)
+            actualizarStreetViewSiEstaActivo()
 
             binding.locationTitle.text = loc.direccion.ifBlank { getString(R.string.localizacion_overlay_title) }
             binding.locationCoordinates.text = getString(
@@ -331,9 +343,11 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
                     else -> streetViewMode
                 }
                 if (newState == BottomSheetBehavior.STATE_HIDDEN) {
-                    ensureStreetViewActive(false)
+                    releaseStreetViewResources()
                     viewModel.actualizarStreetViewEstado(LocalizacionViewModel.StreetViewState.CLOSED)
-                } else {
+                } else if (newState == BottomSheetBehavior.STATE_COLLAPSED || newState == BottomSheetBehavior.STATE_EXPANDED) {
+                    ensureStreetViewInflatedAndInitialized()
+                    actualizarStreetViewSiEstaActivo()
                     actualizarStreetViewEstadoDesdeSheet()
                 }
                 actualizarStreetViewUi()
@@ -346,7 +360,7 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
     }
 
     private fun abrirStreetView() {
-        ensureStreetViewActive(true)
+        ensureStreetViewInflatedAndInitialized()
         streetViewMode = StreetViewMode.EXPANDED
         streetViewBehavior?.state = BottomSheetBehavior.STATE_EXPANDED
         binding.streetViewSheet.alpha = 0f
@@ -356,6 +370,7 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
     }
 
     private fun expandirStreetView() {
+        ensureStreetViewInflatedAndInitialized()
         streetViewMode = StreetViewMode.EXPANDED
         streetViewBehavior?.state = BottomSheetBehavior.STATE_EXPANDED
         actualizarStreetViewEstadoDesdeSheet()
@@ -363,6 +378,7 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
     }
 
     private fun minimizarStreetView() {
+        ensureStreetViewInflatedAndInitialized()
         streetViewMode = StreetViewMode.COLLAPSED
         streetViewBehavior?.state = BottomSheetBehavior.STATE_COLLAPSED
         actualizarStreetViewEstadoDesdeSheet()
@@ -372,19 +388,74 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
     private fun cerrarStreetView() {
         streetViewMode = StreetViewMode.HIDDEN
         streetViewBehavior?.state = BottomSheetBehavior.STATE_HIDDEN
-        ensureStreetViewActive(false)
+        releaseStreetViewResources()
         viewModel.actualizarStreetViewEstado(LocalizacionViewModel.StreetViewState.CLOSED)
         actualizarStreetViewUi()
     }
 
-    private fun ensureStreetViewActive(active: Boolean) {
-        if (active) {
-            binding.streetViewPanorama.onStart()
-            binding.streetViewPanorama.onResume()
-        } else {
-            binding.streetViewPanorama.onPause()
-            binding.streetViewPanorama.onStop()
+    private fun ensureStreetViewInflatedAndInitialized() {
+        if (streetViewPanoramaView == null) {
+            // OOM prevention: StreetView solo se infla cuando el usuario realmente abre el sheet.
+            val inflated = binding.streetViewStub.inflate()
+            streetViewContainer = inflated as? FrameLayout
+            streetViewPanoramaView = streetViewContainer?.findViewById(R.id.streetViewPanorama)
         }
+
+        val panoramaView = streetViewPanoramaView ?: return
+        if (!streetViewCreated) {
+            panoramaView.onCreate(streetViewSavedState)
+            streetViewSavedState = null
+            streetViewCreated = true
+            panoramaView.getStreetViewPanoramaAsync { panorama ->
+                streetViewPanorama = panorama.apply {
+                    setUserNavigationEnabled(true)
+                    setPanningGesturesEnabled(true)
+                    setZoomGesturesEnabled(true)
+                    setStreetNamesEnabled(true)
+                    setOnStreetViewPanoramaChangeListener { location ->
+                        streetViewHasPanorama = location != null
+                        actualizarStreetViewEstadoDesdeSheet()
+                        actualizarStreetViewUi()
+                    }
+                }
+                actualizarStreetViewSiEstaActivo()
+            }
+        }
+
+        panoramaView.isVisible = true
+        if (!streetViewStarted) {
+            panoramaView.onStart()
+            streetViewStarted = true
+        }
+        if (lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED) && !streetViewResumed) {
+            panoramaView.onResume()
+            streetViewResumed = true
+        }
+    }
+
+    private fun releaseStreetViewResources() {
+        val panorama = streetViewPanorama
+        panorama?.setOnStreetViewPanoramaChangeListener(null)
+        streetViewPanorama = null
+        streetViewHasPanorama = false
+
+        val panoramaView = streetViewPanoramaView ?: return
+        if (streetViewResumed) {
+            panoramaView.onPause()
+            streetViewResumed = false
+        }
+        if (streetViewStarted) {
+            panoramaView.onStop()
+            streetViewStarted = false
+        }
+        if (streetViewCreated) {
+            panoramaView.onDestroy()
+            streetViewCreated = false
+        }
+
+        // OOM prevention: destruimos el renderer de Street View al cerrar el sheet,
+        // evitando que MapView + StreetView mantengan buffers pesados en paralelo.
+        streetViewPanoramaView?.isVisible = false
     }
 
     private fun actualizarStreetViewEstadoDesdeSheet() {
@@ -411,7 +482,7 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
 
         binding.streetViewLoadingContainer.isVisible = loading
         binding.streetViewEmptyState.isVisible = unavailable
-        binding.streetViewPanorama.isVisible = active && !unavailable
+        streetViewPanoramaView?.isVisible = active && !unavailable
         binding.streetViewActionExpand.isVisible = estado == LocalizacionViewModel.StreetViewState.MINIMIZED
         binding.streetViewActionMinimize.isVisible = estado == LocalizacionViewModel.StreetViewState.FULLSCREEN
     }
@@ -427,6 +498,7 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
         binding.actionCenter.isEnabled = false
         binding.actionNavigate.isEnabled = false
         streetViewHasPanorama = false
+        pendingStreetViewLatLng = null
         cerrarStreetView()
     }
 
@@ -440,26 +512,6 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
         mapaVista.getMapAsync(this)
     }
 
-    private fun inicializarStreetView(savedInstanceState: Bundle?) {
-        val streetBundle = savedInstanceState?.getBundle(CLAVE_STREET_VIEW_BUNDLE)
-        binding.streetViewPanorama.onCreate(streetBundle)
-        binding.streetViewPanorama.getStreetViewPanoramaAsync { panorama ->
-            streetViewPanorama = panorama.apply {
-                setUserNavigationEnabled(true)
-                setPanningGesturesEnabled(true)
-                setZoomGesturesEnabled(true)
-                setStreetNamesEnabled(true)
-                setOnStreetViewPanoramaChangeListener { location ->
-                    streetViewHasPanorama = true
-                    actualizarStreetViewEstadoDesdeSheet()
-                    actualizarStreetViewUi()
-                }
-            }
-        }
-        streetViewHasPanorama = false
-        viewModel.actualizarStreetViewEstado(LocalizacionViewModel.StreetViewState.CLOSED)
-        actualizarStreetViewUi()
-    }
 
     override fun onMapReady(map: GoogleMap) {
         mapaGoogle = map
@@ -470,17 +522,18 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
             isMyLocationButtonEnabled = true
             isMapToolbarEnabled = false
             isZoomGesturesEnabled = true
-            isTiltGesturesEnabled = true
+            isTiltGesturesEnabled = false
             isCompassEnabled = true
             isRotateGesturesEnabled = true
             isScrollGesturesEnabledDuringRotateOrZoom = true
             isScrollGesturesEnabled = true
-            isIndoorLevelPickerEnabled = true
+            isIndoorLevelPickerEnabled = false
         }
         mapaGoogle?.apply {
-            isTrafficEnabled = true
-            isBuildingsEnabled = true
-            isIndoorEnabled = true
+            // Mapa más liviano: desactivamos capas pesadas para reducir uso de memoria/GPU.
+            isTrafficEnabled = false
+            isBuildingsEnabled = false
+            isIndoorEnabled = false
             setMinZoomPreference(6f)
             setMaxZoomPreference(21f)
             setOnMyLocationButtonClickListener {
@@ -492,6 +545,7 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
         }
 
         configurarTipoDeMapa()
+        configurarInfoWindowPersonalizadoSiHaceFalta()
         setupCameraListeners()        // mueve/idle centralizado
         verificarPermisosUbicacion()  // si ya hay permiso, activa myLocation + updates
         centrarMapaEnCostaRica()
@@ -586,7 +640,10 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
         if (fine != PackageManager.PERMISSION_GRANTED && coarse != PackageManager.PERMISSION_GRANTED) return
 
         mapaGoogle?.isMyLocationEnabled = true
-        fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper())
+        if (!locationUpdatesActive) {
+            fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper())
+            locationUpdatesActive = true
+        }
         if (!followLocationEnabled) {
             hasCenteredOnUser = false
         }
@@ -594,7 +651,10 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
     }
 
     private fun stopLocationUpdates() {
-        fusedLocationClient.removeLocationUpdates(locationCallback)
+        if (locationUpdatesActive) {
+            fusedLocationClient.removeLocationUpdates(locationCallback)
+            locationUpdatesActive = false
+        }
         singleLocationToken?.cancel()
         singleLocationToken = null
     }
@@ -652,7 +712,6 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
         map.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition), 600, null)
         lastCompassBearing = normalizeBearing(cameraPosition.bearing)
         lastBearingUpdateAt = SystemClock.elapsedRealtime()
-        configurarInfoWindowPersonalizado()
     }
 
     private fun normalizeBearing(raw: Float): Float {
@@ -673,7 +732,8 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
         return normalizeBearing(adjusted)
     }
 
-    private fun configurarInfoWindowPersonalizado() {
+    private fun configurarInfoWindowPersonalizadoSiHaceFalta() {
+        if (infoWindowAdapterConfigured) return
         mapaGoogle?.setInfoWindowAdapter(object : GoogleMap.InfoWindowAdapter {
             override fun getInfoWindow(marker: Marker): View? = null
             override fun getInfoContents(marker: Marker): View {
@@ -683,6 +743,7 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
                 return v
             }
         })
+        infoWindowAdapterConfigured = true
     }
 
     private fun mostrarOpcionesDeNavegacion() {
@@ -785,22 +846,23 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
     override fun onStart() {
         super.onStart()
         binding.mapView.onStart()
-        if (streetViewMode != StreetViewMode.HIDDEN) {
-            binding.streetViewPanorama.onStart()
+        if (streetViewCreated && !streetViewStarted) {
+            streetViewPanoramaView?.onStart()
+            streetViewStarted = true
         }
     }
 
     override fun onResume() {
         super.onResume()
         binding.mapView.onResume()
-        if (streetViewMode != StreetViewMode.HIDDEN) {
-            binding.streetViewPanorama.onResume()
+        if (streetViewCreated && streetViewMode != StreetViewMode.HIDDEN && !streetViewResumed) {
+            streetViewPanoramaView?.onResume()
+            streetViewResumed = true
         }
         rotationVectorSensor?.let { sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_UI) }
-        // si ya teníamos permiso, asegúrate de que los updates sigan activos
         val fine = ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION)
         val coarse = ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_COARSE_LOCATION)
-        if (fine == PackageManager.PERMISSION_GRANTED || coarse == PackageManager.PERMISSION_GRANTED) {
+        if ((fine == PackageManager.PERMISSION_GRANTED || coarse == PackageManager.PERMISSION_GRANTED) && !locationUpdatesActive) {
             enableMyLocationAndStartUpdates()
         }
     }
@@ -808,7 +870,10 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
     override fun onPause() {
         super.onPause()
         binding.mapView.onPause()
-        binding.streetViewPanorama.onPause()
+        if (streetViewResumed) {
+            streetViewPanoramaView?.onPause()
+            streetViewResumed = false
+        }
         stopLocationUpdates()
         sensorManager.unregisterListener(this)
     }
@@ -818,7 +883,10 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
         stopLocationUpdates()
         sensorManager.unregisterListener(this)
         binding.mapView.onStop()
-        binding.streetViewPanorama.onStop()
+        if (streetViewStarted) {
+            streetViewPanoramaView?.onStop()
+            streetViewStarted = false
+        }
     }
 
     override fun onDestroyView() {
@@ -831,8 +899,9 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
         mapaGoogle?.setOnMyLocationButtonClickListener(null)
         mapaGoogle?.setOnMapClickListener(null)
         mapaGoogle?.setInfoWindowAdapter(null)
+        infoWindowAdapterConfigured = false
         binding.mapView.onDestroy()
-        binding.streetViewPanorama.onDestroy()
+        releaseStreetViewResources()
         handler.removeCallbacksAndMessages(null)
         singleLocationToken?.cancel()
         singleLocationToken = null
@@ -845,7 +914,7 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
     override fun onLowMemory() {
         super.onLowMemory()
         binding.mapView.onLowMemory()
-        binding.streetViewPanorama.onLowMemory()
+        streetViewPanoramaView?.onLowMemory()
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -853,16 +922,20 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
         val mapaBundle = outState.getBundle(CLAVE_MAPA_VISTA_BUNDLE) ?: Bundle()
         binding.mapView.onSaveInstanceState(mapaBundle)
         outState.putBundle(CLAVE_MAPA_VISTA_BUNDLE, mapaBundle)
-        val streetBundle = outState.getBundle(CLAVE_STREET_VIEW_BUNDLE) ?: Bundle()
-        binding.streetViewPanorama.onSaveInstanceState(streetBundle)
-        outState.putBundle(CLAVE_STREET_VIEW_BUNDLE, streetBundle)
+        if (streetViewCreated) {
+            val streetBundle = outState.getBundle(CLAVE_STREET_VIEW_BUNDLE) ?: Bundle()
+            streetViewPanoramaView?.onSaveInstanceState(streetBundle)
+            outState.putBundle(CLAVE_STREET_VIEW_BUNDLE, streetBundle)
+        }
     }
 
-    private fun actualizarStreetView(latitud: Double, longitud: Double) {
+    private fun actualizarStreetViewSiEstaActivo() {
+        if (streetViewMode == StreetViewMode.HIDDEN || !streetViewCreated) return
         val panorama = streetViewPanorama ?: return
+        val target = pendingStreetViewLatLng ?: return
         viewModel.actualizarStreetViewEstado(LocalizacionViewModel.StreetViewState.LOADING)
         actualizarStreetViewUi()
-        panorama.setPosition(LatLng(latitud, longitud), 50, StreetViewSource.OUTDOOR)
+        panorama.setPosition(target, 50, StreetViewSource.OUTDOOR)
     }
 
     private fun actualizarStreetViewUi() {
