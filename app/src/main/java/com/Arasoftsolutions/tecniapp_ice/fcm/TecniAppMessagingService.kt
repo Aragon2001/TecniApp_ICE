@@ -115,7 +115,7 @@ class TecniAppMessagingService : FirebaseMessagingService() {
     }
 
     private fun saveTokenToRtdb(uid: String, token: String) {
-        FirebaseDatabase.getInstance()
+        FirebaseDatabase.getInstance("https://tecniapp-ice-user.firebaseio.com")
             .getReference("usuarios")
             .child(uid)
             .child("fcmToken")
