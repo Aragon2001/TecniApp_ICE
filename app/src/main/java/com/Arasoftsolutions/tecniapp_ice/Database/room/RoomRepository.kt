@@ -4,6 +4,7 @@ import android.content.Context
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.*
 import com.Arasoftsolutions.tecniapp_ice.Database.sync.FirebaseSyncManager
 import com.Arasoftsolutions.tecniapp_ice.Database.sync.SubregionNormalizer
+import com.Arasoftsolutions.tecniapp_ice.Database.sync.vehicle.VehicleRepository
 import com.Arasoftsolutions.tecniapp_ice.Database.utils.VehiculoPlacaUtils
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.ValueEventListener
@@ -27,6 +28,7 @@ class   RoomRepository(context: Context) {
 
     private val db = AppDatabase.getInstance(context.applicationContext)
     private val firebase = FirebaseSyncManager(context.applicationContext)
+    private val vehicleRepository = VehicleRepository()
     private val vehiculoDao = db.vehiculoDao()
     private val registroVehiculoDao = db.registroVehiculoDao()
     private val inventarioDao = db.inventarioDao()
@@ -186,7 +188,17 @@ class   RoomRepository(context: Context) {
             orimetroActual = orimetroActual ?: vehiculo.orimetroActual,
             registrosDiariosJson = registrosJson
         )
-        firebase.guardarVehiculo(actualizado)
+        firebase.guardarVehiculoMeta(actualizado)
+        val valorOdometro = kilometrajeActual ?: orimetroActual
+        if (valorOdometro != null) {
+            vehicleRepository.registerKmEvent(
+                vehiculoId = vehiculo.id.toString(),
+                km = valorOdometro,
+                tipo = "registro_diario",
+                refPath = "vehiculos/${vehiculo.id}/meta/registroFecha/$fecha",
+                nota = "Registro diario actualizado desde app"
+            )
+        }
         vehiculoDao.insertAll(listOf(actualizado))
     }
 
@@ -298,7 +310,7 @@ class   RoomRepository(context: Context) {
     }
 
     suspend fun guardarVehiculo(vehiculo: VehiculosEntity) = withContext(Dispatchers.IO) {
-        firebase.guardarVehiculo(vehiculo)
+        firebase.guardarVehiculoMeta(vehiculo)
         db.vehiculoDao().insertAll(listOf(vehiculo))
     }
 
@@ -309,10 +321,12 @@ class   RoomRepository(context: Context) {
     ) = withContext(Dispatchers.IO) {
         val placaLong = VehiculoPlacaUtils.parsePlacaLong(placa) ?: return@withContext
         vehiculoDao.actualizarKilometrajeActual(placaLong, kilometrajeFinal)
-        firebase.guardarKilometrajeVehicular(
-            placa = placa.trim(),
-            kilometrajeFinal = kilometrajeFinal,
-            registradoEn = timestamp
+        val vehiculo = vehiculoDao.buscarPorPlaca(placaLong)
+        vehicleRepository.registerKmEvent(
+            vehiculoId = (vehiculo?.id ?: placaLong.toInt()).toString(),
+            km = kilometrajeFinal,
+            tipo = "registro_diario",
+            refPath = "vehiculos/${vehiculo?.id ?: placaLong}/historial/lecturasKm/$timestamp"
         )
     }
 
@@ -354,17 +368,25 @@ class   RoomRepository(context: Context) {
                 )
             }
         }
-        firebase.guardarMantenimientoVehicular(
-            placa = placa.trim(),
-            vehiculoId = vehiculoId,
-            tipo = tipo,
-            fecha = fecha,
-            valorAlMomento = valorAlMomento,
-            observaciones = observaciones,
-            proximoKm = proximoKm,
-            proximoHoras = proximoHoras,
-            proximoFecha = proximoFecha,
-            registradoEn = registradoEn
+        val targetVehiculoId = vehiculoId
+            ?: VehiculoPlacaUtils.parsePlacaLong(placa)?.let { vehiculoDao.buscarPorPlaca(it)?.id }
+            ?: return@withContext
+        vehicleRepository.registerMaintenance(
+            vehiculoId = targetVehiculoId.toString(),
+            mantenimientoId = registradoEn.toString(),
+            payload = mapOf(
+                "placa" to placa.trim(),
+                "vehiculoId" to targetVehiculoId,
+                "tipo" to tipo,
+                "fecha" to fecha,
+                "valorAlMomento" to valorAlMomento,
+                "observaciones" to observaciones,
+                "proximoKm" to proximoKm,
+                "proximoHoras" to proximoHoras,
+                "proximoFecha" to proximoFecha,
+                "registradoEn" to registradoEn
+            ),
+            km = valorAlMomento
         )
     }
 
