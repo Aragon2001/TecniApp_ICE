@@ -8,6 +8,7 @@ import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
 import com.Arasoftsolutions.tecniapp_ice.Database.utils.VehiculoPlacaUtils
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.materialswitch.MaterialSwitch
 import com.google.android.material.textfield.TextInputLayout
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
@@ -35,6 +36,23 @@ fun Fragment.showRegistroVehiculoPendienteDialog(
     val tilCaso = dialogView.findViewById<TextInputLayout>(R.id.tilRegistroCaso)
     val tilLugar = dialogView.findViewById<TextInputLayout>(R.id.tilRegistroLugar)
     val tilObservaciones = dialogView.findViewById<TextInputLayout>(R.id.tilRegistroObservaciones)
+    val switchCerrar = dialogView.findViewById<MaterialSwitch>(R.id.switchRegistroCerrar)
+    val layoutCierre = dialogView.findViewById<android.view.View>(R.id.layoutRegistroCierre)
+    val tvModoInfo = dialogView.findViewById<android.widget.TextView>(R.id.tvRegistroModoInfo)
+
+    fun syncModoCierreUI(cerrar: Boolean) {
+        layoutCierre.visibility = if (cerrar) android.view.View.VISIBLE else android.view.View.GONE
+        tvModoInfo.text = if (cerrar) {
+            getString(R.string.registro_pendiente_modo_cierre_info)
+        } else {
+            getString(R.string.registro_pendiente_modo_inicial_info)
+        }
+    }
+
+    syncModoCierreUI(false)
+    switchCerrar.setOnCheckedChangeListener { _, checked ->
+        syncModoCierreUI(checked)
+    }
 
     dialogView.findViewById<MaterialButton>(R.id.btnRegistroDialogRegistrar).setOnClickListener {
         val fechaTexto = tilFecha.editText?.text?.toString()?.trim().orEmpty()
@@ -45,13 +63,18 @@ fun Fragment.showRegistroVehiculoPendienteDialog(
             return@setOnClickListener
         }
         tilValor.error = null
+        val cerrarRegistro = switchCerrar.isChecked
         val kmFinalTexto = tilKmFinal.editText?.text?.toString()?.trim().orEmpty()
         val kmFinal = kmFinalTexto.takeIf { it.isNotBlank() }?.replace(",", ".")?.toDoubleOrNull()
-        if (kmFinalTexto.isNotBlank() && (kmFinal == null || kmFinal < valor)) {
-            tilKmFinal.error = getString(R.string.averia_error_km_final_menor)
-            return@setOnClickListener
+        if (cerrarRegistro) {
+            if (kmFinal == null || kmFinal < valor) {
+                tilKmFinal.error = getString(R.string.averia_error_km_final_menor)
+                return@setOnClickListener
+            }
+            tilKmFinal.error = null
+        } else {
+            tilKmFinal.error = null
         }
-        tilKmFinal.error = null
 
         val fecha = if (fechaTexto.isBlank()) {
             LocalDate.now().format(DateTimeFormatter.ISO_DATE)
@@ -73,6 +96,20 @@ fun Fragment.showRegistroVehiculoPendienteDialog(
         val lugar = tilLugar.editText?.text?.toString()?.trim()?.ifBlank { null }
         val observaciones = tilObservaciones.editText?.text?.toString()?.trim()?.ifBlank { null }
 
+        if (cerrarRegistro) {
+            val camposCierreInvalidos =
+                horasLaboradas == null || actividad.isNullOrBlank() || lugar.isNullOrBlank()
+            if (camposCierreInvalidos) {
+                tilHoras.error = if (horasLaboradas == null) getString(R.string.mi_vehiculo_horas_invalidas) else null
+                tilActividad.error = if (actividad.isNullOrBlank()) getString(R.string.registro_pendiente_cierre_campos_requeridos) else null
+                tilLugar.error = if (lugar.isNullOrBlank()) getString(R.string.registro_pendiente_cierre_campos_requeridos) else null
+                return@setOnClickListener
+            }
+        } else {
+            tilActividad.error = null
+            tilLugar.error = null
+        }
+
         viewLifecycleOwner.lifecycleScope.launch {
             val repo = RoomRepository.getInstance(requireContext())
             val uid = FirebaseAuth.getInstance().currentUser?.uid
@@ -85,8 +122,8 @@ fun Fragment.showRegistroVehiculoPendienteDialog(
                 val registro = RegistroDiarioVehiculo(
                     fecha = fecha,
                     valorInicial = valor,
-                    valorFinal = kmFinal,
-                    cerrado = kmFinal != null,
+                    valorFinal = if (cerrarRegistro) kmFinal else null,
+                    cerrado = cerrarRegistro && kmFinal != null,
                     registradoPor = usuario?.nombre,
                     combustible = combustible,
                     observaciones = observaciones,
@@ -100,15 +137,15 @@ fun Fragment.showRegistroVehiculoPendienteDialog(
                     .filterNot { it.fecha == fecha }
                 val nuevos = listOf(registro) + registrosActuales
                 val registroJson = serializeRegistrosDiarios(nuevos)
-                val valorActualizado = kmFinal ?: valor
+                val valorActualizado = if (cerrarRegistro) (kmFinal ?: valor) else valor
                 val kilometrajeActual = if (tipo.usaKilometraje) valorActualizado else vehiculo.kilometrajeActual
                 val orimetroActual = if (tipo.usaOrimetro) valorActualizado else vehiculo.orimetroActual
                 repo.actualizarRegistroDiarioVehiculo(
                     vehiculoId = vehiculo.id,
                     fecha = fecha,
                     inicial = valor,
-                    final = kmFinal,
-                    cerrado = kmFinal != null,
+                    final = if (cerrarRegistro) kmFinal else null,
+                    cerrado = cerrarRegistro && kmFinal != null,
                     kilometrajeActual = kilometrajeActual,
                     orimetroActual = orimetroActual,
                     registrosJson = registroJson

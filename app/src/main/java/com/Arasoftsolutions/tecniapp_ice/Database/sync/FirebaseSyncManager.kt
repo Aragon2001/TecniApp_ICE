@@ -7,6 +7,7 @@ import com.Arasoftsolutions.tecniapp_ice.Database.utils.VehiculoPlacaUtils
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ServerValue
 import com.google.firebase.database.ValueEventListener
 import kotlinx.coroutines.tasks.await
 import com.google.firebase.database.DataSnapshot
@@ -31,7 +32,7 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
     }
 
     private val dbDatosGenerales: DatabaseReference by lazy {
-        database("https://tecniapp-ice-datosgenerales.firebaseio.com")
+        RtdbInstances.datosGenerales().reference
     }
 
     private val dbLocal: DatabaseReference by lazy {
@@ -226,7 +227,8 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
             val entityId = idValue?.toIntOrNull()
                 ?: idValue?.hashCode()
                 ?: "${agencia.trim()}_${placa}".hashCode()
-            val kilometrajeActual = child.doubleValueAny("kilometrajeActual", "kilometraje")
+            val kilometrajeActual = child.child("odometro").doubleValueAny("km_actual")
+                ?: child.doubleValueAny("kilometrajeActual", "kilometraje")
             val orimetroActual = child.doubleValueAny("orimetroActual", "orimetro")
             val registroFecha = child.stringValueAny("registroFecha", "registro_fecha")
             val registroInicial = child.doubleValueAny("registroInicial", "registro_inicial")
@@ -536,7 +538,7 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
         referencia.child(numero).removeValue().await()
     }
 
-    suspend fun guardarVehiculo(vehiculo: VehiculosEntity) {
+    suspend fun guardarVehiculoMeta(vehiculo: VehiculosEntity) {
         val root = dbDatosGenerales.child("vehiculos")
         val idKey = vehiculo.id.takeIf { it != 0 }?.toString()
         val placaKey = vehiculo.placa.takeIf { it != 0L }?.toString()
@@ -544,20 +546,20 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
             ?: throw IllegalArgumentException("Vehículo inválido, requiere id o placa")
 
         val payload = mapOf(
-            "id" to vehiculo.id,
-            "agencia" to vehiculo.agencia,
-            "placa" to vehiculo.placa,
-            "tipo" to vehiculo.tipo,
-            "subregion" to vehiculo.subregion,
-            "kilometrajeActual" to vehiculo.kilometrajeActual,
-            "orimetroActual" to vehiculo.orimetroActual,
-            "registroFecha" to vehiculo.registroFecha,
-            "registroInicial" to vehiculo.registroInicial,
-            "registroFinal" to vehiculo.registroFinal,
-            "registroCerrado" to vehiculo.registroCerrado,
-            "registrosDiariosJson" to vehiculo.registrosDiariosJson,
-            "mantenimientoUltimo" to vehiculo.mantenimientoUltimo,
-            "mantenimientoProximo" to vehiculo.mantenimientoProximo
+            "meta/id" to vehiculo.id,
+            "meta/agencia" to vehiculo.agencia,
+            "meta/placa" to vehiculo.placa,
+            "meta/tipo" to vehiculo.tipo,
+            "meta/subregion" to vehiculo.subregion,
+            "meta/orimetroActual" to vehiculo.orimetroActual,
+            "meta/registroFecha" to vehiculo.registroFecha,
+            "meta/registroInicial" to vehiculo.registroInicial,
+            "meta/registroFinal" to vehiculo.registroFinal,
+            "meta/registroCerrado" to vehiculo.registroCerrado,
+            "meta/registrosDiariosJson" to vehiculo.registrosDiariosJson,
+            "meta/mantenimientoUltimo" to vehiculo.mantenimientoUltimo,
+            "meta/mantenimientoProximo" to vehiculo.mantenimientoProximo,
+            "meta/updatedAt" to ServerValue.TIMESTAMP
         )
 
         root.child(primaryKey).updateChildren(payload).await()
