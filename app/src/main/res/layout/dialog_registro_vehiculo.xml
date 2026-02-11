@@ -11,7 +11,7 @@
         style="@style/Tecni.DialogCard"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:animation="@anim/dialog_scale_fade_in"
+
         android:background="@drawable/bg_dialog_glass"
         app:cardBackgroundColor="@color/surface_light">
 
