@@ -632,6 +632,11 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
                     dialog.update(done, total, getString(R.string.settings_clear_cache_step_clear), downloadedBytes)
                 }
                 withContext(Dispatchers.IO) {
+                    val workManager = WorkManager.getInstance(requireContext())
+                    workManager.cancelUniqueWork(AveriasSyncWorker.UNIQUE_MANUAL_WORK)
+                    workManager.cancelUniqueWork(AveriasSyncWorker.UNIQUE_PERIODIC_WORK)
+                    workManager.cancelUniqueWork("vehiculo_sync_now")
+                    roomRepository.stopRealtimeSync()
                     roomRepository.limpiarBaseLocal()
                 }
                 if (isAdded) {
@@ -675,6 +680,9 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
                 SyncStatusNotifications.dismissProgress(requireContext())
                 Toast.makeText(requireContext(), R.string.settings_clear_cache_failure, Toast.LENGTH_LONG).show()
             } finally {
+                withContext(Dispatchers.IO) {
+                    roomRepository.startRealtimeSync()
+                }
                 dismissSyncDialog()
                 setCacheClearInProgress(false)
             }
