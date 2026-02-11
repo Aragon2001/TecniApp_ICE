@@ -216,13 +216,17 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
         val snap = dbDatosGenerales.child(nodeName).get().await()
         val filtroSubregion = subregionId?.trim()?.takeIf { it.isNotEmpty() }
         return snap.children.mapNotNull { child ->
-            val idValue = child.stringChild("id") ?: child.key
-            val agencia = child.stringChild("agencia") ?: return@mapNotNull null
-            val tipo = child.stringChild("tipo") ?: ""
-            val subregion = child.stringChild("subregion")
-                ?: child.stringChild("subregion_id")
-                ?: child.stringChild("subregionId")
-            val placaRaw = child.child("placa").value
+            val meta = child.child("meta")
+            val hasMeta = meta.exists()
+            val source = if (hasMeta) meta else child
+
+            val idValue = source.stringChild("id") ?: child.key
+            val agencia = source.stringChild("agencia") ?: return@mapNotNull null
+            val tipo = source.stringChild("tipo") ?: ""
+            val subregion = source.stringChild("subregion")
+                ?: source.stringChild("subregion_id")
+                ?: source.stringChild("subregionId")
+            val placaRaw = source.child("placa").value
             val placa = when (placaRaw) {
                 is Long -> placaRaw
                 is Int -> placaRaw.toLong()
@@ -234,15 +238,15 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
                 ?: idValue?.hashCode()
                 ?: "${agencia.trim()}_${placa}".hashCode()
             val kilometrajeActual = child.child("odometro").doubleValueAny("km_actual")
-                ?: child.doubleValueAny("kilometrajeActual", "kilometraje")
-            val orimetroActual = child.doubleValueAny("orimetroActual", "orimetro")
-            val registroFecha = child.stringValueAny("registroFecha", "registro_fecha")
-            val registroInicial = child.doubleValueAny("registroInicial", "registro_inicial")
-            val registroFinal = child.doubleValueAny("registroFinal", "registro_final")
-            val registroCerrado = child.booleanValueAny("registroCerrado", "registro_cerrado") ?: false
-            val registrosDiariosJson = child.stringValueAny("registrosDiariosJson", "registros_diarios_json")
-            val mantenimientoUltimo = child.stringValueAny("mantenimientoUltimo", "mantenimiento_ultimo")
-            val mantenimientoProximo = child.stringValueAny("mantenimientoProximo", "mantenimiento_proximo")
+                ?: source.doubleValueAny("kilometrajeActual", "kilometraje")
+            val orimetroActual = source.doubleValueAny("orimetroActual", "orimetro")
+            val registroFecha = source.stringValueAny("registroFecha", "registro_fecha")
+            val registroInicial = source.doubleValueAny("registroInicial", "registro_inicial")
+            val registroFinal = source.doubleValueAny("registroFinal", "registro_final")
+            val registroCerrado = source.booleanValueAny("registroCerrado", "registro_cerrado") ?: false
+            val registrosDiariosJson = source.stringValueAny("registrosDiariosJson", "registros_diarios_json")
+            val mantenimientoUltimo = source.stringValueAny("mantenimientoUltimo", "mantenimiento_ultimo")
+            val mantenimientoProximo = source.stringValueAny("mantenimientoProximo", "mantenimiento_proximo")
             VehiculosEntity(
                 id = entityId,
                 agencia = agencia.trim(),
@@ -548,7 +552,7 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
         val root = dbDatosGenerales.child("vehiculos")
         val idKey = vehiculo.id.takeIf { it != 0 }?.toString()
         val placaKey = vehiculo.placa.takeIf { it != 0L }?.toString()
-        val primaryKey = placaKey ?: idKey
+        val primaryKey = idKey ?: placaKey
             ?: throw IllegalArgumentException("Vehículo inválido, requiere id o placa")
 
         val payload = mapOf(
@@ -557,6 +561,7 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
             "meta/placa" to vehiculo.placa,
             "meta/tipo" to vehiculo.tipo,
             "meta/subregion" to vehiculo.subregion,
+            "meta/kilometrajeActual" to vehiculo.kilometrajeActual,
             "meta/orimetroActual" to vehiculo.orimetroActual,
             "meta/registroFecha" to vehiculo.registroFecha,
             "meta/registroInicial" to vehiculo.registroInicial,
