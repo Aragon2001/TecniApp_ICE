@@ -13,9 +13,9 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
+import com.Arasoftsolutions.tecniapp_ice.Database.sync.RtdbInstances
 import com.Arasoftsolutions.tecniapp_ice.Database.utils.SyncStatus
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.database.FirebaseDatabase
 import kotlinx.coroutines.tasks.await
 import java.util.concurrent.TimeUnit
 
@@ -30,14 +30,14 @@ class VehiculoSyncWorker(
     override suspend fun doWork(): Result {
         if (!isInternetAvailable()) return Result.retry()
 
-        val uid = auth.currentUser?.uid ?: return Result.success()
+        if (auth.currentUser?.uid == null) return Result.success()
         val mantenimientoPendientes = repository.obtenerMantenimientosPendientes(SyncStatus.PENDING)
         val registrosPendientes = repository.obtenerRegistrosDiariosPendientes(SyncStatus.PENDING)
         if (mantenimientoPendientes.isEmpty() && registrosPendientes.isEmpty()) {
             return Result.success()
         }
 
-        val database = FirebaseDatabase.getInstance("https://tecniapp-ice.firebaseio.com").reference
+        val database = RtdbInstances.datosGenerales().reference.child("vehiculos")
         return try {
             mantenimientoPendientes.forEach { registro ->
                 val payload = mapOf(
@@ -49,9 +49,10 @@ class VehiculoSyncWorker(
                     "proximoMantenimiento" to registro.proximoMantenimiento,
                     "creadoEn" to registro.creadoEn
                 )
-                database.child("vehiculo_mantenimiento")
-                    .child(uid)
+                database
                     .child(registro.vehiculoId.toString())
+                    .child("historial")
+                    .child("mantenimientos")
                     .child(registro.id.toString())
                     .setValue(payload)
                     .await()
@@ -65,9 +66,10 @@ class VehiculoSyncWorker(
                     "registradoEn" to registro.registradoEn,
                     "registradoPor" to (registro.registradoPor ?: "")
                 )
-                database.child("vehiculo_registro_diario")
-                    .child(uid)
+                database
                     .child(registro.vehiculoId.toString())
+                    .child("historial")
+                    .child("lecturasKm")
                     .child(registro.fecha)
                     .setValue(payload)
                     .await()

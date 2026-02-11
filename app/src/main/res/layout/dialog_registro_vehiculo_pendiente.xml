@@ -83,21 +83,42 @@
                     android:layout_height="wrap_content"
                     android:inputType="numberDecimal" />
             </com.google.android.material.textfield.TextInputLayout>
-
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/tilRegistroKmFinal"
-                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            <com.google.android.material.materialswitch.MaterialSwitch
+                android:id="@+id/switchRegistroCerrar"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
-                android:hint="@string/mi_vehiculo_registro_km_final_hint">
+                android:text="@string/registro_pendiente_cerrar_label" />
 
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/etRegistroKmFinal"
+            <TextView
+                android:id="@+id/tvRegistroModoInfo"
+                style="@style/TextAppearance.Material3.BodySmall"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="@string/registro_pendiente_modo_inicial_info" />
+
+            <LinearLayout
+                android:id="@+id/layoutRegistroCierre"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilRegistroKmFinal"
+                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:inputType="numberDecimal" />
-            </com.google.android.material.textfield.TextInputLayout>
+                    android:layout_marginTop="12dp"
+                    android:hint="@string/mi_vehiculo_registro_km_final_hint">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etRegistroKmFinal"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="numberDecimal" />
+                </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/tilRegistroCombustible"
@@ -204,6 +225,8 @@
                     android:inputType="textCapSentences|textMultiLine"
                     android:minLines="2" />
             </com.google.android.material.textfield.TextInputLayout>
+
+            </LinearLayout>
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnRegistroDialogRegistrar"
