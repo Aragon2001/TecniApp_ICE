@@ -91,10 +91,11 @@ class TecniApp : Application() {
             "https://tecniapp-ice.firebaseio.com",
             "https://tecniapp-ice-default-rtdb.firebaseio.com",
             "https://tecniapp-ice-personal.firebaseio.com/",
-            "https://tecniapp-ice-materiales.firebaseio.com/",
-            "https://tecniapp-ice-inventario.firebaseio.com/",
-            "https://tecniapp-ice-averias.firebaseio.com/"
+            "https://tecniapp-ice-materiales.firebaseio.com/"
         )
+
+        // ⚠️ Evitamos persistencia local en nodos de alto volumen (inventario/averías/luminarias)
+        // para prevenir OOM al rehidratar caché SQLite de Firebase.
 
         runCatching {
             FirebaseDatabase.getInstance().setPersistenceEnabled(true)
