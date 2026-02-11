@@ -322,29 +322,51 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
     suspend fun obtenerPueblosPorSubregion(subregionId: String): List<PueblosEntity> {
         val node = if (dbLocal.child("pueblos").get().await().exists()) "pueblos" else "Pueblos"
         val filtro = subregionId.trim().takeIf { it.isNotEmpty() } ?: return emptyList()
-        val snap = dbLocal.child(node)
-            .orderByChild("subregion")
-            .equalTo(filtro)
-            .get()
-            .await()
-        if (!snap.exists()) return emptyList()
+        val parsePueblos: (DataSnapshot) -> List<PueblosEntity> = { snapshot ->
+            snapshot.children.mapNotNull { child ->
+                val id = child.key?.trim()?.toIntOrNull()
+                    ?: child.intValueAny("id", "Id", "ID")
+                    ?: return@mapNotNull null
+                val nombre = child.stringValueAny("nombre", "Nombre", "NOMBRE")?.trim()
+                    ?: return@mapNotNull null
+                val remoteSubregion = child.stringValueAny("subregion", "Subregion", "SubRegión", "Subregión")?.trim()
+                val canonical = SubregionNormalizer.canonicalIdOrSelf(remoteSubregion) ?: ""
 
-        return snap.children.mapNotNull { child ->
-            val id = child.key?.trim()?.toIntOrNull()
-                ?: child.intValueAny("id", "Id", "ID")
-                ?: return@mapNotNull null
-            val nombre = child.stringValueAny("nombre", "Nombre", "NOMBRE")?.trim()
-                ?: return@mapNotNull null
-            val remoteSubregion = child.stringValueAny("subregion", "Subregion", "SubRegión", "Subregión")?.trim()
-            val canonical = SubregionNormalizer.canonicalIdOrSelf(remoteSubregion) ?: ""
+                PueblosEntity(
+                    id = id,
+                    nombre = nombre,
+                    subregion = remoteSubregion.orEmpty(),
+                    subregion_id_normalizado = canonical
+                )
+            }.distinctBy { it.id }
+        }
 
-            PueblosEntity(
-                id = id,
-                nombre = nombre,
-                subregion = remoteSubregion.orEmpty(),
-                subregion_id_normalizado = canonical
-            )
-        }.distinctBy { it.id }
+        return try {
+            val snap = dbLocal.child(node)
+                .orderByChild("subregion")
+                .equalTo(filtro)
+                .get()
+                .await()
+            if (!snap.exists()) {
+                emptyList()
+            } else {
+                parsePueblos(snap)
+            }
+        } catch (e: Exception) {
+            // Fallback cuando las reglas de Firebase no tienen `.indexOn: "subregion"`.
+            // Evita romper la sincronización completa y filtra localmente.
+            val indexMissing = e.message?.contains("Index not defined", ignoreCase = true) == true
+            if (!indexMissing) throw e
+
+            val allSnap = dbLocal.child(node).get().await()
+            if (!allSnap.exists()) {
+                emptyList()
+            } else {
+                parsePueblos(allSnap).filter {
+                    it.subregion_id_normalizado == filtro || it.subregion.equals(filtro, ignoreCase = true)
+                }
+            }
+        }
     }
 
     suspend fun obtenerLocalizacionesPorPueblos(puebloIds: List<Int>): List<LocalizacionesEntity> {
