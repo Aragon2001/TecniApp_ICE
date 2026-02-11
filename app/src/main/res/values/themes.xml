@@ -71,6 +71,31 @@
         <item name="chipCornerRadius">8dp</item>
     </style>
 
+
+    <style name="Tecni.DashboardCard" parent="Widget.Material3.CardView.Elevated">
+        <item name="cardElevation">3dp</item>
+        <item name="cardCornerRadius">28dp</item>
+        <item name="strokeWidth">0dp</item>
+    </style>
+
+    <style name="Tecni.DialogCard" parent="Widget.Material3.CardView.Elevated">
+        <item name="cardElevation">3dp</item>
+        <item name="cardCornerRadius">16dp</item>
+        <item name="strokeWidth">0dp</item>
+    </style>
+
+    <style name="Tecni.KpiCard" parent="Widget.Material3.CardView.Elevated">
+        <item name="cardElevation">2dp</item>
+        <item name="cardCornerRadius">16dp</item>
+        <item name="strokeWidth">0dp</item>
+    </style>
+
+    <style name="Tecni.StatusChip" parent="Widget.Material3.Chip.Assist">
+        <item name="chipMinHeight">36dp</item>
+        <item name="chipCornerRadius">8dp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
     <style name="Tecni.Toolbar" parent="Widget.Material3.Toolbar">
         <item name="android:elevation">0dp</item>
         <item name="titleTextColor">?attr/colorOnSurface</item>
