@@ -108,7 +108,7 @@ object AveriaNotificationPreferences {
             "notificationAgencies" to agencies
         )
 
-        FirebaseDatabase.getInstance()
+        FirebaseDatabase.getInstance("https://tecniapp-ice-user.firebaseio.com")
             .getReference("usuarios")
             .child(uid)
             .updateChildren(updates)
