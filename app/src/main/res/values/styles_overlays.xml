@@ -12,6 +12,55 @@
         <item name="android:navigationBarColor">@android:color/transparent</item>
     </style>
 
+    <!-- Search pill (ovalado) -->
+<style name="Tecni.Search.Pill" parent="Widget.Material3.TextInputLayout.OutlinedBox">
+    <item name="boxBackgroundColor">@android:color/transparent</item>
+    <item name="boxStrokeWidth">1dp</item>
+    <item name="boxStrokeWidthFocused">1.5dp</item>
+    <item name="boxCornerRadiusTopStart">28dp</item>
+    <item name="boxCornerRadiusTopEnd">28dp</item>
+    <item name="boxCornerRadiusBottomStart">28dp</item>
+    <item name="boxCornerRadiusBottomEnd">28dp</item>
+    <item name="hintTextColor">?attr/colorOnSurfaceVariant</item>
+    <item name="android:minHeight">48dp</item>
+</style>
+
+<!-- Dropdown pill (ovalado + compacto) -->
+<style name="Tecni.Dropdown.Pill" parent="Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
+    <item name="boxBackgroundColor">@android:color/transparent</item>
+    <item name="boxStrokeWidth">1dp</item>
+    <item name="boxStrokeWidthFocused">1.5dp</item>
+    <item name="boxCornerRadiusTopStart">22dp</item>
+    <item name="boxCornerRadiusTopEnd">22dp</item>
+    <item name="boxCornerRadiusBottomStart">22dp</item>
+    <item name="boxCornerRadiusBottomEnd">22dp</item>
+    <item name="android:minHeight">46dp</item>
+</style>
+
+<!-- Botón compacto outlined -->
+<style name="Tecni.Button.Outlined.Compact" parent="Widget.Material3.Button.OutlinedButton">
+    <item name="android:minHeight">40dp</item>
+    <item name="android:insetTop">0dp</item>
+    <item name="android:insetBottom">0dp</item>
+    <item name="android:paddingStart">12dp</item>
+    <item name="android:paddingEnd">12dp</item>
+</style>
+
+<!-- Botón compacto text -->
+<style name="Tecni.Button.Text.Compact" parent="Widget.Material3.Button.TextButton">
+    <item name="android:minHeight">40dp</item>
+    <item name="android:insetTop">0dp</item>
+    <item name="android:insetBottom">0dp</item>
+</style>
+
+<!-- Chip compacto base (podés clonar variantes por color) -->
+<style name="Tecni.Chip.Compact" parent="Widget.Material3.Chip.Filter">
+    <item name="chipMinHeight">30dp</item>
+    <item name="android:textSize">12sp</item>
+    <item name="chipCornerRadius">18dp</item>
+</style>
+
+
     <!-- SearchBar/SearchView (look & feel glass) -->
     <style name="ThemeOverlay.Tecni.Search" parent="ThemeOverlay.Material3">
         <item name="colorSurface">@color/glass_light</item>
