@@ -111,6 +111,7 @@
     <string name="mi_vehiculo_mantenimiento_revision_estado">Vencido</string>
     <string name="vehiculo_registro_fecha">Fecha de registro</string>
     <string name="vehiculo_registro_km_orimetro">Km / Orímetro</string>
+    <string name="vehiculo_registro_km">Km</string>
     <string name="vehiculo_registro_combustible">Combustible</string>
     <string name="vehiculo_registro_observaciones">Observaciones</string>
     <string name="etm_registro">Registro ETM</string>

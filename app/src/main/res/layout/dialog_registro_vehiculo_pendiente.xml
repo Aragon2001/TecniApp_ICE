@@ -59,13 +59,15 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
+                android:enabled="false"
                 android:hint="@string/vehiculo_registro_fecha">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/etRegistroFecha"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:inputType="date"
+                    android:focusable="false"
+                    android:inputType="none"
                     android:text="" />
             </com.google.android.material.textfield.TextInputLayout>
 
