@@ -66,6 +66,9 @@ class LocalizacionViewModel(app: Application) : AndroidViewModel(app) {
     fun prepararDatos() {
         if (initialized) return
         initialized = true
+        _pueblos.value = listOf(puebloPlaceholder)
+        _calles.value = listOf(callePlaceholder)
+        _localizacion.value = null
         _estado.value = Estado.Cargando
         viewModelScope.launch { cargarContexto() }
     }
@@ -149,6 +152,7 @@ class LocalizacionViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             _estado.value = Estado.Cargando
             puebloSeleccionadoActual = pueblo
+            _localizacion.value = null
             var calles = withContext(Dispatchers.IO) {
                 repository.obtenerCallesPorPueblo(pueblo)
             }
