@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.*
 
 @Database(
@@ -15,7 +17,7 @@ import com.Arasoftsolutions.tecniapp_ice.Database.entities.*
         MedidorEntity::class,
         PueblosEntity::class,
         SubregionesEntity::class,
-        VehiculosEntity::class,
+        VehiculoEntity::class,
         VehiculoLogEntity::class,
         MaterialEntity::class,
         TecnicoEntity::class,
@@ -44,7 +46,32 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun inventarioDao(): InventarioDao
 
     companion object {
-        const val SCHEMA_VERSION = 24
+        const val SCHEMA_VERSION = 25
+
+        val MIGRATION_24_25 = object : Migration(24, 25) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `vehiculo_log` (
+                        `logId` TEXT NOT NULL,
+                        `vehiculoId` TEXT NOT NULL,
+                        `tipo` TEXT NOT NULL,
+                        `timestamp` INTEGER NOT NULL,
+                        `km` REAL,
+                        `payloadJson` TEXT NOT NULL,
+                        `syncState` TEXT NOT NULL,
+                        `updatedAt` INTEGER NOT NULL,
+                        PRIMARY KEY(`logId`)
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_vehiculo_log_vehiculoId_timestamp` ON `vehiculo_log` (`vehiculoId`, `timestamp`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_vehiculo_log_vehiculoId_syncState` ON `vehiculo_log` (`vehiculoId`, `syncState`)")
+
+                runCatching { db.execSQL("ALTER TABLE vehiculos ADD COLUMN kmActual REAL NOT NULL DEFAULT 0.0") }
+                runCatching { db.execSQL("UPDATE vehiculos SET kmActual = COALESCE(kilometrajeActual, 0.0)") }
+            }
+        }
 
         @Volatile private var INSTANCE: AppDatabase? = null
 
@@ -55,7 +82,8 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "tecniapp_room.db"
                 )
-                    .fallbackToDestructiveMigration(true)
+                    .addMigrations(MIGRATION_24_25)
+                    .fallbackToDestructiveMigrationOnDowngrade(true)
                     .build()
                     .also { INSTANCE = it }
             }
