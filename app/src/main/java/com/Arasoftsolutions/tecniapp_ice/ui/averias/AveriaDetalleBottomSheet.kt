@@ -1132,8 +1132,31 @@ b.btnExportar.isEnabled = pertenece
         mostrarDialogoMedidor(material, cantidadInicial, metadataInicial) { cantidad, metadata ->
             actualizarMaterial(material, cantidad, metadata)
             if (cantidad > 0 && metadata != null) {
+                sincronizarMedidorDesdeMaterial(metadata)
                 solicitarAbrirPanelAdminMedidor(metadata)
             }
+        }
+    }
+
+    private fun sincronizarMedidorDesdeMaterial(metadata: MedidorInstalacion) {
+        val numeroNuevo = metadata.numero.trim()
+        if (numeroNuevo.isBlank()) {
+            b.tilMedidor.error = getString(R.string.averia_medidor_error_requerido)
+            scrollToDetalleMedidor()
+            return
+        }
+        b.tilMedidor.error = null
+        b.etMedidor.setText(numeroNuevo)
+        b.etMedidor.setSelection(numeroNuevo.length)
+        lastMedidorLookup = numeroNuevo
+        medidorSeleccionado = null
+        scrollToDetalleMedidor()
+    }
+
+    private fun scrollToDetalleMedidor() {
+        b.root.post {
+            b.root.smoothScrollTo(0, b.tilMedidor.top)
+            b.etMedidor.requestFocus()
         }
     }
 
@@ -1228,26 +1251,30 @@ b.btnExportar.isEnabled = pertenece
 
         fun updateLecturasEnabled() {
             val sinCambios = binding.switchNoCambios.isChecked
+            val lecturaAnteriorNoVisible = binding.switchLecturaAnteriorNoVisible.isChecked
             binding.tilLecturaNueva.isEnabled = !sinCambios
-            binding.tilLecturaAnterior.isEnabled = !sinCambios
-            if (sinCambios) {
+            binding.tilLecturaAnterior.isEnabled = !sinCambios && !lecturaAnteriorNoVisible
+            if (sinCambios || lecturaAnteriorNoVisible) {
                 binding.tilLecturaNueva.error = null
                 binding.tilLecturaAnterior.error = null
+            }
+            if (lecturaAnteriorNoVisible) {
+                binding.etLecturaAnterior.setText("")
             }
         }
 
         binding.switchNoCambios.setOnCheckedChangeListener { _, isChecked ->
             if (isChecked) {
                 binding.switchLecturaAnteriorNoVisible.isChecked = false
-                binding.switchLecturasAnterioresNoVisibles.isChecked = false
             }
             updateLecturasEnabled()
         }
-        binding.switchLecturaAnteriorNoVisible.setOnCheckedChangeListener { _, _ ->
+        binding.switchLecturaAnteriorNoVisible.setOnCheckedChangeListener { _, isChecked ->
+            if (isChecked) {
+                binding.switchNoCambios.isChecked = false
+            }
             binding.tilLecturaAnterior.error = null
-        }
-        binding.switchLecturasAnterioresNoVisibles.setOnCheckedChangeListener { _, _ ->
-            binding.tilLecturaAnterior.error = null
+            updateLecturasEnabled()
         }
         updateLecturasEnabled()
 
@@ -1273,7 +1300,6 @@ b.btnExportar.isEnabled = pertenece
             val lecturaAnteriorTexto = binding.etLecturaAnterior.text?.toString()?.trim().orEmpty()
             val sinCambios = binding.switchNoCambios.isChecked
             val lecturaAnteriorNoVisible = binding.switchLecturaAnteriorNoVisible.isChecked
-            val lecturasAnterioresNoVisibles = binding.switchLecturasAnterioresNoVisibles.isChecked
             if (numero.isBlank()) {
                 binding.tilNumero.error = getString(R.string.averia_medidor_error_numero)
                 return null
@@ -1282,7 +1308,7 @@ b.btnExportar.isEnabled = pertenece
                 binding.tilLecturaNueva.error = getString(R.string.averia_medidor_error_lectura)
                 return null
             }
-            if (!sinCambios && lecturaAnteriorTexto.isBlank() && !lecturaAnteriorNoVisible && !lecturasAnterioresNoVisibles) {
+            if (!sinCambios && lecturaAnteriorTexto.isBlank() && !lecturaAnteriorNoVisible) {
                 binding.tilLecturaAnterior.error = getString(R.string.averia_medidor_error_lectura_anterior)
                 return null
             }
@@ -1459,6 +1485,7 @@ b.btnExportar.isEnabled = pertenece
                             mostrarDialogoMedidor(materialBase, uso.cantidad, uso.medidorInstalado) { cantidadActualizada, metadata ->
                                 actualizarMaterial(materialBase, cantidadActualizada, metadata)
                                 if (cantidadActualizada > 0 && metadata != null) {
+                                    sincronizarMedidorDesdeMaterial(metadata)
                                     solicitarAbrirPanelAdminMedidor(metadata)
                                 }
                             }
