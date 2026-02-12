@@ -4,7 +4,7 @@ import android.util.Log
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.AveriaEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.InventarioMovimientoAveriaEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.room.AppDatabase
-import com.Arasoftsolutions.tecniapp_ice.Database.utils.VehiculoPlacaUtils
+import com.Arasoftsolutions.tecniapp_ice.ui.vehiculo.VehiculoPlacaUtils
 import com.Arasoftsolutions.tecniapp_ice.ui.admin.MapCoordinatePickerBottomSheet.Companion.TAG
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError

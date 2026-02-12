@@ -4,7 +4,7 @@ import android.content.Context
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.*
 import com.Arasoftsolutions.tecniapp_ice.Database.sync.FirebaseSyncManager
 import com.Arasoftsolutions.tecniapp_ice.Database.sync.SubregionNormalizer
-import com.Arasoftsolutions.tecniapp_ice.Database.utils.VehiculoPlacaUtils
+import com.Arasoftsolutions.tecniapp_ice.ui.vehiculo.VehiculoPlacaUtils
 import com.google.firebase.auth.FirebaseAuth
 import com.Arasoftsolutions.tecniapp_ice.ui.vehiculo.RegistroDiarioEntity
 import com.Arasoftsolutions.tecniapp_ice.ui.vehiculo.RegistroMantenimientoEntity
@@ -318,6 +318,22 @@ class   RoomRepository(context: Context) {
 
     suspend fun obtenerVehiculoPorPlaca(placa: Long): VehiculosEntity? =
         db.vehiculoDao().buscarPorPlaca(placa)
+
+    suspend fun obtenerRegistroDiarioPorFecha(vehiculoId: Int, fecha: String): RegistroDiarioEntity? {
+        return vehiculoLogDao.findLastByTipo(vehiculoId.toString(), "DIARIO")
+            ?.toRegistroDiarioEntity(vehiculoId)
+            ?.takeIf { it.fecha == fecha }
+    }
+
+    suspend fun obtenerUltimoRegistroDiario(vehiculoId: Int): RegistroDiarioEntity? {
+        return vehiculoLogDao.findLastByTipo(vehiculoId.toString(), "DIARIO")
+            ?.toRegistroDiarioEntity(vehiculoId)
+    }
+
+    suspend fun obtenerUltimoMantenimiento(vehiculoId: Int): RegistroMantenimientoEntity? {
+        return vehiculoLogDao.findLastByTipo(vehiculoId.toString(), "MANTENIMIENTO")
+            ?.toRegistroMantenimientoEntity(vehiculoId)
+    }
 
     suspend fun obtenerMaterialPorCodigo(codigo: String): MaterialEntity? =
         db.materialDao().obtenerPorCodigo(codigo)
@@ -1001,6 +1017,31 @@ class   RoomRepository(context: Context) {
         luminariasRealtimeListener = null
         realtimeScope.coroutineContext.cancelChildren()
     }
+}
+
+private fun VehiculoLogEntity.toRegistroDiarioEntity(vehiculoId: Int): RegistroDiarioEntity {
+    return RegistroDiarioEntity(
+        vehiculoId = vehiculoId,
+        fecha = payloadJson.optStringSafe("fecha"),
+        valor = km ?: 0.0,
+        unidad = payloadJson.optStringSafe("unidad", "km"),
+        registradoEn = timestamp,
+        registradoPor = payloadJson.optStringSafe("registradoPor").ifBlank { null },
+        syncStatus = syncState
+    )
+}
+
+private fun VehiculoLogEntity.toRegistroMantenimientoEntity(vehiculoId: Int): RegistroMantenimientoEntity {
+    return RegistroMantenimientoEntity(
+        vehiculoId = vehiculoId,
+        tipoMantenimiento = payloadJson.optStringSafe("tipoMantenimiento", "General"),
+        valorActual = km ?: 0.0,
+        unidad = payloadJson.optStringSafe("unidad", "km"),
+        observaciones = payloadJson.optStringSafe("observaciones").ifBlank { null },
+        proximoMantenimiento = payloadJson.optDoubleSafe("proximoMantenimiento", km ?: 0.0),
+        creadoEn = timestamp,
+        syncStatus = syncState
+    )
 }
 
 private fun String.optStringSafe(key: String, default: String = ""): String =
