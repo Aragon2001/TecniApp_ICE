@@ -679,7 +679,11 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
                 Toast.makeText(requireContext(), R.string.settings_clear_cache_failure, Toast.LENGTH_LONG).show()
             } finally {
                 withContext(Dispatchers.IO) {
-                    roomRepository.startRealtimeSync()
+                    val uid = auth.currentUser?.uid
+                    if (uid != null) {
+                        val scope = roomRepository.buildUserScope(uid)
+                        roomRepository.startRealtimeSyncForScope(scope)
+                    }
                 }
                 dismissSyncDialog()
                 setCacheClearInProgress(false)

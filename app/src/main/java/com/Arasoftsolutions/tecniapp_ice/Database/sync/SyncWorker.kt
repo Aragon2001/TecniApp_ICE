@@ -35,8 +35,10 @@ class SyncWorker(
         val subregionId = inputData.getString(KEY_SUBREGION) ?: return Result.failure()
 
         return try {
-            val repo = RoomRepository(applicationContext)
-            repo.syncSubregion(subregionId)
+            val repo = RoomRepository.getInstance(applicationContext)
+            AppSyncCoordinator.runExclusive {
+                repo.syncSubregion(subregionId)
+            }
             Log.d(TAG, "✅ Sincronización completada exitosamente.")
             Result.success()
         } catch (e: Exception) {
