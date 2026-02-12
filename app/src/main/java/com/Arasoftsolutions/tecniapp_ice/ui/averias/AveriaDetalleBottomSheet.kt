@@ -1139,15 +1139,17 @@ b.btnExportar.isEnabled = pertenece
     }
 
     private fun sincronizarMedidorDesdeMaterial(metadata: MedidorInstalacion) {
-        val numeroNuevo = metadata.numero.trim()
-        if (numeroNuevo.isBlank()) {
+        val numeroNuevo = metadata.numero?.trim()
+        if (numeroNuevo?.isBlank() == true) {
             b.tilMedidor.error = getString(R.string.averia_medidor_error_requerido)
             scrollToDetalleMedidor()
             return
         }
         b.tilMedidor.error = null
         b.etMedidor.setText(numeroNuevo)
-        b.etMedidor.setSelection(numeroNuevo.length)
+        if (numeroNuevo != null) {
+            b.etMedidor.setSelection(numeroNuevo.length)
+        }
         lastMedidorLookup = numeroNuevo
         medidorSeleccionado = null
         scrollToDetalleMedidor()
