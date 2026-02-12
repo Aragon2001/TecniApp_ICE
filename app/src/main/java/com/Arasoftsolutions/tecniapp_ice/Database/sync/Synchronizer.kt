@@ -23,7 +23,7 @@ class Synchronizer(
         var downloadedBytes = 0L
 
         try {
-            AppSyncCoordinator.runExclusive {
+            val executed = AppSyncCoordinator.runExclusiveDebounced {
 
                 // ----------- 1. TÉCNICOS ----------------
                 onSyncStart("Descargando Datos…")
@@ -71,6 +71,9 @@ class Synchronizer(
                 }
 
                 // FINAL
+                onSyncSuccess()
+            }
+            if (executed == null) {
                 onSyncSuccess()
             }
         } catch (t: Throwable) {

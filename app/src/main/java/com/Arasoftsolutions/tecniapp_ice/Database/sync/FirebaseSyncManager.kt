@@ -10,7 +10,6 @@ import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ServerValue
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.ChildEventListener
-import com.google.firebase.database.Query
 import kotlinx.coroutines.tasks.await
 import com.google.firebase.database.DataSnapshot
 import kotlinx.coroutines.CoroutineScope
@@ -66,12 +65,10 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
     }
 
     private val subregionNombreCache = mutableMapOf<String, String>()
-    private var inventarioRealtimeRef: DatabaseReference? = null
-    private var luminariasRealtimeRef: DatabaseReference? = null
-    private var inventarioRealtimeQuery: Query? = null
-    private var luminariasRealtimeQuery: Query? = null
     private val inventarioChildListeners = mutableMapOf<ValueEventListener, ChildEventListener>()
     private val luminariasChildListeners = mutableMapOf<ValueEventListener, ChildEventListener>()
+    private val inventarioChildRefs = mutableMapOf<ValueEventListener, DatabaseReference>()
+    private val luminariasChildRefs = mutableMapOf<ValueEventListener, DatabaseReference>()
 
     private fun database(url: String): DatabaseReference {
         return runCatching { FirebaseDatabase.getInstance(url).reference }
@@ -766,108 +763,122 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
             .await()
     }
 
-    fun startInventarioRealtime(
+    fun startInventarioRealtimeForVehiculo(
+        vehiculoKey: String,
         scope: CoroutineScope,
-        onUpdate: suspend (List<InventarioItemEntity>) -> Unit,
+        onItemUpsert: suspend (InventarioItemEntity) -> Unit,
+        onItemRemove: suspend (vehiculoId: Int, codigo: String) -> Unit,
         onError: (DatabaseError) -> Unit
     ): ValueEventListener {
+
         val token = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) = Unit
             override fun onCancelled(error: DatabaseError) = Unit
         }
-        scope.launch {
-            val target = selectInventarioRealtimeRef()
-            inventarioRealtimeRef = target
-            val query = target
-            inventarioRealtimeQuery = query
 
-            val byNode = linkedMapOf<String, List<InventarioItemEntity>>()
-            val childListener = object : ChildEventListener {
-                override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
-                    processInventarioNodeUpdate(snapshot, byNode, scope, onUpdate)
-                }
+        val target = dbInventario.child(vehiculoKey.trim())
+        val vehiculoId = vehiculoKey.toIntOrNull() ?: -1
 
-                override fun onChildChanged(snapshot: DataSnapshot, previousChildName: String?) {
-                    processInventarioNodeUpdate(snapshot, byNode, scope, onUpdate)
-                }
+        val childListener = object : ChildEventListener {
+            override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
+                scope.launch {
+                    val codigo = snapshot.key?.trim().orEmpty()
+                    if (codigo.isBlank() || vehiculoId == -1) return@launch
 
-                override fun onChildRemoved(snapshot: DataSnapshot) {
-                    val nodeKey = snapshot.key.orEmpty()
-                    byNode.remove(nodeKey)
-                    emitInventarioSnapshot(scope, byNode, onUpdate)
-                }
-
-                override fun onChildMoved(snapshot: DataSnapshot, previousChildName: String?) = Unit
-
-                override fun onCancelled(error: DatabaseError) {
-                    onError(error)
+                    val item = InventarioItemEntity(
+                        id = snapshot.child("id").getValue(Long::class.java) ?: 0L,
+                        vehiculoId = vehiculoId,
+                        codigoMaterial = codigo,
+                        descripcionMaterial = snapshot.child("descripcionMaterial").getValue(String::class.java).orEmpty(),
+                        cantidadDisponible = snapshot.child("cantidadDisponible").getValue(Double::class.java) ?: 0.0
+                    )
+                    onItemUpsert(item)
                 }
             }
-            inventarioChildListeners[token] = childListener
-            query.addChildEventListener(childListener)
+
+            override fun onChildChanged(snapshot: DataSnapshot, previousChildName: String?) {
+                onChildAdded(snapshot, previousChildName)
+            }
+
+            override fun onChildRemoved(snapshot: DataSnapshot) {
+                scope.launch {
+                    val codigo = snapshot.key?.trim().orEmpty()
+                    if (codigo.isBlank() || vehiculoId == -1) return@launch
+                    onItemRemove(vehiculoId, codigo)
+                }
+            }
+
+            override fun onChildMoved(snapshot: DataSnapshot, previousChildName: String?) = Unit
+            override fun onCancelled(error: DatabaseError) = onError(error)
         }
+
+        inventarioChildListeners[token] = childListener
+        inventarioChildRefs[token] = target
+        target.addChildEventListener(childListener)
+
         return token
     }
 
     fun stopInventarioRealtime(listener: ValueEventListener) {
         val childListener = inventarioChildListeners.remove(listener)
-        if (childListener != null) {
-            (inventarioRealtimeQuery ?: inventarioRealtimeRef ?: dbInventario).removeEventListener(childListener)
+        val target = inventarioChildRefs.remove(listener)
+        if (childListener != null && target != null) {
+            target.removeEventListener(childListener)
         }
-        inventarioRealtimeRef = null
-        inventarioRealtimeQuery = null
     }
 
-    fun startLuminariasRealtime(
+    fun startLuminariasRealtimeForAgencia(
+        agenciaKey: String,
         scope: CoroutineScope,
-        onUpdate: suspend (List<LuminariaReparacionEntity>) -> Unit,
+        onUpsert: suspend (LuminariaReparacionEntity) -> Unit,
+        onRemove: suspend (id: Long) -> Unit,
         onError: (DatabaseError) -> Unit
     ): ValueEventListener {
+
         val token = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) = Unit
             override fun onCancelled(error: DatabaseError) = Unit
         }
-        scope.launch {
-            val target = selectLuminariasRealtimeRef()
-            luminariasRealtimeRef = target
-            val query = target
-            luminariasRealtimeQuery = query
 
-            val byNode = linkedMapOf<String, List<LuminariaReparacionEntity>>()
-            val childListener = object : ChildEventListener {
-                override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
-                    processLuminariasNodeUpdate(snapshot, byNode, scope, onUpdate)
-                }
+        val target = dbLuminarias.child(agenciaKey.trim())
 
-                override fun onChildChanged(snapshot: DataSnapshot, previousChildName: String?) {
-                    processLuminariasNodeUpdate(snapshot, byNode, scope, onUpdate)
-                }
-
-                override fun onChildRemoved(snapshot: DataSnapshot) {
-                    val nodeKey = snapshot.key.orEmpty()
-                    byNode.remove(nodeKey)
-                    emitLuminariasSnapshot(scope, byNode, onUpdate)
-                }
-
-                override fun onChildMoved(snapshot: DataSnapshot, previousChildName: String?) = Unit
-
-                override fun onCancelled(error: DatabaseError) {
-                    onError(error)
+        val childListener = object : ChildEventListener {
+            override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
+                scope.launch {
+                    snapshot.children.forEach { item ->
+                        parseLuminariaEntity(item)?.let { onUpsert(it) }
+                    }
                 }
             }
-            luminariasChildListeners[token] = childListener
-            query.addChildEventListener(childListener)
+
+            override fun onChildChanged(snapshot: DataSnapshot, previousChildName: String?) {
+                onChildAdded(snapshot, previousChildName)
+            }
+
+            override fun onChildRemoved(snapshot: DataSnapshot) {
+                scope.launch {
+                    val nodeId = snapshot.key?.toLongOrNull()
+                    if (nodeId != null) onRemove(nodeId)
+                }
+            }
+
+            override fun onChildMoved(snapshot: DataSnapshot, previousChildName: String?) = Unit
+            override fun onCancelled(error: DatabaseError) = onError(error)
         }
+
+        luminariasChildListeners[token] = childListener
+        luminariasChildRefs[token] = target
+        target.addChildEventListener(childListener)
+
         return token
     }
 
     fun stopLuminariasRealtime(listener: ValueEventListener) {
         val childListener = luminariasChildListeners.remove(listener)
-        if (childListener != null) {
-            (luminariasRealtimeQuery ?: luminariasRealtimeRef ?: dbLuminarias).removeEventListener(childListener)
+        val target = luminariasChildRefs.remove(listener)
+        if (childListener != null && target != null) {
+            target.removeEventListener(childListener)
         }
-        luminariasRealtimeRef = null
-        luminariasRealtimeQuery = null
     }
 
     suspend fun eliminarLocalizacion(id: Int) {
