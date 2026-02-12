@@ -101,7 +101,7 @@ class AveriasAdapter(
         private val tvLocalizacion: TextView? = view.findViewById(R.id.tvLocalizacion)
         private val tvDireccion: TextView? = view.findViewById(R.id.tvDireccion)
         private val tvFecha: TextView = view.findViewById(R.id.tvFecha)
-        private val mapContainer: View = view.findViewById(R.id.mapContainer)
+        private val mapContainer: View = view.findViewById(R.id.cardMapa)
         private val imgMapa: ImageView = view.findViewById(R.id.imgMapa)
         private val btnVerMapa: MaterialButton = view.findViewById(R.id.btnVerMapa)
         private val btnAsignar: MaterialButton = view.findViewById(R.id.btnAsignar)
