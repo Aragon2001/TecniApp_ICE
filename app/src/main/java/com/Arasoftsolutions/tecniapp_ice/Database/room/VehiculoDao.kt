@@ -27,13 +27,13 @@ interface VehiculoDao {
     @Query("SELECT * FROM vehiculos WHERE id = :id LIMIT 1")
     suspend fun buscarPorId(id: Int): VehiculosEntity?
 
-    @Query("SELECT * FROM vehiculos WHERE placa = :placa LIMIT 1")
-    suspend fun buscarPorPlaca(placa: Long): VehiculosEntity?
-
     @Query("SELECT * FROM vehiculos WHERE vehiculoId = :vehiculoId LIMIT 1")
     suspend fun buscarPorVehiculoId(vehiculoId: String): VehiculosEntity?
 
-    @Query("SELECT * FROM vehiculos WHERE placa = :placa LIMIT 1")
+    @Query("SELECT * FROM vehiculos WHERE CAST(placaRaw AS INTEGER) = :placa OR placa = :placa LIMIT 1")
+    suspend fun buscarPorPlaca(placa: Long): VehiculosEntity?
+
+    @Query("SELECT * FROM vehiculos WHERE CAST(placaRaw AS INTEGER) = :placa OR placa = :placa LIMIT 1")
     fun observarPorPlaca(placa: Long): Flow<VehiculosEntity?>
 
     @Query("SELECT * FROM vehiculos WHERE vehiculoId = :vehiculoId LIMIT 1")
@@ -51,10 +51,14 @@ interface VehiculoDao {
     @Query("DELETE FROM vehiculos")
     suspend fun limpiarTodo()
 
-    @Query("UPDATE vehiculos SET kilometrajeActual = :kilometrajeActual, updatedAt = :updatedAt WHERE vehiculoId = :vehiculoId")
-    suspend fun actualizarKilometrajeByVehiculoId(vehiculoId: String, kilometrajeActual: Double, updatedAt: Long = System.currentTimeMillis())
+    @Query("UPDATE vehiculos SET kmActual = :kmActual, kilometrajeActual = :kmActual, updatedAt = :updatedAt WHERE vehiculoId = :vehiculoId")
+    suspend fun actualizarKilometrajeByVehiculoId(
+        vehiculoId: String,
+        kmActual: Double,
+        updatedAt: Long = System.currentTimeMillis()
+    )
 
-    @Query("UPDATE vehiculos SET kilometrajeActual = :kilometrajeActual, updatedAt = :updatedAt WHERE placa = :placa")
+    @Query("UPDATE vehiculos SET kilometrajeActual = :kilometrajeActual, kmActual = :kilometrajeActual, updatedAt = :updatedAt WHERE placa = :placa")
     suspend fun actualizarKilometrajeActual(placa: Long, kilometrajeActual: Double, updatedAt: Long = System.currentTimeMillis())
 
     @Query("UPDATE vehiculos SET orimetroActual = :orimetroActual, updatedAt = :updatedAt WHERE placa = :placa")
@@ -63,7 +67,7 @@ interface VehiculoDao {
     @Query("UPDATE vehiculos SET mantenimientoUltimo = :mantenimientoUltimo, mantenimientoProximo = :mantenimientoProximo, updatedAt = :updatedAt WHERE id = :vehiculoId")
     suspend fun actualizarMantenimiento(vehiculoId: Int, mantenimientoUltimo: String?, mantenimientoProximo: String?, updatedAt: Long = System.currentTimeMillis())
 
-    @Query("UPDATE vehiculos SET registroFecha = :fecha, registroInicial = :inicial, registroFinal = :final, registroCerrado = :cerrado, kilometrajeActual = :kilometrajeActual, orimetroActual = :orimetroActual, registrosDiariosJson = :registrosJson, updatedAt = :updatedAt WHERE id = :vehiculoId")
+    @Query("UPDATE vehiculos SET registroFecha = :fecha, registroInicial = :inicial, registroFinal = :final, registroCerrado = :cerrado, kilometrajeActual = :kilometrajeActual, kmActual = COALESCE(:kilometrajeActual, kmActual), orimetroActual = :orimetroActual, registrosDiariosJson = :registrosJson, updatedAt = :updatedAt WHERE id = :vehiculoId")
     suspend fun actualizarRegistroDiario(
         vehiculoId: Int,
         fecha: String,

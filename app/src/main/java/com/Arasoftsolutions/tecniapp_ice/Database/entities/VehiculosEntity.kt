@@ -2,6 +2,7 @@ package com.Arasoftsolutions.tecniapp_ice.Database.entities
 
 import androidx.annotation.Keep
 import androidx.room.Entity
+import androidx.room.Ignore
 import androidx.room.PrimaryKey
 import com.google.firebase.database.IgnoreExtraProperties
 
@@ -12,13 +13,15 @@ data class VehiculosEntity(
     @PrimaryKey
     val vehiculoId: String,
     val placaRaw: String = "",
-    val agencia: String = "",
-    val placa: Long = 0,
-    val tipo: String = "",
     val subregion: String? = null,
-    val kilometrajeActual: Double? = null,
-    val orimetroActual: Double? = null,
+    val tipo: String = "",
+    val agencia: String = "",
+    val kmActual: Double = 0.0,
     val updatedAt: Long = System.currentTimeMillis(),
+    // Legacy compatibility fields (kept for current module integration)
+    val placa: Long = 0,
+    val kilometrajeActual: Double? = kmActual,
+    val orimetroActual: Double? = null,
     val id: Int = 0,
     val registroFecha: String? = null,
     val registroInicial: Double? = null,
@@ -28,23 +31,18 @@ data class VehiculosEntity(
     val mantenimientoUltimo: String? = null,
     val mantenimientoProximo: String? = null,
 ) {
+    @Ignore
+    val kmActualNormalizado: Double = kmActual.takeIf { it > 0.0 } ?: (kilometrajeActual ?: 0.0)
+
     constructor() : this(
         vehiculoId = "",
         placaRaw = "",
-        agencia = "",
-        placa = 0,
-        tipo = "",
         subregion = null,
-        kilometrajeActual = null,
-        orimetroActual = null,
-        updatedAt = 0L,
-        id = 0,
-        registroFecha = null,
-        registroInicial = null,
-        registroFinal = null,
-        registroCerrado = false,
-        registrosDiariosJson = null,
-        mantenimientoUltimo = null,
-        mantenimientoProximo = null
+        tipo = "",
+        agencia = "",
+        kmActual = 0.0,
+        updatedAt = 0L
     )
 }
+
+typealias VehiculoEntity = VehiculosEntity
