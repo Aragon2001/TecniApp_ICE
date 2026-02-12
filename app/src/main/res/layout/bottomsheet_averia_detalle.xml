@@ -50,8 +50,7 @@
                         android:layout_height="wrap_content"
                         android:clickable="false"
                         android:checkable="false"
-                        android:textColor="@android:color/white"
-                        app:chipIconVisible="false" />
+                        android:textColor="@android:color/white" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnCerrar"
