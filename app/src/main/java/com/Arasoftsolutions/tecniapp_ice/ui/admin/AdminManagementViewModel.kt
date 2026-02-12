@@ -342,6 +342,8 @@ class AdminManagementViewModel(application: Application) : AndroidViewModel(appl
 
             val nuevoId = (vehiculos.value.maxOfOrNull { it.id } ?: 0) + 1
             val vehiculo = VehiculosEntity(
+                vehiculoId = placa.toString(),
+                placaRaw = placa.toString(),
                 id = nuevoId,
                 agencia = agenciaLimpia,
                 placa = placa,

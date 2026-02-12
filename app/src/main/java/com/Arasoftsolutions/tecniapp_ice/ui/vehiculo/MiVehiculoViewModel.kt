@@ -9,8 +9,7 @@ import com.Arasoftsolutions.tecniapp_ice.Database.entities.VehiculosEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
 import com.Arasoftsolutions.tecniapp_ice.Database.utils.SyncStatus
 import com.Arasoftsolutions.tecniapp_ice.Database.utils.VehiculoPlacaUtils
-import com.Arasoftsolutions.tecniapp_ice.ui.vehiculo.worker.VehiculoReminderWorker
-import com.Arasoftsolutions.tecniapp_ice.ui.vehiculo.worker.VehiculoSyncWorker
+import com.Arasoftsolutions.tecniapp_ice.Database.sync.vehicle.VehiculoSyncService
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -68,6 +67,7 @@ class MiVehiculoViewModel(app: Application) : AndroidViewModel(app) {
 
     private val repository = RoomRepository.getInstance(app)
     private val auth = FirebaseAuth.getInstance()
+    private val vehiculoSyncService = VehiculoSyncService(repository)
 
     private val _uiState = MutableStateFlow(MiVehiculoUiState(isLoading = true))
     val uiState: StateFlow<MiVehiculoUiState> = _uiState.asStateFlow()
@@ -179,8 +179,7 @@ class MiVehiculoViewModel(app: Application) : AndroidViewModel(app) {
                 mantenimientoProximo = "${formatearValor(proximo, unidad)}"
             )
 
-            VehiculoSyncWorker.triggerNow(getApplication())
-            VehiculoReminderWorker.triggerNow(getApplication())
+            syncAhora()
         }
     }
 
@@ -270,6 +269,12 @@ class MiVehiculoViewModel(app: Application) : AndroidViewModel(app) {
         }.reversed()
     }
 
+
+    fun syncAhora() {
+        viewModelScope.launch {
+            _uiState.value.vehiculo?.let { vehiculoSyncService.syncVehiculo(it) }
+        }
+    }
     private fun formatearValor(valor: Double, unidad: String): String {
         return String.format(Locale.getDefault(), "%.0f %s", valor, unidad)
     }

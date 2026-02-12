@@ -248,6 +248,8 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
             val mantenimientoUltimo = source.stringValueAny("mantenimientoUltimo", "mantenimiento_ultimo")
             val mantenimientoProximo = source.stringValueAny("mantenimientoProximo", "mantenimiento_proximo")
             VehiculosEntity(
+                vehiculoId = placa.toString(),
+                placaRaw = placa.toString(),
                 id = entityId,
                 agencia = agencia.trim(),
                 placa = placa,
