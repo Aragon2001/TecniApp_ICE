@@ -400,7 +400,7 @@
 
         <item name="chipBackgroundColor">@color/glass_chip_surface</item>
 
-        <item name="android:textColor">?attr/colorOnSurface</item>
+        <item name="android:textColor">@color/on_surface</item>
         <item name="android:textStyle">bold</item>
 
         <item name="chipMinTouchTargetSize">0dp</item>
