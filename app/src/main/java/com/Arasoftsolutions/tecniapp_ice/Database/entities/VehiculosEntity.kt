@@ -9,29 +9,36 @@ import com.google.firebase.database.IgnoreExtraProperties
 @IgnoreExtraProperties
 @Entity(tableName = "vehiculos")
 data class VehiculosEntity(
-    @PrimaryKey val id: Int = 0,
+    @PrimaryKey
+    val vehiculoId: String,
+    val placaRaw: String = "",
     val agencia: String = "",
     val placa: Long = 0,
     val tipo: String = "",
     val subregion: String? = null,
     val kilometrajeActual: Double? = null,
     val orimetroActual: Double? = null,
+    val updatedAt: Long = System.currentTimeMillis(),
+    val id: Int = 0,
     val registroFecha: String? = null,
     val registroInicial: Double? = null,
     val registroFinal: Double? = null,
     val registroCerrado: Boolean = false,
     val registrosDiariosJson: String? = null,
     val mantenimientoUltimo: String? = null,
-    val mantenimientoProximo: String? = null
+    val mantenimientoProximo: String? = null,
 ) {
     constructor() : this(
-        id = 0,
+        vehiculoId = "",
+        placaRaw = "",
         agencia = "",
         placa = 0,
         tipo = "",
         subregion = null,
         kilometrajeActual = null,
         orimetroActual = null,
+        updatedAt = 0L,
+        id = 0,
         registroFecha = null,
         registroInicial = null,
         registroFinal = null,

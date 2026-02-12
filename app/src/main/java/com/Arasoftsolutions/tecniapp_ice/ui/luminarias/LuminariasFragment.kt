@@ -23,7 +23,8 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.Arasoftsolutions.tecniapp_ice.R
 import com.Arasoftsolutions.tecniapp_ice.databinding.FragmentLuminariasBinding
 import com.Arasoftsolutions.tecniapp_ice.databinding.BottomSheetLuminariaReparacionBinding
-import com.Arasoftsolutions.tecniapp_ice.ui.vehiculo.RegistroVehiculoGate
+import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
+import com.google.firebase.auth.FirebaseAuth
 import com.Arasoftsolutions.tecniapp_ice.ui.vehiculo.showRegistroVehiculoPendienteDialog
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.bottomsheet.BottomSheetDialog
@@ -101,8 +102,10 @@ class LuminariasFragment : Fragment() {
         }
 
         viewLifecycleOwner.lifecycleScope.launch {
-            val gate = RegistroVehiculoGate.evaluar(requireContext())
-            if (gate.requiereRegistro) {
+            val repo = RoomRepository.getInstance(requireContext())
+            val uid = FirebaseAuth.getInstance().currentUser?.uid
+            val placa = uid?.let { repo.obtenerUsuario(it) }?.placaVehiculo?.trim().orEmpty()
+            if (placa.isBlank()) {
                 showRegistroVehiculoPendienteDialog(
                     onRegistroGuardado = { },
                     onNoVehiculo = { findNavController().popBackStack(R.id.nav_home, false) }

@@ -1,27 +1,23 @@
-// ======================
-// VehiculoDao.kt
-// ======================
 package com.Arasoftsolutions.tecniapp_ice.Database.room
 
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
-
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.VehiculosEntity
 import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface VehiculoDao {
-    // Inserta todos los vehículos con conflicto por reemplazo
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(vehiculos: List<VehiculosEntity>)
 
-    // Retorna todos los vehículos existentes
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertVehiculo(vehiculo: VehiculosEntity)
+
     @Query("SELECT * FROM vehiculos")
     suspend fun getAll(): List<VehiculosEntity>
 
-    // Observa vehículos por agencia
     @Query("SELECT * FROM vehiculos WHERE agencia = :agencia COLLATE NOCASE")
     fun observarPorAgencia(agencia: String): Flow<List<VehiculosEntity>>
 
@@ -34,8 +30,14 @@ interface VehiculoDao {
     @Query("SELECT * FROM vehiculos WHERE placa = :placa LIMIT 1")
     suspend fun buscarPorPlaca(placa: Long): VehiculosEntity?
 
+    @Query("SELECT * FROM vehiculos WHERE vehiculoId = :vehiculoId LIMIT 1")
+    suspend fun buscarPorVehiculoId(vehiculoId: String): VehiculosEntity?
+
     @Query("SELECT * FROM vehiculos WHERE placa = :placa LIMIT 1")
     fun observarPorPlaca(placa: Long): Flow<VehiculosEntity?>
+
+    @Query("SELECT * FROM vehiculos WHERE vehiculoId = :vehiculoId LIMIT 1")
+    fun observarPorVehiculoId(vehiculoId: String): Flow<VehiculosEntity?>
 
     @Query("DELETE FROM vehiculos WHERE id = :id")
     suspend fun eliminarPorId(id: Int)
@@ -49,19 +51,19 @@ interface VehiculoDao {
     @Query("DELETE FROM vehiculos")
     suspend fun limpiarTodo()
 
-    @Query(
-        """
-        UPDATE vehiculos
-        SET registroFecha = :fecha,
-            registroInicial = :inicial,
-            registroFinal = :final,
-            registroCerrado = :cerrado,
-            kilometrajeActual = :kilometrajeActual,
-            orimetroActual = :orimetroActual,
-            registrosDiariosJson = :registrosJson
-        WHERE id = :vehiculoId
-        """
-    )
+    @Query("UPDATE vehiculos SET kilometrajeActual = :kilometrajeActual, updatedAt = :updatedAt WHERE vehiculoId = :vehiculoId")
+    suspend fun actualizarKilometrajeByVehiculoId(vehiculoId: String, kilometrajeActual: Double, updatedAt: Long = System.currentTimeMillis())
+
+    @Query("UPDATE vehiculos SET kilometrajeActual = :kilometrajeActual, updatedAt = :updatedAt WHERE placa = :placa")
+    suspend fun actualizarKilometrajeActual(placa: Long, kilometrajeActual: Double, updatedAt: Long = System.currentTimeMillis())
+
+    @Query("UPDATE vehiculos SET orimetroActual = :orimetroActual, updatedAt = :updatedAt WHERE placa = :placa")
+    suspend fun actualizarOrimetroActual(placa: Long, orimetroActual: Double, updatedAt: Long = System.currentTimeMillis())
+
+    @Query("UPDATE vehiculos SET mantenimientoUltimo = :mantenimientoUltimo, mantenimientoProximo = :mantenimientoProximo, updatedAt = :updatedAt WHERE id = :vehiculoId")
+    suspend fun actualizarMantenimiento(vehiculoId: Int, mantenimientoUltimo: String?, mantenimientoProximo: String?, updatedAt: Long = System.currentTimeMillis())
+
+    @Query("UPDATE vehiculos SET registroFecha = :fecha, registroInicial = :inicial, registroFinal = :final, registroCerrado = :cerrado, kilometrajeActual = :kilometrajeActual, orimetroActual = :orimetroActual, registrosDiariosJson = :registrosJson, updatedAt = :updatedAt WHERE id = :vehiculoId")
     suspend fun actualizarRegistroDiario(
         vehiculoId: Int,
         fecha: String,
@@ -70,40 +72,7 @@ interface VehiculoDao {
         cerrado: Boolean,
         kilometrajeActual: Double?,
         orimetroActual: Double?,
-        registrosJson: String?
-    )
-
-    @Query("UPDATE vehiculos SET kilometrajeActual = :kilometrajeActual WHERE placa = :placa")
-    suspend fun actualizarKilometrajeActual(placa: Long, kilometrajeActual: Double)
-
-    @Query("UPDATE vehiculos SET orimetroActual = :orimetroActual WHERE placa = :placa")
-    suspend fun actualizarOrimetroActual(placa: Long, orimetroActual: Double)
-
-    @Query(
-        """
-        UPDATE vehiculos
-        SET mantenimientoUltimo = :mantenimientoUltimo,
-            mantenimientoProximo = :mantenimientoProximo
-        WHERE id = :vehiculoId
-        """
-    )
-    suspend fun actualizarMantenimiento(
-        vehiculoId: Int,
-        mantenimientoUltimo: String?,
-        mantenimientoProximo: String?
-    )
-
-    @Query(
-        """
-        UPDATE vehiculos
-        SET mantenimientoUltimo = :mantenimientoUltimo,
-            mantenimientoProximo = :mantenimientoProximo
-        WHERE placa = :placa
-        """
-    )
-    suspend fun actualizarMantenimientoPorPlaca(
-        placa: Long,
-        mantenimientoUltimo: String?,
-        mantenimientoProximo: String?
+        registrosJson: String?,
+        updatedAt: Long = System.currentTimeMillis()
     )
 }
