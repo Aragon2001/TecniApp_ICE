@@ -846,7 +846,7 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
             override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
                 scope.launch {
                     snapshot.children.forEach { item ->
-                        parseLuminariaEntity(item)?.let { onUpsert(it) }
+                        parseLuminariaSnapshot(item, null)?.let { onUpsert(it) }
                     }
                 }
             }
