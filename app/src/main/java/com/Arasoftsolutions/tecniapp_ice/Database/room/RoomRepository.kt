@@ -1,6 +1,7 @@
 package com.Arasoftsolutions.tecniapp_ice.Database.room
 
 import android.content.Context
+import android.util.Log
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.*
 import com.Arasoftsolutions.tecniapp_ice.Database.sync.FirebaseSyncManager
 import com.Arasoftsolutions.tecniapp_ice.Database.sync.SubregionNormalizer
@@ -27,6 +28,13 @@ import org.json.JSONObject
  * Repositorio centralizado para exponer operaciones de lectura sobre Room
  * y para sincronizar datos desde Firebase hacia la base de datos local.
  */
+data class UserScope(
+    val regionId: String?,
+    val subregionId: String?,
+    val agenciaTag: String?,
+    val vehiculoKey: String?
+)
+
 class   RoomRepository(context: Context) {
 
     private val db = AppDatabase.getInstance(context.applicationContext)
@@ -298,6 +306,17 @@ class   RoomRepository(context: Context) {
 
     suspend fun buscarUsuarioPorCedula(cedula: String): UserEntity? = withContext(Dispatchers.IO) {
         firebase.buscarUsuarioPorCedula(cedula)
+    }
+
+    suspend fun buildUserScope(uid: String): UserScope = withContext(Dispatchers.IO) {
+        val user = db.usuarioDao().getByUid(uid) ?: runCatching { upsertUserFromFirebase(uid) }.getOrNull()
+        UserScope(
+            regionId = user?.region?.trim()?.takeIf { it.isNotEmpty() },
+            subregionId = user?.subregion?.trim()?.takeIf { it.isNotEmpty() },
+            agenciaTag = user?.agenciaId?.trim()?.takeIf { it.isNotEmpty() }
+                ?: user?.agencia?.trim()?.takeIf { it.isNotEmpty() },
+            vehiculoKey = user?.placaVehiculo?.trim()?.takeIf { it.isNotEmpty() }
+        )
     }
 
     suspend fun actualizarUsuarioAdmin(user: UserEntity) = withContext(Dispatchers.IO) {
@@ -978,33 +997,39 @@ class   RoomRepository(context: Context) {
         db.clearAllTables()
     }
 
-    fun startRealtimeSync() {
-        if (inventarioRealtimeListener == null) {
-            inventarioRealtimeListener = firebase.startInventarioRealtime(
+    fun startRealtimeSyncForScope(scope: UserScope) {
+        stopRealtimeSync()
+
+        val vehiculoKey = scope.vehiculoKey?.trim().orEmpty()
+        if (vehiculoKey.isNotBlank()) {
+            inventarioRealtimeListener = firebase.startInventarioRealtimeForVehiculo(
+                vehiculoKey = vehiculoKey,
                 scope = realtimeScope,
-                onUpdate = { items ->
-                    inventarioDao.limpiarTodo()
-                    if (items.isNotEmpty()) {
-                        inventarioDao.insertAll(items)
-                    }
+                onItemUpsert = { item ->
+                    inventarioDao.upsert(item)
                 },
-                onError = { error ->
-                    android.util.Log.e("RoomRepository", "Inventario realtime cancelado", error.toException())
+                onItemRemove = { vehiculoId, codigo ->
+                    inventarioDao.eliminarPorVehiculoYCodigo(vehiculoId, codigo)
+                },
+                onError = { err ->
+                    Log.e("RoomRepository", "Inventario realtime cancelado", err.toException())
                 }
             )
         }
 
-        if (luminariasRealtimeListener == null) {
-            luminariasRealtimeListener = firebase.startLuminariasRealtime(
+        val agenciaTag = scope.agenciaTag?.trim().orEmpty()
+        if (agenciaTag.isNotBlank()) {
+            luminariasRealtimeListener = firebase.startLuminariasRealtimeForAgencia(
+                agenciaKey = agenciaTag,
                 scope = realtimeScope,
-                onUpdate = { reparaciones ->
-                    inventarioDao.limpiarReparaciones()
-                    if (reparaciones.isNotEmpty()) {
-                        inventarioDao.insertarReparaciones(reparaciones)
-                    }
+                onUpsert = { rep ->
+                    inventarioDao.upsertReparacion(rep)
                 },
-                onError = { error ->
-                    android.util.Log.e("RoomRepository", "Luminarias realtime cancelado", error.toException())
+                onRemove = { id ->
+                    inventarioDao.eliminarReparacionPorId(id)
+                },
+                onError = { err ->
+                    Log.e("RoomRepository", "Luminarias realtime cancelado", err.toException())
                 }
             )
         }
@@ -1013,10 +1038,13 @@ class   RoomRepository(context: Context) {
     fun stopRealtimeSync() {
         inventarioRealtimeListener?.let { firebase.stopInventarioRealtime(it) }
         luminariasRealtimeListener?.let { firebase.stopLuminariasRealtime(it) }
+
         inventarioRealtimeListener = null
         luminariasRealtimeListener = null
+
         realtimeScope.coroutineContext.cancelChildren()
     }
+
 }
 
 private fun VehiculoLogEntity.toRegistroDiarioEntity(vehiculoId: Int): RegistroDiarioEntity {
