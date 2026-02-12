@@ -4,7 +4,6 @@ import android.content.Context
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.*
 import com.Arasoftsolutions.tecniapp_ice.Database.sync.FirebaseSyncManager
 import com.Arasoftsolutions.tecniapp_ice.Database.sync.SubregionNormalizer
-import com.Arasoftsolutions.tecniapp_ice.Database.sync.vehicle.VehicleRepository
 import com.Arasoftsolutions.tecniapp_ice.Database.utils.VehiculoPlacaUtils
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.ValueEventListener
@@ -17,6 +16,8 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
+import androidx.room.withTransaction
+import org.json.JSONObject
 // Si usas transacciones, habilita esto y agrega la dependencia de room-ktx:
 // import androidx.room.withTransaction
 
@@ -28,9 +29,8 @@ class   RoomRepository(context: Context) {
 
     private val db = AppDatabase.getInstance(context.applicationContext)
     private val firebase = FirebaseSyncManager(context.applicationContext)
-    private val vehicleRepository = VehicleRepository()
     private val vehiculoDao = db.vehiculoDao()
-    private val registroVehiculoDao = db.registroVehiculoDao()
+    private val vehiculoLogDao = db.vehiculoLogDao()
     private val inventarioDao = db.inventarioDao()
 
     private val realtimeScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -105,55 +105,97 @@ class   RoomRepository(context: Context) {
     fun observarVehiculoPorPlaca(placa: Long): Flow<VehiculosEntity?> =
         vehiculoDao.observarPorPlaca(placa)
 
+    fun observeVehiculo(vehiculoId: String): Flow<VehiculosEntity?> =
+        vehiculoDao.observarPorVehiculoId(vehiculoId)
+
+    fun observeTimeline(vehiculoId: String): Flow<List<VehiculoLogEntity>> =
+        vehiculoLogDao.observeTimeline(vehiculoId)
+
     fun observarRegistrosDiarios(vehiculoId: Int): Flow<List<RegistroDiarioEntity>> =
-        registroVehiculoDao.observarRegistrosDiarios(vehiculoId)
+        vehiculoLogDao.observeByTipo(vehiculoId.toString(), "DIARIO").map { logs ->
+            logs.map { log ->
+                RegistroDiarioEntity(
+                    vehiculoId = vehiculoId,
+                    fecha = log.payloadJson.optStringSafe("fecha"),
+                    valor = log.km ?: 0.0,
+                    unidad = log.payloadJson.optStringSafe("unidad", "km"),
+                    registradoEn = log.timestamp,
+                    registradoPor = log.payloadJson.optStringSafe("registradoPor").ifBlank { null },
+                    syncStatus = log.syncState
+                )
+            }
+        }
 
     fun observarMantenimientos(vehiculoId: Int): Flow<List<RegistroMantenimientoEntity>> =
-        registroVehiculoDao.observarMantenimientos(vehiculoId)
+        vehiculoLogDao.observeByTipo(vehiculoId.toString(), "MANTENIMIENTO").map { logs ->
+            logs.map { log ->
+                RegistroMantenimientoEntity(
+                    vehiculoId = vehiculoId,
+                    tipoMantenimiento = log.payloadJson.optStringSafe("tipoMantenimiento", "General"),
+                    valorActual = log.km ?: 0.0,
+                    unidad = log.payloadJson.optStringSafe("unidad", "km"),
+                    observaciones = log.payloadJson.optStringSafe("observaciones").ifBlank { null },
+                    proximoMantenimiento = log.payloadJson.optDoubleSafe("proximoMantenimiento", log.km ?: 0.0),
+                    creadoEn = log.timestamp,
+                    syncStatus = log.syncState
+                )
+            }
+        }
+
+    suspend fun upsertVehiculo(entity: VehiculosEntity) = withContext(Dispatchers.IO) {
+        vehiculoDao.upsertVehiculo(entity)
+    }
 
     suspend fun insertarRegistroDiario(registro: RegistroDiarioEntity) = withContext(Dispatchers.IO) {
-        registroVehiculoDao.insertRegistroDiario(registro)
+        val log = VehiculoLogEntity(
+            logId = "diario_${registro.vehiculoId}_${registro.registradoEn}",
+            vehiculoId = registro.vehiculoId.toString(),
+            tipo = "DIARIO",
+            timestamp = registro.registradoEn,
+            km = registro.valor,
+            payloadJson = JSONObject().put("fecha", registro.fecha).put("unidad", registro.unidad).put("registradoPor", registro.registradoPor).toString(),
+            syncState = "PENDING"
+        )
+        addLogAndUpdateKm(log)
     }
 
     suspend fun insertarRegistroMantenimiento(registro: RegistroMantenimientoEntity) = withContext(Dispatchers.IO) {
-        registroVehiculoDao.insertRegistroMantenimiento(registro)
+        val log = VehiculoLogEntity(
+            logId = "mant_${registro.vehiculoId}_${registro.creadoEn}",
+            vehiculoId = registro.vehiculoId.toString(),
+            tipo = "MANTENIMIENTO",
+            timestamp = registro.creadoEn,
+            km = registro.valorActual,
+            payloadJson = JSONObject().put("tipoMantenimiento", registro.tipoMantenimiento).put("unidad", registro.unidad).put("observaciones", registro.observaciones).put("proximoMantenimiento", registro.proximoMantenimiento).toString(),
+            syncState = "PENDING"
+        )
+        addLogAndUpdateKm(log)
     }
 
-    suspend fun obtenerRegistroDiarioPorFecha(vehiculoId: Int, fecha: String): RegistroDiarioEntity? =
-        withContext(Dispatchers.IO) {
-            registroVehiculoDao.obtenerRegistroDiarioPorFecha(vehiculoId, fecha)
-        }
-
-    suspend fun obtenerUltimoRegistroDiario(vehiculoId: Int): RegistroDiarioEntity? =
-        withContext(Dispatchers.IO) {
-            registroVehiculoDao.obtenerUltimoRegistroDiario(vehiculoId)
-        }
-
-    suspend fun obtenerUltimoMantenimiento(vehiculoId: Int): RegistroMantenimientoEntity? =
-        withContext(Dispatchers.IO) {
-            registroVehiculoDao.obtenerUltimoMantenimiento(vehiculoId)
-        }
-
-    suspend fun obtenerMantenimientosPendientes(status: String): List<RegistroMantenimientoEntity> =
-        withContext(Dispatchers.IO) {
-            registroVehiculoDao.obtenerMantenimientosPendientes(status)
-        }
-
-    suspend fun obtenerRegistrosDiariosPendientes(status: String): List<RegistroDiarioEntity> =
-        withContext(Dispatchers.IO) {
-            registroVehiculoDao.obtenerRegistrosDiariosPendientes(status)
-        }
-
-    suspend fun actualizarMantenimientoSyncStatus(ids: List<Long>, status: String) = withContext(Dispatchers.IO) {
-        if (ids.isNotEmpty()) {
-            registroVehiculoDao.actualizarMantenimientoSyncStatus(ids, status)
+    suspend fun addLogAndUpdateKm(log: VehiculoLogEntity) = withContext(Dispatchers.IO) {
+        db.withTransaction {
+            vehiculoLogDao.upsert(log)
+            if (log.km != null) {
+                val vehiculo = vehiculoDao.buscarPorVehiculoId(log.vehiculoId)
+                if (vehiculo != null) {
+                    val nuevoKm = maxOf(vehiculo.kilometrajeActual ?: 0.0, log.km)
+                    vehiculoDao.upsertVehiculo(vehiculo.copy(kilometrajeActual = nuevoKm, updatedAt = System.currentTimeMillis()))
+                }
+            }
         }
     }
 
-    suspend fun actualizarRegistroDiarioSyncStatus(ids: List<Long>, status: String) = withContext(Dispatchers.IO) {
-        if (ids.isNotEmpty()) {
-            registroVehiculoDao.actualizarRegistroDiarioSyncStatus(ids, status)
-        }
+    suspend fun getPendingLogs(vehiculoId: String, limit: Int = 100): List<VehiculoLogEntity> = withContext(Dispatchers.IO) {
+        vehiculoLogDao.getPending(vehiculoId, limit = limit)
+    }
+
+    suspend fun markLogsSynced(logIds: List<String>) = withContext(Dispatchers.IO) {
+        if (logIds.isNotEmpty()) vehiculoLogDao.markState(logIds, "SYNCED")
+    }
+
+    suspend fun markLogError(logId: String, reason: String) = withContext(Dispatchers.IO) {
+        val payload = JSONObject().put("error", reason).toString()
+        vehiculoLogDao.markSingle(logId, "ERROR", payload)
     }
 
     suspend fun actualizarMantenimiento(
@@ -189,16 +231,6 @@ class   RoomRepository(context: Context) {
             registrosDiariosJson = registrosJson
         )
         firebase.guardarVehiculoMeta(actualizado)
-        val valorOdometro = kilometrajeActual ?: orimetroActual
-        if (valorOdometro != null) {
-            vehicleRepository.registerKmEvent(
-                vehiculoId = vehiculo.id.toString(),
-                km = valorOdometro,
-                tipo = "registro_diario",
-                refPath = "vehiculos/${vehiculo.id}/meta/registroFecha/$fecha",
-                nota = "Registro diario actualizado desde app"
-            )
-        }
         vehiculoDao.insertAll(listOf(actualizado))
     }
 
@@ -320,13 +352,17 @@ class   RoomRepository(context: Context) {
         timestamp: Long = System.currentTimeMillis()
     ) = withContext(Dispatchers.IO) {
         val placaLong = VehiculoPlacaUtils.parsePlacaLong(placa) ?: return@withContext
-        vehiculoDao.actualizarKilometrajeActual(placaLong, kilometrajeFinal)
-        val vehiculo = vehiculoDao.buscarPorPlaca(placaLong)
-        vehicleRepository.registerKmEvent(
-            vehiculoId = (vehiculo?.id ?: placaLong.toInt()).toString(),
-            km = kilometrajeFinal,
-            tipo = "registro_diario",
-            refPath = "vehiculos/${vehiculo?.id ?: placaLong}/historial/lecturasKm/$timestamp"
+        val vehiculo = vehiculoDao.buscarPorPlaca(placaLong) ?: return@withContext
+        addLogAndUpdateKm(
+            VehiculoLogEntity(
+                logId = "km_${vehiculo.vehiculoId}_$timestamp",
+                vehiculoId = vehiculo.vehiculoId,
+                tipo = "KM",
+                timestamp = timestamp,
+                km = kilometrajeFinal,
+                payloadJson = "{"placa":"${placa.trim()}"}",
+                syncState = "PENDING"
+            )
         )
     }
 
@@ -342,51 +378,29 @@ class   RoomRepository(context: Context) {
         proximoFecha: Long?,
         registradoEn: Long = System.currentTimeMillis()
     ) = withContext(Dispatchers.IO) {
-        val mantenimientoUltimo = buildString {
-            append("Tipo: ").append(tipo.ifBlank { "N/A" })
-            fecha?.let { append(" · Fecha: ").append(it) }
-            valorAlMomento?.let { append(" · Valor: ").append(it) }
-            observaciones?.trim()?.takeIf { it.isNotBlank() }?.let { append(" · Obs: ").append(it) }
-        }
-        val mantenimientoProximo = listOfNotNull(
-            proximoKm?.let { "Próx km: $it" },
-            proximoHoras?.let { "Próx horas: $it" },
-            proximoFecha?.let { "Próx fecha: $it" }
-        ).joinToString(" · ")
-            .takeIf { it.isNotBlank() }
-        when {
-            vehiculoId != null -> vehiculoDao.actualizarMantenimiento(
-                vehiculoId = vehiculoId,
-                mantenimientoUltimo = mantenimientoUltimo,
-                mantenimientoProximo = mantenimientoProximo
+        val targetVehiculo = when {
+            vehiculoId != null -> vehiculoDao.buscarPorId(vehiculoId)
+            else -> VehiculoPlacaUtils.parsePlacaLong(placa)?.let { vehiculoDao.buscarPorPlaca(it) }
+        } ?: return@withContext
+        val payload = JSONObject()
+            .put("placa", placa.trim())
+            .put("tipo", tipo)
+            .put("fecha", fecha)
+            .put("observaciones", observaciones)
+            .put("proximoKm", proximoKm)
+            .put("proximoHoras", proximoHoras)
+            .put("proximoFecha", proximoFecha)
+            .toString()
+        addLogAndUpdateKm(
+            VehiculoLogEntity(
+                logId = "mant_${targetVehiculo.vehiculoId}_$registradoEn",
+                vehiculoId = targetVehiculo.vehiculoId,
+                tipo = "MANTENIMIENTO",
+                timestamp = registradoEn,
+                km = valorAlMomento,
+                payloadJson = payload,
+                syncState = "PENDING"
             )
-            else -> VehiculoPlacaUtils.parsePlacaLong(placa)?.let { placaLong ->
-                vehiculoDao.actualizarMantenimientoPorPlaca(
-                    placa = placaLong,
-                    mantenimientoUltimo = mantenimientoUltimo,
-                    mantenimientoProximo = mantenimientoProximo
-                )
-            }
-        }
-        val targetVehiculoId = vehiculoId
-            ?: VehiculoPlacaUtils.parsePlacaLong(placa)?.let { vehiculoDao.buscarPorPlaca(it)?.id }
-            ?: return@withContext
-        vehicleRepository.registerMaintenance(
-            vehiculoId = targetVehiculoId.toString(),
-            mantenimientoId = registradoEn.toString(),
-            payload = mapOf(
-                "placa" to placa.trim(),
-                "vehiculoId" to targetVehiculoId,
-                "tipo" to tipo,
-                "fecha" to fecha,
-                "valorAlMomento" to valorAlMomento,
-                "observaciones" to observaciones,
-                "proximoKm" to proximoKm,
-                "proximoHoras" to proximoHoras,
-                "proximoFecha" to proximoFecha,
-                "registradoEn" to registradoEn
-            ),
-            km = valorAlMomento
         )
     }
 
@@ -985,3 +999,9 @@ class   RoomRepository(context: Context) {
         realtimeScope.coroutineContext.cancelChildren()
     }
 }
+
+private fun String.optStringSafe(key: String, default: String = ""): String =
+    runCatching { JSONObject(this).optString(key, default) }.getOrDefault(default)
+
+private fun String.optDoubleSafe(key: String, default: Double = 0.0): Double =
+    runCatching { JSONObject(this).optDouble(key, default) }.getOrDefault(default)
