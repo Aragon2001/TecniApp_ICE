@@ -49,19 +49,7 @@ class AveriasSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorke
             repo.syncPendientesConFirebase()
 
             // 2. Refresca Room desde Firebase cuando aplique
-            val pullResult = repo.pullFromFirebaseOnce()
-            if (pullResult.hadLocalData && pullResult.newCases.isNotEmpty()) {
-                if (AveriaNotificationPreferences.areNotificationsEnabled(applicationContext)) {
-                    val agencyFilters =
-                        AveriaNotificationPreferences.normalizedAgencies(applicationContext)
-                    val filtered = pullResult.newCases.filter { averia ->
-                        shouldNotifyForAgency(averia, agencyFilters)
-                    }
-                    if (filtered.isNotEmpty()) {
-                        AveriaNotificationDispatcher.notifyNewCases(applicationContext, filtered)
-                    }
-                }
-            }
+            repo.pullFromFirebaseOnce()
 
             val uid = auth.currentUser?.uid
             if (!uid.isNullOrBlank()) {

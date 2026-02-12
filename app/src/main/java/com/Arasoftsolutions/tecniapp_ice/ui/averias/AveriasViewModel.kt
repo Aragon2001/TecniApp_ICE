@@ -205,19 +205,6 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), AveriasUiState())
 
     init {
-        viewModelScope.launch {
-            repo.startRealtimeListener(onNewAverias = { nuevas ->
-                viewModelScope.launch(Dispatchers.Default) {
-                    if (!AveriaNotificationPreferences.areNotificationsEnabled(getApplication())) return@launch
-
-                    val agencyFilters = AveriaNotificationPreferences.normalizedAgencies(getApplication())
-                    val filtered = nuevas.filter { shouldNotifyForAgency(it, agencyFilters) }
-                    if (filtered.isNotEmpty()) {
-                        AveriaNotificationDispatcher.notifyNewCases(getApplication(), filtered)
-                    }
-                }
-            })
-        }
         AveriaNotifications.ensureChannel(app)
         observeCatalogos()
         observeUsuarioActual()
@@ -854,15 +841,11 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun syncNow() {
+        isLoading.tryEmit(true)
+        AveriasSyncWorker.triggerNow(getApplication(), showSyncNotification = false)
         viewModelScope.launch {
-            isLoading.emit(true)
-            try {
-                repo.pullFromFirebaseOnce()
-                repo.syncPendientesConFirebase()
-                roomRepo.refreshUsuarioActual()
-            } finally {
-                isLoading.emit(false)
-            }
+            roomRepo.refreshUsuarioActual()
+            isLoading.emit(false)
         }
     }
 
@@ -884,7 +867,6 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
                 }
                 else -> return@launch
             }
-            syncNow()
         }
     }
 
@@ -898,7 +880,6 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
             val vehiculo = user.placaVehiculo?.takeIf { !it.isNullOrBlank() }
             repo.asignar(ui.id, user.uid, nombreTecnico, vehiculo)
             _messages.tryEmit(getApplication<Application>().getString(R.string.averia_exito_asignada))
-            syncNow()
         }
     }
 
@@ -921,7 +902,7 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
             repo.enAtencion(ui.id, resolved)
             _messages.tryEmit(getApplication<Application>().getString(R.string.averia_exito_en_atencion))
             clearDraft(ui.id)
-            syncNow()
+            AveriasSyncWorker.triggerNow(getApplication(), showSyncNotification = false)
         }
     }
 
@@ -932,7 +913,6 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
             ensurePropietario(ui) ?: return@launch
             repo.revertirAPendiente(ui.id)
             _messages.tryEmit(getApplication<Application>().getString(R.string.averia_exito_cancelada))
-            syncNow()
         }
     }
 
@@ -946,7 +926,6 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
             }
             repo.revertirAPendiente(ui.id)
             _messages.tryEmit(getApplication<Application>().getString(R.string.averia_exito_revertida))
-            syncNow()
         }
     }
 
@@ -967,7 +946,7 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
             _shareRequests.tryEmit(shareItem)
             _messages.tryEmit(getApplication<Application>().getString(R.string.averia_exito_resuelta))
             clearDraft(ui.id)
-            syncNow()
+            AveriasSyncWorker.triggerNow(getApplication(), showSyncNotification = false)
         }
     }
 
@@ -979,7 +958,7 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
             runCatching { repo.eliminarAveria(ui.id) }
                 .onSuccess {
                     _messages.tryEmit(getApplication<Application>().getString(R.string.averia_exito_eliminada))
-                    syncNow()
+                    AveriasSyncWorker.triggerNow(getApplication(), showSyncNotification = false)
                 }
                 .onFailure {
                     Log.e(TAG, "No se pudo eliminar la avería ${ui.id}", it)
@@ -996,7 +975,7 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
             runCatching { repo.anular(ui.id) }
                 .onSuccess {
                     _messages.tryEmit(getApplication<Application>().getString(R.string.averia_exito_anulada))
-                    syncNow()
+                    AveriasSyncWorker.triggerNow(getApplication(), showSyncNotification = false)
                 }
                 .onFailure {
                     Log.e(TAG, "No se pudo anular la avería ${ui.id}", it)
@@ -1201,7 +1180,6 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
 
     override fun onCleared() {
         super.onCleared()
-        repo.stopRealtimeListener()
     }
 }
 

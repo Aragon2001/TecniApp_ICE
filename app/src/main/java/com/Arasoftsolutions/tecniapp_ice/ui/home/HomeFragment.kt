@@ -19,7 +19,6 @@ import com.Arasoftsolutions.tecniapp_ice.R
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.UserEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.apellidosCompletos
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasFragment
-import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasRepository
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasSyncWorker
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.Estado
 import com.Arasoftsolutions.tecniapp_ice.ui.modal.SyncDialogFragment
@@ -53,10 +52,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
     private val timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss", locale)
     private val dataStore by lazy { DataStoreManager.getInstance(requireContext().applicationContext) }
     private val roomRepository by lazy { RoomRepository.getInstance(requireContext().applicationContext) }
-    private val averiasRepository by lazy {
-        AveriasRepository(AppDatabase.getInstance(requireContext().applicationContext))
-    }
-    private val synchronizer by lazy { Synchronizer(roomRepository, averiasRepository) }
+    private val synchronizer by lazy { Synchronizer(roomRepository) }
     private var manualSyncInProgress = false
 
     private var syncButton: MaterialButton? = null
