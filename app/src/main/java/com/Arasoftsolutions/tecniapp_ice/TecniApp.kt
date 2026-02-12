@@ -32,7 +32,6 @@ class TecniApp : Application() {
         AveriaNotifications.ensureChannel(this)
         networkAlertManager.start()
         enableFirebasePersistence()
-        registerRealtimeSyncObserver()
         val dataStore = DataStoreManager.getInstance(this)
         applicationScope.launch {
             val darkThemeEnabled = dataStore.darkThemeEnabled.first()
