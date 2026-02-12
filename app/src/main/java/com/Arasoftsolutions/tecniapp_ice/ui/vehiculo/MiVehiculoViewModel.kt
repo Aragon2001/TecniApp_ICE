@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.VehiculoEntity
+import com.Arasoftsolutions.tecniapp_ice.Database.entities.VehiculoLogEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
 import com.Arasoftsolutions.tecniapp_ice.Database.sync.SyncStatus
 import com.google.firebase.auth.FirebaseAuth
@@ -266,6 +267,63 @@ class MiVehiculoViewModel(app: Application) : AndroidViewModel(app) {
     }
 
 
+
+
+    fun crearVehiculo(placaRaw: String, subregion: String?, tipo: String, agencia: String) {
+        viewModelScope.launch {
+            val vehiculoId = placaRaw.trim().uppercase(Locale.ROOT)
+            val vehiculo = VehiculoEntity(
+                vehiculoId = vehiculoId,
+                placaRaw = placaRaw.trim().uppercase(Locale.ROOT),
+                subregion = subregion,
+                tipo = tipo,
+                agencia = agencia,
+                kmActual = 0.0,
+                kilometrajeActual = 0.0,
+                updatedAt = System.currentTimeMillis()
+            )
+            repository.upsertVehiculo(vehiculo)
+            vehiculoSyncService.syncVehiculo(vehiculo)
+        }
+    }
+
+    fun registrarKm(km: Double) {
+        viewModelScope.launch {
+            val vehiculo = _uiState.value.vehiculo ?: return@launch
+            val now = System.currentTimeMillis()
+            repository.addLogAndUpdateKm(
+                VehiculoLogEntity(
+                    logId = "km_${vehiculo.vehiculoId}_$now",
+                    vehiculoId = vehiculo.vehiculoId,
+                    tipo = "KM",
+                    timestamp = now,
+                    km = km,
+                    payloadJson = "{}",
+                    syncState = "PENDING"
+                )
+            )
+            syncAhora()
+        }
+    }
+
+    fun registrarDiario(valor: Double, observaciones: String?) {
+        viewModelScope.launch {
+            val vehiculo = _uiState.value.vehiculo ?: return@launch
+            val now = System.currentTimeMillis()
+            repository.addLogAndUpdateKm(
+                VehiculoLogEntity(
+                    logId = "diario_${vehiculo.vehiculoId}_$now",
+                    vehiculoId = vehiculo.vehiculoId,
+                    tipo = "DIARIO",
+                    timestamp = now,
+                    km = valor,
+                    payloadJson = org.json.JSONObject().put("observaciones", observaciones.orEmpty()).toString(),
+                    syncState = "PENDING"
+                )
+            )
+            syncAhora()
+        }
+    }
     fun syncAhora() {
         viewModelScope.launch {
             _uiState.value.vehiculo?.let { vehiculoSyncService.syncVehiculo(it) }
