@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit
 private const val UMBRAL_MANTENIMIENTO_KM = 500.0
 private const val UMBRAL_MANTENIMIENTO_HORAS = 25.0
 
-class ehiculoReminderWorker(
+class VehiculoReminderWorker(
     context: Context,
     params: WorkerParameters
 ) : CoroutineWorker(context, params) {
