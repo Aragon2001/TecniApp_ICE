@@ -83,6 +83,7 @@ abstract class AppDatabase : RoomDatabase() {
                     "tecniapp_room.db"
                 )
                     .addMigrations(MIGRATION_24_25)
+                    .fallbackToDestructiveMigrationFrom(true, 23)
                     .fallbackToDestructiveMigrationOnDowngrade(true)
                     .build()
                     .also { INSTANCE = it }
