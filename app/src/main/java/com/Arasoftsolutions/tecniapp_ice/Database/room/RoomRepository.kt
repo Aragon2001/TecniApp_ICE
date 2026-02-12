@@ -782,6 +782,30 @@ class   RoomRepository(context: Context) {
         bytes
     }
 
+    suspend fun syncInventarioVehiculo(vehiculoId: Int, vehiculoKey: String): Long = withContext(Dispatchers.IO) {
+        val key = vehiculoKey.trim()
+        if (key.isEmpty()) return@withContext 0L
+        val inventario = firebase.obtenerInventarioDeVehiculo(key)
+        val bytes = estimateBytes(inventario)
+        inventarioDao.eliminarPorVehiculo(vehiculoId)
+        if (inventario.isNotEmpty()) {
+            inventarioDao.insertAll(inventario)
+        }
+        bytes
+    }
+
+    suspend fun syncLuminariasAgencia(agencia: String): Long = withContext(Dispatchers.IO) {
+        val agenciaValue = agencia.trim()
+        if (agenciaValue.isEmpty()) return@withContext 0L
+        val reparaciones = firebase.obtenerLuminariasPorAgencia(agenciaValue)
+        val bytes = estimateBytes(reparaciones)
+        inventarioDao.limpiarReparaciones()
+        if (reparaciones.isNotEmpty()) {
+            inventarioDao.insertarReparaciones(reparaciones)
+        }
+        bytes
+    }
+
     private suspend fun resolveVehiculoKey(vehiculoId: Int): String {
         val vehiculo = db.vehiculoDao().buscarPorId(vehiculoId)
         return vehiculo?.placa?.toString() ?: vehiculoId.toString()
