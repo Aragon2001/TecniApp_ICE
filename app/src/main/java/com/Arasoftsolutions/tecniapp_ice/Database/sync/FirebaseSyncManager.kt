@@ -652,6 +652,15 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
         return parseInventarioSnapshot(snap)
     }
 
+    suspend fun obtenerInventarioDeVehiculo(vehiculoKey: String): List<InventarioItemEntity> {
+        val key = vehiculoKey.trim()
+        if (key.isEmpty()) return emptyList()
+        val root = inventarioRoot().child(key)
+        val snap = root.get().await()
+        if (!snap.exists()) return emptyList()
+        return parseInventarioVehiculoNode(snap)
+    }
+
     suspend fun guardarInventarioVehiculo(vehiculoKey: String, vehiculoId: Int, items: List<InventarioItemEntity>) {
         val payload = items.associate { item ->
             val key = item.codigoMaterial.trim()
@@ -709,6 +718,14 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
             reparaciones += parseLuminariasSnapshot(snap)
         }
         return reparaciones
+    }
+
+    suspend fun obtenerLuminariasPorAgencia(agencia: String): List<LuminariaReparacionEntity> {
+        val agenciaKey = normalizarClave(agencia)?.takeIf { it.isNotBlank() } ?: agencia.trim()
+        if (agenciaKey.isBlank()) return emptyList()
+        val snap = luminariasBase().child(agenciaKey).get().await()
+        if (!snap.exists()) return emptyList()
+        return parseLuminariasSnapshot(snap)
     }
 
     suspend fun guardarKilometrajeVehicular(
@@ -1042,7 +1059,7 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
         return when {
             lowerExists -> lower
             upperExists -> upper
-            else -> dbInventario
+            else -> lower
         }
     }
 
