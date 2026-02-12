@@ -813,31 +813,30 @@ class   RoomRepository(context: Context) {
         db.agenciaDao().insertAll(agencias)
         progress(++done, total, "Descargando agencias…", downloadedBytes)
 
-        val pueblosRemotos = firebase.obtenerPueblosPorSubregion(canonicalSubregion)
+        val pueblosRemotos = firebase.obtenerPueblos()
         downloadedBytes += estimateBytes(pueblosRemotos)
         val pueblosNormalizados = pueblosRemotos.map { remoto ->
             val base = remoto.subregion_id_normalizado.takeIf { it.isNotBlank() } ?: remoto.subregion
-            val canonico = SubregionNormalizer.canonicalIdOrSelf(base) ?: ""
+            val canonico = SubregionNormalizer.canonicalIdOrSelf(base)?.trim().orEmpty()
             remoto.copy(subregion_id_normalizado = canonico)
         }
         val pueblosFiltrados = pueblosNormalizados.filter { it.subregion_id_normalizado == canonicalSubregion }
-        if (pueblosFiltrados.isNotEmpty()) {
-            db.puebloDao().limpiarSubregion(canonicalSubregion)
-            db.puebloDao().insertAll(pueblosFiltrados)
+        if (pueblosFiltrados.isEmpty()) {
+            throw IllegalStateException(
+                "No se encontraron pueblos para subregión=$canonicalSubregion. Revisa normalización y datos remotos."
+            )
         }
+        db.puebloDao().limpiarSubregion(canonicalSubregion)
+        db.puebloDao().insertAll(pueblosFiltrados)
         progress(++done, total, "Descargando pueblos…", downloadedBytes)
 
-        val idsPueblos = if (pueblosFiltrados.isNotEmpty()) {
-            pueblosFiltrados.map { it.id }
-        } else {
-            db.puebloDao().obtenerIdsPorSubregion(canonicalSubregion)
-        }
+        val idsPueblos = pueblosFiltrados.map { it.id }
         val idsSet = idsPueblos.toSet()
-        val localizacionesRemotas = firebase.obtenerLocalizacionesPorPueblos(idsPueblos)
+        val localizacionesRemotas = firebase.obtenerLocalizaciones()
         downloadedBytes += estimateBytes(localizacionesRemotas)
         val localizacionesFiltradas = localizacionesRemotas.filter { it.pueblo in idsSet }
+        db.localizacionDao().eliminarPorPueblos(idsPueblos)
         if (localizacionesFiltradas.isNotEmpty()) {
-            db.localizacionDao().eliminarPorPueblos(idsPueblos)
             db.localizacionDao().insertAll(localizacionesFiltradas)
         }
         progress(++done, total, "Descargando localizaciones…", downloadedBytes)

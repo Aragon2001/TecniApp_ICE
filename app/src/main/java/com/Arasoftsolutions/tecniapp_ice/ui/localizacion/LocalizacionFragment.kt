@@ -4,6 +4,7 @@ package com.Arasoftsolutions.tecniapp_ice.ui.localizacion
 
 import android.Manifest
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.ClipData
 import android.content.ClipboardManager
@@ -13,6 +14,7 @@ import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.location.Location
 import android.os.Bundle
+import android.provider.Settings
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
@@ -236,20 +238,34 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
                     val calleSeleccionada = parent?.getItemAtPosition(position)?.toString().orEmpty()
                     if (calleSeleccionada == getString(R.string.localizacion_select_calle)) return
 
-                    try {
-                        val partes = calleSeleccionada.split(" - ")
-                        val codigoCalle = partes[0].toInt()
-                        val direccionCalle = partes[1]
-                        val puebloSel = binding.spinnerPueblos.selectedItem?.toString().orEmpty()
-                        if (puebloSel == getString(R.string.localizacion_select_pueblo)) return
-                        val codigoPueblo = puebloSel.split(" - ")[0].toInt()
+                    val codigoCalle = parseCodigo(calleSeleccionada)
+                    val direccionCalle = calleSeleccionada.substringAfter(" - ", "").trim()
+                    val puebloSel = binding.spinnerPueblos.selectedItem?.toString().orEmpty()
+                    if (puebloSel == getString(R.string.localizacion_select_pueblo)) return
+                    val codigoPueblo = parseCodigo(puebloSel)
 
-                        viewModel.cargarLocalizacionParaCalle(codigoCalle, codigoPueblo, direccionCalle)
-                    } catch (e: Exception) {
-                        Log.e("Localizacion", "Error parseando calle seleccionada: ${e.message}", e)
+                    if (codigoCalle == null || codigoPueblo == null || direccionCalle.isBlank()) {
+                        Log.e("Localizacion", "Error parseando calle seleccionada: calle=$calleSeleccionada pueblo=$puebloSel")
+                        return
                     }
+
+                    viewModel.cargarLocalizacionParaCalle(codigoCalle, codigoPueblo, direccionCalle)
                 }
                 override fun onNothingSelected(parent: AdapterView<*>?) {}
+            }
+        }
+
+        viewModel.marcadoresCalles.observe(viewLifecycleOwner) { markers ->
+            val map = mapaGoogle ?: return@observe
+            map.clear()
+            marcador = null
+            markers.take(250).forEach { marker ->
+                map.addMarker(
+                    MarkerOptions()
+                        .position(LatLng(marker.latitud, marker.longitud))
+                        .title(marker.titulo)
+                        .snippet(marker.snippet)
+                )
             }
         }
 
@@ -300,17 +316,20 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
                 val puebloSeleccionado = parent?.getItemAtPosition(position)?.toString().orEmpty()
                 if (puebloSeleccionado == getString(R.string.localizacion_select_pueblo)) return
-                try {
-                    val codigoPueblo = puebloSeleccionado.split(" - ")[0].toInt()
-                    limpiarCamposDeTexto()
-                    viewModel.cargarCallesParaPueblo(codigoPueblo)
-                } catch (e: Exception) {
-                    Log.e("Localizacion", "Error parseando pueblo seleccionado: ${e.message}", e)
+                val codigoPueblo = parseCodigo(puebloSeleccionado)
+                if (codigoPueblo == null) {
+                    Log.e("Localizacion", "Error parseando pueblo seleccionado: $puebloSeleccionado")
+                    return
                 }
+                limpiarCamposDeTexto()
+                viewModel.cargarCallesParaPueblo(codigoPueblo)
             }
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
     }
+
+    private fun parseCodigo(item: String): Int? =
+        item.substringBefore(" - ", item).trim().toIntOrNull()
 
     private fun configurarControles() {
         binding.actionNavigate.setOnClickListener { mostrarOpcionesDeNavegacion() }
@@ -623,6 +642,7 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
         val fine = ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION)
         val coarse = ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_COARSE_LOCATION)
         if (fine == PackageManager.PERMISSION_GRANTED || coarse == PackageManager.PERMISSION_GRANTED) {
+            pedirActivarUbicacionSiOcupa()
             enableMyLocationAndStartUpdates()
         } else {
             locationPermissionLauncher.launch(
@@ -949,10 +969,30 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
 
     private fun debeAutorrotar(): Boolean = autoRotatePreference && runtimeAutoRotateEnabled
 
+    private fun isLocationEnabled(): Boolean {
+        val lm = requireContext().getSystemService(Context.LOCATION_SERVICE) as android.location.LocationManager
+        return lm.isProviderEnabled(android.location.LocationManager.GPS_PROVIDER) ||
+            lm.isProviderEnabled(android.location.LocationManager.NETWORK_PROVIDER)
+    }
+
+    private fun pedirActivarUbicacionSiOcupa() {
+        if (!isLocationEnabled()) {
+            Snackbar.make(
+                binding.root,
+                "Ubicación desactivada. Activá GPS para centrar.",
+                Snackbar.LENGTH_LONG
+            ).setAction("Activar") {
+                startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+            }.show()
+        }
+    }
+
     private fun solicitarUbicacionActual(force: Boolean = false) {
         val fine = ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION)
         val coarse = ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_COARSE_LOCATION)
         if (fine != PackageManager.PERMISSION_GRANTED && coarse != PackageManager.PERMISSION_GRANTED) return
+
+        pedirActivarUbicacionSiOcupa()
 
         try {
             fusedLocationClient.lastLocation
