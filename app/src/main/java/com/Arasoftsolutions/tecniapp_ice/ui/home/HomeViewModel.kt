@@ -18,7 +18,7 @@ import com.Arasoftsolutions.tecniapp_ice.ui.averias.normalizeAveriaText
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.shouldNotifyForAgency
 import com.Arasoftsolutions.tecniapp_ice.ui.vehiculo.TipoVehiculo
 import com.Arasoftsolutions.tecniapp_ice.ui.vehiculo.inferirTipoVehiculo
-import com.Arasoftsolutions.tecniapp_ice.Database.utils.VehiculoPlacaUtils
+import com.Arasoftsolutions.tecniapp_ice.ui.vehiculo.VehiculoPlacaUtils
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch

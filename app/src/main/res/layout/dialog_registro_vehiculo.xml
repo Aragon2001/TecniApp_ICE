@@ -12,8 +12,8 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
 
-        android:background="@drawable/bg_dialog_glass"
-        app:cardBackgroundColor="@color/surface_light">
+        android:background="@drawable/bg_averia_notification"
+        app:cardBackgroundColor="@color/averia_notification_surface">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -169,7 +169,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                app:cardBackgroundColor="@color/tertiary_container_light">
+                app:cardBackgroundColor="@color/background">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -183,7 +183,7 @@
                         android:layout_height="24dp"
                         android:contentDescription="@string/mi_vehiculo_dialog_proximo"
                         android:src="@drawable/ic_calendar"
-                        app:tint="@color/on_tertiary_container_light" />
+                        app:tint="@color/bg_dark" />
 
                     <TextView
                         android:id="@+id/tvProximoMantenimiento"

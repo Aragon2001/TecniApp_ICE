@@ -1,4 +1,4 @@
-package com.Arasoftsolutions.tecniapp_ice.Database.utils
+package com.Arasoftsolutions.tecniapp_ice.ui.vehiculo
 
 object VehiculoPlacaUtils {
     fun parsePlacaLong(raw: String?): Long? {

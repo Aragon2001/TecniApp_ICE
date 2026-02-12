@@ -1,94 +1,133 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Material 3 semantic tokens (light) -->
+
+    <!-- =========================================================
+         Material 3 Color Tokens (LIGHT)
+         Nota: para modo oscuro real con DayNight, ver values-night/colors.xml
+         ========================================================= -->
+
+    <!-- Brand -->
     <color name="md_theme_light_primary">#005DAA</color>
     <color name="md_theme_light_on_primary">#FFFFFF</color>
     <color name="md_theme_light_primary_container">#D4E3FF</color>
     <color name="md_theme_light_on_primary_container">#001C39</color>
 
+    <!-- Secondary (warning/acciones secundarias institucionales) -->
     <color name="md_theme_light_secondary">#705D00</color>
     <color name="md_theme_light_on_secondary">#FFFFFF</color>
     <color name="md_theme_light_secondary_container">#FFE17A</color>
     <color name="md_theme_light_on_secondary_container">#231B00</color>
 
+    <!-- Tertiary (success/estado ok) -->
     <color name="md_theme_light_tertiary">#206C2C</color>
     <color name="md_theme_light_on_tertiary">#FFFFFF</color>
     <color name="md_theme_light_tertiary_container">#C6EFCC</color>
     <color name="md_theme_light_on_tertiary_container">#002106</color>
 
+    <!-- Error -->
     <color name="md_theme_light_error">#BA1A1A</color>
     <color name="md_theme_light_on_error">#FFFFFF</color>
 
+    <!-- Surfaces -->
     <color name="md_theme_light_background">#F8F9FF</color>
     <color name="md_theme_light_on_background">#1A1B21</color>
     <color name="md_theme_light_surface">#F8F9FF</color>
     <color name="md_theme_light_on_surface">#1A1B21</color>
     <color name="md_theme_light_surface_variant">#DFE2EB</color>
     <color name="md_theme_light_on_surface_variant">#434750</color>
+
+    <!-- Outlines -->
     <color name="md_theme_light_outline">#737780</color>
     <color name="md_theme_light_outline_variant">#C3C6CF</color>
 
-    <!-- Material 3 semantic aliases used by XML -->
+    <!-- =========================================================
+         Material 3 Semantic Aliases (usados por XML/Theme)
+         IMPORTANTE: estos nombres deben existir también en values-night
+         ========================================================= -->
     <color name="primary">@color/md_theme_light_primary</color>
     <color name="on_primary">@color/md_theme_light_on_primary</color>
     <color name="primary_container">@color/md_theme_light_primary_container</color>
     <color name="on_primary_container">@color/md_theme_light_on_primary_container</color>
+
     <color name="secondary">@color/md_theme_light_secondary</color>
     <color name="on_secondary">@color/md_theme_light_on_secondary</color>
     <color name="secondary_container">@color/md_theme_light_secondary_container</color>
     <color name="on_secondary_container">@color/md_theme_light_on_secondary_container</color>
+
     <color name="tertiary">@color/md_theme_light_tertiary</color>
     <color name="on_tertiary">@color/md_theme_light_on_tertiary</color>
     <color name="tertiary_container">@color/md_theme_light_tertiary_container</color>
     <color name="on_tertiary_container">@color/md_theme_light_on_tertiary_container</color>
+
     <color name="error">@color/md_theme_light_error</color>
     <color name="on_error">@color/md_theme_light_on_error</color>
+
     <color name="background">@color/md_theme_light_background</color>
     <color name="on_background">@color/md_theme_light_on_background</color>
     <color name="surface">@color/md_theme_light_surface</color>
     <color name="on_surface">@color/md_theme_light_on_surface</color>
     <color name="surface_variant">@color/md_theme_light_surface_variant</color>
     <color name="on_surface_variant">@color/md_theme_light_on_surface_variant</color>
+
     <color name="outline">@color/md_theme_light_outline</color>
     <color name="outline_variant">@color/md_theme_light_outline_variant</color>
 
-    <!-- Existing app colors kept for compatibility -->
+    <!-- =========================================================
+         Compatibilidad / App legacy
+         (Si algo ya existe en layouts viejos, lo dejamos)
+         ========================================================= -->
     <color name="white">#FFFFFFFF</color>
     <color name="black">#FF000000</color>
     <color name="transparent">#00000000</color>
+
+    <!-- Institucional ICE -->
     <color name="ice_blue">@color/primary</color>
     <color name="ice_blue_dark">#004C8C</color>
     <color name="ice_yellow">#FFDD00</color>
     <color name="ice_yellow_dark">#CCAA00</color>
+    <color name="ice_cyan">#35C9FF</color>
 
-    <color name="bg_light">@color/background</color>
-    <color name="surface_light">@color/surface</color>
-    <color name="surface_variant_light">@color/surface_variant</color>
-    <color name="on_surface_variant_light">@color/on_surface_variant</color>
-    <color name="outline_variant_light">@color/outline_variant</color>
-    <color name="bg_dark">#1C1F26</color>
-    <color name="surface_dark">#262B35</color>
-    <color name="surface_variant_dark">#323845</color>
-    <color name="on_surface_variant_dark">#C6CBD7</color>
-    <color name="outline_variant_dark">#444A56</color>
-    <color name="on_light">@color/on_surface</color>
-    <color name="on_dark">#F1F3F8</color>
+    <!-- Estados genéricos -->
     <color name="success_500">#4CAF50</color>
     <color name="error_500">#D32F2F</color>
 
-    <color name="primary_container_light">@color/primary_container</color>
-    <color name="on_primary_container_light">@color/on_primary_container</color>
-    <color name="secondary_container_light">@color/secondary_container</color>
-    <color name="on_secondary_container_light">@color/on_secondary_container</color>
-    <color name="tertiary_container_light">@color/tertiary_container</color>
-    <color name="on_tertiary_container_light">@color/on_tertiary_container</color>
-    <color name="primary_container_dark">#004C8C</color>
-    <color name="on_primary_container_dark">#B4DAFF</color>
-    <color name="secondary_container_dark">#4C3C00</color>
-    <color name="on_secondary_container_dark">#FFEB3B</color>
-    <color name="tertiary_container_dark">#0F3A1B</color>
-    <color name="on_tertiary_container_dark">#B1F0BF</color>
+    <color name="success_green">#2EBE7E</color>
+    <color name="warning_yellow">#FFC857</color>
+    <color name="danger_red">#E5484D</color>
 
+    <!-- Texto y grises -->
+    <color name="light_gray">#B3B3B3</color>
+    <color name="dark_gray">#616161</color>
+    <color name="red">#D32F2F</color>
+    <color name="white_translucent">#80FFFFFF</color>
+
+    <!-- Scrims / overlays -->
+    <color name="scrim_light">#33000000</color>
+    <color name="overlay_dark">#80000000</color>
+
+    <!-- =========================================================
+         Glass / Transparencias (tu estilo “glass”)
+         Nota: en night se redefine glass_dark, glass_outline, etc.
+         ========================================================= -->
+    <color name="glass_light">#E6FFFFFF</color>
+    <color name="glass_dark">#4D1C1F26</color>
+    <color name="glass_surface">#E6FFFFFF</color>
+    <color name="glass_outline">#26FFFFFF</color>
+    <color name="glass_chip_surface">#D9FFFFFF</color>
+
+    <!-- =========================================================
+         Chips / Estados de Averías (colores directos)
+         (Si querés, luego los conectamos a tokens M3 para consistencia)
+         ========================================================= -->
+    <color name="chip_asignada">#FBC02D</color>     <!-- Amarillo -->
+    <color name="chip_en_atencion">#1E88E5</color>  <!-- Azul -->
+    <color name="chip_pendiente">#E53935</color>    <!-- Rojo -->
+    <color name="chip_resuelta">#43A047</color>     <!-- Verde -->
+    <color name="chip_anulada">#546E7A</color>      <!-- Gris -->
+
+    <!-- =========================================================
+         Colores específicos de UI (login / notificaciones / etc.)
+         ========================================================= -->
     <color name="login_background">#0071CE</color>
     <color name="login_card_background">#FFFFFFFF</color>
     <color name="login_text_primary">#004C8C</color>
@@ -96,35 +135,8 @@
     <color name="login_button_background">#FFDD00</color>
     <color name="login_button_text">#004C8C</color>
     <color name="login_hint_text">#B3B3B3</color>
-    <color name="scrim_light">#33000000</color>
-    <color name="scrim_dark">#26FFFFFF</color>
-    <color name="overlay_dark">#80000000</color>
 
-    <color name="glass_light">#E6FFFFFF</color>
-    <color name="glass_dark">#4D1C1F26</color>
-    <color name="glass_surface">#E6FFFFFF</color>
-    <color name="glass_outline">#26FFFFFF</color>
-    <color name="glass_chip_surface">#D9FFFFFF</color>
-
-    <color name="chip_asignada">#FBC02D</color>
-    <color name="chip_en_atencion">#1E88E5</color>
-    <color name="chip_pendiente">#E53935</color>
-    <color name="chip_resuelta">#43A047</color>
-    <color name="chip_anulada">#546E7A</color>
-
-    <color name="ice_cyan">#35C9FF</color>
-    <color name="success_green">#2EBE7E</color>
-    <color name="warning_yellow">#FFC857</color>
-    <color name="danger_red">#E5484D</color>
-    <color name="surface_neutral_light">#F6F8FB</color>
-    <color name="surface_neutral_dark">#1F242D</color>
-    <color name="status_pending">#E05A5A</color>
-    <color name="status_in_progress">#3D9CFF</color>
-    <color name="status_assigned">#FFB020</color>
-    <color name="status_done">#2EBE7E</color>
-
-    <color name="outline_soft">#1F000000</color>
-
+    <!-- Notificaciones de averías -->
     <color name="averia_notification_glow">#332196F3</color>
     <color name="averia_notification_accent">#2196F3</color>
     <color name="averia_notification_resolved">#2E7D32</color>
@@ -134,10 +146,57 @@
     <color name="averia_notification_chip_bg">#142196F3</color>
     <color name="averia_notification_chip_text">#E3F2FD</color>
 
-    <color name="light_gray">#B3B3B3</color>
-    <color name="dark_gray">#616161</color>
-    <color name="red">#D32F2F</color>
-    <color name="white_translucent">#80FFFFFF</color>
+    <!-- Helpers -->
+    <color name="outline_soft">#1F000000</color>
     <color name="primary_dark">#1A237E</color>
     <color name="medidor_warning_background">#FFF3E0</color>
+
+    <!-- =========================================================
+         IMPORTANTE:
+         Estos nombres “*_dark / *_light” NO cambian solos con DayNight.
+         Si los necesitás dinámicos, moverlos a values-night o usar tokens.
+         ========================================================= -->
+    <color name="bg_light">@color/background</color>
+    <color name="surface_light">@color/surface</color>
+    <color name="surface_variant_light">@color/surface_variant</color>
+    <color name="on_surface_variant_light">@color/on_surface_variant</color>
+    <color name="outline_variant_light">@color/outline_variant</color>
+
+    <!-- Si todavía hay pantallas legacy que usan estos nombres, los dejamos -->
+    <color name="bg_dark">#1C1F26</color>
+    <color name="surface_dark">#262B35</color>
+    <color name="surface_variant_dark">#323845</color>
+    <color name="on_surface_variant_dark">#C6CBD7</color>
+    <color name="outline_variant_dark">#444A56</color>
+    <color name="on_light">@color/on_surface</color>
+    <color name="on_dark">#F1F3F8</color>
+
+    <!-- Estados normalizados (si los usás en lógica/DB/UI) -->
+    <color name="status_pending">#E05A5A</color>
+    <color name="status_in_progress">#3D9CFF</color>
+    <color name="status_assigned">#FFB020</color>
+    <color name="status_done">#2EBE7E</color>
+
+    <!-- Superficies neutrales -->
+    <color name="surface_neutral_light">#F6F8FB</color>
+    <color name="surface_neutral_dark">#1F242D</color>
+
+    <!-- Scrim night legacy (si lo ocupás, se redefine en values-night idealmente) -->
+    <color name="scrim_dark">#26FFFFFF</color>
+    <!-- ========================================================= -->
+<!-- ========================================================= -->
+<!-- Legacy “*_light” colors (compatibilidad con layouts viejos) -->
+<!-- Apuntan a tus tokens Material 3 actuales                   -->
+<!-- ========================================================= -->
+
+<color name="primary_container_light">@color/primary_container</color>
+<color name="on_primary_container_light">@color/on_primary_container</color>
+
+<color name="secondary_container_light">@color/secondary_container</color>
+<color name="on_secondary_container_light">@color/on_secondary_container</color>
+
+<color name="tertiary_container_light">@color/tertiary_container</color>
+<color name="on_tertiary_container_light">@color/on_tertiary_container</color>
+
+
 </resources>

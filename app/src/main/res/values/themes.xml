@@ -1,46 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- =========================================================
+         THEME PRINCIPAL (Material 3 DayNight)
+         - Toma colores desde @color/primary, surface, etc.
+         - Para que DayNight funcione, define esos mismos nombres en values-night/colors.xml
+         ========================================================= -->
     <style name="Theme.TecniAppICE" parent="Theme.Material3.DayNight.NoActionBar">
+
+        <!-- ===== Colors (Material 3) ===== -->
         <item name="colorPrimary">@color/primary</item>
         <item name="colorOnPrimary">@color/on_primary</item>
         <item name="colorPrimaryContainer">@color/primary_container</item>
         <item name="colorOnPrimaryContainer">@color/on_primary_container</item>
+
         <item name="colorSecondary">@color/secondary</item>
         <item name="colorOnSecondary">@color/on_secondary</item>
         <item name="colorSecondaryContainer">@color/secondary_container</item>
         <item name="colorOnSecondaryContainer">@color/on_secondary_container</item>
+
         <item name="colorTertiary">@color/tertiary</item>
         <item name="colorOnTertiary">@color/on_tertiary</item>
         <item name="colorTertiaryContainer">@color/tertiary_container</item>
         <item name="colorOnTertiaryContainer">@color/on_tertiary_container</item>
+
         <item name="colorError">@color/error</item>
         <item name="colorOnError">@color/on_error</item>
 
         <item name="android:colorBackground">@color/background</item>
         <item name="android:windowBackground">@color/background</item>
+
         <item name="colorSurface">@color/surface</item>
         <item name="colorOnSurface">@color/on_surface</item>
         <item name="colorSurfaceVariant">@color/surface_variant</item>
         <item name="colorOnSurfaceVariant">@color/on_surface_variant</item>
+
         <item name="colorOnBackground">@color/on_background</item>
+
         <item name="colorOutline">@color/outline</item>
         <item name="colorOutlineVariant">@color/outline_variant</item>
 
+        <!-- ===== System bars (Edge-to-edge) ===== -->
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
 
+        <!-- ===== Shape system ===== -->
         <item name="shapeAppearanceSmallComponent">@style/ShapeAppearance.Tecni.Small</item>
         <item name="shapeAppearanceMediumComponent">@style/ShapeAppearance.Tecni.Medium</item>
         <item name="shapeAppearanceLargeComponent">@style/ShapeAppearance.Tecni.Large</item>
 
+        <!-- ===== Default component styles ===== -->
         <item name="materialCardViewStyle">@style/Tecni.Card</item>
         <item name="materialButtonStyle">@style/Tecni.Button</item>
         <item name="chipStyle">@style/Tecni.Chip</item>
         <item name="toolbarStyle">@style/Tecni.Toolbar</item>
+
+        <!-- BottomSheet overlay (tu app lo usa) -->
         <item name="bottomSheetDialogTheme">@style/ThemeOverlay.Tecni.BottomSheetDialog</item>
+
+        <!-- Tipografía rápida (si luego querés, lo hacemos más completo) -->
         <item name="textAppearanceTitleLarge">@style/TextAppearance.Tecni.TitleLarge</item>
         <item name="textAppearanceBodyMedium">@style/TextAppearance.Tecni.BodyMedium</item>
     </style>
 
+    <!-- =========================================================
+         SHAPES (redondeos estilo “TecniApp”)
+         ========================================================= -->
     <style name="ShapeAppearance.Tecni.Small" parent="ShapeAppearance.Material3.Corner.Small">
         <item name="cornerSize">8dp</item>
     </style>
@@ -53,12 +78,21 @@
         <item name="cornerSize">28dp</item>
     </style>
 
+    <!-- =========================================================
+         TEXT APPEARANCE
+         ========================================================= -->
     <style name="TextAppearance.Tecni.TitleLarge" parent="TextAppearance.Material3.TitleLarge" />
     <style name="TextAppearance.Tecni.BodyMedium" parent="TextAppearance.Material3.BodyMedium" />
 
+    <!-- =========================================================
+         COMPONENT STYLES BASE
+         ========================================================= -->
     <style name="Tecni.Card" parent="Widget.Material3.CardView.Elevated">
         <item name="cardElevation">2dp</item>
         <item name="cardCornerRadius">16dp</item>
+        <!-- Si querés stroke suave tipo glass, lo activamos aquí -->
+        <!-- <item name="strokeWidth">1dp</item> -->
+        <!-- <item name="strokeColor">?attr/colorOutlineVariant</item> -->
     </style>
 
     <style name="Tecni.Button" parent="Widget.Material3.Button.TonalButton">
@@ -71,7 +105,21 @@
         <item name="chipCornerRadius">8dp</item>
     </style>
 
+    <style name="Tecni.StatusChip" parent="Widget.Material3.Chip.Assist">
+        <item name="chipMinHeight">36dp</item>
+        <item name="chipCornerRadius">8dp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
 
+    <style name="Tecni.Toolbar" parent="Widget.Material3.Toolbar">
+        <item name="android:elevation">0dp</item>
+        <item name="titleTextColor">?attr/colorOnSurface</item>
+        <item name="subtitleTextColor">?attr/colorOnSurfaceVariant</item>
+    </style>
+
+    <!-- =========================================================
+         SPECIAL CARDS (dashboard / dialogs / kpi)
+         ========================================================= -->
     <style name="Tecni.DashboardCard" parent="Widget.Material3.CardView.Elevated">
         <item name="cardElevation">3dp</item>
         <item name="cardCornerRadius">28dp</item>
@@ -90,15 +138,9 @@
         <item name="strokeWidth">0dp</item>
     </style>
 
-    <style name="Tecni.StatusChip" parent="Widget.Material3.Chip.Assist">
-        <item name="chipMinHeight">36dp</item>
-        <item name="chipCornerRadius">8dp</item>
-        <item name="android:textStyle">bold</item>
-    </style>
+    <!-- =========================================================
+         BOTTOM SHEET THEME OVERLAY (CORREGIDO: ahora sí existe)
+         ========================================================= -->
 
-    <style name="Tecni.Toolbar" parent="Widget.Material3.Toolbar">
-        <item name="android:elevation">0dp</item>
-        <item name="titleTextColor">?attr/colorOnSurface</item>
-        <item name="subtitleTextColor">?attr/colorOnSurfaceVariant</item>
-    </style>
+
 </resources>

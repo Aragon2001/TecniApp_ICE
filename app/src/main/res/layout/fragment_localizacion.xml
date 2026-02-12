@@ -27,7 +27,7 @@
             android:layout_height="wrap_content"
             android:layout_margin="12dp"
             android:layout_gravity="top"
-            app:cardBackgroundColor="?attr/colorSurfaceVariant"
+            app:cardBackgroundColor="@color/background"
             app:cardCornerRadius="16dp"
             app:cardElevation="0dp"
             app:strokeColor="?attr/colorOutline"
@@ -157,7 +157,7 @@
         app:behavior_peekHeight="@dimen/street_view_peek_height"
         app:cardCornerRadius="20dp"
         app:cardElevation="8dp"
-        app:cardBackgroundColor="?attr/colorSurface">
+        app:cardBackgroundColor="@color/background">
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"

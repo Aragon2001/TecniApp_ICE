@@ -1,4 +1,4 @@
-package com.Arasoftsolutions.tecniapp_ice.Database.utils
+package com.Arasoftsolutions.tecniapp_ice.Database.sync
 
 object SyncStatus {
     const val PENDING = "PENDING"
