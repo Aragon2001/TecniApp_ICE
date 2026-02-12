@@ -36,7 +36,6 @@ import com.Arasoftsolutions.tecniapp_ice.databinding.FragmentSettingsBinding
 import com.Arasoftsolutions.tecniapp_ice.notifications.SyncStatusNotifications
 import com.Arasoftsolutions.tecniapp_ice.preferences.DataStoreManager
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriaNotificationPreferences
-import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasRepository
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasSyncWorker
 import com.Arasoftsolutions.tecniapp_ice.ui.modal.SyncDialogFragment
 import com.Arasoftsolutions.tecniapp_ice.update.GithubUpdateChecker
@@ -67,8 +66,7 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
     private val auth by lazy { FirebaseAuth.getInstance() }
     private val dataStore by lazy { DataStoreManager.getInstance(requireContext()) }
     private val roomRepository by lazy { RoomRepository.getInstance(requireContext()) }
-    private val averiasRepository by lazy { AveriasRepository(AppDatabase.getInstance(requireContext())) }
-    private val synchronizer by lazy { Synchronizer(roomRepository, averiasRepository) }
+    private val synchronizer by lazy { Synchronizer(roomRepository) }
     private var availableNotificationAgencies: List<String> = emptyList()
     private var latestAutoSyncInfo: WorkInfo? = null
     private val updateDownloadManager by lazy { UpdateDownloadManager(requireContext()) }
