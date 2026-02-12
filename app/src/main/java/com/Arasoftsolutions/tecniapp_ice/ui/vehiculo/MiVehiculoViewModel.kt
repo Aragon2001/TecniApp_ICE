@@ -5,7 +5,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.RegistroDiarioEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.RegistroMantenimientoEntity
-import com.Arasoftsolutions.tecniapp_ice.Database.entities.VehiculosEntity
+import com.Arasoftsolutions.tecniapp_ice.Database.entities.VehiculoEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
 import com.Arasoftsolutions.tecniapp_ice.Database.utils.SyncStatus
 import com.Arasoftsolutions.tecniapp_ice.Database.utils.VehiculoPlacaUtils
@@ -45,7 +45,7 @@ data class UsoMensualUi(
 )
 
 data class MiVehiculoUiState(
-    val vehiculo: VehiculosEntity? = null,
+    val vehiculo: VehiculoEntity? = null,
     val tipoVehiculo: TipoVehiculo = TipoVehiculo.LIVIANO,
     val estado: EstadoVehiculo = EstadoVehiculo.OPTIMO,
     val estadoMensaje: String = "",
