@@ -1,13 +1,14 @@
 package com.Arasoftsolutions.tecniapp_ice.Database.sync
 
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
+import com.google.firebase.auth.FirebaseAuth
 
 class Synchronizer(
     private val repository: RoomRepository
 ) {
 
     companion object {
-        private const val EXTRA_STEPS = 4
+        private const val EXTRA_STEPS = 2
     }
 
     suspend fun syncSubregion(
@@ -42,22 +43,6 @@ class Synchronizer(
                     throw Exception("Error en syncMateriales(): ${e.message}", e)
                 }
 
-                // ----------- 1. INVENTARIO ----------------
-                try {
-                    downloadedBytes += repository.syncInventario()
-                    onSyncProgress(++done, total, "Sincronizando inventario…", downloadedBytes)
-                } catch (e: Exception) {
-                    throw Exception("Error en syncInventario(): ${e.message}", e)
-                }
-
-                // ----------- 2. LUMINARIAS ----------------
-                try {
-                    downloadedBytes += repository.syncLuminarias()
-                    onSyncProgress(++done, total, "Sincronizando luminarias…", downloadedBytes)
-                } catch (e: Exception) {
-                    throw Exception("Error en syncLuminarias(): ${e.message}", e)
-                }
-
                 // ----------- 3. SUBREGIÓN COMPLETA ----------------
                 try {
                     val bytesBeforeSubregion = downloadedBytes
@@ -69,6 +54,37 @@ class Synchronizer(
                 } catch (e: Exception) {
                     throw Exception("Error en syncSubregion(): ${e.message}", e)
                 }
+
+                // ----------- 4. INVENTARIO/LUMINARIAS SCOPED ----------------
+                val uid = FirebaseAuth.getInstance().currentUser?.uid
+                val scope = uid?.let { repository.buildUserScope(it) }
+
+                scope?.vehiculoKey
+                    ?.trim()
+                    ?.takeIf { it.isNotEmpty() }
+                    ?.let { vehiculoKey ->
+                        val vehiculoId = vehiculoKey.toIntOrNull()
+                        if (vehiculoId != null) {
+                            try {
+                                downloadedBytes += repository.syncInventarioVehiculo(vehiculoId, vehiculoKey)
+                                onSyncProgress(++done, total, "Sincronizando inventario del vehículo…", downloadedBytes)
+                            } catch (e: Exception) {
+                                throw Exception("Error en syncInventarioVehiculo(): ${e.message}", e)
+                            }
+                        }
+                    }
+
+                scope?.agenciaTag
+                    ?.trim()
+                    ?.takeIf { it.isNotEmpty() }
+                    ?.let { agencia ->
+                        try {
+                            downloadedBytes += repository.syncLuminariasAgencia(agencia)
+                            onSyncProgress(++done, total, "Sincronizando luminarias de agencia…", downloadedBytes)
+                        } catch (e: Exception) {
+                            throw Exception("Error en syncLuminariasAgencia(): ${e.message}", e)
+                        }
+                    }
 
                 // FINAL
                 onSyncSuccess()
