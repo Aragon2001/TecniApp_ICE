@@ -1,15 +1,13 @@
 package com.Arasoftsolutions.tecniapp_ice.Database.sync
 
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
-import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasRepository
 
 class Synchronizer(
-    private val repository: RoomRepository,
-    private val averiasRepository: AveriasRepository
+    private val repository: RoomRepository
 ) {
 
     companion object {
-        private const val EXTRA_STEPS = 6
+        private const val EXTRA_STEPS = 4
     }
 
     suspend fun syncSubregion(
@@ -26,14 +24,6 @@ class Synchronizer(
 
         try {
             AppSyncCoordinator.runExclusive {
-                // ----------- 0. PENDIENTES ----------------
-                onSyncStart("Sincronizando pendientes…")
-                try {
-                    averiasRepository.syncPendientesConFirebase()
-                    onSyncProgress(++done, total, "Subiendo averías pendientes…", downloadedBytes)
-                } catch (e: Exception) {
-                    throw Exception("Error en syncPendientesConFirebase(): ${e.message}", e)
-                }
 
                 // ----------- 1. TÉCNICOS ----------------
                 onSyncStart("Descargando Datos…")
@@ -52,15 +42,7 @@ class Synchronizer(
                     throw Exception("Error en syncMateriales(): ${e.message}", e)
                 }
 
-                // ----------- 3. AVERÍAS ----------------
-                try {
-                    averiasRepository.pullFromFirebaseOnce()
-                    onSyncProgress(++done, total, "Descargando averías…", downloadedBytes)
-                } catch (e: Exception) {
-                    throw Exception("Error al cargar averías: ${e.message}", e)
-                }
-
-                // ----------- 4. INVENTARIO ----------------
+                // ----------- 1. INVENTARIO ----------------
                 try {
                     downloadedBytes += repository.syncInventario()
                     onSyncProgress(++done, total, "Sincronizando inventario…", downloadedBytes)
@@ -68,7 +50,7 @@ class Synchronizer(
                     throw Exception("Error en syncInventario(): ${e.message}", e)
                 }
 
-                // ----------- 5. LUMINARIAS ----------------
+                // ----------- 2. LUMINARIAS ----------------
                 try {
                     downloadedBytes += repository.syncLuminarias()
                     onSyncProgress(++done, total, "Sincronizando luminarias…", downloadedBytes)
@@ -76,7 +58,7 @@ class Synchronizer(
                     throw Exception("Error en syncLuminarias(): ${e.message}", e)
                 }
 
-                // ----------- 6. SUBREGIÓN COMPLETA ----------------
+                // ----------- 3. SUBREGIÓN COMPLETA ----------------
                 try {
                     val bytesBeforeSubregion = downloadedBytes
                     repository.syncSubregion(subregionId) { subDone, _, msg, bytes ->

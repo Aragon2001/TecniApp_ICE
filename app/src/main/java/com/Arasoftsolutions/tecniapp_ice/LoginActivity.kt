@@ -16,7 +16,6 @@ import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
 import com.Arasoftsolutions.tecniapp_ice.Database.sync.Synchronizer
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriaNotificationPreferences
 import com.Arasoftsolutions.tecniapp_ice.ui.modal.SyncDialogFragment
-import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasRepository
 import com.google.android.material.button.MaterialButton
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
@@ -54,7 +53,6 @@ class LoginActivity : AppCompatActivity() {
     private lateinit var sharedPreferences: SharedPreferences
     private lateinit var database: DatabaseReference
     private lateinit var roomRepository: RoomRepository
-    private lateinit var averiasRepository: AveriasRepository
     private lateinit var synchronizer: Synchronizer
 
     private companion object {
@@ -78,10 +76,8 @@ class LoginActivity : AppCompatActivity() {
         // Inicialización de servicios base
         auth = FirebaseAuth.getInstance()
         database = FirebaseDatabase.getInstance(DATABASE_URL_USERS).reference
-        val localDb = AppDatabase.getInstance(applicationContext)
         roomRepository = RoomRepository.getInstance(applicationContext)
-        averiasRepository = AveriasRepository(localDb)
-        synchronizer = Synchronizer(roomRepository, averiasRepository)
+        synchronizer = Synchronizer(roomRepository)
 
         // Si ya existe sesión (por cualquiera de los dos flags), navegar directo a Main
         sharedPreferences = getSharedPreferences(LEGACY_PREFS, MODE_PRIVATE)
@@ -285,6 +281,9 @@ class LoginActivity : AppCompatActivity() {
                 .child(uid)
                 .child("fcmToken")
                 .setValue(token)
+                .addOnSuccessListener {
+                    TecniAppMessagingService.flushPendingToken(this, uid)
+                }
                 .addOnFailureListener { e ->
                     Log.e(TAG, "No se pudo guardar fcmToken en login: ${e.message}", e)
                 }
