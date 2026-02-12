@@ -178,14 +178,14 @@
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnCancelar"
-            style="@style/Tecni.Button.Text"
+            style="@style/Tecni.Button.Outlined.Danger"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/averia_medidor_dialog_cancelar" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnGuardar"
-            style="@style/Tecni.Button.Primary"
+            style="@style/Tecni.Button.Elevated"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="12dp"
