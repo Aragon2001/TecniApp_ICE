@@ -5,7 +5,7 @@ import org.json.JSONObject
 
 data class RegistroDiarioVehiculo(
     val fecha: String,
-    val valorInicial: Double,
+    val valorInicial: Double?,
     val valorFinal: Double? = null,
     val cerrado: Boolean = false,
     val registradoEn: Long = System.currentTimeMillis(),
@@ -20,7 +20,7 @@ data class RegistroDiarioVehiculo(
     val horasLaboradas: Int? = null
 ) {
     val diferencia: Double?
-        get() = valorFinal?.let { it - valorInicial }
+        get() = valorFinal?.let { it - valorInicial!! }
 }
 
 fun parseRegistrosDiarios(json: String?): List<RegistroDiarioVehiculo> {

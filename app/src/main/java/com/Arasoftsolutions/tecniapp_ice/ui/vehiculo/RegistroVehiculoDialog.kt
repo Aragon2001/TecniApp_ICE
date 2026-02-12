@@ -3,9 +3,7 @@ package com.Arasoftsolutions.tecniapp_ice.ui.vehiculo
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.Arasoftsolutions.tecniapp_ice.R
-import com.Arasoftsolutions.tecniapp_ice.Database.entities.RegistroDiarioEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
-import com.Arasoftsolutions.tecniapp_ice.Database.utils.VehiculoPlacaUtils
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.materialswitch.MaterialSwitch

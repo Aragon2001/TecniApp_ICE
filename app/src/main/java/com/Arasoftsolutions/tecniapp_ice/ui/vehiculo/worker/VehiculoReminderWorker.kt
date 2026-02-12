@@ -9,7 +9,7 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
-import com.Arasoftsolutions.tecniapp_ice.Database.utils.VehiculoPlacaUtils
+import com.Arasoftsolutions.tecniapp_ice.ui.vehiculo.VehiculoPlacaUtils
 import com.Arasoftsolutions.tecniapp_ice.notifications.VehiculoNotifications
 import com.Arasoftsolutions.tecniapp_ice.ui.vehiculo.inferirTipoVehiculo
 import com.google.firebase.auth.FirebaseAuth

@@ -3,13 +3,9 @@ package com.Arasoftsolutions.tecniapp_ice.ui.vehiculo
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.Arasoftsolutions.tecniapp_ice.Database.entities.RegistroDiarioEntity
-import com.Arasoftsolutions.tecniapp_ice.Database.entities.RegistroMantenimientoEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.VehiculoEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
-import com.Arasoftsolutions.tecniapp_ice.Database.utils.SyncStatus
-import com.Arasoftsolutions.tecniapp_ice.Database.utils.VehiculoPlacaUtils
-import com.Arasoftsolutions.tecniapp_ice.Database.sync.vehicle.VehiculoSyncService
+import com.Arasoftsolutions.tecniapp_ice.Database.sync.SyncStatus
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow

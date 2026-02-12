@@ -3,7 +3,7 @@ package com.Arasoftsolutions.tecniapp_ice.Database.sync
 import android.content.Context
 import android.util.Log
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.*
-import com.Arasoftsolutions.tecniapp_ice.Database.utils.VehiculoPlacaUtils
+import com.Arasoftsolutions.tecniapp_ice.ui.vehiculo.VehiculoPlacaUtils
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
@@ -34,7 +34,7 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
     }
 
     private val dbDatosGenerales: DatabaseReference by lazy {
-        RtdbInstances.datosGenerales().reference
+       database( "https://tecniapp-ice-datosgenerales.firebaseio.com")
     }
 
     private val dbLocal: DatabaseReference by lazy {

@@ -1,4 +1,4 @@
-package com.Arasoftsolutions.tecniapp_ice.Database.sync.vehicle
+package com.Arasoftsolutions.tecniapp_ice.ui.vehiculo
 
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.VehiculoLogEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.VehiculosEntity
