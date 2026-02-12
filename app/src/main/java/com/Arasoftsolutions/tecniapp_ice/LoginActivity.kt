@@ -14,6 +14,7 @@ import androidx.lifecycle.lifecycleScope
 import com.Arasoftsolutions.tecniapp_ice.Database.room.AppDatabase
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
 import com.Arasoftsolutions.tecniapp_ice.Database.sync.Synchronizer
+import com.Arasoftsolutions.tecniapp_ice.fcm.TecniAppMessagingService
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriaNotificationPreferences
 import com.Arasoftsolutions.tecniapp_ice.ui.modal.SyncDialogFragment
 import com.google.android.material.button.MaterialButton

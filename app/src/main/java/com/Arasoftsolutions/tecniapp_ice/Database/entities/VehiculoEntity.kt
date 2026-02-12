@@ -8,7 +8,7 @@ import com.google.firebase.database.IgnoreExtraProperties
 
 @Keep
 @IgnoreExtraProperties
-@Entity(tableName = "vehiculos")
+@Entity(tableName = "vehiculo")
 data class VehiculoEntity(
     @PrimaryKey
     val vehiculoId: String,

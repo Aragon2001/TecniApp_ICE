@@ -18,7 +18,7 @@ interface InventarioDao {
     @Query(
         "SELECT i.*, v.placa AS vehiculoPlaca, v.agencia AS vehiculoAgencia " +
             "FROM inventario_material i " +
-            "LEFT JOIN vehiculos v ON v.id = i.vehiculoId " +
+            "LEFT JOIN vehiculo v ON v.id = i.vehiculoId " +
             "WHERE i.vehiculoId = :vehiculoId " +
             "ORDER BY i.descripcionMaterial"
     )
@@ -30,7 +30,7 @@ interface InventarioDao {
     @Query(
         "SELECT i.*, v.placa AS vehiculoPlaca, v.agencia AS vehiculoAgencia " +
             "FROM inventario_material i " +
-            "LEFT JOIN vehiculos v ON v.id = i.vehiculoId " +
+            "LEFT JOIN vehiculo v ON v.id = i.vehiculoId " +
             "ORDER BY v.placa, i.descripcionMaterial"
     )
     fun observarInventarioGeneral(): Flow<List<InventarioConVehiculo>>
