@@ -14,7 +14,6 @@ import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-import com.Arasoftsolutions.tecniapp_ice.ui.vehiculo.worker.VehiculoSyncWorker
 
 fun Fragment.showRegistroVehiculoPendienteDialog(
     onRegistroGuardado: () -> Unit,
@@ -200,7 +199,6 @@ fun Fragment.showRegistroVehiculoPendienteDialog(
                         registradoPor = usuario?.nombre
                     )
                 )
-                VehiculoSyncWorker.triggerNow(requireContext())
             }
             dialog.dismiss()
             onRegistroGuardado()

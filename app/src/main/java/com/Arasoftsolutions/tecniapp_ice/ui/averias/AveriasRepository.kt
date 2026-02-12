@@ -5,7 +5,6 @@ import com.Arasoftsolutions.tecniapp_ice.Database.entities.AveriaEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.InventarioMovimientoAveriaEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.room.AppDatabase
 import com.Arasoftsolutions.tecniapp_ice.Database.utils.VehiculoPlacaUtils
-import com.Arasoftsolutions.tecniapp_ice.Database.sync.vehicle.VehicleRepository
 import com.Arasoftsolutions.tecniapp_ice.ui.admin.MapCoordinatePickerBottomSheet.Companion.TAG
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
@@ -42,7 +41,6 @@ class AveriasRepository(private val db: AppDatabase) {
         .reference
         .child("averias")
 
-    private val vehicleRepository = VehicleRepository()
 
     // Base de materiales usada por ICE
     private val materialesRef = FirebaseDatabase
@@ -848,17 +846,6 @@ return AveriaEntity(
             ?: VehiculoPlacaUtils.parsePlacaLong(vehiculo.replace("ICE", "", ignoreCase = true))
             ?: return
         vehiculoDao.actualizarKilometrajeActual(normalizada, kilometraje)
-        runCatching {
-            val vehiculoId = vehiculoDao.buscarPorPlaca(normalizada)?.id?.toString() ?: normalizada.toString()
-            vehicleRepository.registerAveriaEvent(
-                vehiculoId = vehiculoId,
-                averiaId = "avg_$timestamp",
-                km = kilometraje,
-                refPath = "averias/${timestamp}"
-            )
-        }.onFailure { error ->
-            Log.w(TAG, "No se pudo subir kilometraje a Firebase", error)
-        }
     }
 
     private suspend fun syncSingle(caseId: String) {
