@@ -363,7 +363,7 @@ class   RoomRepository(context: Context) {
                 tipo = "KM",
                 timestamp = timestamp,
                 km = kilometrajeFinal,
-                payloadJson = "{"placa":"${placa.trim()}"}",
+                payloadJson = JSONObject().put("placa", placa.trim()).toString(),
                 syncState = "PENDING"
             )
         )

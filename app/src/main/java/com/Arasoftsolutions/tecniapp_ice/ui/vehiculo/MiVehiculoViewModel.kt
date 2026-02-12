@@ -293,7 +293,7 @@ class MiVehiculoViewModel(app: Application) : AndroidViewModel(app) {
             val now = System.currentTimeMillis()
             repository.addLogAndUpdateKm(
                 VehiculoLogEntity(
-                    logId = "km_${'$'}{vehiculo.vehiculoId}_${'$'}now",
+                    logId = "km_${vehiculo.vehiculoId}_$now",
                     vehiculoId = vehiculo.vehiculoId,
                     tipo = "KM",
                     timestamp = now,
@@ -312,12 +312,12 @@ class MiVehiculoViewModel(app: Application) : AndroidViewModel(app) {
             val now = System.currentTimeMillis()
             repository.addLogAndUpdateKm(
                 VehiculoLogEntity(
-                    logId = "diario_${'$'}{vehiculo.vehiculoId}_${'$'}now",
+                    logId = "diario_${vehiculo.vehiculoId}_$now",
                     vehiculoId = vehiculo.vehiculoId,
                     tipo = "DIARIO",
                     timestamp = now,
                     km = valor,
-                    payloadJson = "{\"observaciones\":\"${'$'}{observaciones.orEmpty()}\"}",
+                    payloadJson = org.json.JSONObject().put("observaciones", observaciones.orEmpty()).toString(),
                     syncState = "PENDING"
                 )
             )
