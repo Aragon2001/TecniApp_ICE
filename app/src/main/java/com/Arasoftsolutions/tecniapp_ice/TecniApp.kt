@@ -111,8 +111,10 @@ class TecniApp : Application() {
     private fun registerRealtimeSyncObserver() {
         ProcessLifecycleOwner.get().lifecycle.addObserver(object : DefaultLifecycleObserver {
             override fun onStart(owner: LifecycleOwner) {
-                if (FirebaseAuth.getInstance().currentUser != null) {
-                    roomRepository.startRealtimeSync()
+                val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+                applicationScope.launch(Dispatchers.IO) {
+                    val scope = roomRepository.buildUserScope(uid)
+                    roomRepository.startRealtimeSyncForScope(scope)
                 }
             }
 

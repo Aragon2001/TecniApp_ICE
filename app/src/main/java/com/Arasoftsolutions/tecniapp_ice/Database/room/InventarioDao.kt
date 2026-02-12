@@ -53,11 +53,17 @@ interface InventarioDao {
     @Query("DELETE FROM inventario_material WHERE vehiculoId = :vehiculoId")
     suspend fun eliminarPorVehiculo(vehiculoId: Int)
 
+    @Query("DELETE FROM inventario_material WHERE vehiculoId = :vehiculoId AND codigoMaterial = :codigo")
+    suspend fun eliminarPorVehiculoYCodigo(vehiculoId: Int, codigo: String)
+
     @Query("DELETE FROM inventario_material")
     suspend fun limpiarTodo()
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun registrarReparacion(entity: LuminariaReparacionEntity): Long
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertReparacion(entity: LuminariaReparacionEntity)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertarReparaciones(items: List<LuminariaReparacionEntity>)
@@ -85,6 +91,9 @@ interface InventarioDao {
 
     @Query("DELETE FROM luminaria_reparacion WHERE id = :id")
     suspend fun eliminarReparacion(id: Long)
+
+    @Query("DELETE FROM luminaria_reparacion WHERE id = :id")
+    suspend fun eliminarReparacionPorId(id: Long)
 
     @Query("DELETE FROM luminaria_reparacion")
     suspend fun limpiarReparaciones()
