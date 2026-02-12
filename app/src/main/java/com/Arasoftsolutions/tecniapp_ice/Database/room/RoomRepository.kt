@@ -6,6 +6,8 @@ import com.Arasoftsolutions.tecniapp_ice.Database.sync.FirebaseSyncManager
 import com.Arasoftsolutions.tecniapp_ice.Database.sync.SubregionNormalizer
 import com.Arasoftsolutions.tecniapp_ice.Database.utils.VehiculoPlacaUtils
 import com.google.firebase.auth.FirebaseAuth
+import com.Arasoftsolutions.tecniapp_ice.ui.vehiculo.RegistroDiarioEntity
+import com.Arasoftsolutions.tecniapp_ice.ui.vehiculo.RegistroMantenimientoEntity
 import com.google.firebase.database.ValueEventListener
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.CoroutineScope
@@ -85,7 +87,7 @@ class   RoomRepository(context: Context) {
     fun observarUltimoKilometraje(placa: String): Flow<Double?> {
         val placaLong = VehiculoPlacaUtils.parsePlacaLong(placa) ?: return flowOf(null)
         return vehiculoDao.observarPorPlaca(placaLong)
-            .map { it?.kilometrajeActual }
+            .map { it?.kmActual?.takeIf { km -> km > 0.0 } ?: it?.kilometrajeActual }
     }
 
     fun observarTodosLosPueblos(): Flow<List<PueblosEntity>> = db.puebloDao().observarTodos()
@@ -178,8 +180,9 @@ class   RoomRepository(context: Context) {
             if (log.km != null) {
                 val vehiculo = vehiculoDao.buscarPorVehiculoId(log.vehiculoId)
                 if (vehiculo != null) {
-                    val nuevoKm = maxOf(vehiculo.kilometrajeActual ?: 0.0, log.km)
-                    vehiculoDao.upsertVehiculo(vehiculo.copy(kilometrajeActual = nuevoKm, updatedAt = System.currentTimeMillis()))
+                    val actual = vehiculo.kmActual.takeIf { it > 0.0 } ?: (vehiculo.kilometrajeActual ?: 0.0)
+                    val nuevoKm = maxOf(actual, log.km)
+                    vehiculoDao.upsertVehiculo(vehiculo.copy(kmActual = nuevoKm, kilometrajeActual = nuevoKm, updatedAt = System.currentTimeMillis()))
                 }
             }
         }

@@ -60,7 +60,7 @@ class MiVehiculoFragment : Fragment() {
                         binding.containerUsoMensual.isVisible = visible
                         if (!visible) return@collect
 
-                        binding.tvVehiculoPlaca.text = vehiculo.placa.toString()
+                        binding.tvVehiculoPlaca.text = vehiculo.placaRaw.ifBlank { vehiculo.vehiculoId }
                         binding.tvVehiculoTipo.text = when (state.tipoVehiculo) {
                             TipoVehiculo.CAMION_GRUA -> getString(R.string.mi_vehiculo_tipo_grua)
                             TipoVehiculo.MAQUINARIA_PESADA -> getString(R.string.mi_vehiculo_tipo_maquinaria)
@@ -73,7 +73,7 @@ class MiVehiculoFragment : Fragment() {
                                 TipoVehiculo.LIVIANO -> R.drawable.liviano
                             }
                         )
-                        binding.tvVehiculoAgencia.text = vehiculo.agencia ?: ""
+                        binding.tvVehiculoAgencia.text = vehiculo.agencia
 
                         binding.tvEstadoMensaje.text = state.estadoMensaje
                         binding.tvMotivacion.text = state.motivacion
