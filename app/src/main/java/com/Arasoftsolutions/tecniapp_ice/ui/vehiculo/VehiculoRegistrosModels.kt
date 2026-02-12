@@ -1,6 +1,5 @@
 package com.Arasoftsolutions.tecniapp_ice.ui.vehiculo
 
-import com.Arasoftsolutions.tecniapp_ice.Database.sync.SyncStatus
 
 data class RegistroDiarioEntity(
     val vehiculoId: Int,
@@ -9,7 +8,7 @@ data class RegistroDiarioEntity(
     val unidad: String = "km",
     val registradoEn: Long = System.currentTimeMillis(),
     val registradoPor: String? = null,
-    val syncStatus: SyncStatus = SyncStatus.PENDING,
+    val syncStatus: String = "PENDING",
 )
 
 data class RegistroMantenimientoEntity(
@@ -20,5 +19,5 @@ data class RegistroMantenimientoEntity(
     val observaciones: String? = null,
     val proximoMantenimiento: Double,
     val creadoEn: Long = System.currentTimeMillis(),
-    val syncStatus: SyncStatus = SyncStatus.PENDING,
+    val syncStatus: String = "PENDING",
 )
