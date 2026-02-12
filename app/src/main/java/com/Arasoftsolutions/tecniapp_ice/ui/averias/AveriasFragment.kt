@@ -306,8 +306,9 @@ override fun onStop() {
             }
         }
 
-        // Sincronizar datos iniciales
-        vm.syncNow()
+        if (savedInstanceState == null) {
+            vm.syncNow()
+        }
     }
     private fun handleAtender(item: AveriaUI) {
         when (Estado.fromLabel(item.estado)) {
@@ -567,10 +568,5 @@ override fun onStop() {
         notificationSheetScope = null
         _b = null
         super.onDestroyView()
-    }
-
-    override fun onResume() {
-        super.onResume()
-        vm.syncNow()
     }
 }

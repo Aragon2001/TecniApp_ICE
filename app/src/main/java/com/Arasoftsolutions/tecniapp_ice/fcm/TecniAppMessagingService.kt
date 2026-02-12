@@ -1,5 +1,6 @@
 package com.Arasoftsolutions.tecniapp_ice.fcm
 
+import android.content.Context
 import android.util.Log
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.AveriaEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.room.AppDatabase
@@ -15,18 +16,12 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.Job
-import java.util.concurrent.atomic.AtomicLong
 
 class TecniAppMessagingService : FirebaseMessagingService() {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val repo by lazy { AveriasRepository(AppDatabase.getInstance(applicationContext)) }
-
-    // Debounce para pullFromFirebaseOnce()
-    private var refreshJob: Job? = null
 
     override fun onNewToken(token: String) {
         super.onNewToken(token)
@@ -34,7 +29,8 @@ class TecniAppMessagingService : FirebaseMessagingService() {
 
         val uid = FirebaseAuth.getInstance().currentUser?.uid
         if (uid.isNullOrBlank()) {
-            Log.w(TAG, "Token recibido sin usuario autenticado; se omite el guardado")
+            cacheToken(this, token)
+            Log.w(TAG, "Token recibido sin usuario autenticado; se cachea para subir luego")
             return
         }
 
@@ -49,28 +45,20 @@ class TecniAppMessagingService : FirebaseMessagingService() {
         val caseId = data["caseId"]
         if (caseId.isNullOrBlank()) {
             Log.w(TAG, "Mensaje FCM ignorado: caseId faltante")
-            scope.launch { refreshFromFirebaseAndNotify() }
-            scheduleFirebaseRefreshDebounced()
             return
         }
 
         val averia = buildAveriaFromMessage(caseId, data)
 
-        // 1) Guardar SIEMPRE en Room (offline-first)
         scope.launch {
             repo.upsertFromPush(averia)
-
-            // 2) Refrescar desde Firebase, pero con debounce para no saturar
-            scheduleFirebaseRefreshDebounced()
         }
 
-        // 3) Respetar apagado global del usuario
         if (!AveriaNotificationPreferences.areNotificationsEnabled(this)) {
             Log.d(TAG, "Notificaciones desactivadas por el usuario; se omite alerta local")
             return
         }
 
-        // 4) Aplicar filtros locales por agencias (preferencias)
         val agencyFilters = AveriaNotificationPreferences.normalizedAgencies(this)
         if (!shouldNotifyForAgency(averia, agencyFilters)) {
             Log.d(TAG, "Mensaje FCM filtrado por agencia (${averia.agencia}/${averia.agenciaTag})")
@@ -80,38 +68,11 @@ class TecniAppMessagingService : FirebaseMessagingService() {
         AveriaNotificationDispatcher.notifyNewCases(this, listOf(averia))
     }
 
-    private suspend fun refreshFromFirebaseAndNotify() {
-        runCatching { repo.pullFromFirebaseOnce() }
-            .onSuccess { result ->
-                if (!result.hadLocalData || result.newCases.isEmpty()) return
-                if (!AveriaNotificationPreferences.areNotificationsEnabled(this)) return
-                val agencyFilters = AveriaNotificationPreferences.normalizedAgencies(this)
-                val filtered = result.newCases.filter { averia ->
-                    shouldNotifyForAgency(averia, agencyFilters)
-                }
-                if (filtered.isNotEmpty()) {
-                    AveriaNotificationDispatcher.notifyNewCases(this, filtered)
-                }
-            }
-            .onFailure { error ->
-                Log.w(TAG, "No se pudo refrescar Firebase tras push incompleto", error)
-            }
-    }
-
-    private fun scheduleFirebaseRefreshDebounced() {
-        // Si llegan muchos pushes seguidos, cancelamos y reprogramamos
-        refreshJob?.cancel()
-        refreshJob = scope.launch {
-            delay(15_000) // 15s (ajustable 10–20s)
-            val now = System.currentTimeMillis()
-            val last = LAST_REFRESH_AT.get()
-            // Gate extra: no permitir más de 1 refresh cada 12s aunque algo raro pase
-            if (now - last < 12_000) return@launch
-
-            LAST_REFRESH_AT.set(now)
-            runCatching { repo.pullFromFirebaseOnce() }
-                .onFailure { Log.w(TAG, "No se pudo refrescar Firebase (debounced)", it) }
-        }
+    private fun cacheToken(context: Context, token: String) {
+        context.getSharedPreferences(FCM_PREFS, MODE_PRIVATE)
+            .edit()
+            .putString(KEY_PENDING_TOKEN, token)
+            .apply()
     }
 
     private fun saveTokenToRtdb(uid: String, token: String) {
@@ -121,7 +82,14 @@ class TecniAppMessagingService : FirebaseMessagingService() {
             .child("fcmToken")
             .setValue(token)
             .addOnFailureListener { error ->
+                cacheToken(this, token)
                 Log.e(TAG, "No se pudo guardar el token FCM", error)
+            }
+            .addOnSuccessListener {
+                getSharedPreferences(FCM_PREFS, MODE_PRIVATE)
+                    .edit()
+                    .remove(KEY_PENDING_TOKEN)
+                    .apply()
             }
     }
 
@@ -138,7 +106,6 @@ class TecniAppMessagingService : FirebaseMessagingService() {
 
         return AveriaEntity(
             caseId = caseId,
-            // OJO: Idealmente server manda PENDIENTE/RESUELTA; si no, esto igual no crashea.
             estado = data["estado"] ?: "PENDIENTE",
             agencia = agencia,
             nombreAgencia = nombreAgencia,
@@ -172,6 +139,24 @@ class TecniAppMessagingService : FirebaseMessagingService() {
 
     companion object {
         private const val TAG = "TecniAppFCM"
-        private val LAST_REFRESH_AT = AtomicLong(0L)
+        private const val FCM_PREFS = "fcm_prefs"
+        private const val KEY_PENDING_TOKEN = "pending_token"
+
+        fun flushPendingToken(context: Context, uid: String?) {
+            if (uid.isNullOrBlank()) return
+            val prefs = context.getSharedPreferences(FCM_PREFS, MODE_PRIVATE)
+            val pending = prefs.getString(KEY_PENDING_TOKEN, null) ?: return
+            FirebaseDatabase.getInstance("https://tecniapp-ice-user.firebaseio.com")
+                .getReference("usuarios")
+                .child(uid)
+                .child("fcmToken")
+                .setValue(pending)
+                .addOnSuccessListener {
+                    prefs.edit().remove(KEY_PENDING_TOKEN).apply()
+                }
+                .addOnFailureListener { error ->
+                    Log.e(TAG, "No se pudo subir pending_token cacheado", error)
+                }
+        }
     }
 }
