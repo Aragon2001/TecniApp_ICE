@@ -657,7 +657,7 @@ Cliente: %4$s</string>
     <string name="medidor_lectura_anterior_label">Lectura anterior</string>
     <string name="medidor_lectura_fecha_label">Fecha de lectura</string>
     <string name="medidor_registrar_lectura">Registrar lectura</string>
-    <string name="medidor_ver_detalles">Ver detalles</string>
+    <string name="medidor_copy">Copiar Detalles</string>
     <string name="medidor_sincronizar">Sincronizar</string>
     <string name="medidor_dialog_consulta_icon">Consulta en la nube</string>
     <string name="medidor_numero_hint">Número de medidor</string>
@@ -735,13 +735,13 @@ Cliente: %4$s</string>
     <string name="medidor_registro_confirm_positive">Registrar medidor</string>
     <string name="medidor_registro_aviso_title">Verifica la información</string>
     <string name="medidor_registro_aviso_message">Verifique que toda la información sea exacta y confiable. Para modificarla tendrá que contactar al supervisor.</string>
-    <string name="medidor_chip_numero_format">Número: %1$s</string>
-    <string name="medidor_chip_cliente_format">Cliente: %1$s</string>
-    <string name="medidor_chip_localizacion_format">Localización: %1$s</string>
-    <string name="medidor_chip_calle_format">Calle: %1$s</string>
-    <string name="medidor_chip_poste_format">Poste: %1$s</string>
-    <string name="medidor_chip_metros_format">Metros: %1$s</string>
-    <string name="medidor_chip_pueblo_format">Pueblo: %1$s</string>
+    <string name="medidor_chip_numero_format"> %1$s</string>
+    <string name="medidor_chip_cliente_format"> %1$s</string>
+    <string name="medidor_chip_localizacion_format"> %1$s</string>
+    <string name="medidor_chip_calle_format"> %1$s</string>
+    <string name="medidor_chip_poste_format"> %1$s</string>
+    <string name="medidor_chip_metros_format"> %1$s</string>
+    <string name="medidor_chip_pueblo_format"> %1$s</string>
 
     <!-- Localización -->
     <string name="localizacion_estado_sin_subregion">No se pudo determinar la subregión del usuario.</string>
