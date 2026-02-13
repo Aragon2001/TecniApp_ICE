@@ -10,6 +10,7 @@ import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasRepository
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.shouldNotifyForAgency
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ServerValue
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import kotlinx.coroutines.CoroutineScope
@@ -76,11 +77,18 @@ class TecniAppMessagingService : FirebaseMessagingService() {
     }
 
     private fun saveTokenToRtdb(uid: String, token: String) {
+        val safeTokenKey = token.toFirebaseKey()
+        val updates = hashMapOf<String, Any>(
+            "fcmToken" to token,
+            "fcm/currentToken" to token,
+            "fcm/lastUpdated" to ServerValue.TIMESTAMP,
+            "fcm/tokens/$safeTokenKey" to token
+        )
+
         FirebaseDatabase.getInstance("https://tecniapp-ice-user.firebaseio.com")
             .getReference("usuarios")
             .child(uid)
-            .child("fcmToken")
-            .setValue(token)
+            .updateChildren(updates)
             .addOnFailureListener { error ->
                 cacheToken(this, token)
                 Log.e(TAG, "No se pudo guardar el token FCM", error)
@@ -149,8 +157,14 @@ class TecniAppMessagingService : FirebaseMessagingService() {
             FirebaseDatabase.getInstance("https://tecniapp-ice-user.firebaseio.com")
                 .getReference("usuarios")
                 .child(uid)
-                .child("fcmToken")
-                .setValue(pending)
+                .updateChildren(
+                    hashMapOf<String, Any>(
+                        "fcmToken" to pending,
+                        "fcm/currentToken" to pending,
+                        "fcm/lastUpdated" to ServerValue.TIMESTAMP,
+                        "fcm/tokens/${pending.toFirebaseKey()}" to pending
+                    )
+                )
                 .addOnSuccessListener {
                     prefs.edit().remove(KEY_PENDING_TOKEN).apply()
                 }
@@ -158,5 +172,13 @@ class TecniAppMessagingService : FirebaseMessagingService() {
                     Log.e(TAG, "No se pudo subir pending_token cacheado", error)
                 }
         }
+
+        private fun String.toFirebaseKey(): String =
+            replace('.', '_')
+                .replace('#', '_')
+                .replace('$', '_')
+                .replace('[', '_')
+                .replace(']', '_')
+                .replace('/', '_')
     }
 }

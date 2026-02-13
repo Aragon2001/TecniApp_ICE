@@ -101,6 +101,37 @@ function toStringArray(v) {
   return [String(v)];
 }
 
+function toBooleanOrDefault(v, fallback = true) {
+  if (v === null || v === undefined) return fallback;
+  if (typeof v === "boolean") return v;
+  const s = String(v).trim().toLowerCase();
+  if (!s) return fallback;
+  if (["true", "1", "yes", "si", "on"].includes(s)) return true;
+  if (["false", "0", "no", "off"].includes(s)) return false;
+  return fallback;
+}
+
+function extractUserTokens(user) {
+  const set = new Set();
+  const add = (v) => {
+    const t = String(v || "").trim();
+    if (t) set.add(t);
+  };
+
+  add(user?.fcmToken);
+  add(user?.fcm?.currentToken);
+
+  if (Array.isArray(user?.fcmTokens)) {
+    user.fcmTokens.forEach(add);
+  }
+
+  if (user?.fcm?.tokens && typeof user.fcm.tokens === "object") {
+    Object.values(user.fcm.tokens).forEach(add);
+  }
+
+  return Array.from(set);
+}
+
 // Soporta múltiples envoltorios del API ICE
 function envelopePayload(respData) {
   if (!respData) return [];
@@ -484,13 +515,16 @@ exports.syncAveriasYNotificar = onSchedule(
         const recipients = [];
         for (const uid of Object.keys(users)) {
           const u = users[uid];
-          if (!u || !u.fcmToken) continue;
+          if (!u) continue;
 
           // respetar apagado global del usuario (si existe)
-          if (u.notificationEnabled === false) continue;
+          if (!toBooleanOrDefault(u.notificationEnabled, true)) continue;
+
+          const userTokens = extractUserTokens(u);
+          if (!userTokens.length) continue;
 
           if (userWantsThisAveria(u, item.agenciaTag)) {
-            recipients.push({ uid, token: u.fcmToken });
+            userTokens.forEach((token) => recipients.push({ uid, token }));
           }
         }
 
@@ -531,7 +565,23 @@ exports.syncAveriasYNotificar = onSchedule(
           const uid = tokenToUid.get(badToken);
           if (!uid) continue;
           console.log(`Eliminando token inválido uid=${uid}`);
-          await dbU.ref("usuarios").child(uid).child("fcmToken").remove();
+
+          const userRef = dbU.ref("usuarios").child(uid);
+          const updates = {
+            fcmToken: null,
+            "fcm/currentToken": null,
+          };
+
+          const key = badToken
+            .replace(/\./g, "_")
+            .replace(/#/g, "_")
+            .replace(/\$/g, "_")
+            .replace(/\[/g, "_")
+            .replace(/\]/g, "_")
+            .replace(/\//g, "_");
+          updates[`fcm/tokens/${key}`] = null;
+
+          await userRef.update(updates);
         }
       }
     } catch (e) {
