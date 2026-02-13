@@ -768,6 +768,7 @@ Cliente: %4$s</string>
     <string name="localizacion_action_copy">Copiar coordenadas</string>
     <string name="localizacion_coords_copied">Coordenadas copiadas.</string>
     <string name="localizacion_overlay_title">Ubicación seleccionada</string>
+    <string name="localizacion_overlay_title_poste">Poste %1$d · %2$s</string>
     <string name="localizacion_street_view_action">Ver Street View</string>
     <string name="localizacion_street_view_title">Street View</string>
     <string name="localizacion_street_view_expand">Expandir Street View</string>
@@ -775,6 +776,7 @@ Cliente: %4$s</string>
     <string name="localizacion_street_view_close">Cerrar Street View</string>
     <string name="localizacion_street_view_loading">Cargando Street View…</string>
     <string name="localizacion_street_view_empty">Street View no está disponible para este punto.</string>
+    <string name="localizacion_street_view_pin_desc">Punto fijo de referencia</string>
     <string name="localizacion_coordenadas_format">Lat %1$.6f · Lng %2$.6f</string>
     <string name="localizacion_permiso_denegado">Permiso de ubicación denegado.</string>
     <string name="localizacion_placeholder_direccion_no_disponible">N/A</string>
@@ -785,7 +787,14 @@ Cliente: %4$s</string>
     <string name="localizacion_toast_sin_ubicacion_mapa">La ubicación no está disponible.</string>
     <string name="localizacion_toast_no_compartir">No se puede compartir la ubicación. Intenta de nuevo.</string>
     <string name="localizacion_share_title">Compartir ubicación con</string>
-    <string name="localizacion_share_message">Compartiendo la ubicación desde TecniApp ICE:\n\n- Pueblo: (Código: %1$s) \"%2$s\"\n- Calle: (Código: %3$s) \"%4$s\"\n- Poste: \"%5$s\"\n\nhttps://maps.google.com/?q=%6$.6f,%7$.6f</string>
+    <string name="localizacion_share_message">Compartiendo la ubicación desde TecniApp ICE:
+
+- Pueblo: (Código: %1$s) "%2$s"
+- Calle: (Código: %3$s) "%4$s"
+- Poste: "%5$s"
+- Coordenadas: %6$.6f, %7$.6f
+
+%8$s</string>
     <string name="localizacion_select_pueblo">Seleccione un pueblo</string>
     <string name="localizacion_select_calle">Seleccione una calle</string>
     <string name="localizacion_calles_show">Cargar calles</string>
