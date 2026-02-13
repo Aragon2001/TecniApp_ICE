@@ -1139,7 +1139,7 @@ b.btnExportar.isEnabled = pertenece
     }
 
     private fun sincronizarMedidorDesdeMaterial(metadata: MedidorInstalacion) {
-        val numeroNuevo = metadata.numero.trim()
+        val numeroNuevo = metadata.numero.orEmpty().trim()
         if (numeroNuevo.isBlank()) {
             b.tilMedidor.error = getString(R.string.averia_medidor_error_requerido)
             scrollToDetalleMedidor()
