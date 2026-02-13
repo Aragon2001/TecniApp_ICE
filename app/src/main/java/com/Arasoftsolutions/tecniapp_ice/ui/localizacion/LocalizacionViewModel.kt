@@ -239,6 +239,11 @@ class LocalizacionViewModel(app: Application) : AndroidViewModel(app) {
                 MarcadorCalle(
                     latitud = entidad.latitud,
                     longitud = entidad.longitud,
+                    codigoPueblo = entidad.pueblo,
+                    codigoCalle = entidad.calle,
+                    direccion = entidad.direccion,
+                    delPoste = entidad.delPoste,
+                    alPoste = entidad.alPoste,
                     titulo = "${entidad.calle} - ${entidad.direccion}",
                     snippet = buildString {
                         val codigo = buildString {
@@ -309,6 +314,11 @@ class LocalizacionViewModel(app: Application) : AndroidViewModel(app) {
     data class MarcadorCalle(
         val latitud: Double,
         val longitud: Double,
+        val codigoPueblo: Int,
+        val codigoCalle: Int,
+        val direccion: String,
+        val delPoste: Int,
+        val alPoste: Int,
         val titulo: String,
         val snippet: String,
     )
