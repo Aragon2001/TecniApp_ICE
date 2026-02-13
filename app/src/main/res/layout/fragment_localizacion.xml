@@ -27,10 +27,10 @@
             android:layout_height="wrap_content"
             android:layout_margin="12dp"
             android:layout_gravity="top"
-            app:cardBackgroundColor="@color/background"
+            app:cardBackgroundColor="@color/glass_light"
             app:cardCornerRadius="16dp"
             app:cardElevation="0dp"
-            app:strokeColor="?attr/colorOutline"
+
             app:strokeWidth="1dp">
 
             <LinearLayout
@@ -94,7 +94,6 @@
             app:cardBackgroundColor="@color/glass_light"
             app:cardCornerRadius="18dp"
             app:cardElevation="2dp"
-            app:strokeColor="@color/glass_light"
             app:strokeWidth="1dp">
 
          <LinearLayout
@@ -117,21 +116,21 @@
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/actionStreetView"
-                style="@style/Widget.Material3.Button.IconButton"
-                android:layout_width="44dp"
-                android:layout_height="44dp"
-                android:minWidth="0dp"
-                android:minHeight="0dp"
-                android:padding="0dp"
-                android:insetTop="0dp"
-                android:insetBottom="0dp"
-                android:insetLeft="0dp"
-                android:insetRight="0dp"
-                android:gravity="center"
-                app:icon="@drawable/photo_prints_24px"
-
-                app:iconPadding="0dp"
-                android:contentDescription="@string/localizacion_street_view_action"/>
+                    style="@style/Widget.Material3.Button.IconButton"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:minWidth="0dp"
+                    android:minHeight="0dp"
+                    android:padding="0dp"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    android:insetLeft="0dp"
+                    android:insetRight="0dp"
+                    android:gravity="center"
+                    app:icon="@drawable/photo_prints_24px"
+                    app:iconGravity="textStart"
+                    app:iconPadding="0dp"
+                    android:contentDescription="@string/localizacion_street_view_action"/>
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -153,10 +152,19 @@
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/actionCenter"
                     style="@style/Widget.Material3.Button.IconButton"
-                    android:layout_width="44dp"
+                      android:layout_width="44dp"
                     android:layout_height="44dp"
                     android:minWidth="0dp"
+                    android:minHeight="0dp"
                     android:padding="0dp"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    android:insetLeft="0dp"
+                    android:insetRight="0dp"
+                    android:gravity="center"
+
+                    app:iconGravity="textStart"
+                    app:iconPadding="0dp"
                     app:icon="@drawable/center_focus_weak_24px" />
 
                 <TextView
@@ -179,10 +187,19 @@
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/actionCopy"
                     style="@style/Widget.Material3.Button.IconButton"
-                    android:layout_width="44dp"
+                      android:layout_width="44dp"
                     android:layout_height="44dp"
                     android:minWidth="0dp"
+                    android:minHeight="0dp"
                     android:padding="0dp"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    android:insetLeft="0dp"
+                    android:insetRight="0dp"
+                    android:gravity="center"
+
+                    app:iconGravity="textStart"
+                    app:iconPadding="0dp"
                     app:icon="@drawable/ic_copy" />
 
                 <TextView
@@ -205,10 +222,19 @@
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/actionNavigate"
                     style="@style/Widget.Material3.Button.IconButton"
-                    android:layout_width="44dp"
+                   android:layout_width="44dp"
                     android:layout_height="44dp"
                     android:minWidth="0dp"
+                    android:minHeight="0dp"
                     android:padding="0dp"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    android:insetLeft="0dp"
+                    android:insetRight="0dp"
+                    android:gravity="center"
+
+                    app:iconGravity="textStart"
+                    app:iconPadding="0dp"
                     app:icon="@drawable/ic_car" />
 
                 <TextView
@@ -231,10 +257,19 @@
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/actionShare"
                     style="@style/Widget.Material3.Button.IconButton"
-                    android:layout_width="44dp"
+                     android:layout_width="44dp"
                     android:layout_height="44dp"
                     android:minWidth="0dp"
+                    android:minHeight="0dp"
                     android:padding="0dp"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    android:insetLeft="0dp"
+                    android:insetRight="0dp"
+                    android:gravity="center"
+
+                    app:iconGravity="textStart"
+                    app:iconPadding="0dp"
                     app:icon="@drawable/ic_share" />
 
                 <TextView
@@ -257,10 +292,19 @@
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/actionToggleStreets"
                     style="@style/Widget.Material3.Button.IconButton"
-                    android:layout_width="44dp"
+                      android:layout_width="44dp"
                     android:layout_height="44dp"
                     android:minWidth="0dp"
+                    android:minHeight="0dp"
                     android:padding="0dp"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    android:insetLeft="0dp"
+                    android:insetRight="0dp"
+                    android:gravity="center"
+
+                    app:iconGravity="textStart"
+                    app:iconPadding="0dp"
                     app:icon="@drawable/disabled_visible_24px" />
 
                 <TextView
@@ -294,7 +338,7 @@
         app:behavior_peekHeight="@dimen/street_view_peek_height"
         app:cardCornerRadius="20dp"
         app:cardElevation="8dp"
-        app:cardBackgroundColor="@color/glass_chip_surface">
+        app:cardBackgroundColor="@color/on_primary">
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"

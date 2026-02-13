@@ -3,54 +3,54 @@
 
     <!-- =========================================================
          Material 3 Color Tokens (DARK)
-         - Primary/Secondary/Tertiary se mantiene estilo ICE
-         - Background/Surface/Variant pasan a grises oscuros
+         Ajustado:
+         - Marca idéntica al LIGHT
+         - Solo superficies pasan a gris oscuro neutro
          ========================================================= -->
 
-    <!-- Brand (ICE Blue) -->
-    <!-- Mantengo un primary azul usable en dark (más claro para contraste) -->
-    <color name="md_theme_dark_primary">#9ACBFF</color>
-    <color name="md_theme_dark_on_primary">#003258</color>
-    <color name="md_theme_dark_primary_container">#004B84</color>
-    <color name="md_theme_dark_on_primary_container">#D2E4FF</color>
+    <!-- Brand (ICE Blue igual al LIGHT) -->
+    <color name="md_theme_dark_primary">#005DAA</color>
+    <color name="md_theme_dark_on_primary">#FFFFFF</color>
+    <color name="md_theme_dark_primary_container">#D4E3FF</color>
+    <color name="md_theme_dark_on_primary_container">#001C39</color>
 
-    <!-- Secondary (amarillo institucional / advertencias suaves) -->
-    <color name="md_theme_dark_secondary">#E6C74E</color>
-    <color name="md_theme_dark_on_secondary">#3A2F00</color>
-    <color name="md_theme_dark_secondary_container">#544300</color>
-    <color name="md_theme_dark_on_secondary_container">#FFE8A6</color>
+    <!-- Secondary (amarillo institucional REAL) -->
+    <color name="md_theme_dark_secondary">#FFDD00</color>
+    <color name="md_theme_dark_on_secondary">#003258</color>
+    <color name="md_theme_dark_secondary_container">#FFE17A</color>
+    <color name="md_theme_dark_on_secondary_container">#231B00</color>
 
-    <!-- Tertiary (verdes / éxito) -->
-    <color name="md_theme_dark_tertiary">#8BD79A</color>
-    <color name="md_theme_dark_on_tertiary">#003914</color>
-    <color name="md_theme_dark_tertiary_container">#0F5224</color>
-    <color name="md_theme_dark_on_tertiary_container">#A7F4B7</color>
+    <!-- Tertiary (verde institucional igual) -->
+    <color name="md_theme_dark_tertiary">#206C2C</color>
+    <color name="md_theme_dark_on_tertiary">#FFFFFF</color>
+    <color name="md_theme_dark_tertiary_container">#C6EFCC</color>
+    <color name="md_theme_dark_on_tertiary_container">#002106</color>
 
-    <!-- Error -->
-    <color name="md_theme_dark_error">#FFB4AB</color>
-    <color name="md_theme_dark_on_error">#690005</color>
+    <!-- Error igual -->
+    <color name="md_theme_dark_error">#D32F2F</color>
+    <color name="md_theme_dark_on_error">#FFFFFF</color>
 
     <!-- =========================================================
-         Dark Surfaces (aquí aplicamos tu regla: blancos -> grises oscuros)
-         Basado en tu light: #F8F9FF y similares, ahora se vuelven grises oscuros.
+         Dark Surfaces (gris oscuro neutro)
          ========================================================= -->
-    <color name="md_theme_dark_background">#101318</color>
-    <color name="md_theme_dark_on_background">#E2E2E9</color>
 
-    <color name="md_theme_dark_surface">#101318</color>
-    <color name="md_theme_dark_on_surface">#E2E2E9</color>
+    <color name="md_theme_dark_background">#0F1115</color>
+    <color name="md_theme_dark_on_background">#E6E8EC</color>
 
-    <color name="md_theme_dark_surface_variant">#2A2F3A</color>
-    <color name="md_theme_dark_on_surface_variant">#C6CBD7</color>
+    <color name="md_theme_dark_surface">#161A20</color>
+    <color name="md_theme_dark_on_surface">#E6E8EC</color>
+
+    <color name="md_theme_dark_surface_variant">#20252D</color>
+    <color name="md_theme_dark_on_surface_variant">#B6BCC6</color>
 
     <!-- Outlines -->
-    <color name="md_theme_dark_outline">#8C909A</color>
-    <color name="md_theme_dark_outline_variant">#3A3F4A</color>
+    <color name="md_theme_dark_outline">#3A404B</color>
+    <color name="md_theme_dark_outline_variant">#2A2F38</color>
 
     <!-- =========================================================
-         Material 3 Semantic Aliases (MISMO NOMBRE que en light)
-         Esto es lo que hace que Theme.Material3.DayNight cambie solo.
+         Material 3 Semantic Aliases
          ========================================================= -->
+
     <color name="primary">@color/md_theme_dark_primary</color>
     <color name="on_primary">@color/md_theme_dark_on_primary</color>
     <color name="primary_container">@color/md_theme_dark_primary_container</color>
@@ -81,27 +81,26 @@
 
     <!-- =========================================================
          Compatibilidad / App legacy
-         Nota: no cambio tu identidad, solo reemplazo fondos claros por oscuros donde aplique.
          ========================================================= -->
+
     <color name="white">#FFFFFFFF</color>
     <color name="black">#FF000000</color>
     <color name="transparent">#00000000</color>
 
-    <!-- Institucional ICE -->
-    <color name="ice_blue">@color/primary</color>
+    <!-- Institucional ICE (idéntico al LIGHT) -->
+    <color name="ice_blue">#005DAA</color>
     <color name="ice_blue_dark">#004C8C</color>
     <color name="ice_yellow">#FFDD00</color>
     <color name="ice_yellow_dark">#CCAA00</color>
     <color name="ice_cyan">#35C9FF</color>
 
-    <!-- Legacy bg/surface (en night sí conviene que apunten a tokens) -->
+    <!-- Legacy bg/surface -->
     <color name="bg_light">@color/background</color>
     <color name="surface_light">@color/surface</color>
     <color name="surface_variant_light">@color/surface_variant</color>
     <color name="on_surface_variant_light">@color/on_surface_variant</color>
     <color name="outline_variant_light">@color/outline_variant</color>
 
-    <!-- Estos "dark" legacy ahora sí quedan coherentes -->
     <color name="bg_dark">@color/background</color>
     <color name="surface_dark">@color/surface</color>
     <color name="surface_variant_dark">@color/surface_variant</color>
@@ -112,7 +111,7 @@
     <color name="on_light">@color/on_surface</color>
     <color name="on_dark">@color/on_surface</color>
 
-    <!-- Estados (no tocamos los colores de estado: siguen igual) -->
+    <!-- Estados (iguales) -->
     <color name="success_500">#4CAF50</color>
     <color name="error_500">#D32F2F</color>
 
@@ -120,52 +119,52 @@
     <color name="warning_yellow">#FFC857</color>
     <color name="danger_red">#E5484D</color>
 
-    <!-- Chips / Averías (iguales para consistencia visual) -->
+    <!-- Chips -->
     <color name="chip_asignada">#FBC02D</color>
     <color name="chip_en_atencion">#1E88E5</color>
     <color name="chip_pendiente">#E53935</color>
     <color name="chip_resuelta">#43A047</color>
     <color name="chip_anulada">#546E7A</color>
 
-    <!-- Login (mantenemos marca, pero cambiamos fondo/card a oscuro-gris) -->
-    <color name="login_background">#101318</color>
-    <color name="login_card_background">#1A1F28</color>
-    <color name="login_text_primary">#E2E2E9</color>
+    <!-- Login -->
+    <color name="login_background">#0F1115</color>
+    <color name="login_card_background">#161A20</color>
+    <color name="login_text_primary">#E6E8EC</color>
     <color name="login_text_secondary">#FFDD00</color>
     <color name="login_button_background">#FFDD00</color>
     <color name="login_button_text">#003258</color>
     <color name="login_hint_text">#A9AFBC</color>
 
-    <!-- Scrims / overlays (noche) -->
+    <!-- Scrims -->
     <color name="scrim_light">#66000000</color>
     <color name="scrim_dark">#33FFFFFF</color>
     <color name="overlay_dark">#B0000000</color>
 
-    <!-- Glass / Transparencias (en night que sea más “humo” oscuro) -->
-    <color name="glass_light">#E61A1F28</color>
+    <!-- Glass -->
+    <color name="glass_light">#E6161A20</color>
     <color name="glass_dark">#66101318</color>
     <color name="glass_surface">#66101318</color>
     <color name="glass_outline">#33FFFFFF</color>
-    <color name="glass_chip_surface">#4D1A1F28</color>
+    <color name="glass_chip_surface">#4D161A20</color>
 
-    <!-- Notificaciones de averías (convertimos surface a oscuro, texto claro) -->
+    <!-- Notificaciones -->
     <color name="averia_notification_glow">#332196F3</color>
     <color name="averia_notification_accent">#2196F3</color>
     <color name="averia_notification_resolved">#2E7D32</color>
     <color name="averia_notification_pending">#EF6C00</color>
-    <color name="averia_notification_surface">#121722</color>
-    <color name="averia_notification_on_surface">#E2E2E9</color>
+    <color name="averia_notification_surface">#161A20</color>
+    <color name="averia_notification_on_surface">#E6E8EC</color>
     <color name="averia_notification_chip_bg">#1F2196F3</color>
     <color name="averia_notification_chip_text">#E3F2FD</color>
 
     <!-- Helpers -->
     <color name="outline_soft">#33FFFFFF</color>
-    <color name="primary_dark">#9ACBFF</color>
+    <color name="primary_dark">#005DAA</color>
     <color name="medidor_warning_background">#2A2016</color>
 
     <!-- Superficies neutrales -->
-    <color name="surface_neutral_light">#121722</color>
-    <color name="surface_neutral_dark">#121722</color>
+    <color name="surface_neutral_light">#161A20</color>
+    <color name="surface_neutral_dark">#161A20</color>
 
     <!-- Estados normalizados -->
     <color name="status_pending">#E05A5A</color>
@@ -179,19 +178,12 @@
     <color name="red">#D32F2F</color>
     <color name="white_translucent">#66FFFFFF</color>
 
-    <!-- ========================================================= -->
-<!-- Legacy “*_dark” colors (compatibilidad)                   -->
-<!-- Se usan en XML viejos / overlays que aún referencian *_dark -->
-<!-- ========================================================= -->
-
-<color name="primary_container_dark">@color/primary_container</color>
-<color name="on_primary_container_dark">@color/on_primary_container</color>
-
-<color name="secondary_container_dark">@color/secondary_container</color>
-<color name="on_secondary_container_dark">@color/on_secondary_container</color>
-
-<color name="tertiary_container_dark">@color/tertiary_container</color>
-<color name="on_tertiary_container_dark">@color/on_tertiary_container</color>
-
+    <!-- Legacy _dark -->
+    <color name="primary_container_dark">@color/primary_container</color>
+    <color name="on_primary_container_dark">@color/on_primary_container</color>
+    <color name="secondary_container_dark">@color/secondary_container</color>
+    <color name="on_secondary_container_dark">@color/on_secondary_container</color>
+    <color name="tertiary_container_dark">@color/tertiary_container</color>
+    <color name="on_tertiary_container_dark">@color/on_tertiary_container</color>
 
 </resources>

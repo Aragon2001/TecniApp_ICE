@@ -431,8 +431,8 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
                     setPanningGesturesEnabled(true)
                     setZoomGesturesEnabled(true)
                     setStreetNamesEnabled(true)
-                    setOnStreetViewPanoramaChangeListener { location ->
-                        streetViewHasPanorama = location != null
+                    setOnStreetViewPanoramaChangeListener {
+                        streetViewHasPanorama = true
                         actualizarStreetViewEstadoDesdeSheet()
                         actualizarStreetViewUi()
                     }
