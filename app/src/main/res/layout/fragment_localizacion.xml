@@ -85,6 +85,19 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
+        <TextView
+            android:id="@+id/mapLegend"
+            style="@style/TextAppearance.Material3.BodySmall"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top|end"
+            android:layout_marginTop="132dp"
+            android:layout_marginEnd="20dp"
+            android:background="@drawable/rounded_edit_text"
+            android:paddingHorizontal="10dp"
+            android:paddingVertical="6dp"
+            android:text="@string/localizacion_ocultar_calles" />
+
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/overlayBottom"
             android:layout_width="match_parent"
@@ -417,6 +430,15 @@
                     android:layout_height="match_parent"
                     android:inflatedId="@+id/streetViewPanoramaContainer"
                     android:layout="@layout/include_streetview_panorama" />
+
+                <ImageView
+                    android:id="@+id/streetViewCenterPin"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_gravity="center"
+                    android:contentDescription="@string/localizacion_street_view_pin_desc"
+                    android:src="@drawable/ic_location"
+                    android:visibility="gone" />
 
                 <LinearLayout
                     android:id="@+id/streetViewLoadingContainer"
