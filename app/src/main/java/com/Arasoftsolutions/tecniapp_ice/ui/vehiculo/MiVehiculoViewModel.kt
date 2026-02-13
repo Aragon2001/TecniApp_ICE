@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Calendar
+import java.util.Date
 import java.util.Locale
 
 private const val INTERVALO_MANTENIMIENTO_KM = 5000.0
@@ -50,6 +51,9 @@ data class MiVehiculoUiState(
     val unidad: String = "km",
     val mantenimientoCards: List<MantenimientoCardUi> = emptyList(),
     val usoMensual: List<UsoMensualUi> = emptyList(),
+    val kmHoy: Double = 0.0,
+    val mantenimientosMes: Int = 0,
+    val alertasCount: Int = 0,
     val motivacion: String = "",
     val isLoading: Boolean = false
 )
@@ -114,6 +118,9 @@ class MiVehiculoViewModel(app: Application) : AndroidViewModel(app) {
                     val estadoMensaje = construirMensajeEstado(estado)
                     val cards = construirCards(ultimoMantenimiento, valorActual, unidad, estado)
                     val grafica = construirUsoMensual(registros)
+                    val kmHoy = calcularUsoHoy(registros)
+                    val mantenimientosMes = contarMantenimientosMes(mantenimientos)
+                    val alertas = calcularAlertas(valorActual, ultimoMantenimiento, tipo)
 
                     _uiState.value = MiVehiculoUiState(
                         vehiculo = vehiculo,
@@ -124,6 +131,9 @@ class MiVehiculoViewModel(app: Application) : AndroidViewModel(app) {
                         unidad = unidad,
                         mantenimientoCards = cards,
                         usoMensual = grafica,
+                        kmHoy = kmHoy,
+                        mantenimientosMes = mantenimientosMes,
+                        alertasCount = alertas,
                         motivacion = "Cuidar tu vehículo es cuidar tu seguridad.",
                         isLoading = false
                     )
@@ -137,6 +147,11 @@ class MiVehiculoViewModel(app: Application) : AndroidViewModel(app) {
             val vehiculo = state.vehiculo ?: return@launch
             if (valor < 0) {
                 _eventos.emit("Ingresa un valor válido para continuar.")
+                return@launch
+            }
+            val lecturaActual = state.valorActual ?: 0.0
+            if (valor < lecturaActual) {
+                _eventos.emit("No se permite registrar una lectura menor a la actual (${formatearValor(lecturaActual, state.unidad)}).")
                 return@launch
             }
 
@@ -267,6 +282,40 @@ class MiVehiculoViewModel(app: Application) : AndroidViewModel(app) {
     }
 
 
+    private fun calcularUsoHoy(registros: List<RegistroDiarioEntity>): Double {
+        val hoy = fechaHoy()
+        val delDia = registros.filter { it.fecha == hoy }.sortedBy { it.registradoEn }
+        if (delDia.isEmpty()) return 0.0
+        val min = delDia.minOf { it.valor }
+        val max = delDia.maxOf { it.valor }
+        return (max - min).coerceAtLeast(0.0)
+    }
+
+    private fun contarMantenimientosMes(mantenimientos: List<RegistroMantenimientoEntity>): Int {
+        val cal = Calendar.getInstance()
+        val month = cal.get(Calendar.MONTH)
+        val year = cal.get(Calendar.YEAR)
+        return mantenimientos.count { item ->
+            val d = Date(item.creadoEn)
+            val c = Calendar.getInstance().apply { time = d }
+            c.get(Calendar.MONTH) == month && c.get(Calendar.YEAR) == year
+        }
+    }
+
+    private fun calcularAlertas(
+        valorActual: Double?,
+        ultimoMantenimiento: RegistroMantenimientoEntity?,
+        tipo: TipoVehiculo
+    ): Int {
+        if (valorActual == null || ultimoMantenimiento == null) return 1
+        val delta = ultimoMantenimiento.proximoMantenimiento - valorActual
+        val umbral = if (tipo.usaKilometraje) AVISO_MANTENIMIENTO_DELTA_KM else AVISO_MANTENIMIENTO_DELTA_HORAS
+        return when {
+            delta <= 0 -> 2
+            delta <= umbral -> 1
+            else -> 0
+        }
+    }
 
 
     fun crearVehiculo(placaRaw: String, subregion: String?, tipo: String, agencia: String) {
@@ -289,7 +338,13 @@ class MiVehiculoViewModel(app: Application) : AndroidViewModel(app) {
 
     fun registrarKm(km: Double) {
         viewModelScope.launch {
-            val vehiculo = _uiState.value.vehiculo ?: return@launch
+            val state = _uiState.value
+            val vehiculo = state.vehiculo ?: return@launch
+            val actual = state.valorActual ?: 0.0
+            if (km < actual) {
+                _eventos.emit("No se permite registrar una lectura menor a la actual (${formatearValor(actual, state.unidad)}).")
+                return@launch
+            }
             val now = System.currentTimeMillis()
             repository.addLogAndUpdateKm(
                 VehiculoLogEntity(
@@ -308,7 +363,13 @@ class MiVehiculoViewModel(app: Application) : AndroidViewModel(app) {
 
     fun registrarDiario(valor: Double, observaciones: String?) {
         viewModelScope.launch {
-            val vehiculo = _uiState.value.vehiculo ?: return@launch
+            val state = _uiState.value
+            val vehiculo = state.vehiculo ?: return@launch
+            val actual = state.valorActual ?: 0.0
+            if (valor < actual) {
+                _eventos.emit("No se permite registrar una lectura menor a la actual (${formatearValor(actual, state.unidad)}).")
+                return@launch
+            }
             val now = System.currentTimeMillis()
             repository.addLogAndUpdateKm(
                 VehiculoLogEntity(
