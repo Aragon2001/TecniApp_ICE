@@ -131,6 +131,16 @@ fun Fragment.showRegistroVehiculoPendienteDialog(
             val vehiculo = placaLong?.let { repo.obtenerVehiculoPorPlaca(it) }
             if (vehiculo != null) {
                 val tipo = inferirTipoVehiculo(vehiculo.tipo)
+                val lecturaActual = if (tipo.usaKilometraje) {
+                    vehiculo.registroFinal ?: vehiculo.registroInicial ?: vehiculo.kilometrajeActual ?: 0.0
+                } else {
+                    vehiculo.registroFinal ?: vehiculo.registroInicial ?: vehiculo.orimetroActual ?: 0.0
+                }
+                if (valor < lecturaActual) {
+                    tilValor.error = getString(R.string.averia_error_km_inicio_menor_ultimo, String.format(java.util.Locale.getDefault(), "%.0f", lecturaActual))
+                    return@launch
+                }
+                tilValor.error = null
 
                 val registrosActuales = parseRegistrosDiarios(vehiculo.registrosDiariosJson)
                 val registroAyerSinCerrar = registrosActuales.firstOrNull {
@@ -175,6 +185,10 @@ fun Fragment.showRegistroVehiculoPendienteDialog(
                 }
                 val registroJson = serializeRegistrosDiarios(registrosConNuevoDia)
                 val valorActualizado = if (cerrarRegistro) (kmFinal ?: valor) else valor
+                if (valorActualizado < lecturaActual) {
+                    tilValor.error = getString(R.string.averia_error_km_inicio_menor_ultimo, String.format(java.util.Locale.getDefault(), "%.0f", lecturaActual))
+                    return@launch
+                }
                 val kilometrajeActual = if (tipo.usaKilometraje) valorActualizado else vehiculo.kilometrajeActual
                 val orimetroActual = if (tipo.usaOrimetro) valorActualizado else vehiculo.orimetroActual
                 repo.actualizarRegistroDiarioVehiculo(

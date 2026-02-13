@@ -58,6 +58,7 @@ class MiVehiculoFragment : Fragment() {
                         binding.containerMantenimientos.isVisible = visible
                         binding.tvTituloUsoMensual.isVisible = visible
                         binding.containerUsoMensual.isVisible = visible
+                        binding.tvChartPlaceholder.isVisible = visible
                         if (!visible) return@collect
 
                         binding.tvVehiculoPlaca.text = vehiculo.placaRaw.ifBlank { vehiculo.vehiculoId }
@@ -84,6 +85,9 @@ class MiVehiculoFragment : Fragment() {
                         binding.tvValorActual.text = state.valorActual?.let {
                             String.format(Locale.getDefault(), "%.0f %s", it, state.unidad)
                         } ?: getString(R.string.mi_vehiculo_valor_actual_placeholder)
+                        binding.tvKpiKmHoy.text = String.format(Locale.getDefault(), "%.0f %s", state.kmHoy, state.unidad)
+                        binding.tvKpiMantenimientos.text = state.mantenimientosMes.toString()
+                        binding.tvKpiAlertas.text = state.alertasCount.toString()
 
                         actualizarEstadoChip(state.estado)
                         renderMantenimientos(state.mantenimientoCards)
@@ -164,6 +168,7 @@ class MiVehiculoFragment : Fragment() {
 
     private fun renderUsoMensual(items: List<UsoMensualUi>, unidad: String) {
         binding.containerUsoMensual.removeAllViews()
+        binding.tvChartPlaceholder.isVisible = items.isEmpty()
         if (items.isEmpty()) {
             val empty = layoutInflater.inflate(R.layout.item_uso_mes, binding.containerUsoMensual, false)
             empty.findViewById<android.widget.TextView>(R.id.tvMes).text = "—"

@@ -84,6 +84,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         val statsDamagedLights: TextView = view.findViewById(R.id.text_stats_damaged_lights)
         val statsScheduledVisits: TextView = view.findViewById(R.id.text_stats_scheduled_visits)
         val cardPending: View = view.findViewById(R.id.card_pending)
+        val cardKilometraje: View = view.findViewById(R.id.card_kilometraje)
         val cardAttended: View = view.findViewById(R.id.card_attended)
         val actionAverias: View = view.findViewById(R.id.action_averias)
         val actionMedidor: View = view.findViewById(R.id.action_medidor)
@@ -119,6 +120,9 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                     bundleOf(AveriasFragment.ARG_INITIAL_ESTADO to Estado.RESUELTA.name)
                 )
             }
+        }
+        cardKilometraje.setOnClickListener {
+            ejecutarOperacionSiRegistroCompleto { navigateTo(R.id.nav_mi_vehiculo) }
         }
         actionAverias.setOnClickListener {
             ejecutarOperacionSiRegistroCompleto { navigateTo(R.id.nav_averias) }
@@ -166,6 +170,8 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                 launch {
                     vm.averiasPendientesPorAgencia.collect { items ->
                         statsPendingAverias.text = formatPendingAverias(items)
+                        val agenciasConPendientes = items.count { it.pendientes > 0 }
+                        statsScheduledVisits.text = agenciasConPendientes.toString()
                     }
                 }
                 launch {
