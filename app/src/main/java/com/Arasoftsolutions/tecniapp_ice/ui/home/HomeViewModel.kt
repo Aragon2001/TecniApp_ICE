@@ -88,10 +88,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
             .stateIn(viewModelScope, sharing, emptyList())
 
     private val averias: StateFlow<List<AveriaEntity>> =
-        agenciasFiltroTags
-            .flatMapLatest { agencias ->
-                averiasRepository.observe(agencias, "", "", "")
-            }
+        averiasRepository.observe(emptyList(), "", "", "")
             .stateIn(viewModelScope, sharing, emptyList())
 
     private val usuarioUid: StateFlow<String?> =
@@ -130,12 +127,10 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
 
     val averiasPendientesPorAgencia: StateFlow<List<AveriasPendientesPorAgencia>> =
         combine(averias, agenciasPreferidas) { lista, agencias ->
-            if (agencias.isEmpty()) {
-                emptyList()
-            } else {
-                val pendientes = lista.filter { averia ->
-                    !averia.estado.equals("Resuelta", ignoreCase = true)
-                }
+            val pendientes = lista.filter { averia ->
+                !averia.estado.equals("Resuelta", ignoreCase = true)
+            }
+            if (agencias.isNotEmpty()) {
                 agencias.map { agencia ->
                     val normalized = normalizeAveriaText(agencia)
                     val count = if (normalized.isBlank()) {
@@ -147,6 +142,13 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
                     }
                     AveriasPendientesPorAgencia(agencia, count)
                 }
+            } else {
+                pendientes
+                    .groupBy { it.agencia ?: it.nombreAgencia ?: "Sin agencia" }
+                    .map { (agencia, items) ->
+                        AveriasPendientesPorAgencia(agencia, items.size)
+                    }
+                    .sortedByDescending { it.pendientes }
             }
         }.stateIn(viewModelScope, sharing, emptyList())
 
