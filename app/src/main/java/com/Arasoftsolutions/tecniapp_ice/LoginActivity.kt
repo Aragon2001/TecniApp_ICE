@@ -23,6 +23,7 @@ import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
 import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ServerValue
 import com.google.firebase.messaging.FirebaseMessaging
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -277,11 +278,17 @@ class LoginActivity : AppCompatActivity() {
         .addOnSuccessListener { token ->
             if (token.isNullOrBlank()) return@addOnSuccessListener
 
+            val updates = hashMapOf<String, Any>(
+                "fcmToken" to token,
+                "fcm/currentToken" to token,
+                "fcm/lastUpdated" to ServerValue.TIMESTAMP,
+                "fcm/tokens/${token.toFirebaseKey()}" to token
+            )
+
             FirebaseDatabase.getInstance(DATABASE_URL_USERS)
                 .getReference("usuarios")
                 .child(uid)
-                .child("fcmToken")
-                .setValue(token)
+                .updateChildren(updates)
                 .addOnSuccessListener {
                     TecniAppMessagingService.flushPendingToken(this, uid)
                 }
@@ -293,6 +300,14 @@ class LoginActivity : AppCompatActivity() {
             Log.w(TAG, "No se pudo obtener token FCM en login: ${e.message}", e)
         }
 }
+
+    private fun String.toFirebaseKey(): String =
+        replace('.', '_')
+            .replace('#', '_')
+            .replace('$', '_')
+            .replace('[', '_')
+            .replace(']', '_')
+            .replace('/', '_')
 
     /**
      * Marcado de sesión en dos preferencias:
