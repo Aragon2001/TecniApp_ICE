@@ -340,6 +340,7 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
         binding.actionCopy.setOnClickListener { copiarCoordenadas() }
         binding.actionShare.setOnClickListener { compartirLocalizacion() }
         binding.actionToggleStreets.setOnClickListener { alternarVisibilidadCalles() }
+        binding.streetViewActionSurfaceMode.setOnClickListener { irAVistaAereaDesdeStreetView() }
         binding.streetViewActionExpand.setOnClickListener { expandirStreetView() }
         binding.streetViewActionMinimize.setOnClickListener { minimizarStreetView() }
         binding.streetViewActionClose.setOnClickListener { cerrarStreetView() }
@@ -358,7 +359,7 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
         streetViewMode = StreetViewMode.HIDDEN
         behavior.isHideable = true
         behavior.skipCollapsed = false
-        behavior.isDraggable = true
+        behavior.isDraggable = false
         behavior.addBottomSheetCallback(object : BottomSheetBehavior.BottomSheetCallback() {
             override fun onStateChanged(bottomSheet: View, newState: Int) {
                 streetViewMode = when (newState) {
@@ -385,6 +386,7 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
     }
 
     private fun abrirStreetView() {
+        mapaGoogle?.mapType = GoogleMap.MAP_TYPE_NORMAL
         ensureStreetViewInflatedAndInitialized()
         streetViewMode = StreetViewMode.EXPANDED
         streetViewBehavior?.state = BottomSheetBehavior.STATE_EXPANDED
@@ -437,8 +439,8 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
                     setPanningGesturesEnabled(true)
                     setZoomGesturesEnabled(true)
                     setStreetNamesEnabled(true)
-                    setOnStreetViewPanoramaChangeListener {
-                        streetViewHasPanorama = true
+                    setOnStreetViewPanoramaChangeListener { location ->
+                        streetViewHasPanorama = location != null
                         actualizarStreetViewEstadoDesdeSheet()
                         actualizarStreetViewUi()
                     }
@@ -484,10 +486,8 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
     }
 
     private fun actualizarStreetViewEstadoDesdeSheet() {
-        val estadoActual = viewModel.streetViewState.value
         val estado = when {
             streetViewMode == StreetViewMode.HIDDEN -> LocalizacionViewModel.StreetViewState.CLOSED
-            estadoActual == LocalizacionViewModel.StreetViewState.LOADING -> LocalizacionViewModel.StreetViewState.LOADING
             streetViewHasPanorama && streetViewMode == StreetViewMode.EXPANDED ->
                 LocalizacionViewModel.StreetViewState.FULLSCREEN
             streetViewHasPanorama && streetViewMode == StreetViewMode.COLLAPSED ->
@@ -511,6 +511,7 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
         binding.streetViewCenterPin.isVisible = active && !unavailable
         binding.streetViewActionExpand.isVisible = estado == LocalizacionViewModel.StreetViewState.MINIMIZED
         binding.streetViewActionMinimize.isVisible = estado == LocalizacionViewModel.StreetViewState.FULLSCREEN
+        binding.streetViewActionSurfaceMode.isVisible = active && !unavailable
     }
 
     // Reset de textos y cámara a vista país
@@ -766,6 +767,17 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
         infoWindowAdapterConfigured = true
     }
 
+    private fun irAVistaAereaDesdeStreetView() {
+        val loc = viewModel.localizacion.value
+        if (loc == null) {
+            Snackbar.make(binding.root, getString(R.string.localizacion_toast_sin_ubicacion_mapa), Snackbar.LENGTH_SHORT).show()
+            return
+        }
+        cerrarStreetView()
+        mapaGoogle?.mapType = GoogleMap.MAP_TYPE_HYBRID
+        centrarMapaEnLocalizacion()
+    }
+
     private fun configurarInteraccionMarcadores() {
         mapaGoogle?.setOnMarkerClickListener { marker ->
             val data = marker.tag as? StreetMarkerTag ?: return@setOnMarkerClickListener false
@@ -852,7 +864,6 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
         }
         binding.actionToggleStreets.setIconResource(icon)
         binding.actionToggleStreets.contentDescription = legend
-        binding.mapLegend.text = legend
     }
 
     private fun compartirLocalizacion() {

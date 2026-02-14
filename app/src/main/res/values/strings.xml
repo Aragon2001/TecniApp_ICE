@@ -777,6 +777,9 @@ Cliente: %4$s</string>
     <string name="localizacion_street_view_loading">Cargando Street View…</string>
     <string name="localizacion_street_view_empty">Street View no está disponible para este punto.</string>
     <string name="localizacion_street_view_pin_desc">Punto fijo de referencia</string>
+    <string name="localizacion_street_view_surface_mode">Cambiar entre vista Street y aérea</string>
+    <string name="localizacion_street_view_mode_aerea">Aérea</string>
+    <string name="localizacion_street_view_mode_street">Street</string>
     <string name="localizacion_coordenadas_format">Lat %1$.6f · Lng %2$.6f</string>
     <string name="localizacion_permiso_denegado">Permiso de ubicación denegado.</string>
     <string name="localizacion_placeholder_direccion_no_disponible">N/A</string>
