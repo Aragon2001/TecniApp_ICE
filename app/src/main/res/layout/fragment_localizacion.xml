@@ -436,6 +436,7 @@
                     android:layout_width="32dp"
                     android:layout_height="32dp"
                     android:layout_gravity="center"
+                    android:translationY="-16dp"
                     android:contentDescription="@string/localizacion_street_view_pin_desc"
                     android:src="@drawable/ic_location"
                     android:visibility="gone" />
@@ -462,6 +463,19 @@
                         android:text="@string/localizacion_street_view_loading"
                         android:textColor="?attr/colorOnSurfaceVariant" />
                 </LinearLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/streetViewActionSurfaceMode"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="bottom|start"
+                    android:layout_marginStart="12dp"
+                    android:layout_marginBottom="16dp"
+                    android:contentDescription="@string/localizacion_street_view_surface_mode"
+                    android:text="@string/localizacion_street_view_mode_aerea"
+                    app:icon="@drawable/map_24px"
+                    app:iconPadding="8dp" />
 
                 <TextView
                     android:id="@+id/streetViewEmptyState"
