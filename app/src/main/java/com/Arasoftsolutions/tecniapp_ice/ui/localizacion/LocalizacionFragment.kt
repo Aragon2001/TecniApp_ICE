@@ -359,7 +359,7 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
         streetViewMode = StreetViewMode.HIDDEN
         behavior.isHideable = true
         behavior.skipCollapsed = false
-        behavior.isDraggable = true
+        behavior.isDraggable = false
         behavior.addBottomSheetCallback(object : BottomSheetBehavior.BottomSheetCallback() {
             override fun onStateChanged(bottomSheet: View, newState: Int) {
                 streetViewMode = when (newState) {
@@ -439,8 +439,8 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
                     setPanningGesturesEnabled(true)
                     setZoomGesturesEnabled(true)
                     setStreetNamesEnabled(true)
-                    setOnStreetViewPanoramaChangeListener {
-                        streetViewHasPanorama = true
+                    setOnStreetViewPanoramaChangeListener { location ->
+                        streetViewHasPanorama = location != null
                         actualizarStreetViewEstadoDesdeSheet()
                         actualizarStreetViewUi()
                     }
@@ -486,10 +486,8 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
     }
 
     private fun actualizarStreetViewEstadoDesdeSheet() {
-        val estadoActual = viewModel.streetViewState.value
         val estado = when {
             streetViewMode == StreetViewMode.HIDDEN -> LocalizacionViewModel.StreetViewState.CLOSED
-            estadoActual == LocalizacionViewModel.StreetViewState.LOADING -> LocalizacionViewModel.StreetViewState.LOADING
             streetViewHasPanorama && streetViewMode == StreetViewMode.EXPANDED ->
                 LocalizacionViewModel.StreetViewState.FULLSCREEN
             streetViewHasPanorama && streetViewMode == StreetViewMode.COLLAPSED ->
@@ -866,7 +864,6 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
         }
         binding.actionToggleStreets.setIconResource(icon)
         binding.actionToggleStreets.contentDescription = legend
-        binding.mapLegend.text = legend
     }
 
     private fun compartirLocalizacion() {
