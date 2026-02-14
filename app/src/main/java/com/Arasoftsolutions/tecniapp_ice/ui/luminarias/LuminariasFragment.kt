@@ -26,6 +26,7 @@ import com.Arasoftsolutions.tecniapp_ice.databinding.BottomSheetLuminariaReparac
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.Arasoftsolutions.tecniapp_ice.ui.vehiculo.showRegistroVehiculoPendienteDialog
+import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.textfield.MaterialAutoCompleteTextView
@@ -214,16 +215,50 @@ class LuminariasFragment : Fragment() {
         val cantidadInput = dialogView.findViewById<AppCompatEditText>(
             com.Arasoftsolutions.tecniapp_ice.R.id.etCantidadMaterial
         )
+        val btnMenos = dialogView.findViewById<com.google.android.material.button.MaterialButton>(
+            com.Arasoftsolutions.tecniapp_ice.R.id.btnCantidadMenos
+        )
+        val btnMas = dialogView.findViewById<com.google.android.material.button.MaterialButton>(
+            com.Arasoftsolutions.tecniapp_ice.R.id.btnCantidadMas
+        )
+        val btnConfirmar = dialogView.findViewById<com.google.android.material.button.MaterialButton>(
+            com.Arasoftsolutions.tecniapp_ice.R.id.btnConfirmarCantidad
+        )
+        val tvDisponible = dialogView.findViewById<android.widget.TextView>(
+            com.Arasoftsolutions.tecniapp_ice.R.id.tvDisponibleCantidad
+        )
+        val cardWarning = dialogView.findViewById<com.google.android.material.card.MaterialCardView>(
+            com.Arasoftsolutions.tecniapp_ice.R.id.cardWarningCantidad
+        )
+
+        tvDisponible.text = "Material: ${material.codigo} - ${material.descripcion}"
+        cardWarning.isVisible = false
         cantidadInput.setText("1")
-        MaterialAlertDialogBuilder(requireContext())
+        val dialog = MaterialAlertDialogBuilder(requireContext())
             .setTitle("Cantidad usada")
             .setView(dialogView)
-            .setPositiveButton("Agregar") { _, _ ->
-                val cantidad = cantidadInput.text?.toString()?.toDoubleOrNull() ?: 0.0
-                onConfirm(cantidad)
-            }
             .setNegativeButton("Cancelar", null)
             .show()
+
+        fun ajustar(delta: Double) {
+            val actual = cantidadInput.text?.toString()?.toDoubleOrNull() ?: 1.0
+            val nuevo = (actual + delta).coerceAtLeast(0.5)
+            val texto = if (nuevo % 1.0 == 0.0) nuevo.toInt().toString() else nuevo.toString()
+            cantidadInput.setText(texto)
+            cantidadInput.setSelection(texto.length)
+        }
+
+        btnMenos.setOnClickListener { ajustar(-0.5) }
+        btnMas.setOnClickListener { ajustar(0.5) }
+        btnConfirmar.setOnClickListener {
+            val cantidad = cantidadInput.text?.toString()?.toDoubleOrNull() ?: 0.0
+            if (cantidad <= 0.0) {
+                cantidadInput.error = "Ingresa una cantidad válida"
+                return@setOnClickListener
+            }
+            onConfirm(cantidad)
+            dialog.dismiss()
+        }
     }
 
     private fun mostrarDialogoEdicion(reparacion: com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaReparacionEntity) {
@@ -237,7 +272,7 @@ class LuminariasFragment : Fragment() {
             reparacion = reparacion,
             onDone = { dialog.dismiss() }
         )
-        dialog.show()
+        mostrarBottomSheet(dialog)
     }
 
     private fun confirmarEliminacion(reparacion: com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaReparacionEntity) {
@@ -267,7 +302,7 @@ class LuminariasFragment : Fragment() {
             reparacion = null,
             onDone = { dialog.dismiss() }
         )
-        dialog.show()
+        mostrarBottomSheet(dialog)
     }
 
     private fun mostrarDetallePendiente(reparacion: com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaReparacionEntity) {
@@ -281,7 +316,7 @@ class LuminariasFragment : Fragment() {
             reparacion = reparacion,
             onDone = { dialog.dismiss() }
         )
-        dialog.show()
+        mostrarBottomSheet(dialog)
         cargarDetalleCliente(sheetBinding, reparacion)
     }
 
@@ -296,7 +331,7 @@ class LuminariasFragment : Fragment() {
             reparacion = reparacion,
             onDone = { dialog.dismiss() }
         )
-        dialog.show()
+        mostrarBottomSheet(dialog)
         cargarDetalleCliente(sheetBinding, reparacion)
     }
 
@@ -495,8 +530,8 @@ class LuminariasFragment : Fragment() {
         val soloAsignacion = esAdminSupervisor && reparacion != null
         val mostrarSoloReasignacion = esAdminSupervisor && reparacion != null &&
             estadoActual == com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado.REPARADA
-        val ocultarMateriales = esAdminSupervisor
-        val ocultarEjecutor = esAdminSupervisor
+        val ocultarMateriales = false
+        val ocultarEjecutor = false
         binding.tilEstadoLuminaria.isVisible = !mostrarSoloReasignacion && !ocultarMateriales
         binding.actEstadoLuminaria.isEnabled = !mostrarSoloReasignacion && !ocultarMateriales
         if (ocultarMateriales) {
@@ -592,6 +627,14 @@ class LuminariasFragment : Fragment() {
                 }
             }
         }
+    }
+
+    private fun mostrarBottomSheet(dialog: BottomSheetDialog) {
+        dialog.setOnShowListener {
+            dialog.behavior.skipCollapsed = true
+            dialog.behavior.state = BottomSheetBehavior.STATE_EXPANDED
+        }
+        dialog.show()
     }
 
     private fun validarFormularioRegistro(
