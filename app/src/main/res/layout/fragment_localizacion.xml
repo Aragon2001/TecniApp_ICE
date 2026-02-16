@@ -85,18 +85,7 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <TextView
-            android:id="@+id/mapLegend"
-            style="@style/TextAppearance.Material3.BodySmall"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="top|end"
-            android:layout_marginTop="132dp"
-            android:layout_marginEnd="20dp"
-            android:background="@drawable/rounded_edit_text"
-            android:paddingHorizontal="10dp"
-            android:paddingVertical="6dp"
-            android:text="@string/localizacion_ocultar_calles" />
+        
 
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/overlayBottom"
