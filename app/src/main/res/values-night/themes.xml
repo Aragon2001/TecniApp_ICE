@@ -142,6 +142,8 @@
          El fondo real se controla por tokens/drawables (y en night ya es oscuro).
          ========================================================= -->
     <style name="ThemeOverlay.Tecni.BottomSheetDialog" parent="ThemeOverlay.Material3.BottomSheetDialog">
+        <item name="colorSurface">@color/surface</item>
+        <item name="colorOnSurface">@color/on_surface</item>
         <item name="bottomSheetStyle">@style/Widget.Tecni.BottomSheet</item>
     </style>
 
