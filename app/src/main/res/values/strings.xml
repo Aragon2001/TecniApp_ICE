@@ -305,6 +305,8 @@ Cliente: %4$s</string>
     <string name="permission_background_location_required">Activa la ubicación en segundo plano para mantener el monitoreo y las alertas de averías.</string>
     <string name="permission_all_files_required">Activa el acceso a todos los archivos para poder gestionar recursos y reportes.</string>
     <string name="permission_unknown_sources_required">Permite instalar apps de orígenes desconocidos para completar actualizaciones.</string>
+    <string name="permission_notification_required">Activa las notificaciones para recibir alertas operativas y de averías.</string>
+    <string name="permission_location_required">Activa el acceso a ubicación para habilitar georreferencia y seguimiento.</string>
     <string name="averia_notificacion_switch_label">Recibir notificaciones</string>
     <string name="averia_notificacion_switch_helper">Desactiva esta opción cuando no necesites alertas (por ejemplo, cuando otra cuadrilla está de turno).</string>
     <string name="averia_notificacion_filtro_titulo">Filtrar notificaciones por agencia</string>

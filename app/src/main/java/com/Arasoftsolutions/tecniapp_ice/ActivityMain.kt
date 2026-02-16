@@ -5,20 +5,11 @@
  */
 package com.Arasoftsolutions.tecniapp_ice
 
-import android.Manifest
 import android.content.Intent
-import android.content.pm.PackageManager
-import android.net.Uri
-import android.os.Build
 import android.os.Bundle
-import android.os.Environment
-import android.provider.Settings
 import android.util.Log
 import android.widget.TextView
-import android.widget.Toast
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.ContextCompat
 import androidx.core.view.GravityCompat
 import androidx.core.view.isVisible
 import androidx.drawerlayout.widget.DrawerLayout
@@ -37,6 +28,7 @@ import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
 import com.Arasoftsolutions.tecniapp_ice.databinding.ActivityMainBinding
 import com.Arasoftsolutions.tecniapp_ice.databinding.NavHeaderMainBinding
 import com.Arasoftsolutions.tecniapp_ice.preferences.DataStoreManager
+import com.Arasoftsolutions.tecniapp_ice.permissions.PermissionInitializer
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasSyncWorker
 import com.Arasoftsolutions.tecniapp_ice.ui.legal.StructuredTextFormatter
 import com.Arasoftsolutions.tecniapp_ice.ui.legal.StructuredTextParser
@@ -62,6 +54,7 @@ class ActivityMain : AppCompatActivity() {
     private lateinit var headerBinding: NavHeaderMainBinding
     private val dataStore by lazy { DataStoreManager.getInstance(applicationContext) }
     private val updateDownloadManager by lazy { UpdateDownloadManager(this) }
+    private lateinit var permissionInitializer: PermissionInitializer
     private var adminRoleEligible = false
     private var adminPrivilegesEnabled = true
     private val authStateListener = FirebaseAuth.AuthStateListener { firebaseAuth ->
@@ -69,43 +62,6 @@ class ActivityMain : AppCompatActivity() {
             navigateToLogin()
         }
     }
-
-    private val runtimePermissionsLauncher =
-        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { results ->
-            val notificationGranted = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                results[Manifest.permission.POST_NOTIFICATIONS] == true ||
-                    ContextCompat.checkSelfPermission(
-                        this,
-                        Manifest.permission.POST_NOTIFICATIONS
-                    ) == PackageManager.PERMISSION_GRANTED
-            } else {
-                true
-            }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !notificationGranted) {
-                Toast.makeText(
-                    this,
-                    R.string.averia_notification_permission_denied,
-                    Toast.LENGTH_LONG
-                ).show()
-            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                Toast.makeText(
-                    this,
-                    R.string.averia_notification_permission_granted,
-                    Toast.LENGTH_LONG
-                ).show()
-            }
-            requestAllPermissionsOnLaunch()
-        }
-
-    private val backgroundLocationLauncher =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) {
-            requestAllPermissionsOnLaunch()
-        }
-
-    private val settingsLauncher =
-        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-            requestAllPermissionsOnLaunch()
-        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -126,6 +82,7 @@ class ActivityMain : AppCompatActivity() {
 
         // Room Repository
         repository = RoomRepository.getInstance(applicationContext)
+        permissionInitializer = PermissionInitializer(this, dataStore)
 
         // Cargar datos del usuario local (Room)
         lifecycleScope.launch {
@@ -137,7 +94,7 @@ class ActivityMain : AppCompatActivity() {
             triggerInitialAveriasSyncIfIdle()
         }
 
-        requestAllPermissionsOnLaunch()
+        permissionInitializer.initializeIfNeeded()
 
         // Drawer + Navigation
         val drawerLayout: DrawerLayout = binding.drawerLayout
@@ -327,84 +284,6 @@ class ActivityMain : AppCompatActivity() {
             .setPopUpTo(startDestinationId, inclusive = false, saveState = true)
             .build()
 
-    private fun requestAllPermissionsOnLaunch() {
-        val runtimePermissions = mutableListOf<String>()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-            !hasPermission(Manifest.permission.POST_NOTIFICATIONS)
-        ) {
-            runtimePermissions += Manifest.permission.POST_NOTIFICATIONS
-        }
-
-        if (!hasAnyLocationPermission()) {
-            runtimePermissions += listOf(
-                Manifest.permission.ACCESS_FINE_LOCATION,
-                Manifest.permission.ACCESS_COARSE_LOCATION
-            )
-        }
-
-        if (runtimePermissions.isNotEmpty()) {
-            runtimePermissionsLauncher.launch(runtimePermissions.toTypedArray())
-            return
-        }
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && !hasBackgroundLocationPermission()) {
-            showPermissionRequiredDialog(
-                message = getString(R.string.permission_background_location_required)
-            ) {
-                backgroundLocationLauncher.launch(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
-            }
-            return
-        }
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && !Environment.isExternalStorageManager()) {
-            showPermissionRequiredDialog(
-                message = getString(R.string.permission_all_files_required)
-            ) {
-                val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION).apply {
-                    data = Uri.fromParts("package", packageName, null)
-                }
-                settingsLauncher.launch(intent)
-            }
-            return
-        }
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !packageManager.canRequestPackageInstalls()) {
-            showPermissionRequiredDialog(
-                message = getString(R.string.permission_unknown_sources_required)
-            ) {
-                val intent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
-                    data = Uri.fromParts("package", packageName, null)
-                }
-                settingsLauncher.launch(intent)
-            }
-        }
-    }
-
-    private fun hasPermission(permission: String): Boolean =
-        ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
-
-    private fun hasAnyLocationPermission(): Boolean =
-        hasPermission(Manifest.permission.ACCESS_FINE_LOCATION) ||
-            hasPermission(Manifest.permission.ACCESS_COARSE_LOCATION)
-
-    private fun hasBackgroundLocationPermission(): Boolean =
-        hasPermission(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
-
-    private fun showPermissionRequiredDialog(message: String, onConfirm: () -> Unit) {
-        MaterialAlertDialogBuilder(this)
-            .setTitle(R.string.permission_required_title)
-            .setMessage(message)
-            .setCancelable(false)
-            .setPositiveButton(R.string.permission_required_action) { dialog, _ ->
-                dialog.dismiss()
-                onConfirm()
-            }
-            .setNegativeButton(R.string.permission_required_exit) { _, _ ->
-                finishAffinity()
-            }
-            .show()
-    }
-
     override fun onSupportNavigateUp(): Boolean {
         val navController = findNavController(R.id.nav_host_fragment_content_main)
         return navController.navigateUp(appBarConfiguration) || super.onSupportNavigateUp()
@@ -417,7 +296,6 @@ class ActivityMain : AppCompatActivity() {
             return
         }
         lifecycleScope.launch { loadUserDataFromDatabase() }
-        requestAllPermissionsOnLaunch()
     }
 
     override fun onStart() {
