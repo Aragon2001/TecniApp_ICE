@@ -749,7 +749,7 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
             marcador = map.addMarker(
                 MarkerOptions()
                     .position(ubicacion)
-                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_poste))
+                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.poste))
                     .title(posteTitulo)
                     .snippet(snippetInfo)
             )
@@ -834,7 +834,7 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
             map.addMarker(
                 MarkerOptions()
                     .position(LatLng(marker.latitud, marker.longitud))
-                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_poste))
+                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.poste))
                     .title(getString(R.string.localizacion_marker_poste_unico, marker.delPoste))
                     .snippet(marker.snippet)
             )?.tag = StreetMarkerTag(

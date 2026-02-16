@@ -13,61 +13,133 @@ import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ServerValue
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 
 class TecniAppMessagingService : FirebaseMessagingService() {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val repo by lazy { AveriasRepository(AppDatabase.getInstance(applicationContext)) }
+
+    private val repo by lazy {
+        AveriasRepository(AppDatabase.getInstance(applicationContext))
+    }
+
+    // =====================================================
+    // TOKEN MANAGEMENT
+    // =====================================================
 
     override fun onNewToken(token: String) {
         super.onNewToken(token)
-        Log.d(TAG, "Nuevo token FCM: $token")
+        Log.d(TAG, "Nuevo token FCM recibido")
 
         val uid = FirebaseAuth.getInstance().currentUser?.uid
+
         if (uid.isNullOrBlank()) {
             cacheToken(this, token)
-            Log.w(TAG, "Token recibido sin usuario autenticado; se cachea para subir luego")
+            Log.w(TAG, "Token recibido sin usuario autenticado. Se cachea.")
             return
         }
 
         saveTokenToRtdb(uid, token)
     }
 
+    // =====================================================
+    // MENSAJE RECIBIDO
+    // =====================================================
+
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         super.onMessageReceived(remoteMessage)
-        Log.d(TAG, "Mensaje FCM recibido: ${remoteMessage.data}")
 
         val data = remoteMessage.data
-        val caseId = data["caseId"]
-        if (caseId.isNullOrBlank()) {
-            Log.w(TAG, "Mensaje FCM ignorado: caseId faltante")
+        if (data.isEmpty()) {
+            Log.w(TAG, "Mensaje FCM vacío")
             return
         }
 
-        val averia = buildAveriaFromMessage(caseId, data)
-
-        scope.launch {
-            repo.upsertFromPush(averia)
+        val caseId = data["caseId"]
+        if (caseId.isNullOrBlank()) {
+            Log.w(TAG, "Mensaje ignorado: caseId faltante")
+            return
         }
 
+        val estado = data["estado"] ?: data["estadoClor"] ?: "PENDIENTE"
+
+        Log.d(TAG, "FCM caseId=$caseId estado=$estado")
+
+        val averia = buildAveriaFromMessage(caseId, data, estado)
+
+        // Insertar/Actualizar en Room
+        scope.launch {
+            try {
+                repo.upsertFromPush(averia)
+                Log.d(TAG, "Avería insertada/actualizada en Room")
+            } catch (e: Exception) {
+                Log.e(TAG, "Error insertando en Room", e)
+            }
+        }
+
+        // Verificar preferencias
         if (!AveriaNotificationPreferences.areNotificationsEnabled(this)) {
-            Log.d(TAG, "Notificaciones desactivadas por el usuario; se omite alerta local")
+            Log.d(TAG, "Notificaciones desactivadas por usuario")
             return
         }
 
         val agencyFilters = AveriaNotificationPreferences.normalizedAgencies(this)
         if (!shouldNotifyForAgency(averia, agencyFilters)) {
-            Log.d(TAG, "Mensaje FCM filtrado por agencia (${averia.agencia}/${averia.agenciaTag})")
+            Log.d(TAG, "Filtrado por agencia")
             return
         }
 
-        AveriaNotificationDispatcher.notifyNewCases(this, listOf(averia))
+        // Notificar según tipo
+        if (estado == "RESUELTA") {
+            AveriaNotificationDispatcher.notifyResolvedCases(this, listOf(averia))
+        } else {
+            AveriaNotificationDispatcher.notifyNewCases(this, listOf(averia))
+        }
     }
+
+    // =====================================================
+    // BUILD ENTITY DESDE FCM
+    // =====================================================
+
+    private fun buildAveriaFromMessage(
+        caseId: String,
+        data: Map<String, String>,
+        estado: String
+    ): AveriaEntity {
+
+        val agencia = data["agencia"]
+        val nombreAgencia = data["nombreAgencia"] ?: agencia
+        val descripcion = data["descripcion"]
+
+        val lastUpdated =
+            data["lastUpdated"]?.toLongOrNull() ?: System.currentTimeMillis()
+
+        val fechaInicio =
+            data["fechaInicioMillis"]?.toLongOrNull() ?: lastUpdated
+
+        return AveriaEntity(
+            caseId = caseId,
+            estado = estado,
+            agencia = agencia,
+            nombreAgencia = nombreAgencia,
+            agenciaTag = data["agenciaTag"] ?: agencia ?: "",
+            region = data["region"],
+            localizacion = descripcion ?: nombreAgencia,
+            observaciones = descripcion,
+            nise = data["nise"],
+            causa = data["causa"],
+            clientesAfectados = data["clientesAfectados"],
+            lat = data["lat"]?.toDoubleOrNull(),
+            lng = data["lng"]?.toDoubleOrNull(),
+            fechaInicioMillis = fechaInicio,
+            lastUpdated = lastUpdated,
+            isSynced = true
+        )
+    }
+
+    // =====================================================
+    // TOKEN CACHE SI NO HAY LOGIN
+    // =====================================================
 
     private fun cacheToken(context: Context, token: String) {
         context.getSharedPreferences(FCM_PREFS, MODE_PRIVATE)
@@ -77,67 +149,35 @@ class TecniAppMessagingService : FirebaseMessagingService() {
     }
 
     private fun saveTokenToRtdb(uid: String, token: String) {
-        val safeTokenKey = token.toFirebaseKey()
-        val updates = hashMapOf<String, Any>(
-            "fcmToken" to token,
-            "fcm/currentToken" to token,
-            "fcm/lastUpdated" to ServerValue.TIMESTAMP,
-            "fcm/tokens/$safeTokenKey" to token
-        )
+
+        val safeKey = token.replace("[.#$\\[\\]/]".toRegex(), "_")
 
         FirebaseDatabase.getInstance("https://tecniapp-ice-user.firebaseio.com")
             .getReference("usuarios")
             .child(uid)
-            .updateChildren(updates)
-            .addOnFailureListener { error ->
-                cacheToken(this, token)
-                Log.e(TAG, "No se pudo guardar el token FCM", error)
-            }
+            .updateChildren(
+                hashMapOf(
+                    "fcmToken" to token,
+                    "fcm/currentToken" to token,
+                    "fcm/lastUpdated" to ServerValue.TIMESTAMP,
+                    "fcm/tokens/$safeKey" to token
+                )
+            )
             .addOnSuccessListener {
-                getSharedPreferences(FCM_PREFS, MODE_PRIVATE)
-                    .edit()
-                    .remove(KEY_PENDING_TOKEN)
-                    .apply()
+                clearPendingToken(this)
+                Log.d(TAG, "Token FCM guardado correctamente")
+            }
+            .addOnFailureListener { e ->
+                cacheToken(this, token)
+                Log.e(TAG, "Error guardando token FCM", e)
             }
     }
 
-    private fun buildAveriaFromMessage(
-        caseId: String,
-        data: Map<String, String>
-    ): AveriaEntity {
-        val agencia = data["agencia"]
-        val nombreAgencia = data["nombreAgencia"] ?: agencia
-        val localizacion = data["localizacion"] ?: data["descripcion"] ?: nombreAgencia
-        val fechaInicio = data["fechaInicioMillis"]?.toLongOrNull()
-            ?: data["fechaInicio"]?.toLongOrNull()
-        val lastUpdated = data["lastUpdated"]?.toLongOrNull() ?: System.currentTimeMillis()
-
-        return AveriaEntity(
-            caseId = caseId,
-            estado = data["estado"] ?: "PENDIENTE",
-            agencia = agencia,
-            nombreAgencia = nombreAgencia,
-            agenciaTag = data["agenciaTag"] ?: agencia ?: "",
-            region = data["region"],
-            localizacion = localizacion,
-            observaciones = data["descripcion"],
-            nise = data["nise"],
-            causa = data["causa"],
-            clientesAfectados = data["clientesAfectados"],
-            lat = data["lat"]?.toDoubleOrNull(),
-            lng = data["lng"]?.toDoubleOrNull(),
-            fechaInicioMillis = fechaInicio ?: lastUpdated,
-            tipoAfectacion = data["tipoAfectacion"],
-            numeroMedidor = data["numeroMedidor"],
-            medidorCalle = data["medidorCalle"],
-            medidorPueblo = data["medidorPueblo"],
-            medidorMetros = data["medidorMetros"],
-            medidorPoste = data["medidorPoste"],
-            cliente = data["cliente"],
-            direccion = data["direccion"],
-            lastUpdated = lastUpdated,
-            isSynced = true
-        )
+    private fun clearPendingToken(context: Context) {
+        context.getSharedPreferences(FCM_PREFS, MODE_PRIVATE)
+            .edit()
+            .remove(KEY_PENDING_TOKEN)
+            .apply()
     }
 
     override fun onDestroy() {
@@ -152,33 +192,30 @@ class TecniAppMessagingService : FirebaseMessagingService() {
 
         fun flushPendingToken(context: Context, uid: String?) {
             if (uid.isNullOrBlank()) return
+
             val prefs = context.getSharedPreferences(FCM_PREFS, MODE_PRIVATE)
             val pending = prefs.getString(KEY_PENDING_TOKEN, null) ?: return
+
+            val safeKey = pending.replace("[.#$\\[\\]/]".toRegex(), "_")
+
             FirebaseDatabase.getInstance("https://tecniapp-ice-user.firebaseio.com")
                 .getReference("usuarios")
                 .child(uid)
                 .updateChildren(
-                    hashMapOf<String, Any>(
+                    hashMapOf(
                         "fcmToken" to pending,
                         "fcm/currentToken" to pending,
                         "fcm/lastUpdated" to ServerValue.TIMESTAMP,
-                        "fcm/tokens/${pending.toFirebaseKey()}" to pending
+                        "fcm/tokens/$safeKey" to pending
                     )
                 )
                 .addOnSuccessListener {
                     prefs.edit().remove(KEY_PENDING_TOKEN).apply()
+                    Log.d(TAG, "Pending token subido correctamente")
                 }
-                .addOnFailureListener { error ->
-                    Log.e(TAG, "No se pudo subir pending_token cacheado", error)
+                .addOnFailureListener {
+                    Log.e(TAG, "Error subiendo pending token")
                 }
         }
-
-        private fun String.toFirebaseKey(): String =
-            replace('.', '_')
-                .replace('#', '_')
-                .replace('$', '_')
-                .replace('[', '_')
-                .replace(']', '_')
-                .replace('/', '_')
     }
 }
