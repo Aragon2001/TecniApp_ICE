@@ -43,13 +43,16 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1" />
 
-                    <com.google.android.material.chip.Chip
+                    <com.google.android.material.textview.MaterialTextView
                         android:id="@+id/chipEstado"
-                        style="@style/Tecni.StatusChip.Pending"
+                        style="@style/Tecni.Text.ChipEstado"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:clickable="false"
-                        android:checkable="false"
+                        android:background="@drawable/bg_chip_estado"
+                        android:paddingStart="12dp"
+                        android:paddingTop="6dp"
+                        android:paddingEnd="12dp"
+                        android:paddingBottom="6dp"
                         android:textColor="@android:color/white" />
 
                     <com.google.android.material.button.MaterialButton
