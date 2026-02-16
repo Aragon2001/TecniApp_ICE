@@ -785,7 +785,12 @@ class   RoomRepository(context: Context) {
     suspend fun syncInventarioVehiculo(vehiculoId: Int, vehiculoKey: String): Long = withContext(Dispatchers.IO) {
         val key = vehiculoKey.trim()
         if (key.isEmpty()) return@withContext 0L
-        val inventario = firebase.obtenerInventarioDeVehiculo(key)
+        val inventarioDirecto = firebase.obtenerInventarioDeVehiculo(key)
+        val inventario = if (inventarioDirecto.isNotEmpty()) {
+            inventarioDirecto
+        } else {
+            firebase.obtenerInventario().filter { it.vehiculoId == vehiculoId }
+        }
         val bytes = estimateBytes(inventario)
         inventarioDao.eliminarPorVehiculo(vehiculoId)
         if (inventario.isNotEmpty()) {
@@ -797,7 +802,12 @@ class   RoomRepository(context: Context) {
     suspend fun syncLuminariasAgencia(agencia: String): Long = withContext(Dispatchers.IO) {
         val agenciaValue = agencia.trim()
         if (agenciaValue.isEmpty()) return@withContext 0L
-        val reparaciones = firebase.obtenerLuminariasPorAgencia(agenciaValue)
+        val reparacionesDirectas = firebase.obtenerLuminariasPorAgencia(agenciaValue)
+        val reparaciones = if (reparacionesDirectas.isNotEmpty()) {
+            reparacionesDirectas
+        } else {
+            firebase.obtenerLuminarias(null)
+        }
         val bytes = estimateBytes(reparaciones)
         inventarioDao.limpiarReparaciones()
         if (reparaciones.isNotEmpty()) {
@@ -845,21 +855,31 @@ class   RoomRepository(context: Context) {
             remoto.copy(subregion_id_normalizado = canonico)
         }
         val pueblosFiltrados = pueblosNormalizados.filter { it.subregion_id_normalizado == canonicalSubregion }
-        if (pueblosFiltrados.isEmpty()) {
-            throw IllegalStateException(
-                "No se encontraron pueblos para subregión=$canonicalSubregion. Revisa normalización y datos remotos."
+        val pueblosASincronizar = if (pueblosFiltrados.isNotEmpty()) {
+            pueblosFiltrados
+        } else {
+            Log.w(
+                "RoomRepository",
+                "No se encontraron pueblos para subregión=$canonicalSubregion; se omite el filtro para evitar un sincronizado en blanco."
             )
+            pueblosNormalizados
         }
-        db.puebloDao().limpiarSubregion(canonicalSubregion)
-        db.puebloDao().insertAll(pueblosFiltrados)
+        if (pueblosFiltrados.isNotEmpty()) {
+            db.puebloDao().limpiarSubregion(canonicalSubregion)
+        }
+        if (pueblosASincronizar.isNotEmpty()) {
+            db.puebloDao().insertAll(pueblosASincronizar)
+        }
         progress(++done, total, "Descargando pueblos…", downloadedBytes)
 
-        val idsPueblos = pueblosFiltrados.map { it.id }
+        val idsPueblos = pueblosASincronizar.map { it.id }
         val idsSet = idsPueblos.toSet()
         val localizacionesRemotas = firebase.obtenerLocalizaciones()
         downloadedBytes += estimateBytes(localizacionesRemotas)
         val localizacionesFiltradas = localizacionesRemotas.filter { it.pueblo in idsSet }
-        db.localizacionDao().eliminarPorPueblos(idsPueblos)
+        if (idsPueblos.isNotEmpty()) {
+            db.localizacionDao().eliminarPorPueblos(idsPueblos)
+        }
         if (localizacionesFiltradas.isNotEmpty()) {
             db.localizacionDao().insertAll(localizacionesFiltradas)
         }
