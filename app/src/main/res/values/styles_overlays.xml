@@ -21,8 +21,10 @@
 
     <!-- BottomSheet dialog overlay -->
     <style name="ThemeOverlay.Tecni.BottomSheetDialog" parent="ThemeOverlay.Material3.BottomSheetDialog">
-        <item name="colorSurface">?attr/colorSurface</item>
-        <item name="colorOnSurface">?attr/colorOnSurface</item>
+        <item name="colorSurface">@color/surface</item>
+        <item name="colorOnSurface">@color/on_surface</item>
+        <item name="colorSurfaceVariant">@color/surface_variant</item>
+        <item name="colorOnSurfaceVariant">@color/on_surface_variant</item>
         <item name="bottomSheetStyle">@style/Widget.Tecni.BottomSheet</item>
     </style>
 
