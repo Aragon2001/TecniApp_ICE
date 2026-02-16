@@ -491,7 +491,7 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
             Estado.RESUELTA -> "#43A047"
             Estado.ANULADA -> "#546E7A"
         }
-        b.chipEstado.chipBackgroundColor = ColorStateList.valueOf(Color.parseColor(color))
+        b.chipEstado.backgroundTintList = ColorStateList.valueOf(Color.parseColor(color))
         b.chipEstado.setTextColor(Color.WHITE)
 
         val emptyValue = getString(R.string.averia_pdf_empty_value)
