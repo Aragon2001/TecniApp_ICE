@@ -31,6 +31,9 @@ class DataStoreManager private constructor(private val appContext: Context) {
 
     val onboardingCompleted: Flow<Boolean> = booleanFlow(Keys.ONBOARDING_COMPLETED, default = false)
 
+    val permissionsValidated: Flow<Boolean> =
+        booleanFlow(Keys.PERMISSIONS_VALIDATED, default = false)
+
     val adminPrivilegesEnabled: Flow<Boolean> =
         booleanFlow(Keys.ADMIN_PRIVILEGES_ENABLED, default = true)
 
@@ -81,6 +84,10 @@ class DataStoreManager private constructor(private val appContext: Context) {
         dataStore.edit { prefs -> prefs[Keys.ONBOARDING_COMPLETED] = value }
     }
 
+    suspend fun setPermissionsValidated(value: Boolean) {
+        dataStore.edit { prefs -> prefs[Keys.PERMISSIONS_VALIDATED] = value }
+    }
+
     suspend fun markManualSyncNow(timestampMillis: Long = System.currentTimeMillis()) {
         dataStore.edit { prefs -> prefs[Keys.LAST_MANUAL_SYNC] = timestampMillis }
     }
@@ -118,6 +125,7 @@ class DataStoreManager private constructor(private val appContext: Context) {
         val ADMIN_PRIVILEGES_ENABLED = booleanPreferencesKey("admin_privileges_enabled")
         val LAST_MANUAL_SYNC = longPreferencesKey("last_manual_sync")
         val ONBOARDING_COMPLETED = booleanPreferencesKey("onboarding_completed")
+        val PERMISSIONS_VALIDATED = booleanPreferencesKey("permissions_validated")
         val LAST_SCHEMA_VERSION_APPLIED = intPreferencesKey("last_schema_version_applied")
         val PENDING_UPDATE_VERSION_CODE = intPreferencesKey("pending_update_version_code")
         val PENDING_UPDATE_VERSION_NAME = androidx.datastore.preferences.core.stringPreferencesKey(
