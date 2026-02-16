@@ -501,13 +501,9 @@ return AveriaEntity(
     }
 
     private suspend fun scopedAveriasQuery(limitToLast: Int? = null): Query {
-        val syncScope = resolveSyncScope()
-        val base = when {
-            !syncScope.agenciaTag.isNullOrBlank() -> firebaseRef.orderByChild("agenciaTag").equalTo(syncScope.agenciaTag)
-            !syncScope.agencia.isNullOrBlank() -> firebaseRef.orderByChild("agencia").equalTo(syncScope.agencia)
-            !syncScope.region.isNullOrBlank() -> firebaseRef.orderByChild("region").equalTo(syncScope.region)
-            else -> firebaseRef.orderByKey().limitToLast(FALLBACK_GLOBAL_LIMIT)
-        }
+        // Se consulta el catálogo completo para que los filtros de la UI puedan mostrar
+        // averías de cualquier región/agencia sin quedar restringidos al usuario autenticado.
+        val base = firebaseRef.orderByKey()
         return if (limitToLast != null) base.limitToLast(limitToLast) else base
     }
 
