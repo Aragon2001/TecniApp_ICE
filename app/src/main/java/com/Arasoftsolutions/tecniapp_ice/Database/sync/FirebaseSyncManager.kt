@@ -213,13 +213,19 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
         val snap = dbDatosGenerales.child(nodeName).get().await()
         val filtroSubregion = subregionId?.trim()?.takeIf { it.isNotEmpty() }
         return snap.children.mapNotNull { child ->
-            val idValue = child.stringChild("id") ?: child.key
-            val agencia = child.stringChild("agencia") ?: return@mapNotNull null
-            val tipo = child.stringChild("tipo") ?: ""
-            val subregion = child.stringChild("subregion")
+            val source = child.child("meta").takeIf { it.exists() } ?: child
+            val idValue = source.stringChild("id") ?: child.stringChild("id") ?: child.key
+            val agencia = source.stringChild("agencia")
+                ?: child.stringChild("agencia")
+                ?: return@mapNotNull null
+            val tipo = source.stringChild("tipo") ?: child.stringChild("tipo") ?: ""
+            val subregion = source.stringChild("subregion")
+                ?: source.stringChild("subregion_id")
+                ?: source.stringChild("subregionId")
+                ?: child.stringChild("subregion")
                 ?: child.stringChild("subregion_id")
                 ?: child.stringChild("subregionId")
-            val placaRaw = child.child("placa").value
+            val placaRaw = source.child("placa").value ?: child.child("placa").value
             val placa = when (placaRaw) {
                 is Long -> placaRaw
                 is Int -> placaRaw.toLong()
@@ -230,16 +236,26 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
             val entityId = idValue?.toIntOrNull()
                 ?: idValue?.hashCode()
                 ?: "${agencia.trim()}_${placa}".hashCode()
-            val kilometrajeActual = child.child("odometro").doubleValueAny("km_actual")
+            val kilometrajeActual = source.doubleValueAny("kmActual", "kilometrajeActual", "kilometraje")
+                ?: child.child("odometro").doubleValueAny("km_actual")
                 ?: child.doubleValueAny("kilometrajeActual", "kilometraje")
-            val orimetroActual = child.doubleValueAny("orimetroActual", "orimetro")
-            val registroFecha = child.stringValueAny("registroFecha", "registro_fecha")
-            val registroInicial = child.doubleValueAny("registroInicial", "registro_inicial")
-            val registroFinal = child.doubleValueAny("registroFinal", "registro_final")
-            val registroCerrado = child.booleanValueAny("registroCerrado", "registro_cerrado") ?: false
-            val registrosDiariosJson = child.stringValueAny("registrosDiariosJson", "registros_diarios_json")
-            val mantenimientoUltimo = child.stringValueAny("mantenimientoUltimo", "mantenimiento_ultimo")
-            val mantenimientoProximo = child.stringValueAny("mantenimientoProximo", "mantenimiento_proximo")
+            val orimetroActual = source.doubleValueAny("orimetroActual", "orimetro")
+                ?: child.doubleValueAny("orimetroActual", "orimetro")
+            val registroFecha = source.stringValueAny("registroFecha", "registro_fecha")
+                ?: child.stringValueAny("registroFecha", "registro_fecha")
+            val registroInicial = source.doubleValueAny("registroInicial", "registro_inicial")
+                ?: child.doubleValueAny("registroInicial", "registro_inicial")
+            val registroFinal = source.doubleValueAny("registroFinal", "registro_final")
+                ?: child.doubleValueAny("registroFinal", "registro_final")
+            val registroCerrado = source.booleanValueAny("registroCerrado", "registro_cerrado")
+                ?: child.booleanValueAny("registroCerrado", "registro_cerrado")
+                ?: false
+            val registrosDiariosJson = source.stringValueAny("registrosDiariosJson", "registros_diarios_json")
+                ?: child.stringValueAny("registrosDiariosJson", "registros_diarios_json")
+            val mantenimientoUltimo = source.stringValueAny("mantenimientoUltimo", "mantenimiento_ultimo")
+                ?: child.stringValueAny("mantenimientoUltimo", "mantenimiento_ultimo")
+            val mantenimientoProximo = source.stringValueAny("mantenimientoProximo", "mantenimiento_proximo")
+                ?: child.stringValueAny("mantenimientoProximo", "mantenimiento_proximo")
             VehiculosEntity(
                 vehiculoId = placa.toString(),
                 placaRaw = placa.toString(),
@@ -556,6 +572,8 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
             "meta/placa" to vehiculo.placa,
             "meta/tipo" to vehiculo.tipo,
             "meta/subregion" to vehiculo.subregion,
+            "meta/kmActual" to vehiculo.kmActual,
+            "meta/kilometrajeActual" to (vehiculo.kilometrajeActual ?: vehiculo.kmActual),
             "meta/orimetroActual" to vehiculo.orimetroActual,
             "meta/registroFecha" to vehiculo.registroFecha,
             "meta/registroInicial" to vehiculo.registroInicial,
