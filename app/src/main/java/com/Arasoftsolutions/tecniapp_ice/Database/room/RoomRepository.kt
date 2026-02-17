@@ -219,6 +219,8 @@ class   RoomRepository(context: Context) {
             mantenimientoUltimo = mantenimientoUltimo,
             mantenimientoProximo = mantenimientoProximo
         )
+        val actualizado = vehiculoDao.buscarPorId(vehiculoId) ?: return@withContext
+        firebase.guardarVehiculoMeta(actualizado)
     }
 
     suspend fun actualizarRegistroDiarioVehiculo(

@@ -38,6 +38,11 @@ class AveriasRepository(private val db: AppDatabase) {
         .reference
         .child("usuarios")
 
+    private val vehiculosDatosRef = FirebaseDatabase
+        .getInstance("https://tecniapp-ice-datosgenerales.firebaseio.com/")
+        .reference
+        .child("vehiculos")
+
     private data class SyncScope(
         val region: String?,
         val agenciaTag: String?,
@@ -672,6 +677,17 @@ return AveriaEntity(
             ?: VehiculoPlacaUtils.parsePlacaLong(vehiculo.replace("ICE", "", ignoreCase = true))
             ?: return
         vehiculoDao.actualizarKilometrajeActual(normalizada, kilometraje)
+
+        val placaKey = normalizada.toString()
+        val updates = mapOf<String, Any>(
+            "meta/kmActual" to kilometraje,
+            "meta/kilometrajeActual" to kilometraje,
+            "kmActual" to kilometraje,
+            "kilometrajeActual" to kilometraje,
+            "meta/updatedAt" to System.currentTimeMillis()
+        )
+        runCatching { vehiculosDatosRef.child(placaKey).updateChildren(updates).await() }
+            .onFailure { Log.w(TAG, "No se pudo actualizar kilometraje remoto para placa=$placaKey", it) }
     }
 
     private suspend fun syncSingle(caseId: String) {
