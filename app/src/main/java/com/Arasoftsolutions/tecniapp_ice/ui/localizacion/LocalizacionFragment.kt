@@ -8,6 +8,8 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.ClipData
 import android.content.ClipboardManager
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
@@ -49,7 +51,8 @@ import com.google.android.gms.maps.MapView
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.StreetViewPanorama
 import com.google.android.gms.maps.StreetViewPanoramaView
-import com.google.android.gms.maps.model.StreetViewSource
+import com.google.android.gms.maps.model.BitmapDescriptor
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
@@ -102,6 +105,7 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
     private var locationUpdatesActive = false
     private var infoWindowAdapterConfigured = false
     private var mostrarCalles = true
+    private var posteMarkerIconDescriptor: BitmapDescriptor? = null
 
     private data class StreetMarkerTag(
         val codigoPueblo: Int,
@@ -277,6 +281,11 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
 
             actualizarUbicacionMapa(loc.latitud, loc.longitud, codigoPueblo, codigoCalle, numeroPoste)
             pendingStreetViewLatLng = LatLng(loc.latitud, loc.longitud)
+            val streetViewDisponible = isValidCoordinate(loc.latitud, loc.longitud)
+            binding.actionStreetView.isEnabled = streetViewDisponible
+            if (!streetViewDisponible) {
+                cerrarStreetView()
+            }
             actualizarStreetViewSiEstaActivo()
 
             binding.locationTitle.text = getString(
@@ -289,7 +298,7 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
                 loc.latitud,
                 loc.longitud
             )
-            binding.actionStreetView.isEnabled = true
+            binding.actionStreetView.isEnabled = streetViewDisponible
             binding.actionCopy.isEnabled = true
             binding.actionCenter.isEnabled = true
             binding.actionNavigate.isEnabled = true
@@ -317,7 +326,10 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
         binding.spinnerPueblos.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
                 val puebloSeleccionado = parent?.getItemAtPosition(position)?.toString().orEmpty()
-                if (puebloSeleccionado == getString(R.string.localizacion_select_pueblo)) return
+                if (puebloSeleccionado == getString(R.string.localizacion_select_pueblo)) {
+                    actualizarBotonCalles()
+                    return
+                }
                 val codigoPueblo = parseCodigo(puebloSeleccionado)
                 if (codigoPueblo == null) {
                     Log.e("Localizacion", "Error parseando pueblo seleccionado: $puebloSeleccionado")
@@ -325,6 +337,7 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
                 }
                 limpiarCamposDeTexto()
                 viewModel.cargarCallesParaPueblo(codigoPueblo)
+                actualizarBotonCalles()
             }
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
@@ -386,6 +399,14 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
     }
 
     private fun abrirStreetView() {
+        val target = getStreetViewTargetOrNull()
+        if (target == null) {
+            binding.actionStreetView.isEnabled = false
+            Snackbar.make(binding.root, "Street View no disponible en esta ubicación", Snackbar.LENGTH_SHORT).show()
+            return
+        }
+
+        pendingStreetViewLatLng = target
         mapaGoogle?.mapType = GoogleMap.MAP_TYPE_NORMAL
         ensureStreetViewInflatedAndInitialized()
         streetViewMode = StreetViewMode.EXPANDED
@@ -421,6 +442,8 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
     }
 
     private fun ensureStreetViewInflatedAndInitialized() {
+        val target = getStreetViewTargetOrNull() ?: return
+
         if (streetViewPanoramaView == null) {
             // OOM prevention: StreetView solo se infla cuando el usuario realmente abre el sheet.
             val inflated = binding.streetViewStub.inflate()
@@ -440,11 +463,24 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
                     setZoomGesturesEnabled(true)
                     setStreetNamesEnabled(true)
                     setOnStreetViewPanoramaChangeListener { location ->
-                        streetViewHasPanorama = location != null
+                        if (location == null) {
+                            streetViewHasPanorama = false
+                            Snackbar.make(binding.root, "Street View no disponible en esta ubicación", Snackbar.LENGTH_SHORT).show()
+                            streetViewMode = StreetViewMode.HIDDEN
+                            streetViewBehavior?.state = BottomSheetBehavior.STATE_HIDDEN
+                            streetViewContainer?.isVisible = false
+                            actualizarStreetViewEstadoDesdeSheet()
+                            actualizarStreetViewUi()
+                            return@setOnStreetViewPanoramaChangeListener
+                        }
+
+                        streetViewHasPanorama = true
+                        streetViewContainer?.isVisible = true
                         actualizarStreetViewEstadoDesdeSheet()
                         actualizarStreetViewUi()
                     }
                 }
+                panorama.setPosition(target)
                 actualizarStreetViewSiEstaActivo()
             }
         }
@@ -698,6 +734,10 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
     ) {
         val map = mapaGoogle ?: return
         val ubicacion = LatLng(latitud, longitud)
+        val posteTitulo = numeroPoste
+            ?.toIntOrNull()
+            ?.let { getString(R.string.localizacion_marker_poste_unico, it) }
+            ?: getString(R.string.localizacion_marker_title)
 
         // Formato con ceros a la izquierda: PPPP-CCC-XXX-00
         val snippetInfo = buildString {
@@ -713,12 +753,14 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
             marcador = map.addMarker(
                 MarkerOptions()
                     .position(ubicacion)
-                    .title(getString(R.string.localizacion_marker_title))
+                    .icon(getPosteMarkerIconDescriptor())
+                    .title(posteTitulo)
                     .snippet(snippetInfo)
             )
         } else {
             marcador?.apply {
                 position = ubicacion
+                title = posteTitulo
                 snippet = snippetInfo
                 showInfoWindow()
             }
@@ -796,7 +838,8 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
             map.addMarker(
                 MarkerOptions()
                     .position(LatLng(marker.latitud, marker.longitud))
-                    .title(marker.titulo)
+                    .icon(getPosteMarkerIconDescriptor())
+                    .title(getString(R.string.localizacion_marker_poste_unico, marker.delPoste))
                     .snippet(marker.snippet)
             )?.tag = StreetMarkerTag(
                 codigoPueblo = marker.codigoPueblo,
@@ -850,20 +893,67 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
     }
 
     private fun alternarVisibilidadCalles() {
+        if (!hayPuebloSeleccionado()) return
         mostrarCalles = !mostrarCalles
         actualizarBotonCalles()
         renderizarMarcadoresCalles(viewModel.marcadoresCalles.value.orEmpty())
     }
 
     private fun actualizarBotonCalles() {
+        val habilitado = hayPuebloSeleccionado()
         val icon = if (mostrarCalles) R.drawable.disabled_visible_24px else R.drawable.ic_visibility_off
         val legend = if (mostrarCalles) {
             getString(R.string.localizacion_ocultar_calles)
         } else {
             getString(R.string.localizacion_mostrar_calles)
         }
+        binding.actionToggleStreets.isEnabled = habilitado
         binding.actionToggleStreets.setIconResource(icon)
         binding.actionToggleStreets.contentDescription = legend
+    }
+
+    private fun hayPuebloSeleccionado(): Boolean {
+        val seleccionado = binding.spinnerPueblos.selectedItem?.toString().orEmpty()
+        val codigo = parseCodigo(seleccionado)
+        return codigo != null && seleccionado != getString(R.string.localizacion_select_pueblo)
+    }
+
+    private fun isValidCoordinate(lat: Double?, lng: Double?): Boolean {
+        if (lat == null || lng == null) return false
+        return lat != 0.0 || lng != 0.0
+    }
+
+    private fun getStreetViewTargetOrNull(): LatLng? {
+        val latLng = pendingStreetViewLatLng
+        if (isValidCoordinate(latLng?.latitude, latLng?.longitude)) return latLng
+
+        val loc = viewModel.localizacion.value ?: return null
+        if (!isValidCoordinate(loc.latitud, loc.longitud)) return null
+        return LatLng(loc.latitud, loc.longitud)
+    }
+
+    private fun getPosteMarkerIconDescriptor(): BitmapDescriptor {
+        val cached = posteMarkerIconDescriptor
+        if (cached != null) return cached
+
+        val resources = requireContext().resources
+        val density = resources.displayMetrics.density
+        val iconSizePx = (36f * density).toInt().coerceAtLeast(24)
+        val decoded = BitmapFactory.decodeResource(resources, R.drawable.ic_poste)
+
+        val descriptor = if (decoded == null) {
+            BitmapDescriptorFactory.fromResource(R.drawable.ic_poste)
+        } else {
+            val scaledBitmap = if (decoded.width == iconSizePx && decoded.height == iconSizePx) {
+                decoded
+            } else {
+                Bitmap.createScaledBitmap(decoded, iconSizePx, iconSizePx, true)
+            }
+            BitmapDescriptorFactory.fromBitmap(scaledBitmap)
+        }
+
+        posteMarkerIconDescriptor = descriptor
+        return descriptor
     }
 
     private fun compartirLocalizacion() {
@@ -1063,6 +1153,7 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
         singleLocationToken?.cancel()
         singleLocationToken = null
         streetViewPanorama = null
+        posteMarkerIconDescriptor = null
         _binding = null
         mapaGoogle = null
         marcador = null
@@ -1089,10 +1180,10 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
     private fun actualizarStreetViewSiEstaActivo() {
         if (streetViewMode == StreetViewMode.HIDDEN || !streetViewCreated) return
         val panorama = streetViewPanorama ?: return
-        val target = pendingStreetViewLatLng ?: return
+        val target = getStreetViewTargetOrNull() ?: return
         viewModel.actualizarStreetViewEstado(LocalizacionViewModel.StreetViewState.LOADING)
         actualizarStreetViewUi()
-        panorama.setPosition(target, 50, StreetViewSource.OUTDOOR)
+        panorama.setPosition(target)
     }
 
     private fun actualizarStreetViewUi() {
