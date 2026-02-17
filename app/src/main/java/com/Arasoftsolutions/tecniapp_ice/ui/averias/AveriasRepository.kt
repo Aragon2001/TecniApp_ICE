@@ -684,7 +684,11 @@ return AveriaEntity(
             "meta/kilometrajeActual" to kilometraje,
             "kmActual" to kilometraje,
             "kilometrajeActual" to kilometraje,
-            "meta/updatedAt" to System.currentTimeMillis()
+            "base/kmActual" to kilometraje,
+            "base/kilometrajeActual" to kilometraje,
+            "meta/updatedAt" to System.currentTimeMillis(),
+            "updatedAt" to System.currentTimeMillis(),
+            "base/updatedAt" to System.currentTimeMillis()
         )
 
         val targetKey = resolveVehiculoNodeKey(placaNormalizada)
