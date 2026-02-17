@@ -8,6 +8,8 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.ClipData
 import android.content.ClipboardManager
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
@@ -49,6 +51,7 @@ import com.google.android.gms.maps.MapView
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.StreetViewPanorama
 import com.google.android.gms.maps.StreetViewPanoramaView
+import com.google.android.gms.maps.model.BitmapDescriptor
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
@@ -102,6 +105,7 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
     private var locationUpdatesActive = false
     private var infoWindowAdapterConfigured = false
     private var mostrarCalles = true
+    private var posteMarkerIconDescriptor: BitmapDescriptor? = null
 
     private data class StreetMarkerTag(
         val codigoPueblo: Int,
@@ -749,7 +753,7 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
             marcador = map.addMarker(
                 MarkerOptions()
                     .position(ubicacion)
-                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.poste))
+                    .icon(getPosteMarkerIconDescriptor())
                     .title(posteTitulo)
                     .snippet(snippetInfo)
             )
@@ -834,7 +838,7 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
             map.addMarker(
                 MarkerOptions()
                     .position(LatLng(marker.latitud, marker.longitud))
-                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.poste))
+                    .icon(getPosteMarkerIconDescriptor())
                     .title(getString(R.string.localizacion_marker_poste_unico, marker.delPoste))
                     .snippet(marker.snippet)
             )?.tag = StreetMarkerTag(
@@ -926,6 +930,30 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
         val loc = viewModel.localizacion.value ?: return null
         if (!isValidCoordinate(loc.latitud, loc.longitud)) return null
         return LatLng(loc.latitud, loc.longitud)
+    }
+
+    private fun getPosteMarkerIconDescriptor(): BitmapDescriptor {
+        val cached = posteMarkerIconDescriptor
+        if (cached != null) return cached
+
+        val resources = requireContext().resources
+        val density = resources.displayMetrics.density
+        val iconSizePx = (36f * density).toInt().coerceAtLeast(24)
+        val decoded = BitmapFactory.decodeResource(resources, R.drawable.ic_poste)
+
+        val descriptor = if (decoded == null) {
+            BitmapDescriptorFactory.fromResource(R.drawable.ic_poste)
+        } else {
+            val scaledBitmap = if (decoded.width == iconSizePx && decoded.height == iconSizePx) {
+                decoded
+            } else {
+                Bitmap.createScaledBitmap(decoded, iconSizePx, iconSizePx, true)
+            }
+            BitmapDescriptorFactory.fromBitmap(scaledBitmap)
+        }
+
+        posteMarkerIconDescriptor = descriptor
+        return descriptor
     }
 
     private fun compartirLocalizacion() {
@@ -1125,6 +1153,7 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
         singleLocationToken?.cancel()
         singleLocationToken = null
         streetViewPanorama = null
+        posteMarkerIconDescriptor = null
         _binding = null
         mapaGoogle = null
         marcador = null
