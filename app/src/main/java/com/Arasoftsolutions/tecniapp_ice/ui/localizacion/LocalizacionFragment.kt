@@ -56,6 +56,7 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
+import com.google.android.gms.maps.model.StreetViewPanoramaLocation
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.gms.tasks.CancellationTokenSource
 import java.lang.Math.toDegrees
@@ -98,6 +99,8 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
     private var streetViewMode = StreetViewMode.HIDDEN
     private var streetViewBehavior: BottomSheetBehavior<*>? = null
     private var pendingStreetViewLatLng: LatLng? = null
+    private var streetViewUnavailableTarget: LatLng? = null
+    private var streetViewRequestedTarget: LatLng? = null
     private var streetViewSavedState: Bundle? = null
     private var streetViewCreated = false
     private var streetViewStarted = false
@@ -106,6 +109,9 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
     private var infoWindowAdapterConfigured = false
     private var mostrarCalles = true
     private var posteMarkerIconDescriptor: BitmapDescriptor? = null
+    private val mapLayers = intArrayOf(GoogleMap.MAP_TYPE_NORMAL, GoogleMap.MAP_TYPE_SATELLITE, GoogleMap.MAP_TYPE_HYBRID)
+    private var currentMapLayerIndex = 0
+    private var pendingStreetUnavailableCheck: Runnable? = null
 
     private data class StreetMarkerTag(
         val codigoPueblo: Int,
@@ -280,8 +286,15 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
             val numeroPoste = loc.delPoste.toString()
 
             actualizarUbicacionMapa(loc.latitud, loc.longitud, codigoPueblo, codigoCalle, numeroPoste)
-            pendingStreetViewLatLng = LatLng(loc.latitud, loc.longitud)
-            val streetViewDisponible = isValidCoordinate(loc.latitud, loc.longitud)
+            val nuevoTarget = LatLng(loc.latitud, loc.longitud)
+            val targetCambio = !pendingStreetViewLatLng.sameCoordinateAs(nuevoTarget)
+            pendingStreetViewLatLng = nuevoTarget
+            streetViewRequestedTarget = pendingStreetViewLatLng
+            if (targetCambio) {
+                streetViewUnavailableTarget = null
+            }
+            val streetViewDisponible = isValidCoordinate(loc.latitud, loc.longitud) &&
+                !streetViewUnavailableTarget.sameCoordinateAs(nuevoTarget)
             binding.actionStreetView.isEnabled = streetViewDisponible
             if (!streetViewDisponible) {
                 cerrarStreetView()
@@ -353,6 +366,7 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
         binding.actionCopy.setOnClickListener { copiarCoordenadas() }
         binding.actionShare.setOnClickListener { compartirLocalizacion() }
         binding.actionToggleStreets.setOnClickListener { alternarVisibilidadCalles() }
+        binding.actionMapLayer.setOnClickListener { alternarCapaMapa() }
         binding.streetViewActionSurfaceMode.setOnClickListener { irAVistaAereaDesdeStreetView() }
         binding.streetViewActionExpand.setOnClickListener { expandirStreetView() }
         binding.streetViewActionMinimize.setOnClickListener { minimizarStreetView() }
@@ -402,11 +416,18 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
         val target = getStreetViewTargetOrNull()
         if (target == null) {
             binding.actionStreetView.isEnabled = false
-            Snackbar.make(binding.root, "Street View no disponible en esta ubicación", Snackbar.LENGTH_SHORT).show()
+            Snackbar.make(binding.root, getString(R.string.localizacion_street_view_unavailable_toast), Snackbar.LENGTH_SHORT).show()
+            return
+        }
+
+        if (streetViewUnavailableTarget.sameCoordinateAs(target)) {
+            binding.actionStreetView.isEnabled = false
+            Snackbar.make(binding.root, getString(R.string.localizacion_street_view_unavailable_toast), Snackbar.LENGTH_SHORT).show()
             return
         }
 
         pendingStreetViewLatLng = target
+        streetViewRequestedTarget = target
         mapaGoogle?.mapType = GoogleMap.MAP_TYPE_NORMAL
         ensureStreetViewInflatedAndInitialized()
         streetViewMode = StreetViewMode.EXPANDED
@@ -462,19 +483,35 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
                     setPanningGesturesEnabled(true)
                     setZoomGesturesEnabled(true)
                     setStreetNamesEnabled(true)
-                    setOnStreetViewPanoramaChangeListener { location ->
+                    setOnStreetViewPanoramaChangeListener { location: StreetViewPanoramaLocation? ->
                         if (location == null) {
                             streetViewHasPanorama = false
-                            Snackbar.make(binding.root, "Street View no disponible en esta ubicación", Snackbar.LENGTH_SHORT).show()
-                            streetViewMode = StreetViewMode.HIDDEN
-                            streetViewBehavior?.state = BottomSheetBehavior.STATE_HIDDEN
-                            streetViewContainer?.isVisible = false
-                            actualizarStreetViewEstadoDesdeSheet()
-                            actualizarStreetViewUi()
+                            pendingStreetUnavailableCheck?.let { handler.removeCallbacks(it) }
+                            val unavailableCheck = Runnable {
+                                if (!isAdded || streetViewHasPanorama) return@Runnable
+                                streetViewUnavailableTarget = streetViewRequestedTarget
+                                binding.actionStreetView.isEnabled = false
+                                Snackbar.make(
+                                    binding.root,
+                                    getString(R.string.localizacion_street_view_unavailable_toast),
+                                    Snackbar.LENGTH_SHORT
+                                ).show()
+                                streetViewMode = StreetViewMode.HIDDEN
+                                streetViewBehavior?.state = BottomSheetBehavior.STATE_HIDDEN
+                                streetViewContainer?.isVisible = false
+                                actualizarStreetViewEstadoDesdeSheet()
+                                actualizarStreetViewUi()
+                            }
+                            pendingStreetUnavailableCheck = unavailableCheck
+                            handler.postDelayed(unavailableCheck, 700L)
                             return@setOnStreetViewPanoramaChangeListener
                         }
 
+                        pendingStreetUnavailableCheck?.let { handler.removeCallbacks(it) }
+                        pendingStreetUnavailableCheck = null
                         streetViewHasPanorama = true
+                        streetViewUnavailableTarget = null
+                        binding.actionStreetView.isEnabled = true
                         streetViewContainer?.isVisible = true
                         actualizarStreetViewEstadoDesdeSheet()
                         actualizarStreetViewUi()
@@ -501,6 +538,8 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
         panorama?.setOnStreetViewPanoramaChangeListener(null)
         streetViewPanorama = null
         streetViewHasPanorama = false
+        pendingStreetUnavailableCheck?.let { handler.removeCallbacks(it) }
+        pendingStreetUnavailableCheck = null
 
         val panoramaView = streetViewPanoramaView ?: return
         if (streetViewResumed) {
@@ -544,7 +583,7 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
         binding.streetViewLoadingContainer.isVisible = loading
         binding.streetViewEmptyState.isVisible = unavailable
         streetViewPanoramaView?.isVisible = active && !unavailable
-        binding.streetViewCenterPin.isVisible = active && !unavailable
+        binding.streetViewCenterPin.isVisible = false
         binding.streetViewActionExpand.isVisible = estado == LocalizacionViewModel.StreetViewState.MINIMIZED
         binding.streetViewActionMinimize.isVisible = estado == LocalizacionViewModel.StreetViewState.FULLSCREEN
         binding.streetViewActionSurfaceMode.isVisible = active && !unavailable
@@ -593,6 +632,7 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
             isIndoorLevelPickerEnabled = false
         }
         mapaGoogle?.apply {
+            currentMapLayerIndex = mapLayers.indexOf(mapType).takeIf { it >= 0 } ?: 0
             // Mapa más liviano: desactivamos capas pesadas para reducir uso de memoria/GPU.
             isTrafficEnabled = false
             isBuildingsEnabled = false
@@ -892,6 +932,20 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
         return null
     }
 
+    private fun alternarCapaMapa() {
+        val map = mapaGoogle ?: return
+        currentMapLayerIndex = (currentMapLayerIndex + 1) % mapLayers.size
+        val nuevoTipo = mapLayers[currentMapLayerIndex]
+        map.mapType = nuevoTipo
+        val descripcion = when (nuevoTipo) {
+            GoogleMap.MAP_TYPE_SATELLITE -> getString(R.string.localizacion_map_layer_satellite)
+            GoogleMap.MAP_TYPE_HYBRID -> getString(R.string.localizacion_map_layer_hybrid)
+            else -> getString(R.string.localizacion_map_layer_normal)
+        }
+        binding.actionMapLayer.contentDescription = descripcion
+        Snackbar.make(binding.root, descripcion, Snackbar.LENGTH_SHORT).show()
+    }
+
     private fun alternarVisibilidadCalles() {
         if (!hayPuebloSeleccionado()) return
         mostrarCalles = !mostrarCalles
@@ -930,6 +984,11 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
         val loc = viewModel.localizacion.value ?: return null
         if (!isValidCoordinate(loc.latitud, loc.longitud)) return null
         return LatLng(loc.latitud, loc.longitud)
+    }
+
+    private fun LatLng?.sameCoordinateAs(other: LatLng): Boolean {
+        val current = this ?: return false
+        return current.latitude == other.latitude && current.longitude == other.longitude
     }
 
     private fun getPosteMarkerIconDescriptor(): BitmapDescriptor {
