@@ -56,6 +56,7 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
+import com.google.android.gms.maps.model.StreetViewPanoramaLocation
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.gms.tasks.CancellationTokenSource
 import java.lang.Math.toDegrees
@@ -98,6 +99,8 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
     private var streetViewMode = StreetViewMode.HIDDEN
     private var streetViewBehavior: BottomSheetBehavior<*>? = null
     private var pendingStreetViewLatLng: LatLng? = null
+    private var streetViewUnavailableTarget: LatLng? = null
+    private var streetViewRequestedTarget: LatLng? = null
     private var streetViewSavedState: Bundle? = null
     private var streetViewCreated = false
     private var streetViewStarted = false
@@ -281,6 +284,8 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
 
             actualizarUbicacionMapa(loc.latitud, loc.longitud, codigoPueblo, codigoCalle, numeroPoste)
             pendingStreetViewLatLng = LatLng(loc.latitud, loc.longitud)
+            streetViewRequestedTarget = pendingStreetViewLatLng
+            streetViewUnavailableTarget = null
             val streetViewDisponible = isValidCoordinate(loc.latitud, loc.longitud)
             binding.actionStreetView.isEnabled = streetViewDisponible
             if (!streetViewDisponible) {
@@ -406,7 +411,13 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
             return
         }
 
+        if (streetViewUnavailableTarget.sameCoordinateAs(target)) {
+            Snackbar.make(binding.root, "Street View no disponible en esta ubicación", Snackbar.LENGTH_SHORT).show()
+            return
+        }
+
         pendingStreetViewLatLng = target
+        streetViewRequestedTarget = target
         mapaGoogle?.mapType = GoogleMap.MAP_TYPE_NORMAL
         ensureStreetViewInflatedAndInitialized()
         streetViewMode = StreetViewMode.EXPANDED
@@ -462,9 +473,10 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
                     setPanningGesturesEnabled(true)
                     setZoomGesturesEnabled(true)
                     setStreetNamesEnabled(true)
-                    setOnStreetViewPanoramaChangeListener { location ->
+                    setOnStreetViewPanoramaChangeListener { location: StreetViewPanoramaLocation? ->
                         if (location == null) {
                             streetViewHasPanorama = false
+                            streetViewUnavailableTarget = streetViewRequestedTarget
                             Snackbar.make(binding.root, "Street View no disponible en esta ubicación", Snackbar.LENGTH_SHORT).show()
                             streetViewMode = StreetViewMode.HIDDEN
                             streetViewBehavior?.state = BottomSheetBehavior.STATE_HIDDEN
@@ -475,6 +487,7 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
                         }
 
                         streetViewHasPanorama = true
+                        streetViewUnavailableTarget = null
                         streetViewContainer?.isVisible = true
                         actualizarStreetViewEstadoDesdeSheet()
                         actualizarStreetViewUi()
@@ -544,7 +557,7 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
         binding.streetViewLoadingContainer.isVisible = loading
         binding.streetViewEmptyState.isVisible = unavailable
         streetViewPanoramaView?.isVisible = active && !unavailable
-        binding.streetViewCenterPin.isVisible = active && !unavailable
+        binding.streetViewCenterPin.isVisible = false
         binding.streetViewActionExpand.isVisible = estado == LocalizacionViewModel.StreetViewState.MINIMIZED
         binding.streetViewActionMinimize.isVisible = estado == LocalizacionViewModel.StreetViewState.FULLSCREEN
         binding.streetViewActionSurfaceMode.isVisible = active && !unavailable
@@ -930,6 +943,11 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
         val loc = viewModel.localizacion.value ?: return null
         if (!isValidCoordinate(loc.latitud, loc.longitud)) return null
         return LatLng(loc.latitud, loc.longitud)
+    }
+
+    private fun LatLng?.sameCoordinateAs(other: LatLng): Boolean {
+        val current = this ?: return false
+        return current.latitude == other.latitude && current.longitude == other.longitude
     }
 
     private fun getPosteMarkerIconDescriptor(): BitmapDescriptor {
