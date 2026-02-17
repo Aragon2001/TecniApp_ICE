@@ -2,4 +2,7 @@
 <resources>
     <color name="admin_card_stroke">@color/outline_variant_light</color>
     <color name="admin_toggle_text">@color/ice_blue_dark</color>
+    <color name="admin_header_start">@color/ice_blue_dark</color>
+    <color name="admin_header_end">@color/ice_blue</color>
+    <color name="admin_toggle_group_bg">#4DFFFFFF</color>
 </resources>
