@@ -570,10 +570,7 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
         val fechaEvento = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(item.fechaMillis)
         b.tvFechaDetalle.text = fechaEvento
 
-        b.tvAsignado.text = item.tecnico.ifBlank { getString(R.string.averia_sin_asignar) }
-        val atendidoDisplay = item.resolvedAtendidoDisplay(emptyValue)
-        b.tvAtendido.text = atendidoDisplay
-        b.tvVehiculo.text = item.vehiculo ?: emptyValue
+
     }
 
     private fun bindResumenes() {

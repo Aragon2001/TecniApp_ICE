@@ -6,7 +6,7 @@ import com.google.firebase.database.FirebaseDatabase
 import kotlinx.coroutines.tasks.await
 
 private const val VEHICULOS_URL = "https://tecniapp-ice-datosgenerales.firebaseio.com/"
-private const val VEHICULOS_PATH = "datosGenerales/vehiculos"
+private const val VEHICULOS_PATH = "vehiculos"
 
 class FirebaseVehicleDataSource {
 
