@@ -188,7 +188,9 @@ class MiVehiculoViewModel(app: Application) : AndroidViewModel(app) {
             repository.actualizarMantenimiento(
                 vehiculoId = vehiculo.id,
                 mantenimientoUltimo = "${tipoMantenimiento} • ${formatearValor(valor, unidad)}",
-                mantenimientoProximo = "${formatearValor(proximo, unidad)}"
+                mantenimientoProximo = "${formatearValor(proximo, unidad)}",
+                valorActual = valor,
+                usaKilometraje = state.tipoVehiculo.usaKilometraje
             )
 
             syncAhora()

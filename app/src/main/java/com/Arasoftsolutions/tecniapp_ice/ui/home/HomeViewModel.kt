@@ -196,15 +196,11 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     val valorEtmActual: StateFlow<Double?> =
         combine(vehiculoAsignado, tipoVehiculo) { vehiculo, tipo ->
             if (vehiculo == null) return@combine null
-            val lecturaRegistro = vehiculo.registroFinal ?: vehiculo.registroInicial
-            val lecturaActual = if (tipo.usaKilometraje) {
+            if (tipo.usaKilometraje) {
                 vehiculo.kmActual.takeIf { it > 0.0 } ?: vehiculo.kilometrajeActual
             } else {
                 vehiculo.orimetroActual
             }
-            listOfNotNull(lecturaRegistro, lecturaActual).maxOrNull()
-                ?: lecturaRegistro
-                ?: lecturaActual
         }.stateIn(viewModelScope, sharing, null)
 
     val lastManualSync: StateFlow<Long?> =

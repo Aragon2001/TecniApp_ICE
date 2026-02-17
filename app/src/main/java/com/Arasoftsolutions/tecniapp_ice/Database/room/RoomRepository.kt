@@ -212,14 +212,33 @@ class   RoomRepository(context: Context) {
     suspend fun actualizarMantenimiento(
         vehiculoId: Int,
         mantenimientoUltimo: String?,
-        mantenimientoProximo: String?
+        mantenimientoProximo: String?,
+        valorActual: Double? = null,
+        usaKilometraje: Boolean = true
     ) = withContext(Dispatchers.IO) {
-        vehiculoDao.actualizarMantenimiento(
-            vehiculoId = vehiculoId,
+        val vehiculo = vehiculoDao.buscarPorId(vehiculoId) ?: return@withContext
+        val kilometrajeBase = vehiculo.kmActual.takeIf { it > 0.0 } ?: (vehiculo.kilometrajeActual ?: 0.0)
+        val orimetroBase = vehiculo.orimetroActual ?: 0.0
+        val nuevoKilometraje = if (usaKilometraje && valorActual != null) {
+            maxOf(kilometrajeBase, valorActual)
+        } else {
+            kilometrajeBase
+        }
+        val nuevoOrimetro = if (!usaKilometraje && valorActual != null) {
+            maxOf(orimetroBase, valorActual)
+        } else {
+            vehiculo.orimetroActual
+        }
+
+        val actualizado = vehiculo.copy(
             mantenimientoUltimo = mantenimientoUltimo,
-            mantenimientoProximo = mantenimientoProximo
+            mantenimientoProximo = mantenimientoProximo,
+            kmActual = nuevoKilometraje,
+            kilometrajeActual = nuevoKilometraje,
+            orimetroActual = nuevoOrimetro,
+            updatedAt = System.currentTimeMillis()
         )
-        val actualizado = vehiculoDao.buscarPorId(vehiculoId) ?: return@withContext
+        vehiculoDao.upsertVehiculo(actualizado)
         firebase.guardarVehiculoMeta(actualizado)
     }
 

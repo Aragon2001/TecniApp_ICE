@@ -678,16 +678,65 @@ return AveriaEntity(
             ?: return
         vehiculoDao.actualizarKilometrajeActual(normalizada, kilometraje)
 
-        val placaKey = normalizada.toString()
+        val placaNormalizada = normalizada.toString()
         val updates = mapOf<String, Any>(
             "meta/kmActual" to kilometraje,
             "meta/kilometrajeActual" to kilometraje,
             "kmActual" to kilometraje,
             "kilometrajeActual" to kilometraje,
-            "meta/updatedAt" to System.currentTimeMillis()
+            "base/kmActual" to kilometraje,
+            "base/kilometrajeActual" to kilometraje,
+            "meta/updatedAt" to System.currentTimeMillis(),
+            "updatedAt" to System.currentTimeMillis(),
+            "base/updatedAt" to System.currentTimeMillis()
         )
-        runCatching { vehiculosDatosRef.child(placaKey).updateChildren(updates).await() }
-            .onFailure { Log.w(TAG, "No se pudo actualizar kilometraje remoto para placa=$placaKey", it) }
+
+        val targetKey = resolveVehiculoNodeKey(placaNormalizada)
+        if (targetKey == null) {
+            Log.w(TAG, "No se encontró nodo remoto para placa=$placaNormalizada al actualizar km de avería")
+            return
+        }
+
+        runCatching { vehiculosDatosRef.child(targetKey).updateChildren(updates).await() }
+            .onFailure {
+                Log.w(
+                    TAG,
+                    "No se pudo actualizar kilometraje remoto para placa=$placaNormalizada (key=$targetKey)",
+                    it
+                )
+            }
+    }
+
+    private suspend fun resolveVehiculoNodeKey(placaNormalizada: String): String? {
+        val direct = runCatching { vehiculosDatosRef.child(placaNormalizada).get().await() }.getOrNull()
+        if (direct?.exists() == true) return placaNormalizada
+
+        val byMetaString = runCatching {
+            vehiculosDatosRef.orderByChild("meta/placa").equalTo(placaNormalizada).get().await()
+        }.getOrNull()?.children?.firstOrNull()?.key
+        if (!byMetaString.isNullOrBlank()) return byMetaString
+
+        val byRootString = runCatching {
+            vehiculosDatosRef.orderByChild("placa").equalTo(placaNormalizada).get().await()
+        }.getOrNull()?.children?.firstOrNull()?.key
+        if (!byRootString.isNullOrBlank()) return byRootString
+
+        val byMetaNumber = runCatching {
+            vehiculosDatosRef.orderByChild("meta/placa").equalTo(placaNormalizada.toDouble()).get().await()
+        }.getOrNull()?.children?.firstOrNull()?.key
+        if (!byMetaNumber.isNullOrBlank()) return byMetaNumber
+
+        val byRootNumber = runCatching {
+            vehiculosDatosRef.orderByChild("placa").equalTo(placaNormalizada.toDouble()).get().await()
+        }.getOrNull()?.children?.firstOrNull()?.key
+        if (!byRootNumber.isNullOrBlank()) return byRootNumber
+
+        val scanFallback = runCatching { vehiculosDatosRef.get().await() }.getOrNull()
+        return scanFallback?.children?.firstOrNull { node ->
+            val metaPlaca = node.child("meta").child("placa").value?.toString()?.trim()
+            val rootPlaca = node.child("placa").value?.toString()?.trim()
+            metaPlaca == placaNormalizada || rootPlaca == placaNormalizada
+        }?.key
     }
 
     private suspend fun syncSingle(caseId: String) {
