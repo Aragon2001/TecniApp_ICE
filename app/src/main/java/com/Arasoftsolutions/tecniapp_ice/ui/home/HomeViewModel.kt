@@ -182,6 +182,17 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
             placa.isNullOrBlank() || !registroOk
         }.stateIn(viewModelScope, sharing, false)
 
+    val tipoVehiculo: StateFlow<TipoVehiculo> =
+        placaVehiculo
+            .flatMapLatest { placa ->
+                flow {
+                    val placaLong = VehiculoPlacaUtils.parsePlacaLong(placa)
+                    val tipo = placaLong?.let { repo.obtenerVehiculoPorPlaca(it)?.tipo }
+                    emit(inferirTipoVehiculo(tipo))
+                }
+            }
+            .stateIn(viewModelScope, sharing, TipoVehiculo.LIVIANO)
+
     val valorEtmActual: StateFlow<Double?> =
         combine(vehiculoAsignado, tipoVehiculo) { vehiculo, tipo ->
             if (vehiculo == null) return@combine null
@@ -195,17 +206,6 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
                 ?: lecturaRegistro
                 ?: lecturaActual
         }.stateIn(viewModelScope, sharing, null)
-
-    val tipoVehiculo: StateFlow<TipoVehiculo> =
-        placaVehiculo
-            .flatMapLatest { placa ->
-                flow {
-                    val placaLong = VehiculoPlacaUtils.parsePlacaLong(placa)
-                    val tipo = placaLong?.let { repo.obtenerVehiculoPorPlaca(it)?.tipo }
-                    emit(inferirTipoVehiculo(tipo))
-                }
-            }
-            .stateIn(viewModelScope, sharing, TipoVehiculo.LIVIANO)
 
     val lastManualSync: StateFlow<Long?> =
         dataStore.lastManualSyncMillis

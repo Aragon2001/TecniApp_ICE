@@ -426,6 +426,11 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
             return
         }
 
+        if (streetViewUnavailableTarget.sameCoordinateAs(target)) {
+            Snackbar.make(binding.root, "Street View no disponible en esta ubicación", Snackbar.LENGTH_SHORT).show()
+            return
+        }
+
         pendingStreetViewLatLng = target
         streetViewRequestedTarget = target
         mapaGoogle?.mapType = GoogleMap.MAP_TYPE_NORMAL
