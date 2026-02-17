@@ -242,9 +242,14 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
             val entityId = idValue?.toIntOrNull()
                 ?: idValue?.hashCode()
                 ?: "${agencia.trim()}_${placa}".hashCode()
-            val kilometrajeActual = source.doubleValueAny("kmActual", "kilometrajeActual", "kilometraje")
-                ?: child.child("odometro").doubleValueAny("km_actual")
-                ?: child.doubleValueAny("kilometrajeActual", "kilometraje")
+            val kilometrajeCandidatos = listOfNotNull(
+                source.doubleValueAny("kmActual"),
+                source.doubleValueAny("kilometrajeActual", "kilometraje"),
+                child.doubleValueAny("kmActual"),
+                child.doubleValueAny("kilometrajeActual", "kilometraje"),
+                child.child("odometro").doubleValueAny("km_actual")
+            )
+            val kilometrajeActual = kilometrajeCandidatos.maxOrNull()
             val orimetroActual = source.doubleValueAny("orimetroActual", "orimetro")
                 ?: child.doubleValueAny("orimetroActual", "orimetro")
             val registroFecha = source.stringValueAny("registroFecha", "registro_fecha")
@@ -572,14 +577,19 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
         val primaryKey = placaKey ?: idKey
             ?: throw IllegalArgumentException("Vehículo inválido, requiere id o placa")
 
+        val kilometrajeNormalizado = listOfNotNull(
+            vehiculo.kmActual.takeIf { it > 0.0 },
+            vehiculo.kilometrajeActual?.takeIf { it > 0.0 }
+        ).maxOrNull() ?: 0.0
+
         val payload = mapOf(
             "meta/id" to vehiculo.id,
             "meta/agencia" to vehiculo.agencia,
             "meta/placa" to vehiculo.placa,
             "meta/tipo" to vehiculo.tipo,
             "meta/subregion" to vehiculo.subregion,
-            "meta/kmActual" to vehiculo.kmActual,
-            "meta/kilometrajeActual" to (vehiculo.kilometrajeActual ?: vehiculo.kmActual),
+            "meta/kmActual" to kilometrajeNormalizado,
+            "meta/kilometrajeActual" to kilometrajeNormalizado,
             "meta/orimetroActual" to vehiculo.orimetroActual,
             "meta/registroFecha" to vehiculo.registroFecha,
             "meta/registroInicial" to vehiculo.registroInicial,
@@ -588,7 +598,13 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
             "meta/registrosDiariosJson" to vehiculo.registrosDiariosJson,
             "meta/mantenimientoUltimo" to vehiculo.mantenimientoUltimo,
             "meta/mantenimientoProximo" to vehiculo.mantenimientoProximo,
-            "meta/updatedAt" to ServerValue.TIMESTAMP
+            "kmActual" to kilometrajeNormalizado,
+            "kilometrajeActual" to kilometrajeNormalizado,
+            "base/kmActual" to kilometrajeNormalizado,
+            "base/kilometrajeActual" to kilometrajeNormalizado,
+            "meta/updatedAt" to ServerValue.TIMESTAMP,
+            "updatedAt" to ServerValue.TIMESTAMP,
+            "base/updatedAt" to ServerValue.TIMESTAMP
         )
 
         root.child(primaryKey).updateChildren(payload).await()
