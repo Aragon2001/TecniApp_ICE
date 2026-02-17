@@ -2,7 +2,9 @@ package com.Arasoftsolutions.tecniapp_ice.ui.averias
 
 import android.Manifest
 import android.app.Notification
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
@@ -11,224 +13,118 @@ import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
+import com.Arasoftsolutions.tecniapp_ice.ActivityMain
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.AveriaEntity
 import com.Arasoftsolutions.tecniapp_ice.R
 
 object AveriaNotificationDispatcher {
 
     fun notifyNewCases(context: Context, averias: List<AveriaEntity>) {
-        if (averias.isEmpty()) return
-        AveriaNotifications.ensureChannel(context)
-        val manager = NotificationManagerCompat.from(context)
-        if (!hasNotificationPermission(context, manager)) return
-        averias.forEach { averia ->
-            if (ActivityCompat.checkSelfPermission(
-                    context,
-                    Manifest.permission.POST_NOTIFICATIONS
-                ) != PackageManager.PERMISSION_GRANTED
-            ) {
-                // TODO: Consider calling
-                //    ActivityCompat#requestPermissions
-                // here to request the missing permissions, and then overriding
-                //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-                //                                          int[] grantResults)
-                // to handle the case where the user grants the permission. See the documentation
-                // for ActivityCompat#requestPermissions for more details.
-                return
-            }
-            manager.notify(averia.caseId.hashCode(), buildNotification(context, averia, NotificationType.NEW))
-        }
+        notify(context, averias, false)
     }
 
     fun notifyResolvedCases(context: Context, averias: List<AveriaEntity>) {
-        if (averias.isEmpty()) return
-        AveriaNotifications.ensureChannel(context)
-        val manager = NotificationManagerCompat.from(context)
-        if (!hasNotificationPermission(context, manager)) return
-        averias.forEach { averia ->
-            if (ActivityCompat.checkSelfPermission(
-                    context,
-                    Manifest.permission.POST_NOTIFICATIONS
-                ) != PackageManager.PERMISSION_GRANTED
-            ) {
-                return
-            }
-            manager.notify(averia.caseId.hashCode(), buildNotification(context, averia, NotificationType.RESOLVED))
-        }
+        notify(context, averias, true)
     }
 
-    private fun hasNotificationPermission(
-        context: Context,
-        manager: NotificationManagerCompat
-    ): Boolean {
-        val enabled = manager.areNotificationsEnabled()
-        if (!enabled) return false
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-            return true
+    private fun notify(context: Context, averias: List<AveriaEntity>, resolved: Boolean) {
+
+        if (averias.isEmpty()) return
+
+        AveriaNotifications.ensureChannel(context)
+
+        val manager = NotificationManagerCompat.from(context)
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ActivityCompat.checkSelfPermission(
+                context,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) != PackageManager.PERMISSION_GRANTED
+        ) return
+
+        averias.forEach { averia ->
+            manager.notify(
+                averia.caseId.hashCode(),
+                buildNotification(context, averia, resolved)
+            )
         }
-        val granted = ActivityCompat.checkSelfPermission(
-            context,
-            Manifest.permission.POST_NOTIFICATIONS
-        ) == PackageManager.PERMISSION_GRANTED
-        return granted
     }
 
     private fun buildNotification(
         context: Context,
         averia: AveriaEntity,
-        type: NotificationType
+        resolved: Boolean
     ): Notification {
-        val hora = AveriaNotifications.formatDateTime(
-            when (type) {
-                NotificationType.NEW -> averia.horaInicioMillis ?: averia.fechaInicioMillis
-                NotificationType.RESOLVED -> averia.horaFinalMillis ?: averia.fechaInicioMillis
-            }
-        ) ?: context.getString(R.string.averia_notificacion_sin_hora)
 
-        val lugar = resolveLugar(context, averia)
-        val agencia = resolveAgencia(context, averia)
-        val caseLine = context.getString(
-            R.string.averia_notificacion_caso_nise,
-            averia.caseId,
-            averia.nise ?: context.getString(R.string.averia_notificacion_sin_cliente)
-        )
-        val cliente = averia.cliente?.takeIf { it.isNotBlank() }
-            ?: context.getString(R.string.averia_notificacion_sin_cliente)
-        val detalleCliente = context.getString(R.string.averia_notificacion_detalle_cliente, cliente)
-        val detalleAgencia = context.getString(R.string.averia_notificacion_detalle_agencia, agencia)
-        val detalleHora = context.getString(R.string.averia_notificacion_detalle_hora, hora)
-        val afectados = averia.clientesAfectados?.takeIf { it.isNotBlank() }
-            ?: context.getString(R.string.averia_notificacion_sin_cliente)
-        val detalleAfectados = context.getString(R.string.averia_notificacion_detalle_afectados, afectados)
-        val tipoAfectacion = averia.tipoAfectacion?.takeIf { it.isNotBlank() }
-            ?: context.getString(R.string.averia_notificacion_sin_cliente)
-        val detalleTipo = context.getString(R.string.averia_notificacion_detalle_tipo, tipoAfectacion)
-        val estadoColor = when (type) {
-            NotificationType.NEW -> ContextCompat.getColor(context, R.color.averia_notification_pending)
-            NotificationType.RESOLVED -> ContextCompat.getColor(context, R.color.averia_notification_resolved)
-        }
-        val technician = averia.tecnicoAsignadoNombre?.takeIf { it.isNotBlank() }
-            ?.let { context.getString(R.string.averia_notificacion_tecnico, it) }
-            ?: context.getString(R.string.averia_notificacion_tecnico_no_asignado)
+        val estadoColor = if (resolved)
+            ContextCompat.getColor(context, R.color.averia_notification_resolved)
+        else
+            ContextCompat.getColor(context, R.color.averia_notification_pending)
 
-        val clientesTexto = averia.clientesAfectados?.takeIf { it.isNotBlank() }
-            ?: "0"
-        val estadoLabel = context.getString(
-            if (clientesTexto == "0") R.string.averia_notificacion_estado else R.string.averia_notificacion_estado_clientes,
-            averia.estado,
-            clientesTexto
-        )
-        val cause = averia.causa?.takeIf { it.isNotBlank() }
-            ?.let { context.getString(R.string.averia_notificacion_causa, it) }
-            ?: context.getString(
-                R.string.averia_notificacion_causa,
-                context.getString(R.string.averia_notificacion_causa_no_definida)
-            )
+        val titulo = if (resolved) "Avería resuelta" else "Nueva avería"
 
         val collapsed = RemoteViews(context.packageName, R.layout.notification_averia_compact).apply {
-            setImageViewResource(R.id.icon, type.icon)
-            setTextViewText(
-                R.id.title,
-                when (type) {
-                    NotificationType.NEW -> context.getString(R.string.averia_notificacion_header_nueva, lugar)
-                    NotificationType.RESOLVED -> context.getString(R.string.averia_notificacion_header_resuelta, lugar)
-                }
-            )
-            setTextViewText(R.id.address, lugar)
-            setTextViewText(R.id.case_line, caseLine)
-            setTextViewText(R.id.state_line, estadoLabel)
+            setTextViewText(R.id.title, titulo)
+            setTextViewText(R.id.address, averia.localizacion ?: "")
+            setTextViewText(R.id.case_line, "Caso ${averia.caseId}")
+            setTextViewText(R.id.state_line, averia.estado)
             setTextColor(R.id.state_line, estadoColor)
         }
 
-        val mapUrl = AveriaStaticMapProvider.buildUrl(context, averia.lat, averia.lng, lugar)
-        val mapPreview = AveriaStaticMapProvider.bitmapOrPlaceholder(context, mapUrl)
-        val baseIntent = AveriaNotifications.averiasPendingIntent(context)
         val expanded = RemoteViews(context.packageName, R.layout.notification_averia_expanded).apply {
-            setImageViewResource(R.id.icon_large, type.icon)
-            setTextViewText(R.id.title, context.getString(type.titleRes, agencia))
-            setTextViewText(R.id.case_line, caseLine)
-            setTextViewText(R.id.state_line, estadoLabel)
+            setTextViewText(R.id.title, titulo)
+            setTextViewText(R.id.case_line, "Caso ${averia.caseId}")
+            setTextViewText(R.id.address, averia.localizacion ?: "")
+            setTextViewText(R.id.customer, averia.cliente ?: "Sin cliente")
+            setTextViewText(R.id.agency, averia.nombreAgencia ?: "")
+            setTextViewText(R.id.state_line, averia.estado)
             setTextColor(R.id.state_line, estadoColor)
-            setTextViewText(R.id.address, context.getString(R.string.averia_notificacion_direccion, lugar))
-            setTextViewText(R.id.agency, detalleAgencia)
-            setTextViewText(R.id.time, detalleHora)
-            setTextViewText(R.id.customer, detalleCliente)
-            setTextViewText(R.id.affected, detalleAfectados)
-            setTextViewText(R.id.impact, detalleTipo)
-            setTextViewText(R.id.cause, cause)
-            setTextViewText(R.id.technician, technician)
-            setImageViewBitmap(R.id.map_preview, mapPreview)
-
-            setOnClickPendingIntent(R.id.action_detail, AveriaNotifications.averiasPendingIntent(context))
-            AveriaMapLauncher.pendingIntent(
-                context,
-                averia.lat,
-                averia.lng,
-                lugar,
-                averia.caseId.hashCode()
-            )?.let { mapPending ->
-                setOnClickPendingIntent(R.id.action_map, mapPending)
-            }
-            setOnClickPendingIntent(R.id.action_attend, baseIntent)
+            setTextViewText(R.id.cause, averia.causa ?: "Sin causa")
+            setTextViewText(R.id.affected, averia.clientesAfectados ?: "0")
         }
 
-        val builder = NotificationCompat.Builder(context, AveriaNotifications.CHANNEL_ID)
-            .setSmallIcon(type.icon)
+        val openAppIntent = Intent(context, ActivityMain::class.java).apply {
+            putExtra("open_averia", averia.caseId)
+        }
+
+        val openAppPendingIntent = PendingIntent.getActivity(
+            context,
+            averia.caseId.hashCode(),
+            openAppIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val mapIntent = Intent(
+            Intent.ACTION_VIEW,
+            Uri.parse("geo:${averia.lat},${averia.lng}?q=${averia.lat},${averia.lng}")
+        )
+
+        val mapPendingIntent = PendingIntent.getActivity(
+            context,
+            averia.caseId.hashCode() + 1,
+            mapIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        return NotificationCompat.Builder(context, AveriaNotifications.CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_notification_bolt)
             .setCustomContentView(collapsed)
             .setCustomBigContentView(expanded)
             .setStyle(NotificationCompat.DecoratedCustomViewStyle())
             .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setCategory(NotificationCompat.CATEGORY_EVENT)
             .setAutoCancel(true)
-            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setColor(estadoColor)
-            .setColorized(true)
-            .setLargeIcon(mapPreview)
-            .setContentIntent(baseIntent)
-            .setBubbleMetadata(AveriaNotifications.bubbleMetadata(context))
-            .setSound(
-                Uri.parse("android.resource://${context.packageName}/${R.raw.beep}")
+            .setContentIntent(openAppPendingIntent)
+            .addAction(
+                R.drawable.ic_map_placeholder,
+                "Ver mapa",
+                mapPendingIntent
             )
-
-        AveriaMapLauncher.pendingIntent(
-            context,
-            averia.lat,
-            averia.lng,
-            lugar,
-            averia.caseId.hashCode()
-        )?.let { mapPending ->
-            builder.addAction(
-                NotificationCompat.Action.Builder(
-                    R.drawable.ic_map_placeholder,
-                    context.getString(R.string.averia_notificacion_action_ver_mapa),
-                    mapPending
-                ).build()
-            )
-        }
-        builder.addAction(
-            NotificationCompat.Action.Builder(
+            .addAction(
                 R.drawable.ic_outage_assign,
-                context.getString(R.string.averia_notificacion_action_atender),
-                baseIntent
-            ).build()
-        )
-
-        return builder.build()
-    }
-
-    private fun resolveLugar(context: Context, averia: AveriaEntity): String =
-        averia.localizacion?.takeIf { it.isNotBlank() }
-            ?: averia.nombreAgencia?.takeIf { it.isNotBlank() }
-            ?: averia.agencia?.takeIf { it.isNotBlank() }
-            ?: context.getString(R.string.averia_notificacion_sin_lugar)
-
-    private fun resolveAgencia(context: Context, averia: AveriaEntity): String =
-        averia.nombreAgencia?.takeIf { it.isNotBlank() }
-            ?: averia.agencia?.takeIf { it.isNotBlank() }
-            ?: context.getString(R.string.averia_notificacion_sin_agencia)
-
-    private enum class NotificationType(val icon: Int, val titleRes: Int) {
-        NEW(R.drawable.ic_notification_bolt, R.string.averia_notificacion_header_nueva),
-        RESOLVED(R.drawable.ic_notification_bolt, R.string.averia_notificacion_header_resuelta)
+                "Abrir",
+                openAppPendingIntent
+            )
+            .build()
     }
 }
