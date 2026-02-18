@@ -47,28 +47,33 @@ class FirebaseVehicleDataSource {
         if (logs.isEmpty()) return
         logs.forEach { log ->
             val fechaIso = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date(log.timestamp))
-            val payload = mapOf(
-                "km" to log.km,
-                "tecnico" to extractString(log.payloadJson, "registradoPor"),
-                "observacion" to extractString(log.payloadJson, "observaciones"),
-                "createdAt" to log.timestamp,
-                "tipo" to extractString(log.payloadJson, "tipoMantenimiento"),
-                "proximoKm" to extractDouble(log.payloadJson, "proximoMantenimiento"),
-                "descripcion" to extractString(log.payloadJson, "observaciones")
-            )
+            val tecnico = extractString(log.payloadJson, "registradoPor")
+            val observacion = extractString(log.payloadJson, "observaciones")
+            val tipoMantenimiento = extractString(log.payloadJson, "tipoMantenimiento")
+            val proximoKm = extractDouble(log.payloadJson, "proximoMantenimiento")
             when (log.tipo.uppercase()) {
-                "DIARIO" -> etmRef.child(vehiculoId).child(fechaIso).updateChildren(
-                    payload.filterKeys { it in setOf("km", "tecnico", "observacion", "createdAt") }
-                        .toMutableMap()
-                        .apply {
-                            this["kmInicio"] = log.km ?: 0.0
-                            this["kmFin"] = log.km ?: 0.0
-                        }
-                ).await()
+                "DIARIO" -> {
+                    val dailyPayload = mutableMapOf<String, Any>(
+                        "createdAt" to log.timestamp,
+                        "kmInicio" to (log.km ?: 0.0),
+                        "kmFin" to (log.km ?: 0.0)
+                    )
+                    tecnico?.let { dailyPayload["tecnico"] = it }
+                    observacion?.let { dailyPayload["observacion"] = it }
+                    log.km?.let { dailyPayload["km"] = it }
+                    etmRef.child(vehiculoId).child(fechaIso).updateChildren(dailyPayload).await()
+                }
 
-                "MANTENIMIENTO" -> mantenimientoRef.child(vehiculoId).child(fechaIso).updateChildren(
-                    payload.filterKeys { it in setOf("tipo", "km", "proximoKm", "descripcion", "createdAt") }
-                ).await()
+                "MANTENIMIENTO" -> {
+                    val mantenimientoPayload = mutableMapOf<String, Any>(
+                        "createdAt" to log.timestamp,
+                        "km" to (log.km ?: 0.0)
+                    )
+                    tipoMantenimiento?.let { mantenimientoPayload["tipo"] = it }
+                    proximoKm?.let { mantenimientoPayload["proximoKm"] = it }
+                    observacion?.let { mantenimientoPayload["descripcion"] = it }
+                    mantenimientoRef.child(vehiculoId).child(fechaIso).updateChildren(mantenimientoPayload).await()
+                }
             }
         }
     }
