@@ -45,6 +45,10 @@ class RegistroVehiculoDialogFragment : DialogFragment() {
         binding.btnCancelar.setOnClickListener { dismiss() }
         binding.btnGuardar.setOnClickListener { guardarRegistro() }
 
+        binding.chipGroupMantenimiento.setOnCheckedStateChangeListener { _, _ ->
+            actualizarProximoMantenimiento()
+        }
+
         binding.etValorActual.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit
@@ -71,13 +75,7 @@ class RegistroVehiculoDialogFragment : DialogFragment() {
             return
         }
         binding.tilValorActual.error = null
-        val tipo = when (binding.chipGroupMantenimiento.checkedChipId) {
-            binding.chipAceite.id -> binding.chipAceite.text.toString()
-            binding.chipFrenos.id -> binding.chipFrenos.text.toString()
-            binding.chipRevision.id -> binding.chipRevision.text.toString()
-            binding.chipOtros.id -> binding.chipOtros.text.toString()
-            else -> binding.chipOtros.text.toString()
-        }
+        val tipo = tipoMantenimientoSeleccionado()
         val observaciones = binding.etObservaciones.text?.toString()?.trim()?.ifBlank { null }
 
         viewModel.registrarMantenimiento(valor, tipo, observaciones)
@@ -87,7 +85,10 @@ class RegistroVehiculoDialogFragment : DialogFragment() {
     private fun actualizarProximoMantenimiento() {
         val state = viewModel.uiState.value
         val valor = binding.etValorActual.text?.toString()?.replace(",", ".")?.toDoubleOrNull()
-        val intervalo = if (state.tipoVehiculo.usaKilometraje) 5000.0 else 250.0
+        val intervalo = viewModel.obtenerIntervaloMantenimiento(
+            tipoMantenimientoSeleccionado(),
+            state.tipoVehiculo.usaKilometraje
+        )
         val proximo = valor?.let { it + intervalo }
         val label = if (proximo != null) {
             getString(
@@ -99,6 +100,19 @@ class RegistroVehiculoDialogFragment : DialogFragment() {
             getString(com.Arasoftsolutions.tecniapp_ice.R.string.mi_vehiculo_dialog_proximo_placeholder)
         }
         binding.tvProximoMantenimiento.text = label
+    }
+
+
+    private fun tipoMantenimientoSeleccionado(): String {
+        return when (binding.chipGroupMantenimiento.checkedChipId) {
+            binding.chipAceite.id -> binding.chipAceite.text.toString()
+            binding.chipFrenos.id -> binding.chipFrenos.text.toString()
+            binding.chipRevision.id -> binding.chipRevision.text.toString()
+            binding.chipLlantas.id -> binding.chipLlantas.text.toString()
+            binding.chipFiltros.id -> binding.chipFiltros.text.toString()
+            binding.chipOtros.id -> binding.chipOtros.text.toString()
+            else -> binding.chipOtros.text.toString()
+        }
     }
 
     override fun onDestroyView() {
