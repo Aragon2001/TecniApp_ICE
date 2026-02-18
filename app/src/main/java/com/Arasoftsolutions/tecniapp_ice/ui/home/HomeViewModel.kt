@@ -200,7 +200,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
         combine(vehiculoAsignado,tipoVehiculo) { vehiculo, tipo ->
             if (vehiculo == null) return@combine null
             if (tipo.usaKilometraje) {
-                vehiculo.kmActual.takeIf { it > 0.0 } ?: vehiculo.kilometrajeActual
+                vehiculo.kmActual
             } else {
                 vehiculo.orimetroActual
             }

@@ -41,7 +41,9 @@ class MiVehiculoFragment : Fragment() {
             RegistroVehiculoDialogFragment().show(childFragmentManager, RegistroVehiculoDialogFragment.TAG)
         }
         binding.tvKpiAlertas.setOnClickListener { mostrarHistorialAlertas() }
+        binding.cardKpiAlertas.setOnClickListener { mostrarHistorialAlertas() }
         binding.tvTituloMantenimientos.setOnClickListener { mostrarHistorialMantenimientos() }
+        binding.cardKpiMantenimientos.setOnClickListener { mostrarHistorialMantenimientos() }
         binding.btnRegistrarMantenimiento.setOnLongClickListener {
             mostrarConfigIntervaloMantenimiento()
             true
@@ -205,15 +207,7 @@ class MiVehiculoFragment : Fragment() {
     private fun mostrarHistorialAlertas() {
         val state = latestState
         if (state.vehiculo == null) return
-        val mensajes = mutableListOf<String>()
-        if (state.alertasCount <= 0) {
-            mensajes += "Sin alertas activas."
-        } else {
-            mensajes += "Alertas activas: ${state.alertasCount}"
-            state.mantenimientoCards.forEach { card ->
-                mensajes += "• ${card.titulo}: ${card.detalle}"
-            }
-        }
+        val mensajes = state.historialAlertas.ifEmpty { listOf("Sin alertas activas.") }
         com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
             .setTitle("Historial de alertas")
             .setItems(mensajes.toTypedArray(), null)
@@ -222,12 +216,9 @@ class MiVehiculoFragment : Fragment() {
     }
 
     private fun mostrarHistorialMantenimientos() {
-        val cards = latestState.mantenimientoCards
-        val items = if (cards.isEmpty()) {
-            arrayOf(getString(R.string.mi_vehiculo_mantenimiento_placeholder_detalle))
-        } else {
-            cards.map { "${it.titulo}: ${it.detalle}" }.toTypedArray()
-        }
+        val items = latestState.historialMantenimientos.ifEmpty {
+            listOf(getString(R.string.mi_vehiculo_mantenimiento_placeholder_detalle))
+        }.toTypedArray()
         com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
             .setTitle("Mantenimientos realizados")
             .setItems(items, null)
