@@ -110,15 +110,18 @@ class MiVehiculoViewModel(app: Application) : AndroidViewModel(app) {
                 .collect { (vehiculo, tipo, data) ->
                     val (registros, mantenimientos) = data
                     val unidad = tipo.unidadTexto
-                    val valorActual = registros.firstOrNull()?.valor
-                        ?: if (tipo.usaKilometraje) vehiculo.kilometrajeActual else vehiculo.orimetroActual
+                    val valorActual = if (tipo.usaKilometraje) {
+                        vehiculo.kmActual.takeIf { it > 0.0 } ?: vehiculo.kilometrajeActual
+                    } else {
+                        vehiculo.orimetroActual
+                    }
 
                     val ultimoMantenimiento = mantenimientos.firstOrNull()
                     val estado = calcularEstado(valorActual, ultimoMantenimiento, tipo)
                     val estadoMensaje = construirMensajeEstado(estado)
                     val cards = construirCards(ultimoMantenimiento, valorActual, unidad, estado)
                     val grafica = construirUsoMensual(registros)
-                    val kmHoy = calcularUsoHoy(registros)
+                    val kmHoy = calcularUsoHoy(registros, vehiculo, valorActual)
                     val mantenimientosMes = contarMantenimientosMes(mantenimientos)
                     val alertas = calcularAlertas(valorActual, ultimoMantenimiento, tipo)
 
@@ -284,13 +287,22 @@ class MiVehiculoViewModel(app: Application) : AndroidViewModel(app) {
     }
 
 
-    private fun calcularUsoHoy(registros: List<RegistroDiarioEntity>): Double {
+    private fun calcularUsoHoy(
+        registros: List<RegistroDiarioEntity>,
+        vehiculo: VehiculoEntity,
+        valorActual: Double?
+    ): Double {
         val hoy = fechaHoy()
         val delDia = registros.filter { it.fecha == hoy }.sortedBy { it.registradoEn }
-        if (delDia.isEmpty()) return 0.0
-        val min = delDia.minOf { it.valor }
-        val max = delDia.maxOf { it.valor }
-        return (max - min).coerceAtLeast(0.0)
+        val inicialDia = vehiculo.registroInicial
+            ?.takeIf { vehiculo.registroFecha == hoy }
+            ?: delDia.minOfOrNull { it.valor }
+            ?: return 0.0
+
+        val maxRegistroDia = delDia.maxOfOrNull { it.valor } ?: inicialDia
+        val referenciaActual = valorActual ?: maxRegistroDia
+        val maxDia = maxOf(maxRegistroDia, referenciaActual)
+        return (maxDia - inicialDia).coerceAtLeast(0.0)
     }
 
     private fun contarMantenimientosMes(mantenimientos: List<RegistroMantenimientoEntity>): Int {
