@@ -359,6 +359,11 @@ class   RoomRepository(context: Context) {
     suspend fun obtenerVehiculoPorPlaca(placa: Long): VehiculosEntity? =
         db.vehiculoDao().buscarPorPlaca(placa)
 
+
+    suspend fun obtenerVehiculosCatalogoLocal(): List<VehiculosEntity> = withContext(Dispatchers.IO) {
+        db.vehiculoDao().getAll()
+    }
+
     suspend fun obtenerRegistroDiarioPorFecha(vehiculoId: Int, fecha: String): RegistroDiarioEntity? {
         return vehiculoLogDao.findLastByTipo(vehiculoId.toString(), "DIARIO")
             ?.toRegistroDiarioEntity(vehiculoId)

@@ -33,20 +33,29 @@ class VehiculoReminderWorker(
     override suspend fun doWork(): Result {
         val uid = auth.currentUser?.uid ?: return Result.success()
         val usuario = repository.obtenerUsuario(uid) ?: return Result.success()
+
+        val hoy = formatoFecha.format(System.currentTimeMillis())
+        val vehiculos = repository.obtenerVehiculosCatalogoLocal()
+        val vehiculosPendientes = vehiculos.filter { item ->
+            repository.obtenerRegistroDiarioPorFecha(item.id, hoy) == null
+        }
+        if (vehiculosPendientes.isNotEmpty()) {
+            val mensaje = if (vehiculosPendientes.size == 1) {
+                "El vehículo ${vehiculosPendientes.first().placa} aún no registra su lectura diaria."
+            } else {
+                "${vehiculosPendientes.size} vehículos aún no registran su lectura diaria."
+            }
+            VehiculoNotifications.notifyRegistroPendiente(
+                applicationContext,
+                "Registro diario pendiente",
+                mensaje
+            )
+        }
+
         val placa = usuario.placaVehiculo?.trim().orEmpty()
         val placaLong = VehiculoPlacaUtils.parsePlacaLong(placa) ?: return Result.success()
         val vehiculo = repository.obtenerVehiculoPorPlaca(placaLong) ?: return Result.success()
         val tipo = inferirTipoVehiculo(vehiculo.tipo)
-
-        val hoy = formatoFecha.format(System.currentTimeMillis())
-        val registroHoy = repository.obtenerRegistroDiarioPorFecha(vehiculo.id, hoy)
-        if (registroHoy == null) {
-            VehiculoNotifications.notifyRegistroPendiente(
-                applicationContext,
-                "¿Ya registraste tu lectura de hoy?",
-                "Un pequeño registro hoy mantiene tu historial al día y tu seguridad en orden."
-            )
-        }
 
         val ultimoMantenimiento = repository.obtenerUltimoMantenimiento(vehiculo.id)
         val ultimoRegistro = repository.obtenerUltimoRegistroDiario(vehiculo.id)

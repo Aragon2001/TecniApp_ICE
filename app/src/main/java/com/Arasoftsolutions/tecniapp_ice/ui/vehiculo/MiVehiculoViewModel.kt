@@ -273,7 +273,9 @@ class MiVehiculoViewModel(app: Application) : AndroidViewModel(app) {
                 regCal.get(Calendar.MONTH) == month && regCal.get(Calendar.YEAR) == year
             }.sortedBy { it.fecha }
             val total = if (registrosMes.size >= 2) {
-                registrosMes.last().valor - registrosMes.first().valor
+                registrosMes
+                    .zipWithNext { anterior, actual -> (actual.valor - anterior.valor).coerceAtLeast(0.0) }
+                    .sum()
             } else {
                 0.0
             }
