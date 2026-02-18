@@ -156,6 +156,27 @@ class   RoomRepository(context: Context) {
         vehiculoDao.upsertVehiculo(entity)
     }
 
+    suspend fun actualizarKmActual(placa: String, km: Double) = withContext(Dispatchers.IO) {
+        val vehiculo = vehiculoDao.buscarPorVehiculoId(placa) ?: return@withContext
+        val updatedAt = System.currentTimeMillis()
+        vehiculoDao.actualizarKilometrajeByVehiculoId(placa, km, updatedAt)
+        firebase.actualizarVehiculoKm(placa, km)
+    }
+
+    suspend fun actualizarSubregion(placa: String, subregion: String?) = withContext(Dispatchers.IO) {
+        val vehiculo = vehiculoDao.buscarPorVehiculoId(placa) ?: return@withContext
+        val updatedAt = System.currentTimeMillis()
+        vehiculoDao.upsertVehiculo(vehiculo.copy(subregion = subregion, updatedAt = updatedAt))
+        firebase.actualizarVehiculoCampos(placa, mapOf("subregion" to subregion))
+    }
+
+    suspend fun cerrarRegistro(placa: String, cerrado: Boolean) = withContext(Dispatchers.IO) {
+        val vehiculo = vehiculoDao.buscarPorVehiculoId(placa) ?: return@withContext
+        val updatedAt = System.currentTimeMillis()
+        vehiculoDao.upsertVehiculo(vehiculo.copy(registroCerrado = cerrado, updatedAt = updatedAt))
+        firebase.actualizarVehiculoCampos(placa, mapOf("registroCerrado" to cerrado))
+    }
+
     suspend fun insertarRegistroDiario(registro: RegistroDiarioEntity) = withContext(Dispatchers.IO) {
         val log = VehiculoLogEntity(
             logId = "diario_${registro.vehiculoId}_${registro.registradoEn}",
@@ -238,7 +259,10 @@ class   RoomRepository(context: Context) {
             updatedAt = System.currentTimeMillis()
         )
         vehiculoDao.upsertVehiculo(actualizado)
-        firebase.guardarVehiculoMeta(actualizado)
+        firebase.actualizarVehiculoCampos(actualizado.vehiculoId, mapOf(
+            "kmActual" to actualizado.kmActual,
+            "registroCerrado" to actualizado.registroCerrado
+        ))
     }
 
     suspend fun actualizarRegistroDiarioVehiculo(
@@ -261,7 +285,10 @@ class   RoomRepository(context: Context) {
             orimetroActual = orimetroActual ?: vehiculo.orimetroActual,
             registrosDiariosJson = registrosJson
         )
-        firebase.guardarVehiculoMeta(actualizado)
+        firebase.actualizarVehiculoCampos(actualizado.vehiculoId, mapOf(
+            "kmActual" to actualizado.kmActual,
+            "registroCerrado" to actualizado.registroCerrado
+        ))
         vehiculoDao.insertAll(listOf(actualizado))
     }
 
@@ -405,7 +432,13 @@ class   RoomRepository(context: Context) {
     }
 
     suspend fun guardarVehiculo(vehiculo: VehiculosEntity) = withContext(Dispatchers.IO) {
-        firebase.guardarVehiculoMeta(vehiculo)
+        firebase.actualizarVehiculoCampos(vehiculo.vehiculoId, mapOf(
+            "tipo" to vehiculo.tipo,
+            "subregion" to vehiculo.subregion,
+            "agencia" to vehiculo.agencia,
+            "kmActual" to vehiculo.kmActual,
+            "registroCerrado" to vehiculo.registroCerrado
+        ))
         db.vehiculoDao().insertAll(listOf(vehiculo))
     }
 
