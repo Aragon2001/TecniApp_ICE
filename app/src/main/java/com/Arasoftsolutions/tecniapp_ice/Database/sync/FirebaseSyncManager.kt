@@ -597,10 +597,7 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
             "meta/registrosDiariosJson" to vehiculo.registrosDiariosJson,
             "meta/mantenimientoUltimo" to vehiculo.mantenimientoUltimo,
             "meta/mantenimientoProximo" to vehiculo.mantenimientoProximo,
-            "kmActual" to kilometrajeNormalizado,
             "kilometrajeActual" to kilometrajeNormalizado,
-            "base/kmActual" to kilometrajeNormalizado,
-            "base/kilometrajeActual" to kilometrajeNormalizado,
             "meta/updatedAt" to ServerValue.TIMESTAMP,
             "updatedAt" to ServerValue.TIMESTAMP,
             "base/updatedAt" to ServerValue.TIMESTAMP
