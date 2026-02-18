@@ -121,11 +121,11 @@ class   RoomRepository(context: Context) {
     fun observeTimeline(vehiculoId: String): Flow<List<VehiculoLogEntity>> =
         vehiculoLogDao.observeTimeline(vehiculoId)
 
-    fun observarRegistrosDiarios(vehiculoId: Int): Flow<List<RegistroDiarioEntity>> =
-        vehiculoLogDao.observeByTipo(vehiculoId.toString(), "DIARIO").map { logs ->
+    fun observarRegistrosDiarios(vehiculoKey: String): Flow<List<RegistroDiarioEntity>> =
+        vehiculoLogDao.observeByTipo(vehiculoKey, "DIARIO").map { logs ->
             logs.map { log ->
                 RegistroDiarioEntity(
-                    vehiculoId = vehiculoId,
+                    vehiculoId = vehiculoKey.toIntOrNull() ?: 0,
                     fecha = log.payloadJson.optStringSafe("fecha"),
                     valor = log.km ?: 0.0,
                     unidad = log.payloadJson.optStringSafe("unidad", "km"),
@@ -136,11 +136,11 @@ class   RoomRepository(context: Context) {
             }
         }
 
-    fun observarMantenimientos(vehiculoId: Int): Flow<List<RegistroMantenimientoEntity>> =
-        vehiculoLogDao.observeByTipo(vehiculoId.toString(), "MANTENIMIENTO").map { logs ->
+    fun observarMantenimientos(vehiculoKey: String): Flow<List<RegistroMantenimientoEntity>> =
+        vehiculoLogDao.observeByTipo(vehiculoKey, "MANTENIMIENTO").map { logs ->
             logs.map { log ->
                 RegistroMantenimientoEntity(
-                    vehiculoId = vehiculoId,
+                    vehiculoId = vehiculoKey.toIntOrNull() ?: 0,
                     tipoMantenimiento = log.payloadJson.optStringSafe("tipoMantenimiento", "General"),
                     valorActual = log.km ?: 0.0,
                     unidad = log.payloadJson.optStringSafe("unidad", "km"),
@@ -177,10 +177,15 @@ class   RoomRepository(context: Context) {
         firebase.actualizarVehiculoCampos(placa, mapOf("registroCerrado" to cerrado))
     }
 
+    private suspend fun resolveVehiculoKey(vehiculoId: Int): String? {
+        return vehiculoDao.buscarPorId(vehiculoId)?.vehiculoId
+    }
+
     suspend fun insertarRegistroDiario(registro: RegistroDiarioEntity) = withContext(Dispatchers.IO) {
+        val vehiculoKey = resolveVehiculoKey(registro.vehiculoId) ?: registro.vehiculoId.toString()
         val log = VehiculoLogEntity(
-            logId = "diario_${registro.vehiculoId}_${registro.registradoEn}",
-            vehiculoId = registro.vehiculoId.toString(),
+            logId = "diario_${vehiculoKey}_${registro.registradoEn}",
+            vehiculoId = vehiculoKey,
             tipo = "DIARIO",
             timestamp = registro.registradoEn,
             km = registro.valor,
@@ -191,9 +196,10 @@ class   RoomRepository(context: Context) {
     }
 
     suspend fun insertarRegistroMantenimiento(registro: RegistroMantenimientoEntity) = withContext(Dispatchers.IO) {
+        val vehiculoKey = resolveVehiculoKey(registro.vehiculoId) ?: registro.vehiculoId.toString()
         val log = VehiculoLogEntity(
-            logId = "mant_${registro.vehiculoId}_${registro.creadoEn}",
-            vehiculoId = registro.vehiculoId.toString(),
+            logId = "mant_${vehiculoKey}_${registro.creadoEn}",
+            vehiculoId = vehiculoKey,
             tipo = "MANTENIMIENTO",
             timestamp = registro.creadoEn,
             km = registro.valorActual,
@@ -261,7 +267,9 @@ class   RoomRepository(context: Context) {
         vehiculoDao.upsertVehiculo(actualizado)
         firebase.actualizarVehiculoCampos(actualizado.vehiculoId, mapOf(
             "kmActual" to actualizado.kmActual,
-            "registroCerrado" to actualizado.registroCerrado
+            "registroCerrado" to actualizado.registroCerrado,
+            "mantenimientoUltimo" to actualizado.mantenimientoUltimo,
+            "mantenimientoProximo" to actualizado.mantenimientoProximo
         ))
     }
 
@@ -391,18 +399,21 @@ class   RoomRepository(context: Context) {
     }
 
     suspend fun obtenerRegistroDiarioPorFecha(vehiculoId: Int, fecha: String): RegistroDiarioEntity? {
-        return vehiculoLogDao.findLastByTipo(vehiculoId.toString(), "DIARIO")
+        val vehiculoKey = resolveVehiculoKey(vehiculoId) ?: vehiculoId.toString()
+        return vehiculoLogDao.findLastByTipo(vehiculoKey, "DIARIO")
             ?.toRegistroDiarioEntity(vehiculoId)
             ?.takeIf { it.fecha == fecha }
     }
 
     suspend fun obtenerUltimoRegistroDiario(vehiculoId: Int): RegistroDiarioEntity? {
-        return vehiculoLogDao.findLastByTipo(vehiculoId.toString(), "DIARIO")
+        val vehiculoKey = resolveVehiculoKey(vehiculoId) ?: vehiculoId.toString()
+        return vehiculoLogDao.findLastByTipo(vehiculoKey, "DIARIO")
             ?.toRegistroDiarioEntity(vehiculoId)
     }
 
     suspend fun obtenerUltimoMantenimiento(vehiculoId: Int): RegistroMantenimientoEntity? {
-        return vehiculoLogDao.findLastByTipo(vehiculoId.toString(), "MANTENIMIENTO")
+        val vehiculoKey = resolveVehiculoKey(vehiculoId) ?: vehiculoId.toString()
+        return vehiculoLogDao.findLastByTipo(vehiculoKey, "MANTENIMIENTO")
             ?.toRegistroMantenimientoEntity(vehiculoId)
     }
 

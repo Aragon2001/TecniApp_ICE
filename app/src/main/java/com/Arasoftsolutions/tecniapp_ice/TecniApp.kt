@@ -13,6 +13,7 @@ import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriaNotifications
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasSyncWorker
 import com.Arasoftsolutions.tecniapp_ice.ui.common.NetworkAlertManager
 import com.Arasoftsolutions.tecniapp_ice.update.UpdateWorker
+import com.Arasoftsolutions.tecniapp_ice.ui.vehiculo.worker.VehiculoReminderWorker
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.FirebaseDatabase
 import kotlinx.coroutines.CoroutineScope
@@ -53,6 +54,7 @@ class TecniApp : Application() {
         }
 
         UpdateWorker.schedule(this)
+        VehiculoReminderWorker.scheduleDaily(this)
 
         applicationScope.launch {
             val currentSchemaVersion = AppDatabase.SCHEMA_VERSION
