@@ -8,6 +8,7 @@ import com.Arasoftsolutions.tecniapp_ice.Database.entities.VehiculoEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.VehiculoLogEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
 import com.Arasoftsolutions.tecniapp_ice.Database.sync.SyncStatus
+import com.Arasoftsolutions.tecniapp_ice.notifications.VehiculoNotifications
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -55,6 +56,8 @@ data class MiVehiculoUiState(
     val kmHoy: Double = 0.0,
     val mantenimientosMes: Int = 0,
     val alertasCount: Int = 0,
+    val historialAlertas: List<String> = emptyList(),
+    val historialMantenimientos: List<String> = emptyList(),
     val motivacion: String = "",
     val isLoading: Boolean = false
 )
@@ -80,6 +83,7 @@ class MiVehiculoViewModel(app: Application) : AndroidViewModel(app) {
     private val formatoFecha = SimpleDateFormat("yyyy-MM-dd", Locale.ROOT)
     private val formatoMes = SimpleDateFormat("MMM", Locale.getDefault())
     private val prefs = app.getSharedPreferences("vehiculo_settings", Context.MODE_PRIVATE)
+    private var ultimaCantidadAlertasNotificada: Int = 0
 
     init {
         cargarDashboard()
@@ -113,7 +117,7 @@ class MiVehiculoViewModel(app: Application) : AndroidViewModel(app) {
                     val (registros, mantenimientos) = data
                     val unidad = tipo.unidadTexto
                     val valorActual = if (tipo.usaKilometraje) {
-                        vehiculo.kmActual.takeIf { it > 0.0 } ?: vehiculo.kilometrajeActual
+                        vehiculo.kmActual
                     } else {
                         vehiculo.orimetroActual
                     }
@@ -126,6 +130,16 @@ class MiVehiculoViewModel(app: Application) : AndroidViewModel(app) {
                     val kmHoy = calcularUsoHoy(registros, vehiculo, valorActual)
                     val mantenimientosMes = contarMantenimientosMes(mantenimientos)
                     val alertas = calcularAlertas(valorActual, ultimoMantenimiento, tipo)
+                    if (alertas > ultimaCantidadAlertasNotificada && alertas > 0) {
+                        VehiculoNotifications.notifyMantenimientoProximo(
+                            getApplication(),
+                            "Nueva alerta de mantenimiento",
+                            "Tu vehículo tiene $alertas alerta(s) activa(s)."
+                        )
+                    }
+                    ultimaCantidadAlertasNotificada = alertas
+                    val historialAlertas = construirHistorialAlertas(alertas, estado, ultimoMantenimiento, valorActual, unidad)
+                    val historialMantenimientos = construirHistorialMantenimientos(mantenimientos, unidad)
 
                     _uiState.value = MiVehiculoUiState(
                         vehiculo = vehiculo,
@@ -139,6 +153,8 @@ class MiVehiculoViewModel(app: Application) : AndroidViewModel(app) {
                         kmHoy = kmHoy,
                         mantenimientosMes = mantenimientosMes,
                         alertasCount = alertas,
+                        historialAlertas = historialAlertas,
+                        historialMantenimientos = historialMantenimientos,
                         motivacion = "Cuidar tu vehículo es cuidar tu seguridad.",
                         isLoading = false
                     )
@@ -278,6 +294,8 @@ class MiVehiculoViewModel(app: Application) : AndroidViewModel(app) {
                 registrosMes
                     .zipWithNext { anterior, actual -> (actual.valor - anterior.valor).coerceAtLeast(0.0) }
                     .sum()
+            } else if (registrosMes.size == 1) {
+                registrosMes.first().valor.coerceAtLeast(0.0)
             } else {
                 0.0
             }
@@ -288,6 +306,47 @@ class MiVehiculoViewModel(app: Application) : AndroidViewModel(app) {
                 total = total
             )
         }.reversed()
+    }
+
+    private fun construirHistorialAlertas(
+        alertas: Int,
+        estado: EstadoVehiculo,
+        ultimoMantenimiento: RegistroMantenimientoEntity?,
+        valorActual: Double?,
+        unidad: String
+    ): List<String> {
+        val items = mutableListOf<String>()
+        if (alertas <= 0) {
+            items += "Sin alertas activas"
+            return items
+        }
+        val estadoTexto = when (estado) {
+            EstadoVehiculo.OPTIMO -> "Óptimo"
+            EstadoVehiculo.ATENCION -> "Atención"
+            EstadoVehiculo.VENCIDO -> "Vencido"
+        }
+        items += "Estado actual: $estadoTexto"
+        valorActual?.let { items += "Lectura actual: ${formatearValor(it, unidad)}" }
+        ultimoMantenimiento?.let {
+            items += "Último mantenimiento: ${it.tipoMantenimiento} (${formatearValor(it.valorActual, unidad)})"
+            items += "Próximo mantenimiento: ${formatearValor(it.proximoMantenimiento, unidad)}"
+        }
+        return items
+    }
+
+    private fun construirHistorialMantenimientos(
+        mantenimientos: List<RegistroMantenimientoEntity>,
+        unidad: String
+    ): List<String> {
+        if (mantenimientos.isEmpty()) {
+            return listOf("Aún no registras mantenimientos")
+        }
+        return mantenimientos
+            .sortedByDescending { it.creadoEn }
+            .map { item ->
+                val fecha = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(item.creadoEn))
+                "$fecha • ${item.tipoMantenimiento} • ${formatearValor(item.valorActual, unidad)}"
+            }
     }
 
 
@@ -346,7 +405,6 @@ class MiVehiculoViewModel(app: Application) : AndroidViewModel(app) {
                 tipo = tipo,
                 agencia = agencia,
                 kmActual = 0.0,
-                kilometrajeActual = 0.0,
                 updatedAt = System.currentTimeMillis()
             )
             repository.upsertVehiculo(vehiculo)
