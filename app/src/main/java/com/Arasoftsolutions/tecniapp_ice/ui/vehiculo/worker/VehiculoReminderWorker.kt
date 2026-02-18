@@ -66,15 +66,31 @@ class VehiculoReminderWorker(
             val delta = ultimoMantenimiento.proximoMantenimiento - valorActual
             val umbral = if (tipo.usaKilometraje) UMBRAL_MANTENIMIENTO_KM else UMBRAL_MANTENIMIENTO_HORAS
             if (delta <= umbral) {
-                val mensaje = if (delta <= 0) {
-                    "Tu mantenimiento ya venció. Agenda una revisión y cuida tu seguridad."
+                val placaVehiculo = vehiculo.placaRaw.ifBlank { vehiculo.vehiculoId }
+                val tipoAlerta = ultimoMantenimiento.tipoMantenimiento.ifBlank { "General" }
+                val estadoResumen = if (delta <= 0) {
+                    "Mantenimiento vencido"
                 } else {
-                    "Faltan ${String.format(Locale.getDefault(), "%.0f", delta)} ${tipo.unidadTexto} para tu próximo mantenimiento."
+                    "Próximo mantenimiento"
                 }
+                val kilometrajeActual = String.format(Locale.getDefault(), "%.0f", valorActual)
+                val restanteTexto = if (delta <= 0) {
+                    "Vencido por ${String.format(Locale.getDefault(), "%.0f", kotlin.math.abs(delta))} ${tipo.unidadTexto}"
+                } else {
+                    "Restan ${String.format(Locale.getDefault(), "%.0f", delta)} ${tipo.unidadTexto}"
+                }
+                val mensaje = "$estadoResumen · $tipoAlerta · $restanteTexto"
+                val detalleCompleto = """
+                    Vehículo: $placaVehiculo
+                    Lectura actual: $kilometrajeActual ${tipo.unidadTexto}
+                    Tipo de alerta: $tipoAlerta
+                    $restanteTexto
+                """.trimIndent()
                 VehiculoNotifications.notifyMantenimientoProximo(
                     applicationContext,
-                    "Mantenimiento en el horizonte",
-                    mensaje
+                    "Alerta de mantenimiento: $tipoAlerta",
+                    mensaje,
+                    detalleCompleto
                 )
             }
         }

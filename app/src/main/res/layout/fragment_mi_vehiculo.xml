@@ -498,6 +498,28 @@
                     android:text="@string/mi_vehiculo_cta_registrar"
                     app:iconTint="@color/white"
                     app:cornerRadius="16dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnRegistroEtm"
+                    style="@style/Tecni.Button.Outlined"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:icon="@drawable/ic_edit"
+                    android:text="@string/mi_vehiculo_cta_registro_etm"
+                    app:iconTint="@color/ice_blue"
+                    app:cornerRadius="16dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnConfigurarVehiculo"
+                    style="@style/Tecni.Button.Outlined"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:icon="@drawable/ic_settings"
+                    android:text="@string/mi_vehiculo_cta_configurar"
+                    app:iconTint="@color/primary_500"
+                    app:cornerRadius="16dp" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
