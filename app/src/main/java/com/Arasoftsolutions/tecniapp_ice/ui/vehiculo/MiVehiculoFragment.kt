@@ -40,13 +40,18 @@ class MiVehiculoFragment : Fragment() {
         binding.btnRegistrarMantenimiento.setOnClickListener {
             RegistroVehiculoDialogFragment().show(childFragmentManager, RegistroVehiculoDialogFragment.TAG)
         }
+        binding.btnRegistroEtm.setOnClickListener {
+            showRegistroVehiculoPendienteDialog(
+                onRegistroGuardado = { viewModel.syncAhora() },
+                onNoVehiculo = { }
+            )
+        }
         binding.tvKpiAlertas.setOnClickListener { mostrarHistorialAlertas() }
         binding.cardKpiAlertas.setOnClickListener { mostrarHistorialAlertas() }
         binding.tvTituloMantenimientos.setOnClickListener { mostrarHistorialMantenimientos() }
         binding.cardKpiMantenimientos.setOnClickListener { mostrarHistorialMantenimientos() }
-        binding.btnRegistrarMantenimiento.setOnLongClickListener {
+        binding.btnConfigurarVehiculo.setOnClickListener {
             mostrarConfigIntervaloMantenimiento()
-            true
         }
         observarEstado()
         animateCta()
@@ -62,6 +67,8 @@ class MiVehiculoFragment : Fragment() {
                         val visible = vehiculo != null
                         binding.layoutSinVehiculo.isVisible = !visible
                         binding.btnRegistrarMantenimiento.isVisible = visible
+                        binding.btnRegistroEtm.isVisible = visible
+                        binding.btnConfigurarVehiculo.isVisible = visible
                         binding.cardVehiculoHeader.isVisible = visible
                         binding.cardMotivacion.isVisible = visible
                         binding.tvTituloMantenimientos.isVisible = visible
@@ -227,18 +234,36 @@ class MiVehiculoFragment : Fragment() {
     }
 
     private fun mostrarConfigIntervaloMantenimiento() {
+        val tipos = listOf(
+            getString(R.string.mi_vehiculo_chip_aceite),
+            getString(R.string.mi_vehiculo_chip_frenos),
+            getString(R.string.mi_vehiculo_chip_revision),
+            getString(R.string.mi_vehiculo_chip_llantas),
+            getString(R.string.mi_vehiculo_chip_filtros),
+            getString(R.string.mi_vehiculo_chip_otros)
+        )
+        com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.mi_vehiculo_config_tipo_titulo)
+            .setItems(tipos.toTypedArray()) { _, which ->
+                mostrarDialogoIntervaloParaTipo(tipos[which])
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    private fun mostrarDialogoIntervaloParaTipo(tipoMantenimiento: String) {
         val view = layoutInflater.inflate(R.layout.dialog_config_mantenimiento_intervalo, null)
         val kmInput = view.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.etIntervaloKm)
         val horasInput = view.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.etIntervaloHoras)
-        kmInput.setText(String.format(Locale.getDefault(), "%.0f", viewModel.obtenerIntervaloMantenimientoKm()))
-        horasInput.setText(String.format(Locale.getDefault(), "%.0f", viewModel.obtenerIntervaloMantenimientoHoras()))
+        kmInput.setText(String.format(Locale.getDefault(), "%.0f", viewModel.obtenerIntervaloMantenimientoKm(tipoMantenimiento)))
+        horasInput.setText(String.format(Locale.getDefault(), "%.0f", viewModel.obtenerIntervaloMantenimientoHoras(tipoMantenimiento)))
         com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
-            .setTitle("Configurar intervalo de mantenimiento")
+            .setTitle(getString(R.string.mi_vehiculo_config_intervalo_titulo, tipoMantenimiento))
             .setView(view)
-            .setPositiveButton("Guardar") { _, _ ->
+            .setPositiveButton(R.string.mi_vehiculo_config_guardar) { _, _ ->
                 val km = kmInput.text?.toString()?.trim()?.replace(",", ".")?.toDoubleOrNull()
                 val horas = horasInput.text?.toString()?.trim()?.replace(",", ".")?.toDoubleOrNull()
-                viewModel.guardarIntervaloMantenimiento(km, horas)
+                viewModel.guardarIntervaloMantenimiento(tipoMantenimiento, km, horas)
             }
             .setNegativeButton(android.R.string.cancel, null)
             .show()

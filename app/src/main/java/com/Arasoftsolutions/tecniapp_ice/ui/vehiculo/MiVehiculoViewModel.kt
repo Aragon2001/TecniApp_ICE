@@ -162,6 +162,27 @@ class MiVehiculoViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+
+    private fun maintenanceTypeKey(tipoMantenimiento: String): String {
+        return tipoMantenimiento
+            .trim()
+            .lowercase(Locale.ROOT)
+            .replace("á", "a")
+            .replace("é", "e")
+            .replace("í", "i")
+            .replace("ó", "o")
+            .replace("ú", "u")
+            .replace("ñ", "n")
+            .replace(Regex("[^a-z0-9]+"), "_")
+            .trim('_')
+            .ifBlank { "general" }
+    }
+
+    private fun intervalKey(tipoMantenimiento: String, usaKilometraje: Boolean): String {
+        val unidad = if (usaKilometraje) "km" else "horas"
+        return "intervalo_mantenimiento_${unidad}_${maintenanceTypeKey(tipoMantenimiento)}"
+    }
+
     fun registrarMantenimiento(valor: Double, tipoMantenimiento: String, observaciones: String?) {
         viewModelScope.launch {
             val state = _uiState.value
@@ -177,11 +198,7 @@ class MiVehiculoViewModel(app: Application) : AndroidViewModel(app) {
             }
 
             val unidad = state.unidad
-            val intervalo = if (state.tipoVehiculo.usaKilometraje) {
-                prefs.getFloat("intervalo_mantenimiento_km", INTERVALO_MANTENIMIENTO_KM.toFloat()).toDouble()
-            } else {
-                prefs.getFloat("intervalo_mantenimiento_horas", INTERVALO_MANTENIMIENTO_HORAS.toFloat()).toDouble()
-            }
+            val intervalo = obtenerIntervaloMantenimiento(tipoMantenimiento, state.tipoVehiculo.usaKilometraje)
             val proximo = valor + intervalo
 
             val registroDiario = RegistroDiarioEntity(
@@ -462,18 +479,24 @@ class MiVehiculoViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun guardarIntervaloMantenimiento(km: Double?, horas: Double?) {
+    fun guardarIntervaloMantenimiento(tipoMantenimiento: String, km: Double?, horas: Double?) {
         prefs.edit().apply {
-            km?.takeIf { it > 0 }?.let { putFloat("intervalo_mantenimiento_km", it.toFloat()) }
-            horas?.takeIf { it > 0 }?.let { putFloat("intervalo_mantenimiento_horas", it.toFloat()) }
+            km?.takeIf { it > 0 }?.let { putFloat(intervalKey(tipoMantenimiento, true), it.toFloat()) }
+            horas?.takeIf { it > 0 }?.let { putFloat(intervalKey(tipoMantenimiento, false), it.toFloat()) }
         }.apply()
     }
 
-    fun obtenerIntervaloMantenimientoKm(): Double =
-        prefs.getFloat("intervalo_mantenimiento_km", INTERVALO_MANTENIMIENTO_KM.toFloat()).toDouble()
+    fun obtenerIntervaloMantenimiento(tipoMantenimiento: String, usaKilometraje: Boolean): Double {
+        val key = intervalKey(tipoMantenimiento, usaKilometraje)
+        val fallback = if (usaKilometraje) INTERVALO_MANTENIMIENTO_KM else INTERVALO_MANTENIMIENTO_HORAS
+        return prefs.getFloat(key, fallback.toFloat()).toDouble()
+    }
 
-    fun obtenerIntervaloMantenimientoHoras(): Double =
-        prefs.getFloat("intervalo_mantenimiento_horas", INTERVALO_MANTENIMIENTO_HORAS.toFloat()).toDouble()
+    fun obtenerIntervaloMantenimientoKm(tipoMantenimiento: String): Double =
+        obtenerIntervaloMantenimiento(tipoMantenimiento, true)
+
+    fun obtenerIntervaloMantenimientoHoras(tipoMantenimiento: String): Double =
+        obtenerIntervaloMantenimiento(tipoMantenimiento, false)
 
     fun syncAhora() {
         viewModelScope.launch {

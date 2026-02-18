@@ -66,6 +66,11 @@
     <string name="mi_vehiculo_sin_vehiculo_info">Podrás seguir consultando información general, pero las acciones operativas estarán restringidas.</string>
     <string name="mi_vehiculo_sin_asignar">Actualiza tu perfil con una placa asignada para usar este módulo.</string>
     <string name="mi_vehiculo_cta_registrar">Registrar mantenimiento</string>
+    <string name="mi_vehiculo_cta_registro_etm">Registro ETM (km/horas diario)</string>
+    <string name="mi_vehiculo_cta_configurar">Configurar mi vehículo</string>
+    <string name="mi_vehiculo_config_tipo_titulo">Selecciona el mantenimiento a configurar</string>
+    <string name="mi_vehiculo_config_intervalo_titulo">Configurar intervalo de %1$s</string>
+    <string name="mi_vehiculo_config_guardar">Guardar</string>
     <string name="mi_vehiculo_mantenimientos_titulo">Mantenimientos inteligentes</string>
     <string name="mi_vehiculo_uso_mensual">Uso mensual</string>
     <string name="mi_vehiculo_valor_actual_label">Lectura actual (%1$s)</string>
