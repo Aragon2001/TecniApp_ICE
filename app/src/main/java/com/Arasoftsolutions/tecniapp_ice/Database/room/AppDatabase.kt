@@ -25,6 +25,8 @@ import com.Arasoftsolutions.tecniapp_ice.Database.entities.*
         InventarioItemEntity::class,
         LuminariaReparacionEntity::class,
         InventarioMovimientoAveriaEntity::class,
+        ProgramacionEntity::class,
+        ProgramacionFotoEntity::class,
     ],
     version = AppDatabase.SCHEMA_VERSION,
     exportSchema = true
@@ -44,9 +46,10 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun tecnicoDao(): TecnicoDao
     abstract fun averiaDao(): AveriaDao
     abstract fun inventarioDao(): InventarioDao
+    abstract fun programacionDao(): ProgramacionDao
 
     companion object {
-        const val SCHEMA_VERSION = 25
+        const val SCHEMA_VERSION = 26
 
         val MIGRATION_24_25 = object : Migration(24, 25) {
             override fun migrate(db: SupportSQLiteDatabase) {
@@ -73,6 +76,57 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+
+
+        val MIGRATION_25_26 = object : Migration(25, 26) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `programaciones` (
+                        `programacionId` TEXT NOT NULL,
+                        `vehiculoId` TEXT NOT NULL,
+                        `placa` TEXT NOT NULL,
+                        `localizacion` TEXT NOT NULL,
+                        `circuito` TEXT NOT NULL,
+                        `cuenta` TEXT NOT NULL,
+                        `actividad` TEXT NOT NULL,
+                        `descripcion` TEXT,
+                        `lat` REAL,
+                        `lng` REAL,
+                        `estado` TEXT NOT NULL,
+                        `observaciones` TEXT,
+                        `fechaAsignacion` INTEGER NOT NULL,
+                        `fechaEjecucion` INTEGER,
+                        `supervisorId` TEXT NOT NULL,
+                        `tecnicoId` TEXT NOT NULL,
+                        `subregion` TEXT NOT NULL,
+                        `updatedAt` INTEGER NOT NULL,
+                        PRIMARY KEY(`programacionId`)
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_programaciones_vehiculoId` ON `programaciones` (`vehiculoId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_programaciones_tecnicoId` ON `programaciones` (`tecnicoId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_programaciones_subregion` ON `programaciones` (`subregion`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_programaciones_estado` ON `programaciones` (`estado`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_programaciones_updatedAt` ON `programaciones` (`updatedAt`)")
+
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `programacion_fotos` (
+                        `fotoId` TEXT NOT NULL,
+                        `programacionId` TEXT NOT NULL,
+                        `url` TEXT NOT NULL,
+                        `tipo` TEXT NOT NULL,
+                        PRIMARY KEY(`fotoId`),
+                        FOREIGN KEY(`programacionId`) REFERENCES `programaciones`(`programacionId`) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_programacion_fotos_programacionId` ON `programacion_fotos` (`programacionId`)")
+            }
+        }
+
         @Volatile private var INSTANCE: AppDatabase? = null
 
         fun getInstance(context: Context): AppDatabase =
@@ -82,7 +136,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "tecniapp_room.db"
                 )
-                    .addMigrations(MIGRATION_24_25)
+                    .addMigrations(MIGRATION_24_25, MIGRATION_25_26)
                     .fallbackToDestructiveMigrationFrom(true, 23)
                     .fallbackToDestructiveMigrationOnDowngrade(true)
                     .build()

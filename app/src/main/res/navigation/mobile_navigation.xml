@@ -85,7 +85,17 @@
         android:id="@+id/nav_programacion"
         android:name="com.Arasoftsolutions.tecniapp_ice.ui.programacion.ProgramacionFragment"
         android:label="@string/menu_programacion"
-        tools:layout="@layout/fragment_programacion" />
+        tools:layout="@layout/fragment_programacion">
+        <action
+            android:id="@+id/action_nav_programacion_to_nuevaProgramacionFragment"
+            app:destination="@id/nuevaProgramacionFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/nuevaProgramacionFragment"
+        android:name="com.Arasoftsolutions.tecniapp_ice.ui.programacion.NuevaProgramacionFragment"
+        android:label="Nueva programación"
+        tools:layout="@layout/fragment_nueva_programacion" />
 
      <!-- Fragmento de Account -->
     <fragment
