@@ -171,10 +171,12 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
 
     private val registroHoy: StateFlow<Boolean> =
         vehiculoAsignado
-            .map { vehiculo ->
-                val hoy = LocalDate.now().format(formatoFechaEtm)
-                vehiculo?.registroFecha == hoy && vehiculo
-                    ?.registroInicial != null
+            .flatMapLatest { vehiculo ->
+                flow {
+                    val hoy = LocalDate.now().format(formatoFechaEtm)
+                    val existe = vehiculo?.let { repo.obtenerRegistroDiarioPorFecha(it.id, hoy) } != null
+                    emit(existe)
+                }
             }
             .stateIn(viewModelScope, sharing, false)
 
