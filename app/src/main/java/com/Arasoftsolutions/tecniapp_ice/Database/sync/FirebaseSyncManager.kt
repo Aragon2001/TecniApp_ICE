@@ -570,6 +570,17 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
         referencia.child(numero).removeValue().await()
     }
 
+
+    suspend fun actualizarVehiculoCampos(vehiculoKey: String, campos: Map<String, Any?>) {
+        if (vehiculoKey.isBlank() || campos.isEmpty()) return
+        val payload = campos.toMutableMap()
+        payload["updatedAt"] = ServerValue.TIMESTAMP
+        dbDatosGenerales.child("vehiculos").child(vehiculoKey).updateChildren(payload).await()
+    }
+
+    suspend fun actualizarVehiculoKm(vehiculoKey: String, kmActual: Double) {
+        actualizarVehiculoCampos(vehiculoKey, mapOf("kmActual" to kmActual))
+    }
     suspend fun guardarVehiculoMeta(vehiculo: VehiculosEntity) {
         val root = dbDatosGenerales.child("vehiculos")
         val idKey = vehiculo.id.takeIf { it != 0 }?.toString()
@@ -577,29 +588,14 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
         val primaryKey = placaKey ?: idKey
             ?: throw IllegalArgumentException("Vehículo inválido, requiere id o placa")
 
-        val kilometrajeNormalizado = listOfNotNull(
-            vehiculo.kmActual.takeIf { it > 0.0 },
-        ).maxOrNull() ?: 0.0
-
         val payload = mapOf(
-            "meta/id" to vehiculo.id,
-            "meta/agencia" to vehiculo.agencia,
-            "meta/placa" to vehiculo.placa,
-            "meta/tipo" to vehiculo.tipo,
-            "meta/subregion" to vehiculo.subregion,
-            "meta/kilometrajeActual" to vehiculo.kmActual,
-            "meta/orimetroActual" to vehiculo.orimetroActual,
-            "meta/registroFecha" to vehiculo.registroFecha,
-            "meta/registroInicial" to vehiculo.registroInicial,
-            "meta/registroFinal" to vehiculo.registroFinal,
-            "meta/registroCerrado" to vehiculo.registroCerrado,
-            "meta/registrosDiariosJson" to vehiculo.registrosDiariosJson,
-            "meta/mantenimientoUltimo" to vehiculo.mantenimientoUltimo,
-            "meta/mantenimientoProximo" to vehiculo.mantenimientoProximo,
-
-            "meta/updatedAt" to ServerValue.TIMESTAMP,
-            "updatedAt" to ServerValue.TIMESTAMP,
-            "base/updatedAt" to ServerValue.TIMESTAMP
+            "placa" to (vehiculo.placaRaw.ifBlank { placaKey ?: primaryKey }),
+            "tipo" to vehiculo.tipo,
+            "subregion" to vehiculo.subregion,
+            "agencia" to vehiculo.agencia,
+            "kmActual" to vehiculo.kmActual,
+            "registroCerrado" to vehiculo.registroCerrado,
+            "updatedAt" to ServerValue.TIMESTAMP
         )
 
         root.child(primaryKey).updateChildren(payload).await()
