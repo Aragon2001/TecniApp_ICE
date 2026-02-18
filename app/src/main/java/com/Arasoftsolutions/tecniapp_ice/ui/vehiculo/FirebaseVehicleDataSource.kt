@@ -18,11 +18,11 @@ class FirebaseVehicleDataSource {
             "subregion" to vehiculo.subregion,
             "tipo" to vehiculo.tipo,
             "agencia" to vehiculo.agencia,
-            "kmActual" to vehiculo.kmActual,
+            "kilometrajeActual" to vehiculo.kmActual,
             "updatedAt" to vehiculo.updatedAt
         )
         vehiculosRef.child(vehiculo.vehiculoId).child("base").setValue(base).await()
-        vehiculosRef.child(vehiculo.vehiculoId).child("kmActual").setValue(vehiculo.kmActual).await()
+        vehiculosRef.child(vehiculo.vehiculoId).child("kilometrajeActual").setValue(vehiculo.kmActual).await()
         vehiculosRef.child(vehiculo.vehiculoId).child("updatedAt").setValue(vehiculo.updatedAt).await()
     }
 
@@ -46,7 +46,9 @@ class FirebaseVehicleDataSource {
     suspend fun pullVehiculoBase(vehiculoId: String): VehiculoEntity? {
         val snap = vehiculosRef.child(vehiculoId).child("base").get().await()
         if (!snap.exists()) return null
-        val kmActual = snap.child("kmActual").getValue(Double::class.java) ?: 0.0
+        val kmActual = snap.child("kilometrajeActual").getValue(Double::class.java)
+            ?: snap.child("kmActual").getValue(Double::class.java)
+            ?: 0.0
         return VehiculoEntity(
             vehiculoId = vehiculoId,
             placaRaw = snap.child("placaRaw").getValue(String::class.java).orEmpty(),
@@ -60,6 +62,8 @@ class FirebaseVehicleDataSource {
     }
 
     suspend fun pullKmActual(vehiculoId: String): Double? {
-        return vehiculosRef.child(vehiculoId).child("kmActual").get().await().getValue(Double::class.java)
+        val snap = vehiculosRef.child(vehiculoId).get().await()
+        return snap.child("kilometrajeActual").getValue(Double::class.java)
+            ?: snap.child("kmActual").getValue(Double::class.java)
     }
 }

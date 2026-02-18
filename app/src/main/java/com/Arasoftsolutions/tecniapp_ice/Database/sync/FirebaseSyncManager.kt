@@ -243,10 +243,10 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
                 ?: idValue?.hashCode()
                 ?: "${agencia.trim()}_${placa}".hashCode()
             val kilometrajeCandidatos = listOfNotNull(
-                source.doubleValueAny("kmActual"),
                 source.doubleValueAny("kilometrajeActual", "kilometraje"),
-                child.doubleValueAny("kmActual"),
+                source.doubleValueAny("kmActual"),
                 child.doubleValueAny("kilometrajeActual", "kilometraje"),
+                child.doubleValueAny("kmActual"),
                 child.child("odometro").doubleValueAny("km_actual")
             )
             val kilometrajeActual = kilometrajeCandidatos.maxOrNull()
@@ -588,7 +588,6 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
             "meta/placa" to vehiculo.placa,
             "meta/tipo" to vehiculo.tipo,
             "meta/subregion" to vehiculo.subregion,
-            "meta/kmActual" to kilometrajeNormalizado,
             "meta/kilometrajeActual" to kilometrajeNormalizado,
             "meta/orimetroActual" to vehiculo.orimetroActual,
             "meta/registroFecha" to vehiculo.registroFecha,

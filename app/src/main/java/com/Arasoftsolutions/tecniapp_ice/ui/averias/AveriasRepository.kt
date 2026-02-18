@@ -680,15 +680,8 @@ return AveriaEntity(
 
         val placaNormalizada = normalizada.toString()
         val updates = mapOf<String, Any>(
-            "meta/kmActual" to kilometraje,
             "meta/kilometrajeActual" to kilometraje,
-            "kmActual" to kilometraje,
-            "kilometrajeActual" to kilometraje,
-            "base/kmActual" to kilometraje,
-            "base/kilometrajeActual" to kilometraje,
-            "meta/updatedAt" to System.currentTimeMillis(),
-            "updatedAt" to System.currentTimeMillis(),
-            "base/updatedAt" to System.currentTimeMillis()
+            "meta/updatedAt" to System.currentTimeMillis()
         )
 
         val targetKey = resolveVehiculoNodeKey(placaNormalizada)
