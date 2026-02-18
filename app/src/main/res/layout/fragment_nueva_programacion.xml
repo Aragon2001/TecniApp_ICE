@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <Spinner android:id="@+id/spinnerVehiculo" android:layout_width="match_parent" android:layout_height="wrap_content" />
+        <Spinner android:id="@+id/spinnerTecnico" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp"/>
+        <com.google.android.material.textfield.TextInputEditText android:id="@+id/etLocalizacion" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Localización"/>
+        <com.google.android.material.textfield.TextInputEditText android:id="@+id/etCircuito" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Circuito"/>
+        <com.google.android.material.textfield.TextInputEditText android:id="@+id/etCuenta" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Cuenta"/>
+        <com.google.android.material.textfield.TextInputEditText android:id="@+id/etActividad" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Actividad"/>
+        <com.google.android.material.textfield.TextInputEditText android:id="@+id/etDescripcion" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Descripción"/>
+        <com.google.android.material.textfield.TextInputEditText android:id="@+id/etLat" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Lat"/>
+        <com.google.android.material.textfield.TextInputEditText android:id="@+id/etLng" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Lng"/>
+        <com.google.android.material.textfield.TextInputEditText android:id="@+id/etFotos" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="URLs fotos asignación (separadas por coma)"/>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnAsignar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="Asignar"/>
+    </LinearLayout>
+</ScrollView>

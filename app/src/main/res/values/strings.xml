@@ -802,6 +802,11 @@ Cliente: %4$s</string>
 %8$s</string>
     <string name="localizacion_select_pueblo">Seleccione un pueblo</string>
     <string name="localizacion_select_calle">Seleccione una calle</string>
+    <string name="localizacion_map_layer_action">Cambiar capa del mapa</string>
+    <string name="localizacion_map_layer_normal">Capa normal</string>
+    <string name="localizacion_map_layer_satellite">Capa satélite</string>
+    <string name="localizacion_map_layer_hybrid">Capa híbrida</string>
+    <string name="localizacion_street_view_unavailable_toast">Street View no está disponible en esta ubicación.</string>
     <string name="localizacion_calles_show">Cargar calles</string>
     <string name="localizacion_calles_hide">Desmarcar calles</string>
     <string name="localizacion_calles_toast_sin_pueblo">Selecciona un pueblo antes de cargar las calles.</string>
