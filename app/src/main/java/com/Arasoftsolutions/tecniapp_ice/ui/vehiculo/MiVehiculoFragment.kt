@@ -24,6 +24,7 @@ class MiVehiculoFragment : Fragment() {
     private val binding get() = _binding!!
 
     private val viewModel: MiVehiculoViewModel by viewModels()
+    private var latestState: MiVehiculoUiState = MiVehiculoUiState()
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -39,6 +40,12 @@ class MiVehiculoFragment : Fragment() {
         binding.btnRegistrarMantenimiento.setOnClickListener {
             RegistroVehiculoDialogFragment().show(childFragmentManager, RegistroVehiculoDialogFragment.TAG)
         }
+        binding.tvKpiAlertas.setOnClickListener { mostrarHistorialAlertas() }
+        binding.tvTituloMantenimientos.setOnClickListener { mostrarHistorialMantenimientos() }
+        binding.btnRegistrarMantenimiento.setOnLongClickListener {
+            mostrarConfigIntervaloMantenimiento()
+            true
+        }
         observarEstado()
         animateCta()
     }
@@ -48,6 +55,7 @@ class MiVehiculoFragment : Fragment() {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
                     viewModel.uiState.collect { state ->
+                        latestState = state
                         val vehiculo = state.vehiculo
                         val visible = vehiculo != null
                         binding.layoutSinVehiculo.isVisible = !visible
@@ -190,6 +198,59 @@ class MiVehiculoFragment : Fragment() {
             view.findViewById<LinearProgressIndicator>(R.id.progressUso).progress = item.porcentaje
             binding.containerUsoMensual.addView(view)
         }
+    }
+
+
+
+    private fun mostrarHistorialAlertas() {
+        val state = latestState
+        if (state.vehiculo == null) return
+        val mensajes = mutableListOf<String>()
+        if (state.alertasCount <= 0) {
+            mensajes += "Sin alertas activas."
+        } else {
+            mensajes += "Alertas activas: ${state.alertasCount}"
+            state.mantenimientoCards.forEach { card ->
+                mensajes += "• ${card.titulo}: ${card.detalle}"
+            }
+        }
+        com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+            .setTitle("Historial de alertas")
+            .setItems(mensajes.toTypedArray(), null)
+            .setPositiveButton(android.R.string.ok, null)
+            .show()
+    }
+
+    private fun mostrarHistorialMantenimientos() {
+        val cards = latestState.mantenimientoCards
+        val items = if (cards.isEmpty()) {
+            arrayOf(getString(R.string.mi_vehiculo_mantenimiento_placeholder_detalle))
+        } else {
+            cards.map { "${it.titulo}: ${it.detalle}" }.toTypedArray()
+        }
+        com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+            .setTitle("Mantenimientos realizados")
+            .setItems(items, null)
+            .setPositiveButton(android.R.string.ok, null)
+            .show()
+    }
+
+    private fun mostrarConfigIntervaloMantenimiento() {
+        val view = layoutInflater.inflate(R.layout.dialog_config_mantenimiento_intervalo, null)
+        val kmInput = view.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.etIntervaloKm)
+        val horasInput = view.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.etIntervaloHoras)
+        kmInput.setText(String.format(Locale.getDefault(), "%.0f", viewModel.obtenerIntervaloMantenimientoKm()))
+        horasInput.setText(String.format(Locale.getDefault(), "%.0f", viewModel.obtenerIntervaloMantenimientoHoras()))
+        com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+            .setTitle("Configurar intervalo de mantenimiento")
+            .setView(view)
+            .setPositiveButton("Guardar") { _, _ ->
+                val km = kmInput.text?.toString()?.trim()?.replace(",", ".")?.toDoubleOrNull()
+                val horas = horasInput.text?.toString()?.trim()?.replace(",", ".")?.toDoubleOrNull()
+                viewModel.guardarIntervaloMantenimiento(km, horas)
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
     }
 
     private fun animateCta() {

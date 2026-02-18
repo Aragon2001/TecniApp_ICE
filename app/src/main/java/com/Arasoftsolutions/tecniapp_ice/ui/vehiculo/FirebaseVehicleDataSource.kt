@@ -73,6 +73,14 @@ class FirebaseVehicleDataSource {
                     proximoKm?.let { mantenimientoPayload["proximoKm"] = it }
                     observacion?.let { mantenimientoPayload["descripcion"] = it }
                     mantenimientoRef.child(vehiculoId).child(fechaIso).updateChildren(mantenimientoPayload).await()
+
+                    val resumenPayload = mutableMapOf<String, Any>(
+                        "updatedAt" to log.timestamp,
+                        "mantenimientoUltimo" to ((tipoMantenimiento ?: "Mantenimiento") + " • " + String.format(java.util.Locale.US, "%.0f", (log.km ?: 0.0))),
+                        "tipoMantenimiento" to (tipoMantenimiento ?: "General")
+                    )
+                    proximoKm?.let { resumenPayload["mantenimientoProximo"] = String.format(java.util.Locale.US, "%.0f", it) }
+                    vehiculosRef.child(vehiculoId).updateChildren(resumenPayload).await()
                 }
             }
         }

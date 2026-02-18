@@ -1,6 +1,7 @@
 package com.Arasoftsolutions.tecniapp_ice.ui.vehiculo
 
 import android.app.Application
+import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.VehiculoEntity
@@ -78,6 +79,7 @@ class MiVehiculoViewModel(app: Application) : AndroidViewModel(app) {
 
     private val formatoFecha = SimpleDateFormat("yyyy-MM-dd", Locale.ROOT)
     private val formatoMes = SimpleDateFormat("MMM", Locale.getDefault())
+    private val prefs = app.getSharedPreferences("vehiculo_settings", Context.MODE_PRIVATE)
 
     init {
         cargarDashboard()
@@ -101,8 +103,8 @@ class MiVehiculoViewModel(app: Application) : AndroidViewModel(app) {
                 .distinctUntilChanged()
                 .flatMapLatest { vehiculo ->
                     val tipo = inferirTipoVehiculo(vehiculo.tipo)
-                    repository.observarRegistrosDiarios(vehiculo.id)
-                        .combine(repository.observarMantenimientos(vehiculo.id)) { registros, mantenimientos ->
+                    repository.observarRegistrosDiarios(vehiculo.vehiculoId)
+                        .combine(repository.observarMantenimientos(vehiculo.vehiculoId)) { registros, mantenimientos ->
                             Triple(vehiculo, tipo, Pair(registros, mantenimientos))
                         }
                 }
@@ -160,9 +162,9 @@ class MiVehiculoViewModel(app: Application) : AndroidViewModel(app) {
 
             val unidad = state.unidad
             val intervalo = if (state.tipoVehiculo.usaKilometraje) {
-                INTERVALO_MANTENIMIENTO_KM
+                prefs.getFloat("intervalo_mantenimiento_km", INTERVALO_MANTENIMIENTO_KM.toFloat()).toDouble()
             } else {
-                INTERVALO_MANTENIMIENTO_HORAS
+                prefs.getFloat("intervalo_mantenimiento_horas", INTERVALO_MANTENIMIENTO_HORAS.toFloat()).toDouble()
             }
             val proximo = valor + intervalo
 
@@ -401,6 +403,20 @@ class MiVehiculoViewModel(app: Application) : AndroidViewModel(app) {
             syncAhora()
         }
     }
+
+    fun guardarIntervaloMantenimiento(km: Double?, horas: Double?) {
+        prefs.edit().apply {
+            km?.takeIf { it > 0 }?.let { putFloat("intervalo_mantenimiento_km", it.toFloat()) }
+            horas?.takeIf { it > 0 }?.let { putFloat("intervalo_mantenimiento_horas", it.toFloat()) }
+        }.apply()
+    }
+
+    fun obtenerIntervaloMantenimientoKm(): Double =
+        prefs.getFloat("intervalo_mantenimiento_km", INTERVALO_MANTENIMIENTO_KM.toFloat()).toDouble()
+
+    fun obtenerIntervaloMantenimientoHoras(): Double =
+        prefs.getFloat("intervalo_mantenimiento_horas", INTERVALO_MANTENIMIENTO_HORAS.toFloat()).toDouble()
+
     fun syncAhora() {
         viewModelScope.launch {
             _uiState.value.vehiculo?.let { vehiculoSyncService.syncVehiculo(it) }
