@@ -168,6 +168,7 @@
                 </com.google.android.material.card.MaterialCardView>
 
                 <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardKpiMantenimientos"
                     style="@style/Tecni.KpiCard"
                     android:layout_width="160dp"
                     android:layout_height="wrap_content"
@@ -206,6 +207,7 @@
                 </com.google.android.material.card.MaterialCardView>
 
                 <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardKpiAlertas"
                     style="@style/Tecni.KpiCard"
                     android:layout_width="160dp"
                     android:layout_height="wrap_content"
