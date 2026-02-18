@@ -17,6 +17,8 @@ data class VehiculoEntity(
     val tipo: String = "",
     val agencia: String = "",
     val kmActual: Double = 0.0,
+    // Compatibility alias for legacy UI flows; canonical field is kmActual
+    val kilometrajeActual: Double? = null,
     val updatedAt: Long = System.currentTimeMillis(),
     // Legacy compatibility fields (kept for current module integration)
     val placa: Long = 0,
