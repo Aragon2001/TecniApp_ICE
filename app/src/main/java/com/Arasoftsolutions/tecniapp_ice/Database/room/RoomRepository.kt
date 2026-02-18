@@ -177,12 +177,8 @@ class   RoomRepository(context: Context) {
         firebase.actualizarVehiculoCampos(placa, mapOf("registroCerrado" to cerrado))
     }
 
-    private suspend fun resolveVehiculoKey(vehiculoId: Int): String? {
-        return vehiculoDao.buscarPorId(vehiculoId)?.vehiculoId
-    }
-
     suspend fun insertarRegistroDiario(registro: RegistroDiarioEntity) = withContext(Dispatchers.IO) {
-        val vehiculoKey = resolveVehiculoKey(registro.vehiculoId) ?: registro.vehiculoId.toString()
+        val vehiculoKey = resolveVehiculoKey(registro.vehiculoId)
         val log = VehiculoLogEntity(
             logId = "diario_${vehiculoKey}_${registro.registradoEn}",
             vehiculoId = vehiculoKey,
@@ -196,7 +192,7 @@ class   RoomRepository(context: Context) {
     }
 
     suspend fun insertarRegistroMantenimiento(registro: RegistroMantenimientoEntity) = withContext(Dispatchers.IO) {
-        val vehiculoKey = resolveVehiculoKey(registro.vehiculoId) ?: registro.vehiculoId.toString()
+        val vehiculoKey = resolveVehiculoKey(registro.vehiculoId)
         val log = VehiculoLogEntity(
             logId = "mant_${vehiculoKey}_${registro.creadoEn}",
             vehiculoId = vehiculoKey,
@@ -399,20 +395,20 @@ class   RoomRepository(context: Context) {
     }
 
     suspend fun obtenerRegistroDiarioPorFecha(vehiculoId: Int, fecha: String): RegistroDiarioEntity? {
-        val vehiculoKey = resolveVehiculoKey(vehiculoId) ?: vehiculoId.toString()
+        val vehiculoKey = resolveVehiculoKey(vehiculoId)
         return vehiculoLogDao.findLastByTipo(vehiculoKey, "DIARIO")
             ?.toRegistroDiarioEntity(vehiculoId)
             ?.takeIf { it.fecha == fecha }
     }
 
     suspend fun obtenerUltimoRegistroDiario(vehiculoId: Int): RegistroDiarioEntity? {
-        val vehiculoKey = resolveVehiculoKey(vehiculoId) ?: vehiculoId.toString()
+        val vehiculoKey = resolveVehiculoKey(vehiculoId)
         return vehiculoLogDao.findLastByTipo(vehiculoKey, "DIARIO")
             ?.toRegistroDiarioEntity(vehiculoId)
     }
 
     suspend fun obtenerUltimoMantenimiento(vehiculoId: Int): RegistroMantenimientoEntity? {
-        val vehiculoKey = resolveVehiculoKey(vehiculoId) ?: vehiculoId.toString()
+        val vehiculoKey = resolveVehiculoKey(vehiculoId)
         return vehiculoLogDao.findLastByTipo(vehiculoKey, "MANTENIMIENTO")
             ?.toRegistroMantenimientoEntity(vehiculoId)
     }
@@ -887,7 +883,10 @@ class   RoomRepository(context: Context) {
 
     private suspend fun resolveVehiculoKey(vehiculoId: Int): String {
         val vehiculo = db.vehiculoDao().buscarPorId(vehiculoId)
-        return vehiculo?.placa?.toString() ?: vehiculoId.toString()
+        return vehiculo?.vehiculoId?.takeIf { it.isNotBlank() }
+            ?: vehiculo?.placaRaw?.takeIf { it.isNotBlank() }
+            ?: vehiculo?.placa?.takeIf { it != 0L }?.toString()
+            ?: vehiculoId.toString()
     }
 
     suspend fun syncSubregion(
