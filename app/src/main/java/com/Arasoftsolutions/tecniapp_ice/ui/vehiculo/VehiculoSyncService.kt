@@ -30,7 +30,7 @@ class VehiculoSyncService(
         val remoteKm = remote.pullKmActual(local.vehiculoId) ?: return
         if (remoteKm <= local.kmActual) return
 
-        repository.upsertVehiculo(local.copy(kmActual = remoteKm, kilometrajeActual = remoteKm, updatedAt = System.currentTimeMillis()))
+        repository.upsertVehiculo(local.copy(kmActual = remoteKm, updatedAt = System.currentTimeMillis()))
         repository.addLogAndUpdateKm(
             VehiculoLogEntity(
                 logId = "sync_pull_${local.vehiculoId}_${System.currentTimeMillis()}",

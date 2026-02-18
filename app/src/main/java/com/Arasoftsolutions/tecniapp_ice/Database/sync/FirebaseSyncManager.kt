@@ -218,72 +218,31 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
         val nodeName = resolveDatosGeneralesNode("vehiculos", "Vehiculos")
         val snap = dbDatosGenerales.child(nodeName).get().await()
         val filtroSubregion = subregionId?.trim()?.takeIf { it.isNotEmpty() }
+
         return snap.children.mapNotNull { child ->
-            val source = child.child("meta").takeIf { it.exists() } ?: child
-            val idValue = source.stringChild("id") ?: child.stringChild("id") ?: child.key
-            val agencia = source.stringChild("agencia")
-                ?: child.stringChild("agencia")
+            val placaNodo = child.key?.trim().orEmpty().takeIf { it.isNotEmpty() }
                 ?: return@mapNotNull null
-            val tipo = source.stringChild("tipo") ?: child.stringChild("tipo") ?: ""
-            val subregion = source.stringChild("subregion")
-                ?: source.stringChild("subregion_id")
-                ?: source.stringChild("subregionId")
-                ?: child.stringChild("subregion")
-                ?: child.stringChild("subregion_id")
-                ?: child.stringChild("subregionId")
-            val placaRaw = source.child("placa").value ?: child.child("placa").value
-            val placa = when (placaRaw) {
-                is Long -> placaRaw
-                is Int -> placaRaw.toLong()
-                is Double -> placaRaw.toLong()
-                is String -> placaRaw.trim().toLongOrNull()
-                else -> null
-            } ?: return@mapNotNull null
-            val entityId = idValue?.toIntOrNull()
-                ?: idValue?.hashCode()
-                ?: "${agencia.trim()}_${placa}".hashCode()
-            val kilometrajeCandidatos = listOfNotNull(
-                source.doubleValueAny("kilometrajeActual", "kilometraje"),
-                source.doubleValueAny("kmActual"),
-                child.doubleValueAny("kilometrajeActual", "kilometraje"),
-                child.doubleValueAny("kmActual"),
-                child.child("odometro").doubleValueAny("km_actual")
-            )
-            val kilometrajeActual = kilometrajeCandidatos.maxOrNull()
-            val orimetroActual = source.doubleValueAny("orimetroActual", "orimetro")
-                ?: child.doubleValueAny("orimetroActual", "orimetro")
-            val registroFecha = source.stringValueAny("registroFecha", "registro_fecha")
-                ?: child.stringValueAny("registroFecha", "registro_fecha")
-            val registroInicial = source.doubleValueAny("registroInicial", "registro_inicial")
-                ?: child.doubleValueAny("registroInicial", "registro_inicial")
-            val registroFinal = source.doubleValueAny("registroFinal", "registro_final")
-                ?: child.doubleValueAny("registroFinal", "registro_final")
-            val registroCerrado = source.booleanValueAny("registroCerrado", "registro_cerrado")
-                ?: child.booleanValueAny("registroCerrado", "registro_cerrado")
-                ?: false
-            val registrosDiariosJson = source.stringValueAny("registrosDiariosJson", "registros_diarios_json")
-                ?: child.stringValueAny("registrosDiariosJson", "registros_diarios_json")
-            val mantenimientoUltimo = source.stringValueAny("mantenimientoUltimo", "mantenimiento_ultimo")
-                ?: child.stringValueAny("mantenimientoUltimo", "mantenimiento_ultimo")
-            val mantenimientoProximo = source.stringValueAny("mantenimientoProximo", "mantenimiento_proximo")
-                ?: child.stringValueAny("mantenimientoProximo", "mantenimiento_proximo")
+            val placaTexto = child.stringChild("placa")?.trim().takeIf { !it.isNullOrEmpty() }
+                ?: placaNodo
+            val placaLong = placaTexto.toLongOrNull() ?: return@mapNotNull null
+            val agencia = child.stringChild("agencia")?.trim().orEmpty()
+            if (agencia.isEmpty()) return@mapNotNull null
+
+            val tipo = child.stringChild("tipo")?.trim().orEmpty()
+            val subregion = child.stringChild("subregion")?.trim()
+            val kmActual = child.doubleValueAny("kmActual") ?: 0.0
+            val registroCerrado = child.booleanValueAny("registroCerrado", "registro_cerrado") ?: false
+
             VehiculosEntity(
-                vehiculoId = placa.toString(),
-                placaRaw = placa.toString(),
-                id = entityId,
-                agencia = agencia.trim(),
-                placa = placa,
-                tipo = tipo.trim(),
-                subregion = subregion?.trim(),
+                vehiculoId = placaNodo,
+                placaRaw = placaTexto,
+                placa = placaLong,
+                id = placaTexto.hashCode(),
+                tipo = tipo,
+                subregion = subregion,
+                agencia = agencia,
                 kmActual = kmActual,
-                orimetroActual = orimetroActual,
-                registroFecha = registroFecha,
-                registroInicial = registroInicial,
-                registroFinal = registroFinal,
-                registroCerrado = registroCerrado,
-                registrosDiariosJson = registrosDiariosJson,
-                mantenimientoUltimo = mantenimientoUltimo,
-                mantenimientoProximo = mantenimientoProximo
+                registroCerrado = registroCerrado
             )
         }.filter { vehiculo ->
             filtroSubregion == null || vehiculo.subregion?.equals(filtroSubregion, ignoreCase = true) == true
@@ -570,6 +529,17 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
         referencia.child(numero).removeValue().await()
     }
 
+
+    suspend fun actualizarVehiculoCampos(vehiculoKey: String, campos: Map<String, Any?>) {
+        if (vehiculoKey.isBlank() || campos.isEmpty()) return
+        val payload = campos.toMutableMap()
+        payload["updatedAt"] = ServerValue.TIMESTAMP
+        dbDatosGenerales.child("vehiculos").child(vehiculoKey).updateChildren(payload).await()
+    }
+
+    suspend fun actualizarVehiculoKm(vehiculoKey: String, kmActual: Double) {
+        actualizarVehiculoCampos(vehiculoKey, mapOf("kmActual" to kmActual))
+    }
     suspend fun guardarVehiculoMeta(vehiculo: VehiculosEntity) {
         val root = dbDatosGenerales.child("vehiculos")
         val idKey = vehiculo.id.takeIf { it != 0 }?.toString()
@@ -577,29 +547,14 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
         val primaryKey = placaKey ?: idKey
             ?: throw IllegalArgumentException("Vehículo inválido, requiere id o placa")
 
-        val kilometrajeNormalizado = listOfNotNull(
-            vehiculo.kmActual.takeIf { it > 0.0 },
-        ).maxOrNull() ?: 0.0
-
         val payload = mapOf(
-            "meta/id" to vehiculo.id,
-            "meta/agencia" to vehiculo.agencia,
-            "meta/placa" to vehiculo.placa,
-            "meta/tipo" to vehiculo.tipo,
-            "meta/subregion" to vehiculo.subregion,
-            "meta/kilometrajeActual" to vehiculo.kmActual,
-            "meta/orimetroActual" to vehiculo.orimetroActual,
-            "meta/registroFecha" to vehiculo.registroFecha,
-            "meta/registroInicial" to vehiculo.registroInicial,
-            "meta/registroFinal" to vehiculo.registroFinal,
-            "meta/registroCerrado" to vehiculo.registroCerrado,
-            "meta/registrosDiariosJson" to vehiculo.registrosDiariosJson,
-            "meta/mantenimientoUltimo" to vehiculo.mantenimientoUltimo,
-            "meta/mantenimientoProximo" to vehiculo.mantenimientoProximo,
-
-            "meta/updatedAt" to ServerValue.TIMESTAMP,
-            "updatedAt" to ServerValue.TIMESTAMP,
-            "base/updatedAt" to ServerValue.TIMESTAMP
+            "placa" to (vehiculo.placaRaw.ifBlank { placaKey ?: primaryKey }),
+            "tipo" to vehiculo.tipo,
+            "subregion" to vehiculo.subregion,
+            "agencia" to vehiculo.agencia,
+            "kmActual" to vehiculo.kmActual,
+            "registroCerrado" to vehiculo.registroCerrado,
+            "updatedAt" to ServerValue.TIMESTAMP
         )
 
         root.child(primaryKey).updateChildren(payload).await()
@@ -778,7 +733,7 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
         vehiculoKilometrajesRoot()
             .child(placaNormalizada)
             .child(registradoEn.toString())
-            .setValue(payload)
+            .updateChildren(payload)
             .await()
     }
 
@@ -811,7 +766,7 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
         vehiculoMantenimientosRoot()
             .child(placaNormalizada)
             .child(registradoEn.toString())
-            .setValue(payload)
+            .updateChildren(payload)
             .await()
     }
 
@@ -1103,11 +1058,11 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
     }
 
     private fun vehiculoKilometrajesRoot(): DatabaseReference {
-        return dbVehiculoOps.child("vehiculo_kilometrajes")
+        return dbVehiculoOps.child("vehiculo_etm")
     }
 
     private fun vehiculoMantenimientosRoot(): DatabaseReference {
-        return dbVehiculoOps.child("vehiculo_mantenimientos")
+        return dbVehiculoOps.child("vehiculo_mantenimiento")
     }
 
     private fun parseLuminariaSnapshot(
