@@ -17,7 +17,7 @@
     <!-- Secondary (amarillo institucional REAL) -->
     <color name="md_theme_dark_secondary">#FFDD00</color>
     <color name="md_theme_dark_on_secondary">#003258</color>
-    <color name="md_theme_dark_secondary_container">#FFE17A</color>
+    <color name="md_theme_dark_secondary_container">#FEDC00</color>
     <color name="md_theme_dark_on_secondary_container">#231B00</color>
 
     <!-- Tertiary (verde institucional igual) -->
@@ -141,8 +141,8 @@
     <color name="overlay_dark">#B0000000</color>
 
     <!-- Glass -->
-    <color name="glass_light">#E6161A20</color>
-    <color name="glass_dark">#66101318</color>
+    <color name="glass_light">#161A20</color>
+    <color name="glass_dark">#101318</color>
     <color name="glass_surface">#66101318</color>
     <color name="glass_outline">#33FFFFFF</color>
     <color name="glass_chip_surface">#4D161A20</color>

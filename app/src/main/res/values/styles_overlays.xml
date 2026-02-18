@@ -391,7 +391,7 @@
         <item name="strokeWidth">@dimen/glass_stroke_width</item>
         <item name="strokeColor">@color/glass_outline</item>
 
-        <item name="cardBackgroundColor">@color/glass_surface</item>
+        <item name="cardBackgroundColor">@color/glass_light</item>
     </style>
 
     <style name="Tecni.Glass.Chip" parent="Widget.Material3.Chip.Filter">
@@ -483,5 +483,8 @@
     <style name="Tecni.Text.Meta" parent="TextAppearance.Material3.LabelSmall">
         <item name="android:textColor">?attr/colorOnSurfaceVariant</item>
     </style>
+
+
+
 
 </resources>

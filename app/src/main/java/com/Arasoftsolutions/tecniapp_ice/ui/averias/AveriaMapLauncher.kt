@@ -170,9 +170,9 @@ val wazeIntent = Intent(Intent.ACTION_VIEW, wazeUri).apply {
             ),
             MapAppOption(
                 label = "Navegar con Google Maps",
-                packageName = null, // no depende de un paquete específico
+                packageName = PACKAGE_GOOGLE_MAPS, // no depende de un paquete específico
                 intent = googleMapsNavIntent,
-                errorMessage = "No se pudo abrir en el navegador."
+                errorMessage = "No se pudo abrir en el google maps."
             )
         )
 
@@ -195,6 +195,7 @@ val wazeIntent = Intent(Intent.ACTION_VIEW, wazeUri).apply {
 ) : android.widget.ArrayAdapter<MapAppOption>(context, 0, items) {
 
     private val pm: PackageManager = context.packageManager
+
     private val fallbackIcon: Drawable =
         ContextCompat.getDrawable(context, R.drawable.ic_map_placeholder)
             ?: context.applicationInfo.loadIcon(pm)
@@ -208,19 +209,30 @@ val wazeIntent = Intent(Intent.ACTION_VIEW, wazeUri).apply {
         val iconView = view.findViewById<ImageView>(R.id.imgAppIcon)
         val labelView = view.findViewById<TextView>(R.id.tvAppName)
 
-        // 1) Intentamos resolver la activity que va a manejar el intent
-        val icon = try {
-            val resolved = option.intent.resolveActivity(pm)
-            if (resolved != null) {
-                pm.getApplicationIcon(resolved.packageName)
-            } else {
-                // 2) Si no resolvió, probamos con packageName “a mano”
-                option.packageName?.let { pkg ->
-                    pm.getApplicationIcon(pkg)
-                } ?: fallbackIcon
+        val icon = when (option.packageName) {
+
+            // 🔵 TU ICONO FIELD MAPS
+            PACKAGE_FIELD_MAPS -> {
+                ContextCompat.getDrawable(context, R.drawable.field_maps)
+                    ?: fallbackIcon
             }
-        } catch (e: Exception) {
-            fallbackIcon
+
+            // 🟡 TU ICONO WAZE
+            PACKAGE_WAZE -> {
+                ContextCompat.getDrawable(context, R.drawable.waze)
+                    ?: fallbackIcon
+            }
+
+            // 🗺 Google Maps usa icono real del sistema
+            PACKAGE_GOOGLE_MAPS -> {
+                try {
+                    pm.getApplicationIcon(PACKAGE_GOOGLE_MAPS)
+                } catch (e: Exception) {
+                    fallbackIcon
+                }
+            }
+
+            else -> fallbackIcon
         }
 
         iconView.setImageDrawable(icon)
@@ -232,5 +244,8 @@ val wazeIntent = Intent(Intent.ACTION_VIEW, wazeUri).apply {
     override fun areAllItemsEnabled(): Boolean = true
     override fun isEnabled(position: Int): Boolean = position in items.indices
 }
+
+
+
 
 }

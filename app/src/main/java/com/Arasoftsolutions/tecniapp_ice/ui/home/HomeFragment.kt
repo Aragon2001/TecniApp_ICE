@@ -265,7 +265,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
 
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                val subregion = usuarioActual.subregion?.trim()
+                val subregion = usuarioActual?.subregion?.trim()
                     ?.takeIf { it.isNotEmpty() }
                     ?: throw IllegalStateException(getString(R.string.home_sync_unknown_error))
                 synchronizer.syncSubregion(

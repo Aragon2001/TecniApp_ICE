@@ -62,7 +62,7 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
     }
 
     private val dbVehiculoOps: DatabaseReference by lazy {
-        dbLocal
+        database( "https://tecniapp-ice-datosgenerales.firebaseio.com/vehiculos")
     }
 
     private val subregionNombreCache = mutableMapOf<String, String>()
@@ -275,7 +275,7 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
                 placa = placa,
                 tipo = tipo.trim(),
                 subregion = subregion?.trim(),
-                kilometrajeActual = kilometrajeActual,
+                kmActual = kmActual,
                 orimetroActual = orimetroActual,
                 registroFecha = registroFecha,
                 registroInicial = registroInicial,
@@ -579,7 +579,6 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
 
         val kilometrajeNormalizado = listOfNotNull(
             vehiculo.kmActual.takeIf { it > 0.0 },
-            vehiculo.kilometrajeActual?.takeIf { it > 0.0 }
         ).maxOrNull() ?: 0.0
 
         val payload = mapOf(
@@ -588,7 +587,7 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
             "meta/placa" to vehiculo.placa,
             "meta/tipo" to vehiculo.tipo,
             "meta/subregion" to vehiculo.subregion,
-            "meta/kilometrajeActual" to kilometrajeNormalizado,
+            "meta/kilometrajeActual" to vehiculo.kmActual,
             "meta/orimetroActual" to vehiculo.orimetroActual,
             "meta/registroFecha" to vehiculo.registroFecha,
             "meta/registroInicial" to vehiculo.registroInicial,
@@ -597,7 +596,7 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
             "meta/registrosDiariosJson" to vehiculo.registrosDiariosJson,
             "meta/mantenimientoUltimo" to vehiculo.mantenimientoUltimo,
             "meta/mantenimientoProximo" to vehiculo.mantenimientoProximo,
-            "kilometrajeActual" to kilometrajeNormalizado,
+
             "meta/updatedAt" to ServerValue.TIMESTAMP,
             "updatedAt" to ServerValue.TIMESTAMP,
             "base/updatedAt" to ServerValue.TIMESTAMP

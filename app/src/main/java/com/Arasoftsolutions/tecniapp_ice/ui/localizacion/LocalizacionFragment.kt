@@ -997,28 +997,32 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
     }
 
     private fun getPosteMarkerIconDescriptor(): BitmapDescriptor {
-        val cached = posteMarkerIconDescriptor
-        if (cached != null) return cached
+    posteMarkerIconDescriptor?.let { return it }
 
-        val resources = requireContext().resources
+    return try {
+        val drawable = requireContext().getDrawable(R.drawable.poste)
+            ?: return BitmapDescriptorFactory.defaultMarker()
+
         val density = resources.displayMetrics.density
-        val iconSizePx = (36f * density).toInt().coerceAtLeast(24)
-        val decoded = BitmapFactory.decodeResource(resources, R.drawable.ic_poste)
+        val sizeDp = 50f // 👈 Cambiá esto si querés más pequeño o más grande
+        val sizePx = (sizeDp * density).toInt()
 
-        val descriptor = if (decoded == null) {
-            BitmapDescriptorFactory.fromResource(R.drawable.ic_poste)
-        } else {
-            val scaledBitmap = if (decoded.width == iconSizePx && decoded.height == iconSizePx) {
-                decoded
-            } else {
-                Bitmap.createScaledBitmap(decoded, iconSizePx, iconSizePx, true)
-            }
-            BitmapDescriptorFactory.fromBitmap(scaledBitmap)
-        }
+        val bitmap = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888)
+        val canvas = android.graphics.Canvas(bitmap)
 
+        drawable.setBounds(0, 0, sizePx, sizePx)
+        drawable.draw(canvas)
+
+        val descriptor = BitmapDescriptorFactory.fromBitmap(bitmap)
         posteMarkerIconDescriptor = descriptor
-        return descriptor
+        descriptor
+
+    } catch (e: Exception) {
+        Log.e("Localizacion", "Error creando icono poste", e)
+        BitmapDescriptorFactory.defaultMarker()
     }
+}
+
 
     private fun compartirLocalizacion() {
         val loc = viewModel.localizacion.value

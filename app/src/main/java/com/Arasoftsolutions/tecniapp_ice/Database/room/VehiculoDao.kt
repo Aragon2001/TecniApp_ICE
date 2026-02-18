@@ -51,14 +51,14 @@ interface VehiculoDao {
     @Query("DELETE FROM vehiculo")
     suspend fun limpiarTodo()
 
-    @Query("UPDATE vehiculo SET kmActual = :kmActual, kilometrajeActual = :kmActual, updatedAt = :updatedAt WHERE vehiculoId = :vehiculoId")
+    @Query("UPDATE vehiculo SET kmActual = :kmActual, updatedAt = :updatedAt WHERE vehiculoId = :vehiculoId")
     suspend fun actualizarKilometrajeByVehiculoId(
         vehiculoId: String,
         kmActual: Double,
         updatedAt: Long = System.currentTimeMillis()
     )
 
-    @Query("UPDATE vehiculo SET kilometrajeActual = :kilometrajeActual, kmActual = :kilometrajeActual, updatedAt = :updatedAt WHERE placa = :placa")
+    @Query("UPDATE vehiculo SET  kmActual = :kilometrajeActual, updatedAt = :updatedAt WHERE placa = :placa")
     suspend fun actualizarKilometrajeActual(placa: Long, kilometrajeActual: Double, updatedAt: Long = System.currentTimeMillis())
 
     @Query("UPDATE vehiculo SET orimetroActual = :orimetroActual, updatedAt = :updatedAt WHERE placa = :placa")
@@ -67,14 +67,14 @@ interface VehiculoDao {
     @Query("UPDATE vehiculo SET mantenimientoUltimo = :mantenimientoUltimo, mantenimientoProximo = :mantenimientoProximo, updatedAt = :updatedAt WHERE id = :vehiculoId")
     suspend fun actualizarMantenimiento(vehiculoId: Int, mantenimientoUltimo: String?, mantenimientoProximo: String?, updatedAt: Long = System.currentTimeMillis())
 
-    @Query("UPDATE vehiculo SET registroFecha = :fecha, registroInicial = :inicial, registroFinal = :final, registroCerrado = :cerrado, kilometrajeActual = :kilometrajeActual, kmActual = COALESCE(:kilometrajeActual, kmActual), orimetroActual = :orimetroActual, registrosDiariosJson = :registrosJson, updatedAt = :updatedAt WHERE id = :vehiculoId")
+    @Query("UPDATE vehiculo SET registroFecha = :fecha, registroInicial = :inicial, registroFinal = :final, registroCerrado = :cerrado, kmActual = :kmActual, orimetroActual = :orimetroActual, registrosDiariosJson = :registrosJson, updatedAt = :updatedAt WHERE id = :vehiculoId")
     suspend fun actualizarRegistroDiario(
         vehiculoId: Int,
         fecha: String,
         inicial: Double,
         final: Double?,
         cerrado: Boolean,
-        kilometrajeActual: Double?,
+        kmActual: Double?,
         orimetroActual: Double?,
         registrosJson: String?,
         updatedAt: Long = System.currentTimeMillis()

@@ -29,7 +29,7 @@
             android:layout_gravity="top"
             app:cardBackgroundColor="@color/glass_light"
             app:cardCornerRadius="16dp"
-            app:cardElevation="0dp"
+            app:cardElevation="4dp"
 
             app:strokeWidth="1dp">
 
@@ -388,7 +388,7 @@
                 android:layout_width="@dimen/street_view_handle_width"
                 android:layout_height="@dimen/street_view_handle_height"
                 android:layout_marginTop="12dp"
-                android:background="@drawable/bg_bottom_sheet_handle"
+
                 app:layout_constraintTop_toTopOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent" />

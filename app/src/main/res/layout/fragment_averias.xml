@@ -12,7 +12,7 @@
         android:id="@+id/appBarLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="?android:colorBackground"
+        android:background="@color/bg_light"
         app:elevation="0dp">
 
         <com.google.android.material.appbar.CollapsingToolbarLayout
@@ -263,7 +263,7 @@
         android:layout_gravity="bottom|end"
         android:layout_margin="16dp"
         android:src="@drawable/ic_filter_list"
-        android:tint="@android:color/white"
+        android:tint="@color/background"
         app:backgroundTint="@color/ice_blue" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

@@ -5,13 +5,14 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginHorizontal="12dp"
-    android:layout_marginVertical="6dp"
-    app:cardBackgroundColor="@color/white"
-    app:cardCornerRadius="20dp"
-    app:cardElevation="2dp"
+    android:layout_marginHorizontal="4dp"
+    android:layout_marginVertical="4dp"
+    app:cardBackgroundColor="@color/glass_light"
+    app:strokeColor="@color/glass_stroke"
+    app:cardCornerRadius="24dp"
+    app:cardElevation="4dp"
     app:cardUseCompatPadding="true"
-    app:strokeColor="?attr/colorOutline"
+
     app:strokeWidth="1dp">
 
     <androidx.constraintlayout.widget.ConstraintLayout
@@ -26,7 +27,7 @@
             android:layout_width="4dp"
             android:layout_height="0dp"
             android:alpha="0.85"
-            android:background="@color/ice_cyan"
+            android:background="@color/chip_pendiente"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent" />
