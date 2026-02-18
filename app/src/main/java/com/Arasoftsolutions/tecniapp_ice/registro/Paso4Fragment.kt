@@ -375,12 +375,20 @@ class Paso4Fragment : Fragment() {
                 if (!isAdded) return
                 vehicles = mutableListOf("Seleccione un Vehículo")
                 for (snap in ds.children) {
+                    val source = snap.child("meta").takeIf { it.exists() } ?: snap
                     val agencyValues = listOfNotNull(
+    source.child("agencia").getValue(String::class.java),
+    source.child("agencia_id").getValue(String::class.java),
+    source.child("agenciaId").getValue(String::class.java),
+
+    // ✅ extras comunes en datasets reales
+    source.child("agenciaNombre").getValue(String::class.java),
+    source.child("agencia_nombre").getValue(String::class.java),
+    source.child("agenciaTag").getValue(String::class.java),
+    source.child("agencia_tag").getValue(String::class.java),
     snap.child("agencia").getValue(String::class.java),
     snap.child("agencia_id").getValue(String::class.java),
     snap.child("agenciaId").getValue(String::class.java),
-
-    // ✅ extras comunes en datasets reales
     snap.child("agenciaNombre").getValue(String::class.java),
     snap.child("agencia_nombre").getValue(String::class.java),
     snap.child("agenciaTag").getValue(String::class.java),
@@ -392,7 +400,10 @@ class Paso4Fragment : Fragment() {
 
                     if (!vehicleMatchesAgency(agencyValues, agency)) continue
 
-                    val subregionValue = snap.child("subregion").getValue(String::class.java)
+                    val subregionValue = source.child("subregion").getValue(String::class.java)
+                        ?: source.child("subregion_id").getValue(String::class.java)
+                        ?: source.child("subregionId").getValue(String::class.java)
+                        ?: snap.child("subregion").getValue(String::class.java)
                         ?: snap.child("subregion_id").getValue(String::class.java)
                         ?: snap.child("subregionId").getValue(String::class.java)
                     val matchesSubregion = selectedSubregionItem?.let { sub ->
@@ -404,7 +415,9 @@ class Paso4Fragment : Fragment() {
 
                     if (!matchesSubregion) continue
 
-                    val placa = snap.child("placa").value?.toString()?.trim()
+                    val placa = (source.child("placa").value ?: snap.child("placa").value)
+                        ?.toString()
+                        ?.trim()
                     if (!placa.isNullOrBlank()) {
                         vehicles.add(placa)
                     }
