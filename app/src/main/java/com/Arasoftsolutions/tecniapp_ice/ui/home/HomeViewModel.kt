@@ -173,7 +173,8 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
         vehiculoAsignado
             .map { vehiculo ->
                 val hoy = LocalDate.now().format(formatoFechaEtm)
-                vehiculo?.registroFecha == hoy && vehiculo.registroInicial != null
+                vehiculo?.registroFecha == hoy && vehiculo
+                    ?.registroInicial != null
             }
             .stateIn(viewModelScope, sharing, false)
 
@@ -194,7 +195,7 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
             .stateIn(viewModelScope, sharing, TipoVehiculo.LIVIANO)
 
     val valorEtmActual: StateFlow<Double?> =
-        combine(vehiculoAsignado, tipoVehiculo) { vehiculo, tipo ->
+        combine(vehiculoAsignado,tipoVehiculo) { vehiculo, tipo ->
             if (vehiculo == null) return@combine null
             if (tipo.usaKilometraje) {
                 vehiculo.kmActual.takeIf { it > 0.0 } ?: vehiculo.kilometrajeActual

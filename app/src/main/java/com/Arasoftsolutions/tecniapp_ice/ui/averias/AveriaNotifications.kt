@@ -18,6 +18,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+
 object AveriaNotifications {
     const val CHANNEL_ID = "averias_channel"
 
@@ -86,25 +87,7 @@ object AveriaNotifications {
             .build()
     }
 
-    fun mapAction(
-        context: Context,
-        lat: Double?,
-        lng: Double?,
-        label: String?,
-        requestCode: Int
-    ): NotificationCompat.Action? {
-        if (lat == null || lng == null) return null
-        if (lat == 0.0 && lng == 0.0) return null
-        val safeLabel = label?.takeIf { it.isNotBlank() }
-            ?: context.getString(R.string.averia_notificacion_map_label_default)
-        val pendingIntent = AveriaMapLauncher.pendingIntent(context, lat, lng, safeLabel, requestCode)
-            ?: return null
-        return NotificationCompat.Action.Builder(
-            R.drawable.ic_map_placeholder,
-            context.getString(R.string.averia_notificacion_map_action),
-            pendingIntent
-        ).build()
-    }
+
 
     fun formatDateTime(millis: Long?): String? {
         if (millis == null || millis <= 0) return null

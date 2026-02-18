@@ -58,19 +58,20 @@
             android:layout_gravity="center"
             android:contentDescription="@string/map_picker_marker_content_description"
             android:src="@drawable/ic_location"
-            android:tint="@color/error_500" />
+            app:tint="@color/error_500" />
     </FrameLayout>
 
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/coordinatesCard"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
         android:layout_marginBottom="16dp"
         android:padding="16dp"
-        app:cardBackgroundColor="?attr/colorSurfaceVariant"
-        app:cardCornerRadius="20dp"
-        app:cardElevation="0dp"
+        android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="1dp"
+                android:layout_marginTop="24dp"
+                app:cardBackgroundColor="@color/glass_light"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="4dp"
         app:layout_constraintBottom_toTopOf="@+id/actionButtons"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
@@ -90,7 +91,7 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
+                android:layout_marginTop="16dp"
                 android:orientation="vertical">
 
                 <LinearLayout
@@ -160,7 +161,7 @@
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnCancelar"
-            style="@style/Tecni.Button.Text"
+            style="@style/Tecni.Button.Outlined.Danger"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/admin_confirm_cancel"

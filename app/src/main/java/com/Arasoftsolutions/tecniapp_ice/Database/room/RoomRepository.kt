@@ -95,7 +95,7 @@ class   RoomRepository(context: Context) {
     fun observarUltimoKilometraje(placa: String): Flow<Double?> {
         val placaLong = VehiculoPlacaUtils.parsePlacaLong(placa) ?: return flowOf(null)
         return vehiculoDao.observarPorPlaca(placaLong)
-            .map { it?.kmActual?.takeIf { km -> km > 0.0 } ?: it?.kilometrajeActual }
+            .map { it?.kmActual?.takeIf { km -> km > 0.0 } ?: it?.kmActual }
     }
 
     fun observarTodosLosPueblos(): Flow<List<PueblosEntity>> = db.puebloDao().observarTodos()
@@ -188,9 +188,9 @@ class   RoomRepository(context: Context) {
             if (log.km != null) {
                 val vehiculo = vehiculoDao.buscarPorVehiculoId(log.vehiculoId)
                 if (vehiculo != null) {
-                    val actual = vehiculo.kmActual.takeIf { it > 0.0 } ?: (vehiculo.kilometrajeActual ?: 0.0)
+                    val actual = vehiculo.kmActual.takeIf { it > 0.0 } ?: (vehiculo.kmActual ?: 0.0)
                     val nuevoKm = maxOf(actual, log.km)
-                    vehiculoDao.upsertVehiculo(vehiculo.copy(kmActual = nuevoKm, kilometrajeActual = nuevoKm, updatedAt = System.currentTimeMillis()))
+                    vehiculoDao.upsertVehiculo(vehiculo.copy(kmActual = nuevoKm, updatedAt = System.currentTimeMillis()))
                 }
             }
         }
@@ -217,7 +217,7 @@ class   RoomRepository(context: Context) {
         usaKilometraje: Boolean = true
     ) = withContext(Dispatchers.IO) {
         val vehiculo = vehiculoDao.buscarPorId(vehiculoId) ?: return@withContext
-        val kilometrajeBase = vehiculo.kmActual.takeIf { it > 0.0 } ?: (vehiculo.kilometrajeActual ?: 0.0)
+        val kilometrajeBase = vehiculo.kmActual.takeIf { it > 0.0 } ?: (vehiculo.kmActual ?: 0.0)
         val orimetroBase = vehiculo.orimetroActual ?: 0.0
         val nuevoKilometraje = if (usaKilometraje && valorActual != null) {
             maxOf(kilometrajeBase, valorActual)
@@ -234,7 +234,6 @@ class   RoomRepository(context: Context) {
             mantenimientoUltimo = mantenimientoUltimo,
             mantenimientoProximo = mantenimientoProximo,
             kmActual = nuevoKilometraje,
-            kilometrajeActual = nuevoKilometraje,
             orimetroActual = nuevoOrimetro,
             updatedAt = System.currentTimeMillis()
         )
@@ -258,7 +257,7 @@ class   RoomRepository(context: Context) {
             registroInicial = inicial,
             registroFinal = final,
             registroCerrado = cerrado,
-            kilometrajeActual = kilometrajeActual ?: vehiculo.kilometrajeActual,
+            kmActual = kilometrajeActual ?: vehiculo.kmActual,
             orimetroActual = orimetroActual ?: vehiculo.orimetroActual,
             registrosDiariosJson = registrosJson
         )
@@ -1010,7 +1009,7 @@ class   RoomRepository(context: Context) {
                 remoto
             } else {
                 remoto.copy(
-                    kilometrajeActual = remoto.kilometrajeActual ?: local.kilometrajeActual,
+                    kmActual = remoto.kmActual ?: local.kmActual,
                     orimetroActual = remoto.orimetroActual ?: local.orimetroActual,
                     registroFecha = remoto.registroFecha ?: local.registroFecha,
                     registroInicial = remoto.registroInicial ?: local.registroInicial,
@@ -1050,7 +1049,7 @@ class   RoomRepository(context: Context) {
             placa = if (base.placa != 0L) base.placa else otro.placa,
             tipo = base.tipo.ifBlank { otro.tipo },
             subregion = base.subregion ?: otro.subregion,
-            kilometrajeActual = base.kilometrajeActual ?: otro.kilometrajeActual,
+            kmActual = base.kmActual ?: otro.kmActual,
             orimetroActual = base.orimetroActual ?: otro.orimetroActual,
             registroFecha = base.registroFecha ?: otro.registroFecha,
             registroInicial = base.registroInicial ?: otro.registroInicial,

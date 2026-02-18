@@ -15,7 +15,7 @@
     <!-- Secondary (warning/acciones secundarias institucionales) -->
     <color name="md_theme_light_secondary">#705D00</color>
     <color name="md_theme_light_on_secondary">#FFFFFF</color>
-    <color name="md_theme_light_secondary_container">#FFE17A</color>
+    <color name="md_theme_light_secondary_container">#FEDC00</color>
     <color name="md_theme_light_on_secondary_container">#231B00</color>
 
     <!-- Tertiary (success/estado ok) -->
@@ -92,7 +92,7 @@
     <color name="error_500">#D32F2F</color>
 
     <color name="success_green">#2EBE7E</color>
-    <color name="warning_yellow">#FFC857</color>
+    <color name="warning_yellow">#F5D400</color>
     <color name="danger_red">#E5484D</color>
 
     <!-- Texto y grises -->
@@ -109,11 +109,14 @@
          Glass / Transparencias (tu estilo “glass”)
          Nota: en night se redefine glass_dark, glass_outline, etc.
          ========================================================= -->
-    <color name="glass_light">#E6FFFFFF</color>
+    <color name="glass_light">#FFFFFF</color>
     <color name="glass_dark">#4D1C1F26</color>
     <color name="glass_surface">#E6FFFFFF</color>
     <color name="glass_outline">#26FFFFFF</color>
     <color name="glass_chip_surface">#D9FFFFFF</color>
+    <color name="glass_stroke_dark">#FFFFFF</color> <!-- night -->
+<color name="glass_stroke">#22000000</color> <!-- day -->
+
 
     <!-- =========================================================
          Chips / Estados de Averías (colores directos)

@@ -41,7 +41,7 @@
 
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardHeader"
-                style="@style/Tecni.Card"
+                style="@style/Tecni.Glass.Card"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp">
@@ -138,7 +138,7 @@
 
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardFiltro"
-                style="@style/Tecni.Card"
+                style="@style/Tecni.Glass.Card"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp">
@@ -245,7 +245,60 @@
                             app:iconPadding="8dp"
                             app:iconTint="@color/ice_blue_dark"
                             tools:visibility="visible" />
+
                     </LinearLayout>
+    <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:scrollbars="none"
+                android:fillViewport="true">
+
+                <com.google.android.material.button.MaterialButtonToggleGroup
+                    android:id="@+id/tabGroupReportes"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    app:singleSelection="true"
+                    app:selectionRequired="true">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/tabResumen"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/reportes_tab_resumen" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/tabOperacion"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/reportes_tab_operacion" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/tabMateriales"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/reportes_tab_materiales" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/tabInventario"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/reportes_tab_inventario" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/tabBitacora"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/reportes_tab_bitacora" />
+
+                </com.google.android.material.button.MaterialButtonToggleGroup>
+
+            </HorizontalScrollView>
 
                     <LinearLayout
                         android:layout_width="match_parent"
@@ -280,58 +333,10 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <com.google.android.material.button.MaterialButtonToggleGroup
-                android:id="@+id/tabGroupReportes"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                app:singleSelection="true"
-                app:selectionRequired="true">
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/tabResumen"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="@string/reportes_tab_resumen" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/tabOperacion"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="@string/reportes_tab_operacion" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/tabMateriales"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="@string/reportes_tab_materiales" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/tabInventario"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="@string/reportes_tab_inventario" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/tabBitacora"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="@string/reportes_tab_bitacora" />
-            </com.google.android.material.button.MaterialButtonToggleGroup>
 
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardResumen"
-                style="@style/Tecni.Card"
+                style="@style/Tecni.Glass.Card"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp">
@@ -495,7 +500,7 @@
 
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardMiResumen"
-                style="@style/Tecni.Card"
+                style="@style/Tecni.Glass.Card"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"

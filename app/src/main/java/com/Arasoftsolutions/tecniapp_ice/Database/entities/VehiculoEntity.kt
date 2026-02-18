@@ -20,7 +20,7 @@ data class VehiculoEntity(
     val updatedAt: Long = System.currentTimeMillis(),
     // Legacy compatibility fields (kept for current module integration)
     val placa: Long = 0,
-    val kilometrajeActual: Double? = kmActual,
+
     val orimetroActual: Double? = null,
     val id: Int = 0,
     val registroFecha: String? = null,
@@ -31,8 +31,7 @@ data class VehiculoEntity(
     val mantenimientoUltimo: String? = null,
     val mantenimientoProximo: String? = null,
 ) {
-    @Ignore
-    val kmActualNormalizado: Double = kmActual.takeIf { it > 0.0 } ?: (kilometrajeActual ?: 0.0)
+
 
     constructor() : this(
         vehiculoId = "",

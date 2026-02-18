@@ -37,9 +37,8 @@
                 android:layout_marginTop="8dp"
                 android:layout_marginBottom="12dp"
                 app:cardCornerRadius="24dp"
-                app:cardElevation="0dp"
-                app:cardBackgroundColor="?attr/colorSurface"
-                app:strokeColor="?attr/colorOutlineVariant"
+                app:cardElevation="4dp"
+                app:cardBackgroundColor="@color/glass_light"
                 app:strokeWidth="1dp">
 
                 <LinearLayout
@@ -121,9 +120,9 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 app:cardCornerRadius="24dp"
-                app:cardElevation="0dp"
-                app:cardBackgroundColor="?attr/colorSurface"
-                app:strokeColor="?attr/colorOutlineVariant"
+                app:cardElevation="4dp"
+                app:cardBackgroundColor="@color/glass_light"
+
                 app:strokeWidth="1dp">
 
                 <LinearLayout
@@ -135,7 +134,7 @@
                     <com.google.android.material.textview.MaterialTextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="@string/profile_section_assignment"
+                        android:text="Datos"
                         android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
                         android:textColor="?attr/colorOnSurface" />
 
@@ -148,7 +147,7 @@
 
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/tilRegion"
-                        style="@style/Widget.Material3.TextInputLayout.FilledBox.ExposedDropdownMenu"
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:hint="@string/profile_region_label"
@@ -157,7 +156,7 @@
                         app:boxCornerRadiusTopEnd="18dp"
                         app:boxCornerRadiusBottomStart="18dp"
                         app:boxCornerRadiusBottomEnd="18dp"
-                        app:startIconDrawable="@drawable/ic_location"
+                        app:startIconDrawable="@drawable/map_24px"
                         app:startIconTint="?attr/colorOnSurfaceVariant">
 
                         <com.google.android.material.textfield.MaterialAutoCompleteTextView
@@ -175,7 +174,7 @@
 
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/tilSubregion"
-                        style="@style/Widget.Material3.TextInputLayout.FilledBox.ExposedDropdownMenu"
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="16dp"
@@ -203,7 +202,7 @@
 
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/tilAgency"
-                        style="@style/Widget.Material3.TextInputLayout.FilledBox.ExposedDropdownMenu"
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="16dp"
@@ -213,7 +212,7 @@
                         app:boxCornerRadiusTopEnd="18dp"
                         app:boxCornerRadiusBottomStart="18dp"
                         app:boxCornerRadiusBottomEnd="18dp"
-                        app:startIconDrawable="@drawable/ic_location"
+                        app:startIconDrawable="@drawable/ic_menu_home"
                         app:startIconTint="?attr/colorOnSurfaceVariant">
 
                         <com.google.android.material.textfield.MaterialAutoCompleteTextView
@@ -231,7 +230,7 @@
 
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/tilVehicle"
-                        style="@style/Widget.Material3.TextInputLayout.FilledBox.ExposedDropdownMenu"
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="16dp"
@@ -259,7 +258,7 @@
 
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/tilPhone"
-                        style="@style/Widget.Material3.TextInputLayout.FilledBox"
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="16dp"
@@ -302,7 +301,7 @@
 
                         <com.google.android.material.textfield.TextInputLayout
                             android:id="@+id/tilPassword"
-                            style="@style/Widget.Material3.TextInputLayout.FilledBox"
+                            style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:hint="@string/profile_password_hint"
@@ -326,7 +325,7 @@
 
                         <com.google.android.material.textfield.TextInputLayout
                             android:id="@+id/tilConfirmPassword"
-                            style="@style/Widget.Material3.TextInputLayout.FilledBox"
+                            style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="16dp"
