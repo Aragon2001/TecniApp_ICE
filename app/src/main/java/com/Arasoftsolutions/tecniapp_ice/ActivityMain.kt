@@ -135,7 +135,9 @@ class ActivityMain : AppCompatActivity() {
                 binding.drawerLayout.closeDrawer(GravityCompat.START)
                 return@setNavigationItemSelectedListener true
             }
-            navController.navigate(item.itemId, null, buildDrawerNavOptions(navController.graph.startDestinationId))
+            validarEtmAntesDeNavegar(item.itemId) {
+                navController.navigate(item.itemId, null, buildDrawerNavOptions(navController.graph.startDestinationId))
+            }
             binding.drawerLayout.closeDrawer(GravityCompat.START)
             true
         }
@@ -145,6 +147,44 @@ class ActivityMain : AppCompatActivity() {
                 adminPrivilegesEnabled = enabled
                 applyAdminMenuVisibility()
             }
+        }
+    }
+
+
+    private fun validarEtmAntesDeNavegar(destinationId: Int, onContinue: () -> Unit) {
+        val requiereEtm = destinationId == R.id.nav_averias ||
+            destinationId == R.id.nav_luminarias ||
+            destinationId == R.id.nav_programacion
+        if (!requiereEtm) {
+            onContinue()
+            return
+        }
+        lifecycleScope.launch {
+            val uid = auth.currentUser?.uid ?: run {
+                onContinue()
+                return@launch
+            }
+            val usuario = repository.obtenerUsuario(uid)
+            val placa = usuario?.placaVehiculo?.trim().orEmpty()
+            val placaLong = com.Arasoftsolutions.tecniapp_ice.ui.vehiculo.VehiculoPlacaUtils.parsePlacaLong(placa)
+            val vehiculo = placaLong?.let { repository.obtenerVehiculoPorPlaca(it) }
+            if (vehiculo != null && !vehiculo.registroCerrado) {
+                MaterialAlertDialogBuilder(this@ActivityMain)
+                    .setTitle(getString(R.string.mi_vehiculo_titulo))
+                    .setMessage("Debes registrar y cerrar el eTM del vehículo antes de abrir este módulo.")
+                    .setPositiveButton("Ir a Mi vehículo") { _, _ ->
+                        val navController = findNavController(R.id.nav_host_fragment_content_main)
+                        navController.navigate(
+                            R.id.nav_mi_vehiculo,
+                            null,
+                            buildDrawerNavOptions(navController.graph.startDestinationId)
+                        )
+                    }
+                    .setNegativeButton(android.R.string.cancel, null)
+                    .show()
+                return@launch
+            }
+            onContinue()
         }
     }
 
