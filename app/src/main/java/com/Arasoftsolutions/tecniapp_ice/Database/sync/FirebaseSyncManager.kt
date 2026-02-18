@@ -7,6 +7,7 @@ import com.Arasoftsolutions.tecniapp_ice.ui.vehiculo.VehiculoPlacaUtils
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.Query
 import com.google.firebase.database.ServerValue
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.ChildEventListener
@@ -67,8 +68,13 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
     private val subregionNombreCache = mutableMapOf<String, String>()
     private val inventarioChildListeners = mutableMapOf<ValueEventListener, ChildEventListener>()
     private val luminariasChildListeners = mutableMapOf<ValueEventListener, ChildEventListener>()
-    private val inventarioChildRefs = mutableMapOf<ValueEventListener, DatabaseReference>()
-    private val luminariasChildRefs = mutableMapOf<ValueEventListener, DatabaseReference>()
+    private val inventarioChildRefs = mutableMapOf<ValueEventListener, Query>()
+    private val luminariasChildRefs = mutableMapOf<ValueEventListener, Query>()
+
+    private companion object {
+        private const val MAX_INVENTARIO_RT_ITEMS = 400
+        private const val MAX_LUMINARIAS_RT_ITEMS = 500
+    }
 
     private fun database(url: String): DatabaseReference {
         return runCatching { FirebaseDatabase.getInstance(url).reference }
@@ -591,7 +597,13 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
             "meta/registrosDiariosJson" to vehiculo.registrosDiariosJson,
             "meta/mantenimientoUltimo" to vehiculo.mantenimientoUltimo,
             "meta/mantenimientoProximo" to vehiculo.mantenimientoProximo,
-            "meta/updatedAt" to ServerValue.TIMESTAMP
+            "kmActual" to kilometrajeNormalizado,
+            "kilometrajeActual" to kilometrajeNormalizado,
+            "base/kmActual" to kilometrajeNormalizado,
+            "base/kilometrajeActual" to kilometrajeNormalizado,
+            "meta/updatedAt" to ServerValue.TIMESTAMP,
+            "updatedAt" to ServerValue.TIMESTAMP,
+            "base/updatedAt" to ServerValue.TIMESTAMP
         )
 
         root.child(primaryKey).updateChildren(payload).await()
@@ -820,7 +832,9 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
             override fun onCancelled(error: DatabaseError) = Unit
         }
 
-        val target = dbInventario.child(vehiculoKey.trim())
+        val target = dbInventario
+            .child(vehiculoKey.trim())
+            .limitToLast(MAX_INVENTARIO_RT_ITEMS)
         val vehiculoId = vehiculoKey.toIntOrNull() ?: -1
 
         val childListener = object : ChildEventListener {
@@ -884,7 +898,9 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
             override fun onCancelled(error: DatabaseError) = Unit
         }
 
-        val target = dbLuminarias.child(agenciaKey.trim())
+        val target = dbLuminarias
+            .child(agenciaKey.trim())
+            .limitToLast(MAX_LUMINARIAS_RT_ITEMS)
 
         val childListener = object : ChildEventListener {
             override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {

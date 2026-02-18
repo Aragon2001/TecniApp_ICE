@@ -2,6 +2,7 @@
 
 const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
+const { onValueCreated } = require("firebase-functions/v2/database");
 const { defineSecret } = require("firebase-functions/params");
 require("firebase-admin/database");
 const admin = require("firebase-admin");
@@ -684,3 +685,44 @@ exports.sendReport = onCall(
     return { success: true };
   }
 );
+
+
+exports.notifyProgramacionAssigned = onValueCreated({
+  region: "us-central1",
+  ref: "/programaciones/{subregion}/{vehiculoId}/{programacionId}",
+  instance: "tecniapp-ice-programacion-default-rtdb"
+}, async (event) => {
+  const data = event.data?.val();
+  if (!data) return;
+
+  const tecnicoId = String(data.tecnicoId || "").trim();
+  if (!tecnicoId) return;
+
+  const userSnap = await dbUsers.ref("usuarios").child(tecnicoId).get();
+  const user = userSnap.val() || {};
+  const tokens = extractUserTokens(user);
+  if (!tokens.length) return;
+
+  const actividad = String(data.actividad || "Nueva tarea");
+  const placa = String(data.placa || data.vehiculoId || "");
+
+  const msg = {
+    notification: {
+      title: "Nueva tarea asignada",
+      body: `Actividad: ${actividad} · Vehículo: ${placa}`
+    },
+    data: {
+      type: "PROGRAMACION_ASSIGNED",
+      destination: "nav_programacion",
+      programacionId: String(data.programacionId || event.params.programacionId || "")
+    },
+    tokens
+  };
+
+  try {
+    const r = await admin.messaging().sendEachForMulticast(msg);
+    console.log("notifyProgramacionAssigned sent", r.successCount, "of", tokens.length);
+  } catch (e) {
+    console.error("notifyProgramacionAssigned error", e);
+  }
+});

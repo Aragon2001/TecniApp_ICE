@@ -31,6 +31,9 @@ interface UsuarioDao {
     @Query("DELETE FROM usuarios")
     suspend fun clear()
 
+    @Query("SELECT * FROM usuarios WHERE LOWER(COALESCE(rol,'')) LIKE '%tecnico%' OR LOWER(COALESCE(rol,'')) LIKE '%técnico%' ORDER BY nombre")
+    suspend fun searchTecnicos(): List<UserEntity>
+
     @Query("SELECT * FROM usuarios WHERE uid = :uid LIMIT 1")
     suspend fun get(uid: String): UserEntity?
 
