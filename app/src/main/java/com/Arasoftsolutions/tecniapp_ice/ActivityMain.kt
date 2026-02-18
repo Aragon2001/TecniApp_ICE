@@ -27,6 +27,7 @@ import com.Arasoftsolutions.tecniapp_ice.Database.entities.apellidosCompletos
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
 import com.Arasoftsolutions.tecniapp_ice.databinding.ActivityMainBinding
 import com.Arasoftsolutions.tecniapp_ice.databinding.NavHeaderMainBinding
+import com.Arasoftsolutions.tecniapp_ice.notifications.VehiculoNotifications
 import com.Arasoftsolutions.tecniapp_ice.preferences.DataStoreManager
 import com.Arasoftsolutions.tecniapp_ice.permissions.PermissionInitializer
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasSyncWorker
@@ -148,8 +149,28 @@ class ActivityMain : AppCompatActivity() {
                 applyAdminMenuVisibility()
             }
         }
+
+        handleIntentNavigation(intent)
     }
 
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleIntentNavigation(intent)
+    }
+
+    private fun handleIntentNavigation(intent: Intent?) {
+        if (intent?.getBooleanExtra(VehiculoNotifications.EXTRA_OPEN_MIVEHICULO, false) != true) return
+        intent.removeExtra(VehiculoNotifications.EXTRA_OPEN_MIVEHICULO)
+        val navController = findNavController(R.id.nav_host_fragment_content_main)
+        if (navController.currentDestination?.id != R.id.nav_mi_vehiculo) {
+            navController.navigate(
+                R.id.nav_mi_vehiculo,
+                null,
+                buildDrawerNavOptions(navController.graph.startDestinationId)
+            )
+        }
+    }
 
     private fun validarEtmAntesDeNavegar(destinationId: Int, onContinue: () -> Unit) {
         val requiereEtm = destinationId == R.id.nav_averias ||
