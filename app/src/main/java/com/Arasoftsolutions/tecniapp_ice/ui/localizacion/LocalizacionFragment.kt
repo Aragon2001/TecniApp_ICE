@@ -26,6 +26,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.FrameLayout
+import android.widget.ImageView
 import android.widget.ArrayAdapter
 import android.widget.TextView
 import android.widget.Toast
@@ -95,8 +96,10 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
     private val CLAVE_STREET_VIEW_BUNDLE = "ClaveStreetViewBundle"
     private var streetViewPanoramaView: StreetViewPanoramaView? = null
     private var streetViewContainer: FrameLayout? = null
+    private var streetViewDynamicMarker: ImageView? = null
     private var streetViewPanorama: StreetViewPanorama? = null
     private var streetViewHasPanorama = false
+    private var streetViewLoading = false
     private var streetViewMode = StreetViewMode.HIDDEN
     private var streetViewBehavior: BottomSheetBehavior<*>? = null
     private var pendingStreetViewLatLng: LatLng? = null
@@ -503,7 +506,7 @@ private fun attachDynamicStreetMarker(
 
         val visible = delta < 30f
 
-        val markerView = binding.streetViewDynamicMarker
+        val markerView = streetViewDynamicMarker ?: return@setOnStreetViewPanoramaCameraChangeListener
 
         if (visible && !markerView.isVisible) {
             markerView.alpha = 0f
@@ -538,6 +541,7 @@ private fun attachDynamicStreetMarker(
             val inflated = binding.streetViewStub.inflate()
             streetViewContainer = inflated as? FrameLayout
             streetViewPanoramaView = streetViewContainer?.findViewById(R.id.streetViewPanorama)
+            streetViewDynamicMarker = streetViewContainer?.findViewById(R.id.streetViewDynamicMarker)
         }
 
         val panoramaView = streetViewPanoramaView ?: return
@@ -557,6 +561,7 @@ private fun attachDynamicStreetMarker(
                             pendingStreetUnavailableCheck?.let { handler.removeCallbacks(it) }
                             val unavailableCheck = Runnable {
                                 if (!isAdded || streetViewHasPanorama) return@Runnable
+                                streetViewLoading = false
                                 streetViewUnavailableTarget = streetViewRequestedTarget
                                 binding.actionStreetView.isEnabled = false
                                 Snackbar.make(
@@ -578,6 +583,7 @@ private fun attachDynamicStreetMarker(
                         pendingStreetUnavailableCheck?.let { handler.removeCallbacks(it) }
                         pendingStreetUnavailableCheck = null
                         streetViewHasPanorama = true
+                        streetViewLoading = false
                         streetViewUnavailableTarget = null
                         binding.actionStreetView.isEnabled = true
                         streetViewContainer?.isVisible = true
@@ -585,6 +591,7 @@ private fun attachDynamicStreetMarker(
                         actualizarStreetViewUi()
                     }
                 }
+               streetViewLoading = true
                panorama.setPosition(target)
 
 val camera = StreetViewPanoramaCamera.Builder()
@@ -621,6 +628,7 @@ attachDynamicStreetMarker(panorama, target)
 
         streetViewPanorama = null
         streetViewHasPanorama = false
+        streetViewLoading = false
         pendingStreetUnavailableCheck?.let { handler.removeCallbacks(it) }
         pendingStreetUnavailableCheck = null
 
@@ -644,13 +652,16 @@ attachDynamicStreetMarker(panorama, target)
     }
 
     private fun actualizarStreetViewEstadoDesdeSheet() {
+        val target = getStreetViewTargetOrNull()
+        val unavailableForTarget = target != null && streetViewUnavailableTarget.sameCoordinateAs(target)
         val estado = when {
             streetViewMode == StreetViewMode.HIDDEN -> LocalizacionViewModel.StreetViewState.CLOSED
+            streetViewLoading -> LocalizacionViewModel.StreetViewState.LOADING
             streetViewHasPanorama && streetViewMode == StreetViewMode.EXPANDED ->
                 LocalizacionViewModel.StreetViewState.FULLSCREEN
             streetViewHasPanorama && streetViewMode == StreetViewMode.COLLAPSED ->
                 LocalizacionViewModel.StreetViewState.MINIMIZED
-            streetViewHasPanorama.not() -> LocalizacionViewModel.StreetViewState.UNAVAILABLE
+            unavailableForTarget -> LocalizacionViewModel.StreetViewState.UNAVAILABLE
             else -> LocalizacionViewModel.StreetViewState.LOADING
         }
         viewModel.actualizarStreetViewEstado(estado)
@@ -683,6 +694,7 @@ attachDynamicStreetMarker(panorama, target)
         binding.actionCenter.isEnabled = false
         binding.actionNavigate.isEnabled = false
         streetViewHasPanorama = false
+        streetViewLoading = false
         pendingStreetViewLatLng = null
         cerrarStreetView()
     }
@@ -1363,12 +1375,11 @@ attachDynamicStreetMarker(panorama, target)
         if (streetViewMode == StreetViewMode.HIDDEN || !streetViewCreated) return
         val panorama = streetViewPanorama ?: return
         val target = getStreetViewTargetOrNull() ?: return
+        streetViewLoading = true
         viewModel.actualizarStreetViewEstado(LocalizacionViewModel.StreetViewState.LOADING)
         actualizarStreetViewUi()
-if (!streetViewHasPanorama) {
-    panorama.setPosition(target)
-    attachDynamicStreetMarker(panorama, target)
-}
+        panorama.setPosition(target)
+        attachDynamicStreetMarker(panorama, target)
 
 
     }
