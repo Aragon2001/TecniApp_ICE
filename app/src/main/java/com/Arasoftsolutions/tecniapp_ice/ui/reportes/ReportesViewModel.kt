@@ -11,6 +11,7 @@ import com.Arasoftsolutions.tecniapp_ice.Database.entities.InventarioConVehiculo
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaReparacionEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.MaterialEntity
+import com.Arasoftsolutions.tecniapp_ice.Database.entities.ProgramacionEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.UserEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.room.AppDatabase
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
@@ -152,8 +153,11 @@ data class InventarioMovimientoResumen(
 data class BitacoraResumen(
     val horasTrabajadas: String,
     val kilometros: String,
+    val kilometrajeInicial: String,
+    val kilometrajeFinal: String,
     val averiasAtendidas: Int,
     val luminariasReparadas: Int,
+    val laboresEjecutadas: Int,
     val materialTop: List<MaterialTotalItem>
 )
 
@@ -259,6 +263,11 @@ private data class DatosBase(
     val totalMateriales: Int,
     val existenciasActuales: Map<String, Double>,
     val pendientes: List<AveriaEntity>
+)
+
+private data class ProgramacionBitacoraItem(
+    val entity: ProgramacionEntity,
+    val fechaEventoMillis: Long
 )
 
 class ReportesViewModel(app: Application) : AndroidViewModel(app) {
@@ -866,14 +875,20 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
         val horasTrabajadas = calcularHorasTrabajadas(base.averias)
         val kilometros = calcularKilometros(base.averias)
         val materialesTop = base.materialesTotales.take(5)
+        val programaciones = obtenerProgramacionesEjecutadas(inicio, fin)
+        val kilometrajeInicial = base.averias.mapNotNull { it.entity.kilometrajeInicio }.minOrNull()
+        val kilometrajeFinal = base.averias.mapNotNull { it.entity.kilometrajeFinal }.maxOrNull()
         val resumen = BitacoraResumen(
             horasTrabajadas = formatCantidad(horasTrabajadas),
             kilometros = formatCantidad(kilometros),
+            kilometrajeInicial = kilometrajeInicial?.let(::formatCantidad) ?: "-",
+            kilometrajeFinal = kilometrajeFinal?.let(::formatCantidad) ?: "-",
             averiasAtendidas = base.averias.size,
             luminariasReparadas = luminarias.count { it.estado.contains("repar", true) },
+            laboresEjecutadas = programaciones.size,
             materialTop = materialesTop
         )
-        val eventos = buildBitacoraEventos(base, luminarias)
+        val eventos = buildBitacoraEventos(base, luminarias, programaciones)
         return ReportExportData.MiBitacora(resumen, eventos)
     }
 
@@ -1241,7 +1256,8 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun buildBitacoraEventos(
         base: DatosBase,
-        luminarias: List<MisLuminariaReportItem>
+        luminarias: List<MisLuminariaReportItem>,
+        programaciones: List<ProgramacionBitacoraItem>
     ): List<BitacoraEventItem> {
         val eventos = mutableListOf<BitacoraEventItem>()
         base.averias.forEach { raw ->
@@ -1269,11 +1285,58 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
                 tipo = getString(R.string.reportes_bitacora_tipo_luminaria),
                 referencia = luminaria.localizacion,
                 fecha = luminaria.fecha,
-                descripcion = luminaria.estado,
+                descripcion = listOf(luminaria.estado, luminaria.comunidad, luminaria.vehiculo)
+                    .filter { it.isNotBlank() }
+                    .joinToString(" • "),
                 cantidad = luminaria.materialesResumen
             )
         }
+        programaciones.forEach { programacion ->
+            val entidad = programacion.entity
+            val descripcion = listOfNotNull(
+                entidad.actividad.takeIf { it.isNotBlank() },
+                entidad.descripcion?.takeIf { it.isNotBlank() },
+                entidad.observaciones?.takeIf { it.isNotBlank() }
+            ).joinToString(" • ").ifBlank {
+                getString(R.string.reportes_bitacora_sin_descripcion)
+            }
+            eventos += BitacoraEventItem(
+                tipo = getString(R.string.reportes_bitacora_tipo_programacion),
+                referencia = entidad.programacionId,
+                fecha = formatDateTime(programacion.fechaEventoMillis),
+                descripcion = descripcion,
+                cantidad = entidad.localizacion
+            )
+        }
         return eventos.sortedByDescending { it.fecha }
+    }
+
+
+    private suspend fun obtenerProgramacionesEjecutadas(
+        inicio: LocalDate,
+        fin: LocalDate
+    ): List<ProgramacionBitacoraItem> {
+        val contexto = obtenerUserContext()
+        val userId = auth.currentUser?.uid ?: contexto.user?.uid
+        if (userId.isNullOrBlank()) return emptyList()
+
+        val zona = ZoneId.systemDefault()
+        val inicioMillis = inicio.atStartOfDay(zona).toInstant().toEpochMilli()
+        val finExclusiveMillis = fin.plusDays(1).atStartOfDay(zona).toInstant().toEpochMilli()
+
+        return withContext(Dispatchers.IO) {
+            database.programacionDao().observeAll().first()
+        }.filter { programacion ->
+            programacion.tecnicoId.equals(userId, ignoreCase = true) &&
+                programacion.estado.equals("EJECUTADA", ignoreCase = true)
+        }.mapNotNull { programacion ->
+            val fechaEvento = programacion.fechaEjecucion ?: programacion.updatedAt
+            if (fechaEvento in inicioMillis until finExclusiveMillis) {
+                ProgramacionBitacoraItem(programacion, fechaEvento)
+            } else {
+                null
+            }
+        }
     }
 
     private fun construirCuerpoCorreo(

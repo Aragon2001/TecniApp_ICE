@@ -1052,6 +1052,9 @@ Cliente: %4$s</string>
     <string name="reportes_excel_col_horas">Horas trabajadas</string>
     <string name="reportes_excel_col_kilometros">Kilómetros</string>
     <string name="reportes_excel_col_luminarias">Luminarias reparadas</string>
+    <string name="reportes_excel_col_labores">Labores ejecutadas</string>
+    <string name="reportes_excel_col_km_inicial">Kilometraje inicial</string>
+    <string name="reportes_excel_col_km_final">Kilometraje final</string>
     <string name="reportes_excel_col_tipo">Tipo</string>
     <string name="reportes_excel_col_referencia">Referencia</string>
     <string name="reportes_excel_col_descripcion">Descripción</string>
@@ -1153,10 +1156,14 @@ Cliente: %4$s</string>
     <string name="reportes_bitacora_km">Km: %1$s</string>
     <string name="reportes_bitacora_averias">Averías atendidas: %1$d</string>
     <string name="reportes_bitacora_luminarias">Luminarias reparadas: %1$d</string>
+    <string name="reportes_bitacora_labores">Labores ejecutadas: %1$d</string>
+    <string name="reportes_bitacora_km_inicial">Kilometraje inicial: %1$s</string>
+    <string name="reportes_bitacora_km_final">Kilometraje final: %1$s</string>
     <string name="reportes_bitacora_material_top">Material top 5: %1$s</string>
     <string name="reportes_bitacora_tipo_averia">Avería</string>
     <string name="reportes_bitacora_tipo_luminaria">Luminaria</string>
     <string name="reportes_bitacora_tipo_material">Material</string>
+    <string name="reportes_bitacora_tipo_programacion">Programación</string>
     <string name="reportes_bitacora_sin_descripcion">Sin descripción</string>
     <string name="reportes_bitacora_material_cantidad">Material consumido: %1$d</string>
 

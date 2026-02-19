@@ -317,6 +317,18 @@ object ExcelReportExporter {
             createCell(0).setCellValue(context.getString(R.string.reportes_excel_col_luminarias))
             createCell(1).setCellValue(data.resumen.luminariasReparadas.toDouble())
         }
+        resumenSheet.createRow(4).apply {
+            createCell(0).setCellValue(context.getString(R.string.reportes_excel_col_labores))
+            createCell(1).setCellValue(data.resumen.laboresEjecutadas.toDouble())
+        }
+        resumenSheet.createRow(5).apply {
+            createCell(0).setCellValue(context.getString(R.string.reportes_excel_col_km_inicial))
+            createCell(1).setCellValue(data.resumen.kilometrajeInicial)
+        }
+        resumenSheet.createRow(6).apply {
+            createCell(0).setCellValue(context.getString(R.string.reportes_excel_col_km_final))
+            createCell(1).setCellValue(data.resumen.kilometrajeFinal)
+        }
         autosize(resumenSheet, 2)
 
         val detallesSheet = workbook.createSheet(context.getString(R.string.reportes_excel_mi_bitacora_sheet))
