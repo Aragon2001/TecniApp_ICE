@@ -33,6 +33,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
+import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlinx.coroutines.Dispatchers
@@ -187,7 +188,6 @@ class ReportesFragment : Fragment() {
     private fun setupListeners() {
         binding.btnCambiarFechas.setOnClickListener { mostrarSelectorRango() }
         binding.btnGenerarReporte.setOnClickListener { viewModel.generarReporteSeleccionado() }
-        binding.btnLimpiarFechas.setOnClickListener { viewModel.restablecerRango() }
         binding.chipFiltroFecha.setOnClickListener { mostrarSelectorRango() }
         binding.chipFiltroTipo.setOnClickListener { viewModel.generarReporteSeleccionado() }
         binding.chipFiltroSync.setOnClickListener {
@@ -254,10 +254,8 @@ class ReportesFragment : Fragment() {
                 viewModel.uiState.collect { state ->
                     val isProcessing = state.isGlobalLoading || state.isEmailSending || state.loading
                     binding.progressIndicator.isVisible = isProcessing
-                    binding.tvRangoFechas.text = state.rangoTexto
-                    binding.btnLimpiarFechas.isVisible = !state.isDefaultRange
-                    binding.btnLimpiarFechas.isEnabled = !isProcessing
                     binding.btnCambiarFechas.isEnabled = !isProcessing
+                    binding.btnCambiarFechas.text = state.rangoTexto
 
                     val seleccionado = state.reporteSeleccionado
                     syncTabSelection(state.selectedTab)
@@ -520,8 +518,8 @@ class ReportesFragment : Fragment() {
         if (childFragmentManager.findFragmentByTag(tag) != null) return
 
         val selection = Pair(
-            state.fechaInicio.toStartOfDayMillis(),
-            state.fechaFin.toStartOfDayMillis()
+            state.fechaInicio.toUtcStartOfDayMillis(),
+            state.fechaFin.toUtcStartOfDayMillis()
         )
 
         val picker = MaterialDatePicker.Builder.dateRangePicker()
@@ -533,8 +531,8 @@ class ReportesFragment : Fragment() {
             val start = range.first
             val end = range.second
             if (start != null && end != null) {
-                val inicio = start.toLocalDate()
-                val fin = end.toLocalDate()
+                val inicio = start.toUtcLocalDate()
+                val fin = end.toUtcLocalDate()
                 viewModel.actualizarRangoFechas(inicio, fin)
             }
         }
@@ -787,11 +785,11 @@ class ReportesFragment : Fragment() {
             .show()
     }
 
-    private fun LocalDate.toStartOfDayMillis(): Long =
-        this.atStartOfDay(zoneId).toInstant().toEpochMilli()
+    private fun LocalDate.toUtcStartOfDayMillis(): Long =
+        this.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
 
-    private fun Long.toLocalDate(): LocalDate =
-        Instant.ofEpochMilli(this).atZone(zoneId).toLocalDate()
+    private fun Long.toUtcLocalDate(): LocalDate =
+        Instant.ofEpochMilli(this).atZone(ZoneOffset.UTC).toLocalDate()
 
     override fun onDestroyView() {
         super.onDestroyView()
