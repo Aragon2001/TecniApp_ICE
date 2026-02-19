@@ -810,24 +810,43 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
         return compact.takeIf { it.isNotBlank() }
     }
 
+    private fun normalizeRegionKey(value: String?): String? {
+        val normalized = normalizeAveriaText(value)
+        val compact = normalized.replace("[^a-z0-9]".toRegex(), "")
+        return compact.takeIf { it.isNotBlank() }
+    }
+
     private fun isSubregionMismatch(ui: AveriaUI): Boolean {
         val user = _usuario.value ?: return false
-        val userKeys = listOfNotNull(
-            normalizeSubregionKey(user.subregion),
-            normalizeSubregionKey(user.subregionNombre),
-            normalizeSubregionKey(user.agencia),
-            normalizeSubregionKey(user.agenciaId)
+        val userRegionKeys = listOfNotNull(
+            normalizeRegionKey(user.regionNombre),
+            normalizeRegionKey(user.region),
+            user.subregion
+                ?.let { subId -> cachedSubregiones.firstOrNull { it.id.equals(subId, ignoreCase = true) }?.regionId }
+                ?.let { regionId -> cachedRegiones.firstOrNull { it.id.equals(regionId, ignoreCase = true) }?.nombre }
+                ?.let { normalizeRegionKey(it) }
         ).distinct()
-        val averiaKeys = listOfNotNull(
-            normalizeSubregionKey(ui.zonaTag),
-            normalizeSubregionKey(ui.agencia)
+        val averiaRegionKeys = listOfNotNull(
+            normalizeRegionKey(ui.region),
+            ui.zonaTag
+                ?.let { zona ->
+                    cachedSubregiones.firstOrNull {
+                        it.id.equals(zona, ignoreCase = true) || it.nombre.equals(zona, ignoreCase = true)
+                    }?.regionId
+                }
+                ?.let { regionId -> cachedRegiones.firstOrNull { it.id.equals(regionId, ignoreCase = true) }?.nombre }
+                ?.let { normalizeRegionKey(it) }
         ).distinct()
-        if (userKeys.isEmpty() || averiaKeys.isEmpty()) return false
-        return userKeys.none { userKey ->
-            averiaKeys.any { averiaKey ->
-                averiaKey.contains(userKey) || userKey.contains(averiaKey)
+        if (userRegionKeys.isNotEmpty() && averiaRegionKeys.isNotEmpty()) {
+            val sameRegion = userRegionKeys.any { userKey ->
+                averiaRegionKeys.any { averiaKey ->
+                    averiaKey.contains(userKey) || userKey.contains(averiaKey)
+                }
             }
+            if (!sameRegion) return true
         }
+
+        return false
     }
 
     fun isSubregionAllowed(ui: AveriaUI): Boolean = !isSubregionMismatch(ui)
@@ -838,6 +857,33 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
             return false
         }
         return true
+    }
+
+    private fun isSupervisorRole(user: UserEntity): Boolean {
+        val role = user.rol?.trim()?.lowercase(Locale.getDefault()).orEmpty()
+        return role == "supervisor" || role == "administrador"
+    }
+
+    fun canAssignToCrew(): Boolean = _usuario.value?.let(::isSupervisorRole) == true
+
+    fun assignToSelf(ui: AveriaUI) {
+        onToggleAsignacion(ui)
+    }
+
+    fun assignToVehiculo(ui: AveriaUI, vehiculo: String) {
+        viewModelScope.launch {
+            if (!ensureSubregionAllowed(ui)) return@launch
+            if (Estado.fromLabel(ui.estado) != Estado.PENDIENTE) return@launch
+            val user = requireUsuario() ?: return@launch
+            if (!isSupervisorRole(user)) {
+                _messages.tryEmit(getApplication<Application>().getString(R.string.averia_error_no_autorizado))
+                return@launch
+            }
+            val nombreSupervisor = nombreCompleto(user)
+            repo.asignar(ui.id, user.uid, nombreSupervisor, vehiculo.trim())
+            _messages.tryEmit(getApplication<Application>().getString(R.string.averia_exito_asignada_cuadrilla, vehiculo.trim()))
+            AveriasSyncWorker.triggerNow(getApplication(), showSyncNotification = false)
+        }
     }
 
     fun syncNow() {

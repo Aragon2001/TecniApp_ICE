@@ -233,7 +233,7 @@
     <string name="averia_error_app_mapa">Instala una aplicación de mapas para continuar.</string>
     <string name="averia_map_select_app">Abrir con</string>
     <string name="averias_vacio">No hay averías con los filtros actuales.</string>
-    <string name="averia_error_region_diferente">Solo puedes gestionar averías de tu subregión.</string>
+    <string name="averia_error_region_diferente">Solo puedes gestionar averías de tu región.</string>
     <string name="estado_pendiente">Pendiente</string>
     <string name="estado_asignada">Asignada</string>
     <string name="estado_en_atencion">En atención</string>
@@ -243,6 +243,9 @@
     <string name="averia_cancelar_atencion">Cancelar atención</string>
     <string name="averia_resolver">Resolver</string>
     <string name="averia_exportar_pdf">Exportar PDF</string>
+    <string name="averia_asignar_mi">Asignar a mí</string>
+    <string name="averia_asignar_cuadrilla">Asignar a una cuadrilla</string>
+    <string name="averia_asignar_cuadrilla_sin_camiones">No hay camiones disponibles para asignar.</string>
     <string name="averia_atencion_finalizada">Atención finalizada</string>
     <string name="averia_materiales_label">Materiales: %1$s</string>
     <string name="averia_cliente_label">Cliente: %1$s</string>
@@ -267,6 +270,7 @@
     <string name="averia_fecha_atencion_fin">Fin: %1$s</string>
     <string name="averia_notificacion_asignada_title">Avería asignada</string>
     <string name="averia_notificacion_asignada_body">Caso %1$s asignado a %2$s</string>
+    <string name="averia_exito_asignada_cuadrilla">Avería asignada al camión %1$s.</string>
     <string name="averia_notificacion_atencion_title">Avería en atención</string>
     <string name="averia_notificacion_atencion_body">Caso %1$s atendido por %2$s</string>
     <string name="averia_notificacion_resuelta_title">Avería resuelta</string>
