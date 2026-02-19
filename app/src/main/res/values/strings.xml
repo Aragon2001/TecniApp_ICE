@@ -1041,7 +1041,7 @@ Cliente: %4$s</string>
     <string name="reportes_excel_col_fecha_llegada">Fecha llegada</string>
     <string name="reportes_excel_col_km_inicio">Km inicio</string>
     <string name="reportes_excel_col_km_llegada">Km llegada</string>
-    <string name="reportes_excel_col_km_final">Km final</string>
+
     <string name="reportes_excel_col_ubicacion">Ubicación</string>
     <string name="reportes_excel_col_kpi">Indicador</string>
     <string name="reportes_excel_col_valor">Valor</string>

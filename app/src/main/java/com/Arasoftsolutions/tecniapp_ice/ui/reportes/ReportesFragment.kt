@@ -188,11 +188,7 @@ class ReportesFragment : Fragment() {
     private fun setupListeners() {
         binding.btnCambiarFechas.setOnClickListener { mostrarSelectorRango() }
         binding.btnGenerarReporte.setOnClickListener { viewModel.generarReporteSeleccionado() }
-        binding.chipFiltroFecha.setOnClickListener { mostrarSelectorRango() }
-        binding.chipFiltroTipo.setOnClickListener { viewModel.generarReporteSeleccionado() }
-        binding.chipFiltroSync.setOnClickListener {
-            Snackbar.make(binding.root, R.string.reportes_sync_info, Snackbar.LENGTH_SHORT).show()
-        }
+
     }
 
     private fun setupSpeedDial() {
@@ -267,34 +263,6 @@ class ReportesFragment : Fragment() {
                     )
                     binding.btnGenerarReporte.isEnabled = !isProcessing
 
-                    binding.tvReportesSubtitle.text = getString(R.string.reportes_header_rango, state.rangoTexto)
-                    binding.tvReportesContext.text = getString(
-                        R.string.reportes_header_contexto,
-                        state.filtrosSeleccionados.agencia ?: getString(R.string.reportes_filtro_agencia_default),
-                        state.filtrosSeleccionados.tecnico ?: getString(R.string.reportes_filtro_tecnico_default)
-                    )
-
-                    binding.chipFiltroFecha.text = getString(R.string.reportes_chip_fecha_resumen, state.rangoTexto)
-                    binding.chipFiltroAgencia.text = getString(
-                        R.string.reportes_chip_agencia_resumen,
-                        state.filtrosSeleccionados.agencia ?: getString(R.string.reportes_filtro_agencia_default)
-                    )
-                    binding.chipFiltroCamion.text = getString(
-                        R.string.reportes_chip_camion_resumen,
-                        state.filtrosSeleccionados.camion ?: getString(R.string.reportes_filtro_camion_default)
-                    )
-                    binding.chipFiltroTecnico.text = getString(
-                        R.string.reportes_chip_tecnico_resumen,
-                        state.filtrosSeleccionados.tecnico ?: getString(R.string.reportes_filtro_tecnico_default)
-                    )
-                    binding.chipFiltroTipo.text = getString(
-                        R.string.reportes_chip_tipo_resumen,
-                        getString(seleccionado.titleRes)
-                    )
-                    binding.chipFiltroSync.text = getString(
-                        R.string.reportes_chip_sync_resumen,
-                        state.filtrosSeleccionados.estadoSync ?: getString(R.string.reportes_filtro_sync_default)
-                    )
 
                     binding.tvResumenTitulo.text = getString(seleccionado.titleRes)
                     binding.tvResumenRango.text = state.rangoTexto
@@ -313,18 +281,6 @@ class ReportesFragment : Fragment() {
 
                     historyAdapter.submitList(state.historialExports)
 
-                    binding.tvInsight1.text = getString(
-                        R.string.reportes_insight_material,
-                        resumen?.totalMateriales ?: 0
-                    )
-                    binding.tvInsight2.text = getString(
-                        R.string.reportes_insight_averias,
-                        resumen?.totalAverias ?: 0
-                    )
-                    binding.tvInsight3.text = getString(
-                        R.string.reportes_insight_codigos,
-                        resumen?.totalMaterialesDistintos ?: 0
-                    )
 
                     val section: ReportSectionState<*>
                     val recycler: RecyclerView

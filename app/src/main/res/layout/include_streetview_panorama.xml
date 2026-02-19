@@ -2,9 +2,19 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
-
+<ImageView
+    android:id="@+id/streetViewDynamicMarker"
+    android:layout_width="42dp"
+    android:layout_height="42dp"
+    android:layout_gravity="center"
+    android:src="@drawable/poste"
+    android:visibility="gone"
+    android:alpha="0" />
     <com.google.android.gms.maps.StreetViewPanoramaView
         android:id="@+id/streetViewPanorama"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
+
+
+
 </FrameLayout>
