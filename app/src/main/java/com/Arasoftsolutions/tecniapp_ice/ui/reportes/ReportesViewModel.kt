@@ -131,6 +131,15 @@ data class InventarioMovimientoResumen(
     val neto: Double
 )
 
+data class InventarioConsumoItem(
+    val fecha: String,
+    val material: String,
+    val cantidad: Double,
+    val usoEn: String,
+    val donde: String,
+    val cuando: String
+)
+
 data class BitacoraResumen(
     val horasTrabajadas: String,
     val kilometros: String,
@@ -201,7 +210,8 @@ sealed class ReportExportData {
     data class MiInventario(
         val criticos: List<InventarioReportItem>,
         val generales: List<InventarioReportItem>,
-        val movimientos: InventarioMovimientoResumen
+        val movimientos: InventarioMovimientoResumen,
+        val consumos: List<InventarioConsumoItem>
     ) : ReportExportData()
 
     data class MiBitacora(
@@ -232,7 +242,8 @@ data class ReportesUiState(
     val miInventarioCriticoState: ReportSectionState<InventarioReportItem> = ReportSectionState(),
     val miBitacoraState: ReportSectionState<BitacoraEventItem> = ReportSectionState(),
     val miBitacoraResumen: BitacoraResumen? = null,
-    val miInventarioMovimientos: InventarioMovimientoResumen? = null
+    val miInventarioMovimientos: InventarioMovimientoResumen? = null,
+    val miInventarioConsumos: List<InventarioConsumoItem> = emptyList()
 )
 
 private data class DatosBase(
@@ -526,7 +537,8 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
                 ReportExportData.MiInventario(
                     criticos = state.miInventarioCriticoState.items,
                     generales = state.miInventarioState.items,
-                    movimientos = state.miInventarioMovimientos ?: InventarioMovimientoResumen(0.0, 0.0, 0.0)
+                    movimientos = state.miInventarioMovimientos ?: InventarioMovimientoResumen(0.0, 0.0, 0.0),
+                    consumos = state.miInventarioConsumos
                 )
             }
             ReportType.MI_BITACORA -> {
@@ -784,8 +796,9 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
                 unidad = getString(R.string.reportes_inventario_unidad_default)
             )
         }
-        val movimientos = calcularMovimientosInventario(inicio, fin, contexto)
-        return ReportExportData.MiInventario(mappedCriticos, mappedGenerales, movimientos)
+        val consumos = construirConsumosMateriales(inicio, fin, contexto)
+        val movimientos = calcularMovimientosInventario(consumos)
+        return ReportExportData.MiInventario(mappedCriticos, mappedGenerales, movimientos, consumos)
     }
 
     private suspend fun construirBitacora(inicio: LocalDate, fin: LocalDate): ReportExportData.MiBitacora {
@@ -899,6 +912,7 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
                 miInventarioState = ReportSectionState(isLoading = false, items = inventario.generales, hasContent = true),
                 miInventarioCriticoState = ReportSectionState(isLoading = false, items = inventario.criticos, hasContent = true),
                 miInventarioMovimientos = inventario.movimientos,
+                miInventarioConsumos = inventario.consumos,
                 resumenState = current.resumenState.copy(isLoading = false)
             )
         }
@@ -1136,35 +1150,59 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
         return nombres.contains(ejecutor)
     }
 
-    private suspend fun calcularMovimientosInventario(
-        inicio: LocalDate,
-        fin: LocalDate,
-        contexto: UserContext
+    private fun calcularMovimientosInventario(
+        consumos: List<InventarioConsumoItem>
     ): InventarioMovimientoResumen {
-        val zona = ZoneId.systemDefault()
-        val inicioMillis = inicio.atStartOfDay(zona).toInstant().toEpochMilli()
-        val finExclusiveMillis = fin.plusDays(1).atStartOfDay(zona).toInstant().toEpochMilli()
-        val averias = withContext(Dispatchers.IO) { database.averiaDao().all() }
-        val consumoAverias = averias.filter { entity ->
-            val fecha = obtenerFechaAtencion(entity) ?: return@filter false
-            fecha in inicioMillis until finExclusiveMillis &&
-                coincideConVehiculo(entity, contexto.placaVehiculo)
-        }.sumOf { entity ->
-            obtenerMateriales(entity, emptyMap(), emptyMap()).sumOf { it.cantidad }.toDouble()
-        }
-        val luminarias = withContext(Dispatchers.IO) { database.inventarioDao().observarReparaciones().first() }
-        val consumoLuminarias = luminarias.filter { reparacion ->
-            reparacion.fechaRegistro in inicioMillis until finExclusiveMillis &&
-                coincideConVehiculo(reparacion, contexto.vehiculoId)
-        }.sumOf { reparacion ->
-            com.Arasoftsolutions.tecniapp_ice.ui.luminarias.LuminariaMaterialSerializer
-                .fromJson(reparacion.materialesJson)
-                .sumOf { it.cantidad }
-        }
-        val salidas = consumoAverias + consumoLuminarias
+        val salidas = consumos.sumOf { it.cantidad }
         val entradas = 0.0
         val neto = entradas - salidas
         return InventarioMovimientoResumen(entradas, salidas, neto)
+    }
+
+    private suspend fun construirConsumosMateriales(
+        inicio: LocalDate,
+        fin: LocalDate,
+        contexto: UserContext
+    ): List<InventarioConsumoItem> {
+        val zona = ZoneId.systemDefault()
+        val inicioMillis = inicio.atStartOfDay(zona).toInstant().toEpochMilli()
+        val finExclusiveMillis = fin.plusDays(1).atStartOfDay(zona).toInstant().toEpochMilli()
+        val (averias, materialesCatalogo) = withContext(Dispatchers.IO) {
+            database.averiaDao().all() to database.materialDao().all()
+        }
+        val catalogoPorCodigo = materialesCatalogo.associateBy { it.codigo.trim() }
+        val catalogoPorDescripcion = materialesCatalogo.associateBy { it.descripcion.trim().lowercase(locale) }
+
+        return averias.asSequence()
+            .filter { entity ->
+                val fecha = obtenerFechaAtencion(entity) ?: return@filter false
+                fecha in inicioMillis until finExclusiveMillis &&
+                    coincideConVehiculo(entity, contexto.placaVehiculo) &&
+                    coincideConUsuario(entity, contexto.user?.uid, contexto.user?.nombre)
+            }
+            .flatMap { entity ->
+                val fechaAtencion = obtenerFechaAtencion(entity) ?: entity.fechaInicioMillis
+                val usoEn = entity.causa?.trim().orEmpty().ifBlank {
+                    getString(R.string.reportes_bitacora_tipo_averia)
+                }
+                val donde = entity.localizacion?.trim().orEmpty().ifBlank {
+                    entity.direccion?.trim().orEmpty().ifBlank { "-" }
+                }
+                val cuando = formatDateTime(fechaAtencion)
+                obtenerMateriales(entity, catalogoPorCodigo, catalogoPorDescripcion)
+                    .asSequence()
+                    .map { material ->
+                        InventarioConsumoItem(
+                            fecha = cuando,
+                            material = material.descripcion.ifBlank { desconocidoMaterial },
+                            cantidad = material.cantidad.toDouble(),
+                            usoEn = usoEn,
+                            donde = donde,
+                            cuando = cuando
+                        )
+                    }
+            }
+            .toList()
     }
 
     private fun buildBitacoraEventos(
