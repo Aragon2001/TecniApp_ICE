@@ -50,6 +50,7 @@ class ReportesFragment : Fragment() {
     private lateinit var misLuminariasAdapter: MisLuminariasAdapter
     private lateinit var inventarioGeneralAdapter: InventarioReporteAdapter
     private lateinit var inventarioCriticoAdapter: InventarioReporteAdapter
+    private lateinit var inventarioConsumoAdapter: InventarioConsumoAdapter
     private lateinit var bitacoraAdapter: BitacoraEventosAdapter
     private lateinit var historyAdapter: ReportHistoryAdapter
     private val locale = Locale.getDefault()
@@ -127,6 +128,14 @@ class ReportesFragment : Fragment() {
         binding.recyclerInventarioCritico.apply {
             layoutManager = LinearLayoutManager(context)
             adapter = inventarioCriticoAdapter
+            setHasFixedSize(false)
+            isNestedScrollingEnabled = false
+        }
+
+        inventarioConsumoAdapter = InventarioConsumoAdapter()
+        binding.recyclerInventarioConsumos.apply {
+            layoutManager = LinearLayoutManager(context)
+            adapter = inventarioConsumoAdapter
             setHasFixedSize(false)
             isNestedScrollingEnabled = false
         }
@@ -374,6 +383,7 @@ class ReportesFragment : Fragment() {
                             emptyView = binding.tvInventarioGeneralVacio
                             emptyRes = R.string.reportes_mi_inventario_vacio
                             val movimientos = state.miInventarioMovimientos
+                            inventarioConsumoAdapter.submitList(state.miInventarioConsumos)
                             binding.tvInventarioMovimientosDetalle.text = if (movimientos != null) {
                                 getString(
                                     R.string.reportes_inventario_movimientos_resumen,
@@ -386,6 +396,8 @@ class ReportesFragment : Fragment() {
                             }
                             binding.recyclerInventarioCritico.isVisible = state.miInventarioCriticoState.items.isNotEmpty()
                             binding.tvInventarioCriticoVacio.isVisible = state.miInventarioCriticoState.items.isEmpty()
+                            binding.recyclerInventarioConsumos.isVisible = state.miInventarioConsumos.isNotEmpty()
+                            binding.tvInventarioConsumosVacio.isVisible = state.miInventarioConsumos.isEmpty()
                         }
                         ReportType.MI_BITACORA -> {
                             binding.cardMiResumen.isVisible = false
