@@ -123,6 +123,14 @@ object PdfReportExporter {
             }
             is ReportExportData.MiBitacora -> {
                 lines += context.getString(R.string.reportes_pdf_seccion_bitacora)
+                lines += context.getString(R.string.reportes_bitacora_horas, data.resumen.horasTrabajadas)
+                lines += context.getString(R.string.reportes_bitacora_km, data.resumen.kilometros)
+                lines += context.getString(R.string.reportes_bitacora_km_inicial, data.resumen.kilometrajeInicial)
+                lines += context.getString(R.string.reportes_bitacora_km_final, data.resumen.kilometrajeFinal)
+                lines += context.getString(R.string.reportes_bitacora_averias, data.resumen.averiasAtendidas)
+                lines += context.getString(R.string.reportes_bitacora_luminarias, data.resumen.luminariasReparadas)
+                lines += context.getString(R.string.reportes_bitacora_labores, data.resumen.laboresEjecutadas)
+                lines += ""
                 data.eventos.forEach { item ->
                     lines += "• ${item.tipo}: ${item.descripcion}"
                 }

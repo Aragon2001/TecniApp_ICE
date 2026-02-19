@@ -416,6 +416,18 @@ class ReportesFragment : Fragment() {
                                     R.string.reportes_bitacora_luminarias,
                                     resumenBitacora.luminariasReparadas
                                 )
+                                binding.tvBitacoraLabores.text = getString(
+                                    R.string.reportes_bitacora_labores,
+                                    resumenBitacora.laboresEjecutadas
+                                )
+                                binding.tvBitacoraKmInicial.text = getString(
+                                    R.string.reportes_bitacora_km_inicial,
+                                    resumenBitacora.kilometrajeInicial
+                                )
+                                binding.tvBitacoraKmFinal.text = getString(
+                                    R.string.reportes_bitacora_km_final,
+                                    resumenBitacora.kilometrajeFinal
+                                )
                                 val topMateriales = resumenBitacora.materialTop.joinToString(", ") { it.descripcion }
                                 binding.tvBitacoraMaterial.text = getString(
                                     R.string.reportes_bitacora_material_top,
