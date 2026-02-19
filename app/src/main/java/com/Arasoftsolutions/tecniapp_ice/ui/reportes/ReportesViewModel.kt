@@ -97,11 +97,29 @@ data class ResumenKpiItem(
 
 data class MisAveriaReportItem(
     val caseId: String,
+    val region: String,
+    val provincia: String,
+    val agencia: String,
+    val cliente: String,
     val nise: String,
+    val causa: String,
+    val observaciones: String,
+    val direccion: String,
     val ubicacion: String,
+    val tipoAfectacion: String,
+    val numeroMedidor: String,
+    val medidorReferencia: String,
+    val clientesAfectados: String,
+    val tecnicoAsignado: String,
+    val tecnicoAtendio: String,
+    val vehiculoAsignado: String,
     val estado: String,
     val fechaReporte: String,
+    val fechaLlegada: String,
     val fechaAtencion: String,
+    val kilometrajeInicio: String,
+    val kilometrajeLlegada: String,
+    val kilometrajeFinal: String,
     val materialesCantidad: Int,
     val materialesResumen: String
 )
@@ -698,23 +716,77 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
 
     private suspend fun construirMisAverias(inicio: LocalDate, fin: LocalDate): List<MisAveriaReportItem> {
         val base = obtenerDatosBase(inicio, fin)
-        return base.averias.map { raw ->
-            val entidad = raw.entity
-            val resumen = MaterialesSerializer.toSummary(raw.materiales)
-            val totalMateriales = raw.materiales.sumOf { it.cantidad }
+        val zona = ZoneId.systemDefault()
+        val inicioMillis = inicio.atStartOfDay(zona).toInstant().toEpochMilli()
+        val finExclusiveMillis = fin.plusDays(1).atStartOfDay(zona).toInstant().toEpochMilli()
+        val currentUid = auth.currentUser?.uid?.takeIf { it.isNotBlank() }
+        val currentNombre = auth.currentUser?.displayName?.trim()?.lowercase(locale)
+        val placaVehiculo = runBlockingUserContext()?.placaVehiculo?.trim()?.takeIf { it.isNotBlank() }
+        val materialesPorCaso = base.averias.associateBy { it.entity.caseId }
+
+        val averias = withContext(Dispatchers.IO) {
+            database.averiaDao().all()
+        }
+
+        return averias
+            .asSequence()
+            .filter { entity ->
+                entity.fechaInicioMillis in inicioMillis until finExclusiveMillis &&
+                    coincideConVehiculo(entity, placaVehiculo) &&
+                    (coincideConUsuario(entity, currentUid, currentNombre) ||
+                        coincideConUsuarioAsignado(entity, currentUid, currentNombre)) &&
+                    esEstadoValidoParaReporte(entity.estado)
+            }
+            .sortedByDescending { it.fechaInicioMillis }
+            .map { entidad ->
+            val materiales = materialesPorCaso[entidad.caseId]?.materiales ?: emptyList()
+            val resumen = MaterialesSerializer.toSummary(materiales)
+            val totalMateriales = materiales.sumOf { it.cantidad }
             MisAveriaReportItem(
                 caseId = entidad.caseId,
+                region = entidad.region?.trim().orEmpty(),
+                provincia = entidad.provincia?.toString().orEmpty(),
+                agencia = entidad.nombreAgencia?.trim().orEmpty().ifBlank {
+                    entidad.agencia?.trim().orEmpty()
+                },
+                cliente = entidad.cliente?.trim().orEmpty(),
                 nise = entidad.nise?.trim().orEmpty(),
+                causa = entidad.causa?.trim().orEmpty(),
+                observaciones = entidad.observaciones?.trim().orEmpty(),
+                direccion = entidad.direccion?.trim().orEmpty(),
                 ubicacion = entidad.localizacion?.trim().orEmpty().ifBlank {
                     entidad.direccion?.trim().orEmpty()
                 },
+                tipoAfectacion = entidad.tipoAfectacion?.trim().orEmpty(),
+                numeroMedidor = entidad.numeroMedidor?.trim().orEmpty(),
+                medidorReferencia = listOfNotNull(
+                    entidad.medidorCalle?.trim()?.takeIf { it.isNotBlank() },
+                    entidad.medidorPueblo?.trim()?.takeIf { it.isNotBlank() },
+                    entidad.medidorMetros?.trim()?.takeIf { it.isNotBlank() },
+                    entidad.medidorPoste?.trim()?.takeIf { it.isNotBlank() }
+                ).joinToString(" | "),
+                clientesAfectados = entidad.clientesAfectados?.trim().orEmpty(),
+                tecnicoAsignado = entidad.tecnicoAsignadoNombre?.trim().orEmpty(),
+                tecnicoAtendio = entidad.atendidoPorNombre?.trim().orEmpty(),
+                vehiculoAsignado = entidad.vehiculoAsignado?.trim().orEmpty(),
                 estado = entidad.estado.trim(),
                 fechaReporte = formatDateTime(entidad.fechaInicioMillis),
-                fechaAtencion = formatDateTime(raw.finalMillis),
+                fechaLlegada = entidad.horaLlegadaMillis?.let { formatDateTime(it) }.orEmpty(),
+                fechaAtencion = obtenerFechaAtencion(entidad)?.let { formatDateTime(it) }.orEmpty(),
+                kilometrajeInicio = entidad.kilometrajeInicio?.let { formatCantidad(it) }.orEmpty(),
+                kilometrajeLlegada = entidad.kilometrajeLlegada?.let { formatCantidad(it) }.orEmpty(),
+                kilometrajeFinal = entidad.kilometrajeFinal?.let { formatCantidad(it) }.orEmpty(),
                 materialesCantidad = totalMateriales,
                 materialesResumen = resumen
             )
-        }
+        }.toList()
+    }
+
+    private fun esEstadoValidoParaReporte(estado: String?): Boolean {
+        val normalizado = estado?.trim()?.lowercase(locale).orEmpty()
+        return normalizado.contains("resuelt") ||
+            normalizado.contains("asignad") ||
+            normalizado.contains("repar")
     }
 
     private suspend fun construirMisLuminarias(inicio: LocalDate, fin: LocalDate): List<MisLuminariaReportItem> {
