@@ -31,6 +31,7 @@ import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.Arasoftsolutions.tecniapp_ice.ui.vehiculo.showRegistroVehiculoPendienteDialog
 import com.google.android.material.datepicker.MaterialDatePicker
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.chip.Chip
 import android.view.inputmethod.EditorInfo
@@ -146,7 +147,7 @@ override fun onStop() {
         adapter = AveriasAdapter(
             onVerDetalle = { showDetalle(it) },
             onVerMapa = { openMap(it) },
-            onAsignar = { vm.onToggleAsignacion(it) },
+            onAsignar = { handleAsignar(it) },
             onAtender = { handleAtender(it) },
             onResolver = { handleResolver(it) },
             onRevertir = { handleRevertir(it) }
@@ -316,6 +317,49 @@ override fun onStop() {
             EN_ATENCION -> vm.onCancelarAtencion(item)
             else -> showDetalle(item)
         }
+    }
+
+    private fun handleAsignar(item: AveriaUI) {
+        val estado = Estado.fromLabel(item.estado)
+        if (estado != PENDIENTE || !vm.canAssignToCrew()) {
+            vm.onToggleAsignacion(item)
+            return
+        }
+
+        val options = arrayOf(
+            getString(R.string.averia_asignar_mi),
+            getString(R.string.averia_asignar_cuadrilla)
+        )
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.averia_asignar)
+            .setItems(options) { _, which ->
+                when (which) {
+                    0 -> vm.assignToSelf(item)
+                    1 -> showCrewSelectionDialog(item)
+                }
+            }
+            .show()
+    }
+
+    private fun showCrewSelectionDialog(item: AveriaUI) {
+        val vehiculos = vm.vehiculosDisponibles.value
+            .map { it.placa.trim() }
+            .filter { it.isNotEmpty() }
+            .distinct()
+
+        if (vehiculos.isEmpty()) {
+            Snackbar.make(b.root, R.string.averia_asignar_cuadrilla_sin_camiones, Snackbar.LENGTH_LONG).show()
+            return
+        }
+
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.averia_asignar_cuadrilla)
+            .setItems(vehiculos.toTypedArray()) { _, which ->
+                vehiculos.getOrNull(which)?.let { selected ->
+                    vm.assignToVehiculo(item, selected)
+                }
+            }
+            .show()
     }
 
     private fun handleResolver(item: AveriaUI) {
