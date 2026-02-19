@@ -798,6 +798,27 @@
                             tools:text="Luminarias reparadas: 4" />
 
                         <TextView
+                            android:id="@+id/tvBitacoraLabores"
+                            style="@style/TextAppearance.Material3.BodyMedium"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            tools:text="Labores ejecutadas: 3" />
+
+                        <TextView
+                            android:id="@+id/tvBitacoraKmInicial"
+                            style="@style/TextAppearance.Material3.BodyMedium"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            tools:text="Kilometraje inicial: 25010" />
+
+                        <TextView
+                            android:id="@+id/tvBitacoraKmFinal"
+                            style="@style/TextAppearance.Material3.BodyMedium"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            tools:text="Kilometraje final: 25090" />
+
+                        <TextView
                             android:id="@+id/tvBitacoraMaterial"
                             style="@style/TextAppearance.Material3.BodyMedium"
                             android:layout_width="match_parent"
