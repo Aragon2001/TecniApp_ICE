@@ -1254,8 +1254,11 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
         val zona = ZoneId.systemDefault()
         val inicioMillis = inicio.atStartOfDay(zona).toInstant().toEpochMilli()
         val finExclusiveMillis = fin.plusDays(1).atStartOfDay(zona).toInstant().toEpochMilli()
-        val (averias, materialesCatalogo) = withContext(Dispatchers.IO) {
-            database.averiaDao().all() to database.materialDao().all()
+        val averias: List<AveriaEntity> = withContext(Dispatchers.IO) {
+            database.averiaDao().all()
+        }
+        val materialesCatalogo: List<MaterialEntity> = withContext(Dispatchers.IO) {
+            database.materialDao().observarMateriales().first()
         }
         val catalogoPorCodigo = materialesCatalogo.associateBy { it.codigo.trim() }
         val catalogoPorDescripcion = materialesCatalogo.associateBy { it.descripcion.trim().lowercase(locale) }
