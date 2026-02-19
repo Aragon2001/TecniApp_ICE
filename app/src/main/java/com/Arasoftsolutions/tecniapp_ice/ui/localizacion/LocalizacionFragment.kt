@@ -26,6 +26,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.FrameLayout
+import android.widget.ImageView
 import android.widget.ArrayAdapter
 import android.widget.TextView
 import android.widget.Toast
@@ -95,6 +96,7 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
     private val CLAVE_STREET_VIEW_BUNDLE = "ClaveStreetViewBundle"
     private var streetViewPanoramaView: StreetViewPanoramaView? = null
     private var streetViewContainer: FrameLayout? = null
+    private var streetViewDynamicMarker: ImageView? = null
     private var streetViewPanorama: StreetViewPanorama? = null
     private var streetViewHasPanorama = false
     private var streetViewMode = StreetViewMode.HIDDEN
@@ -503,7 +505,7 @@ private fun attachDynamicStreetMarker(
 
         val visible = delta < 30f
 
-        val markerView = binding.streetViewDynamicMarker
+        val markerView = streetViewDynamicMarker ?: return@setOnStreetViewPanoramaCameraChangeListener
 
         if (visible && !markerView.isVisible) {
             markerView.alpha = 0f
@@ -538,6 +540,7 @@ private fun attachDynamicStreetMarker(
             val inflated = binding.streetViewStub.inflate()
             streetViewContainer = inflated as? FrameLayout
             streetViewPanoramaView = streetViewContainer?.findViewById(R.id.streetViewPanorama)
+            streetViewDynamicMarker = streetViewContainer?.findViewById(R.id.streetViewDynamicMarker)
         }
 
         val panoramaView = streetViewPanoramaView ?: return
