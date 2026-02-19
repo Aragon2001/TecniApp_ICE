@@ -29,6 +29,8 @@
     <!-- Error igual -->
     <color name="md_theme_dark_error">#D32F2F</color>
     <color name="md_theme_dark_on_error">#FFFFFF</color>
+    <color name="md_theme_dark_error_container">#93000A</color>
+    <color name="md_theme_dark_on_error_container">#FFDAD6</color>
 
     <!-- =========================================================
          Dark Surfaces (gris oscuro neutro)
