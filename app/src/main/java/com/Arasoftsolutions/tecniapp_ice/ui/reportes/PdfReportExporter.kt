@@ -47,12 +47,16 @@ object PdfReportExporter {
         canvas.drawText(context.getString(R.string.reportes_pdf_rango, payload.rango), 40f, y, paint)
         y += 24f
 
+        val contentWidth = pageWidth - 80f
         for (line in lines) {
-            if (y > pageHeight - 60f) {
-                newPage()
+            val wrapped = wrapLine(line, paint, contentWidth)
+            for (row in wrapped) {
+                if (y > pageHeight - 60f) {
+                    newPage()
+                }
+                canvas.drawText(row, 40f, y, paint)
+                y += 18f
             }
-            canvas.drawText(line, 40f, y, paint)
-            y += 18f
         }
 
         document.finishPage(page)
@@ -84,8 +88,25 @@ object PdfReportExporter {
             }
             is ReportExportData.MisAverias -> {
                 lines += context.getString(R.string.reportes_pdf_seccion_averias)
-                data.items.forEach { item ->
-                    lines += "• ${item.caseId} | ${item.ubicacion} | ${item.estado}"
+                data.items.forEachIndexed { index, item ->
+                    lines += ""
+                    lines += "${index + 1}. Caso ${item.caseId} · ${item.estado}"
+                    lines += "Región/Provincia: ${item.region.ifBlank { "-" }} / ${item.provincia.ifBlank { "-" }}"
+                    lines += "Agencia: ${item.agencia.ifBlank { "-" }}"
+                    lines += "Cliente/NISE: ${item.cliente.ifBlank { "-" }} / ${item.nise.ifBlank { "-" }}"
+                    lines += "Ubicación: ${item.ubicacion.ifBlank { "-" }}"
+                    lines += "Dirección: ${item.direccion.ifBlank { "-" }}"
+                    lines += "Causa: ${item.causa.ifBlank { "-" }}"
+                    lines += "Observaciones: ${item.observaciones.ifBlank { "-" }}"
+                    lines += "Afectación: ${item.tipoAfectacion.ifBlank { "-" }}"
+                    lines += "Medidor: ${item.numeroMedidor.ifBlank { "-" }}"
+                    lines += "Referencia medidor: ${item.medidorReferencia.ifBlank { "-" }}"
+                    lines += "Clientes afectados: ${item.clientesAfectados.ifBlank { "-" }}"
+                    lines += "Técnico asignado/atendió: ${item.tecnicoAsignado.ifBlank { "-" }} / ${item.tecnicoAtendio.ifBlank { "-" }}"
+                    lines += "Vehículo: ${item.vehiculoAsignado.ifBlank { "-" }}"
+                    lines += "Fechas (reporte/llegada/atención): ${item.fechaReporte.ifBlank { "-" }} / ${item.fechaLlegada.ifBlank { "-" }} / ${item.fechaAtencion.ifBlank { "-" }}"
+                    lines += "Kilometraje (inicio/llegada/final): ${item.kilometrajeInicio.ifBlank { "-" }} / ${item.kilometrajeLlegada.ifBlank { "-" }} / ${item.kilometrajeFinal.ifBlank { "-" }}"
+                    lines += "Materiales (${item.materialesCantidad}): ${item.materialesResumen.ifBlank { "-" }}"
                 }
             }
             is ReportExportData.MisLuminarias -> {
@@ -111,4 +132,25 @@ object PdfReportExporter {
         lines += context.getString(R.string.reportes_pdf_footer)
         return lines
     }
+
+    private fun wrapLine(text: String, paint: Paint, maxWidth: Float): List<String> {
+        if (text.isBlank()) return listOf("")
+        val words = text.split(" ")
+        val lines = mutableListOf<String>()
+        var current = ""
+        words.forEach { word ->
+            val candidate = if (current.isBlank()) word else "$current $word"
+            if (paint.measureText(candidate) <= maxWidth) {
+                current = candidate
+            } else {
+                if (current.isNotBlank()) {
+                    lines += current
+                }
+                current = word
+            }
+        }
+        if (current.isNotBlank()) lines += current
+        return if (lines.isEmpty()) listOf("") else lines
+    }
+
 }

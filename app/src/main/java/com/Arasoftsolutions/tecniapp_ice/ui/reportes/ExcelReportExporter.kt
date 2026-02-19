@@ -151,11 +151,29 @@ object ExcelReportExporter {
         val sheet = workbook.createSheet(context.getString(R.string.reportes_excel_mis_averias_sheet))
         val headers = listOf(
             context.getString(R.string.reportes_excel_col_case),
+            context.getString(R.string.reportes_excel_col_region),
+            context.getString(R.string.reportes_excel_col_provincia),
+            context.getString(R.string.reportes_excel_col_agencia),
+            context.getString(R.string.reportes_excel_col_cliente),
             context.getString(R.string.reportes_excel_col_nise),
+            context.getString(R.string.reportes_excel_col_causa),
+            context.getString(R.string.reportes_excel_col_observaciones),
+            context.getString(R.string.reportes_excel_col_direccion),
             context.getString(R.string.reportes_excel_col_ubicacion),
+            context.getString(R.string.reportes_excel_col_tipo_afectacion),
+            context.getString(R.string.reportes_excel_col_numero_medidor),
+            context.getString(R.string.reportes_excel_col_medidor_referencia),
+            context.getString(R.string.reportes_excel_col_clientes_afectados),
+            context.getString(R.string.reportes_excel_col_tecnico_asignado),
+            context.getString(R.string.reportes_excel_col_atendido),
+            context.getString(R.string.reportes_excel_col_vehiculo),
             context.getString(R.string.reportes_excel_col_estado),
             context.getString(R.string.reportes_excel_col_fecha_reporte),
+            context.getString(R.string.reportes_excel_col_fecha_llegada),
             context.getString(R.string.reportes_excel_col_fecha_atencion),
+            context.getString(R.string.reportes_excel_col_km_inicio),
+            context.getString(R.string.reportes_excel_col_km_llegada),
+            context.getString(R.string.reportes_excel_col_km_final),
             context.getString(R.string.reportes_excel_col_material_resumen),
             context.getString(R.string.reportes_excel_col_material_total)
         )
@@ -164,13 +182,31 @@ object ExcelReportExporter {
         items.forEach { item ->
             val row = sheet.createRow(rowIndex++)
             row.createCell(0).setCellValue(item.caseId)
-            row.createCell(1).setCellValue(item.nise)
-            row.createCell(2).setCellValue(item.ubicacion)
-            row.createCell(3).setCellValue(item.estado)
-            row.createCell(4).setCellValue(item.fechaReporte)
-            row.createCell(5).setCellValue(item.fechaAtencion)
-            row.createCell(6).setCellValue(item.materialesResumen)
-            row.createCell(7).setCellValue(item.materialesCantidad.toDouble())
+            row.createCell(1).setCellValue(item.region)
+            row.createCell(2).setCellValue(item.provincia)
+            row.createCell(3).setCellValue(item.agencia)
+            row.createCell(4).setCellValue(item.cliente)
+            row.createCell(5).setCellValue(item.nise)
+            row.createCell(6).setCellValue(item.causa)
+            row.createCell(7).setCellValue(item.observaciones)
+            row.createCell(8).setCellValue(item.direccion)
+            row.createCell(9).setCellValue(item.ubicacion)
+            row.createCell(10).setCellValue(item.tipoAfectacion)
+            row.createCell(11).setCellValue(item.numeroMedidor)
+            row.createCell(12).setCellValue(item.medidorReferencia)
+            row.createCell(13).setCellValue(item.clientesAfectados)
+            row.createCell(14).setCellValue(item.tecnicoAsignado)
+            row.createCell(15).setCellValue(item.tecnicoAtendio)
+            row.createCell(16).setCellValue(item.vehiculoAsignado)
+            row.createCell(17).setCellValue(item.estado)
+            row.createCell(18).setCellValue(item.fechaReporte)
+            row.createCell(19).setCellValue(item.fechaLlegada)
+            row.createCell(20).setCellValue(item.fechaAtencion)
+            row.createCell(21).setCellValue(item.kilometrajeInicio)
+            row.createCell(22).setCellValue(item.kilometrajeLlegada)
+            row.createCell(23).setCellValue(item.kilometrajeFinal)
+            row.createCell(24).setCellValue(item.materialesResumen)
+            row.createCell(25).setCellValue(item.materialesCantidad.toDouble())
         }
 
         autosize(sheet, headers.size)
