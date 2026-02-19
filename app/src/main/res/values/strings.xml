@@ -1069,6 +1069,14 @@ Cliente: %4$s</string>
     <string name="luminarias_importar_excel">Cargar XLSX de luminarias</string>
     <string name="luminarias_descargar_machote">Descargar machote de luminarias</string>
     <string name="luminarias_enviar_machote">Enviar machote por correo</string>
+    <string name="luminarias_menu_reportes">Opciones de luminarias</string>
+    <string name="luminarias_menu_cargar">Cargar</string>
+    <string name="luminarias_menu_enviar">Enviar</string>
+    <string name="luminarias_menu_descargar">Descargar</string>
+    <string name="luminarias_menu_reporte_pdf">Reporte general PDF</string>
+    <string name="luminarias_menu_reporte_excel">Reporte general Excel</string>
+    <string name="luminarias_reporte_generado">Reporte generado</string>
+    <string name="luminarias_reporte_error">No se pudo generar el reporte general</string>
     <string name="luminarias_filtro_camion">Filtrar por camión</string>
     <string name="luminarias_camion_todos">Todos los camiones</string>
     <string name="luminarias_camion_asignado">Camión asignado</string>
