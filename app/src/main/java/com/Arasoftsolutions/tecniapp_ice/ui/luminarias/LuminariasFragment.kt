@@ -366,10 +366,11 @@ class LuminariasFragment : Fragment() {
         binding.tvLocalizacionDetalle.text = reparacion?.localizacion?.let {
             "Localización ${viewModel.normalizarLocalizacion(it)}"
         } ?: "-"
-        binding.btnGuardarReparacion.text = if (reparacion == null) {
-            "Registrar reparación"
-        } else {
-            "Actualizar reparación"
+        binding.btnGuardarReparacion.text = when {
+            reparacion == null -> "Registrar reparación"
+            com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado.fromRaw(reparacion.estado) ==
+                com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado.PENDIENTE -> "Actualizar atención"
+            else -> "Actualizar reparación"
         }
         binding.btnLlamarContacto.setOnClickListener {
             val telefonoRaw = binding.tvContactoDetalle.text?.toString().orEmpty()
@@ -526,8 +527,6 @@ class LuminariasFragment : Fragment() {
             binding.tilEjecutorLuminaria.error = null
         }
 
-        val formularioPendiente = estadoActual == com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado.PENDIENTE
-        val soloAsignacion = esAdminSupervisor && reparacion != null
         val mostrarSoloReasignacion = esAdminSupervisor && reparacion != null &&
             estadoActual == com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado.REPARADA
         val ocultarMateriales = false
@@ -552,7 +551,25 @@ class LuminariasFragment : Fragment() {
         } else {
             binding.tilEjecutorLuminaria.isVisible = true
         }
-        binding.etLocalizacion.isEnabled = !mostrarSoloReasignacion && !soloAsignacion
+        binding.etLocalizacion.isEnabled = !mostrarSoloReasignacion
+
+        binding.btnToggleDetalle.setOnClickListener {
+            val expandido = !binding.groupDetalle.isVisible
+            binding.groupDetalle.isVisible = expandido
+            binding.btnToggleDetalle.setIconResource(
+                if (expandido) com.Arasoftsolutions.tecniapp_ice.R.drawable.ic_expand_less
+                else com.Arasoftsolutions.tecniapp_ice.R.drawable.ic_expand_more
+            )
+            binding.btnToggleDetalle.contentDescription = if (expandido) {
+                "Contraer detalles"
+            } else {
+                "Expandir detalles"
+            }
+        }
+        binding.btnToggleDetalle.setIconResource(
+            if (binding.groupDetalle.isVisible) com.Arasoftsolutions.tecniapp_ice.R.drawable.ic_expand_less
+            else com.Arasoftsolutions.tecniapp_ice.R.drawable.ic_expand_more
+        )
 
         if (mostrarSoloReasignacion) {
             binding.btnGuardarReparacion.text = "Cerrar"
@@ -585,18 +602,7 @@ class LuminariasFragment : Fragment() {
                     onDone()
                 }
             } else {
-                if (esAdminSupervisor && formularioPendiente) {
-                    val placaSeleccionada = binding.actVehiculoLuminaria.text?.toString().orEmpty()
-                    val vehiculoSeleccionado = vehiculosDisponibles.firstOrNull {
-                        it.placa.toString() == placaSeleccionada
-                    }
-                    if (vehiculoSeleccionado == null) {
-                        viewModel.enviarMensaje("Selecciona un camión válido", esError = true)
-                    } else {
-                        viewModel.reasignarVehiculo(reparacion.id, vehiculoSeleccionado.id)
-                        onDone()
-                    }
-                } else if (!mostrarSoloReasignacion) {
+                if (!mostrarSoloReasignacion) {
                     val estado = obtenerEstado(binding.actEstadoLuminaria)
                     val ejecutorNombre = binding.actEjecutorLuminaria.text?.toString().orEmpty()
                     val ejecutorCedula = tecnicosCatalogo.firstOrNull {
