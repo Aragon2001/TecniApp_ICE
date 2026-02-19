@@ -737,6 +737,38 @@
                         android:layout_marginTop="4dp"
                         android:textColor="@color/dark_gray"
                         tools:text="Entradas: 0 • Salidas: 4 • Neto: -4" />
+
+                    <TextView
+                        android:id="@+id/tvInventarioConsumosTitulo"
+                        style="@style/TextAppearance.Material3.BodyLarge"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:text="@string/reportes_inventario_consumos_titulo"
+                        android:textStyle="bold" />
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/recyclerInventarioConsumos"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:nestedScrollingEnabled="false"
+                        android:overScrollMode="never"
+                        tools:listitem="@layout/item_reporte_inventario_consumo"
+                        tools:visibility="gone" />
+
+                    <TextView
+                        android:id="@+id/tvInventarioConsumosVacio"
+                        style="@style/TextAppearance.Material3.BodyMedium"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:drawableStart="@drawable/ic_report_placeholder"
+                        android:drawablePadding="12dp"
+                        android:gravity="center_vertical"
+                        android:text="@string/reportes_inventario_consumos_vacio"
+                        tools:visibility="visible" />
+
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 

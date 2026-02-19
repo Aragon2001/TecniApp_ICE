@@ -292,6 +292,27 @@ object ExcelReportExporter {
             createCell(1).setCellValue(data.movimientos.neto)
         }
         autosize(movimientosSheet, 2)
+
+        val consumoSheet = workbook.createSheet(context.getString(R.string.reportes_excel_mi_inventario_consumo_sheet))
+        val consumoHeaders = listOf(
+            context.getString(R.string.reportes_excel_col_consumo_fecha),
+            context.getString(R.string.reportes_excel_col_consumo_material),
+            context.getString(R.string.reportes_excel_col_consumo_cantidad),
+            context.getString(R.string.reportes_excel_col_consumo_uso),
+            context.getString(R.string.reportes_excel_col_consumo_donde),
+            context.getString(R.string.reportes_excel_col_consumo_cuando)
+        )
+        rowIndex = createHeader(consumoSheet, headerStyle, consumoHeaders)
+        data.consumos.forEach { item ->
+            val row = consumoSheet.createRow(rowIndex++)
+            row.createCell(0).setCellValue(item.fecha)
+            row.createCell(1).setCellValue(item.material)
+            row.createCell(2).setCellValue(item.cantidad)
+            row.createCell(3).setCellValue(item.usoEn)
+            row.createCell(4).setCellValue(item.donde)
+            row.createCell(5).setCellValue(item.cuando)
+        }
+        autosize(consumoSheet, consumoHeaders.size)
     }
 
     private fun addMiBitacoraSheets(
