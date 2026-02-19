@@ -3,10 +3,13 @@ package com.Arasoftsolutions.tecniapp_ice.ui.luminarias
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.graphics.Paint
+import android.graphics.pdf.PdfDocument
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
+import androidx.appcompat.widget.PopupMenu
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.widget.AppCompatEditText
@@ -31,6 +34,12 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.textfield.MaterialAutoCompleteTextView
 import kotlinx.coroutines.launch
+import java.io.File
+import java.io.FileOutputStream
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import org.apache.poi.xssf.usermodel.XSSFWorkbook
 
 class LuminariasFragment : Fragment() {
 
@@ -362,6 +371,9 @@ class LuminariasFragment : Fragment() {
     ) {
         val estadoUi = viewModel.uiState.value
         binding.tvTituloBottomSheet.text = titulo
+        binding.btnMenuReporteLuminarias.setOnClickListener {
+            mostrarMenuReportesLuminarias(it)
+        }
         binding.groupDetalle.isVisible = mostrarDetalle || reparacion != null
         binding.tvLocalizacionDetalle.text = reparacion?.localizacion?.let {
             "Localización ${viewModel.normalizarLocalizacion(it)}"
@@ -836,6 +848,183 @@ class LuminariasFragment : Fragment() {
                 viewModel.enviarMensaje("No se pudo generar el machote de luminarias", esError = true)
             }
         }
+    }
+
+    private fun mostrarMenuReportesLuminarias(anchor: View) {
+        PopupMenu(requireContext(), anchor).apply {
+            menu.add(0, 1, 1, getString(R.string.luminarias_menu_cargar))
+            menu.add(0, 2, 2, getString(R.string.luminarias_menu_enviar))
+            menu.add(0, 3, 3, getString(R.string.luminarias_menu_descargar))
+            menu.add(0, 4, 4, getString(R.string.luminarias_menu_reporte_pdf))
+            menu.add(0, 5, 5, getString(R.string.luminarias_menu_reporte_excel))
+            setOnMenuItemClickListener { item ->
+                when (item.itemId) {
+                    1 -> {
+                        excelLauncher.launch(
+                            arrayOf(
+                                "application/vnd.ms-excel",
+                                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                            )
+                        )
+                        true
+                    }
+                    2 -> {
+                        prepararMachoteCorreo()
+                        true
+                    }
+                    3 -> {
+                        prepararMachote()
+                        true
+                    }
+                    4 -> {
+                        exportarReporteGeneralPdf()
+                        true
+                    }
+                    5 -> {
+                        exportarReporteGeneralExcel()
+                        true
+                    }
+                    else -> false
+                }
+            }
+            show()
+        }
+    }
+
+    private fun exportarReporteGeneralExcel() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val context = requireContext()
+                val reporteDir = crearDirectorioReportes(context)
+                val file = File(reporteDir, "Reporte_General_Luminarias_${timestampArchivo()}.xlsx")
+                val state = viewModel.uiState.value
+                val reparaciones = (state.reparacionesPendientes + state.reparacionesReparadas)
+                    .sortedByDescending { it.fechaRegistro }
+                val vehiculosById = state.vehiculosAgencia.associateBy { it.id }
+
+                val workbook = XSSFWorkbook()
+                workbook.use { wb ->
+                    val sheet = wb.createSheet("Luminarias")
+                    val headers = listOf(
+                        "ID", "Estado", "Localización", "Cliente", "Contacto", "Observaciones",
+                        "Ejecutor", "Cédula", "Vehículo", "Agencia", "Fecha registro", "Fecha reparación"
+                    )
+                    val headerRow = sheet.createRow(0)
+                    headers.forEachIndexed { index, value -> headerRow.createCell(index).setCellValue(value) }
+
+                    val format = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
+                    reparaciones.forEachIndexed { i, reparacion ->
+                        val row = sheet.createRow(i + 1)
+                        val vehiculo = vehiculosById[reparacion.vehiculoId]
+                        row.createCell(0).setCellValue(reparacion.id.toDouble())
+                        row.createCell(1).setCellValue(reparacion.estado)
+                        row.createCell(2).setCellValue(reparacion.localizacion)
+                        row.createCell(3).setCellValue(reparacion.cliente.orEmpty())
+                        row.createCell(4).setCellValue(reparacion.contacto.orEmpty())
+                        row.createCell(5).setCellValue(reparacion.observaciones.orEmpty())
+                        row.createCell(6).setCellValue(reparacion.ejecutorNombre)
+                        row.createCell(7).setCellValue(reparacion.ejecutorCedula.orEmpty())
+                        row.createCell(8).setCellValue(vehiculo?.placa?.toString().orEmpty())
+                        row.createCell(9).setCellValue(vehiculo?.agencia.orEmpty())
+                        row.createCell(10).setCellValue(format.format(Date(reparacion.fechaRegistro)))
+                        row.createCell(11).setCellValue(reparacion.fechaReparacion?.let { format.format(Date(it)) }.orEmpty())
+                    }
+                    headers.indices.forEach { sheet.autoSizeColumn(it) }
+                    FileOutputStream(file).use { output -> wb.write(output) }
+                }
+                compartirArchivo(
+                    file = file,
+                    mimeType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    subject = "Reporte general de luminarias (Excel)",
+                    chooser = "Compartir reporte Excel"
+                )
+                viewModel.enviarMensaje(getString(R.string.luminarias_reporte_generado))
+            } catch (_: Throwable) {
+                viewModel.enviarMensaje(getString(R.string.luminarias_reporte_error), esError = true)
+            }
+        }
+    }
+
+    private fun exportarReporteGeneralPdf() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val context = requireContext()
+                val reporteDir = crearDirectorioReportes(context)
+                val file = File(reporteDir, "Reporte_General_Luminarias_${timestampArchivo()}.pdf")
+                val state = viewModel.uiState.value
+                val reparaciones = (state.reparacionesPendientes + state.reparacionesReparadas)
+                    .sortedByDescending { it.fechaRegistro }
+                val vehiculosById = state.vehiculosAgencia.associateBy { it.id }
+                val format = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
+
+                val pdf = PdfDocument()
+                val pageInfo = PdfDocument.PageInfo.Builder(1200, 1800, 1).create()
+                var page = pdf.startPage(pageInfo)
+                var canvas = page.canvas
+                val paint = Paint().apply { textSize = 28f }
+                val bodyPaint = Paint().apply { textSize = 20f }
+                var y = 60f
+
+                canvas.drawText("Reporte general de luminarias", 40f, y, paint)
+                y += 40f
+                canvas.drawText("Total registros: ${reparaciones.size}", 40f, y, bodyPaint)
+                y += 40f
+
+                reparaciones.forEachIndexed { _, reparacion ->
+                    if (y > 1720f) {
+                        pdf.finishPage(page)
+                        page = pdf.startPage(pageInfo)
+                        canvas = page.canvas
+                        y = 60f
+                    }
+                    val vehiculo = vehiculosById[reparacion.vehiculoId]
+                    val linea = "#${reparacion.id} | ${reparacion.estado} | Loc ${reparacion.localizacion} | Veh ${vehiculo?.placa ?: "-"} | ${format.format(Date(reparacion.fechaRegistro))}"
+                    canvas.drawText(linea.take(130), 40f, y, bodyPaint)
+                    y += 28f
+                    val detalle = "Cliente: ${reparacion.cliente.orEmpty()} | Contacto: ${reparacion.contacto.orEmpty()} | Obs: ${reparacion.observaciones.orEmpty()}"
+                    canvas.drawText(detalle.take(130), 40f, y, bodyPaint)
+                    y += 34f
+                }
+                pdf.finishPage(page)
+                FileOutputStream(file).use { output -> pdf.writeTo(output) }
+                pdf.close()
+                compartirArchivo(
+                    file = file,
+                    mimeType = "application/pdf",
+                    subject = "Reporte general de luminarias (PDF)",
+                    chooser = "Compartir reporte PDF"
+                )
+                viewModel.enviarMensaje(getString(R.string.luminarias_reporte_generado))
+            } catch (_: Throwable) {
+                viewModel.enviarMensaje(getString(R.string.luminarias_reporte_error), esError = true)
+            }
+        }
+    }
+
+    private fun crearDirectorioReportes(context: android.content.Context): File {
+        val parentDir = context.getExternalFilesDir(null) ?: context.filesDir
+        val reportesDir = File(parentDir, "TecniApp/Reportes")
+        if (!reportesDir.exists()) reportesDir.mkdirs()
+        return reportesDir
+    }
+
+    private fun timestampArchivo(): String =
+        SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+
+    private fun compartirArchivo(file: File, mimeType: String, subject: String, chooser: String) {
+        val context = requireContext()
+        val uri = androidx.core.content.FileProvider.getUriForFile(
+            context,
+            context.packageName + ".fileprovider",
+            file
+        )
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = mimeType
+            putExtra(Intent.EXTRA_STREAM, uri)
+            putExtra(Intent.EXTRA_SUBJECT, subject)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        startActivity(Intent.createChooser(intent, chooser))
     }
 
     private fun obtenerContactos(raw: String): List<String> {

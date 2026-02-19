@@ -39,8 +39,18 @@
         android:text="Pendiente"
         app:chipBackgroundColor="?attr/colorSecondaryContainer"
         app:layout_constraintBaseline_toBaselineOf="@id/tvTituloBottomSheet"
-        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/btnMenuReporteLuminarias"
         android:textColor="?attr/colorOnSecondaryContainer" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnMenuReporteLuminarias"
+        style="@style/Widget.Material3.Button.IconButton"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:contentDescription="@string/luminarias_menu_reportes"
+        android:icon="@drawable/ic_more_vert"
+        app:layout_constraintBaseline_toBaselineOf="@id/tvTituloBottomSheet"
+        app:layout_constraintEnd_toEndOf="parent" />
 
     <TextView
         android:id="@+id/tvSubtitleBottomSheet"
@@ -56,11 +66,10 @@
 
     <androidx.core.widget.NestedScrollView
         android:id="@+id/scrollContent"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
         android:layout_marginTop="12dp"
         android:fillViewport="true"
-        app:layout_constraintBottom_toTopOf="@id/bottomActionBar"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/tvSubtitleBottomSheet">
@@ -431,6 +440,7 @@
         style="@style/Tecni.BottomActionBar"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
+        app:layout_constraintTop_toBottomOf="@id/scrollContent"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
