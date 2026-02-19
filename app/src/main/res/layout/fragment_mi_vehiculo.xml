@@ -518,7 +518,7 @@
                     android:layout_marginTop="10dp"
                     android:icon="@drawable/ic_settings"
                     android:text="@string/mi_vehiculo_cta_configurar"
-                    app:iconTint="@color/primary_500"
+
                     app:cornerRadius="16dp" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>

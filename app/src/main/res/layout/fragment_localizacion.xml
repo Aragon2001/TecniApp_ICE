@@ -457,15 +457,7 @@
                     android:inflatedId="@+id/streetViewPanoramaContainer"
                     android:layout="@layout/include_streetview_panorama" />
 
-                <ImageView
-                    android:id="@+id/streetViewCenterPin"
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
-                    android:layout_gravity="center"
-                    android:translationY="-16dp"
-                    android:contentDescription="@string/localizacion_street_view_pin_desc"
-                    android:src="@drawable/ic_location"
-                    android:visibility="gone" />
+
 
                 <LinearLayout
                     android:id="@+id/streetViewLoadingContainer"

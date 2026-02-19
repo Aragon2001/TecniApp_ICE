@@ -246,30 +246,30 @@ class LocalizacionViewModel(app: Application) : AndroidViewModel(app) {
                     alPoste = entidad.alPoste,
                     titulo = "${entidad.calle} - ${entidad.direccion}",
                     snippet = buildString {
-                        val codigo = buildString {
-                            append(entidad.pueblo.toString().padStart(4, '0'))
-                            append("-")
-                            append(entidad.calle.toString().padStart(3, '0'))
-                            append("-")
-                            append(entidad.delPoste.toString().padStart(3, '0'))
-                            append("-00")
-                        }
-                        append(codigo)
-                        append("")
-                        val postes = if (entidad.alPoste != 0 && entidad.alPoste != entidad.delPoste) {
-                            getApplication<Application>().getString(
-                                R.string.localizacion_marker_rango_postes,
-                                entidad.delPoste,
-                                entidad.alPoste
-                            )
-                        } else {
-                            getApplication<Application>().getString(
-                                R.string.localizacion_marker_poste_unico,
-                                entidad.delPoste
-                            )
-                        }
-                        append(postes)
+
+                    val codigo = buildString {
+                        append(entidad.pueblo.toString().padStart(4, '0'))
+                        append("-")
+                        append(entidad.calle.toString().padStart(3, '0'))
+                        append("-")
+                        append(entidad.delPoste.toString().padStart(3, '0'))
+                        append("-00")
                     }
+
+                    append("🔢 ")
+                    appendLine(codigo)
+
+                    if (entidad.alPoste != 0 && entidad.alPoste != entidad.delPoste) {
+                        append("🪵 Postes ")
+                        append(entidad.delPoste)
+                        append(" ➝ ")
+                        append(entidad.alPoste)
+                    } else {
+                        append("🪵 Poste ")
+                        append(entidad.delPoste)
+                    }
+                }
+
                 )
             }
 

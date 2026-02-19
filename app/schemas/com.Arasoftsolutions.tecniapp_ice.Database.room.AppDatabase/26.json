@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 26,
-    "identityHash": "6ee2da6dc9d0db30316de0c5cdc7b7b0",
+    "identityHash": "5748a7f7a88bdf73d8fe778bd93bbaad",
     "entities": [
       {
         "tableName": "usuarios",
@@ -407,7 +407,7 @@
       },
       {
         "tableName": "vehiculo",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`vehiculoId` TEXT NOT NULL, `placaRaw` TEXT NOT NULL, `subregion` TEXT, `tipo` TEXT NOT NULL, `agencia` TEXT NOT NULL, `kmActual` REAL NOT NULL, `updatedAt` INTEGER NOT NULL, `placa` INTEGER NOT NULL, `orimetroActual` REAL, `id` INTEGER NOT NULL, `registroFecha` TEXT, `registroInicial` REAL, `registroFinal` REAL, `registroCerrado` INTEGER NOT NULL, `registrosDiariosJson` TEXT, `mantenimientoUltimo` TEXT, `mantenimientoProximo` TEXT, PRIMARY KEY(`vehiculoId`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`vehiculoId` TEXT NOT NULL, `placaRaw` TEXT NOT NULL, `subregion` TEXT, `tipo` TEXT NOT NULL, `agencia` TEXT NOT NULL, `kmActual` REAL NOT NULL, `kilometrajeActual` REAL, `updatedAt` INTEGER NOT NULL, `placa` INTEGER NOT NULL, `orimetroActual` REAL, `id` INTEGER NOT NULL, `registroFecha` TEXT, `registroInicial` REAL, `registroFinal` REAL, `registroCerrado` INTEGER NOT NULL, `registrosDiariosJson` TEXT, `mantenimientoUltimo` TEXT, `mantenimientoProximo` TEXT, PRIMARY KEY(`vehiculoId`))",
         "fields": [
           {
             "fieldPath": "vehiculoId",
@@ -443,6 +443,11 @@
             "columnName": "kmActual",
             "affinity": "REAL",
             "notNull": true
+          },
+          {
+            "fieldPath": "kilometrajeActual",
+            "columnName": "kilometrajeActual",
+            "affinity": "REAL"
           },
           {
             "fieldPath": "updatedAt",
@@ -1381,7 +1386,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '6ee2da6dc9d0db30316de0c5cdc7b7b0')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '5748a7f7a88bdf73d8fe778bd93bbaad')"
     ]
   }
 }

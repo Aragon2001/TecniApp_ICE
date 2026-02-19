@@ -191,8 +191,8 @@ class ActivityMain : AppCompatActivity() {
             val vehiculo = placaLong?.let { repository.obtenerVehiculoPorPlaca(it) }
             if (vehiculo != null && !vehiculo.registroCerrado) {
                 MaterialAlertDialogBuilder(this@ActivityMain)
-                    .setTitle(getString(R.string.mi_vehiculo_title))
-                    .setMessage("Debes registrar y cerrar el eTM del vehículo antes de abrir este módulo.")
+                    .setTitle(getString(R.string.mi_vehiculo_titulo))
+                    .setMessage("Debes registrar y cerrar el ETM del vehículo antes de abrir este módulo.")
                     .setPositiveButton("Ir a Mi vehículo") { _, _ ->
                         val navController = findNavController(R.id.nav_host_fragment_content_main)
                         navController.navigate(

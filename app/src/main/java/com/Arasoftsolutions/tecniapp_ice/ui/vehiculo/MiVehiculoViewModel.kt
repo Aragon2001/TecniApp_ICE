@@ -10,6 +10,7 @@ import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
 import com.Arasoftsolutions.tecniapp_ice.Database.sync.SyncStatus
 import com.Arasoftsolutions.tecniapp_ice.notifications.VehiculoNotifications
 import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -68,6 +69,7 @@ enum class EstadoVehiculo {
     VENCIDO
 }
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class MiVehiculoViewModel(app: Application) : AndroidViewModel(app) {
 
     private val repository = RoomRepository.getInstance(app)
@@ -226,7 +228,7 @@ class MiVehiculoViewModel(app: Application) : AndroidViewModel(app) {
             repository.actualizarMantenimiento(
                 vehiculoId = vehiculo.id,
                 mantenimientoUltimo = "${tipoMantenimiento} • ${formatearValor(valor, unidad)}",
-                mantenimientoProximo = "${formatearValor(proximo, unidad)}",
+                mantenimientoProximo = formatearValor(proximo, unidad),
                 valorActual = valor,
                 usaKilometraje = state.tipoVehiculo.usaKilometraje
             )
