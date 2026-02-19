@@ -1009,6 +1009,7 @@ Cliente: %4$s</string>
     <string name="reportes_excel_mi_inventario_sheet">Inventario</string>
     <string name="reportes_excel_mi_inventario_critico_sheet">Stock crítico</string>
     <string name="reportes_excel_mi_inventario_mov_sheet">Movimientos del periodo</string>
+    <string name="reportes_excel_mi_inventario_consumo_sheet">Materiales gastados</string>
     <string name="reportes_excel_mi_bitacora_sheet">Bitácora (detalle)</string>
     <string name="reportes_excel_mi_bitacora_resumen_sheet">Bitácora (resumen)</string>
     <string name="reportes_excel_col_case">Caso</string>
@@ -1049,6 +1050,12 @@ Cliente: %4$s</string>
     <string name="reportes_excel_col_mov_entradas">Entradas</string>
     <string name="reportes_excel_col_mov_salidas">Salidas</string>
     <string name="reportes_excel_col_mov_neto">Neto</string>
+    <string name="reportes_excel_col_consumo_fecha">Fecha</string>
+    <string name="reportes_excel_col_consumo_material">Material</string>
+    <string name="reportes_excel_col_consumo_cantidad">Cantidad</string>
+    <string name="reportes_excel_col_consumo_uso">En qué</string>
+    <string name="reportes_excel_col_consumo_donde">En dónde</string>
+    <string name="reportes_excel_col_consumo_cuando">Cuándo</string>
     <string name="reportes_excel_col_horas">Horas trabajadas</string>
     <string name="reportes_excel_col_kilometros">Kilómetros</string>
     <string name="reportes_excel_col_luminarias">Luminarias reparadas</string>
@@ -1142,6 +1149,11 @@ Cliente: %4$s</string>
     <string name="reportes_inventario_movimientos_titulo">Movimientos del periodo</string>
     <string name="reportes_inventario_movimientos_resumen">Entradas: %1$.1f · Salidas: %2$.1f · Neto: %3$.1f</string>
     <string name="reportes_inventario_movimientos_sin_datos">Sin movimientos registrados</string>
+    <string name="reportes_inventario_consumos_titulo">Descargo de materiales (gastados)</string>
+    <string name="reportes_inventario_consumos_vacio">No hay consumos en el rango seleccionado.</string>
+    <string name="reportes_inventario_consumo_meta">Fecha: %1$s · Cantidad: %2$.1f</string>
+    <string name="reportes_inventario_consumo_uso">En: %1$s</string>
+    <string name="reportes_inventario_consumo_donde">Dónde: %1$s</string>
     <string name="reportes_inventario_unidad_default">Und</string>
     <string name="reportes_inventario_codigo">Código: %1$s</string>
     <string name="reportes_inventario_cantidad">Existencias: %1$.2f %2$s</string>

@@ -67,6 +67,8 @@
     <color name="on_tertiary_container">@color/md_theme_dark_on_tertiary_container</color>
 
     <color name="error">@color/md_theme_dark_error</color>
+    <color name="error_container">@color/md_theme_dark_error_container</color>
+    <color name="on_error_container">@color/md_theme_dark_on_error_container</color>
     <color name="on_error">@color/md_theme_dark_on_error</color>
 
     <color name="background">@color/md_theme_dark_background</color>

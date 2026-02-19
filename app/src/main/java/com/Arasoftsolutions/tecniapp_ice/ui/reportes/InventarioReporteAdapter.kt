@@ -1,5 +1,7 @@
 package com.Arasoftsolutions.tecniapp_ice.ui.reportes
 
+import android.content.res.ColorStateList
+import android.graphics.Paint
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
@@ -46,6 +48,24 @@ class InventarioReporteAdapter : ListAdapter<InventarioReportItem, InventarioRep
             binding.chipInventarioEstado.text = context.getString(
                 if (isLow) R.string.reportes_inventario_estado_bajo else R.string.reportes_inventario_estado_ok
             )
+            if (isLow) {
+                val criticalColor = context.getColor(R.color.error)
+                binding.tvInventarioDescripcion.paintFlags =
+                    binding.tvInventarioDescripcion.paintFlags or Paint.UNDERLINE_TEXT_FLAG
+                binding.tvInventarioDescripcion.setTextColor(criticalColor)
+                binding.chipInventarioEstado.chipBackgroundColor = ColorStateList.valueOf(
+                    context.getColor(R.color.error_container)
+                )
+                binding.chipInventarioEstado.setTextColor(context.getColor(R.color.on_error_container))
+            } else {
+                binding.tvInventarioDescripcion.paintFlags =
+                    binding.tvInventarioDescripcion.paintFlags and Paint.UNDERLINE_TEXT_FLAG.inv()
+                binding.tvInventarioDescripcion.setTextColor(context.getColor(R.color.on_surface))
+                binding.chipInventarioEstado.chipBackgroundColor = ColorStateList.valueOf(
+                    context.getColor(R.color.primary_container)
+                )
+                binding.chipInventarioEstado.setTextColor(context.getColor(R.color.on_primary_container))
+            }
         }
     }
 }
