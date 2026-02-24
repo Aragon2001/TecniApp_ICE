@@ -14,7 +14,11 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.Arasoftsolutions.tecniapp_ice.R
+import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
 import com.Arasoftsolutions.tecniapp_ice.databinding.FragmentProgramacionBinding
+import com.Arasoftsolutions.tecniapp_ice.ui.vehiculo.obtenerEstadoEtmVehiculo
+import com.Arasoftsolutions.tecniapp_ice.ui.vehiculo.showRegistroVehiculoPendienteDialog
+import com.google.firebase.auth.FirebaseAuth
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.launch
 
@@ -49,6 +53,18 @@ class ProgramacionFragment : Fragment() {
         binding.swipeRefresh.setOnRefreshListener { viewModel.sync() }
         binding.fabNueva.setOnClickListener {
             findNavController().navigate(R.id.action_nav_programacion_to_nuevaProgramacionFragment)
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            val repo = RoomRepository.getInstance(requireContext())
+            val uid = FirebaseAuth.getInstance().currentUser?.uid
+            val estadoEtm = uid?.let { repo.obtenerEstadoEtmVehiculo(it) }
+            if (estadoEtm?.registroPendienteCierre != null) {
+                showRegistroVehiculoPendienteDialog(
+                    onRegistroGuardado = { },
+                    onNoVehiculo = { findNavController().popBackStack(R.id.nav_home, false) }
+                )
+            }
         }
 
         viewLifecycleOwner.lifecycleScope.launch {

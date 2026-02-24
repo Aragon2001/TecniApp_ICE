@@ -29,6 +29,7 @@ import com.Arasoftsolutions.tecniapp_ice.databinding.FragmentAveriasBinding
 import com.Arasoftsolutions.tecniapp_ice.databinding.DialogNotificationFiltersBinding
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
 import com.google.firebase.auth.FirebaseAuth
+import com.Arasoftsolutions.tecniapp_ice.ui.vehiculo.obtenerEstadoEtmVehiculo
 import com.Arasoftsolutions.tecniapp_ice.ui.vehiculo.showRegistroVehiculoPendienteDialog
 import com.google.android.material.datepicker.MaterialDatePicker
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -129,8 +130,8 @@ override fun onStop() {
         viewLifecycleOwner.lifecycleScope.launch {
             val repo = RoomRepository.getInstance(requireContext())
             val uid = FirebaseAuth.getInstance().currentUser?.uid
-            val placa = uid?.let { repo.obtenerUsuario(it) }?.placaVehiculo?.trim().orEmpty()
-            if (placa.isBlank()) {
+            val estadoEtm = uid?.let { repo.obtenerEstadoEtmVehiculo(it) }
+            if (estadoEtm?.registroPendienteCierre != null) {
                 showRegistroVehiculoPendienteDialog(
                     onRegistroGuardado = { },
                     onNoVehiculo = { findNavController().popBackStack(R.id.nav_home, false) }

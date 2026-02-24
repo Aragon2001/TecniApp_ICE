@@ -41,6 +41,7 @@ fun Fragment.showRegistroVehiculoPendienteDialog(
     val hoy = LocalDate.now()
     val fechaHoy = hoy.format(DateTimeFormatter.ISO_DATE)
     etFecha?.setText(fechaHoy)
+    var registroPendienteCierre: RegistroDiarioVehiculo? = null
 
     fun syncModoCierreUI(cerrar: Boolean) {
         layoutCierre.visibility = if (cerrar) android.view.View.VISIBLE else android.view.View.GONE
@@ -59,15 +60,27 @@ fun Fragment.showRegistroVehiculoPendienteDialog(
     viewLifecycleOwner.lifecycleScope.launch {
         val repo = RoomRepository.getInstance(requireContext())
         val uid = FirebaseAuth.getInstance().currentUser?.uid
-        val placa = uid?.let { repo.obtenerUsuario(it) }?.placaVehiculo?.trim().orEmpty()
-        val placaLong = VehiculoPlacaUtils.parsePlacaLong(placa)
-        val vehiculo = placaLong?.let { repo.obtenerVehiculoPorPlaca(it) }
+        val estadoEtm = uid?.let { repo.obtenerEstadoEtmVehiculo(it) }
+        val vehiculo = estadoEtm?.vehiculo
+        registroPendienteCierre = estadoEtm?.registroPendienteCierre
         val tipo = inferirTipoVehiculo(vehiculo?.tipo)
         val esMaquinaria = tipo == TipoVehiculo.MAQUINARIA_PESADA
         tilValor.hint = if (esMaquinaria) {
             getString(R.string.vehiculo_registro_km_orimetro)
         } else {
             getString(R.string.vehiculo_registro_km)
+        }
+        registroPendienteCierre?.let { pendiente ->
+            switchCerrar.isChecked = true
+            switchCerrar.isEnabled = false
+            tilFecha.editText?.setText(pendiente.fecha)
+            val lecturaInicial = pendiente.valorInicial
+            if (lecturaInicial != null) {
+                tilValor.editText?.setText(
+                    String.format(java.util.Locale.getDefault(), "%.0f", lecturaInicial)
+                )
+            }
+            tvModoInfo.text = "Tienes un cierre ETM pendiente. Debes registrarlo para continuar."
         }
     }
 
@@ -79,11 +92,14 @@ fun Fragment.showRegistroVehiculoPendienteDialog(
             return@setOnClickListener
         }
         tilValor.error = null
-        val cerrarRegistro = switchCerrar.isChecked
+        val cierreForzado = registroPendienteCierre != null
+        val cerrarRegistro = cierreForzado || switchCerrar.isChecked
         val kmFinalTexto = tilKmFinal.editText?.text?.toString()?.trim().orEmpty()
         val kmFinal = kmFinalTexto.takeIf { it.isNotBlank() }?.replace(",", ".")?.toDoubleOrNull()
+        val valorInicialPendiente = registroPendienteCierre?.valorInicial
+        val valorInicialRegistro = valorInicialPendiente ?: valor
         if (cerrarRegistro) {
-            if (kmFinal == null || kmFinal < 1 || kmFinal < valor) {
+            if (kmFinal == null || kmFinal < 1 || kmFinal < valorInicialRegistro) {
                 tilKmFinal.error = getString(R.string.averia_error_km_final_menor)
                 return@setOnClickListener
             }
@@ -136,25 +152,25 @@ fun Fragment.showRegistroVehiculoPendienteDialog(
                 } else {
                     vehiculo.registroFinal ?: vehiculo.registroInicial ?: vehiculo.orimetroActual ?: 0.0
                 }
-                if (valor < lecturaActual) {
+                if (!cierreForzado && valor < lecturaActual) {
                     tilValor.error = getString(R.string.averia_error_km_inicio_menor_ultimo, String.format(java.util.Locale.getDefault(), "%.0f", lecturaActual))
                     return@launch
                 }
                 tilValor.error = null
 
                 val registrosActuales = parseRegistrosDiarios(vehiculo.registrosDiariosJson)
-                val registroAyerSinCerrar = registrosActuales.firstOrNull {
-                    !it.cerrado && it.fecha == hoy.minusDays(1).format(DateTimeFormatter.ISO_DATE)
+                val registroSinCerrarPrevio = registroPendienteCierre ?: registrosActuales.firstOrNull {
+                    !it.cerrado && it.fecha < fechaHoy
                 }
-                val fechaRegistro = if (cerrarRegistro && registroAyerSinCerrar != null) {
-                    registroAyerSinCerrar.fecha
+                val fechaRegistro = if (cerrarRegistro && registroSinCerrarPrevio != null) {
+                    registroSinCerrarPrevio.fecha
                 } else {
                     fecha
                 }
 
                 val registro = RegistroDiarioVehiculo(
                     fecha = fechaRegistro,
-                    valorInicial = valor,
+                    valorInicial = valorInicialRegistro,
                     valorFinal = if (cerrarRegistro) kmFinal else null,
                     cerrado = cerrarRegistro && kmFinal != null,
                     registradoPor = usuario?.nombre,
@@ -170,7 +186,7 @@ fun Fragment.showRegistroVehiculoPendienteDialog(
                     .filterNot { it.fecha == fechaRegistro }
                 val nuevosCorregidos = listOf(registro) + registrosFiltrados
 
-                val shouldOpenNewDay = cerrarRegistro && registroAyerSinCerrar != null && kmFinal != null
+                val shouldOpenNewDay = cerrarRegistro && registroSinCerrarPrevio != null && kmFinal != null
                 val registrosConNuevoDia = if (shouldOpenNewDay) {
                     val nuevoDia = RegistroDiarioVehiculo(
                         fecha = fechaHoy,
@@ -185,7 +201,7 @@ fun Fragment.showRegistroVehiculoPendienteDialog(
                 }
                 val registroJson = serializeRegistrosDiarios(registrosConNuevoDia)
                 val valorActualizado = if (cerrarRegistro) (kmFinal ?: valor) else valor
-                if (valorActualizado < lecturaActual) {
+                if (!cierreForzado && valorActualizado < lecturaActual) {
                     tilValor.error = getString(R.string.averia_error_km_inicio_menor_ultimo, String.format(java.util.Locale.getDefault(), "%.0f", lecturaActual))
                     return@launch
                 }
@@ -194,7 +210,7 @@ fun Fragment.showRegistroVehiculoPendienteDialog(
                 repo.actualizarRegistroDiarioVehiculo(
                     vehiculoId = vehiculo.id,
                     fecha = fechaRegistro,
-                    inicial = valor,
+                    inicial = valorInicialRegistro,
                     final = if (cerrarRegistro) kmFinal else null,
                     cerrado = cerrarRegistro && kmFinal != null,
                     kilometrajeActual = kilometrajeActual,
