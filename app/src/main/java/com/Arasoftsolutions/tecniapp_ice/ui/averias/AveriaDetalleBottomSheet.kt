@@ -14,7 +14,6 @@ import android.view.KeyEvent
 import android.widget.ArrayAdapter
 import android.widget.Filter
 import android.widget.TextView
-import androidx.appcompat.app.AlertDialog
 import androidx.core.view.isVisible
 import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.viewModels
@@ -32,6 +31,7 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.chip.Chip
+import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import androidx.navigation.findNavController
@@ -1185,8 +1185,18 @@ b.btnExportar.isEnabled = pertenece
         val view = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_material_cantidad, null)
         val tilCantidad = view.findViewById<TextInputLayout>(R.id.tilCantidad)
         val etCantidad = view.findViewById<TextInputEditText>(R.id.etCantidad)
+        val btnMenos = view.findViewById<MaterialButton>(R.id.btnMaterialMenos)
+        val btnMas = view.findViewById<MaterialButton>(R.id.btnMaterialMas)
+        val btnConfirmar = view.findViewById<MaterialButton>(R.id.btnConfirmarMaterial)
         if (cantidadInicial > 0) {
             etCantidad.setText(cantidadInicial.toString())
+            etCantidad.setSelection(etCantidad.text?.length ?: 0)
+        }
+
+        fun ajustar(delta: Int) {
+            val actual = etCantidad.text?.toString()?.trim()?.toIntOrNull() ?: 0
+            val nuevo = (actual + delta).coerceAtLeast(0)
+            etCantidad.setText(nuevo.toString())
             etCantidad.setSelection(etCantidad.text?.length ?: 0)
         }
 
@@ -1194,26 +1204,24 @@ b.btnExportar.isEnabled = pertenece
         val dialog = MaterialAlertDialogBuilder(requireContext())
             .setTitle(getString(R.string.averia_material_cantidad_titulo, descripcion))
             .setView(view)
-            .setPositiveButton(R.string.averia_material_cantidad_guardar, null)
             .setNegativeButton(android.R.string.cancel, null)
             .create()
 
-        dialog.setOnShowListener {
-            val positive = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
-            positive.setOnClickListener {
-                tilCantidad.error = null
-                val cantidadTexto = etCantidad.text?.toString()?.trim()
-                val cantidadSeleccionada = cantidadTexto?.toIntOrNull()
-                if (cantidadSeleccionada == null || cantidadSeleccionada < 0) {
-                    tilCantidad.error = getString(R.string.averia_material_cantidad_error)
-                    return@setOnClickListener
-                }
-                if (!validarDisponibilidadMaterial(material, cantidadSeleccionada)) {
-                    return@setOnClickListener
-                }
-                onCantidadSeleccionada(cantidadSeleccionada)
-                dialog.dismiss()
+        btnMenos.setOnClickListener { ajustar(-1) }
+        btnMas.setOnClickListener { ajustar(1) }
+        btnConfirmar.setOnClickListener {
+            tilCantidad.error = null
+            val cantidadTexto = etCantidad.text?.toString()?.trim()
+            val cantidadSeleccionada = cantidadTexto?.toIntOrNull()
+            if (cantidadSeleccionada == null || cantidadSeleccionada < 0) {
+                tilCantidad.error = getString(R.string.averia_material_cantidad_error)
+                return@setOnClickListener
             }
+            if (!validarDisponibilidadMaterial(material, cantidadSeleccionada)) {
+                return@setOnClickListener
+            }
+            onCantidadSeleccionada(cantidadSeleccionada)
+            dialog.dismiss()
         }
 
         dialog.show()
