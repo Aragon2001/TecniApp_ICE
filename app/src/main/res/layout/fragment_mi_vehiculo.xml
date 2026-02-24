@@ -71,6 +71,16 @@
                         android:textColor="@color/white"
                         app:chipBackgroundColor="@color/success_500" />
 
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipEtmEstadoHeader"
+                        style="@style/Tecni.StatusChip"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="ATM pendiente"
+                        android:textColor="@color/white"
+                        app:chipBackgroundColor="@color/error_500" />
+
                     <TextView
                         android:id="@+id/tvEstadoMensaje"
                         android:layout_width="wrap_content"

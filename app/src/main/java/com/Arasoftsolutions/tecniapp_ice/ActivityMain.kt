@@ -187,10 +187,10 @@ class ActivityMain : AppCompatActivity() {
                 return@launch
             }
             val estadoEtm = repository.obtenerEstadoEtmVehiculo(uid)
-            if (estadoEtm.registroPendienteCierre != null) {
+            if (estadoEtm.registroPendienteCierre != null || !estadoEtm.tieneRegistroHoy) {
                 MaterialAlertDialogBuilder(this@ActivityMain)
                     .setTitle(getString(R.string.mi_vehiculo_titulo))
-                    .setMessage("Debes cerrar el ETM pendiente del día anterior para usar Averías, Luminarias y Programación.")
+                    .setMessage("Debes tener el ATM del día cerrado o registrar el ATM del día actual para usar Averías, Luminarias y Programación.")
                     .setPositiveButton("Ir a Mi vehículo") { _, _ ->
                         val navController = findNavController(R.id.nav_host_fragment_content_main)
                         navController.navigate(

@@ -79,6 +79,8 @@
     <string name="mi_vehiculo_estado_optimo">Óptimo</string>
     <string name="mi_vehiculo_estado_atencion">Atención</string>
     <string name="mi_vehiculo_estado_vencido">Vencido</string>
+    <string name="mi_vehiculo_atm_cerrado">ATM cerrado</string>
+    <string name="mi_vehiculo_atm_pendiente">ATM pendiente</string>
     <string name="mi_vehiculo_motivacion">Un buen mantenimiento reduce averías</string>
     <string name="mi_vehiculo_motivacion_detalle">Tu unidad responde mejor cuando su cuidado es constante.</string>
     <string name="mi_vehiculo_mantenimiento_item">Detalle de mantenimiento</string>
@@ -147,6 +149,8 @@
     <string name="home_header_default_user">técnico</string>
     <string name="home_status_online">Online</string>
     <string name="home_status_offline">Sin conexión</string>
+    <string name="home_atm_alert_pendiente">ATM pendiente: cierra el ETM para habilitar Averías, Luminarias y Programación.</string>
+    <string name="home_atm_alert_cerrado">ATM cerrado: registro del día al día.</string>
     <string name="offline_alert_message">Sin conexión a Internet</string>
     <string name="home_header_assignment_placeholder">Actualiza tu perfil para ver la asignación.</string>
     <string name="home_header_date_format">%1$s · %2$s</string>

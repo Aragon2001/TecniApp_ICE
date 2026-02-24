@@ -131,7 +131,7 @@ override fun onStop() {
             val repo = RoomRepository.getInstance(requireContext())
             val uid = FirebaseAuth.getInstance().currentUser?.uid
             val estadoEtm = uid?.let { repo.obtenerEstadoEtmVehiculo(it) }
-            if (estadoEtm?.registroPendienteCierre != null) {
+            if (estadoEtm != null && (estadoEtm.registroPendienteCierre != null || !estadoEtm.tieneRegistroHoy)) {
                 showRegistroVehiculoPendienteDialog(
                     onRegistroGuardado = { },
                     onNoVehiculo = { findNavController().popBackStack(R.id.nav_home, false) }
