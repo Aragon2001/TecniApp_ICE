@@ -19,6 +19,7 @@ import com.Arasoftsolutions.tecniapp_ice.ui.averias.shouldNotifyForAgency
 import com.Arasoftsolutions.tecniapp_ice.ui.vehiculo.TipoVehiculo
 import com.Arasoftsolutions.tecniapp_ice.ui.vehiculo.inferirTipoVehiculo
 import com.Arasoftsolutions.tecniapp_ice.ui.vehiculo.VehiculoPlacaUtils
+import com.Arasoftsolutions.tecniapp_ice.ui.vehiculo.obtenerEstadoEtmVehiculo
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -26,7 +27,6 @@ import java.text.Normalizer
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 /**
@@ -44,7 +44,6 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
 
     private val sharing = SharingStarted.WhileSubscribed(5_000)
-    private val formatoFechaEtm = DateTimeFormatter.ofPattern("yyyy-MM-dd", Locale.ROOT)
 
     // Subregión activa que define las consultas a Room
     private val _subregion = MutableStateFlow<String?>(null)
@@ -169,21 +168,20 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
             }
             .stateIn(viewModelScope, sharing, null)
 
-    private val registroHoy: StateFlow<Boolean> =
-        vehiculoAsignado
-            .flatMapLatest { vehiculo ->
+    val registroEtmPendiente: StateFlow<Boolean> =
+        usuario
+            .flatMapLatest { user ->
                 flow {
-                    val hoy = LocalDate.now().format(formatoFechaEtm)
-                    val existe = vehiculo?.let { repo.obtenerRegistroDiarioPorFecha(it.id, hoy) } != null
-                    emit(existe)
+                    val uid = user?.uid
+                    if (uid.isNullOrBlank()) {
+                        emit(true)
+                    } else {
+                        val estadoEtm = repo.obtenerEstadoEtmVehiculo(uid)
+                        emit(estadoEtm.vehiculo == null || estadoEtm.registroPendienteCierre != null || !estadoEtm.tieneRegistroHoy)
+                    }
                 }
             }
             .stateIn(viewModelScope, sharing, false)
-
-    val registroEtmPendiente: StateFlow<Boolean> =
-        combine(placaVehiculo, registroHoy) { placa, registroOk ->
-            placa.isNullOrBlank() || !registroOk
-        }.stateIn(viewModelScope, sharing, false)
 
     val tipoVehiculo: StateFlow<TipoVehiculo> =
         placaVehiculo
