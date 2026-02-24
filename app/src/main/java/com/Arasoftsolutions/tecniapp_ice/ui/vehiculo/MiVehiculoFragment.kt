@@ -100,6 +100,9 @@ class MiVehiculoFragment : Fragment() {
                         }
 
                         binding.tvEstadoMensaje.text = state.estadoMensaje
+                        binding.chipEtmEstadoHeader.text = state.etmEstadoTexto
+                        val colorEtm = if (state.etmEstadoCerrado) R.color.success_500 else R.color.error_500
+                        binding.chipEtmEstadoHeader.setChipBackgroundColorResource(colorEtm)
                         binding.tvMotivacion.text = state.motivacion
                         binding.tvValorActualLabel.text = getString(
                             R.string.mi_vehiculo_valor_actual_label,

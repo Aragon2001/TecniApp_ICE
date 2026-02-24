@@ -2,6 +2,7 @@ package com.Arasoftsolutions.tecniapp_ice.ui.vehiculo
 
 import android.app.Application
 import android.content.Context
+import com.Arasoftsolutions.tecniapp_ice.R
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.VehiculoEntity
@@ -64,7 +65,8 @@ data class MiVehiculoUiState(
     val alertasCount: Int = 0,
     val historialAlertas: List<String> = emptyList(),
     val historialMantenimientos: List<String> = emptyList(),
-    val historialMantenimientosUi: List<HistorialMantenimientoUi> = emptyList(),
+    val etmEstadoTexto: String = "Pendiente",
+    val etmEstadoCerrado: Boolean = false,
     val motivacion: String = "",
     val isLoading: Boolean = false
 )
@@ -153,7 +155,7 @@ class MiVehiculoViewModel(app: Application) : AndroidViewModel(app) {
                     ultimaCantidadAlertasNotificada = alertas
                     val historialAlertas = construirHistorialAlertas(alertas, estado, ultimoMantenimiento, valorActual, unidad)
                     val historialMantenimientos = construirHistorialMantenimientos(mantenimientos, unidad)
-                    val historialMantenimientosUi = construirHistorialMantenimientosUi(mantenimientos, unidad)
+                    val (etmEstadoTexto, etmEstadoCerrado) = calcularEstadoEtm(vehiculo)
 
                     _uiState.value = MiVehiculoUiState(
                         vehiculo = vehiculo,
@@ -169,11 +171,25 @@ class MiVehiculoViewModel(app: Application) : AndroidViewModel(app) {
                         alertasCount = alertas,
                         historialAlertas = historialAlertas,
                         historialMantenimientos = historialMantenimientos,
-                        historialMantenimientosUi = historialMantenimientosUi,
+                        etmEstadoTexto = etmEstadoTexto,
+                        etmEstadoCerrado = etmEstadoCerrado,
                         motivacion = "Cuidar tu vehículo es cuidar tu seguridad.",
                         isLoading = false
                     )
                 }
+        }
+    }
+
+    private fun calcularEstadoEtm(vehiculo: VehiculoEntity): Pair<String, Boolean> {
+        val hoy = fechaHoy()
+        val registrosEtm = parseRegistrosDiarios(vehiculo.registrosDiariosJson)
+        val pendienteAnterior = registrosEtm.any { !it.cerrado && it.fecha.isNotBlank() && it.fecha < hoy }
+        val registroHoy = registrosEtm.firstOrNull { it.fecha == hoy }
+        val cerrado = !pendienteAnterior && (registroHoy?.cerrado == true)
+        return if (cerrado) {
+            getApplication<Application>().getString(R.string.mi_vehiculo_atm_cerrado) to true
+        } else {
+            getApplication<Application>().getString(R.string.mi_vehiculo_atm_pendiente) to false
         }
     }
 
