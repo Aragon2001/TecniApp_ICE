@@ -7,6 +7,7 @@ import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.widget.TextView
+import androidx.core.content.ContextCompat
 import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -91,6 +92,8 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         val actionReportes: View = view.findViewById(R.id.action_reportes)
         val actionSettings: View = view.findViewById(R.id.action_settings)
         val kilometrajeLabel: TextView = view.findViewById(R.id.text_kilometraje_label)
+        val atmAlertText: TextView = view.findViewById(R.id.text_etm_alert)
+        val atmAlertCard: com.google.android.material.card.MaterialCardView = view.findViewById(R.id.card_etm_alert)
         statusIndicator = view.findViewById(R.id.view_status_indicator)
 
         syncButton = syncActionButton
@@ -195,6 +198,19 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                 launch {
                     vm.luminariasPendientesCount.collect { count ->
                         statsDamagedLights.text = count.toString()
+                    }
+                }
+                launch {
+                    vm.registroEtmPendiente.collect { pendiente ->
+                        if (pendiente) {
+                            atmAlertText.text = getString(R.string.home_atm_alert_pendiente)
+                            atmAlertCard.setCardBackgroundColor(ContextCompat.getColor(requireContext(), R.color.error_container_light))
+                            atmAlertText.setTextColor(ContextCompat.getColor(requireContext(), R.color.on_error_container_light))
+                        } else {
+                            atmAlertText.text = getString(R.string.home_atm_alert_cerrado)
+                            atmAlertCard.setCardBackgroundColor(ContextCompat.getColor(requireContext(), R.color.success_container_light))
+                            atmAlertText.setTextColor(ContextCompat.getColor(requireContext(), R.color.on_success_container_light))
+                        }
                     }
                 }
                 launch {
