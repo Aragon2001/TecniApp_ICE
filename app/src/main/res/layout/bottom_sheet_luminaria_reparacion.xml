@@ -68,16 +68,17 @@
 
 
 
-    <!-- ✅ Scroll ocupa el espacio entre subtitle y bottomActionBar -->
+    <!-- Contenido desplazable entre header y barra de acciones fija -->
     <androidx.core.widget.NestedScrollView
         android:id="@+id/scrollContent"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="0dp"
         android:layout_marginTop="12dp"
         android:clipToPadding="false"
         android:fillViewport="true"
         android:paddingBottom="12dp"
 
+        app:layout_constraintBottom_toTopOf="@id/bottomActionBar"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/tvSubtitleBottomSheet">
@@ -399,13 +400,18 @@
 
 
             </com.google.android.material.card.MaterialCardView>
+        </LinearLayout>
 
-             <com.google.android.material.card.MaterialCardView
+    </androidx.core.widget.NestedScrollView>
+
+    <com.google.android.material.card.MaterialCardView
         android:id="@+id/bottomActionBar"
         style="@style/Tecni.BottomActionBar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_margin="12dp"
+        android:layout_marginStart="12dp"
+        android:layout_marginEnd="12dp"
+        android:layout_marginBottom="12dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
@@ -475,11 +481,5 @@
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 
-        </LinearLayout>
-
-    </androidx.core.widget.NestedScrollView>
-    <!-- ✅ Barra de acciones sticky (FUERA del scroll) -->
-
 
 </androidx.constraintlayout.widget.ConstraintLayout>
-
