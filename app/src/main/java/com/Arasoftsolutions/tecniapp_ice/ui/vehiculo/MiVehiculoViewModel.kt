@@ -39,6 +39,11 @@ data class MantenimientoCardUi(
     val estado: EstadoVehiculo
 )
 
+data class HistorialMantenimientoUi(
+    val tipo: String,
+    val detalle: String
+)
+
 data class UsoMensualUi(
     val mes: String,
     val porcentaje: Int,
@@ -59,6 +64,7 @@ data class MiVehiculoUiState(
     val alertasCount: Int = 0,
     val historialAlertas: List<String> = emptyList(),
     val historialMantenimientos: List<String> = emptyList(),
+    val historialMantenimientosUi: List<HistorialMantenimientoUi> = emptyList(),
     val motivacion: String = "",
     val isLoading: Boolean = false
 )
@@ -133,15 +139,21 @@ class MiVehiculoViewModel(app: Application) : AndroidViewModel(app) {
                     val mantenimientosMes = contarMantenimientosMes(mantenimientos)
                     val alertas = calcularAlertas(valorActual, ultimoMantenimiento, tipo)
                     if (alertas > ultimaCantidadAlertasNotificada && alertas > 0) {
+                        val tipoAlerta = ultimoMantenimiento?.tipoMantenimiento?.ifBlank { "General" } ?: "General"
+                        val placaVehiculo = vehiculo.placaRaw.ifBlank { vehiculo.vehiculoId }
+                        val estadoAlerta = if (estado == EstadoVehiculo.VENCIDO) "atraso" else "próximo mantenimiento"
+                        val objetivo = ultimoMantenimiento?.proximoMantenimiento?.let { formatearValor(it, unidad) } ?: "sin meta"
                         VehiculoNotifications.notifyMantenimientoProximo(
                             getApplication(),
-                            "Nueva alerta de mantenimiento",
-                            "Tu vehículo tiene $alertas alerta(s) activa(s)."
+                            "Alerta de $tipoAlerta",
+                            "$placaVehiculo · $estadoAlerta",
+                            "Tipo: $tipoAlerta\nLectura actual: ${valorActual?.let { formatearValor(it, unidad) } ?: "sin lectura"}\nPróximo mantenimiento: $objetivo"
                         )
                     }
                     ultimaCantidadAlertasNotificada = alertas
                     val historialAlertas = construirHistorialAlertas(alertas, estado, ultimoMantenimiento, valorActual, unidad)
                     val historialMantenimientos = construirHistorialMantenimientos(mantenimientos, unidad)
+                    val historialMantenimientosUi = construirHistorialMantenimientosUi(mantenimientos, unidad)
 
                     _uiState.value = MiVehiculoUiState(
                         vehiculo = vehiculo,
@@ -157,6 +169,7 @@ class MiVehiculoViewModel(app: Application) : AndroidViewModel(app) {
                         alertasCount = alertas,
                         historialAlertas = historialAlertas,
                         historialMantenimientos = historialMantenimientos,
+                        historialMantenimientosUi = historialMantenimientosUi,
                         motivacion = "Cuidar tu vehículo es cuidar tu seguridad.",
                         isLoading = false
                     )
@@ -284,7 +297,7 @@ class MiVehiculoViewModel(app: Application) : AndroidViewModel(app) {
                 estado = estado
             ),
             MantenimientoCardUi(
-                titulo = "Lectura actual",
+                titulo = "Kilometraje actual",
                 detalle = estadoDetalle,
                 estado = estado
             )
@@ -334,23 +347,33 @@ class MiVehiculoViewModel(app: Application) : AndroidViewModel(app) {
         valorActual: Double?,
         unidad: String
     ): List<String> {
-        val items = mutableListOf<String>()
-        if (alertas <= 0) {
-            items += "Sin alertas activas"
-            return items
-        }
+        if (alertas <= 0) return listOf("Sin alertas activas")
         val estadoTexto = when (estado) {
             EstadoVehiculo.OPTIMO -> "Óptimo"
             EstadoVehiculo.ATENCION -> "Atención"
             EstadoVehiculo.VENCIDO -> "Vencido"
         }
-        items += "Estado actual: $estadoTexto"
-        valorActual?.let { items += "Lectura actual: ${formatearValor(it, unidad)}" }
-        ultimoMantenimiento?.let {
-            items += "Último mantenimiento: ${it.tipoMantenimiento} (${formatearValor(it.valorActual, unidad)})"
-            items += "Próximo mantenimiento: ${formatearValor(it.proximoMantenimiento, unidad)}"
-        }
-        return items
+        val lectura = valorActual?.let { formatearValor(it, unidad) } ?: "Sin lectura"
+        val ultimo = ultimoMantenimiento?.let {
+            "${it.tipoMantenimiento} (${formatearValor(it.valorActual, unidad)})"
+        } ?: "Sin mantenimiento registrado"
+        val proximo = ultimoMantenimiento?.let { formatearValor(it.proximoMantenimiento, unidad) } ?: "Sin programación"
+        return listOf("Estado: $estadoTexto · Lectura actual: $lectura · Último mantenimiento: $ultimo · Próximo mantenimiento: $proximo")
+    }
+
+    private fun construirHistorialMantenimientosUi(
+        mantenimientos: List<RegistroMantenimientoEntity>,
+        unidad: String
+    ): List<HistorialMantenimientoUi> {
+        return mantenimientos
+            .sortedByDescending { it.creadoEn }
+            .map { item ->
+                val fecha = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(item.creadoEn))
+                HistorialMantenimientoUi(
+                    tipo = item.tipoMantenimiento.ifBlank { "General" },
+                    detalle = "$fecha • ${formatearValor(item.valorActual, unidad)}"
+                )
+            }
     }
 
     private fun construirHistorialMantenimientos(
