@@ -73,6 +73,8 @@ class MiVehiculoFragment : Fragment() {
                         binding.cardMotivacion.isVisible = visible
                         binding.tvTituloMantenimientos.isVisible = visible
                         binding.containerMantenimientos.isVisible = visible
+                        binding.tvTituloHistorialMantenimientos.isVisible = visible
+                        binding.containerHistorialMantenimientos.isVisible = visible
                         binding.tvTituloUsoMensual.isVisible = visible
                         binding.containerUsoMensual.isVisible = visible
                         binding.tvChartPlaceholder.isVisible = visible
@@ -115,6 +117,7 @@ class MiVehiculoFragment : Fragment() {
 
                         actualizarEstadoChip(state.estado)
                         renderMantenimientos(state.mantenimientoCards)
+                        renderHistorialMantenimientos(state.historialMantenimientosUi)
                         renderUsoMensual(state.usoMensual, state.unidad)
                     }
                 }
@@ -187,6 +190,35 @@ class MiVehiculoFragment : Fragment() {
                 .setDuration(220)
                 .start()
             binding.containerMantenimientos.addView(card)
+        }
+    }
+
+    private fun renderHistorialMantenimientos(items: List<HistorialMantenimientoUi>) {
+        binding.containerHistorialMantenimientos.removeAllViews()
+        if (items.isEmpty()) {
+            return
+        }
+        items.forEach { item ->
+            val view = layoutInflater.inflate(R.layout.item_mantenimiento_card, binding.containerHistorialMantenimientos, false)
+            val card = view as MaterialCardView
+            val title = card.findViewById<android.widget.TextView>(R.id.tvMantenimientoTitulo)
+            val detail = card.findViewById<android.widget.TextView>(R.id.tvMantenimientoDetalle)
+            val icon = card.findViewById<android.widget.ImageView>(R.id.ivMantenimientoIcon)
+            val estadoIcon = card.findViewById<android.widget.ImageView>(R.id.ivEstado)
+            title.text = item.tipo
+            detail.text = item.detalle
+            val tipo = item.tipo.lowercase(Locale.getDefault())
+            val iconRes = when {
+                "aceite" in tipo -> R.drawable.ic_settings
+                "freno" in tipo -> R.drawable.ic_warning
+                "llanta" in tipo -> R.drawable.ic_car
+                "filtro" in tipo -> R.drawable.ic_check
+                else -> R.drawable.ic_edit
+            }
+            icon.setImageResource(iconRes)
+            estadoIcon.isVisible = false
+            card.setCardBackgroundColor(ContextCompat.getColor(requireContext(), R.color.surface_light))
+            binding.containerHistorialMantenimientos.addView(card)
         }
     }
 
