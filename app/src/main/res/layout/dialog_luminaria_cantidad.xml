@@ -19,7 +19,8 @@
         android:text="Ajusta con botones o escribe el número"
         android:textColor="?attr/colorOnSurfaceVariant"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintStart_toStartOf="parent"
+        tools:ignore="MissingConstraints" />
 
     <!-- Selector rápido de cantidad -->
     <LinearLayout
@@ -42,7 +43,8 @@
             android:icon="@drawable/ic_remove"
             android:backgroundTint="@color/error_500"
             app:iconTint="@color/white"
-            app:iconGravity="textStart" />
+            app:iconGravity=""
+            app:iconSize="24dp"/>
 
         <com.google.android.material.textfield.TextInputLayout
             android:layout_width="0dp"
