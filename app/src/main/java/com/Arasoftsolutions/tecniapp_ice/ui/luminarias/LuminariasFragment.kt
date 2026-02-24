@@ -28,6 +28,7 @@ import com.Arasoftsolutions.tecniapp_ice.databinding.FragmentLuminariasBinding
 import com.Arasoftsolutions.tecniapp_ice.databinding.BottomSheetLuminariaReparacionBinding
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
 import com.google.firebase.auth.FirebaseAuth
+import com.Arasoftsolutions.tecniapp_ice.ui.vehiculo.obtenerEstadoEtmVehiculo
 import com.Arasoftsolutions.tecniapp_ice.ui.vehiculo.showRegistroVehiculoPendienteDialog
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -114,8 +115,8 @@ class LuminariasFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             val repo = RoomRepository.getInstance(requireContext())
             val uid = FirebaseAuth.getInstance().currentUser?.uid
-            val placa = uid?.let { repo.obtenerUsuario(it) }?.placaVehiculo?.trim().orEmpty()
-            if (placa.isBlank()) {
+            val estadoEtm = uid?.let { repo.obtenerEstadoEtmVehiculo(it) }
+            if (estadoEtm != null && (estadoEtm.registroPendienteCierre != null || !estadoEtm.tieneRegistroHoy)) {
                 showRegistroVehiculoPendienteDialog(
                     onRegistroGuardado = { },
                     onNoVehiculo = { findNavController().popBackStack(R.id.nav_home, false) }
