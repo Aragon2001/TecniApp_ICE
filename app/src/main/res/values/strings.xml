@@ -72,6 +72,8 @@
     <string name="mi_vehiculo_config_intervalo_titulo">Configurar intervalo de %1$s</string>
     <string name="mi_vehiculo_config_guardar">Guardar</string>
     <string name="mi_vehiculo_mantenimientos_titulo">Mantenimientos inteligentes</string>
+    <string name="mi_vehiculo_reportes_inteligentes_titulo">Reportes inteligentes</string>
+    <string name="mi_vehiculo_historial_mantenimientos_titulo">Historial de mantenimientos</string>
     <string name="mi_vehiculo_uso_mensual">Uso mensual</string>
     <string name="mi_vehiculo_valor_actual_label">Lectura actual (%1$s)</string>
     <string name="mi_vehiculo_estado_optimo">Óptimo</string>
