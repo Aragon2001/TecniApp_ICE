@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
+    android:layout_height="match_parent"
     android:animateLayoutChanges="true">
 
     <!-- Handle del BottomSheet -->
@@ -23,6 +23,7 @@
         style="@style/TextAppearance.Material3.TitleLarge"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
         android:layout_marginTop="16dp"
         android:text="Registrar reparación"
         android:textStyle="bold"
@@ -37,10 +38,10 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="12dp"
         android:text="Pendiente"
+        android:textColor="?attr/colorOnSecondaryContainer"
         app:chipBackgroundColor="?attr/colorSecondaryContainer"
         app:layout_constraintBaseline_toBaselineOf="@id/tvTituloBottomSheet"
-        app:layout_constraintEnd_toStartOf="@id/btnMenuReporteLuminarias"
-        android:textColor="?attr/colorOnSecondaryContainer" />
+        app:layout_constraintEnd_toStartOf="@id/btnMenuReporteLuminarias" />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnMenuReporteLuminarias"
@@ -57,6 +58,7 @@
         style="@style/TextAppearance.Material3.BodySmall"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
         android:layout_marginTop="4dp"
         android:text="Completa los datos críticos y guarda"
         android:textColor="?attr/colorOnSurfaceVariant"
@@ -64,12 +66,18 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/tvTituloBottomSheet" />
 
+
+
+    <!-- ✅ Scroll ocupa el espacio entre subtitle y bottomActionBar -->
     <androidx.core.widget.NestedScrollView
         android:id="@+id/scrollContent"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="12dp"
+        android:clipToPadding="false"
         android:fillViewport="true"
+        android:paddingBottom="12dp"
+
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/tvSubtitleBottomSheet">
@@ -80,7 +88,9 @@
             android:orientation="vertical"
             android:padding="16dp">
 
-            <!-- Sección 1: Detalles -->
+            <!-- =========================
+                 Sección 1: Detalles
+                 ========================= -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardDetalle"
                 style="@style/Tecni.SectionCard"
@@ -277,10 +287,13 @@
                             android:layout_height="wrap_content"
                             android:inputType="text" />
                     </com.google.android.material.textfield.TextInputLayout>
+
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Sección 2: Materiales usados -->
+            <!-- =========================
+                 Sección 2: Materiales usados
+                 ========================= -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardMateriales"
                 style="@style/Tecni.SectionCard"
@@ -308,15 +321,7 @@
                             android:text="Materiales usados"
                             android:textStyle="bold" />
 
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnAgregarMaterial"
-                            style="@style/Widget.Material3.Button.TonalButton"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:icon="@drawable/ic_add"
-                            android:text="Agregar"
-                            app:iconGravity="textStart"
-                            app:iconPadding="8dp" />
+
                     </LinearLayout>
 
                     <com.google.android.material.textfield.TextInputLayout
@@ -336,40 +341,7 @@
                             android:inputType="text" />
                     </com.google.android.material.textfield.TextInputLayout>
 
-                    <com.google.android.material.card.MaterialCardView
-                        android:id="@+id/cardEmptyMateriales"
-                        style="@style/Tecni.PlaceholderCard"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp">
 
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:gravity="center_vertical"
-                            android:orientation="horizontal"
-                            android:padding="12dp">
-
-                            <com.google.android.material.imageview.ShapeableImageView
-                                android:layout_width="40dp"
-                                android:layout_height="40dp"
-                                android:contentDescription="Sin materiales"
-                                android:padding="8dp"
-                                app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full"
-                                app:srcCompat="@drawable/ic_summary_material"
-                                app:tint="?attr/colorOnSurfaceVariant" />
-
-                            <TextView
-                                android:id="@+id/tvEmptyMateriales"
-                                style="@style/TextAppearance.Material3.BodyMedium"
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_marginStart="12dp"
-                                android:layout_weight="1"
-                                android:text="Aún no se han agregado materiales."
-                                android:textColor="?attr/colorOnSurfaceVariant" />
-                        </LinearLayout>
-                    </com.google.android.material.card.MaterialCardView>
 
                     <androidx.recyclerview.widget.RecyclerView
                         android:id="@+id/listMaterialesLuminaria"
@@ -381,13 +353,16 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Sección 3: Evidencia / Observaciones -->
+            <!-- =========================
+                 Sección 3: Evidencia / Observaciones
+                 ========================= -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardEvidencia"
                 style="@style/Tecni.SectionCard"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp">
+
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -419,28 +394,18 @@
                             android:minLines="3" />
                     </com.google.android.material.textfield.TextInputLayout>
 
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnAgregarEvidencia"
-                        style="@style/Widget.Material3.Button.TonalButton"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:icon="@drawable/ic_camera"
-                        android:text="Agregar evidencia"
-                        app:iconGravity="textStart"
-                        app:iconPadding="8dp" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-        </LinearLayout>
-    </androidx.core.widget.NestedScrollView>
 
-    <!-- Barra de acciones sticky -->
-    <com.google.android.material.card.MaterialCardView
+                </LinearLayout>
+
+
+            </com.google.android.material.card.MaterialCardView>
+
+             <com.google.android.material.card.MaterialCardView
         android:id="@+id/bottomActionBar"
         style="@style/Tecni.BottomActionBar"
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:layout_constraintTop_toBottomOf="@id/scrollContent"
+        android:layout_margin="12dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
@@ -510,5 +475,11 @@
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 
-    <!-- Nota UX: animar expand/collapse de secciones y listas desde Kotlin. -->
+        </LinearLayout>
+
+    </androidx.core.widget.NestedScrollView>
+    <!-- ✅ Barra de acciones sticky (FUERA del scroll) -->
+
+
 </androidx.constraintlayout.widget.ConstraintLayout>
+

@@ -413,7 +413,7 @@ class LuminariasFragment : Fragment() {
         adapterMateriales = LuminariaMaterialAdapter { material ->
             materialesSeleccionados.removeAll { it.codigo == material.codigo }
             adapterMateriales.submitList(materialesSeleccionados.toList())
-            binding.tvEmptyMateriales.isVisible = materialesSeleccionados.isEmpty()
+
             if (reparacion == null) {
                 viewModel.actualizarMaterialesSeleccionados(materialesSeleccionados.toList())
             }
@@ -425,7 +425,7 @@ class LuminariasFragment : Fragment() {
             isNestedScrollingEnabled = false
         }
         adapterMateriales.submitList(materialesSeleccionados.toList())
-        binding.tvEmptyMateriales.isVisible = materialesSeleccionados.isEmpty()
+
         if (reparacion == null) {
             viewModel.actualizarMaterialesSeleccionados(materialesSeleccionados.toList())
         }
@@ -447,7 +447,7 @@ class LuminariasFragment : Fragment() {
                         materialesSeleccionados.add(LuminariaMaterialSeleccionado(material.codigo, material.descripcion, cantidad))
                     }
                     adapterMateriales.submitList(materialesSeleccionados.toList())
-                    binding.tvEmptyMateriales.isVisible = materialesSeleccionados.isEmpty()
+
                     if (reparacion == null) {
                         viewModel.actualizarMaterialesSeleccionados(materialesSeleccionados.toList())
                     }
@@ -550,11 +550,11 @@ class LuminariasFragment : Fragment() {
             binding.actMaterialLuminaria.isEnabled = false
             binding.tilMaterialLuminaria.isVisible = false
             binding.listMaterialesLuminaria.isVisible = false
-            binding.tvEmptyMateriales.isVisible = false
+
         } else {
             binding.tilMaterialLuminaria.isVisible = true
             binding.listMaterialesLuminaria.isVisible = true
-            binding.tvEmptyMateriales.isVisible = materialesSeleccionados.isEmpty()
+
         }
         if (mostrarSoloReasignacion || ocultarEjecutor) {
             binding.tilEjecutorLuminaria.isEnabled = false
