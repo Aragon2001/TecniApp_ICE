@@ -34,6 +34,7 @@ import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasSyncWorker
 import com.Arasoftsolutions.tecniapp_ice.ui.legal.StructuredTextFormatter
 import com.Arasoftsolutions.tecniapp_ice.ui.legal.StructuredTextParser
 import com.Arasoftsolutions.tecniapp_ice.ui.legal.renderStructuredContent
+import com.Arasoftsolutions.tecniapp_ice.ui.vehiculo.obtenerEstadoEtmVehiculo
 import com.Arasoftsolutions.tecniapp_ice.update.UpdateDialog
 import com.Arasoftsolutions.tecniapp_ice.update.UpdateDownloadManager
 import com.Arasoftsolutions.tecniapp_ice.update.UpdateInfo
@@ -185,14 +186,11 @@ class ActivityMain : AppCompatActivity() {
                 onContinue()
                 return@launch
             }
-            val usuario = repository.obtenerUsuario(uid)
-            val placa = usuario?.placaVehiculo?.trim().orEmpty()
-            val placaLong = com.Arasoftsolutions.tecniapp_ice.ui.vehiculo.VehiculoPlacaUtils.parsePlacaLong(placa)
-            val vehiculo = placaLong?.let { repository.obtenerVehiculoPorPlaca(it) }
-            if (vehiculo != null && !vehiculo.registroCerrado) {
+            val estadoEtm = repository.obtenerEstadoEtmVehiculo(uid)
+            if (estadoEtm.registroPendienteCierre != null) {
                 MaterialAlertDialogBuilder(this@ActivityMain)
                     .setTitle(getString(R.string.mi_vehiculo_titulo))
-                    .setMessage("Debes registrar y cerrar el ETM del vehículo antes de abrir este módulo.")
+                    .setMessage("Debes cerrar el ETM pendiente del día anterior para usar Averías, Luminarias y Programación.")
                     .setPositiveButton("Ir a Mi vehículo") { _, _ ->
                         val navController = findNavController(R.id.nav_host_fragment_content_main)
                         navController.navigate(
