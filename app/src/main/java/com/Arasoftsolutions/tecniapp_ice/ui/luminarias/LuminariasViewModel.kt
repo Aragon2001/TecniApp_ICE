@@ -57,7 +57,8 @@ data class LuminariaUiState(
 data class LuminariaMaterialSeleccionado(
     val codigo: String,
     val descripcion: String,
-    val cantidad: Double
+    val cantidad: Double,
+    val selloNumero: String? = null
 )
 
 data class LuminariaCatalogoState(
@@ -245,7 +246,7 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
                 vehiculoId = vehiculoId,
                 localizacion = localizacion,
                 materiales = materiales.map {
-                    LuminariaMaterialUso(it.codigo, it.descripcion, it.cantidad)
+                    LuminariaMaterialUso(it.codigo, it.descripcion, it.cantidad, it.selloNumero)
                 },
                 estado = estado,
                 ejecutorNombre = ejecutorNombre,
@@ -303,7 +304,7 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
             repository.actualizarReparacionLuminaria(
                 id,
                 localizacionNormalizada,
-                materiales.map { LuminariaMaterialUso(it.codigo, it.descripcion, it.cantidad) },
+                materiales.map { LuminariaMaterialUso(it.codigo, it.descripcion, it.cantidad, it.selloNumero) },
                 estado,
                 ejecutorNombre,
                 ejecutorCedula

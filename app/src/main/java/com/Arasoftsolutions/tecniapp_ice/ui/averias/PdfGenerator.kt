@@ -324,8 +324,11 @@ object PdfGenerator {
                     .filter { it.cantidad > 0 }
                     .map { m ->
                         val base = m.descripcion.ifBlank { m.codigo }
-                        val detalle = m.medidorInstalado?.let { meta ->
-                            buildList {
+                        val detalle = buildList {
+                            m.selloNumero?.takeIf { it.isNotBlank() }?.let {
+                                add(context.getString(R.string.material_sello_detalle, it))
+                            }
+                            m.medidorInstalado?.let { meta ->
                                 meta.numero?.takeIf { it.isNotBlank() }?.let {
                                     add(context.getString(R.string.averia_medidor_detalle_numero, it))
                                 }
@@ -336,8 +339,8 @@ object PdfGenerator {
                                 lecturaAnteriorPdf?.let {
                                     add(context.getString(R.string.averia_medidor_detalle_lectura_anterior, it))
                                 }
-                            }.takeIf { it.isNotEmpty() }
-                        }
+                            }
+                        }.takeIf { it.isNotEmpty() }
                         val nombre = if (!detalle.isNullOrEmpty()) {
                             "$base (${detalle.joinToString(" • ")})"
                         } else {
