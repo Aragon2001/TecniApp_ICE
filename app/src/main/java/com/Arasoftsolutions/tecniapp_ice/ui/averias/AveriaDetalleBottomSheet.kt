@@ -1573,9 +1573,9 @@ b.btnExportar.isEnabled = pertenece
         val kmLlegadaTexto = b.etKmLlegada.text?.toString()?.trim()
         val kmInicioTexto = b.etKmInicio.text?.toString()?.trim()
         val kmFinalTexto = b.etKmFinal.text?.toString()?.trim()
-        val kmLlegada = kmLlegadaTexto?.takeIf { it.isNotBlank() }?.toDoubleOrNull()
-        val kmInicio = kmInicioTexto?.takeIf { it.isNotBlank() }?.toDoubleOrNull()
-        val kmFinal = kmFinalTexto?.takeIf { it.isNotBlank() }?.toDoubleOrNull()
+        val kmLlegada = parseKilometraje(kmLlegadaTexto)
+        val kmInicio = parseKilometraje(kmInicioTexto)
+        val kmFinal = parseKilometraje(kmFinalTexto)
         if (!kmLlegadaTexto.isNullOrBlank() && kmLlegada == null) {
             b.tilKmLlegada.error = getString(R.string.averia_error_km_invalido)
             return null
@@ -1673,6 +1673,15 @@ b.btnExportar.isEnabled = pertenece
             medidorMetros = medidorMetros,
             medidorPoste = medidorPoste
         )
+    }
+
+    private fun parseKilometraje(raw: String?): Double? {
+        if (raw.isNullOrBlank()) return null
+        val normalized = raw
+            .trim()
+            .replace(" ", "")
+            .replace(",", ".")
+        return normalized.toDoubleOrNull()
     }
 
     private fun buildDraft(): AveriaDraft {
