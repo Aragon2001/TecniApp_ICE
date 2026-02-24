@@ -64,6 +64,7 @@ data class MiVehiculoUiState(
     val mantenimientosMes: Int = 0,
     val alertasCount: Int = 0,
     val historialAlertas: List<String> = emptyList(),
+    val historialMantenimientosUi: List<HistorialMantenimientoUi> = emptyList(),
     val historialMantenimientos: List<String> = emptyList(),
     val etmEstadoTexto: String = "Pendiente",
     val etmEstadoCerrado: Boolean = false,
@@ -154,6 +155,7 @@ class MiVehiculoViewModel(app: Application) : AndroidViewModel(app) {
                     }
                     ultimaCantidadAlertasNotificada = alertas
                     val historialAlertas = construirHistorialAlertas(alertas, estado, ultimoMantenimiento, valorActual, unidad)
+                    val historialMantenimientosUi = construirHistorialMantenimientosUi(mantenimientos, unidad)
                     val historialMantenimientos = construirHistorialMantenimientos(mantenimientos, unidad)
                     val (etmEstadoTexto, etmEstadoCerrado) = calcularEstadoEtm(vehiculo)
 
@@ -170,6 +172,7 @@ class MiVehiculoViewModel(app: Application) : AndroidViewModel(app) {
                         mantenimientosMes = mantenimientosMes,
                         alertasCount = alertas,
                         historialAlertas = historialAlertas,
+                        historialMantenimientosUi = historialMantenimientosUi,
                         historialMantenimientos = historialMantenimientos,
                         etmEstadoTexto = etmEstadoTexto,
                         etmEstadoCerrado = etmEstadoCerrado,
