@@ -419,6 +419,10 @@ Cliente: %4$s</string>
     <string name="averia_material_cantidad_hint">Cantidad utilizada</string>
     <string name="averia_material_cantidad_error">Ingresa una cantidad válida.</string>
     <string name="averia_material_cantidad_guardar">Guardar</string>
+    <string name="material_sello_numero_title">Número de sello</string>
+    <string name="material_sello_numero_hint">Número de sello</string>
+    <string name="material_sello_numero_error">Ingresa el número del sello.</string>
+    <string name="material_sello_detalle">Sello: %1$s</string>
     <string name="averia_material_existencia_titulo">Material no disponible</string>
     <string name="averia_material_existencia_mensaje">No dispone del material solicitado. Existencia: %1$s, solicitado: %2$s.</string>
     <string name="averia_anular">Anular avería</string>
