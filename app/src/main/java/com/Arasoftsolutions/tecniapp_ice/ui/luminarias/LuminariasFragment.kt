@@ -30,6 +30,7 @@ import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.Arasoftsolutions.tecniapp_ice.ui.vehiculo.obtenerEstadoEtmVehiculo
 import com.Arasoftsolutions.tecniapp_ice.ui.vehiculo.showRegistroVehiculoPendienteDialog
+import com.Arasoftsolutions.tecniapp_ice.ui.materiales.MaterialMetadataRules
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.bottomsheet.BottomSheetDialog
@@ -216,7 +217,8 @@ class LuminariasFragment : Fragment() {
 
     private fun mostrarDialogoCantidad(
         material: com.Arasoftsolutions.tecniapp_ice.Database.entities.MaterialEntity,
-        onConfirm: (Double) -> Unit
+        selloInicial: String?,
+        onConfirm: (Double, String?) -> Unit
     ) {
         val dialogView = layoutInflater.inflate(
             com.Arasoftsolutions.tecniapp_ice.R.layout.dialog_luminaria_cantidad,
@@ -266,9 +268,34 @@ class LuminariasFragment : Fragment() {
                 cantidadInput.error = "Ingresa una cantidad válida"
                 return@setOnClickListener
             }
-            onConfirm(cantidad)
+            val requiereSello = MaterialMetadataRules.requiresSealNumber(material.codigo, material.descripcion)
+            if (requiereSello) {
+                dialog.dismiss()
+                solicitarNumeroSello(selloInicial) { numeroSello ->
+                    onConfirm(cantidad, numeroSello)
+                }
+                return@setOnClickListener
+            }
+            onConfirm(cantidad, null)
             dialog.dismiss()
         }
+    }
+
+    private fun solicitarNumeroSello(numeroInicial: String?, onConfirm: (String) -> Unit) {
+        val input = AppCompatEditText(requireContext()).apply {
+            setText(numeroInicial.orEmpty())
+            setSelection(text?.length ?: 0)
+            hint = getString(R.string.material_sello_numero_hint)
+        }
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.material_sello_numero_title)
+            .setView(input)
+            .setPositiveButton(android.R.string.ok) { _, _ ->
+                val valor = input.text?.toString()?.trim().orEmpty()
+                if (valor.isNotBlank()) onConfirm(valor)
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
     }
 
     private fun mostrarDialogoEdicion(reparacion: com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaReparacionEntity) {
@@ -406,7 +433,7 @@ class LuminariasFragment : Fragment() {
         val materialesSeleccionados = reparacion?.let {
             com.Arasoftsolutions.tecniapp_ice.ui.luminarias.LuminariaMaterialSerializer
                 .fromJson(it.materialesJson)
-                .map { material -> LuminariaMaterialSeleccionado(material.codigo, material.descripcion, material.cantidad) }
+                .map { material -> LuminariaMaterialSeleccionado(material.codigo, material.descripcion, material.cantidad, material.selloNumero) }
                 .toMutableList()
         } ?: mutableListOf()
 
@@ -439,13 +466,14 @@ class LuminariasFragment : Fragment() {
             val codigo = seleccion.substringBefore(" - ").trim()
             val material = materialesCatalogo.firstOrNull { it.codigo == codigo }
             material?.let {
-                mostrarDialogoCantidad(material) { cantidad ->
+                val existente = materialesSeleccionados.firstOrNull { it.codigo == material.codigo }
+                mostrarDialogoCantidad(material, existente?.selloNumero) { cantidad, selloNumero ->
                     val index = materialesSeleccionados.indexOfFirst { it.codigo == material.codigo }
                     if (index >= 0) {
                         val actual = materialesSeleccionados[index]
-                        materialesSeleccionados[index] = actual.copy(cantidad = actual.cantidad + cantidad)
+                        materialesSeleccionados[index] = actual.copy(cantidad = actual.cantidad + cantidad, selloNumero = selloNumero ?: actual.selloNumero)
                     } else {
-                        materialesSeleccionados.add(LuminariaMaterialSeleccionado(material.codigo, material.descripcion, cantidad))
+                        materialesSeleccionados.add(LuminariaMaterialSeleccionado(material.codigo, material.descripcion, cantidad, selloNumero))
                     }
                     adapterMateriales.submitList(materialesSeleccionados.toList())
 

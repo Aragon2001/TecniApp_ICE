@@ -1083,8 +1083,8 @@ b.btnExportar.isEnabled = pertenece
             solicitarMedidorMaterial(material, existente)
         } else {
             val cantidadActual = existente?.cantidad?.takeIf { it > 0 } ?: 1
-            mostrarDialogoCantidadMaterial(material, cantidadActual) { cantidadSeleccionada ->
-                actualizarMaterial(material, cantidadSeleccionada)
+            mostrarDialogoCantidadMaterial(material, cantidadActual, existente?.selloNumero) { cantidadSeleccionada, selloNumero ->
+                actualizarMaterial(material, cantidadSeleccionada, selloNumero = selloNumero)
             }
         }
     }
@@ -1160,7 +1160,8 @@ b.btnExportar.isEnabled = pertenece
     private fun actualizarMaterial(
         material: MaterialEntity,
         cantidad: Int,
-        metadata: MedidorInstalacion? = null
+        metadata: MedidorInstalacion? = null,
+        selloNumero: String? = null
     ) {
         val clave = material.codigo
         val cantidadNormalizada = cantidad.coerceAtLeast(0)
@@ -1172,7 +1173,8 @@ b.btnExportar.isEnabled = pertenece
         }
         val anterior = materialesSeleccionados[clave]
         val meta = metadata ?: anterior?.medidorInstalado
-        val actualizado = MaterialUso(clave, material.descripcion, cantidadNormalizada, meta)
+        val sello = selloNumero ?: anterior?.selloNumero
+        val actualizado = MaterialUso(clave, material.descripcion, cantidadNormalizada, meta, sello)
         materialesSeleccionados[clave] = actualizado
         renderMateriales()
     }
@@ -1180,7 +1182,8 @@ b.btnExportar.isEnabled = pertenece
     private fun mostrarDialogoCantidadMaterial(
         material: MaterialEntity,
         cantidadInicial: Int,
-        onCantidadSeleccionada: (Int) -> Unit
+        selloInicial: String?,
+        onCantidadSeleccionada: (Int, String?) -> Unit
     ) {
         val view = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_material_cantidad, null)
         val tilCantidad = view.findViewById<TextInputLayout>(R.id.tilCantidad)
@@ -1188,6 +1191,8 @@ b.btnExportar.isEnabled = pertenece
         val btnMenos = view.findViewById<MaterialButton>(R.id.btnMaterialMenos)
         val btnMas = view.findViewById<MaterialButton>(R.id.btnMaterialMas)
         val btnConfirmar = view.findViewById<MaterialButton>(R.id.btnConfirmarMaterial)
+        val requiereSello = MaterialMetadataRules.requiresSealNumber(material.codigo, material.descripcion)
+        var selloNumero = selloInicial?.trim().orEmpty()
         if (cantidadInicial > 0) {
             etCantidad.setText(cantidadInicial.toString())
             etCantidad.setSelection(etCantidad.text?.length ?: 0)
@@ -1220,10 +1225,56 @@ b.btnExportar.isEnabled = pertenece
             if (!validarDisponibilidadMaterial(material, cantidadSeleccionada)) {
                 return@setOnClickListener
             }
-            onCantidadSeleccionada(cantidadSeleccionada)
+            if (cantidadSeleccionada > 0 && requiereSello) {
+                dialog.dismiss()
+                solicitarNumeroSello(selloNumero) { numeroSello ->
+                    selloNumero = numeroSello
+                    onCantidadSeleccionada(cantidadSeleccionada, numeroSello)
+                }
+                return@setOnClickListener
+            }
+            onCantidadSeleccionada(cantidadSeleccionada, null)
             dialog.dismiss()
         }
 
+        dialog.show()
+    }
+
+    private fun solicitarNumeroSello(
+        numeroInicial: String?,
+        onConfirm: (String) -> Unit
+    ) {
+        val view = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_material_cantidad, null)
+        val tilCantidad = view.findViewById<TextInputLayout>(R.id.tilCantidad)
+        val etCantidad = view.findViewById<TextInputEditText>(R.id.etCantidad)
+        val btnMenos = view.findViewById<MaterialButton>(R.id.btnMaterialMenos)
+        val btnMas = view.findViewById<MaterialButton>(R.id.btnMaterialMas)
+        val btnConfirmar = view.findViewById<MaterialButton>(R.id.btnConfirmarMaterial)
+
+        tilCantidad.hint = getString(R.string.material_sello_numero_hint)
+        etCantidad.inputType = android.text.InputType.TYPE_CLASS_TEXT
+        etCantidad.setText(numeroInicial.orEmpty())
+        etCantidad.setSelection(etCantidad.text?.length ?: 0)
+        btnMenos.isVisible = false
+        btnMas.isVisible = false
+        btnConfirmar.text = getString(android.R.string.ok)
+
+        val dialog = MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.material_sello_numero_title)
+            .setView(view)
+            .setNegativeButton(android.R.string.cancel, null)
+            .create()
+
+        btnConfirmar.setOnClickListener {
+            tilCantidad.error = null
+            val numero = etCantidad.text?.toString()?.trim().orEmpty()
+            if (numero.isBlank()) {
+                tilCantidad.error = getString(R.string.material_sello_numero_error)
+                return@setOnClickListener
+            }
+            onConfirm(numero)
+            dialog.dismiss()
+        }
         dialog.show()
     }
 
@@ -1366,15 +1417,19 @@ b.btnExportar.isEnabled = pertenece
          return texto.contains("medidor")
     }
 
-    private fun medidorDetalle(metadata: MedidorInstalacion?): String? {
-        metadata ?: return null
+    private fun medidorDetalle(metadata: MedidorInstalacion?, selloNumero: String?): String? {
         val partes = buildList {
-            metadata.numero?.takeIf { it.isNotBlank() }?.let {
+            selloNumero?.takeIf { it.isNotBlank() }?.let {
+                add(getString(R.string.material_sello_detalle, it))
+            }
+            metadata?.numero?.takeIf { it.isNotBlank() }?.let {
                 add(getString(R.string.averia_medidor_detalle_numero, it))
             }
-            val (lecturaNueva, lecturaAnterior) = parseLecturas(metadata.lectura)
-            lecturaNueva?.let { add(getString(R.string.averia_medidor_detalle_lectura, it)) }
-            lecturaAnterior?.let { add(getString(R.string.averia_medidor_detalle_lectura_anterior, it)) }
+            metadata?.let { info ->
+                val (lecturaNueva, lecturaAnterior) = parseLecturas(info.lectura)
+                lecturaNueva?.let { add(getString(R.string.averia_medidor_detalle_lectura, it)) }
+                lecturaAnterior?.let { add(getString(R.string.averia_medidor_detalle_lectura_anterior, it)) }
+            }
         }
         return partes.takeIf { it.isNotEmpty() }?.joinToString(" • ")
     }
@@ -1469,7 +1524,7 @@ b.btnExportar.isEnabled = pertenece
         materiales.forEach { uso ->
             val chip = Chip(requireContext()).apply {
                 val base = uso.descripcion.ifBlank { uso.codigo }
-                val detalle = medidorDetalle(uso.medidorInstalado)
+                val detalle = medidorDetalle(uso.medidorInstalado, uso.selloNumero)
                 val nombre = if (detalle != null) "$base • $detalle" else base
                 text = getString(
                     R.string.averia_chip_material_format,
@@ -1495,8 +1550,8 @@ b.btnExportar.isEnabled = pertenece
                                 }
                             }
                         } else {
-                            mostrarDialogoCantidadMaterial(materialBase, uso.cantidad) { cantidadActualizada ->
-                                actualizarMaterial(materialBase, cantidadActualizada)
+                            mostrarDialogoCantidadMaterial(materialBase, uso.cantidad, uso.selloNumero) { cantidadActualizada, selloNumero ->
+                                actualizarMaterial(materialBase, cantidadActualizada, selloNumero = selloNumero)
                             }
                         }
                     }
