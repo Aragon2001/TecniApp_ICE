@@ -16,7 +16,8 @@ data class MaterialUso(
     val codigo: String,
     val descripcion: String,
     val cantidad: Int,
-    val medidorInstalado: MedidorInstalacion? = null
+    val medidorInstalado: MedidorInstalacion? = null,
+    val selloNumero: String? = null
 ) : Serializable
 
 data class TecnicoAtencion(
@@ -83,14 +84,15 @@ object MaterialesSerializer {
             .joinToString(separator = ", ") { uso ->
                 val cantidad = uso.cantidad
                 val base = uso.descripcion.ifBlank { uso.codigo }
-                val detalles = uso.medidorInstalado?.let { meta ->
-                    buildList {
+                val detalles = buildList {
+                    uso.selloNumero?.takeIf { it.isNotBlank() }?.let { add("Sello: $it") }
+                    uso.medidorInstalado?.let { meta ->
                         meta.numero?.takeIf { it.isNotBlank() }?.let { add("N° $it") }
                         val (lecturaNueva, lecturaAnterior) = parseLecturas(meta.lectura)
                         lecturaNueva?.let { add("Lectura $it") }
                         lecturaAnterior?.let { add("Lectura anterior $it") }
-                    }.takeIf { it.isNotEmpty() }
-                }
+                    }
+                }.takeIf { it.isNotEmpty() }
                 val etiqueta = if (!detalles.isNullOrEmpty()) {
                     "$base (${detalles.joinToString(" • ")})"
                 } else {
@@ -114,6 +116,9 @@ object MaterialesSerializer {
                         put("lectura", meta.lectura)
                     }
                     put("medidorInstalado", metaObj)
+                }
+                uso.selloNumero?.takeIf { it.isNotBlank() }?.let {
+                    put("selloNumero", it)
                 }
             }
             array.put(obj)
@@ -140,8 +145,9 @@ object MaterialesSerializer {
                             null
                         }
                     }
+                    val selloNumero = obj.optString("selloNumero").takeIf { it.isNotBlank() }
                     if (codigo.isBlank() || cantidad <= 0) continue
-                    add(MaterialUso(codigo, descripcion, cantidad, meta))
+                    add(MaterialUso(codigo, descripcion, cantidad, meta, selloNumero))
                 }
             }
         } catch (_: Throwable) {

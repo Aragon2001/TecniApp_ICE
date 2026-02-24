@@ -14,7 +14,6 @@ import android.view.KeyEvent
 import android.widget.ArrayAdapter
 import android.widget.Filter
 import android.widget.TextView
-import androidx.appcompat.app.AlertDialog
 import androidx.core.view.isVisible
 import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.viewModels
@@ -32,6 +31,7 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.chip.Chip
+import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import androidx.navigation.findNavController
@@ -1083,8 +1083,8 @@ b.btnExportar.isEnabled = pertenece
             solicitarMedidorMaterial(material, existente)
         } else {
             val cantidadActual = existente?.cantidad?.takeIf { it > 0 } ?: 1
-            mostrarDialogoCantidadMaterial(material, cantidadActual) { cantidadSeleccionada ->
-                actualizarMaterial(material, cantidadSeleccionada)
+            mostrarDialogoCantidadMaterial(material, cantidadActual, existente?.selloNumero) { cantidadSeleccionada, selloNumero ->
+                actualizarMaterial(material, cantidadSeleccionada, selloNumero = selloNumero)
             }
         }
     }
@@ -1160,7 +1160,8 @@ b.btnExportar.isEnabled = pertenece
     private fun actualizarMaterial(
         material: MaterialEntity,
         cantidad: Int,
-        metadata: MedidorInstalacion? = null
+        metadata: MedidorInstalacion? = null,
+        selloNumero: String? = null
     ) {
         val clave = material.codigo
         val cantidadNormalizada = cantidad.coerceAtLeast(0)
@@ -1172,7 +1173,8 @@ b.btnExportar.isEnabled = pertenece
         }
         val anterior = materialesSeleccionados[clave]
         val meta = metadata ?: anterior?.medidorInstalado
-        val actualizado = MaterialUso(clave, material.descripcion, cantidadNormalizada, meta)
+        val sello = selloNumero ?: anterior?.selloNumero
+        val actualizado = MaterialUso(clave, material.descripcion, cantidadNormalizada, meta, sello)
         materialesSeleccionados[clave] = actualizado
         renderMateriales()
     }
@@ -1180,13 +1182,26 @@ b.btnExportar.isEnabled = pertenece
     private fun mostrarDialogoCantidadMaterial(
         material: MaterialEntity,
         cantidadInicial: Int,
-        onCantidadSeleccionada: (Int) -> Unit
+        selloInicial: String?,
+        onCantidadSeleccionada: (Int, String?) -> Unit
     ) {
         val view = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_material_cantidad, null)
         val tilCantidad = view.findViewById<TextInputLayout>(R.id.tilCantidad)
         val etCantidad = view.findViewById<TextInputEditText>(R.id.etCantidad)
+        val btnMenos = view.findViewById<MaterialButton>(R.id.btnMaterialMenos)
+        val btnMas = view.findViewById<MaterialButton>(R.id.btnMaterialMas)
+        val btnConfirmar = view.findViewById<MaterialButton>(R.id.btnConfirmarMaterial)
+        val requiereSello = MaterialMetadataRules.requiresSealNumber(material.codigo, material.descripcion)
+        var selloNumero = selloInicial?.trim().orEmpty()
         if (cantidadInicial > 0) {
             etCantidad.setText(cantidadInicial.toString())
+            etCantidad.setSelection(etCantidad.text?.length ?: 0)
+        }
+
+        fun ajustar(delta: Int) {
+            val actual = etCantidad.text?.toString()?.trim()?.toIntOrNull() ?: 0
+            val nuevo = (actual + delta).coerceAtLeast(0)
+            etCantidad.setText(nuevo.toString())
             etCantidad.setSelection(etCantidad.text?.length ?: 0)
         }
 
@@ -1194,28 +1209,72 @@ b.btnExportar.isEnabled = pertenece
         val dialog = MaterialAlertDialogBuilder(requireContext())
             .setTitle(getString(R.string.averia_material_cantidad_titulo, descripcion))
             .setView(view)
-            .setPositiveButton(R.string.averia_material_cantidad_guardar, null)
             .setNegativeButton(android.R.string.cancel, null)
             .create()
 
-        dialog.setOnShowListener {
-            val positive = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
-            positive.setOnClickListener {
-                tilCantidad.error = null
-                val cantidadTexto = etCantidad.text?.toString()?.trim()
-                val cantidadSeleccionada = cantidadTexto?.toIntOrNull()
-                if (cantidadSeleccionada == null || cantidadSeleccionada < 0) {
-                    tilCantidad.error = getString(R.string.averia_material_cantidad_error)
-                    return@setOnClickListener
-                }
-                if (!validarDisponibilidadMaterial(material, cantidadSeleccionada)) {
-                    return@setOnClickListener
-                }
-                onCantidadSeleccionada(cantidadSeleccionada)
-                dialog.dismiss()
+        btnMenos.setOnClickListener { ajustar(-1) }
+        btnMas.setOnClickListener { ajustar(1) }
+        btnConfirmar.setOnClickListener {
+            tilCantidad.error = null
+            val cantidadTexto = etCantidad.text?.toString()?.trim()
+            val cantidadSeleccionada = cantidadTexto?.toIntOrNull()
+            if (cantidadSeleccionada == null || cantidadSeleccionada < 0) {
+                tilCantidad.error = getString(R.string.averia_material_cantidad_error)
+                return@setOnClickListener
             }
+            if (!validarDisponibilidadMaterial(material, cantidadSeleccionada)) {
+                return@setOnClickListener
+            }
+            if (cantidadSeleccionada > 0 && requiereSello) {
+                dialog.dismiss()
+                solicitarNumeroSello(selloNumero) { numeroSello ->
+                    selloNumero = numeroSello
+                    onCantidadSeleccionada(cantidadSeleccionada, numeroSello)
+                }
+                return@setOnClickListener
+            }
+            onCantidadSeleccionada(cantidadSeleccionada, null)
+            dialog.dismiss()
         }
 
+        dialog.show()
+    }
+
+    private fun solicitarNumeroSello(
+        numeroInicial: String?,
+        onConfirm: (String) -> Unit
+    ) {
+        val view = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_material_cantidad, null)
+        val tilCantidad = view.findViewById<TextInputLayout>(R.id.tilCantidad)
+        val etCantidad = view.findViewById<TextInputEditText>(R.id.etCantidad)
+        val btnMenos = view.findViewById<MaterialButton>(R.id.btnMaterialMenos)
+        val btnMas = view.findViewById<MaterialButton>(R.id.btnMaterialMas)
+        val btnConfirmar = view.findViewById<MaterialButton>(R.id.btnConfirmarMaterial)
+
+        tilCantidad.hint = getString(R.string.material_sello_numero_hint)
+        etCantidad.inputType = android.text.InputType.TYPE_CLASS_TEXT
+        etCantidad.setText(numeroInicial.orEmpty())
+        etCantidad.setSelection(etCantidad.text?.length ?: 0)
+        btnMenos.isVisible = false
+        btnMas.isVisible = false
+        btnConfirmar.text = getString(android.R.string.ok)
+
+        val dialog = MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.material_sello_numero_title)
+            .setView(view)
+            .setNegativeButton(android.R.string.cancel, null)
+            .create()
+
+        btnConfirmar.setOnClickListener {
+            tilCantidad.error = null
+            val numero = etCantidad.text?.toString()?.trim().orEmpty()
+            if (numero.isBlank()) {
+                tilCantidad.error = getString(R.string.material_sello_numero_error)
+                return@setOnClickListener
+            }
+            onConfirm(numero)
+            dialog.dismiss()
+        }
         dialog.show()
     }
 
@@ -1358,15 +1417,19 @@ b.btnExportar.isEnabled = pertenece
          return texto.contains("medidor")
     }
 
-    private fun medidorDetalle(metadata: MedidorInstalacion?): String? {
-        metadata ?: return null
+    private fun medidorDetalle(metadata: MedidorInstalacion?, selloNumero: String?): String? {
         val partes = buildList {
-            metadata.numero?.takeIf { it.isNotBlank() }?.let {
+            selloNumero?.takeIf { it.isNotBlank() }?.let {
+                add(getString(R.string.material_sello_detalle, it))
+            }
+            metadata?.numero?.takeIf { it.isNotBlank() }?.let {
                 add(getString(R.string.averia_medidor_detalle_numero, it))
             }
-            val (lecturaNueva, lecturaAnterior) = parseLecturas(metadata.lectura)
-            lecturaNueva?.let { add(getString(R.string.averia_medidor_detalle_lectura, it)) }
-            lecturaAnterior?.let { add(getString(R.string.averia_medidor_detalle_lectura_anterior, it)) }
+            metadata?.let { info ->
+                val (lecturaNueva, lecturaAnterior) = parseLecturas(info.lectura)
+                lecturaNueva?.let { add(getString(R.string.averia_medidor_detalle_lectura, it)) }
+                lecturaAnterior?.let { add(getString(R.string.averia_medidor_detalle_lectura_anterior, it)) }
+            }
         }
         return partes.takeIf { it.isNotEmpty() }?.joinToString(" • ")
     }
@@ -1461,7 +1524,7 @@ b.btnExportar.isEnabled = pertenece
         materiales.forEach { uso ->
             val chip = Chip(requireContext()).apply {
                 val base = uso.descripcion.ifBlank { uso.codigo }
-                val detalle = medidorDetalle(uso.medidorInstalado)
+                val detalle = medidorDetalle(uso.medidorInstalado, uso.selloNumero)
                 val nombre = if (detalle != null) "$base • $detalle" else base
                 text = getString(
                     R.string.averia_chip_material_format,
@@ -1487,8 +1550,8 @@ b.btnExportar.isEnabled = pertenece
                                 }
                             }
                         } else {
-                            mostrarDialogoCantidadMaterial(materialBase, uso.cantidad) { cantidadActualizada ->
-                                actualizarMaterial(materialBase, cantidadActualizada)
+                            mostrarDialogoCantidadMaterial(materialBase, uso.cantidad, uso.selloNumero) { cantidadActualizada, selloNumero ->
+                                actualizarMaterial(materialBase, cantidadActualizada, selloNumero = selloNumero)
                             }
                         }
                     }
