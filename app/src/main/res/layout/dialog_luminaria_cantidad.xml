@@ -8,16 +8,7 @@
     android:padding="20dp">
 
     <!-- Título y subtítulo -->
-    <TextView
-        android:id="@+id/tvCantidadTitulo"
-        style="@style/TextAppearance.Material3.TitleLarge"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:text="Cantidad usada"
-        android:textStyle="bold"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+
 
     <TextView
         android:id="@+id/tvCantidadSubtitulo"
@@ -28,8 +19,7 @@
         android:text="Ajusta con botones o escribe el número"
         android:textColor="?attr/colorOnSurfaceVariant"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tvCantidadTitulo" />
+        app:layout_constraintStart_toStartOf="parent" />
 
     <!-- Selector rápido de cantidad -->
     <LinearLayout
@@ -50,6 +40,7 @@
             android:layout_height="48dp"
             android:contentDescription="Disminuir cantidad"
             android:icon="@drawable/ic_remove"
+             app:iconTint="@color/background"
             app:iconGravity="textStart" />
 
         <com.google.android.material.textfield.TextInputLayout
