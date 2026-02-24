@@ -649,6 +649,11 @@ class LuminariasFragment : Fragment() {
 
     private fun mostrarBottomSheet(dialog: BottomSheetDialog) {
         dialog.setOnShowListener {
+            dialog.findViewById<View>(com.google.android.material.R.id.design_bottom_sheet)?.let { sheet ->
+                sheet.layoutParams = sheet.layoutParams.apply {
+                    height = ViewGroup.LayoutParams.MATCH_PARENT
+                }
+            }
             dialog.behavior.skipCollapsed = true
             dialog.behavior.state = BottomSheetBehavior.STATE_EXPANDED
         }
