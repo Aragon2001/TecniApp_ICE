@@ -32,6 +32,7 @@ import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.chip.Chip
 import com.google.android.material.button.MaterialButton
+import com.google.android.material.card.MaterialCardView
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import androidx.navigation.findNavController
@@ -648,6 +649,8 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
                 medidorSeleccionado = null
                 clienteSeleccionado = item.cliente
                 vm.resetMedidorEstado()
+                b.etMedidor.setText("")
+                b.etLocalizacion.setText("")
             }
             updateTipoSection()
             renderState()
@@ -683,6 +686,7 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
                 b.tilMedidor.error = null
                 b.tilMedidor.helperText = null
                 if (tipoSeleccionado == TipoAfectacion.CLIENTE) {
+                    b.etLocalizacion.setText("")
                     renderMedidorInfo(null)
                 }
                 return@doAfterTextChanged
@@ -776,6 +780,7 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
         )
         suppressTipoListener = false
         val esCliente = tipoSeleccionado == TipoAfectacion.CLIENTE
+        b.cardMedidorInput.isVisible = esCliente
         b.tilMedidor.isVisible = esCliente
         b.tilMedidor.isEndIconVisible = esCliente && b.tilMedidor.isEnabled
         if (!esCliente) {
@@ -885,7 +890,7 @@ private fun applyInputStateForRules(
     b.cardMateriales.isVisible = showCompleto
     b.tvSeccionRegistro.isVisible = showCompleto
     b.cardTipoAfectacion.isVisible = showCompleto
-    b.cardMedidorInput.isVisible = showCompleto
+    b.cardMedidorInput.isVisible = showCompleto && tipoSeleccionado == TipoAfectacion.CLIENTE
     b.cardDetallesAtencion.isVisible = showCompleto
     b.tvSeccionHorarios.isVisible = showInicio
     b.cardHorarios.isVisible = showInicio
@@ -1192,8 +1197,13 @@ b.btnExportar.isEnabled = pertenece
         val btnMenos = view.findViewById<MaterialButton>(R.id.btnMaterialMenos)
         val btnMas = view.findViewById<MaterialButton>(R.id.btnMaterialMas)
         val btnConfirmar = view.findViewById<MaterialButton>(R.id.btnConfirmarMaterial)
+        val tvDisponible = view.findViewById<TextView>(R.id.tvMaterialDisponible)
+        val cardWarning = view.findViewById<MaterialCardView>(R.id.cardWarningMaterial)
         val requiereSello = MaterialMetadataRules.requiresSealNumber(material.codigo, material.descripcion)
         var selloNumero = selloInicial?.trim().orEmpty()
+        val disponible = inventarioPorCodigo[material.codigo]?.cantidadDisponible ?: 0.0
+        tvDisponible.text = getString(R.string.averia_material_disponible_label, formatKilometraje(disponible))
+        cardWarning.isVisible = false
         if (cantidadInicial > 0) {
             etCantidad.setText(cantidadInicial.toString())
             etCantidad.setSelection(etCantidad.text?.length ?: 0)
@@ -1251,6 +1261,10 @@ b.btnExportar.isEnabled = pertenece
         val btnMenos = view.findViewById<MaterialButton>(R.id.btnMaterialMenos)
         val btnMas = view.findViewById<MaterialButton>(R.id.btnMaterialMas)
         val btnConfirmar = view.findViewById<MaterialButton>(R.id.btnConfirmarMaterial)
+        val tvDisponible = view.findViewById<TextView>(R.id.tvMaterialDisponible)
+        val cardWarning = view.findViewById<MaterialCardView>(R.id.cardWarningMaterial)
+        val tvTitulo = view.findViewById<TextView>(R.id.tvMaterialCantidadTitulo)
+        val tvSubtitulo = view.findViewById<TextView>(R.id.tvMaterialCantidadSubtitulo)
 
         tilCantidad.hint = getString(R.string.material_sello_numero_hint)
         etCantidad.inputType = android.text.InputType.TYPE_CLASS_TEXT
@@ -1259,6 +1273,10 @@ b.btnExportar.isEnabled = pertenece
         btnMenos.isVisible = false
         btnMas.isVisible = false
         btnConfirmar.text = getString(android.R.string.ok)
+        tvTitulo.isVisible = false
+        tvSubtitulo.text = getString(R.string.material_sello_subtitle)
+        tvDisponible.isVisible = false
+        cardWarning.isVisible = false
 
         val dialog = MaterialAlertDialogBuilder(requireContext())
             .setTitle(R.string.material_sello_numero_title)

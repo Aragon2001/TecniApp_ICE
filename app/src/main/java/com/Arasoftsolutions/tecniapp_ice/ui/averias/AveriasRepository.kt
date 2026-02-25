@@ -680,6 +680,9 @@ return AveriaEntity(
 
         val placaNormalizada = normalizada.toString()
         val updates = mapOf<String, Any>(
+            "kmActual" to kilometraje,
+            "kilometrajeActual" to kilometraje,
+            "meta/kmActual" to kilometraje,
             "meta/kilometrajeActual" to kilometraje,
             "meta/updatedAt" to System.currentTimeMillis()
         )
