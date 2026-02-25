@@ -676,7 +676,9 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
-                    android:textAppearance="?attr/textAppearanceBodySmall"
+                    android:gravity="start"
+                    android:textAppearance="?attr/textAppearanceBodyLarge"
+                    android:textStyle="bold"
                     android:visibility="gone" />
 
                 <TextView
@@ -684,7 +686,8 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="2dp"
-                    android:textAppearance="?attr/textAppearanceBodySmall"
+                    android:gravity="start"
+                    android:textAppearance="?attr/textAppearanceBodyMedium"
                     android:visibility="gone" />
 
                 <TextView
@@ -692,7 +695,8 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="2dp"
-                    android:textAppearance="?attr/textAppearanceBodySmall"
+                    android:gravity="start"
+                    android:textAppearance="?attr/textAppearanceBodyMedium"
                     android:visibility="gone" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
