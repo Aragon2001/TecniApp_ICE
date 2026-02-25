@@ -35,6 +35,7 @@ import com.Arasoftsolutions.tecniapp_ice.ui.legal.StructuredTextFormatter
 import com.Arasoftsolutions.tecniapp_ice.ui.legal.StructuredTextParser
 import com.Arasoftsolutions.tecniapp_ice.ui.legal.renderStructuredContent
 import com.Arasoftsolutions.tecniapp_ice.ui.vehiculo.obtenerEstadoEtmVehiculo
+import com.Arasoftsolutions.tecniapp_ice.ui.vehiculo.showRegistroVehiculoPendienteDialog
 import com.Arasoftsolutions.tecniapp_ice.update.UpdateDialog
 import com.Arasoftsolutions.tecniapp_ice.update.UpdateDownloadManager
 import com.Arasoftsolutions.tecniapp_ice.update.UpdateInfo
@@ -181,29 +182,32 @@ class ActivityMain : AppCompatActivity() {
             onContinue()
             return
         }
+        requireEtmOrShowDialog(continuar = onContinue)
+    }
+
+    private fun getCurrentNavFragment(): androidx.fragment.app.Fragment? {
+        val navHost = supportFragmentManager
+            .findFragmentById(R.id.nav_host_fragment_content_main)
+        return navHost?.childFragmentManager?.primaryNavigationFragment
+    }
+
+    private fun requireEtmOrShowDialog(continuar: () -> Unit) {
         lifecycleScope.launch {
-            val uid = auth.currentUser?.uid ?: run {
-                onContinue()
-                return@launch
-            }
+            val uid = auth.currentUser?.uid ?: return@launch
             val estadoEtm = repository.obtenerEstadoEtmVehiculo(uid)
-            if (estadoEtm.registroPendienteCierre != null || !estadoEtm.tieneRegistroHoy) {
-                MaterialAlertDialogBuilder(this@ActivityMain)
-                    .setTitle(getString(R.string.mi_vehiculo_titulo))
-                    .setMessage("Debes tener el ATM del día cerrado o registrar el ATM del día actual para usar Averías, Luminarias y Programación.")
-                    .setPositiveButton("Ir a Mi vehículo") { _, _ ->
-                        val navController = findNavController(R.id.nav_host_fragment_content_main)
-                        navController.navigate(
-                            R.id.nav_mi_vehiculo,
-                            null,
-                            buildDrawerNavOptions(navController.graph.startDestinationId)
-                        )
-                    }
-                    .setNegativeButton(android.R.string.cancel, null)
-                    .show()
+            val hayPendiente = estadoEtm.registroPendienteCierre != null
+            val noTieneHoy = !estadoEtm.tieneRegistroHoy
+
+            if (hayPendiente || noTieneHoy) {
+                val currentFragment = getCurrentNavFragment()
+                currentFragment?.showRegistroVehiculoPendienteDialog(
+                    onRegistroGuardado = { continuar() },
+                    onNoVehiculo = { /* mantener bloqueado */ }
+                )
                 return@launch
             }
-            onContinue()
+
+            continuar()
         }
     }
 

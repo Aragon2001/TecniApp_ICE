@@ -2,6 +2,7 @@ package com.Arasoftsolutions.tecniapp_ice.ui.vehiculo
 
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import android.view.ViewGroup
 import com.Arasoftsolutions.tecniapp_ice.R
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
 import com.google.android.material.button.MaterialButton
@@ -237,4 +238,8 @@ fun Fragment.showRegistroVehiculoPendienteDialog(
         onNoVehiculo()
     }
     dialog.show()
+    dialog.window?.setLayout(
+        ViewGroup.LayoutParams.MATCH_PARENT,
+        ViewGroup.LayoutParams.WRAP_CONTENT
+    )
 }
