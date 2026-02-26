@@ -991,7 +991,8 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
         }
         viewModelScope.launch {
             if (!ensureSubregionAllowed(ui)) return@launch
-            if (Estado.fromLabel(ui.estado) != Estado.EN_ATENCION) return@launch
+            val estadoActual = Estado.fromLabel(ui.estado)
+            if (estadoActual != Estado.EN_ATENCION && estadoActual != Estado.RESUELTA) return@launch
             val user = ensurePropietario(ui) ?: return@launch
             val resolved = resolveData(ui, data, user)
             repo.cerrar(ui.id, resolved)
