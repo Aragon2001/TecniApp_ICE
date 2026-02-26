@@ -214,6 +214,36 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
         }
     }
 
+    suspend fun obtenerAgenciasPorSubregion(subregionId: String): List<AgenciaEntity> {
+        val filtro = subregionId.trim().takeIf { it.isNotEmpty() } ?: return emptyList()
+        val nodeName = resolveDatosGeneralesNode("agencias", "Agencias")
+        val snap = dbDatosGenerales.child(nodeName)
+            .orderByChild("subregion")
+            .equalTo(filtro)
+            .get()
+            .await()
+        if (!snap.exists()) return emptyList()
+
+        return snap.children.mapNotNull { child ->
+            val id = child.stringChild("id") ?: child.key
+            val nombre = child.stringChild("nombre") ?: return@mapNotNull null
+            val regionId = child.stringChild("region_id")
+                ?: child.stringChild("regionId")
+                ?: child.stringChild("region")
+            val subregion = child.stringChild("subregion")
+                ?: child.stringChild("subregion_id")
+                ?: child.stringChild("subregionId")
+            val entityId = (id ?: nombre).trim()
+            if (entityId.isEmpty()) return@mapNotNull null
+            AgenciaEntity(
+                id = entityId,
+                nombre = nombre.trim(),
+                regionId = regionId?.trim(),
+                subregion = subregion?.trim()
+            )
+        }
+    }
+
     suspend fun obtenerVehiculos(subregionId: String? = null): List<VehiculosEntity> {
         val nodeName = resolveDatosGeneralesNode("vehiculos", "Vehiculos")
         val snap = dbDatosGenerales.child(nodeName).get().await()
@@ -246,6 +276,44 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
             )
         }.filter { vehiculo ->
             filtroSubregion == null || vehiculo.subregion?.equals(filtroSubregion, ignoreCase = true) == true
+        }
+    }
+
+    suspend fun obtenerVehiculosPorSubregion(subregionId: String): List<VehiculosEntity> {
+        val filtro = subregionId.trim().takeIf { it.isNotEmpty() } ?: return emptyList()
+        val nodeName = resolveDatosGeneralesNode("vehiculos", "Vehiculos")
+        val snap = dbDatosGenerales.child(nodeName)
+            .orderByChild("subregion")
+            .equalTo(filtro)
+            .get()
+            .await()
+        if (!snap.exists()) return emptyList()
+
+        return snap.children.mapNotNull { child ->
+            val placaNodo = child.key?.trim().orEmpty().takeIf { it.isNotEmpty() }
+                ?: return@mapNotNull null
+            val placaTexto = child.stringChild("placa")?.trim().takeIf { !it.isNullOrEmpty() }
+                ?: placaNodo
+            val placaLong = placaTexto.toLongOrNull() ?: return@mapNotNull null
+            val agencia = child.stringChild("agencia")?.trim().orEmpty()
+            if (agencia.isEmpty()) return@mapNotNull null
+
+            val tipo = child.stringChild("tipo")?.trim().orEmpty()
+            val subregion = child.stringChild("subregion")?.trim()
+            val kmActual = child.doubleValueAny("kmActual") ?: 0.0
+            val registroCerrado = child.booleanValueAny("registroCerrado", "registro_cerrado") ?: false
+
+            VehiculosEntity(
+                vehiculoId = placaNodo,
+                placaRaw = placaTexto,
+                placa = placaLong,
+                id = placaTexto.hashCode(),
+                tipo = tipo,
+                subregion = subregion,
+                agencia = agencia,
+                kmActual = kmActual,
+                registroCerrado = registroCerrado
+            )
         }
     }
 
