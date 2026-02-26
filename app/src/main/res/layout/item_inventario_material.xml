@@ -116,8 +116,7 @@
                 android:insetBottom="0dp"
                 android:paddingHorizontal="10dp"
                 app:backgroundTint="@color/ice_yellow"
-                app:icon="@drawable/horizontal_rule_24px
-"
+                app:icon="@drawable/horizontal_rule_24px"
                 app:iconPadding="4dp"
                 app:iconSize="16dp"
                 app:iconTint="@color/black"

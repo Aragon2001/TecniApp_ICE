@@ -127,8 +127,8 @@ class AveriasAdapter(
             val estadoEnum = Estado.fromLabel(item.estado)
             val ownerUid = item.ownerUidFor(estadoEnum)
             val placaUsuario = currentUserVehiculo?.trim()
-            val placaAveria = item.vehiculo.trim()
-            val pertenecePorVehiculo = placaUsuario != null && placaAveria.isNotBlank() && placaUsuario.equals(placaAveria, ignoreCase = true)
+            val placaAveria = item.vehiculo?.trim()
+            val pertenecePorVehiculo = placaUsuario != null && placaAveria?.isNotBlank() ?:  && placaUsuario.equals(placaAveria, ignoreCase = true)
             val asignadaAOtro =
                 if (!ownerUid.isNullOrBlank()) {
                     currentUid == null || (ownerUid != currentUid && !pertenecePorVehiculo)

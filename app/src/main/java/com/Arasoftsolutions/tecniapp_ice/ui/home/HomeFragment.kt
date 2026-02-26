@@ -204,7 +204,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                 launch {
                     vm.registroEtmPendiente.collect { pendiente ->
                         if (pendiente) {
-                            etmAlertText.text = getString(R.string.home_atm_alert_pendiente)
+                            etmAlertText.text = getString(R.string.home_etm_alert_pendiente)
 
                         } else {
                             etmAlertCard.isVisible = false

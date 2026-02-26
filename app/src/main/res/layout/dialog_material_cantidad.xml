@@ -44,18 +44,23 @@
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnMaterialMenos"
-            style="@style/Widget.Material3.Button"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:backgroundTint="@color/error_500"
-            android:contentDescription="Disminuir cantidad"
-            android:icon="@drawable/ic_remove"
-            app:iconTint="@color/white"
-            app:iconGravity="textStart" />
+            style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:layout_marginStart="8dp"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:paddingHorizontal="10dp"
+                app:backgroundTint="@color/red"
+                app:icon="@drawable/horizontal_rule_24px"
+                app:iconPadding="4dp"
+                app:iconSize="16dp"
+                app:iconTint="@color/black"
+                />
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilCantidad"
-            style="@style/Tecni.TextInput.Filled"
+            style="@style/Tecni.TextInput.Outlined.Dense"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="12dp"
@@ -75,14 +80,19 @@
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnMaterialMas"
-            style="@style/Widget.Material3.Button"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:backgroundTint="@color/success_500"
-            android:contentDescription="Aumentar cantidad"
-            android:icon="@drawable/ic_add"
-            app:iconTint="@color/white"
-            app:iconGravity="textStart" />
+             style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:layout_marginStart="8dp"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:paddingHorizontal="10dp"
+                app:backgroundTint="@color/success_500"
+                app:icon="@drawable/ic_add"
+                app:iconPadding="4dp"
+                app:iconSize="16dp"
+                app:iconTint="@color/black"
+                />
     </LinearLayout>
 
     <TextView
