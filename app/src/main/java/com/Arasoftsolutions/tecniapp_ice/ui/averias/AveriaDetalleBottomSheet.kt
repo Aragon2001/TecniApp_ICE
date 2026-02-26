@@ -867,7 +867,7 @@ private fun renderState() {
     val puedeEditarInicio = !regionMismatch && !clorResuelta && !asignadaAOtro &&
         (estado == Estado.PENDIENTE || estado == Estado.ASIGNADA || (estado == Estado.EN_ATENCION && pertenece))
     val puedeEditarCompleto = !regionMismatch && !clorResuelta &&
-        estado == Estado.EN_ATENCION && pertenece && !asignadaAOtro
+        (estado == Estado.EN_ATENCION || estado == Estado.RESUELTA) && pertenece && !asignadaAOtro
 
     applyInputStateForRules(
         estado = estado,
@@ -890,7 +890,7 @@ private fun applyInputStateForRules(
     puedeEditarCompleto: Boolean
 ) {
     val showInicio = estado == Estado.PENDIENTE || estado == Estado.ASIGNADA || estado == Estado.EN_ATENCION
-    val showCompleto = estado == Estado.EN_ATENCION
+    val showCompleto = estado == Estado.EN_ATENCION || estado == Estado.RESUELTA
 
     inputsEditable = puedeEditarCompleto
     finalInputsEnabled = puedeEditarCompleto
@@ -1055,9 +1055,20 @@ private fun configureButtonsForRules(
         }
 
         Estado.RESUELTA -> {
-            // ✅ Resuelta por app: solo exportar
+            // ✅ Resuelta por app y propia: permitir re-editar y guardar.
+            b.btnResolver.isVisible = pertenece
+            b.btnResolver.text = getString(R.string.averia_guardar_resolucion)
+            b.btnResolver.isEnabled = pertenece
+            b.btnResolver.setOnClickListener {
+                if (!pertenece) return@setOnClickListener
+                val data = collectFormData(ValidationContext.RESOLVER) ?: return@setOnClickListener
+                vm.onResolver(item, data)
+                persistDraftOnDestroy = false
+                dismissAllowingStateLoss()
+            }
+
             b.btnExportar.isVisible = pertenece
-b.btnExportar.isEnabled = pertenece
+            b.btnExportar.isEnabled = pertenece
 
             b.btnExportar.setOnClickListener {
                 viewLifecycleOwner.lifecycleScope.launch { PdfGenerator.exportAveria(requireContext(), item) }
