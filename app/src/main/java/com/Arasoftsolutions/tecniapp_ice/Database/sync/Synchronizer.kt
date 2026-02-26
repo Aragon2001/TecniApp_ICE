@@ -1,5 +1,6 @@
 package com.Arasoftsolutions.tecniapp_ice.Database.sync
 
+import android.util.Log
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
 import com.google.firebase.auth.FirebaseAuth
 
@@ -9,6 +10,7 @@ class Synchronizer(
 
     companion object {
         private const val EXTRA_STEPS = 2
+        private const val TAG = "Synchronizer"
     }
 
     suspend fun syncSubregion(
@@ -23,6 +25,8 @@ class Synchronizer(
         var done = 0
         var downloadedBytes = 0L
 
+        val syncStartedAt = System.currentTimeMillis()
+        Log.i(TAG, "[SYNC_FLOW] start subregion=$subregionId totalSteps=$total")
         try {
             val executed = AppSyncCoordinator.runExclusiveDebounced {
 
@@ -87,12 +91,15 @@ class Synchronizer(
                     }
 
                 // FINAL
+                Log.i(TAG, "[SYNC_FLOW] completed bytes=$downloadedBytes tookMs=${System.currentTimeMillis()-syncStartedAt}")
                 onSyncSuccess()
             }
             if (executed == null) {
+                Log.i(TAG, "[SYNC_FLOW] skipped reason=debounced/running bytes=$downloadedBytes tookMs=${System.currentTimeMillis()-syncStartedAt}")
                 onSyncSuccess()
             }
         } catch (t: Throwable) {
+            Log.e(TAG, "[SYNC_FLOW] failed bytes=$downloadedBytes tookMs=${System.currentTimeMillis()-syncStartedAt} detail=${t.message}", t)
             // Aquí cae cualquier error del proceso completo
             onSyncError(t)
         }
