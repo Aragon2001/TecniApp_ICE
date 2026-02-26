@@ -190,9 +190,9 @@ class MiVehiculoViewModel(app: Application) : AndroidViewModel(app) {
         val registroHoy = registrosEtm.firstOrNull { it.fecha == hoy }
         val cerrado = !pendienteAnterior && (registroHoy?.cerrado == true)
         return if (cerrado) {
-            getApplication<Application>().getString(R.string.mi_vehiculo_atm_cerrado) to true
+            getApplication<Application>().getString(R.string.mi_vehiculo_etm_cerrado) to true
         } else {
-            getApplication<Application>().getString(R.string.mi_vehiculo_atm_pendiente) to false
+            getApplication<Application>().getString(R.string.mi_vehiculo_etm_pendiente) to false
         }
     }
 
