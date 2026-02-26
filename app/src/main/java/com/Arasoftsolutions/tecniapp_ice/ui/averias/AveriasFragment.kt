@@ -166,6 +166,7 @@ override fun onStop() {
                 vm.usuarioActual.collectLatest { user ->
                     adapter.currentUserUid = user?.uid
                     adapter.currentUserRegion = vm.resolveUserRegionLabel(user)
+                    adapter.currentUserVehiculo = user?.placaVehiculo
                 }
             }
         }

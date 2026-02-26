@@ -777,9 +777,17 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
 
     private suspend fun ensurePropietario(ui: AveriaUI): UserEntity? {
         val user = requireUsuario() ?: return null
+        val placaUsuario = user.placaVehiculo?.trim()
+        val placaAveria = ui.vehiculo?.trim()
+        val pertenecePorVehiculo = !placaUsuario.isNullOrBlank() && !placaAveria.isNullOrBlank() &&
+            placaUsuario.equals(placaAveria, ignoreCase = true)
         val estado = Estado.fromLabel(ui.estado)
         val asignadoA = ui.ownerUidFor(estado)
-        if (!asignadoA.isNullOrBlank() && asignadoA != user.uid) {
+        if (!asignadoA.isNullOrBlank() && asignadoA != user.uid && !pertenecePorVehiculo) {
+            _messages.emit(getApplication<Application>().getString(R.string.averia_error_no_autorizado))
+            return null
+        }
+        if (asignadoA.isNullOrBlank() && !placaAveria.isNullOrBlank() && !pertenecePorVehiculo) {
             _messages.emit(getApplication<Application>().getString(R.string.averia_error_no_autorizado))
             return null
         }
@@ -879,8 +887,9 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
                 _messages.tryEmit(getApplication<Application>().getString(R.string.averia_error_no_autorizado))
                 return@launch
             }
-            val nombreSupervisor = nombreCompleto(user)
-            repo.asignar(ui.id, user.uid, nombreSupervisor, vehiculo.trim())
+            val vehiculoLimpio = vehiculo.trim()
+            val nombreCuadrilla = "Cuadrilla $vehiculoLimpio"
+            repo.asignar(ui.id, "", nombreCuadrilla, vehiculoLimpio)
             _messages.tryEmit(getApplication<Application>().getString(R.string.averia_exito_asignada_cuadrilla, vehiculo.trim()))
             AveriasSyncWorker.triggerNow(getApplication(), showSyncNotification = false)
         }
