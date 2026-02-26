@@ -2,7 +2,7 @@
 
 const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
-const { onValueCreated } = require("firebase-functions/v2/database");
+const { onValueCreated, onValueWritten } = require("firebase-functions/v2/database");
 const { defineSecret } = require("firebase-functions/params");
 require("firebase-admin/database");
 const admin = require("firebase-admin");
@@ -686,6 +686,72 @@ exports.sendReport = onCall(
   }
 );
 
+
+
+exports.notifyAveriaAssignedToCrew = onValueWritten({
+  region: "us-central1",
+  ref: "/averias/{caseId}",
+  instance: "tecniapp-ice-averias-default-rtdb"
+}, async (event) => {
+  const before = event.data?.before?.val() || {};
+  const after = event.data?.after?.val() || {};
+  if (!after) return;
+
+  const estado = String(after.estado || "").trim().toUpperCase();
+  const vehiculo = String(after.vehiculoAsignado || "").trim();
+  const tecnicoUid = String(after.tecnicoAsignadoUid || "").trim();
+
+  if (estado !== "ASIGNADA" || !vehiculo || tecnicoUid) return;
+
+  const beforeVehiculo = String(before.vehiculoAsignado || "").trim();
+  const beforeEstado = String(before.estado || "").trim().toUpperCase();
+  const shouldNotify = beforeVehiculo !== vehiculo || beforeEstado !== "ASIGNADA";
+  if (!shouldNotify) return;
+
+  const usersSnap = await dbUsers.ref("usuarios").get();
+  const usersVal = usersSnap.val() || {};
+
+  const tokensSet = new Set();
+  Object.values(usersVal).forEach((u) => {
+    const placa = String(u?.placaVehiculo || "").trim();
+    if (!placa) return;
+    if (placa.toUpperCase() !== vehiculo.toUpperCase()) return;
+    extractUserTokens(u).forEach((t) => tokensSet.add(t));
+  });
+
+  const tokens = Array.from(tokensSet);
+  if (!tokens.length) return;
+
+  const caseId = String(after.caseId || event.params.caseId || "").trim();
+  const agencia = String(after.nombreAgencia || after.agencia || "").trim();
+  const body = `Caso ${caseId || "s/n"} · ${agencia || "Avería asignada"} · Vehículo: ${vehiculo}`;
+
+  const msg = {
+    notification: {
+      title: "Avería asignada",
+      body,
+    },
+    data: {
+      type: "AVERIA_ASSIGNED",
+      destination: "nav_averias",
+      caseId,
+      vehiculoAsignado: vehiculo,
+      estado: String(after.estado || "Asignada"),
+      agencia: String(after.agencia || ""),
+      nombreAgencia: String(after.nombreAgencia || ""),
+      descripcion: String(after.localizacion || after.observaciones || ""),
+      lastUpdated: String(after.lastUpdated || Date.now()),
+    },
+    tokens,
+  };
+
+  try {
+    const r = await admin.messaging().sendEachForMulticast(msg);
+    console.log("notifyAveriaAssignedToCrew sent", r.successCount, "of", tokens.length, "caseId", caseId, "vehiculo", vehiculo);
+  } catch (e) {
+    console.error("notifyAveriaAssignedToCrew error", e);
+  }
+});
 
 exports.notifyProgramacionAssigned = onValueCreated({
   region: "us-central1",

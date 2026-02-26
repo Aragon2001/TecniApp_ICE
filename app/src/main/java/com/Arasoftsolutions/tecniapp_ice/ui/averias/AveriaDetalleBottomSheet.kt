@@ -849,9 +849,20 @@ private fun renderState() {
     estadoActual = estado
 
     val ownerUid = item.ownerUidFor(estado)
-    val tieneAsignacion = !ownerUid.isNullOrBlank()
-    val pertenece = uid != null && ownerUid == uid
-    val asignadaAOtro = tieneAsignacion && (uid == null || ownerUid != uid)
+    val placaUsuario = vm.usuarioActual.value?.placaVehiculo?.trim()
+    val placaAveria = item.vehiculo?.trim().orEmpty()
+    val pertenecePorVehiculo =
+                placaUsuario != null &&
+                placaAveria.isNotBlank() &&
+                placaUsuario.equals(placaAveria, ignoreCase = true)
+    val tieneAsignacion = !ownerUid.isNullOrBlank() || placaAveria.isNotBlank()
+    val pertenece = (uid != null && ownerUid == uid) || pertenecePorVehiculo
+    val asignadaAOtro =
+        if (!ownerUid.isNullOrBlank()) {
+            tieneAsignacion && (uid == null || (ownerUid != uid && !pertenecePorVehiculo))
+        } else {
+            placaAveria.isNotBlank() && !pertenecePorVehiculo
+        }
 
     val puedeEditarInicio = !regionMismatch && !clorResuelta && !asignadaAOtro &&
         (estado == Estado.PENDIENTE || estado == Estado.ASIGNADA || (estado == Estado.EN_ATENCION && pertenece))
