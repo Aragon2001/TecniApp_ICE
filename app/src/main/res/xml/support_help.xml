@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<legalDocument>
+    <intro>
+        Este centro de soporte reúne recomendaciones para operar TecniApp ICE, reportar incidencias
+        y mantener continuidad operativa en campo.
+    </intro>
+
+    <section title="Canales de atención">
+        <bulletList>
+            <item>Soporte funcional y técnico: {{supportEmail}}</item>
+            <item>Incluye en tu reporte: subregión, agencia, modelo del dispositivo y evidencia del error.</item>
+            <item>Indica fecha y hora aproximada para facilitar trazabilidad en logs.</item>
+        </bulletList>
+    </section>
+
+    <section title="Buenas prácticas operativas">
+        <bulletList>
+            <item>Sincroniza datos al iniciar y finalizar la jornada.</item>
+            <item>Valida conectividad antes de exportar reportes PDF o Excel.</item>
+            <item>Protege credenciales institucionales y evita compartir sesiones abiertas.</item>
+        </bulletList>
+    </section>
+
+    <section title="Gestión de incidentes">
+        <paragraph>
+            Si detectas bloqueos, errores de autenticación o inconsistencias de datos,
+            reporta el caso indicando pasos para reproducirlo y prioridad del impacto operativo.
+        </paragraph>
+    </section>
+
+    <footer>
+        <paragraph>Última revisión de lineamientos: {{year}}.</paragraph>
+    </footer>
+</legalDocument>

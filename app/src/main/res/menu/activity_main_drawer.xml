@@ -68,12 +68,8 @@
             android:icon="@drawable/ic_settings"
             android:title="@string/menu_settings" />
         <item
-            android:id="@+id/nav_help"
-            android:icon="@drawable/ic_menu_help"
-            android:title="@string/menu_help" />
-        <item
-            android:id="@+id/nav_privacy"
+            android:id="@+id/nav_legal_center"
             android:icon="@drawable/ic_menu_policy"
-            android:title="@string/menu_privacy" />
+            android:title="@string/legal_center_title" />
     </group>
 </menu>

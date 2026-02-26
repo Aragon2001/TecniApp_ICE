@@ -111,18 +111,21 @@
         android:label="@string/menu_settings"
         tools:layout="@layout/fragment_settings" />
 
-    <!-- Fragmento de ayuda -->
     <fragment
-        android:id="@+id/nav_help"
-        android:name="com.Arasoftsolutions.tecniapp_ice.ui.help.HelpFragment"
-        android:label="@string/menu_help"
-        tools:layout="@layout/fragment_help" />
+        android:id="@+id/nav_legal_center"
+        android:name="com.Arasoftsolutions.tecniapp_ice.ui.legal.LegalCenterFragment"
+        android:label="@string/legal_center_title"
+        tools:layout="@layout/fragment_legal_center" />
 
-    <!-- Fragmento de políticas -->
     <fragment
-        android:id="@+id/nav_privacy"
-        android:name="com.Arasoftsolutions.tecniapp_ice.ui.policies.PoliciesFragment"
-        android:label="@string/menu_privacy"
-        tools:layout="@layout/fragment_policies" />
+        android:id="@+id/nav_legal_detail"
+        android:name="com.Arasoftsolutions.tecniapp_ice.ui.legal.LegalDetailFragment"
+        android:label="@string/legal_center_title"
+        tools:layout="@layout/fragment_legal_detail">
+        <argument
+            android:name="docType"
+            app:argType="string"
+            android:defaultValue="PRIVACY" />
+    </fragment>
 
 </navigation>
