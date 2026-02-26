@@ -3,10 +3,12 @@ package com.Arasoftsolutions.tecniapp_ice.ui.averias
 import android.util.Log
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.AveriaEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.InventarioMovimientoAveriaEntity
+import com.Arasoftsolutions.tecniapp_ice.Database.entities.MedidorEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.room.AppDatabase
 import com.Arasoftsolutions.tecniapp_ice.ui.vehiculo.VehiculoPlacaUtils
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.Query
 import kotlinx.coroutines.Dispatchers
@@ -21,6 +23,7 @@ class AveriasRepository(private val db: AppDatabase) {
 
     private val dao get() = db.averiaDao()
     private val vehiculoDao get() = db.vehiculoDao()
+    private val medidorDao get() = db.medidorDao()
     private val inventarioDao get() = db.inventarioDao()
     private val firebaseRef = FirebaseDatabase
         .getInstance("https://tecniapp-ice-averias.firebaseio.com/")
@@ -42,6 +45,10 @@ class AveriasRepository(private val db: AppDatabase) {
         .getInstance("https://tecniapp-ice-datosgenerales.firebaseio.com/")
         .reference
         .child("vehiculos")
+
+    private val medidoresRef = FirebaseDatabase
+        .getInstance("https://tecniapp-ice-default-rtdb.firebaseio.com/")
+        .reference
 
     private data class SyncScope(
         val region: String?,
@@ -578,6 +585,7 @@ return AveriaEntity(
     suspend fun enAtencion(caseId: String, data: AveriaActionData) = withContext(Dispatchers.IO) {
         val now = System.currentTimeMillis()
         val base = dao.getByCaseId(caseId)
+        actualizarCambioMedidorSiAplica(caseId, base?.numeroMedidor, data)
         val horaInicio = data.horaInicioMillis
             ?: base?.atencionHoraInicioMillis
             ?: base?.horaInicioMillis
@@ -626,6 +634,7 @@ return AveriaEntity(
     suspend fun cerrar(caseId: String, data: AveriaActionData) = withContext(Dispatchers.IO) {
         val now = System.currentTimeMillis()
         val base = dao.getByCaseId(caseId)
+        actualizarCambioMedidorSiAplica(caseId, base?.numeroMedidor, data)
         val horaInicio = data.horaInicioMillis
             ?: base?.atencionHoraInicioMillis
             ?: base?.horaInicioMillis
@@ -733,6 +742,63 @@ return AveriaEntity(
             val rootPlaca = node.child("placa").value?.toString()?.trim()
             metaPlaca == placaNormalizada || rootPlaca == placaNormalizada
         }?.key
+    }
+
+    private suspend fun actualizarCambioMedidorSiAplica(
+        caseId: String,
+        medidorAnterior: String?,
+        data: AveriaActionData
+    ) {
+        if (data.tipoAfectacion != TipoAfectacion.CLIENTE) return
+
+        val anterior = medidorAnterior?.trim().orEmpty()
+        val nuevo = data.numeroMedidor?.trim().orEmpty()
+        if (anterior.isBlank() || nuevo.isBlank() || anterior.equals(nuevo, ignoreCase = true)) return
+
+        val medidorActual = medidorDao.buscarPorNumero(anterior) ?: return
+        val medidorActualizado = medidorActual.copy(medidorNumber = nuevo)
+
+        medidorDao.insertAll(listOf(medidorActualizado))
+        medidorDao.eliminarPorNumero(anterior)
+
+        runCatching {
+            actualizarMedidorEnFirebase(medidorActual, medidorActualizado)
+        }.onFailure {
+            Log.w(TAG, "No se pudo actualizar el medidor en Firebase para avería=$caseId", it)
+        }
+    }
+
+    private suspend fun actualizarMedidorEnFirebase(anterior: MedidorEntity, nuevo: MedidorEntity) {
+        val subregion = anterior.subregion?.trim().orEmpty()
+        if (subregion.isBlank()) return
+
+        val nodoSubregion = resolveSubregionRef(subregion) ?: return
+        val payload = mutableMapOf<String, Any?>()
+        payload["medidorNumber"] = nuevo.medidorNumber
+        nuevo.cliente?.takeIf { it.isNotBlank() }?.let { payload["cliente"] = it }
+        nuevo.calle?.takeIf { it.isNotBlank() }?.let { payload["calle"] = it }
+        nuevo.poste?.takeIf { it.isNotBlank() }?.let { payload["poste"] = it }
+        nuevo.metros?.takeIf { it.isNotBlank() }?.let { payload["metros"] = it }
+        nuevo.pueblo?.takeIf { it.isNotBlank() }?.let { payload["pueblo"] = it }
+        nuevo.localizacion?.let { payload["localizacion"] = it }
+        payload["subregion"] = subregion
+
+        nodoSubregion.child(nuevo.medidorNumber).setValue(payload).await()
+        nodoSubregion.child(anterior.medidorNumber).removeValue().await()
+    }
+
+    private suspend fun resolveSubregionRef(subregion: String): DatabaseReference? {
+        val roots = listOf("Medidores", "medidores")
+        for (root in roots) {
+            val rootRef = medidoresRef.child(root)
+            val snapshot = runCatching { rootRef.get().await() }.getOrNull() ?: continue
+            if (!snapshot.exists()) continue
+            val match = snapshot.children.firstOrNull { child ->
+                child.key?.trim()?.equals(subregion, ignoreCase = true) == true
+            }
+            if (match != null) return match.ref
+        }
+        return null
     }
 
     private suspend fun syncSingle(caseId: String) {
