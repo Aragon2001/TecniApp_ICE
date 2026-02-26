@@ -1121,10 +1121,7 @@ b.btnExportar.isEnabled = pertenece
             .setMessage(
                 getString(
                     R.string.averia_material_existencia_mensaje,
-                    formatKilometraje(existencia),
-                    solicitado
-                )
-            )
+                    formatKilometraje(existencia), solicitado))
             .setPositiveButton(android.R.string.ok, null)
             .show()
     }
@@ -1229,7 +1226,7 @@ b.btnExportar.isEnabled = pertenece
 
         val descripcion = material.descripcion.ifBlank { material.codigo }
         val dialog = MaterialAlertDialogBuilder(requireContext())
-            .setTitle(getString(R.string.averia_material_cantidad_titulo, descripcion))
+            .setTitle( descripcion)
             .setView(view)
             .setNegativeButton(android.R.string.cancel, null)
             .create()

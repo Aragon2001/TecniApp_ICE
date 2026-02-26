@@ -340,7 +340,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
-            app:cardBackgroundColor="@color/primary_container_light">
+            app:cardBackgroundColor="@color/surface_light">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -366,10 +366,10 @@
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnRegistrarMantenimiento"
-                    style="@style/Widget.Material3.Button"
+                    style="@style/Tecni.Button.Elevated"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
+                    android:layout_marginTop="10dp"
                     android:icon="@drawable/ic_add"
                     android:text="@string/mi_vehiculo_cta_registrar"
                     app:iconTint="@color/white"
@@ -377,7 +377,7 @@
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnRegistroEtm"
-                    style="@style/Tecni.Button.Outlined"
+                    style="@style/Tecni.Button.Elevated"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="10dp"
@@ -388,7 +388,7 @@
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnConfigurarVehiculo"
-                    style="@style/Tecni.Button.Outlined"
+                    style="@style/Tecni.Button.Elevated"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="10dp"
