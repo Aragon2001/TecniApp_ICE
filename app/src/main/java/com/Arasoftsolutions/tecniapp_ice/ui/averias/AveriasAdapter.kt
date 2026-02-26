@@ -49,6 +49,12 @@ class AveriasAdapter(
             notifyDataSetChanged()
         }
 
+    var currentUserVehiculo: String? = null
+        set(value) {
+            field = value
+            notifyDataSetChanged()
+        }
+
     private fun normalizeRegion(value: String): String {
         val normalized = Normalizer.normalize(value, Normalizer.Form.NFD)
         return normalized.replace("\\p{InCombiningDiacriticalMarks}+".toRegex(), "")
@@ -120,11 +126,22 @@ class AveriasAdapter(
             val bloqueadaPorClor = item.estadoClor.equals("RESUELTA", ignoreCase = true)
             val estadoEnum = Estado.fromLabel(item.estado)
             val ownerUid = item.ownerUidFor(estadoEnum)
-            val asignadaAOtro = !ownerUid.isNullOrBlank() && (currentUid == null || ownerUid != currentUid)
+            val placaUsuario = currentUserVehiculo?.trim()
+            val placaAveria = item.vehiculo?.trim().orEmpty()
+            val pertenecePorVehiculo =
+                placaUsuario != null &&
+                placaAveria.isNotBlank() &&
+                placaUsuario.equals(placaAveria, ignoreCase = true)
+            val asignadaAOtro =
+                if (!ownerUid.isNullOrBlank()) {
+                    currentUid == null || (ownerUid != currentUid && !pertenecePorVehiculo)
+                } else {
+                    placaAveria.isNotBlank() && !pertenecePorVehiculo
+                }
             val pertenece = if (estadoEnum == Estado.ANULADA && ownerUid.isNullOrBlank()) {
                 true
             } else {
-                !asignadaAOtro && !ownerUid.isNullOrBlank()
+                !asignadaAOtro && (!ownerUid.isNullOrBlank() || pertenecePorVehiculo)
             }
             val regionMismatch = currentUserRegion?.let { regionUsuario ->
                 val regionAveria = item.region.trim()
