@@ -48,6 +48,7 @@ class   RoomRepository(context: Context) {
     private var luminariasRealtimeListener: ValueEventListener? = null
 
     companion object {
+        private const val TAG = "RoomRepositorySync"
         const val SUBREGION_SYNC_STEPS = 5
 
         @Volatile
@@ -896,11 +897,14 @@ class   RoomRepository(context: Context) {
         val total = SUBREGION_SYNC_STEPS
         var done = 0
         var downloadedBytes = 0L
+        val syncStartedAt = System.currentTimeMillis()
+        Log.i(TAG, "[SYNC_SUBREGION] start subregion=$subregionId totalSteps=$total")
 
         // Si quieres transacción atómica, descomenta y usa withTransaction:
         // db.withTransaction {
         val canonicalSubregion = SubregionNormalizer.canonicalIdOrSelf(subregionId)
             ?: throw IllegalArgumentException("Subregión inválida: $subregionId")
+        Log.i(TAG, "[SYNC_SUBREGION] canonicalSubregion=$canonicalSubregion")
 
         val agenciasPorSubregion = firebase.obtenerAgenciasPorSubregion(canonicalSubregion)
         val agencias = agenciasPorSubregion.ifEmpty { firebase.obtenerAgencias(canonicalSubregion) }
@@ -910,6 +914,7 @@ class   RoomRepository(context: Context) {
             db.agenciaDao().insertAll(agencias)
         }
         progress(++done, total, "Descargando agencias…", downloadedBytes)
+        Log.i(TAG, "[SYNC_SUBREGION] step=$done/$total source=datos_generales/agencias count=${agencias.size} bytes=$downloadedBytes")
 
         val pueblosRemotos = firebase.obtenerPueblosPorSubregion(canonicalSubregion)
         downloadedBytes += estimateBytes(pueblosRemotos)
@@ -927,6 +932,7 @@ class   RoomRepository(context: Context) {
             db.puebloDao().insertAll(pueblosASincronizar)
         }
         progress(++done, total, "Descargando pueblos…", downloadedBytes)
+        Log.i(TAG, "[SYNC_SUBREGION] step=$done/$total source=local/pueblos count=${pueblosASincronizar.size} bytes=$downloadedBytes")
 
         val idsPueblos = pueblosASincronizar.map { it.id }
         val localizacionesFiltradas = firebase.obtenerLocalizacionesPorPueblos(idsPueblos)
@@ -938,6 +944,7 @@ class   RoomRepository(context: Context) {
             db.localizacionDao().insertAll(localizacionesFiltradas)
         }
         progress(++done, total, "Descargando localizaciones…", downloadedBytes)
+        Log.i(TAG, "[SYNC_SUBREGION] step=$done/$total source=local/localizaciones puebloCount=${idsPueblos.size} localizaciones=${localizacionesFiltradas.size} bytes=$downloadedBytes")
 
         val vehiculosPorSubregion = firebase.obtenerVehiculosPorSubregion(canonicalSubregion)
         val vehiculosRemotos = vehiculosPorSubregion.ifEmpty { firebase.obtenerVehiculos(canonicalSubregion) }
@@ -949,12 +956,15 @@ class   RoomRepository(context: Context) {
         val vehiculosCombinados = combinarVehiculosConLocales(vehiculos)
         db.vehiculoDao().insertAll(vehiculosCombinados)
         progress(++done, total, "Descargando vehículos…", downloadedBytes)
+        Log.i(TAG, "[SYNC_SUBREGION] step=$done/$total source=datos_generales/vehiculos count=${vehiculosCombinados.size} bytes=$downloadedBytes")
 
         val medidores = firebase.obtenerMedidores(canonicalSubregion)
         downloadedBytes += estimateBytes(medidores)
         db.medidorDao().eliminarPorSubregion(canonicalSubregion)
         db.medidorDao().insertAll(medidores)
         progress(++done, total, "Descargando medidores…", downloadedBytes)
+        Log.i(TAG, "[SYNC_SUBREGION] step=$done/$total source=medidores/medidores count=${medidores.size} bytes=$downloadedBytes")
+        Log.i(TAG, "[SYNC_SUBREGION] completed subregion=$canonicalSubregion totalBytes=$downloadedBytes tookMs=${System.currentTimeMillis()-syncStartedAt}")
         // }
     }
 
