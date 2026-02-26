@@ -552,10 +552,11 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
                     },
                     onSyncProgress = { done, total, msg, downloadedBytes ->
                         viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Main) {
+                            val safeContext = context ?: return@launch
                             if (isAdded) {
                                 dialog.update(done, total, msg ?: "", downloadedBytes)
                                 SyncStatusNotifications.notifyProgress(
-                                    requireContext(),
+                                    safeContext,
                                     done,
                                     total,
                                     msg
@@ -565,8 +566,9 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
                     },
                     onSyncSuccess = {
                         viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Main) {
-                            SyncStatusNotifications.dismissProgress(requireContext())
-                            AveriasSyncWorker.triggerNow(requireContext())
+                            val safeContext = context ?: return@launch
+                            SyncStatusNotifications.dismissProgress(safeContext)
+                            AveriasSyncWorker.triggerNow(safeContext)
                             viewLifecycleOwner.lifecycleScope.launch {
                                 dataStore.markManualSyncNow()
                             }
@@ -575,10 +577,10 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
                                     roomRepository.refreshUsuarioActual()
                                 }
                             }
-                            SyncStatusNotifications.notifySynced(requireContext())
+                            SyncStatusNotifications.notifySynced(safeContext)
                             dismissSyncDialog()
                             Toast.makeText(
-                                requireContext(),
+                                safeContext,
                                 R.string.settings_sync_triggered,
                                 Toast.LENGTH_SHORT
                             ).show()
@@ -586,10 +588,11 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
                     },
                     onSyncError = { error ->
                         viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Main) {
-                            SyncStatusNotifications.dismissProgress(requireContext())
+                            val safeContext = context ?: return@launch
+                            SyncStatusNotifications.dismissProgress(safeContext)
                             dismissSyncDialog()
                             Toast.makeText(
-                                requireContext(),
+                                safeContext,
                                 error.message ?: getString(R.string.settings_clear_cache_failure),
                                 Toast.LENGTH_LONG
                             ).show()
@@ -598,7 +601,9 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
                 )
             } catch (_: Exception) {
                 dismissSyncDialog()
-                Toast.makeText(requireContext(), R.string.settings_clear_cache_failure, Toast.LENGTH_LONG).show()
+                context?.let {
+                    Toast.makeText(it, R.string.settings_clear_cache_failure, Toast.LENGTH_LONG).show()
+                }
             } finally {
                 setManualSyncInProgress(false)
             }
