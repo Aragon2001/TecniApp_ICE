@@ -850,15 +850,15 @@ private fun renderState() {
 
     val ownerUid = item.ownerUidFor(estado)
     val placaUsuario = vm.usuarioActual.value?.placaVehiculo?.trim()
-    val placaAveria = item.vehiculo.trim()
-    val pertenecePorVehiculo = placaUsuario != null && placaAveria.isNotBlank() && placaUsuario.equals(placaAveria, ignoreCase = true)
-    val tieneAsignacion = !ownerUid.isNullOrBlank() || placaAveria.isNotBlank()
+    val placaAveria = item.vehiculo?.trim()
+    val pertenecePorVehiculo = placaUsuario != null && placaAveria?.isNotBlank() ?:  && placaUsuario.equals(placaAveria, ignoreCase = true)
+    val tieneAsignacion = !ownerUid.isNullOrBlank() || placaAveria?.isNotBlank() ?:
     val pertenece = (uid != null && ownerUid == uid) || pertenecePorVehiculo
     val asignadaAOtro =
         if (!ownerUid.isNullOrBlank()) {
             tieneAsignacion && (uid == null || (ownerUid != uid && !pertenecePorVehiculo))
         } else {
-            placaAveria.isNotBlank() && !pertenecePorVehiculo
+            placaAveria?.isNotBlank() ?:  && !pertenecePorVehiculo
         }
 
     val puedeEditarInicio = !regionMismatch && !clorResuelta && !asignadaAOtro &&
@@ -1118,10 +1118,7 @@ b.btnExportar.isEnabled = pertenece
             .setMessage(
                 getString(
                     R.string.averia_material_existencia_mensaje,
-                    formatKilometraje(existencia),
-                    solicitado
-                )
-            )
+                    formatKilometraje(existencia), solicitado))
             .setPositiveButton(android.R.string.ok, null)
             .show()
     }
@@ -1226,7 +1223,7 @@ b.btnExportar.isEnabled = pertenece
 
         val descripcion = material.descripcion.ifBlank { material.codigo }
         val dialog = MaterialAlertDialogBuilder(requireContext())
-            .setTitle(getString(R.string.averia_material_cantidad_titulo, descripcion))
+            .setTitle( descripcion)
             .setView(view)
             .setNegativeButton(android.R.string.cancel, null)
             .create()

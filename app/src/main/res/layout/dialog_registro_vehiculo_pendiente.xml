@@ -234,7 +234,7 @@
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnRegistroDialogRegistrar"
-                style="@style/Tecni.Button"
+                style="@style/Tecni.Button.Elevated"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
@@ -242,7 +242,7 @@
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnRegistroDialogSinVehiculo"
-                style="@style/Widget.Material3.Button.ElevatedButton"
+                style="@style/Tecni.Button.Outlined.Danger"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="@string/registro_pendiente_sin_vehiculo" />

@@ -36,14 +36,13 @@
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnCantidadMenos"
-            style="@style/Widget.Material3.Button"
+            style="@style/Widget.Material3.Button.IconButton"
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:contentDescription="Disminuir cantidad"
             android:icon="@drawable/ic_remove"
             android:backgroundTint="@color/error_500"
             app:iconTint="@color/white"
-            app:iconGravity=""
             app:iconSize="24dp"/>
 
         <com.google.android.material.textfield.TextInputLayout
@@ -67,14 +66,14 @@
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnCantidadMas"
-            style="@style/Widget.Material3.Button"
+            style="@style/Widget.Material3.Button.IconButton"
             android:layout_width="48dp"
             android:layout_height="48dp"
             android:contentDescription="Aumentar cantidad"
             android:backgroundTint="@color/success_500"
             android:icon="@drawable/ic_add"
             app:iconTint="@color/white"
-            app:iconGravity="textStart" />
+            app:iconSize="24dp"/>
     </LinearLayout>
 
     <TextView

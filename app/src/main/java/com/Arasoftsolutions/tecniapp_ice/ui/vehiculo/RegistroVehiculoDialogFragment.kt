@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import java.util.Locale
 
+
 class RegistroVehiculoDialogFragment : DialogFragment() {
 
     private var _binding: DialogRegistroVehiculoBinding? = null
