@@ -214,6 +214,72 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
         }
     }
 
+    suspend fun obtenerAgenciasPorSubregion(subregionId: String): List<AgenciaEntity> {
+        val filtro = subregionId.trim().takeIf { it.isNotEmpty() } ?: return emptyList()
+        val nodeName = resolveDatosGeneralesNode("agencias", "Agencias")
+        val startedAt = System.currentTimeMillis()
+        return try {
+            Log.i(TAG, "[SYNC_FETCH][datos_generales/$nodeName] query=orderByChild(subregion).equalTo($filtro) start")
+            val snap = dbDatosGenerales.child(nodeName)
+                .orderByChild("subregion")
+                .equalTo(filtro)
+                .get()
+                .await()
+            val result = if (!snap.exists()) {
+                emptyList()
+            } else {
+                snap.children.mapNotNull { child ->
+                    val id = child.stringChild("id") ?: child.key
+                    val nombre = child.stringChild("nombre") ?: return@mapNotNull null
+                    val regionId = child.stringChild("region_id")
+                        ?: child.stringChild("regionId")
+                        ?: child.stringChild("region")
+                    val subregion = child.stringChild("subregion")
+                        ?: child.stringChild("subregion_id")
+                        ?: child.stringChild("subregionId")
+                    val entityId = (id ?: nombre).trim()
+                    if (entityId.isEmpty()) return@mapNotNull null
+                    AgenciaEntity(
+                        id = entityId,
+                        nombre = nombre.trim(),
+                        regionId = regionId?.trim(),
+                        subregion = subregion?.trim()
+                    )
+                }
+            }
+            Log.i(TAG, "[SYNC_FETCH][datos_generales/$nodeName] query_indexed=true fallback=false count=${result.size} bytes=${estimatePayloadBytes(result)} tookMs=${System.currentTimeMillis()-startedAt}")
+            result
+        } catch (e: Exception) {
+            val isIndexError = e.message?.contains("Index not defined", ignoreCase = true) == true
+            Log.w(TAG, "[SYNC_FETCH][datos_generales/$nodeName] indexed_query_failed fallback=true indexError=$isIndexError detail=${e.message}")
+            val fullSnap = dbDatosGenerales.child(nodeName).get().await()
+            val fallback = if (!fullSnap.exists()) {
+                emptyList()
+            } else {
+                fullSnap.children.mapNotNull { child ->
+                    val id = child.stringChild("id") ?: child.key
+                    val nombre = child.stringChild("nombre") ?: return@mapNotNull null
+                    val regionId = child.stringChild("region_id")
+                        ?: child.stringChild("regionId")
+                        ?: child.stringChild("region")
+                    val subregion = child.stringChild("subregion")
+                        ?: child.stringChild("subregion_id")
+                        ?: child.stringChild("subregionId")
+                    val entityId = (id ?: nombre).trim()
+                    if (entityId.isEmpty()) return@mapNotNull null
+                    AgenciaEntity(
+                        id = entityId,
+                        nombre = nombre.trim(),
+                        regionId = regionId?.trim(),
+                        subregion = subregion?.trim()
+                    )
+                }.filter { it.subregion?.equals(filtro, ignoreCase = true) == true }
+            }
+            Log.i(TAG, "[SYNC_FETCH][datos_generales/$nodeName] query_indexed=false fallback=true count=${fallback.size} bytes=${estimatePayloadBytes(fallback)} tookMs=${System.currentTimeMillis()-startedAt}")
+            fallback
+        }
+    }
+
     suspend fun obtenerVehiculos(subregionId: String? = null): List<VehiculosEntity> {
         val nodeName = resolveDatosGeneralesNode("vehiculos", "Vehiculos")
         val snap = dbDatosGenerales.child(nodeName).get().await()
@@ -246,6 +312,58 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
             )
         }.filter { vehiculo ->
             filtroSubregion == null || vehiculo.subregion?.equals(filtroSubregion, ignoreCase = true) == true
+        }
+    }
+
+    suspend fun obtenerVehiculosPorSubregion(subregionId: String): List<VehiculosEntity> {
+        val filtro = subregionId.trim().takeIf { it.isNotEmpty() } ?: return emptyList()
+        val nodeName = resolveDatosGeneralesNode("vehiculos", "Vehiculos")
+        val startedAt = System.currentTimeMillis()
+        return try {
+            Log.i(TAG, "[SYNC_FETCH][datos_generales/$nodeName] query=orderByChild(subregion).equalTo($filtro) start")
+            val snap = dbDatosGenerales.child(nodeName)
+                .orderByChild("subregion")
+                .equalTo(filtro)
+                .get()
+                .await()
+            val result = if (!snap.exists()) {
+                emptyList()
+            } else {
+                snap.children.mapNotNull { child ->
+                    val placaNodo = child.key?.trim().orEmpty().takeIf { it.isNotEmpty() }
+                        ?: return@mapNotNull null
+                    val placaTexto = child.stringChild("placa")?.trim().takeIf { !it.isNullOrEmpty() }
+                        ?: placaNodo
+                    val placaLong = placaTexto.toLongOrNull() ?: return@mapNotNull null
+                    val agencia = child.stringChild("agencia")?.trim().orEmpty()
+                    if (agencia.isEmpty()) return@mapNotNull null
+
+                    val tipo = child.stringChild("tipo")?.trim().orEmpty()
+                    val subregion = child.stringChild("subregion")?.trim()
+                    val kmActual = child.doubleValueAny("kmActual") ?: 0.0
+                    val registroCerrado = child.booleanValueAny("registroCerrado", "registro_cerrado") ?: false
+
+                    VehiculosEntity(
+                        vehiculoId = placaNodo,
+                        placaRaw = placaTexto,
+                        placa = placaLong,
+                        id = placaTexto.hashCode(),
+                        tipo = tipo,
+                        subregion = subregion,
+                        agencia = agencia,
+                        kmActual = kmActual,
+                        registroCerrado = registroCerrado
+                    )
+                }
+            }
+            Log.i(TAG, "[SYNC_FETCH][datos_generales/$nodeName] query_indexed=true fallback=false count=${result.size} bytes=${estimatePayloadBytes(result)} tookMs=${System.currentTimeMillis()-startedAt}")
+            result
+        } catch (e: Exception) {
+            val isIndexError = e.message?.contains("Index not defined", ignoreCase = true) == true
+            Log.w(TAG, "[SYNC_FETCH][datos_generales/$nodeName] indexed_query_failed fallback=true indexError=$isIndexError detail=${e.message}")
+            val fallback = obtenerVehiculos(subregionId = filtro)
+            Log.i(TAG, "[SYNC_FETCH][datos_generales/$nodeName] query_indexed=false fallback=true count=${fallback.size} bytes=${estimatePayloadBytes(fallback)} tookMs=${System.currentTimeMillis()-startedAt}")
+            fallback
         }
     }
 
@@ -1400,6 +1518,10 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
         }
         return null
     }
+
+
+    private fun estimatePayloadBytes(value: Any?): Long =
+        value?.toString()?.toByteArray(Charsets.UTF_8)?.size?.toLong() ?: 0L
 
     private fun DataSnapshot.valueAny(vararg names: String): Any? {
         names.forEach { nombre ->
