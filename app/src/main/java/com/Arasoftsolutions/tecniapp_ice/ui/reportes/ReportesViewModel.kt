@@ -1457,7 +1457,7 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
     ): List<EtmBitacoraItem> {
         val vehiculoId = contexto.vehiculoId ?: return emptyList()
         val vehiculo = withContext(Dispatchers.IO) {
-            database.vehiculoDao().getById(vehiculoId)
+            database.vehiculoDao().buscarPorId(vehiculoId)
         } ?: return emptyList()
         return parseRegistrosDiarios(vehiculo.registrosDiariosJson)
             .mapNotNull { registro ->
