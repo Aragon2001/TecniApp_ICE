@@ -45,7 +45,8 @@ data class AveriaUI(
     val medidorPoste: String?,
     val estadoClor: String?,
     val causaClor: String?,
-    val observacionesClor: String?
+    val observacionesClor: String?,
+    val evidencias: List<EvidenciaFoto>
 ) : Serializable {
 
     fun ownerUidFor(estado: Estado): String? {
