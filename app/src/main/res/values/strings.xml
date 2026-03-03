@@ -378,6 +378,7 @@ Cliente: %4$s</string>
     <string name="averia_vehiculo">Vehículo</string>
     <string name="averia_guardar_en_atencion">Guardar atención</string>
     <string name="averia_guardar_resolucion">Guardar resolución</string>
+    <string name="averia_editar">Editar</string>
     <string name="averia_exportar_pdf_button">Generar PDF</string>
     <string name="averia_estado_todos">Todos</string>
     <string name="averia_caso_format">Caso %1$s</string>
