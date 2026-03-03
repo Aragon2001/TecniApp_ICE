@@ -648,7 +648,7 @@
                         android:layout_marginTop="12dp"
                         android:nestedScrollingEnabled="false"
                         android:overScrollMode="never"
-                        tools:listitem="@layout/item_reporte_bitacora_evento"
+                        tools:listitem="@layout/item_etm_registro"
                         tools:visibility="gone" />
 
                     <TextView
