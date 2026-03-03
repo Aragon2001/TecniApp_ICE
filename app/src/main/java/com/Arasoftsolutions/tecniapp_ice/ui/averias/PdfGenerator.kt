@@ -3,6 +3,7 @@ package com.Arasoftsolutions.tecniapp_ice.ui.averias
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.LinearGradient
@@ -396,6 +397,7 @@ object PdfGenerator {
                 )
             )
 
+            drawEvidenciasCard(context, state, style, item.evidencias)
 
             state.finish()
 
@@ -696,6 +698,55 @@ object PdfGenerator {
         }
         val metaText = "TecniApp ICE · Página $pageNumber"
         canvas.drawText(metaText, footerRect.right - metaPaint.measureText(metaText) - 24f, footerRect.bottom - 14f, metaPaint)
+    }
+
+    private fun drawEvidenciasCard(
+        context: Context,
+        state: PageState,
+        style: PdfStyle,
+        evidencias: List<EvidenciaFoto>
+    ) {
+        if (evidencias.isEmpty()) {
+            drawDetailCard(
+                context,
+                state,
+                style,
+                DetailCard(
+                    title = context.getString(R.string.averia_pdf_section_evidencias),
+                    content = listOf(context.getString(R.string.averia_pdf_no_evidencias))
+                )
+            )
+            return
+        }
+
+        state.ensureSpace(180f)
+        state.canvas.drawText(context.getString(R.string.averia_pdf_section_evidencias), PAGE_MARGIN, state.currentY + style.titlePaint.textSize, style.titlePaint)
+        state.currentY += style.titlePaint.textSize + 10f
+
+        val thumb = 120f
+        val gap = 12f
+        var x = PAGE_MARGIN
+        var y = state.currentY
+        val maxX = PAGE_WIDTH - PAGE_MARGIN
+
+        evidencias.forEachIndexed { idx, evidencia ->
+            if (x + thumb > maxX) {
+                x = PAGE_MARGIN
+                y += thumb + 24f
+                state.ensureSpace(thumb + 24f)
+            }
+            val rect = RectF(x, y, x + thumb, y + thumb)
+            val bmp = runCatching {
+                context.contentResolver.openInputStream(Uri.parse(evidencia.uri))?.use { ins ->
+                    BitmapFactory.decodeStream(ins)
+                }
+            }.getOrNull()
+            if (bmp != null) state.canvas.drawBitmap(bmp, null, rect, null)
+            state.canvas.drawRoundRect(rect, 10f, 10f, style.cardBorderPaint)
+            state.canvas.drawText("#${idx + 1}", x, y + thumb + 14f, style.bodyPaint)
+            x += thumb + gap
+        }
+        state.currentY = y + thumb + 24f
     }
 
     private data class InfoRow(val label: String, val value: String)
