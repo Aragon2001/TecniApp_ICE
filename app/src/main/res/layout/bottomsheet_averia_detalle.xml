@@ -592,6 +592,15 @@
                 android:orientation="vertical"
                 android:padding="@dimen/glass_card_padding">
 
+                <TextView
+                    android:id="@+id/tvEvidenciasTitulo"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    android:text="@string/averia_evidencia_titulo_seccion"
+                    android:textAppearance="?attr/textAppearanceTitleSmall"
+                    android:textStyle="bold" />
+
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnAgregarEvidencia"
                     style="@style/Tecni.Button.Outlined"
