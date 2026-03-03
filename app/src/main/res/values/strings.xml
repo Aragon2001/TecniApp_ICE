@@ -1432,6 +1432,10 @@ Cliente: %4$s</string>
     <string name="registro_paso3_hint_apellido1_manual">Ingresa tu primer apellido</string>
     <string name="registro_paso3_hint_apellido2_manual">Ingresa tu segundo apellido</string>
     <string name="averia_evidencia_agregar">Agregar evidencia fotográfica</string>
+    <string name="averia_evidencia_titulo_seccion">Evidencias fotográficas</string>
+    <string name="averia_evidencia_opciones_titulo">Opciones de evidencia</string>
+    <string name="averia_evidencia_opcion_ver">Ver foto</string>
+    <string name="averia_evidencia_opcion_eliminar">Eliminar foto</string>
     <string name="averia_evidencia_tomar_foto">Tomar foto</string>
     <string name="averia_evidencia_elegir_galeria">Elegir de galería</string>
     <string name="averia_evidencia_titulo_origen">Agregar evidencia</string>

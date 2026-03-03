@@ -972,6 +972,7 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
             if (Estado.fromLabel(ui.estado) != Estado.EN_ATENCION) return@launch
             ensurePropietario(ui) ?: return@launch
             repo.revertirAPendiente(ui.id)
+            clearDraft(ui.id)
             _messages.tryEmit(getApplication<Application>().getString(R.string.averia_exito_cancelada))
         }
     }

@@ -934,6 +934,7 @@ private fun applyInputStateForRules(
     b.tvSeccionTecnicos.isVisible = showCompleto
     b.cardTecnicos.isVisible = showCompleto
     b.cardMateriales.isVisible = showCompleto
+    b.cardEvidencias.isVisible = showCompleto
     b.tvSeccionRegistro.isVisible = showCompleto
     b.cardTipoAfectacion.isVisible = showCompleto
     b.cardMedidorInput.isVisible = showCompleto && tipoSeleccionado == TipoAfectacion.CLIENTE
@@ -1888,7 +1889,7 @@ private fun configureButtonsForRules(
             }
             Glide.with(this).load(Uri.parse(evidencia.uri)).into(image)
             card.addView(image)
-            card.setOnClickListener { abrirVistaEvidencia(evidencia) }
+            card.setOnClickListener { onEvidenciaClick(evidencia) }
             card.setOnLongClickListener {
                 if (!b.btnAgregarEvidencia.isEnabled) return@setOnLongClickListener false
                 evidencias.remove(evidencia)
@@ -1897,6 +1898,29 @@ private fun configureButtonsForRules(
             }
             container.addView(card)
         }
+    }
+
+    private fun onEvidenciaClick(evidencia: EvidenciaFoto) {
+        if (!b.btnAgregarEvidencia.isEnabled) {
+            abrirVistaEvidencia(evidencia)
+            return
+        }
+        val opciones = arrayOf(
+            getString(R.string.averia_evidencia_opcion_ver),
+            getString(R.string.averia_evidencia_opcion_eliminar)
+        )
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.averia_evidencia_opciones_titulo)
+            .setItems(opciones) { _, which ->
+                when (which) {
+                    0 -> abrirVistaEvidencia(evidencia)
+                    1 -> {
+                        evidencias.remove(evidencia)
+                        renderEvidencias()
+                    }
+                }
+            }
+            .show()
     }
 
     private fun abrirVistaEvidencia(evidencia: EvidenciaFoto) {
