@@ -71,6 +71,18 @@ fun Fragment.showRegistroVehiculoPendienteDialog(
         } else {
             getString(R.string.vehiculo_registro_km)
         }
+        val ultimaLectura = vehiculo?.let {
+            if (tipo.usaKilometraje) {
+                it.registroFinal ?: it.registroInicial ?: it.kilometrajeActual
+            } else {
+                it.registroFinal ?: it.registroInicial ?: it.orimetroActual
+            }
+        }
+        if (tilValor.editText?.text.isNullOrBlank() && ultimaLectura != null) {
+            val lecturaTexto = String.format(java.util.Locale.getDefault(), "%.0f", ultimaLectura)
+            tilValor.editText?.setText(lecturaTexto)
+            tilValor.editText?.setSelection(lecturaTexto.length)
+        }
         registroPendienteCierre?.let { pendiente ->
             switchCerrar.isChecked = true
             switchCerrar.isEnabled = false

@@ -378,6 +378,7 @@ Cliente: %4$s</string>
     <string name="averia_vehiculo">Vehículo</string>
     <string name="averia_guardar_en_atencion">Guardar atención</string>
     <string name="averia_guardar_resolucion">Guardar resolución</string>
+    <string name="averia_editar">Editar</string>
     <string name="averia_exportar_pdf_button">Generar PDF</string>
     <string name="averia_estado_todos">Todos</string>
     <string name="averia_caso_format">Caso %1$s</string>
@@ -849,6 +850,7 @@ Cliente: %4$s</string>
     <string name="reportes_header_rango">Rango: %1$s</string>
     <string name="reportes_header_contexto">Agencia: %1$s · Técnico: %2$s</string>
     <string name="reportes_filtros_titulo">Filtros rápidos</string>
+    <string name="reportes_tipo_spinner_label">Tipo de reporte</string>
     <string name="reportes_chip_fecha">Fecha</string>
     <string name="reportes_chip_agencia">Agencia</string>
     <string name="reportes_chip_camion">Camión</string>
@@ -892,6 +894,7 @@ Cliente: %4$s</string>
     <string name="reportes_tipo_mis_luminarias">Mis luminarias</string>
     <string name="reportes_tipo_mi_inventario">Mi inventario</string>
     <string name="reportes_tipo_mi_bitacora">Mi bitácora</string>
+    <string name="reportes_tipo_mi_etm_camion">ETM camión</string>
     <string name="reportes_btn_limpiar_filtro">Limpiar rango</string>
     <string name="reportes_btn_generar">Generar reporte</string>
     <string name="reportes_btn_generar_tipo">Generar %1$s</string>
@@ -913,6 +916,8 @@ Cliente: %4$s</string>
     <string name="reportes_mis_luminarias_vacio">No hay luminarias registradas en el rango seleccionado.</string>
     <string name="reportes_mi_inventario_vacio">No hay inventario disponible para este rango.</string>
     <string name="reportes_mi_bitacora_vacio">No hay eventos para la bitácora en este rango.</string>
+    <string name="reportes_mi_etm_camion_titulo">ETM del camión</string>
+    <string name="reportes_mi_etm_camion_vacio">No hay registros ETM del camión en este rango.</string>
     <string name="reportes_estado_pendiente">Selecciona el reporte y toca "Generar" para ver los datos.</string>
     <string name="reportes_estado_cargando">Generando reporte…</string>
     <string name="reportes_dialog_rango_titulo">Selecciona el rango de fechas</string>
@@ -1006,6 +1011,7 @@ Cliente: %4$s</string>
     <string name="reportes_pdf_seccion_luminarias">Mis luminarias</string>
     <string name="reportes_pdf_seccion_inventario">Inventario</string>
     <string name="reportes_pdf_seccion_bitacora">Bitácora</string>
+    <string name="reportes_pdf_seccion_etm">ETM del camión</string>
     <string name="reportes_pdf_footer">Arasoft Solutions / TecniApp ICE</string>
 
     <string name="reportes_excel_resumen_sheet">Resumen</string>
@@ -1024,6 +1030,7 @@ Cliente: %4$s</string>
     <string name="reportes_excel_mi_inventario_consumo_sheet">Materiales gastados</string>
     <string name="reportes_excel_mi_bitacora_sheet">Bitácora (detalle)</string>
     <string name="reportes_excel_mi_bitacora_resumen_sheet">Bitácora (resumen)</string>
+    <string name="reportes_excel_mi_etm_sheet">ETM camión (detalle)</string>
     <string name="reportes_excel_col_case">Caso</string>
     <string name="reportes_excel_col_fecha">Fecha</string>
     <string name="reportes_excel_col_fecha_reporte">Fecha reporte</string>
@@ -1149,6 +1156,9 @@ Cliente: %4$s</string>
     <string name="reportes_resumen_label_items">Ítems</string>
     <string name="reportes_resumen_label_criticos">Críticos</string>
     <string name="reportes_resumen_label_disponibles">Disponibles</string>
+    <string name="reportes_resumen_label_eventos">Eventos</string>
+    <string name="reportes_resumen_label_etm_cerrados">ETM cerrados</string>
+    <string name="reportes_resumen_label_etm_pendientes">ETM pendientes</string>
 
     <string name="reportes_kpi_averias_atendidas">Averías atendidas</string>
     <string name="reportes_kpi_averias_pendientes">Pendientes</string>
@@ -1196,6 +1206,11 @@ Cliente: %4$s</string>
     <string name="reportes_bitacora_tipo_luminaria">Luminaria</string>
     <string name="reportes_bitacora_tipo_material">Material</string>
     <string name="reportes_bitacora_tipo_programacion">Programación</string>
+    <string name="reportes_bitacora_tipo_etm">ETM camión</string>
+    <string name="reportes_bitacora_etm_cerrado">ETM cerrado</string>
+    <string name="reportes_bitacora_etm_pendiente">ETM pendiente</string>
+    <string name="reportes_bitacora_etm_sin_detalle">Registro ETM sin detalle</string>
+    <string name="reportes_bitacora_etm_lecturas">Inicial: %1$s • Final: %2$s • Recorrido: %3$s</string>
     <string name="reportes_bitacora_sin_descripcion">Sin descripción</string>
     <string name="reportes_bitacora_material_cantidad">Material consumido: %1$d</string>
 
