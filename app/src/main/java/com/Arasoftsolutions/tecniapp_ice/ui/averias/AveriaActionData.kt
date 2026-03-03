@@ -25,6 +25,11 @@ data class TecnicoAtencion(
     val nombre: String
 ) : Serializable
 
+data class EvidenciaFoto(
+    val uri: String,
+    val fuente: String
+) : Serializable
+
 enum class TipoAfectacion : Serializable {
     SECTOR,
     CLIENTE;
@@ -63,7 +68,8 @@ data class AveriaActionData(
     val medidorCalle: String?,
     val medidorPueblo: String?,
     val medidorMetros: String?,
-    val medidorPoste: String?
+    val medidorPoste: String?,
+    val evidencias: List<EvidenciaFoto>
 )
 
 /**
@@ -183,6 +189,46 @@ object TecnicosSerializer {
                     val nombre = obj.optString("nombre")
                     if (cedula.isBlank() && nombre.isBlank()) continue
                     add(TecnicoAtencion(cedula, nombre))
+                }
+            }
+        } catch (_: Throwable) {
+            emptyList()
+        }
+    }
+}
+
+object EvidenciasSerializer {
+    fun toJson(evidencias: List<EvidenciaFoto>): String? {
+        if (evidencias.isEmpty()) return null
+        val array = JSONArray()
+        evidencias.forEach { evidencia ->
+            val uri = evidencia.uri.trim()
+            if (uri.isBlank()) return@forEach
+            array.put(
+                JSONObject().apply {
+                    put("uri", uri)
+                    put("fuente", evidencia.fuente)
+                }
+            )
+        }
+        return if (array.length() == 0) null else array.toString()
+    }
+
+    fun fromJson(json: String?): List<EvidenciaFoto> {
+        if (json.isNullOrBlank()) return emptyList()
+        return try {
+            val array = JSONArray(json)
+            buildList {
+                for (i in 0 until array.length()) {
+                    val obj = array.optJSONObject(i) ?: continue
+                    val uri = obj.optString("uri").trim()
+                    if (uri.isBlank()) continue
+                    add(
+                        EvidenciaFoto(
+                            uri = uri,
+                            fuente = obj.optString("fuente").ifBlank { "galeria" }
+                        )
+                    )
                 }
             }
         } catch (_: Throwable) {
