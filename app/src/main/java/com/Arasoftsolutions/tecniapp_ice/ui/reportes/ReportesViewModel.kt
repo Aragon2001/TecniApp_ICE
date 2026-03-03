@@ -18,6 +18,8 @@ import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
 import com.Arasoftsolutions.tecniapp_ice.R
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.MaterialUso
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.MaterialesSerializer
+import com.Arasoftsolutions.tecniapp_ice.ui.vehiculo.RegistroDiarioVehiculo
+import com.Arasoftsolutions.tecniapp_ice.ui.vehiculo.parseRegistrosDiarios
 import com.Arasoftsolutions.tecniapp_ice.ui.reportes.ExcelReportExporter.ExportPayload
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.functions.FirebaseFunctions
@@ -69,7 +71,8 @@ enum class ReportType(@StringRes val titleRes: Int, val fileNameKey: String) {
     MIS_AVERIAS(R.string.reportes_tipo_mis_averias, "mis_averias"),
     MIS_LUMINARIAS(R.string.reportes_tipo_mis_luminarias, "mis_luminarias"),
     MI_INVENTARIO(R.string.reportes_tipo_mi_inventario, "mi_inventario"),
-    MI_BITACORA(R.string.reportes_tipo_mi_bitacora, "mi_bitacora")
+    MI_BITACORA(R.string.reportes_tipo_mi_bitacora, "mi_bitacora"),
+    MI_ETM_CAMION(R.string.reportes_tipo_mi_etm_camion, "mi_etm_camion")
 }
 
 enum class ReportTab {
@@ -77,7 +80,8 @@ enum class ReportTab {
     OPERACION,
     MATERIALES,
     INVENTARIO,
-    BITACORA
+    BITACORA,
+    ETM
 }
 
 enum class ReportFileType {
@@ -240,6 +244,8 @@ sealed class ReportExportData {
         val resumen: BitacoraResumen,
         val eventos: List<BitacoraEventItem>
     ) : ReportExportData()
+
+    data class MiEtmCamion(val eventos: List<BitacoraEventItem>) : ReportExportData()
 }
 
 data class ReportesUiState(
@@ -263,6 +269,7 @@ data class ReportesUiState(
     val miInventarioState: ReportSectionState<InventarioReportItem> = ReportSectionState(),
     val miInventarioCriticoState: ReportSectionState<InventarioReportItem> = ReportSectionState(),
     val miBitacoraState: ReportSectionState<BitacoraEventItem> = ReportSectionState(),
+    val miEtmState: ReportSectionState<BitacoraEventItem> = ReportSectionState(),
     val miBitacoraResumen: BitacoraResumen? = null,
     val miInventarioMovimientos: InventarioMovimientoResumen? = null,
     val miInventarioConsumos: List<InventarioConsumoItem> = emptyList()
@@ -281,6 +288,11 @@ private data class ProgramacionBitacoraItem(
     val fechaEventoMillis: Long
 )
 
+private data class EtmBitacoraItem(
+    val registro: RegistroDiarioVehiculo,
+    val fecha: LocalDate
+)
+
 class ReportesViewModel(app: Application) : AndroidViewModel(app) {
 
     companion object {
@@ -296,6 +308,7 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
     private val rangeFormatter = DateTimeFormatter.ofPattern("dd MMM yyyy", locale)
     private val dateTimeFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm", locale)
     private val fileNameFormatter = DateTimeFormatter.ofPattern("yyyyMMdd")
+    private val dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE
     private val quantityFormatter = DecimalFormat("#,##0.##")
 
     private val desconocidoMaterial = app.getString(R.string.reportes_material_desconocido)
@@ -455,6 +468,15 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
                         )
                         setMiBitacoraSuccess(bitacora, resumen)
                     }
+                    ReportType.MI_ETM_CAMION -> {
+                        val eventos = construirEtmCamion(state.fechaInicio, state.fechaFin)
+                        val resumen = ResumenTotales(
+                            totalAverias = eventos.size,
+                            totalMateriales = eventos.count { it.referencia.contains("cerrado", true) },
+                            totalMaterialesDistintos = eventos.count { it.referencia.contains("pendiente", true) }
+                        )
+                        setMiEtmSuccess(eventos, resumen)
+                    }
                 }
             } catch (t: Throwable) {
                 Log.e(TAG, "Error generando reporte", t)
@@ -572,6 +594,10 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
                 val resumen = state.miBitacoraResumen ?: return null
                 if (!state.miBitacoraState.hasContent) return null
                 ReportExportData.MiBitacora(resumen, state.miBitacoraState.items)
+            }
+            ReportType.MI_ETM_CAMION -> {
+                if (!state.miEtmState.hasContent) return null
+                ReportExportData.MiEtmCamion(state.miEtmState.items)
             }
         }
     }
@@ -905,6 +931,12 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
         return ReportExportData.MiBitacora(resumen, eventos)
     }
 
+    private suspend fun construirEtmCamion(inicio: LocalDate, fin: LocalDate): List<BitacoraEventItem> {
+        val contexto = obtenerUserContext()
+        val registrosEtm = obtenerRegistrosEtmCamion(inicio, fin, contexto)
+        return buildEtmEventos(registrosEtm)
+    }
+
     private fun setSectionLoading(tipo: ReportType) {
         _uiState.update { current ->
             when (tipo) {
@@ -914,7 +946,8 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
                     misAveriasState = current.misAveriasState.copy(isLoading = false),
                     misLuminariasState = current.misLuminariasState.copy(isLoading = false),
                     miInventarioState = current.miInventarioState.copy(isLoading = false),
-                    miBitacoraState = current.miBitacoraState.copy(isLoading = false)
+                    miBitacoraState = current.miBitacoraState.copy(isLoading = false),
+                    miEtmState = current.miEtmState.copy(isLoading = false)
                 )
                 ReportType.MIS_AVERIAS -> current.copy(
                     isGlobalLoading = true,
@@ -922,7 +955,8 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
                     resumenState = current.resumenState.copy(isLoading = false),
                     misLuminariasState = current.misLuminariasState.copy(isLoading = false),
                     miInventarioState = current.miInventarioState.copy(isLoading = false),
-                    miBitacoraState = current.miBitacoraState.copy(isLoading = false)
+                    miBitacoraState = current.miBitacoraState.copy(isLoading = false),
+                    miEtmState = current.miEtmState.copy(isLoading = false)
                 )
                 ReportType.MIS_LUMINARIAS -> current.copy(
                     isGlobalLoading = true,
@@ -930,7 +964,8 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
                     resumenState = current.resumenState.copy(isLoading = false),
                     misAveriasState = current.misAveriasState.copy(isLoading = false),
                     miInventarioState = current.miInventarioState.copy(isLoading = false),
-                    miBitacoraState = current.miBitacoraState.copy(isLoading = false)
+                    miBitacoraState = current.miBitacoraState.copy(isLoading = false),
+                    miEtmState = current.miEtmState.copy(isLoading = false)
                 )
                 ReportType.MI_INVENTARIO -> current.copy(
                     isGlobalLoading = true,
@@ -939,7 +974,8 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
                     resumenState = current.resumenState.copy(isLoading = false),
                     misAveriasState = current.misAveriasState.copy(isLoading = false),
                     misLuminariasState = current.misLuminariasState.copy(isLoading = false),
-                    miBitacoraState = current.miBitacoraState.copy(isLoading = false)
+                    miBitacoraState = current.miBitacoraState.copy(isLoading = false),
+                    miEtmState = current.miEtmState.copy(isLoading = false)
                 )
                 ReportType.MI_BITACORA -> current.copy(
                     isGlobalLoading = true,
@@ -947,7 +983,17 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
                     resumenState = current.resumenState.copy(isLoading = false),
                     misAveriasState = current.misAveriasState.copy(isLoading = false),
                     misLuminariasState = current.misLuminariasState.copy(isLoading = false),
-                    miInventarioState = current.miInventarioState.copy(isLoading = false)
+                    miInventarioState = current.miInventarioState.copy(isLoading = false),
+                    miEtmState = current.miEtmState.copy(isLoading = false)
+                )
+                ReportType.MI_ETM_CAMION -> current.copy(
+                    isGlobalLoading = true,
+                    miEtmState = current.miEtmState.copy(isLoading = true),
+                    resumenState = current.resumenState.copy(isLoading = false),
+                    misAveriasState = current.misAveriasState.copy(isLoading = false),
+                    misLuminariasState = current.misLuminariasState.copy(isLoading = false),
+                    miInventarioState = current.miInventarioState.copy(isLoading = false),
+                    miBitacoraState = current.miBitacoraState.copy(isLoading = false)
                 )
             }
         }
@@ -1012,6 +1058,19 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
                 resumen = resumen,
                 miBitacoraState = ReportSectionState(isLoading = false, items = bitacora.eventos, hasContent = true),
                 miBitacoraResumen = bitacora.resumen,
+                miEtmState = current.miEtmState.copy(isLoading = false),
+                resumenState = current.resumenState.copy(isLoading = false)
+            )
+        }
+    }
+
+    private fun setMiEtmSuccess(eventos: List<BitacoraEventItem>, resumen: ResumenTotales) {
+        _uiState.update { current ->
+            current.copy(
+                isGlobalLoading = false,
+                resumen = resumen,
+                miEtmState = ReportSectionState(isLoading = false, items = eventos, hasContent = true),
+                miBitacoraState = current.miBitacoraState.copy(isLoading = false),
                 resumenState = current.resumenState.copy(isLoading = false)
             )
         }
@@ -1039,7 +1098,12 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
                 )
                 ReportType.MI_BITACORA -> current.copy(
                     isGlobalLoading = false,
-                    miBitacoraState = current.miBitacoraState.copy(isLoading = false)
+                    miBitacoraState = current.miBitacoraState.copy(isLoading = false),
+                    miEtmState = current.miEtmState.copy(isLoading = false)
+                )
+                ReportType.MI_ETM_CAMION -> current.copy(
+                    isGlobalLoading = false,
+                    miEtmState = current.miEtmState.copy(isLoading = false)
                 )
             }
         }
@@ -1352,6 +1416,56 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
         return eventos.sortedByDescending { it.fecha }
     }
 
+    private fun buildEtmEventos(registrosEtm: List<EtmBitacoraItem>): List<BitacoraEventItem> {
+        return registrosEtm.map { etm ->
+            val registro = etm.registro
+            val descripcion = listOfNotNull(
+                registro.actividad?.takeIf { it.isNotBlank() },
+                registro.lugar?.takeIf { it.isNotBlank() },
+                registro.observaciones?.takeIf { it.isNotBlank() }
+            ).joinToString(" • ").ifBlank {
+                getString(R.string.reportes_bitacora_etm_sin_detalle)
+            }
+            val inicio = registro.valorInicial?.let(::formatCantidad) ?: "-"
+            val final = registro.valorFinal?.let(::formatCantidad) ?: "-"
+            val diferencia = registro.diferencia?.takeIf { it >= 0 }?.let(::formatCantidad) ?: "-"
+            val estado = if (registro.cerrado) {
+                getString(R.string.reportes_bitacora_etm_cerrado)
+            } else {
+                getString(R.string.reportes_bitacora_etm_pendiente)
+            }
+            val cantidad = getString(
+                R.string.reportes_bitacora_etm_lecturas,
+                inicio,
+                final,
+                diferencia
+            )
+            BitacoraEventItem(
+                tipo = getString(R.string.reportes_bitacora_tipo_etm),
+                referencia = estado,
+                fecha = etm.fecha.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli().let(::formatDateTime),
+                descripcion = descripcion,
+                cantidad = cantidad
+            )
+        }.sortedByDescending { it.fecha }
+    }
+
+    private suspend fun obtenerRegistrosEtmCamion(
+        inicio: LocalDate,
+        fin: LocalDate,
+        contexto: UserContext
+    ): List<EtmBitacoraItem> {
+        val vehiculoId = contexto.vehiculoId ?: return emptyList()
+        val vehiculo = withContext(Dispatchers.IO) {
+            database.vehiculoDao().buscarPorId(vehiculoId)
+        } ?: return emptyList()
+        return parseRegistrosDiarios(vehiculo.registrosDiariosJson)
+            .mapNotNull { registro ->
+                val fecha = runCatching { LocalDate.parse(registro.fecha, dateFormatter) }.getOrNull() ?: return@mapNotNull null
+                if (fecha in inicio..fin) EtmBitacoraItem(registro, fecha) else null
+            }
+    }
+
 
     private suspend fun obtenerProgramacionesEjecutadas(
         inicio: LocalDate,
@@ -1436,6 +1550,7 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
             is ReportExportData.MisLuminarias -> data.items.size
             is ReportExportData.MiInventario -> data.generales.size
             is ReportExportData.MiBitacora -> data.eventos.size
+            is ReportExportData.MiEtmCamion -> data.eventos.size
         }
     }
 
@@ -1452,6 +1567,7 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
             ReportType.MIS_LUMINARIAS -> ReportTab.MATERIALES
             ReportType.MI_INVENTARIO -> ReportTab.INVENTARIO
             ReportType.MI_BITACORA -> ReportTab.BITACORA
+            ReportType.MI_ETM_CAMION -> ReportTab.ETM
         }
 
     private fun mapTabToReportType(tab: ReportTab): ReportType =
@@ -1461,6 +1577,7 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
             ReportTab.MATERIALES -> ReportType.MIS_LUMINARIAS
             ReportTab.INVENTARIO -> ReportType.MI_INVENTARIO
             ReportTab.BITACORA -> ReportType.MI_BITACORA
+            ReportTab.ETM -> ReportType.MI_ETM_CAMION
         }
 
     private fun getString(@StringRes resId: Int): String = getApplication<Application>().getString(resId)

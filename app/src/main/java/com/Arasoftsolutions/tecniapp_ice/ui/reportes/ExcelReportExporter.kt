@@ -54,6 +54,14 @@ object ExcelReportExporter {
                 addMiInventarioSheets(context, workbook, headerStyle, payload.data)
             is ReportExportData.MiBitacora ->
                 addMiBitacoraSheets(context, workbook, headerStyle, payload.data)
+            is ReportExportData.MiEtmCamion ->
+                addEventosSheet(
+                    context,
+                    workbook,
+                    headerStyle,
+                    payload.data.eventos,
+                    context.getString(R.string.reportes_excel_mi_etm_sheet)
+                )
         }
 
         onProgress?.invoke(ExportStep.ESCRIBIR)
@@ -352,7 +360,23 @@ object ExcelReportExporter {
         }
         autosize(resumenSheet, 2)
 
-        val detallesSheet = workbook.createSheet(context.getString(R.string.reportes_excel_mi_bitacora_sheet))
+        addEventosSheet(
+            context,
+            workbook,
+            headerStyle,
+            data.eventos,
+            context.getString(R.string.reportes_excel_mi_bitacora_sheet)
+        )
+    }
+
+    private fun addEventosSheet(
+        context: Context,
+        workbook: Workbook,
+        headerStyle: CellStyle,
+        eventos: List<BitacoraEventItem>,
+        sheetName: String
+    ) {
+        val detallesSheet = workbook.createSheet(sheetName)
         val headers = listOf(
             context.getString(R.string.reportes_excel_col_tipo),
             context.getString(R.string.reportes_excel_col_referencia),
@@ -361,7 +385,7 @@ object ExcelReportExporter {
             context.getString(R.string.reportes_excel_col_cantidad)
         )
         var rowIndex = createHeader(detallesSheet, headerStyle, headers)
-        data.eventos.forEach { item ->
+        eventos.forEach { item ->
             val row = detallesSheet.createRow(rowIndex++)
             row.createCell(0).setCellValue(item.tipo)
             row.createCell(1).setCellValue(item.referencia)
