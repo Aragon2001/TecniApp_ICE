@@ -62,8 +62,9 @@ data class AveriaEntity(
     val isSynced: Boolean = true,
     val lastUpdated: Long = 0L,
     val estadoClor: String? = null,
-val causaClor: String? = null,
-val observacionesClor: String? = null
+    val causaClor: String? = null,
+    val observacionesClor: String? = null,
+    val evidenciasJson: String? = null
 
 ) {
     constructor() : this(
@@ -114,6 +115,7 @@ val observacionesClor: String? = null
         estadoClor = null,
         causaClor= null,
         observacionesClor = null,
+        evidenciasJson = null,
         lastUpdated = 0L
     )
 }
