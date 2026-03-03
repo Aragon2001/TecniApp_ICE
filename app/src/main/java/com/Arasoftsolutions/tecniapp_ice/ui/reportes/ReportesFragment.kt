@@ -7,6 +7,7 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ArrayAdapter
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.util.Pair
@@ -86,7 +87,7 @@ class ReportesFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         setupAdapters()
-        setupTabs()
+        setupReportTypeSpinner()
         setupListeners()
         setupSpeedDial()
         observeState()
@@ -156,32 +157,28 @@ class ReportesFragment : Fragment() {
         )
     }
 
-    private fun setupTabs() {
-        binding.tabGroupReportes.addOnButtonCheckedListener { _, checkedId, isChecked ->
-            if (!isChecked) return@addOnButtonCheckedListener
-            val tab = when (checkedId) {
-                R.id.tabResumen -> ReportTab.RESUMEN
-                R.id.tabOperacion -> ReportTab.OPERACION
-                R.id.tabMateriales -> ReportTab.MATERIALES
-                R.id.tabInventario -> ReportTab.INVENTARIO
-                R.id.tabBitacora -> ReportTab.BITACORA
-                else -> ReportTab.RESUMEN
-            }
-            viewModel.seleccionarTab(tab)
+    private fun setupReportTypeSpinner() {
+        val reportTypes = ReportType.values().toList()
+        val labels = reportTypes.map { getString(it.titleRes) }
+        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, labels).apply {
+            setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         }
-        syncTabSelection(viewModel.uiState.value.selectedTab)
+        binding.spinnerTipoReporte.adapter = adapter
+        binding.spinnerTipoReporte.setSelection(reportTypes.indexOf(viewModel.uiState.value.reporteSeleccionado).coerceAtLeast(0), false)
+        binding.spinnerTipoReporte.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: View?, position: Int, id: Long) {
+                reportTypes.getOrNull(position)?.let(viewModel::seleccionarTipo)
+            }
+
+            override fun onNothingSelected(parent: android.widget.AdapterView<*>?) = Unit
+        }
     }
 
-    private fun syncTabSelection(tab: ReportTab) {
-        val targetId = when (tab) {
-            ReportTab.RESUMEN -> R.id.tabResumen
-            ReportTab.OPERACION -> R.id.tabOperacion
-            ReportTab.MATERIALES -> R.id.tabMateriales
-            ReportTab.INVENTARIO -> R.id.tabInventario
-            ReportTab.BITACORA -> R.id.tabBitacora
-        }
-        if (binding.tabGroupReportes.checkedButtonId != targetId) {
-            binding.tabGroupReportes.check(targetId)
+    private fun syncReportTypeSelection(tipo: ReportType) {
+        val reportTypes = ReportType.values().toList()
+        val targetIndex = reportTypes.indexOf(tipo)
+        if (targetIndex >= 0 && binding.spinnerTipoReporte.selectedItemPosition != targetIndex) {
+            binding.spinnerTipoReporte.setSelection(targetIndex, false)
         }
     }
 
@@ -254,7 +251,7 @@ class ReportesFragment : Fragment() {
                     binding.btnCambiarFechas.text = state.rangoTexto
 
                     val seleccionado = state.reporteSeleccionado
-                    syncTabSelection(state.selectedTab)
+                    syncReportTypeSelection(seleccionado)
                     binding.btnGenerarReporte.text = getString(
                         R.string.reportes_btn_generar_tipo,
                         getString(seleccionado.titleRes).replaceFirstChar { char ->
@@ -359,6 +356,8 @@ class ReportesFragment : Fragment() {
                             binding.cardMisLuminarias.isVisible = false
                             binding.cardMiInventario.isVisible = false
                             binding.cardMiBitacora.isVisible = true
+                            binding.tvTituloMiBitacora.text = getString(R.string.reportes_mi_bitacora_titulo)
+                            binding.bitacoraResumenContainer.isVisible = true
                             bitacoraAdapter.submitList(state.miBitacoraState.items)
                             section = state.miBitacoraState
                             recycler = binding.recyclerBitacora
@@ -400,6 +399,20 @@ class ReportesFragment : Fragment() {
                                     topMateriales.ifBlank { "-" }
                                 )
                             }
+                        }
+                        ReportType.MI_ETM_CAMION -> {
+                            binding.cardMiResumen.isVisible = false
+                            binding.cardMisAverias.isVisible = false
+                            binding.cardMisLuminarias.isVisible = false
+                            binding.cardMiInventario.isVisible = false
+                            binding.cardMiBitacora.isVisible = true
+                            binding.tvTituloMiBitacora.text = getString(R.string.reportes_mi_etm_camion_titulo)
+                            binding.bitacoraResumenContainer.isVisible = false
+                            bitacoraAdapter.submitList(state.miEtmState.items)
+                            section = state.miEtmState
+                            recycler = binding.recyclerBitacora
+                            emptyView = binding.tvBitacoraVacio
+                            emptyRes = R.string.reportes_mi_etm_camion_vacio
                         }
                     }
 
@@ -464,6 +477,11 @@ class ReportesFragment : Fragment() {
                 binding.tvResumenLabelAverias.text = getString(R.string.reportes_resumen_label_averias)
                 binding.tvResumenLabelMateriales.text = getString(R.string.reportes_resumen_label_material)
                 binding.tvResumenLabelCodigos.text = getString(R.string.reportes_resumen_label_luminarias)
+            }
+            ReportType.MI_ETM_CAMION -> {
+                binding.tvResumenLabelAverias.text = getString(R.string.reportes_resumen_label_eventos)
+                binding.tvResumenLabelMateriales.text = getString(R.string.reportes_resumen_label_etm_cerrados)
+                binding.tvResumenLabelCodigos.text = getString(R.string.reportes_resumen_label_etm_pendientes)
             }
         }
     }
