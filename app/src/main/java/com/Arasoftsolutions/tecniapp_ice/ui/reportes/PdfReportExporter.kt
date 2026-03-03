@@ -135,6 +135,12 @@ object PdfReportExporter {
                     lines += "• ${item.tipo}: ${item.descripcion}"
                 }
             }
+            is ReportExportData.MiEtmCamion -> {
+                lines += context.getString(R.string.reportes_pdf_seccion_etm)
+                data.eventos.forEach { item ->
+                    lines += "• ${item.fecha} · ${item.referencia}: ${item.descripcion} (${item.cantidad})"
+                }
+            }
         }
         lines += ""
         lines += context.getString(R.string.reportes_pdf_footer)
