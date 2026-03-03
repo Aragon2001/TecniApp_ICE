@@ -564,6 +564,7 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
         val localizacion = data.localizacion ?: ui.localizacion
         val cliente = data.cliente ?: ui.cliente
         val tipo = data.tipoAfectacion
+        val evidencias = if (data.evidencias.isNotEmpty()) data.evidencias else ui.evidencias
         val numeroMedidor = data.numeroMedidor?.takeIf { it.isNotBlank() } ?: ui.numeroMedidor
         val medidorCalle = data.medidorCalle?.takeIf { it.isNotBlank() } ?: ui.medidorCalle
         val medidorPueblo = data.medidorPueblo?.takeIf { it.isNotBlank() } ?: ui.medidorPueblo
@@ -597,7 +598,8 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
             medidorCalle = medidorCalle,
             medidorPueblo = medidorPueblo,
             medidorMetros = medidorMetros,
-            medidorPoste = medidorPoste
+            medidorPoste = medidorPoste,
+            evidencias = evidencias
         )
     }
 
@@ -606,6 +608,7 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
         val materialesResumen = entity.materialesTexto
             ?: MaterialesSerializer.toSummary(materialesDetalle)
         val tecnicosAtendieron = TecnicosSerializer.fromJson(entity.tecnicosAtendieronJson)
+        val evidencias = EvidenciasSerializer.fromJson(entity.evidenciasJson)
         return AveriaUI(
             id = entity.caseId,
             descripcion = "Avería #${entity.caseId}",
@@ -646,7 +649,8 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
             medidorPoste = entity.medidorPoste?.trim(),
             causaClor= entity.causaClor?.trim(),
             estadoClor = entity.estadoClor?.trim(),
-            observacionesClor = entity.observacionesClor?.trim()
+            observacionesClor = entity.observacionesClor?.trim(),
+            evidencias = evidencias
         )
     }
 
@@ -682,7 +686,8 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
             medidorCalle = data.medidorCalle,
             medidorPueblo = data.medidorPueblo,
             medidorMetros = data.medidorMetros,
-            medidorPoste = data.medidorPoste
+            medidorPoste = data.medidorPoste,
+            evidencias = data.evidencias
         )
     }
 
@@ -967,6 +972,7 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
             if (Estado.fromLabel(ui.estado) != Estado.EN_ATENCION) return@launch
             ensurePropietario(ui) ?: return@launch
             repo.revertirAPendiente(ui.id)
+            clearDraft(ui.id)
             _messages.tryEmit(getApplication<Application>().getString(R.string.averia_exito_cancelada))
         }
     }
