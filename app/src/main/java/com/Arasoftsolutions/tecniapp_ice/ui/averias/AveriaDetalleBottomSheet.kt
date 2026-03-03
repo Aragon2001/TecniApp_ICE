@@ -71,6 +71,7 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
     private var finalInputsEnabled = false
     private var horaInicioEditable = false
     private var estadoActual: Estado = Estado.PENDIENTE
+    private var habilitarEdicionResuelta = false
     private var persistDraftOnDestroy = true
     private var medidorLookupJob: Job? = null
     private var lastMedidorLookup: String? = null
@@ -864,10 +865,18 @@ private fun renderState() {
             placaAveria.isNotBlank() && !pertenecePorVehiculo
         }
 
+    if (estado != Estado.RESUELTA) habilitarEdicionResuelta = false
+
     val puedeEditarInicio = !regionMismatch && !clorResuelta && !asignadaAOtro &&
-        (estado == Estado.PENDIENTE || estado == Estado.ASIGNADA || (estado == Estado.EN_ATENCION && pertenece))
+        (
+            estado == Estado.PENDIENTE ||
+                estado == Estado.ASIGNADA ||
+                (estado == Estado.EN_ATENCION && pertenece) ||
+                (estado == Estado.RESUELTA && pertenece && habilitarEdicionResuelta)
+            )
+
     val puedeEditarCompleto = !regionMismatch && !clorResuelta &&
-        estado == Estado.EN_ATENCION && pertenece && !asignadaAOtro
+        (estado == Estado.EN_ATENCION || (estado == Estado.RESUELTA && habilitarEdicionResuelta)) && pertenece && !asignadaAOtro
 
     applyInputStateForRules(
         estado = estado,
@@ -890,7 +899,7 @@ private fun applyInputStateForRules(
     puedeEditarCompleto: Boolean
 ) {
     val showInicio = estado == Estado.PENDIENTE || estado == Estado.ASIGNADA || estado == Estado.EN_ATENCION
-    val showCompleto = estado == Estado.EN_ATENCION
+    val showCompleto = estado == Estado.EN_ATENCION || estado == Estado.RESUELTA
 
     inputsEditable = puedeEditarCompleto
     finalInputsEnabled = puedeEditarCompleto
@@ -976,6 +985,7 @@ private fun configureButtonsForRules(
     b.btnAtender.isVisible = false
     b.btnResolver.isVisible = false
     b.btnAnular.isVisible = false
+    b.btnEditar.isVisible = false
     b.btnExportar.isVisible = false
     b.btnEliminar.isVisible = false
 
@@ -1055,10 +1065,29 @@ private fun configureButtonsForRules(
         }
 
         Estado.RESUELTA -> {
-            // ✅ Resuelta por app: solo exportar
-            b.btnExportar.isVisible = pertenece
-b.btnExportar.isEnabled = pertenece
+            // ✅ Resuelta por app y propia: mostrar botón Editar para habilitar cambios.
+            b.btnEditar.isVisible = pertenece && !habilitarEdicionResuelta
+            b.btnEditar.isEnabled = pertenece
+            b.btnEditar.setOnClickListener {
+                if (!pertenece) return@setOnClickListener
+                habilitarEdicionResuelta = true
+                renderState()
+            }
 
+            b.btnResolver.isVisible = pertenece && habilitarEdicionResuelta
+            b.btnResolver.text = getString(R.string.averia_guardar_resolucion)
+            b.btnResolver.isEnabled = pertenece && habilitarEdicionResuelta
+            b.btnResolver.setOnClickListener {
+                if (!pertenece || !habilitarEdicionResuelta) return@setOnClickListener
+                val data = collectFormData(ValidationContext.RESOLVER) ?: return@setOnClickListener
+                vm.onResolver(item, data)
+                habilitarEdicionResuelta = false
+                persistDraftOnDestroy = false
+                dismissAllowingStateLoss()
+            }
+
+            b.btnExportar.isVisible = pertenece
+            b.btnExportar.isEnabled = pertenece
             b.btnExportar.setOnClickListener {
                 viewLifecycleOwner.lifecycleScope.launch { PdfGenerator.exportAveria(requireContext(), item) }
             }

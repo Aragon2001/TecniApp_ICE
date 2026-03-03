@@ -954,6 +954,10 @@ private fun AveriaEntity.toFirebaseAppPayload(): Map<String, Any?> = hashMapOf(
     // ✅ Estado app se decide con tu lógica (pickEstadoPreferAdvanced)
         val estadoElegido = pickEstadoPreferAdvanced(existing.estado, remote.estado, remote.estadoClor)
     val idEstadoElegido = idEstadoFromLabel(estadoElegido)
+    val bloquearPromocionAClorResuelta =
+        normalizeEstadoLabel(existing.estado) == "Resuelta" &&
+            !isClorResuelta(existing.estadoClor) &&
+            isClorResuelta(remote.estadoClor)
 
     updated += existing.copy(
         // ==========================================================
@@ -977,7 +981,7 @@ private fun AveriaEntity.toFirebaseAppPayload(): Map<String, Any?> = hashMapOf(
         // ==========================================================
         estado = estadoElegido,
         idEstadoAve = idEstadoElegido,
-        idEstadoAranda = remote.idEstadoAranda, // este sí puede venir de CLOR
+        idEstadoAranda = if (bloquearPromocionAClorResuelta) existing.idEstadoAranda else remote.idEstadoAranda,
         causa = preferMeaningful(remote.causa, existing.causa),
         observaciones = preferMeaningful(remote.observaciones, existing.observaciones),
 
@@ -1008,9 +1012,21 @@ private fun AveriaEntity.toFirebaseAppPayload(): Map<String, Any?> = hashMapOf(
         // ==========================================================
         // ✅ CLOR separado (estos sí deben actualizarse desde remote)
         // ==========================================================
-        estadoClor = preferMeaningfulClor(remote.estadoClor, existing.estadoClor),
-        causaClor = preferMeaningfulClor(remote.causaClor, existing.causaClor),
-        observacionesClor = preferMeaningfulClor(remote.observacionesClor, existing.observacionesClor),
+        estadoClor = if (bloquearPromocionAClorResuelta) {
+            existing.estadoClor
+        } else {
+            preferMeaningfulClor(remote.estadoClor, existing.estadoClor)
+        },
+        causaClor = if (bloquearPromocionAClorResuelta) {
+            existing.causaClor
+        } else {
+            preferMeaningfulClor(remote.causaClor, existing.causaClor)
+        },
+        observacionesClor = if (bloquearPromocionAClorResuelta) {
+            existing.observacionesClor
+        } else {
+            preferMeaningfulClor(remote.observacionesClor, existing.observacionesClor)
+        },
 
         // ==========================================================
         // Housekeeping
