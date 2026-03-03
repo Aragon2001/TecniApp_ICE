@@ -97,6 +97,7 @@ fun observe(
           medidorPueblo = :medidorPueblo,
           medidorMetros = :medidorMetros,
           medidorPoste = :medidorPoste,
+          evidenciasJson = :evidenciasJson,
           lastUpdated = :lastUpdated,
           isSynced = 0
         WHERE caseId = :caseId
@@ -126,6 +127,7 @@ fun observe(
         medidorPueblo: String?,
         medidorMetros: String?,
         medidorPoste: String?,
+        evidenciasJson: String?,
         lastUpdated: Long,
         nuevoEstado: String
     )
@@ -160,6 +162,7 @@ fun observe(
           medidorPueblo = NULL,
           medidorMetros = NULL,
           medidorPoste = NULL,
+          evidenciasJson = NULL,
           lastUpdated = :lastUpdated,
           isSynced = 0
         WHERE caseId = :caseId

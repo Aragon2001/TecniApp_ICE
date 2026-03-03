@@ -15,7 +15,8 @@ data class AveriaDraft(
     val numeroMedidor: String?,
     val cliente: String?,
     val materiales: List<MaterialUso>,
-    val tecnicos: List<TecnicoAtencion>
+    val tecnicos: List<TecnicoAtencion>,
+    val evidencias: List<EvidenciaFoto>
 ) {
     fun isEmpty(): Boolean {
         return localizacion.isNullOrBlank() &&
@@ -31,6 +32,7 @@ data class AveriaDraft(
             numeroMedidor.isNullOrBlank() &&
             cliente.isNullOrBlank() &&
             materiales.isEmpty() &&
-            tecnicos.isEmpty()
+            tecnicos.isEmpty() &&
+            evidencias.isEmpty()
     }
 }
