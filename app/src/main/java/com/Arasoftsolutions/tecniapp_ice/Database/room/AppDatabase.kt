@@ -49,7 +49,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun programacionDao(): ProgramacionDao
 
     companion object {
-        const val SCHEMA_VERSION = 26
+        const val SCHEMA_VERSION = 27
 
         val MIGRATION_24_25 = object : Migration(24, 25) {
             override fun migrate(db: SupportSQLiteDatabase) {
@@ -127,6 +127,14 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+
+
+        val MIGRATION_26_27 = object : Migration(26, 27) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE averias ADD COLUMN evidenciasJson TEXT")
+            }
+        }
+
         @Volatile private var INSTANCE: AppDatabase? = null
 
         fun getInstance(context: Context): AppDatabase =
@@ -136,7 +144,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "tecniapp_room.db"
                 )
-                    .addMigrations(MIGRATION_24_25, MIGRATION_25_26)
+                     .addMigrations(MIGRATION_24_25, MIGRATION_25_26, MIGRATION_26_27)
                     .fallbackToDestructiveMigrationFrom(true, 23)
                     .fallbackToDestructiveMigrationOnDowngrade(true)
                     .build()
