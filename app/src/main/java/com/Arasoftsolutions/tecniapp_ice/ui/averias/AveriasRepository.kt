@@ -116,6 +116,7 @@ class AveriasRepository(private val db: AppDatabase) {
                 materialesTexto = preferMeaningful(canonical.materialesTexto, existing.materialesTexto),
                 materialesDetalleJson = mergeRemoteString(canonical.materialesDetalleJson, existing.materialesDetalleJson),
                 tecnicosAtendieronJson = mergeRemoteString(canonical.tecnicosAtendieronJson, existing.tecnicosAtendieronJson),
+                evidenciasJson = mergeRemoteString(canonical.evidenciasJson, existing.evidenciasJson),
                 cliente = preferMeaningful(canonical.cliente, existing.cliente),
                 localizacion = preferMeaningful(canonical.localizacion, existing.localizacion),
                 direccion = preferSavedAddress(existing.direccion, canonical.direccion),
@@ -457,6 +458,7 @@ return AveriaEntity(
     causaClor = map["causaClor"].asStringOrNull(),
     observacionesClor = map["observacionesClor"].asStringOrNull(),
     medidorPoste = map["medidorPoste"].asStringOrNull(),
+    evidenciasJson = map["evidenciasJson"].asStringOrNull(),
     isSynced = true,
     lastUpdated = map["lastUpdated"].asLongOrNull() ?: 0L
 )
@@ -623,6 +625,7 @@ return AveriaEntity(
             medidorPueblo = data.medidorPueblo,
             medidorMetros = data.medidorMetros,
             medidorPoste = data.medidorPoste,
+            evidenciasJson = EvidenciasSerializer.toJson(data.evidencias),
             lastUpdated = now,
             nuevoEstado = "En atención"
         )
@@ -672,6 +675,7 @@ return AveriaEntity(
             medidorPueblo = data.medidorPueblo,
             medidorMetros = data.medidorMetros,
             medidorPoste = data.medidorPoste,
+            evidenciasJson = EvidenciasSerializer.toJson(data.evidencias),
             lastUpdated = now,
             nuevoEstado = "Resuelta"
         )
@@ -864,6 +868,7 @@ private fun AveriaEntity.toFirebaseAppPayload(): Map<String, Any?> = hashMapOf(
     "medidorPueblo" to medidorPueblo,
     "medidorMetros" to medidorMetros,
     "medidorPoste" to medidorPoste,
+    "evidenciasJson" to evidenciasJson,
 
     // ===== HOUSEKEEPING =====
     "lastUpdated" to lastUpdated,
@@ -954,6 +959,10 @@ private fun AveriaEntity.toFirebaseAppPayload(): Map<String, Any?> = hashMapOf(
     // ✅ Estado app se decide con tu lógica (pickEstadoPreferAdvanced)
         val estadoElegido = pickEstadoPreferAdvanced(existing.estado, remote.estado, remote.estadoClor)
     val idEstadoElegido = idEstadoFromLabel(estadoElegido)
+    val bloquearPromocionAClorResuelta =
+        normalizeEstadoLabel(existing.estado) == "Resuelta" &&
+            !isClorResuelta(existing.estadoClor) &&
+            isClorResuelta(remote.estadoClor)
 
     updated += existing.copy(
         // ==========================================================
@@ -977,7 +986,7 @@ private fun AveriaEntity.toFirebaseAppPayload(): Map<String, Any?> = hashMapOf(
         // ==========================================================
         estado = estadoElegido,
         idEstadoAve = idEstadoElegido,
-        idEstadoAranda = remote.idEstadoAranda, // este sí puede venir de CLOR
+        idEstadoAranda = if (bloquearPromocionAClorResuelta) existing.idEstadoAranda else remote.idEstadoAranda,
         causa = preferMeaningful(remote.causa, existing.causa),
         observaciones = preferMeaningful(remote.observaciones, existing.observaciones),
 
@@ -994,6 +1003,7 @@ private fun AveriaEntity.toFirebaseAppPayload(): Map<String, Any?> = hashMapOf(
         materialesTexto = preferMeaningful(remote.materialesTexto, existing.materialesTexto),
         materialesDetalleJson = preferMeaningful(remote.materialesDetalleJson, existing.materialesDetalleJson),
         tecnicosAtendieronJson = mergeRemoteString(remote.tecnicosAtendieronJson, existing.tecnicosAtendieronJson),
+        evidenciasJson = mergeRemoteString(remote.evidenciasJson, existing.evidenciasJson),
         cliente = preferMeaningful(remote.cliente, existing.cliente),
         localizacion = preferMeaningful(remote.localizacion, existing.localizacion),
         direccion = preferMeaningful(remote.direccion, existing.direccion),
@@ -1008,9 +1018,21 @@ private fun AveriaEntity.toFirebaseAppPayload(): Map<String, Any?> = hashMapOf(
         // ==========================================================
         // ✅ CLOR separado (estos sí deben actualizarse desde remote)
         // ==========================================================
-        estadoClor = preferMeaningfulClor(remote.estadoClor, existing.estadoClor),
-        causaClor = preferMeaningfulClor(remote.causaClor, existing.causaClor),
-        observacionesClor = preferMeaningfulClor(remote.observacionesClor, existing.observacionesClor),
+        estadoClor = if (bloquearPromocionAClorResuelta) {
+            existing.estadoClor
+        } else {
+            preferMeaningfulClor(remote.estadoClor, existing.estadoClor)
+        },
+        causaClor = if (bloquearPromocionAClorResuelta) {
+            existing.causaClor
+        } else {
+            preferMeaningfulClor(remote.causaClor, existing.causaClor)
+        },
+        observacionesClor = if (bloquearPromocionAClorResuelta) {
+            existing.observacionesClor
+        } else {
+            preferMeaningfulClor(remote.observacionesClor, existing.observacionesClor)
+        },
 
         // ==========================================================
         // Housekeeping

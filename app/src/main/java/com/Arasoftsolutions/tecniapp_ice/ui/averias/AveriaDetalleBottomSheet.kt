@@ -3,6 +3,15 @@ package com.Arasoftsolutions.tecniapp_ice.ui.averias
 import android.app.Dialog
 import android.app.TimePickerDialog
 import android.content.res.ColorStateList
+import java.util.UUID
+import java.io.File
+import com.bumptech.glide.Glide
+import androidx.core.content.FileProvider
+import androidx.activity.result.contract.ActivityResultContracts
+import android.widget.LinearLayout
+import android.widget.ImageView
+import android.net.Uri
+import android.content.Intent
 import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
@@ -71,6 +80,7 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
     private var finalInputsEnabled = false
     private var horaInicioEditable = false
     private var estadoActual: Estado = Estado.PENDIENTE
+    private var habilitarEdicionResuelta = false
     private var persistDraftOnDestroy = true
     private var medidorLookupJob: Job? = null
     private var lastMedidorLookup: String? = null
@@ -79,6 +89,19 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
     private var ultimoKmRegistrado: Double? = null
     private var vehiculosAdapter: VehiculoAdapter? = null
     private var tecnicosAdapter: TecnicoAdapter? = null
+    private val evidencias = mutableListOf<EvidenciaFoto>()
+    private var pendingCameraUri: Uri? = null
+
+    private val galeriaLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+        uri ?: return@registerForActivityResult
+        addEvidencia(uri, "galeria")
+    }
+
+    private val cameraLauncher = registerForActivityResult(ActivityResultContracts.TakePicture()) { ok ->
+        if (!ok) return@registerForActivityResult
+        pendingCameraUri?.let { addEvidencia(it, "camara") }
+        pendingCameraUri = null
+    }
 
     private enum class ValidationContext { NONE, INICIAR, RESOLVER }
 
@@ -279,8 +302,12 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
         val draft = vm.getDraft(item.id)
         tipoSeleccionado = draft?.tipoAfectacion ?: item.tipoAfectacion
         clienteSeleccionado = draft?.cliente ?: item.cliente
+        evidencias.clear()
+        evidencias.addAll(draft?.evidencias ?: item.evidencias)
 
         b.btnCerrar.setOnClickListener { dismissAllowingStateLoss() }
+        b.btnAgregarEvidencia.setOnClickListener { abrirSelectorEvidencia() }
+        renderEvidencias()
         // TODO(Codex): Cerrar hoja únicamente mediante botón explícito
 
         b.etHoraInicio.setOnClickListener {
@@ -864,10 +891,18 @@ private fun renderState() {
             placaAveria.isNotBlank() && !pertenecePorVehiculo
         }
 
+    if (estado != Estado.RESUELTA) habilitarEdicionResuelta = false
+
     val puedeEditarInicio = !regionMismatch && !clorResuelta && !asignadaAOtro &&
-        (estado == Estado.PENDIENTE || estado == Estado.ASIGNADA || (estado == Estado.EN_ATENCION && pertenece))
+        (
+            estado == Estado.PENDIENTE ||
+                estado == Estado.ASIGNADA ||
+                (estado == Estado.EN_ATENCION && pertenece) ||
+                (estado == Estado.RESUELTA && pertenece && habilitarEdicionResuelta)
+            )
+
     val puedeEditarCompleto = !regionMismatch && !clorResuelta &&
-        (estado == Estado.EN_ATENCION || estado == Estado.RESUELTA) && pertenece && !asignadaAOtro
+        (estado == Estado.EN_ATENCION || (estado == Estado.RESUELTA && habilitarEdicionResuelta)) && pertenece && !asignadaAOtro
 
     applyInputStateForRules(
         estado = estado,
@@ -959,6 +994,7 @@ private fun applyInputStateForRules(
     b.actvVehiculo.isEnabled = puedeEditarInicio
     b.chipGroupTecnicos.isEnabled = puedeEditarCompleto
     b.chipGroupMateriales.isEnabled = puedeEditarCompleto
+    b.btnAgregarEvidencia.isEnabled = puedeEditarCompleto
 
     renderTecnicos()
     renderMateriales()
@@ -976,6 +1012,7 @@ private fun configureButtonsForRules(
     b.btnAtender.isVisible = false
     b.btnResolver.isVisible = false
     b.btnAnular.isVisible = false
+    b.btnEditar.isVisible = false
     b.btnExportar.isVisible = false
     b.btnEliminar.isVisible = false
 
@@ -1055,21 +1092,29 @@ private fun configureButtonsForRules(
         }
 
         Estado.RESUELTA -> {
-            // ✅ Resuelta por app y propia: permitir re-editar y guardar.
-            b.btnResolver.isVisible = pertenece
-            b.btnResolver.text = getString(R.string.averia_guardar_resolucion)
-            b.btnResolver.isEnabled = pertenece
-            b.btnResolver.setOnClickListener {
+            // ✅ Resuelta por app y propia: mostrar botón Editar para habilitar cambios.
+            b.btnEditar.isVisible = pertenece && !habilitarEdicionResuelta
+            b.btnEditar.isEnabled = pertenece
+            b.btnEditar.setOnClickListener {
                 if (!pertenece) return@setOnClickListener
+                habilitarEdicionResuelta = true
+                renderState()
+            }
+
+            b.btnResolver.isVisible = pertenece && habilitarEdicionResuelta
+            b.btnResolver.text = getString(R.string.averia_guardar_resolucion)
+            b.btnResolver.isEnabled = pertenece && habilitarEdicionResuelta
+            b.btnResolver.setOnClickListener {
+                if (!pertenece || !habilitarEdicionResuelta) return@setOnClickListener
                 val data = collectFormData(ValidationContext.RESOLVER) ?: return@setOnClickListener
                 vm.onResolver(item, data)
+                habilitarEdicionResuelta = false
                 persistDraftOnDestroy = false
                 dismissAllowingStateLoss()
             }
 
             b.btnExportar.isVisible = pertenece
             b.btnExportar.isEnabled = pertenece
-
             b.btnExportar.setOnClickListener {
                 viewLifecycleOwner.lifecycleScope.launch { PdfGenerator.exportAveria(requireContext(), item) }
             }
@@ -1772,7 +1817,8 @@ private fun configureButtonsForRules(
             medidorCalle = medidorCalle,
             medidorPueblo = medidorPueblo,
             medidorMetros = medidorMetros,
-            medidorPoste = medidorPoste
+            medidorPoste = medidorPoste,
+            evidencias = evidencias.toList()
         )
     }
 
@@ -1783,6 +1829,83 @@ private fun configureButtonsForRules(
             .replace(" ", "")
             .replace(",", ".")
         return normalized.toDoubleOrNull()
+    }
+
+    private fun abrirSelectorEvidencia() {
+        val opciones = arrayOf(
+            getString(R.string.averia_evidencia_tomar_foto),
+            getString(R.string.averia_evidencia_elegir_galeria)
+        )
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.averia_evidencia_titulo_origen)
+            .setItems(opciones) { _, which ->
+                if (which == 0) abrirCamara() else abrirGaleria()
+            }
+            .show()
+    }
+
+    private fun abrirGaleria() {
+        runCatching { galeriaLauncher.launch("image/*") }
+            .onFailure {
+                Snackbar.make(b.root, R.string.averia_evidencia_error_galeria, Snackbar.LENGTH_SHORT).show()
+            }
+    }
+
+    private fun abrirCamara() {
+        val archivo = File(requireContext().cacheDir.resolve("camera").apply { mkdirs() }, "evidencia_${item.id}_${UUID.randomUUID()}.jpg")
+        val authority = "${requireContext().packageName}.fileprovider"
+        val uri = FileProvider.getUriForFile(requireContext(), authority, archivo)
+        pendingCameraUri = uri
+        runCatching { cameraLauncher.launch(uri) }
+            .onFailure {
+                pendingCameraUri = null
+                Snackbar.make(b.root, R.string.averia_evidencia_error_camara, Snackbar.LENGTH_SHORT).show()
+            }
+    }
+
+    private fun addEvidencia(uri: Uri, fuente: String) {
+        val texto = uri.toString()
+        if (evidencias.any { it.uri == texto }) return
+        evidencias.add(EvidenciaFoto(texto, fuente))
+        renderEvidencias()
+    }
+
+    private fun renderEvidencias() {
+        val container = b.containerEvidencias
+        container.removeAllViews()
+        evidencias.forEachIndexed { index, evidencia ->
+            val card = MaterialCardView(requireContext()).apply {
+                radius = 20f
+                layoutParams = LinearLayout.LayoutParams(
+                    (96 * resources.displayMetrics.density).toInt(),
+                    (96 * resources.displayMetrics.density).toInt()
+                ).apply { rightMargin = (8 * resources.displayMetrics.density).toInt() }
+            }
+            val image = ImageView(requireContext()).apply {
+                scaleType = ImageView.ScaleType.CENTER_CROP
+                layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+                contentDescription = "Evidencia ${index + 1}"
+            }
+            Glide.with(this).load(Uri.parse(evidencia.uri)).into(image)
+            card.addView(image)
+            card.setOnClickListener { abrirVistaEvidencia(evidencia) }
+            card.setOnLongClickListener {
+                if (!b.btnAgregarEvidencia.isEnabled) return@setOnLongClickListener false
+                evidencias.remove(evidencia)
+                renderEvidencias()
+                true
+            }
+            container.addView(card)
+        }
+    }
+
+    private fun abrirVistaEvidencia(evidencia: EvidenciaFoto) {
+        val uri = Uri.parse(evidencia.uri)
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(uri, "image/*")
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        runCatching { startActivity(intent) }
     }
 
     private fun buildDraft(): AveriaDraft {
@@ -1808,7 +1931,8 @@ private fun configureButtonsForRules(
             numeroMedidor = b.etMedidor.readText(),
             cliente = clienteSeleccionado,
             materiales = materiales,
-            tecnicos = tecnicos
+            tecnicos = tecnicos,
+            evidencias = evidencias.toList()
         )
     }
 
@@ -1825,7 +1949,8 @@ private fun configureButtonsForRules(
             horaAtencionInicio = data.horaInicioMillis ?: item.horaAtencionInicio,
             horaLlegada = data.horaLlegadaMillis ?: item.horaLlegada,
             kilometrajeInicio = data.kilometrajeInicio ?: item.kilometrajeInicio,
-            kilometrajeLlegada = data.kilometrajeLlegada ?: item.kilometrajeLlegada
+            kilometrajeLlegada = data.kilometrajeLlegada ?: item.kilometrajeLlegada,
+            evidencias = data.evidencias
         )
         bindHeader(Estado.EN_ATENCION)
         bindResumenes()

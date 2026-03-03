@@ -164,6 +164,12 @@ function normalizeEstado(estado) {
   return "PENDIENTE";
 }
 
+function isEstadoAppResuelta(estado) {
+  if (!estado) return false;
+  return estado.toString().trim().toUpperCase().includes("RESUEL");
+}
+
+
 
 
 /**
@@ -431,9 +437,20 @@ exports.syncAveriasYNotificar = onSchedule(
         const prevEstado = prev ? prev.estado : "";
         const isNew = !prev;
 
+        const averiaRef = dbA.ref("averias").child(caseId);
+        const existingSnap = await averiaRef.get();
+        const existing = existingSnap.val() || {};
+        const bloquearPromocionAClorResuelta =
+          isEstadoAppResuelta(existing.estado) &&
+          normalizeEstado(existing.estadoClor) !== "RESUELTA" &&
+          estado === "RESUELTA";
+        const estadoClorEfectivo = bloquearPromocionAClorResuelta
+          ? (normalizeEstado(existing.estadoClor) || "PENDIENTE")
+          : estado;
+
         // Guardar snapshot SIEMPRE (normalizado) para evitar falsos cambios
         next[caseId] = {
-          estado,
+          estado: estadoClorEfectivo,
           agenciaTag,
           ts: now,
         };
@@ -456,27 +473,31 @@ exports.syncAveriasYNotificar = onSchedule(
           lastUpdated: Date.now(),
 
           // ✅ CLOR (separado)
-          estadoClor: estado, // "PENDIENTE" | "RESUELTA"
-          observacionesClor: String(a.observaciones || ""),
-          causaClor: String(a.causa || ""),
+          estadoClor: bloquearPromocionAClorResuelta ? (existing.estadoClor ?? "") : estadoClorEfectivo,
+          observacionesClor: bloquearPromocionAClorResuelta
+            ? (existing.observacionesClor ?? "")
+            : String(a.observaciones || ""),
+          causaClor: bloquearPromocionAClorResuelta
+            ? (existing.causaClor ?? "")
+            : String(a.causa || ""),
         };
 
-        if (estado === "RESUELTA") {
+        if (estadoClorEfectivo === "RESUELTA" && !bloquearPromocionAClorResuelta) {
           payload.estado = "Resuelta";
         }
 
-        await dbA.ref("averias").child(caseId).update(payload);
+        await averiaRef.update(payload);
 
         // ✅ Decide si notifica (nueva PENDIENTE, o cambio a RESUELTA)
-        if (!shouldNotify(prevEstado, estado, isNew)) continue;
+        if (!shouldNotify(prevEstado, estadoClorEfectivo, isNew)) continue;
 
         // ✅ Data EXACTA (DATA-ONLY) — todo string para FCM
         const data = {
           caseId: String(caseId),
 
           // ✅ CLOR
-          estadoClor: String(estado),
-          estado: String(estado),
+          estadoClor: String(estadoClorEfectivo),
+          estado: String(estadoClorEfectivo),
 
           agencia: String(agencia || ""),
           nombreAgencia: String(nombreAgencia || ""),
