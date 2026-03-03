@@ -378,6 +378,7 @@ Cliente: %4$s</string>
     <string name="averia_vehiculo">Vehículo</string>
     <string name="averia_guardar_en_atencion">Guardar atención</string>
     <string name="averia_guardar_resolucion">Guardar resolución</string>
+    <string name="averia_editar">Editar</string>
     <string name="averia_exportar_pdf_button">Generar PDF</string>
     <string name="averia_estado_todos">Todos</string>
     <string name="averia_caso_format">Caso %1$s</string>
@@ -1430,4 +1431,14 @@ Cliente: %4$s</string>
     <string name="registro_paso3_hint_nombre_manual">Ingresa tu nombre</string>
     <string name="registro_paso3_hint_apellido1_manual">Ingresa tu primer apellido</string>
     <string name="registro_paso3_hint_apellido2_manual">Ingresa tu segundo apellido</string>
+    <string name="averia_evidencia_agregar">Agregar evidencia fotográfica</string>
+    <string name="averia_evidencia_tomar_foto">Tomar foto</string>
+    <string name="averia_evidencia_elegir_galeria">Elegir de galería</string>
+    <string name="averia_evidencia_titulo_origen">Agregar evidencia</string>
+    <string name="averia_evidencia_error_camara">No se pudo abrir la cámara.</string>
+    <string name="averia_evidencia_error_galeria">No se pudo abrir la galería.</string>
+    <string name="averia_evidencia_eliminar">Eliminar evidencia</string>
+    <string name="averia_pdf_section_evidencias">Evidencias fotográficas</string>
+    <string name="averia_pdf_no_evidencias">Sin evidencias fotográficas</string>
+
 </resources>
