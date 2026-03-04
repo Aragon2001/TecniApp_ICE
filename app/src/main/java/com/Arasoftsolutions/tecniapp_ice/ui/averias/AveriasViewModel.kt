@@ -990,7 +990,7 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun onResolver(ui: AveriaUI, data: AveriaActionData) {
+    fun onResolver(ui: AveriaUI, data: AveriaActionData, esActualizacion: Boolean = false) {
         if (data.causa.isBlank()) {
             _messages.tryEmit(getApplication<Application>().getString(R.string.averia_error_causa_requerida))
             return
@@ -1006,7 +1006,12 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
             val baseUi = if (!address.isNullOrBlank()) ui.copy(direccion = address) else ui
             val shareItem = buildResolvedUi(baseUi, resolved)
             _shareRequests.tryEmit(shareItem)
-            _messages.tryEmit(getApplication<Application>().getString(R.string.averia_exito_resuelta))
+            val mensaje = if (esActualizacion) {
+                getApplication<Application>().getString(R.string.averia_exito_cambios_actualizados)
+            } else {
+                getApplication<Application>().getString(R.string.averia_exito_resuelta)
+            }
+            _messages.tryEmit(mensaje)
             clearDraft(ui.id)
             AveriasSyncWorker.triggerNow(getApplication(), showSyncNotification = false)
         }
