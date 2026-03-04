@@ -16,6 +16,9 @@ interface MaterialDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(items: List<MaterialEntity>)
 
+    @Query("SELECT * FROM materiales")
+    suspend fun observarMaterialesSnapshot(): List<MaterialEntity>
+
     @Query("SELECT * FROM materiales WHERE codigo = :codigo LIMIT 1")
     suspend fun obtenerPorCodigo(codigo: String): MaterialEntity?
 
