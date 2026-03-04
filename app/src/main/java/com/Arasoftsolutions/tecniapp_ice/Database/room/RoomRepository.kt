@@ -894,7 +894,7 @@ class   RoomRepository(context: Context) {
         subregionId: String,
         progress: (done: Int, total: Int, msg: String?, downloadedBytes: Long) -> Unit = { _, _, _, _ -> }
     ) = withContext(Dispatchers.IO) {
-        val total = SUBREGION_SYNC_STEPS
+        val total = SUBREGION_SYNC_STEPS * 100
         var done = 0
         var downloadedBytes = 0L
         val syncStartedAt = System.currentTimeMillis()
@@ -913,7 +913,8 @@ class   RoomRepository(context: Context) {
             db.agenciaDao().eliminarPorSubregion(canonicalSubregion)
             db.agenciaDao().insertAll(agencias)
         }
-        progress(++done, total, "Descargando agencias…", downloadedBytes)
+        done += 100
+        progress(done, total, "Descargando agencias…", downloadedBytes)
         Log.i(TAG, "[SYNC_SUBREGION] step=$done/$total source=datos_generales/agencias count=${agencias.size} bytes=$downloadedBytes")
 
         val pueblosRemotos = firebase.obtenerPueblosPorSubregion(canonicalSubregion)
@@ -931,7 +932,8 @@ class   RoomRepository(context: Context) {
             db.puebloDao().limpiarSubregion(canonicalSubregion)
             db.puebloDao().insertAll(pueblosASincronizar)
         }
-        progress(++done, total, "Descargando pueblos…", downloadedBytes)
+        done += 100
+        progress(done, total, "Descargando pueblos…", downloadedBytes)
         Log.i(TAG, "[SYNC_SUBREGION] step=$done/$total source=local/pueblos count=${pueblosASincronizar.size} bytes=$downloadedBytes")
 
         val idsPueblos = pueblosASincronizar.map { it.id }
@@ -943,7 +945,8 @@ class   RoomRepository(context: Context) {
         if (localizacionesFiltradas.isNotEmpty()) {
             db.localizacionDao().insertAll(localizacionesFiltradas)
         }
-        progress(++done, total, "Descargando localizaciones…", downloadedBytes)
+        done += 100
+        progress(done, total, "Descargando localizaciones…", downloadedBytes)
         Log.i(TAG, "[SYNC_SUBREGION] step=$done/$total source=local/localizaciones puebloCount=${idsPueblos.size} localizaciones=${localizacionesFiltradas.size} bytes=$downloadedBytes")
 
         val vehiculosPorSubregion = firebase.obtenerVehiculosPorSubregion(canonicalSubregion)
@@ -955,7 +958,8 @@ class   RoomRepository(context: Context) {
         }
         val vehiculosCombinados = combinarVehiculosConLocales(vehiculos)
         db.vehiculoDao().insertAll(vehiculosCombinados)
-        progress(++done, total, "Descargando vehículos…", downloadedBytes)
+        done += 100
+        progress(done, total, "Descargando vehículos…", downloadedBytes)
         Log.i(TAG, "[SYNC_SUBREGION] step=$done/$total source=datos_generales/vehiculos count=${vehiculosCombinados.size} bytes=$downloadedBytes")
 
         var medidoresTotal = 0
@@ -981,13 +985,14 @@ class   RoomRepository(context: Context) {
                 "[SYNC_SUBREGION] medidores_lote=$medidoresLotes loteSize=${medidoresBatch.size} total=$medidoresTotal objetivo=$totalMedidoresObjetivo elapsed=$elapsed bytes=$downloadedBytes"
             )
             progress(
-                done,
+                done + progressUnitsForMedidores(medidoresTotal, totalMedidoresObjetivo),
                 total,
                 "Descargando medidores… ($medidoresTotal/$totalMedidoresObjetivo) · $elapsed",
                 downloadedBytes
             )
         }
-        progress(++done, total, "Descargando medidores…", downloadedBytes)
+        done += 100
+        progress(done, total, "Descargando medidores…", downloadedBytes)
         Log.i(TAG, "[SYNC_SUBREGION] step=$done/$total source=medidores/medidores count=$medidoresTotal bytes=$downloadedBytes")
         Log.i(TAG, "[SYNC_SUBREGION] completed subregion=$canonicalSubregion totalBytes=$downloadedBytes tookMs=${System.currentTimeMillis()-syncStartedAt}")
         // }
@@ -1084,6 +1089,12 @@ class   RoomRepository(context: Context) {
         val minutes = totalSeconds / 60
         val seconds = totalSeconds % 60
         return String.format("%02d:%02d", minutes, seconds)
+    }
+
+    private fun progressUnitsForMedidores(descargados: Int, objetivo: Int): Int {
+        if (objetivo <= 0) return 0
+        val ratio = descargados.toDouble() / objetivo.toDouble()
+        return (ratio * 100.0).toInt().coerceIn(0, 100)
     }
 
     private suspend fun combinarVehiculosConLocales(remotos: List<VehiculosEntity>): List<VehiculosEntity> {
