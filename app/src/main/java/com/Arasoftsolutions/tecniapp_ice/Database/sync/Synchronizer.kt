@@ -9,7 +9,7 @@ class Synchronizer(
 ) {
 
     companion object {
-        private const val EXTRA_STEPS = 2
+        private const val BASE_EXTRA_STEPS = 2 // técnicos + materiales
         private const val TAG = "Synchronizer"
     }
 
@@ -21,13 +21,23 @@ class Synchronizer(
         onSyncError: (Throwable) -> Unit
     ) {
 
-        val totalSteps = RoomRepository.SUBREGION_SYNC_STEPS + EXTRA_STEPS
+        val uid = FirebaseAuth.getInstance().currentUser?.uid
+        val scope = uid?.let { repository.buildUserScope(it) }
+
+        val shouldSyncVehiculo = scope?.vehiculoKey
+            ?.trim()
+            ?.takeIf { it.isNotEmpty() }
+            ?.toIntOrNull() != null
+        val shouldSyncAgencia = !scope?.agenciaTag.isNullOrBlank()
+
+        val scopedSteps = (if (shouldSyncVehiculo) 1 else 0) + (if (shouldSyncAgencia) 1 else 0)
+        val totalSteps = RoomRepository.SUBREGION_SYNC_STEPS + BASE_EXTRA_STEPS + scopedSteps
         val total = totalSteps * 100
         var done = 0
         var downloadedBytes = 0L
 
         val syncStartedAt = System.currentTimeMillis()
-        Log.i(TAG, "[SYNC_FLOW] start subregion=$subregionId totalSteps=$total")
+        Log.i(TAG, "[SYNC_FLOW] start subregion=$subregionId totalSteps=$total scopedSteps=$scopedSteps")
         try {
             val executed = AppSyncCoordinator.runExclusiveDebounced {
 
@@ -52,21 +62,19 @@ class Synchronizer(
 
                 // ----------- 3. SUBREGIÓN COMPLETA ----------------
                 try {
+                    val baseDone = done
                     val bytesBeforeSubregion = downloadedBytes
                     repository.syncSubregion(subregionId) { subDone, subTotal, msg, bytes ->
                         downloadedBytes = bytesBeforeSubregion + bytes
-                        val adjustedDone = (EXTRA_STEPS * 100) + subDone
-                        val adjustedTotal = (EXTRA_STEPS * 100) + subTotal
-                        onSyncProgress(adjustedDone, adjustedTotal.coerceAtLeast(total), msg, downloadedBytes)
+                        onSyncProgress(baseDone + subDone, baseDone + subTotal, msg, downloadedBytes)
                     }
+                    done = baseDone + (RoomRepository.SUBREGION_SYNC_STEPS * 100)
+                    onSyncProgress(done, total, "Subregión sincronizada", downloadedBytes)
                 } catch (e: Exception) {
                     throw Exception("Error en syncSubregion(): ${e.message}", e)
                 }
 
                 // ----------- 4. INVENTARIO/LUMINARIAS SCOPED ----------------
-                val uid = FirebaseAuth.getInstance().currentUser?.uid
-                val scope = uid?.let { repository.buildUserScope(it) }
-
                 scope?.vehiculoKey
                     ?.trim()
                     ?.takeIf { it.isNotEmpty() }
@@ -80,6 +88,8 @@ class Synchronizer(
                             } catch (e: Exception) {
                                 throw Exception("Error en syncInventarioVehiculo(): ${e.message}", e)
                             }
+                        } else {
+                            Log.w(TAG, "[SYNC_FLOW] scoped_inventory_skipped reason=vehiculoKey_not_numeric key=$vehiculoKey")
                         }
                     }
 

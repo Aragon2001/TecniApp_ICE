@@ -942,8 +942,7 @@ class   RoomRepository(context: Context) {
             ?: throw IllegalArgumentException("Subregión inválida: $subregionId")
         Log.i(TAG, "[SYNC_SUBREGION] canonicalSubregion=$canonicalSubregion")
 
-        val agenciasPorSubregion = firebase.obtenerAgenciasPorSubregion(canonicalSubregion)
-        val agencias = agenciasPorSubregion.ifEmpty { firebase.obtenerAgencias(canonicalSubregion) }
+        val agencias = firebase.obtenerAgenciasPorSubregion(canonicalSubregion)
         downloadedBytes += estimateBytes(agencias)
         if (agencias.isNotEmpty()) {
             val localesAgencias = db.agenciaDao().getAll()
@@ -1005,8 +1004,7 @@ class   RoomRepository(context: Context) {
         progress(done, total, "Descargando localizaciones…", downloadedBytes)
         Log.i(TAG, "[SYNC_SUBREGION] step=$done/$total source=local/localizaciones puebloCount=${idsPueblos.size} localizaciones=${localizacionesFiltradas.size} bytes=$downloadedBytes")
 
-        val vehiculosPorSubregion = firebase.obtenerVehiculosPorSubregion(canonicalSubregion)
-        val vehiculosRemotos = vehiculosPorSubregion.ifEmpty { firebase.obtenerVehiculos(canonicalSubregion) }
+        val vehiculosRemotos = firebase.obtenerVehiculosPorSubregion(canonicalSubregion)
         val vehiculos = deduplicarVehiculos(vehiculosRemotos)
         downloadedBytes += estimateBytes(vehiculos)
         val vehiculosCombinados = combinarVehiculosConLocales(vehiculos)
