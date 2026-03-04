@@ -16,6 +16,9 @@ interface TecnicoDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(items: List<TecnicoEntity>)
 
+    @Query("SELECT * FROM tecnicos")
+    suspend fun observarTecnicosSnapshot(): List<TecnicoEntity>
+
     @Query("SELECT * FROM tecnicos WHERE cedula = :cedula LIMIT 1")
     suspend fun obtenerPorCedula(cedula: String): TecnicoEntity?
 

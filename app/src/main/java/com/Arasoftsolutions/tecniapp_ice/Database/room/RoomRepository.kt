@@ -807,46 +807,68 @@ class   RoomRepository(context: Context) {
     suspend fun syncTecnicos(): Long = withContext(Dispatchers.IO) {
         val tecnicos = firebase.obtenerTecnicos()
         val bytes = estimateBytes(tecnicos)
-        if (tecnicos.isNotEmpty()) {
-            db.tecnicoDao().eliminarFueraDeCedulas(tecnicos.map { it.cedula })
-            db.tecnicoDao().insertAll(tecnicos)
-        } else {
-            db.tecnicoDao().limpiarTodo()
+        if (tecnicos.isEmpty()) return@withContext bytes
+
+        val locales = db.tecnicoDao().observarTecnicosSnapshot().associateBy { it.cedula }
+        val cambios = tecnicos.filter { remoto ->
+            val local = locales[remoto.cedula]
+            local == null || local != remoto
+        }
+        if (cambios.isNotEmpty()) {
+            db.tecnicoDao().insertAll(cambios)
         }
         bytes
     }
+
 
     suspend fun syncMateriales(): Long = withContext(Dispatchers.IO) {
         val materiales = firebase.obtenerMaterialesCatalogo()
         val bytes = estimateBytes(materiales)
-        if (materiales.isNotEmpty()) {
-            db.materialDao().eliminarFueraDeCodigos(materiales.map { it.codigo })
-            db.materialDao().insertAll(materiales)
-        } else {
-            db.materialDao().limpiarTodo()
+        if (materiales.isEmpty()) return@withContext bytes
+
+        val locales = db.materialDao().observarMaterialesSnapshot().associateBy { it.codigo }
+        val cambios = materiales.filter { remoto ->
+            val local = locales[remoto.codigo]
+            local == null || local != remoto
+        }
+        if (cambios.isNotEmpty()) {
+            db.materialDao().insertAll(cambios)
         }
         bytes
     }
+
 
     suspend fun syncInventario(): Long = withContext(Dispatchers.IO) {
         val inventario = firebase.obtenerInventario()
         val bytes = estimateBytes(inventario)
-        inventarioDao.limpiarTodo()
-        if (inventario.isNotEmpty()) {
-            inventarioDao.insertAll(inventario)
+        if (inventario.isEmpty()) return@withContext bytes
+
+        val locales = inventario.groupBy { it.vehiculoId }
+            .flatMap { (vehiculoId, _) -> inventarioDao.obtenerPorVehiculo(vehiculoId) }
+            .associateBy { "${it.vehiculoId}:${it.codigoMaterial}" }
+        val cambios = inventario.filter { remoto ->
+            val key = "${remoto.vehiculoId}:${remoto.codigoMaterial}"
+            val local = locales[key]
+            local == null ||
+                local.descripcionMaterial != remoto.descripcionMaterial ||
+                local.cantidadDisponible != remoto.cantidadDisponible
+        }
+        if (cambios.isNotEmpty()) {
+            inventarioDao.insertAll(cambios)
         }
         bytes
     }
 
+
     suspend fun syncLuminarias(agencia: String? = null): Long = withContext(Dispatchers.IO) {
         val reparaciones = firebase.obtenerLuminarias(agencia)
         val bytes = estimateBytes(reparaciones)
-        inventarioDao.limpiarReparaciones()
         if (reparaciones.isNotEmpty()) {
             inventarioDao.insertarReparaciones(reparaciones)
         }
         bytes
     }
+
 
     suspend fun syncInventarioVehiculo(vehiculoId: Int, vehiculoKey: String): Long = withContext(Dispatchers.IO) {
         val key = vehiculoKey.trim()
@@ -858,12 +880,21 @@ class   RoomRepository(context: Context) {
             firebase.obtenerInventario().filter { it.vehiculoId == vehiculoId }
         }
         val bytes = estimateBytes(inventario)
-        inventarioDao.eliminarPorVehiculo(vehiculoId)
-        if (inventario.isNotEmpty()) {
-            inventarioDao.insertAll(inventario)
+        if (inventario.isEmpty()) return@withContext bytes
+
+        val locales = inventarioDao.obtenerPorVehiculo(vehiculoId).associateBy { it.codigoMaterial }
+        val cambios = inventario.filter { remoto ->
+            val local = locales[remoto.codigoMaterial]
+            local == null ||
+                local.descripcionMaterial != remoto.descripcionMaterial ||
+                local.cantidadDisponible != remoto.cantidadDisponible
+        }
+        if (cambios.isNotEmpty()) {
+            inventarioDao.insertAll(cambios)
         }
         bytes
     }
+
 
     suspend fun syncLuminariasAgencia(agencia: String): Long = withContext(Dispatchers.IO) {
         val agenciaValue = agencia.trim()
@@ -875,12 +906,12 @@ class   RoomRepository(context: Context) {
             firebase.obtenerLuminarias(null)
         }
         val bytes = estimateBytes(reparaciones)
-        inventarioDao.limpiarReparaciones()
         if (reparaciones.isNotEmpty()) {
             inventarioDao.insertarReparaciones(reparaciones)
         }
         bytes
     }
+
 
     private suspend fun resolveVehiculoKey(vehiculoId: Int): String {
         val vehiculo = db.vehiculoDao().buscarPorId(vehiculoId)
@@ -910,8 +941,16 @@ class   RoomRepository(context: Context) {
         val agencias = agenciasPorSubregion.ifEmpty { firebase.obtenerAgencias(canonicalSubregion) }
         downloadedBytes += estimateBytes(agencias)
         if (agencias.isNotEmpty()) {
-            db.agenciaDao().eliminarPorSubregion(canonicalSubregion)
-            db.agenciaDao().insertAll(agencias)
+            val localesAgencias = db.agenciaDao().getAll()
+                .filter { it.subregion.equals(canonicalSubregion, ignoreCase = true) }
+                .associateBy { it.id }
+            val agenciasNuevasOCambiadas = agencias.filter { remoto ->
+                val local = localesAgencias[remoto.id]
+                local == null || local != remoto
+            }
+            if (agenciasNuevasOCambiadas.isNotEmpty()) {
+                db.agenciaDao().insertAll(agenciasNuevasOCambiadas)
+            }
         }
         done += 100
         progress(done, total, "Descargando agencias…", downloadedBytes)
@@ -929,8 +968,16 @@ class   RoomRepository(context: Context) {
             emptyList()
         }
         if (pueblosASincronizar.isNotEmpty()) {
-            db.puebloDao().limpiarSubregion(canonicalSubregion)
-            db.puebloDao().insertAll(pueblosASincronizar)
+            val pueblosLocales = db.puebloDao().getAll()
+                .filter { it.subregion_id_normalizado == canonicalSubregion }
+                .associateBy { it.id }
+            val pueblosNuevosOCambiados = pueblosASincronizar.filter { remoto ->
+                val local = pueblosLocales[remoto.id]
+                local == null || local != remoto
+            }
+            if (pueblosNuevosOCambiados.isNotEmpty()) {
+                db.puebloDao().insertAll(pueblosNuevosOCambiados)
+            }
         }
         done += 100
         progress(done, total, "Descargando pueblos…", downloadedBytes)
@@ -939,11 +986,15 @@ class   RoomRepository(context: Context) {
         val idsPueblos = pueblosASincronizar.map { it.id }
         val localizacionesFiltradas = firebase.obtenerLocalizacionesPorPueblos(idsPueblos)
         downloadedBytes += estimateBytes(localizacionesFiltradas)
-        if (idsPueblos.isNotEmpty()) {
-            db.localizacionDao().eliminarPorPueblos(idsPueblos)
-        }
         if (localizacionesFiltradas.isNotEmpty()) {
-            db.localizacionDao().insertAll(localizacionesFiltradas)
+            val locales = idsPueblos.flatMap { db.localizacionDao().obtenerPorPueblo(it) }.associateBy { it.id }
+            val nuevasOCambiadas = localizacionesFiltradas.filter { remoto ->
+                val local = locales[remoto.id]
+                local == null || local != remoto
+            }
+            if (nuevasOCambiadas.isNotEmpty()) {
+                db.localizacionDao().insertAll(nuevasOCambiadas)
+            }
         }
         done += 100
         progress(done, total, "Descargando localizaciones…", downloadedBytes)
@@ -953,47 +1004,56 @@ class   RoomRepository(context: Context) {
         val vehiculosRemotos = vehiculosPorSubregion.ifEmpty { firebase.obtenerVehiculos(canonicalSubregion) }
         val vehiculos = deduplicarVehiculos(vehiculosRemotos)
         downloadedBytes += estimateBytes(vehiculos)
-        if (vehiculos.isNotEmpty()) {
-            db.vehiculoDao().eliminarPorSubregion(canonicalSubregion)
-        }
         val vehiculosCombinados = combinarVehiculosConLocales(vehiculos)
-        db.vehiculoDao().insertAll(vehiculosCombinados)
+        if (vehiculosCombinados.isNotEmpty()) {
+            val locales = db.vehiculoDao().getAll()
+                .filter { it.subregion.equals(canonicalSubregion, ignoreCase = true) }
+                .associateBy { it.vehiculoId }
+            val nuevosOCambiados = vehiculosCombinados.filter { remoto ->
+                val local = locales[remoto.vehiculoId]
+                local == null || local != remoto
+            }
+            if (nuevosOCambiados.isNotEmpty()) {
+                db.vehiculoDao().insertAll(nuevosOCambiados)
+            }
+        }
         done += 100
         progress(done, total, "Descargando vehículos…", downloadedBytes)
         Log.i(TAG, "[SYNC_SUBREGION] step=$done/$total source=datos_generales/vehiculos count=${vehiculosCombinados.size} bytes=$downloadedBytes")
 
         var medidoresTotal = 0
         var medidoresLotes = 0
-        var totalMedidoresObjetivo = db.medidorDao().contarPorSubregion(canonicalSubregion)
+        val medidoresExistentes = db.medidorDao().contarPorSubregion(canonicalSubregion)
+        var totalMedidoresObjetivo = medidoresExistentes
+        val ultimoMedidorLocal = db.medidorDao().obtenerUltimoNumeroPorSubregion(canonicalSubregion)
         val medidoresSyncStartedAt = System.currentTimeMillis()
-        db.medidorDao().eliminarPorSubregion(canonicalSubregion)
         firebase.obtenerMedidoresPorLotes(
             subregionId = canonicalSubregion,
-            batchSize = 1000
+            batchSize = 1000,
+            startAtKey = ultimoMedidorLocal
         ) { medidoresBatch ->
             if (medidoresBatch.isEmpty()) return@obtenerMedidoresPorLotes
             db.medidorDao().insertAll(medidoresBatch)
             downloadedBytes += estimateMedidoresBatchBytes(medidoresBatch.size)
             medidoresTotal += medidoresBatch.size
             medidoresLotes += 1
-            if (medidoresTotal > totalMedidoresObjetivo) {
-                totalMedidoresObjetivo = medidoresTotal
-            }
+            totalMedidoresObjetivo = medidoresExistentes + medidoresTotal
             val elapsed = formatElapsed(System.currentTimeMillis() - medidoresSyncStartedAt)
             Log.i(
                 TAG,
-                "[SYNC_SUBREGION] medidores_lote=$medidoresLotes loteSize=${medidoresBatch.size} total=$medidoresTotal objetivo=$totalMedidoresObjetivo elapsed=$elapsed bytes=$downloadedBytes"
+                "[SYNC_SUBREGION] medidores_lote=$medidoresLotes loteSize=${medidoresBatch.size} nuevos=$medidoresTotal existentes=$medidoresExistentes objetivo=$totalMedidoresObjetivo elapsed=$elapsed bytes=$downloadedBytes"
             )
             progress(
                 done + progressUnitsForMedidores(medidoresTotal, totalMedidoresObjetivo),
                 total,
-                "Descargando medidores… ($medidoresTotal/$totalMedidoresObjetivo) · $elapsed",
+                "Sincronizando medidores nuevos… ($medidoresTotal/$totalMedidoresObjetivo) · $elapsed",
                 downloadedBytes
             )
         }
         done += 100
-        progress(done, total, "Descargando medidores…", downloadedBytes)
-        Log.i(TAG, "[SYNC_SUBREGION] step=$done/$total source=medidores/medidores count=$medidoresTotal bytes=$downloadedBytes")
+        val medidoresMsg = if (medidoresTotal > 0) "Sincronizando medidores nuevos…" else "Medidores al día; no hay descargas nuevas."
+        progress(done, total, medidoresMsg, downloadedBytes)
+        Log.i(TAG, "[SYNC_SUBREGION] step=$done/$total source=medidores/medidores nuevos=$medidoresTotal existentes=$medidoresExistentes ultimoLocal=$ultimoMedidorLocal bytes=$downloadedBytes")
         Log.i(TAG, "[SYNC_SUBREGION] completed subregion=$canonicalSubregion totalBytes=$downloadedBytes tookMs=${System.currentTimeMillis()-syncStartedAt}")
         // }
     }
@@ -1017,39 +1077,47 @@ class   RoomRepository(context: Context) {
         val regiones = firebase.obtenerRegiones()
         downloadedBytes += estimateBytes(regiones)
         if (regiones.isNotEmpty()) {
-            db.regionDao().eliminarFueraDeIds(regiones.map { it.id })
-            db.regionDao().insertAll(regiones)
-        } else {
-            db.regionDao().limpiarTodo()
+            val locales = db.regionDao().getAll().associateBy { it.id }
+            val nuevasOCambiadas = regiones.filter { remoto ->
+                val local = locales[remoto.id]
+                local == null || local != remoto
+            }
+            if (nuevasOCambiadas.isNotEmpty()) db.regionDao().insertAll(nuevasOCambiadas)
         }
 
         val subregiones = firebase.obtenerSubregiones()
         downloadedBytes += estimateBytes(subregiones)
         if (subregiones.isNotEmpty()) {
-            db.subregionDao().eliminarFueraDeIds(subregiones.map { it.id })
-            db.subregionDao().insertAll(subregiones)
-        } else {
-            db.subregionDao().limpiarTodo()
+            val locales = db.subregionDao().getAll().associateBy { it.id }
+            val nuevasOCambiadas = subregiones.filter { remoto ->
+                val local = locales[remoto.id]
+                local == null || local != remoto
+            }
+            if (nuevasOCambiadas.isNotEmpty()) db.subregionDao().insertAll(nuevasOCambiadas)
         }
 
         val agencias = firebase.obtenerAgencias()
         downloadedBytes += estimateBytes(agencias)
         if (agencias.isNotEmpty()) {
-            db.agenciaDao().eliminarFueraDeIds(agencias.map { it.id })
-            db.agenciaDao().insertAll(agencias)
-        } else {
-            db.agenciaDao().limpiarTodo()
+            val locales = db.agenciaDao().getAll().associateBy { it.id }
+            val nuevasOCambiadas = agencias.filter { remoto ->
+                val local = locales[remoto.id]
+                local == null || local != remoto
+            }
+            if (nuevasOCambiadas.isNotEmpty()) db.agenciaDao().insertAll(nuevasOCambiadas)
         }
 
         val vehiculosRemotos = firebase.obtenerVehiculos()
         val vehiculos = deduplicarVehiculos(vehiculosRemotos)
         downloadedBytes += estimateBytes(vehiculos)
         if (vehiculos.isNotEmpty()) {
-            db.vehiculoDao().eliminarFueraDeIds(vehiculos.map { it.id })
             val vehiculosCombinados = combinarVehiculosConLocales(vehiculos)
-            db.vehiculoDao().insertAll(vehiculosCombinados)
-        } else {
-            db.vehiculoDao().limpiarTodo()
+            val locales = db.vehiculoDao().getAll().associateBy { it.vehiculoId }
+            val nuevosOCambiados = vehiculosCombinados.filter { remoto ->
+                val local = locales[remoto.vehiculoId]
+                local == null || local != remoto
+            }
+            if (nuevosOCambiados.isNotEmpty()) db.vehiculoDao().insertAll(nuevosOCambiados)
         }
 
         runCatching { syncTecnicos() }
