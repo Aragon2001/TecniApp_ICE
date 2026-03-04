@@ -959,6 +959,7 @@ class   RoomRepository(context: Context) {
         Log.i(TAG, "[SYNC_SUBREGION] step=$done/$total source=datos_generales/vehiculos count=${vehiculosCombinados.size} bytes=$downloadedBytes")
 
         var medidoresTotal = 0
+        var medidoresLotes = 0
         db.medidorDao().eliminarPorSubregion(canonicalSubregion)
         firebase.obtenerMedidoresPorLotes(
             subregionId = canonicalSubregion,
@@ -968,6 +969,11 @@ class   RoomRepository(context: Context) {
             db.medidorDao().insertAll(medidoresBatch)
             downloadedBytes += estimateBytes(medidoresBatch)
             medidoresTotal += medidoresBatch.size
+            medidoresLotes += 1
+            Log.i(
+                TAG,
+                "[SYNC_SUBREGION] medidores_lote=$medidoresLotes loteSize=${medidoresBatch.size} total=$medidoresTotal bytes=$downloadedBytes"
+            )
             progress(done, total, "Descargando medidores… ($medidoresTotal)", downloadedBytes)
         }
         progress(++done, total, "Descargando medidores…", downloadedBytes)
@@ -1036,7 +1042,26 @@ class   RoomRepository(context: Context) {
     }
 
     private fun estimateBytes(value: Any?): Long {
-        return value?.toString()?.toByteArray(Charsets.UTF_8)?.size?.toLong() ?: 0L
+        return when (value) {
+            null -> 0L
+            is String -> value.toByteArray(Charsets.UTF_8).size.toLong()
+            is Number, is Boolean -> 8L
+            is MedidorEntity -> estimateMedidorBytes(value)
+            is Collection<*> -> value.sumOf { estimateBytes(it) }
+            is Map<*, *> -> value.entries.sumOf { estimateBytes(it.key) + estimateBytes(it.value) }
+            else -> 64L
+        }
+    }
+
+    private fun estimateMedidorBytes(medidor: MedidorEntity): Long {
+        return estimateBytes(medidor.medidorNumber) +
+            estimateBytes(medidor.subregion) +
+            estimateBytes(medidor.cliente) +
+            estimateBytes(medidor.calle) +
+            estimateBytes(medidor.poste) +
+            estimateBytes(medidor.metros) +
+            estimateBytes(medidor.pueblo) +
+            8L
     }
 
     private suspend fun combinarVehiculosConLocales(remotos: List<VehiculosEntity>): List<VehiculosEntity> {
