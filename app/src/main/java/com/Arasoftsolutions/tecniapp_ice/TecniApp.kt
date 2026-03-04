@@ -88,20 +88,12 @@ class TecniApp : Application() {
         val urls = listOf(
             "https://tecniapp-ice-user.firebaseio.com",
             "https://tecniapp-ice-datosgenerales.firebaseio.com",
-            "https://tecniapp-ice.firebaseio.com",
-            "https://tecniapp-ice-default-rtdb.firebaseio.com",
             "https://tecniapp-ice-personal.firebaseio.com/",
             "https://tecniapp-ice-materiales.firebaseio.com/"
         )
 
-        // ⚠️ Evitamos persistencia local en nodos de alto volumen (inventario/averías/luminarias)
-        // para prevenir OOM al rehidratar caché SQLite de Firebase.
-
-        runCatching {
-            FirebaseDatabase.getInstance().setPersistenceEnabled(true)
-        }.onFailure { error ->
-            android.util.Log.w("TecniApp", "No se pudo habilitar persistencia default", error)
-        }
+        // ⚠️ Evitamos persistencia local en nodos de alto volumen (medidores/localizaciones,
+        // inventario/averías/luminarias) para prevenir OOM al rehidratar caché SQLite de Firebase.
 
         urls.forEach { url ->
             runCatching {

@@ -262,32 +262,11 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
             result
         } catch (e: Exception) {
             val isIndexError = e.message?.contains("Index not defined", ignoreCase = true) == true
-            Log.w(TAG, "[SYNC_FETCH][datos_generales/$nodeName] indexed_query_failed fallback=true indexError=$isIndexError detail=${e.message}")
-            val fullSnap = dbDatosGenerales.child(nodeName).get().await()
-            val fallback = if (!fullSnap.exists()) {
-                emptyList()
-            } else {
-                fullSnap.children.mapNotNull { child ->
-                    val id = child.stringChild("id") ?: child.key
-                    val nombre = child.stringChild("nombre") ?: return@mapNotNull null
-                    val regionId = child.stringChild("region_id")
-                        ?: child.stringChild("regionId")
-                        ?: child.stringChild("region")
-                    val subregion = child.stringChild("subregion")
-                        ?: child.stringChild("subregion_id")
-                        ?: child.stringChild("subregionId")
-                    val entityId = (id ?: nombre).trim()
-                    if (entityId.isEmpty()) return@mapNotNull null
-                    AgenciaEntity(
-                        id = entityId,
-                        nombre = nombre.trim(),
-                        regionId = regionId?.trim(),
-                        subregion = subregion?.trim()
-                    )
-                }.filter { it.subregion?.equals(filtro, ignoreCase = true) == true }
-            }
-            Log.i(TAG, "[SYNC_FETCH][datos_generales/$nodeName] query_indexed=false fallback=true count=${fallback.size} bytes=${estimatePayloadBytes(fallback)} tookMs=${System.currentTimeMillis()-startedAt}")
-            fallback
+            Log.w(
+                TAG,
+                "[SYNC_FETCH][datos_generales/$nodeName] indexed_query_failed fallback_skipped=true indexError=$isIndexError detail=${e.message}"
+            )
+            emptyList()
         }
     }
 
@@ -371,10 +350,11 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
             result
         } catch (e: Exception) {
             val isIndexError = e.message?.contains("Index not defined", ignoreCase = true) == true
-            Log.w(TAG, "[SYNC_FETCH][datos_generales/$nodeName] indexed_query_failed fallback=true indexError=$isIndexError detail=${e.message}")
-            val fallback = obtenerVehiculos(subregionId = filtro)
-            Log.i(TAG, "[SYNC_FETCH][datos_generales/$nodeName] query_indexed=false fallback=true count=${fallback.size} bytes=${estimatePayloadBytes(fallback)} tookMs=${System.currentTimeMillis()-startedAt}")
-            fallback
+            Log.w(
+                TAG,
+                "[SYNC_FETCH][datos_generales/$nodeName] indexed_query_failed fallback_skipped=true indexError=$isIndexError detail=${e.message}"
+            )
+            emptyList()
         }
     }
 
