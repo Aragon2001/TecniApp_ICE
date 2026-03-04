@@ -81,6 +81,8 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
     private var horaInicioEditable = false
     private var estadoActual: Estado = Estado.PENDIENTE
     private var habilitarEdicionResuelta = false
+    private var snapshotEdicionResuelta: AveriaActionData? = null
+    private var tieneCambiosEdicionResuelta = false
     private var persistDraftOnDestroy = true
     private var medidorLookupJob: Job? = null
     private var lastMedidorLookup: String? = null
@@ -308,6 +310,7 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
         b.btnCerrar.setOnClickListener { dismissAllowingStateLoss() }
         b.btnAgregarEvidencia.setOnClickListener { abrirSelectorEvidencia() }
         renderEvidencias()
+        setupResolvedEditChangeListeners()
         // TODO(Codex): Cerrar hoja únicamente mediante botón explícito
 
         b.etHoraInicio.setOnClickListener {
@@ -679,6 +682,7 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
                 b.etMedidor.setText("")
                 b.etLocalizacion.setText("")
             }
+            refreshResolvedEditionState()
             updateTipoSection()
             renderState()
         }
@@ -797,6 +801,54 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
         }
 
         renderMedidorInfo(if (tipoSeleccionado == TipoAfectacion.CLIENTE) medidorSeleccionado else null)
+    }
+
+    private fun setupResolvedEditChangeListeners() {
+        val trackedFields = listOf(
+            b.etLocalizacion,
+            b.etCausa,
+            b.etObs,
+            b.actvVehiculo,
+            b.etHoraLlegada,
+            b.etHoraInicio,
+            b.etHoraFin,
+            b.etKmLlegada,
+            b.etKmInicio,
+            b.etKmFinal,
+            b.etMedidor
+        )
+        trackedFields.forEach { input ->
+            input.doAfterTextChanged { refreshResolvedEditionState() }
+        }
+    }
+
+    private fun refreshResolvedEditionState() {
+        if (_b == null) return
+        val isResolvedEditing = estadoActual == Estado.RESUELTA && habilitarEdicionResuelta
+        if (!isResolvedEditing) {
+            tieneCambiosEdicionResuelta = false
+            snapshotEdicionResuelta = null
+            return
+        }
+        val current = collectFormData(ValidationContext.NONE)?.normalizedForDiff() ?: run {
+            tieneCambiosEdicionResuelta = false
+            b.btnResolver.isEnabled = false
+            return
+        }
+        val base = snapshotEdicionResuelta ?: run {
+            snapshotEdicionResuelta = current
+            current
+        }
+        tieneCambiosEdicionResuelta = current != base
+        b.btnResolver.isEnabled = tieneCambiosEdicionResuelta
+    }
+
+    private fun AveriaActionData.normalizedForDiff(): AveriaActionData {
+        return copy(
+            materiales = materiales.sortedBy { it.codigo },
+            tecnicos = tecnicos.sortedWith(compareBy(TecnicoAtencion::cedula, TecnicoAtencion::nombre)),
+            evidencias = evidencias.sortedBy { it.uri }
+        )
     }
 
     private fun updateTipoSection() {
@@ -1099,17 +1151,21 @@ private fun configureButtonsForRules(
             b.btnEditar.setOnClickListener {
                 if (!pertenece) return@setOnClickListener
                 habilitarEdicionResuelta = true
+                snapshotEdicionResuelta = collectFormData(ValidationContext.NONE)?.normalizedForDiff()
+                tieneCambiosEdicionResuelta = false
                 renderState()
             }
 
             b.btnResolver.isVisible = pertenece && habilitarEdicionResuelta
             b.btnResolver.text = getString(R.string.averia_guardar_resolucion)
-            b.btnResolver.isEnabled = pertenece && habilitarEdicionResuelta
+            b.btnResolver.isEnabled = pertenece && habilitarEdicionResuelta && tieneCambiosEdicionResuelta
             b.btnResolver.setOnClickListener {
                 if (!pertenece || !habilitarEdicionResuelta) return@setOnClickListener
                 val data = collectFormData(ValidationContext.RESOLVER) ?: return@setOnClickListener
-                vm.onResolver(item, data)
+                vm.onResolver(item, data, esActualizacion = true)
                 habilitarEdicionResuelta = false
+                snapshotEdicionResuelta = null
+                tieneCambiosEdicionResuelta = false
                 persistDraftOnDestroy = false
                 dismissAllowingStateLoss()
             }
@@ -1239,6 +1295,7 @@ private fun configureButtonsForRules(
         if (cantidadNormalizada == 0) {
             if (materialesSeleccionados.remove(clave) != null) {
                 renderMateriales()
+                refreshResolvedEditionState()
             }
             return
         }
@@ -1248,6 +1305,7 @@ private fun configureButtonsForRules(
         val actualizado = MaterialUso(clave, material.descripcion, cantidadNormalizada, meta, sello)
         materialesSeleccionados[clave] = actualizado
         renderMateriales()
+        refreshResolvedEditionState()
     }
 
     private fun mostrarDialogoCantidadMaterial(
@@ -1555,6 +1613,7 @@ private fun configureButtonsForRules(
         if (key.isBlank()) return
         tecnicosSeleccionados[key] = TecnicoAtencion(t.cedula, t.nombre)
         renderTecnicos()
+        refreshResolvedEditionState()
     }
 
     private fun ensureTecnicoActual() {
@@ -1564,6 +1623,7 @@ private fun configureButtonsForRules(
         val key = if (cedula.isNotBlank()) cedula else nombre
         if (!tecnicosSeleccionados.containsKey(key)) {
             tecnicosSeleccionados[key] = TecnicoAtencion(cedula, nombre)
+            refreshResolvedEditionState()
         }
     }
 
@@ -1586,6 +1646,7 @@ private fun configureButtonsForRules(
                     setOnCloseIconClickListener {
                         tecnicosSeleccionados.remove(key)
                         renderTecnicos()
+                        refreshResolvedEditionState()
                     }
                 } else {
                     setOnCloseIconClickListener(null)
@@ -1869,6 +1930,7 @@ private fun configureButtonsForRules(
         if (evidencias.any { it.uri == texto }) return
         evidencias.add(EvidenciaFoto(texto, fuente))
         renderEvidencias()
+        refreshResolvedEditionState()
     }
 
     private fun renderEvidencias() {
@@ -1894,6 +1956,7 @@ private fun configureButtonsForRules(
                 if (!b.btnAgregarEvidencia.isEnabled) return@setOnLongClickListener false
                 evidencias.remove(evidencia)
                 renderEvidencias()
+                refreshResolvedEditionState()
                 true
             }
             container.addView(card)
@@ -1917,6 +1980,7 @@ private fun configureButtonsForRules(
                     1 -> {
                         evidencias.remove(evidencia)
                         renderEvidencias()
+                        refreshResolvedEditionState()
                     }
                 }
             }
