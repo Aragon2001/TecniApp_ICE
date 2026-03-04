@@ -356,6 +356,7 @@ Cliente: %4$s</string>
     <string name="averia_exito_en_atencion">Avería en atención</string>
     <string name="averia_exito_cancelada">Atención cancelada</string>
     <string name="averia_exito_resuelta">Avería resuelta</string>
+    <string name="averia_exito_cambios_actualizados">Cambios actualizados</string>
     <string name="averia_exito_eliminada">Avería eliminada</string>
     <string name="averia_exito_anulada">Avería anulada</string>
     <string name="averia_exito_revertida">Avería revertida a pendiente.</string>
