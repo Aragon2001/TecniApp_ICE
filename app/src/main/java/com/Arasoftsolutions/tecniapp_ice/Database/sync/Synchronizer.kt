@@ -21,7 +21,8 @@ class Synchronizer(
         onSyncError: (Throwable) -> Unit
     ) {
 
-        val total = RoomRepository.SUBREGION_SYNC_STEPS + EXTRA_STEPS
+        val totalSteps = RoomRepository.SUBREGION_SYNC_STEPS + EXTRA_STEPS
+        val total = totalSteps * 100
         var done = 0
         var downloadedBytes = 0L
 
@@ -34,7 +35,8 @@ class Synchronizer(
                 onSyncStart("Descargando Datos…")
                 try {
                     downloadedBytes += repository.syncTecnicos()
-                    onSyncProgress(++done, total, "Descargando técnicos…", downloadedBytes)
+                    done += 100
+                    onSyncProgress(done, total, "Descargando técnicos…", downloadedBytes)
                 } catch (e: Exception) {
                     throw Exception("Error en syncTecnicos(): ${e.message}", e)
                 }
@@ -42,7 +44,8 @@ class Synchronizer(
                 // ----------- 2. MATERIALES ----------------
                 try {
                     downloadedBytes += repository.syncMateriales()
-                    onSyncProgress(++done, total, "Descargando materiales…", downloadedBytes)
+                    done += 100
+                    onSyncProgress(done, total, "Descargando materiales…", downloadedBytes)
                 } catch (e: Exception) {
                     throw Exception("Error en syncMateriales(): ${e.message}", e)
                 }
@@ -50,10 +53,11 @@ class Synchronizer(
                 // ----------- 3. SUBREGIÓN COMPLETA ----------------
                 try {
                     val bytesBeforeSubregion = downloadedBytes
-                    repository.syncSubregion(subregionId) { subDone, _, msg, bytes ->
+                    repository.syncSubregion(subregionId) { subDone, subTotal, msg, bytes ->
                         downloadedBytes = bytesBeforeSubregion + bytes
-                        val adjustedDone = EXTRA_STEPS + subDone
-                        onSyncProgress(adjustedDone, total, msg, downloadedBytes)
+                        val adjustedDone = (EXTRA_STEPS * 100) + subDone
+                        val adjustedTotal = (EXTRA_STEPS * 100) + subTotal
+                        onSyncProgress(adjustedDone, adjustedTotal.coerceAtLeast(total), msg, downloadedBytes)
                     }
                 } catch (e: Exception) {
                     throw Exception("Error en syncSubregion(): ${e.message}", e)
@@ -71,7 +75,8 @@ class Synchronizer(
                         if (vehiculoId != null) {
                             try {
                                 downloadedBytes += repository.syncInventarioVehiculo(vehiculoId, vehiculoKey)
-                                onSyncProgress(++done, total, "Sincronizando inventario del vehículo…", downloadedBytes)
+                                done += 100
+                                onSyncProgress(done, total, "Sincronizando inventario del vehículo…", downloadedBytes)
                             } catch (e: Exception) {
                                 throw Exception("Error en syncInventarioVehiculo(): ${e.message}", e)
                             }
@@ -84,7 +89,8 @@ class Synchronizer(
                     ?.let { agencia ->
                         try {
                             downloadedBytes += repository.syncLuminariasAgencia(agencia)
-                            onSyncProgress(++done, total, "Sincronizando luminarias de agencia…", downloadedBytes)
+                            done += 100
+                            onSyncProgress(done, total, "Sincronizando luminarias de agencia…", downloadedBytes)
                         } catch (e: Exception) {
                             throw Exception("Error en syncLuminariasAgencia(): ${e.message}", e)
                         }
