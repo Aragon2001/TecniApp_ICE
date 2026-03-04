@@ -529,6 +529,7 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
         subregionId: String,
         subregionNombre: String? = null,
         batchSize: Int = 500,
+        startAtKey: String? = null,
         onBatch: suspend (medidores: List<MedidorEntity>) -> Unit
     ) {
         require(batchSize in 1..1000) { "batchSize debe estar entre 1 y 1000" }
@@ -543,7 +544,7 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
         val referencia = obtenerReferenciaSubregion(storageKey, lookupNombre, createIfMissing = false)
             ?: return
 
-        var lastKey: String? = null
+        var lastKey: String? = startAtKey?.trim()?.takeIf { it.isNotEmpty() }
         var keepPaging = true
         while (keepPaging) {
             val snapshot = if (lastKey == null) {
