@@ -145,18 +145,10 @@ class MedidorViewModel(app: Application) : AndroidViewModel(app) {
                 }
 
                 if (medidoresPostSync == 0) {
-                    val medidoresDescargados = withContext(Dispatchers.IO) {
-                        runCatching { firebase.obtenerMedidores(storageKey, nombre ?: id) }
-                            .getOrElse { throwable ->
-                                Log.e("MedidorViewModel", "Error descargando medidores", throwable)
-                                emptyList()
-                            }
-                    }
-                    if (medidoresDescargados.isNotEmpty()) {
-                        withContext(Dispatchers.IO) {
-                            repository.insertarMedidores(medidoresDescargados)
-                        }
-                    }
+                    Log.w(
+                        "MedidorViewModel",
+                        "No se encontraron medidores luego de syncSubregion para subregion=$storageKey"
+                    )
                 }
             }
 

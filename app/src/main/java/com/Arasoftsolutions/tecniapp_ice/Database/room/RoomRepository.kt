@@ -958,12 +958,20 @@ class   RoomRepository(context: Context) {
         progress(++done, total, "Descargando vehículos…", downloadedBytes)
         Log.i(TAG, "[SYNC_SUBREGION] step=$done/$total source=datos_generales/vehiculos count=${vehiculosCombinados.size} bytes=$downloadedBytes")
 
-        val medidores = firebase.obtenerMedidores(canonicalSubregion)
-        downloadedBytes += estimateBytes(medidores)
+        var medidoresTotal = 0
         db.medidorDao().eliminarPorSubregion(canonicalSubregion)
-        db.medidorDao().insertAll(medidores)
+        firebase.obtenerMedidoresPorLotes(
+            subregionId = canonicalSubregion,
+            batchSize = 500
+        ) { medidoresBatch ->
+            if (medidoresBatch.isEmpty()) return@obtenerMedidoresPorLotes
+            db.medidorDao().insertAll(medidoresBatch)
+            downloadedBytes += estimateBytes(medidoresBatch)
+            medidoresTotal += medidoresBatch.size
+            progress(done, total, "Descargando medidores… ($medidoresTotal)", downloadedBytes)
+        }
         progress(++done, total, "Descargando medidores…", downloadedBytes)
-        Log.i(TAG, "[SYNC_SUBREGION] step=$done/$total source=medidores/medidores count=${medidores.size} bytes=$downloadedBytes")
+        Log.i(TAG, "[SYNC_SUBREGION] step=$done/$total source=medidores/medidores count=$medidoresTotal bytes=$downloadedBytes")
         Log.i(TAG, "[SYNC_SUBREGION] completed subregion=$canonicalSubregion totalBytes=$downloadedBytes tookMs=${System.currentTimeMillis()-syncStartedAt}")
         // }
     }
