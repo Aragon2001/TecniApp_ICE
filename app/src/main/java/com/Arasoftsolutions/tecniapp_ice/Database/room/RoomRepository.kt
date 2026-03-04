@@ -1005,55 +1005,47 @@ class   RoomRepository(context: Context) {
         val vehiculos = deduplicarVehiculos(vehiculosRemotos)
         downloadedBytes += estimateBytes(vehiculos)
         val vehiculosCombinados = combinarVehiculosConLocales(vehiculos)
-        if (vehiculosCombinados.isNotEmpty()) {
-            val locales = db.vehiculoDao().getAll()
-                .filter { it.subregion.equals(canonicalSubregion, ignoreCase = true) }
-                .associateBy { it.vehiculoId }
-            val nuevosOCambiados = vehiculosCombinados.filter { remoto ->
-                val local = locales[remoto.vehiculoId]
-                local == null || local != remoto
-            }
-            if (nuevosOCambiados.isNotEmpty()) {
-                db.vehiculoDao().insertAll(nuevosOCambiados)
-            }
-        }
+        db.vehiculoDao().insertAll(vehiculosCombinados)
         done += 100
         progress(done, total, "Descargando vehículos…", downloadedBytes)
         Log.i(TAG, "[SYNC_SUBREGION] step=$done/$total source=datos_generales/vehiculos count=${vehiculosCombinados.size} bytes=$downloadedBytes")
 
         var medidoresTotal = 0
         var medidoresLotes = 0
-        val medidoresExistentes = db.medidorDao().contarPorSubregion(canonicalSubregion)
-        var totalMedidoresObjetivo = medidoresExistentes
-        val ultimoMedidorLocal = db.medidorDao().obtenerUltimoNumeroPorSubregion(canonicalSubregion)
+        var totalMedidoresObjetivo = firebase.contarMedidoresSubregion(canonicalSubregion)
         val medidoresSyncStartedAt = System.currentTimeMillis()
+        if (totalMedidoresObjetivo <= 0) {
+            totalMedidoresObjetivo = db.medidorDao().contarPorSubregion(canonicalSubregion)
+        }
+        db.medidorDao().eliminarPorSubregion(canonicalSubregion)
         firebase.obtenerMedidoresPorLotes(
             subregionId = canonicalSubregion,
-            batchSize = 1000,
-            startAtKey = ultimoMedidorLocal
+            batchSize = 1000
         ) { medidoresBatch ->
             if (medidoresBatch.isEmpty()) return@obtenerMedidoresPorLotes
             db.medidorDao().insertAll(medidoresBatch)
             downloadedBytes += estimateMedidoresBatchBytes(medidoresBatch.size)
             medidoresTotal += medidoresBatch.size
             medidoresLotes += 1
-            totalMedidoresObjetivo = medidoresExistentes + medidoresTotal
-            val elapsed = formatElapsed(System.currentTimeMillis() - medidoresSyncStartedAt)
+            if (medidoresTotal > totalMedidoresObjetivo) {
+                totalMedidoresObjetivo = medidoresTotal
+            }
+            val elapsed = formatElapsed(medidoresSyncStartedAt)
+            val medidoresProgress = progressUnitsForMedidores(medidoresTotal, totalMedidoresObjetivo)
             Log.i(
                 TAG,
-                "[SYNC_SUBREGION] medidores_lote=$medidoresLotes loteSize=${medidoresBatch.size} nuevos=$medidoresTotal existentes=$medidoresExistentes objetivo=$totalMedidoresObjetivo elapsed=$elapsed bytes=$downloadedBytes"
+                "[SYNC_SUBREGION] medidores_lote=$medidoresLotes loteSize=${medidoresBatch.size} total=$medidoresTotal objetivo=$totalMedidoresObjetivo medidoresProgress=$medidoresProgress elapsed=$elapsed bytes=$downloadedBytes"
             )
             progress(
-                done + progressUnitsForMedidores(medidoresTotal, totalMedidoresObjetivo),
+                done + medidoresProgress,
                 total,
-                "Sincronizando medidores nuevos… ($medidoresTotal/$totalMedidoresObjetivo) · $elapsed",
+                "Descargando medidores… ($medidoresTotal/$totalMedidoresObjetivo) · $elapsed",
                 downloadedBytes
             )
         }
         done += 100
-        val medidoresMsg = if (medidoresTotal > 0) "Sincronizando medidores nuevos…" else "Medidores al día; no hay descargas nuevas."
-        progress(done, total, medidoresMsg, downloadedBytes)
-        Log.i(TAG, "[SYNC_SUBREGION] step=$done/$total source=medidores/medidores nuevos=$medidoresTotal existentes=$medidoresExistentes ultimoLocal=$ultimoMedidorLocal bytes=$downloadedBytes")
+        progress(done, total, "Descargando medidores…", downloadedBytes)
+        Log.i(TAG, "[SYNC_SUBREGION] step=$done/$total source=medidores/medidores count=$medidoresTotal bytes=$downloadedBytes")
         Log.i(TAG, "[SYNC_SUBREGION] completed subregion=$canonicalSubregion totalBytes=$downloadedBytes tookMs=${System.currentTimeMillis()-syncStartedAt}")
         // }
     }
@@ -1152,7 +1144,8 @@ class   RoomRepository(context: Context) {
         return batchSize.toLong() * 180L
     }
 
-    private fun formatElapsed(elapsedMs: Long): String {
+    private fun formatElapsed(startedAtMs: Long): String {
+        val elapsedMs = (System.currentTimeMillis() - startedAtMs).coerceAtLeast(0L)
         val totalSeconds = elapsedMs / 1000
         val minutes = totalSeconds / 60
         val seconds = totalSeconds % 60

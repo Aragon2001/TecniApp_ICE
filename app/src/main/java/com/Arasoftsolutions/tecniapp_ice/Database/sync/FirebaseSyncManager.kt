@@ -15,8 +15,12 @@ import kotlinx.coroutines.tasks.await
 import com.google.firebase.database.DataSnapshot
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import org.json.JSONObject
 import java.text.Normalizer
 import java.util.Locale
+import java.util.concurrent.TimeUnit
 
 /**
  * Acceso centralizado a Realtime Database en *varios* proyectos.
@@ -63,6 +67,13 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
 
     private val dbVehiculoOps: DatabaseReference by lazy {
         database( "https://tecniapp-ice-datosgenerales.firebaseio.com/vehiculos")
+    }
+
+    private val httpClient: OkHttpClient by lazy {
+        OkHttpClient.Builder()
+            .connectTimeout(20, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .build()
     }
 
     private val subregionNombreCache = mutableMapOf<String, String>()
@@ -529,7 +540,6 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
         subregionId: String,
         subregionNombre: String? = null,
         batchSize: Int = 500,
-        startAtKey: String? = null,
         onBatch: suspend (medidores: List<MedidorEntity>) -> Unit
     ) {
         require(batchSize in 1..1000) { "batchSize debe estar entre 1 y 1000" }
@@ -544,7 +554,7 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
         val referencia = obtenerReferenciaSubregion(storageKey, lookupNombre, createIfMissing = false)
             ?: return
 
-        var lastKey: String? = startAtKey?.trim()?.takeIf { it.isNotEmpty() }
+        var lastKey: String? = null
         var keepPaging = true
         while (keepPaging) {
             val snapshot = if (lastKey == null) {
@@ -571,6 +581,40 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
 
             lastKey = children.lastOrNull()?.key
             keepPaging = children.size >= batchSize && !lastKey.isNullOrBlank()
+        }
+    }
+
+    suspend fun contarMedidoresSubregion(
+        subregionId: String,
+        subregionNombre: String? = null
+    ): Int {
+        val storageKey = subregionId.takeIf { it.isNotBlank() }?.trim()
+            ?: subregionNombre?.takeIf { it.isNotBlank() }?.trim()
+            ?: return 0
+
+        val lookupNombre = subregionNombre?.takeIf { it.isNotBlank() }
+            ?: nombreSubregionDesdeCatalogo(subregionId)
+
+        val referencia = obtenerReferenciaSubregion(storageKey, lookupNombre, createIfMissing = false)
+            ?: return 0
+        val path = referencia.path.toString().trimStart('/')
+        if (path.isBlank()) return 0
+
+        val request = Request.Builder()
+            .url("https://tecniapp-ice-default-rtdb.firebaseio.com/$path.json?shallow=true")
+            .get()
+            .build()
+
+        return runCatching {
+            httpClient.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) return@use 0
+                val body = response.body?.string()?.trim().orEmpty()
+                if (body.isBlank() || body == "null" || body == "{}") return@use 0
+                JSONObject(body).length()
+            }
+        }.getOrElse {
+            Log.w(TAG, "No se pudo contar medidores por shallow endpoint: ${it.message}")
+            0
         }
     }
 
