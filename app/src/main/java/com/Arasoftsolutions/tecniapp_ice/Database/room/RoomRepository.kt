@@ -958,12 +958,26 @@ class   RoomRepository(context: Context) {
         progress(++done, total, "Descargando vehículos…", downloadedBytes)
         Log.i(TAG, "[SYNC_SUBREGION] step=$done/$total source=datos_generales/vehiculos count=${vehiculosCombinados.size} bytes=$downloadedBytes")
 
-        val medidores = firebase.obtenerMedidores(canonicalSubregion)
-        downloadedBytes += estimateBytes(medidores)
+        var medidoresTotal = 0
+        var medidoresLotes = 0
         db.medidorDao().eliminarPorSubregion(canonicalSubregion)
-        db.medidorDao().insertAll(medidores)
+        firebase.obtenerMedidoresPorLotes(
+            subregionId = canonicalSubregion,
+            batchSize = 500
+        ) { medidoresBatch ->
+            if (medidoresBatch.isEmpty()) return@obtenerMedidoresPorLotes
+            db.medidorDao().insertAll(medidoresBatch)
+            downloadedBytes += estimateBytes(medidoresBatch)
+            medidoresTotal += medidoresBatch.size
+            medidoresLotes += 1
+            Log.i(
+                TAG,
+                "[SYNC_SUBREGION] medidores_lote=$medidoresLotes loteSize=${medidoresBatch.size} total=$medidoresTotal bytes=$downloadedBytes"
+            )
+            progress(done, total, "Descargando medidores… ($medidoresTotal)", downloadedBytes)
+        }
         progress(++done, total, "Descargando medidores…", downloadedBytes)
-        Log.i(TAG, "[SYNC_SUBREGION] step=$done/$total source=medidores/medidores count=${medidores.size} bytes=$downloadedBytes")
+        Log.i(TAG, "[SYNC_SUBREGION] step=$done/$total source=medidores/medidores count=$medidoresTotal bytes=$downloadedBytes")
         Log.i(TAG, "[SYNC_SUBREGION] completed subregion=$canonicalSubregion totalBytes=$downloadedBytes tookMs=${System.currentTimeMillis()-syncStartedAt}")
         // }
     }
@@ -1028,7 +1042,26 @@ class   RoomRepository(context: Context) {
     }
 
     private fun estimateBytes(value: Any?): Long {
-        return value?.toString()?.toByteArray(Charsets.UTF_8)?.size?.toLong() ?: 0L
+        return when (value) {
+            null -> 0L
+            is String -> value.toByteArray(Charsets.UTF_8).size.toLong()
+            is Number, is Boolean -> 8L
+            is MedidorEntity -> estimateMedidorBytes(value)
+            is Collection<*> -> value.sumOf { estimateBytes(it) }
+            is Map<*, *> -> value.entries.sumOf { estimateBytes(it.key) + estimateBytes(it.value) }
+            else -> 64L
+        }
+    }
+
+    private fun estimateMedidorBytes(medidor: MedidorEntity): Long {
+        return estimateBytes(medidor.medidorNumber) +
+            estimateBytes(medidor.subregion) +
+            estimateBytes(medidor.cliente) +
+            estimateBytes(medidor.calle) +
+            estimateBytes(medidor.poste) +
+            estimateBytes(medidor.metros) +
+            estimateBytes(medidor.pueblo) +
+            8L
     }
 
     private suspend fun combinarVehiculosConLocales(remotos: List<VehiculosEntity>): List<VehiculosEntity> {
