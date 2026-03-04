@@ -33,6 +33,9 @@ interface MedidorDao {
     @Query("SELECT COUNT(*) FROM medidores WHERE subregion = :subregionId")
     suspend fun contarPorSubregion(subregionId: String): Int
 
+    @Query("SELECT medidorNumber FROM medidores WHERE subregion = :subregionId ORDER BY medidorNumber DESC LIMIT 1")
+    suspend fun obtenerUltimoNumeroPorSubregion(subregionId: String): String?
+
     @Query("DELETE FROM medidores WHERE medidorNumber = :numero")
     suspend fun eliminarPorNumero(numero: String)
 
