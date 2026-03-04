@@ -524,26 +524,53 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
         return listOf(entity)
     }
 
-    // --- MEDIDORES (Sync completa) ---
-    suspend fun obtenerMedidores(subregionId: String, subregionNombre: String? = null): List<MedidorEntity> {
+    // --- MEDIDORES (Sync por lotes) ---
+    suspend fun obtenerMedidoresPorLotes(
+        subregionId: String,
+        subregionNombre: String? = null,
+        batchSize: Int = 500,
+        onBatch: suspend (medidores: List<MedidorEntity>) -> Unit
+    ) {
+        require(batchSize in 1..1000) { "batchSize debe estar entre 1 y 1000" }
+
         val storageKey = subregionId.takeIf { it.isNotBlank() }?.trim()
             ?: subregionNombre?.takeIf { it.isNotBlank() }?.trim()
-            ?: return emptyList()
+            ?: return
 
         val lookupNombre = subregionNombre?.takeIf { it.isNotBlank() }
             ?: nombreSubregionDesdeCatalogo(subregionId)
 
         val referencia = obtenerReferenciaSubregion(storageKey, lookupNombre, createIfMissing = false)
-            ?: return emptyList()
+            ?: return
 
-        val snapshot = referencia.get().await()
-        if (!snapshot.exists()) return emptyList()
+        var lastKey: String? = null
+        var keepPaging = true
+        while (keepPaging) {
+            val snapshot = if (lastKey == null) {
+                referencia.orderByKey().limitToFirst(batchSize).get().await()
+            } else {
+                referencia.orderByKey().startAt(lastKey).limitToFirst(batchSize + 1).get().await()
+            }
 
-        val result = mutableListOf<MedidorEntity>()
-        snapshot.children.forEach { child ->
-            result += extraerMedidores(child, storageKey)
+            if (!snapshot.exists() || snapshot.childrenCount == 0L) break
+
+            val children = snapshot.children
+                .filterNot { child -> lastKey != null && child.key == lastKey }
+            if (children.isEmpty()) break
+
+            val medidoresBatch = buildList {
+                children.forEach { child ->
+                    addAll(extraerMedidores(child, storageKey))
+                }
+            }.distinctBy { it.medidorNumber }
+
+            if (medidoresBatch.isNotEmpty()) {
+                onBatch(medidoresBatch)
+            }
+
+            lastKey = children.lastOrNull()?.key
+            keepPaging = children.size >= batchSize && !lastKey.isNullOrBlank()
         }
-        return result.distinctBy { it.medidorNumber }
     }
 
     // --- MEDIDOR (Búsqueda puntual de uno solo) ---
