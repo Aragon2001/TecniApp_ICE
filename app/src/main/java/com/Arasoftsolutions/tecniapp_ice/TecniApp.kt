@@ -21,6 +21,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class TecniApp : Application() {
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -41,7 +42,9 @@ class TecniApp : Application() {
             } else {
                 AppCompatDelegate.MODE_NIGHT_NO
             }
-            AppCompatDelegate.setDefaultNightMode(mode)
+            withContext(Dispatchers.Main.immediate) {
+                AppCompatDelegate.setDefaultNightMode(mode)
+            }
         }
         applicationScope.launch {
             val autoSyncEnabled = dataStore.autoSyncEnabled.first()
