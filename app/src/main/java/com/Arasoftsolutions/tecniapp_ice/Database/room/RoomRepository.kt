@@ -894,7 +894,7 @@ class   RoomRepository(context: Context) {
         subregionId: String,
         progress: (done: Int, total: Int, msg: String?, downloadedBytes: Long) -> Unit = { _, _, _, _ -> }
     ) = withContext(Dispatchers.IO) {
-        val total = SUBREGION_SYNC_STEPS
+        val total = SUBREGION_SYNC_STEPS * 100
         var done = 0
         var downloadedBytes = 0L
         val syncStartedAt = System.currentTimeMillis()
@@ -913,7 +913,8 @@ class   RoomRepository(context: Context) {
             db.agenciaDao().eliminarPorSubregion(canonicalSubregion)
             db.agenciaDao().insertAll(agencias)
         }
-        progress(++done, total, "Descargando agencias…", downloadedBytes)
+        done += 100
+        progress(done, total, "Descargando agencias…", downloadedBytes)
         Log.i(TAG, "[SYNC_SUBREGION] step=$done/$total source=datos_generales/agencias count=${agencias.size} bytes=$downloadedBytes")
 
         val pueblosRemotos = firebase.obtenerPueblosPorSubregion(canonicalSubregion)
@@ -931,7 +932,8 @@ class   RoomRepository(context: Context) {
             db.puebloDao().limpiarSubregion(canonicalSubregion)
             db.puebloDao().insertAll(pueblosASincronizar)
         }
-        progress(++done, total, "Descargando pueblos…", downloadedBytes)
+        done += 100
+        progress(done, total, "Descargando pueblos…", downloadedBytes)
         Log.i(TAG, "[SYNC_SUBREGION] step=$done/$total source=local/pueblos count=${pueblosASincronizar.size} bytes=$downloadedBytes")
 
         val idsPueblos = pueblosASincronizar.map { it.id }
@@ -943,7 +945,8 @@ class   RoomRepository(context: Context) {
         if (localizacionesFiltradas.isNotEmpty()) {
             db.localizacionDao().insertAll(localizacionesFiltradas)
         }
-        progress(++done, total, "Descargando localizaciones…", downloadedBytes)
+        done += 100
+        progress(done, total, "Descargando localizaciones…", downloadedBytes)
         Log.i(TAG, "[SYNC_SUBREGION] step=$done/$total source=local/localizaciones puebloCount=${idsPueblos.size} localizaciones=${localizacionesFiltradas.size} bytes=$downloadedBytes")
 
         val vehiculosPorSubregion = firebase.obtenerVehiculosPorSubregion(canonicalSubregion)
@@ -955,28 +958,41 @@ class   RoomRepository(context: Context) {
         }
         val vehiculosCombinados = combinarVehiculosConLocales(vehiculos)
         db.vehiculoDao().insertAll(vehiculosCombinados)
-        progress(++done, total, "Descargando vehículos…", downloadedBytes)
+        done += 100
+        progress(done, total, "Descargando vehículos…", downloadedBytes)
         Log.i(TAG, "[SYNC_SUBREGION] step=$done/$total source=datos_generales/vehiculos count=${vehiculosCombinados.size} bytes=$downloadedBytes")
 
         var medidoresTotal = 0
         var medidoresLotes = 0
+        var totalMedidoresObjetivo = db.medidorDao().contarPorSubregion(canonicalSubregion)
+        val medidoresSyncStartedAt = System.currentTimeMillis()
         db.medidorDao().eliminarPorSubregion(canonicalSubregion)
         firebase.obtenerMedidoresPorLotes(
             subregionId = canonicalSubregion,
-            batchSize = 500
+            batchSize = 1000
         ) { medidoresBatch ->
             if (medidoresBatch.isEmpty()) return@obtenerMedidoresPorLotes
             db.medidorDao().insertAll(medidoresBatch)
-            downloadedBytes += estimateBytes(medidoresBatch)
+            downloadedBytes += estimateMedidoresBatchBytes(medidoresBatch.size)
             medidoresTotal += medidoresBatch.size
             medidoresLotes += 1
+            if (medidoresTotal > totalMedidoresObjetivo) {
+                totalMedidoresObjetivo = medidoresTotal
+            }
+            val elapsed = formatElapsed(System.currentTimeMillis() - medidoresSyncStartedAt)
             Log.i(
                 TAG,
-                "[SYNC_SUBREGION] medidores_lote=$medidoresLotes loteSize=${medidoresBatch.size} total=$medidoresTotal bytes=$downloadedBytes"
+                "[SYNC_SUBREGION] medidores_lote=$medidoresLotes loteSize=${medidoresBatch.size} total=$medidoresTotal objetivo=$totalMedidoresObjetivo elapsed=$elapsed bytes=$downloadedBytes"
             )
-            progress(done, total, "Descargando medidores… ($medidoresTotal)", downloadedBytes)
+            progress(
+                done + progressUnitsForMedidores(medidoresTotal, totalMedidoresObjetivo),
+                total,
+                "Descargando medidores… ($medidoresTotal/$totalMedidoresObjetivo) · $elapsed",
+                downloadedBytes
+            )
         }
-        progress(++done, total, "Descargando medidores…", downloadedBytes)
+        done += 100
+        progress(done, total, "Descargando medidores…", downloadedBytes)
         Log.i(TAG, "[SYNC_SUBREGION] step=$done/$total source=medidores/medidores count=$medidoresTotal bytes=$downloadedBytes")
         Log.i(TAG, "[SYNC_SUBREGION] completed subregion=$canonicalSubregion totalBytes=$downloadedBytes tookMs=${System.currentTimeMillis()-syncStartedAt}")
         // }
@@ -1062,6 +1078,23 @@ class   RoomRepository(context: Context) {
             estimateBytes(medidor.metros) +
             estimateBytes(medidor.pueblo) +
             8L
+    }
+
+    private fun estimateMedidoresBatchBytes(batchSize: Int): Long {
+        return batchSize.toLong() * 180L
+    }
+
+    private fun formatElapsed(elapsedMs: Long): String {
+        val totalSeconds = elapsedMs / 1000
+        val minutes = totalSeconds / 60
+        val seconds = totalSeconds % 60
+        return String.format("%02d:%02d", minutes, seconds)
+    }
+
+    private fun progressUnitsForMedidores(descargados: Int, objetivo: Int): Int {
+        if (objetivo <= 0) return 0
+        val ratio = descargados.toDouble() / objetivo.toDouble()
+        return (ratio * 100.0).toInt().coerceIn(0, 100)
     }
 
     private suspend fun combinarVehiculosConLocales(remotos: List<VehiculosEntity>): List<VehiculosEntity> {
