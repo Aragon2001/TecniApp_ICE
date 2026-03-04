@@ -628,7 +628,8 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         viewLifecycleOwner.lifecycleScope.launch {
             try {
                 val uid = requireActiveUser()
-                val total = RoomRepository.SUBREGION_SYNC_STEPS + 3
+                val totalSteps = RoomRepository.SUBREGION_SYNC_STEPS + 3
+                val total = totalSteps * 100
                 var done = 0
                 var downloadedBytes = 0L
                 if (isAdded) {
@@ -643,13 +644,15 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
                     roomRepository.limpiarBaseLocal()
                 }
                 if (isAdded) {
-                    dialog.update(++done, total, getString(R.string.settings_clear_cache_step_catalogs), downloadedBytes)
+                    done += 100
+                    dialog.update(done, total, getString(R.string.settings_clear_cache_step_catalogs), downloadedBytes)
                 }
                 withContext(Dispatchers.IO) {
                     downloadedBytes += roomRepository.syncCatalogosGenerales()
                 }
                 if (isAdded) {
-                    dialog.update(++done, total, getString(R.string.settings_clear_cache_step_profile), downloadedBytes)
+                    done += 100
+                    dialog.update(done, total, getString(R.string.settings_clear_cache_step_profile), downloadedBytes)
                 }
                 val subregion = withContext(Dispatchers.IO) {
                     roomRepository.upsertUserFromFirebase(uid).subregion?.trim()
@@ -658,15 +661,17 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
                 if (subregion != null) {
                     val baseBytes = downloadedBytes
                     withContext(Dispatchers.IO) {
-                        roomRepository.syncSubregion(subregion) { subDone, _, msg, bytes ->
+                        roomRepository.syncSubregion(subregion) { subDone, subTotal, msg, bytes ->
                             downloadedBytes = baseBytes + bytes
                             viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Main) {
                                 if (isAdded) {
-                                    dialog.update(done + subDone, total, msg ?: "", downloadedBytes)
+                                    val adjustedDone = done + subDone
+                                    val adjustedTotal = (done + subTotal).coerceAtLeast(total)
+                                    dialog.update(adjustedDone, adjustedTotal, msg ?: "", downloadedBytes)
                                     SyncStatusNotifications.notifyProgress(
                                         requireContext(),
-                                        done + subDone,
-                                        total,
+                                        adjustedDone,
+                                        adjustedTotal,
                                         msg
                                     )
                                 }
