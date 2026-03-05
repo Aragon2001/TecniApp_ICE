@@ -874,13 +874,15 @@ class   RoomRepository(context: Context) {
         val key = vehiculoKey.trim()
         if (key.isEmpty()) return@withContext 0L
         val inventarioDirecto = firebase.obtenerInventarioDeVehiculo(key)
-        val inventario = if (inventarioDirecto.isNotEmpty()) {
-            inventarioDirecto
-        } else {
-            firebase.obtenerInventario().filter { it.vehiculoId == vehiculoId }
+        val inventario = inventarioDirecto
+        if (inventario.isEmpty()) {
+            Log.i(
+                TAG,
+                "[SYNC_INVENTARIO] Sin datos remotos para vehiculoId=$vehiculoId key=$key; se omite fallback global para evitar descargas masivas"
+            )
+            return@withContext 0L
         }
         val bytes = estimateBytes(inventario)
-        if (inventario.isEmpty()) return@withContext bytes
 
         val locales = inventarioDao.obtenerPorVehiculo(vehiculoId).associateBy { it.codigoMaterial }
         val cambios = inventario.filter { remoto ->
@@ -900,10 +902,13 @@ class   RoomRepository(context: Context) {
         val agenciaValue = agencia.trim()
         if (agenciaValue.isEmpty()) return@withContext 0L
         val reparacionesDirectas = firebase.obtenerLuminariasPorAgencia(agenciaValue)
-        val reparaciones = if (reparacionesDirectas.isNotEmpty()) {
-            reparacionesDirectas
-        } else {
-            firebase.obtenerLuminarias(null)
+        val reparaciones = reparacionesDirectas
+        if (reparaciones.isEmpty()) {
+            Log.i(
+                TAG,
+                "[SYNC_LUMINARIAS] Sin datos remotos para agencia=$agenciaValue; se omite fallback global para evitar descargas masivas"
+            )
+            return@withContext 0L
         }
         val bytes = estimateBytes(reparaciones)
         if (reparaciones.isNotEmpty()) {
@@ -937,8 +942,7 @@ class   RoomRepository(context: Context) {
             ?: throw IllegalArgumentException("Subregión inválida: $subregionId")
         Log.i(TAG, "[SYNC_SUBREGION] canonicalSubregion=$canonicalSubregion")
 
-        val agenciasPorSubregion = firebase.obtenerAgenciasPorSubregion(canonicalSubregion)
-        val agencias = agenciasPorSubregion.ifEmpty { firebase.obtenerAgencias(canonicalSubregion) }
+        val agencias = firebase.obtenerAgenciasPorSubregion(canonicalSubregion)
         downloadedBytes += estimateBytes(agencias)
         if (agencias.isNotEmpty()) {
             val localesAgencias = db.agenciaDao().getAll()
@@ -1000,8 +1004,7 @@ class   RoomRepository(context: Context) {
         progress(done, total, "Descargando localizaciones…", downloadedBytes)
         Log.i(TAG, "[SYNC_SUBREGION] step=$done/$total source=local/localizaciones puebloCount=${idsPueblos.size} localizaciones=${localizacionesFiltradas.size} bytes=$downloadedBytes")
 
-        val vehiculosPorSubregion = firebase.obtenerVehiculosPorSubregion(canonicalSubregion)
-        val vehiculosRemotos = vehiculosPorSubregion.ifEmpty { firebase.obtenerVehiculos(canonicalSubregion) }
+        val vehiculosRemotos = firebase.obtenerVehiculosPorSubregion(canonicalSubregion)
         val vehiculos = deduplicarVehiculos(vehiculosRemotos)
         downloadedBytes += estimateBytes(vehiculos)
         val vehiculosCombinados = combinarVehiculosConLocales(vehiculos)
