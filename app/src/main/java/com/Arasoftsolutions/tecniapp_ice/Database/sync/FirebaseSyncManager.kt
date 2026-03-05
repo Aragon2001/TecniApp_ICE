@@ -426,14 +426,14 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
     suspend fun obtenerPueblosPorSubregion(subregionId: String): List<PueblosEntity> {
         val node = if (dbLocal.child("pueblos").get().await().exists()) "pueblos" else "Pueblos"
         val filtro = subregionId.trim().takeIf { it.isNotEmpty() } ?: return emptyList()
-        val snap = dbLocal.child(node)
-            .orderByChild("subregion")
-            .equalTo(filtro)
-            .get()
-            .await()
-        if (!snap.exists()) return emptyList()
-
-        return snap.children.mapNotNull { child ->
+        val canonicalFiltro = SubregionNormalizer.canonicalIdOrSelf(filtro) ?: filtro
+        val resultadoIndexado = runCatching {
+            dbLocal.child(node)
+                .orderByChild("subregion")
+                .equalTo(filtro)
+                .get()
+                .await()
+        }.getOrNull()?.children.orEmpty().mapNotNull { child ->
             val id = child.key?.trim()?.toIntOrNull()
                 ?: child.intValueAny("id", "Id", "ID")
                 ?: return@mapNotNull null
@@ -449,6 +449,16 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
                 subregion_id_normalizado = canonical
             )
         }.distinctBy { it.id }
+
+        if (resultadoIndexado.isNotEmpty()) {
+            return resultadoIndexado
+        }
+
+        Log.w(TAG, "[SYNC_FETCH][local/$node] query=orderByChild(subregion).equalTo($filtro) sin resultados; usando filtrado local de catálogo de pueblos")
+        return obtenerPueblos().filter { pueblo ->
+            pueblo.subregion.equals(filtro, ignoreCase = true) ||
+                pueblo.subregion_id_normalizado.equals(canonicalFiltro, ignoreCase = true)
+        }
     }
 
     suspend fun obtenerLocalizacionesPorPueblos(puebloIds: List<Int>): List<LocalizacionesEntity> {
@@ -458,13 +468,26 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
         } else {
             "localizaciones"
         }
+        val pueblosSet = puebloIds.toSet()
         val result = mutableListOf<LocalizacionesEntity>()
         puebloIds.forEach { puebloId ->
             val snapshot = dbLocal.child(nodeName).child(puebloId.toString()).get().await()
             if (!snapshot.exists()) return@forEach
             result += parseLocalizacionNode(snapshot)
         }
-        return result.distinctBy { it.id }
+
+        if (result.isNotEmpty()) {
+            return result.distinctBy { it.id }
+        }
+
+        Log.w(TAG, "[SYNC_FETCH][local/$nodeName] sin resultados por ruta /{puebloId}; usando filtro local por campo pueblo")
+        val snap = dbLocal.child(nodeName).get().await()
+        if (!snap.exists()) return emptyList()
+
+        return snap.children
+            .flatMap { child -> parseLocalizacionNode(child) }
+            .filter { it.pueblo in pueblosSet }
+            .distinctBy { it.id }
     }
 
     private fun parseLocalizacionNode(
