@@ -152,6 +152,7 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
     private var pendingAgencyName: String? = prefs.getString(PREF_AGENCIA_NAME, null)
     private var catalogosSyncAttempted = false
     private var tecnicosSyncAttempted = false
+    private var filtersTouchedByUser = false
     private val drafts = mutableMapOf<String, AveriaDraft>()
 
     data class FechaFiltro(val inicioMillis: Long, val finExclusiveMillis: Long)
@@ -356,6 +357,7 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
 
 
     fun setRegionIndex(idx: Int) = viewModelScope.launch {
+        filtersTouchedByUser = true
         val regiones = _regiones.value
         val selected = regiones.getOrNull(idx) ?: regiones.first()
         _regionSeleccionada.emit(selected)
@@ -377,6 +379,7 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun setAgenciaIndex(idx: Int) = viewModelScope.launch {
+        filtersTouchedByUser = true
         val agencias = _agencias.value
         val selected = agencias.getOrNull(idx) ?: agencias.first()
         _agenciaSeleccionada.emit(selected)
@@ -901,10 +904,22 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun syncNow() {
-        isLoading.tryEmit(true)
-        AveriasSyncWorker.triggerNow(getApplication(), showSyncNotification = false)
         viewModelScope.launch {
-            roomRepo.refreshUsuarioActual()
+            isLoading.emit(true)
+            runCatching {
+                withContext(Dispatchers.IO) {
+                    repo.syncPendientesConFirebase()
+                    repo.pullFromFirebaseOnce()
+                }
+                roomRepo.refreshUsuarioActual()
+                AveriasSyncWorker.triggerNow(getApplication(), showSyncNotification = false)
+            }.onFailure { error ->
+                Log.e(TAG, "Error al refrescar averías manualmente", error)
+                _messages.tryEmit(
+                    error.localizedMessage
+                        ?: getApplication<Application>().getString(R.string.averia_error_sync)
+                )
+            }
             isLoading.emit(false)
         }
     }
@@ -1167,6 +1182,27 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private fun refreshPendingSelection() {
+        if (filtersTouchedByUser) return
+
+        if (pendingRegionId.isNullOrBlank()) {
+            pendingRegionId = prefs.getString(PREF_REGION_ID, null)?.takeIf { it.isNotBlank() }
+        }
+        if (pendingRegionName.isNullOrBlank()) {
+            pendingRegionName = prefs.getString(PREF_REGION_NAME, null)?.takeIf { it.isNotBlank() }
+        }
+        if (pendingAgencyId.isNullOrBlank()) {
+            pendingAgencyId = prefs.getString(PREF_AGENCIA_ID, null)?.takeIf { it.isNotBlank() }
+        }
+        if (pendingAgencyName.isNullOrBlank()) {
+            pendingAgencyName = prefs.getString(PREF_AGENCIA_NAME, null)?.takeIf { it.isNotBlank() }
+        }
+
+        val hasPendingPreference = !pendingRegionId.isNullOrBlank() ||
+            !pendingRegionName.isNullOrBlank() ||
+            !pendingAgencyId.isNullOrBlank() ||
+            !pendingAgencyName.isNullOrBlank()
+        if (hasPendingPreference) return
+
         pendingUser?.let { user ->
             val regionIdFromUser = user.region?.takeIf { it.isNotBlank() }
                 ?: user.subregion?.let { subId ->
