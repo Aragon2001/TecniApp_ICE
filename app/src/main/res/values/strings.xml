@@ -360,6 +360,7 @@ Cliente: %4$s</string>
     <string name="averia_exito_eliminada">Avería eliminada</string>
     <string name="averia_exito_anulada">Avería anulada</string>
     <string name="averia_exito_revertida">Avería revertida a pendiente.</string>
+    <string name="averia_error_sync">No se pudo refrescar la lista de averías. Inténtalo de nuevo.</string>
     <string name="averia_error_eliminar">No se pudo eliminar la avería.</string>
     <string name="averia_revertir_pendiente">Revertir a pendiente</string>
     <string name="averia_export_share_title">Compartir reporte</string>
