@@ -3,6 +3,7 @@ package com.Arasoftsolutions.tecniapp_ice.pm.repository
 import com.Arasoftsolutions.tecniapp_ice.pm.model.entities.CatalogSyncMetaEntity
 import com.Arasoftsolutions.tecniapp_ice.pm.model.entities.OrdenSapEntity
 import com.Arasoftsolutions.tecniapp_ice.pm.room.PmDatabase
+import com.Arasoftsolutions.tecniapp_ice.pm.room.dao.OrdenSapDao
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 import kotlinx.coroutines.tasks.await
@@ -48,9 +49,9 @@ class CatalogRepository(
             )
         }
 
-        ordenDao.clearAll()
-        if (ordenes.isNotEmpty()) {
-            ordenDao.upsertAll(ordenes)
+        val nuevasOrdenes = ordenes.filterNuevas(ordenDao)
+        if (nuevasOrdenes.isNotEmpty()) {
+            ordenDao.insertIgnoreAll(nuevasOrdenes)
         }
 
         metaDao.upsert(
@@ -61,7 +62,13 @@ class CatalogRepository(
             )
         )
 
-        return ordenes.size
+        return nuevasOrdenes.size
+    }
+
+    private suspend fun List<OrdenSapEntity>.filterNuevas(ordenDao: OrdenSapDao): List<OrdenSapEntity> {
+        if (isEmpty()) return emptyList()
+        val existentes = ordenDao.getExistingOrdenes(map { it.ordenSap }).toHashSet()
+        return filter { it.ordenSap !in existentes }
     }
 
     private suspend fun fetchRemoteVersion(): Long {
