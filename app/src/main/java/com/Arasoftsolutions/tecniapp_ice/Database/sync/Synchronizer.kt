@@ -23,6 +23,7 @@ class Synchronizer(
 
         val uid = FirebaseAuth.getInstance().currentUser?.uid
         val scope = uid?.let { repository.buildUserScope(it) }
+        Log.i(TAG, "[INV_DIAG][SYNC_START] uid=${uid ?: "null"} scopeVehiculoKey=${scope?.vehiculoKey ?: "null"}")
 
         val shouldSyncVehiculo = scope?.vehiculoKey
             ?.trim()
@@ -79,9 +80,11 @@ class Synchronizer(
                     ?.trim()
                     ?.takeIf { it.isNotEmpty() }
                     ?.let { vehiculoKey ->
+                        Log.i(TAG, "[INV_DIAG][SYNC_SCOPED] uid=${uid ?: "null"} vehiculoKeyRaw=$vehiculoKey")
                         val vehiculoId = vehiculoKey.toIntOrNull()
                         if (vehiculoId != null) {
                             try {
+                                Log.i(TAG, "[INV_DIAG][SYNC_SCOPED] vehiculoKeyParsedInt=$vehiculoId")
                                 downloadedBytes += repository.syncInventarioVehiculo(vehiculoId, vehiculoKey)
                                 done += 100
                                 onSyncProgress(done, total, "Sincronizando inventario del vehículo…", downloadedBytes)
@@ -89,6 +92,7 @@ class Synchronizer(
                                 throw Exception("Error en syncInventarioVehiculo(): ${e.message}", e)
                             }
                         } else {
+                            Log.w(TAG, "[INV_DIAG][SYNC_SCOPED_SKIP] reason=vehiculoKey_not_numeric uid=${uid ?: "null"} vehiculoKeyRaw=$vehiculoKey")
                             Log.w(TAG, "[SYNC_FLOW] scoped_inventory_skipped reason=vehiculoKey_not_numeric key=$vehiculoKey")
                         }
                     }

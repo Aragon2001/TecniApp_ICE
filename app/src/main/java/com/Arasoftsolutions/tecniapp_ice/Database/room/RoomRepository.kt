@@ -362,6 +362,10 @@ class   RoomRepository(context: Context) {
 
     suspend fun buildUserScope(uid: String): UserScope = withContext(Dispatchers.IO) {
         val user = db.usuarioDao().getByUid(uid) ?: runCatching { upsertUserFromFirebase(uid) }.getOrNull()
+        Log.i(
+            TAG,
+            "[INV_DIAG][USER_SCOPE] uid=$uid placaVehiculo=${user?.placaVehiculo ?: "null"} agenciaId=${user?.agenciaId ?: "null"} agencia=${user?.agencia ?: "null"} subregion=${user?.subregion ?: "null"}"
+        )
         UserScope(
             regionId = user?.region?.trim()?.takeIf { it.isNotEmpty() },
             subregionId = user?.subregion?.trim()?.takeIf { it.isNotEmpty() },
@@ -871,21 +875,45 @@ class   RoomRepository(context: Context) {
 
 
     suspend fun syncInventarioVehiculo(vehiculoId: Int, vehiculoKey: String): Long = withContext(Dispatchers.IO) {
-        val key = vehiculoKey.trim()
-        if (key.isEmpty()) return@withContext 0L
-        val inventarioDirecto = firebase.obtenerInventarioDeVehiculo(key)
-        val inventario = inventarioDirecto
+        val uid = FirebaseAuth.getInstance().currentUser?.uid
+        val scope = uid?.let { buildUserScope(it) } ?: UserScope(
+            regionId = null,
+            subregionId = null,
+            agenciaTag = null,
+            vehiculoKey = vehiculoKey.trim().takeIf { it.isNotEmpty() }
+        )
+        Log.i(TAG, "[INV_DIAG][SYNC_INVENTARIO] start uid=${uid ?: "null"} vehiculoIdInput=$vehiculoId")
+
+        val vehiculoLocal = resolveVehiculoLocal(scope)
+        if (vehiculoLocal == null) {
+            Log.w(TAG, "[INV_DIAG][SYNC_INVENTARIO_SKIP] reason=vehiculo_local_not_resolved uid=${uid ?: "null"}")
+            return@withContext 0L
+        }
+        val vehiculoIdLocal = vehiculoLocal.id
+        Log.i(
+            TAG,
+            "[INV_DIAG][SYNC_INVENTARIO] vehiculo_local_resolved vehiculoIdLocal=$vehiculoIdLocal vehiculoKeyLength=${vehiculoLocal.vehiculoId.length}"
+        )
+
+        val candidates = buildInventarioKeyCandidates(scope, vehiculoLocal)
+        val (selectedKey, inventario) = fetchInventarioForCandidates(vehiculoIdLocal, candidates)
         if (inventario.isEmpty()) {
             Log.i(
                 TAG,
-                "[SYNC_INVENTARIO] Sin datos remotos para vehiculoId=$vehiculoId key=$key; se omite fallback global para evitar descargas masivas"
+                "[INV_DIAG][SYNC_INVENTARIO_SKIP] reason=no_remote_items vehiculoIdLocal=$vehiculoIdLocal selectedKey=${selectedKey ?: "none"} items=0"
+            )
+            Log.i(
+                TAG,
+                "[SYNC_INVENTARIO] Sin datos remotos para vehiculoIdLocal=$vehiculoIdLocal; se omite fallback global para evitar descargas masivas"
             )
             return@withContext 0L
         }
+        Log.i(TAG, "[INV_DIAG][SYNC_INVENTARIO] fetch_success vehiculoIdLocal=$vehiculoIdLocal selectedKey=${selectedKey ?: "none"} remoteItems=${inventario.size}")
         val bytes = estimateBytes(inventario)
 
-        val locales = inventarioDao.obtenerPorVehiculo(vehiculoId).associateBy { it.codigoMaterial }
-        val cambios = inventario.filter { remoto ->
+        val inventarioMapped = inventario.map { it.copy(vehiculoId = vehiculoIdLocal) }
+        val locales = inventarioDao.obtenerPorVehiculo(vehiculoIdLocal).associateBy { it.codigoMaterial }
+        val cambios = inventarioMapped.filter { remoto ->
             val local = locales[remoto.codigoMaterial]
             local == null ||
                 local.descripcionMaterial != remoto.descripcionMaterial ||
@@ -895,6 +923,36 @@ class   RoomRepository(context: Context) {
             inventarioDao.insertAll(cambios)
         }
         bytes
+    }
+
+    private suspend fun fetchInventarioForCandidates(
+        vehiculoIdLocal: Int,
+        candidates: List<String>
+    ): Pair<String?, List<InventarioItemEntity>> {
+        if (candidates.isEmpty()) {
+            Log.w(TAG, "[INV_DIAG][FETCH_CANDIDATES] vehiculoIdLocal=$vehiculoIdLocal reason=no_candidates")
+            return null to emptyList()
+        }
+        candidates.forEachIndexed { index, candidate ->
+            Log.i(
+                TAG,
+                "[INV_DIAG][FETCH_CANDIDATES] vehiculoIdLocal=$vehiculoIdLocal attempt=${index + 1}/${candidates.size} keyLength=${candidate.length}"
+            )
+            val items = firebase.obtenerInventarioDeVehiculo(candidate)
+            if (items.isNotEmpty()) {
+                Log.i(
+                    TAG,
+                    "[INV_DIAG][FETCH_CANDIDATES] vehiculoIdLocal=$vehiculoIdLocal selectedAttempt=${index + 1} keyLength=${candidate.length} items=${items.size}"
+                )
+                return candidate to items
+            }
+            Log.i(
+                TAG,
+                "[INV_DIAG][FETCH_CANDIDATES] vehiculoIdLocal=$vehiculoIdLocal emptyAttempt=${index + 1} keyLength=${candidate.length}"
+            )
+        }
+        Log.w(TAG, "[INV_DIAG][FETCH_CANDIDATES] vehiculoIdLocal=$vehiculoIdLocal result=no_items")
+        return null to emptyList()
     }
 
 
@@ -915,6 +973,69 @@ class   RoomRepository(context: Context) {
             inventarioDao.insertarReparaciones(reparaciones)
         }
         bytes
+    }
+
+    private suspend fun resolveVehiculoLocal(scope: UserScope): VehiculoEntity? {
+        val rawKey = scope.vehiculoKey?.trim().orEmpty()
+        if (rawKey.isBlank()) {
+            Log.w(TAG, "[INV_DIAG][RESOLVE_VEHICULO_LOCAL] fail method=none reason=vehiculoKey_blank")
+            return null
+        }
+
+        rawKey.toIntOrNull()?.let { numericId ->
+            db.vehiculoDao().buscarPorId(numericId)?.let { vehiculo ->
+                Log.i(TAG, "[INV_DIAG][RESOLVE_VEHICULO_LOCAL] success method=vehiculoId_int vehiculoId=${vehiculo.id}")
+                return vehiculo
+            }
+            Log.i(TAG, "[INV_DIAG][RESOLVE_VEHICULO_LOCAL] miss method=vehiculoId_int value=$numericId")
+        }
+
+        db.vehiculoDao().buscarPorVehiculoId(rawKey)?.let { vehiculo ->
+            Log.i(TAG, "[INV_DIAG][RESOLVE_VEHICULO_LOCAL] success method=placaRaw vehiculoId=${vehiculo.id}")
+            return vehiculo
+        }
+        Log.i(TAG, "[INV_DIAG][RESOLVE_VEHICULO_LOCAL] miss method=placaRaw")
+
+        rawKey.toLongOrNull()?.let { placaLong ->
+            db.vehiculoDao().buscarPorPlaca(placaLong)?.let { vehiculo ->
+                Log.i(TAG, "[INV_DIAG][RESOLVE_VEHICULO_LOCAL] success method=placa_long vehiculoId=${vehiculo.id}")
+                return vehiculo
+            }
+            Log.i(TAG, "[INV_DIAG][RESOLVE_VEHICULO_LOCAL] miss method=placa_long value=$placaLong")
+        }
+
+        db.vehiculoDao().buscarPorVehiculoId(rawKey)?.let { vehiculo ->
+            Log.i(TAG, "[INV_DIAG][RESOLVE_VEHICULO_LOCAL] success method=placaVehiculo_usuario vehiculoId=${vehiculo.id}")
+            return vehiculo
+        }
+
+        Log.w(TAG, "[INV_DIAG][RESOLVE_VEHICULO_LOCAL] fail method=all keyLength=${rawKey.length}")
+        return null
+    }
+
+    private fun buildInventarioKeyCandidates(
+        scope: UserScope,
+        vehiculo: VehiculoEntity?
+    ): List<String> {
+        val ordered = listOf(
+            vehiculo?.vehiculoId,
+            vehiculo?.placaRaw,
+            vehiculo?.placa?.takeIf { it > 0L }?.toString(),
+            scope.vehiculoKey
+        )
+        val deduped = linkedSetOf<String>()
+        ordered.forEach { raw ->
+            val candidate = raw?.trim().orEmpty()
+            if (candidate.isNotEmpty()) {
+                deduped.add(candidate)
+            }
+        }
+        val candidates = deduped.toList()
+        Log.i(
+            TAG,
+            "[INV_DIAG][KEY_CANDIDATES] count=${candidates.size} order=vehiculoId>placaRaw>placaLong>scopeKey lengths=${candidates.map { it.length }}"
+        )
+        return candidates
     }
 
 
@@ -1233,10 +1354,13 @@ class   RoomRepository(context: Context) {
     fun startRealtimeSyncForScope(scope: UserScope) {
         stopRealtimeSync()
 
+        val vehiculoLocal = runBlocking { resolveVehiculoLocal(scope) }
         val vehiculoKey = scope.vehiculoKey?.trim().orEmpty()
-        if (vehiculoKey.isNotBlank()) {
+        if (vehiculoKey.isNotBlank() && vehiculoLocal != null) {
+            Log.i(TAG, "[INV_DIAG][REALTIME_SETUP] vehiculoKey=$vehiculoKey vehiculoIdLocal=${vehiculoLocal.id}")
             inventarioRealtimeListener = firebase.startInventarioRealtimeForVehiculo(
                 vehiculoKey = vehiculoKey,
+                vehiculoIdLocal = vehiculoLocal.id,
                 scope = realtimeScope,
                 onItemUpsert = { item ->
                     inventarioDao.upsert(item)
@@ -1248,6 +1372,12 @@ class   RoomRepository(context: Context) {
                     Log.e("RoomRepository", "Inventario realtime cancelado", err.toException())
                 }
             )
+        } else {
+            val reason = when {
+                vehiculoKey.isBlank() -> "vehiculoKey_blank"
+                else -> "vehiculo_local_not_resolved"
+            }
+            Log.w(TAG, "[INV_DIAG][REALTIME_SKIP] reason=$reason")
         }
 
         val agenciaTag = scope.agenciaTag?.trim().orEmpty()
