@@ -11,6 +11,12 @@ interface OrdenSapDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertAll(entities: List<OrdenSapEntity>)
 
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertIgnoreAll(entities: List<OrdenSapEntity>)
+
+    @Query("SELECT ordenSap FROM ordenes_sap WHERE ordenSap IN (:ordenes)")
+    suspend fun getExistingOrdenes(ordenes: List<Long>): List<Long>
+
     @Query("SELECT * FROM ordenes_sap WHERE ordenSap = :ordenSap")
     suspend fun getByOrden(ordenSap: Long): OrdenSapEntity?
 
