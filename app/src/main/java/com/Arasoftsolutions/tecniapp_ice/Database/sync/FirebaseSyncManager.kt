@@ -15,6 +15,7 @@ import kotlinx.coroutines.tasks.await
 import com.google.firebase.database.DataSnapshot
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.json.JSONObject
@@ -83,8 +84,6 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
     private val luminariasChildRefs = mutableMapOf<ValueEventListener, Query>()
 
     private companion object {
-        private const val MAX_INVENTARIO_RT_ITEMS = 400
-        private const val MAX_LUMINARIAS_RT_ITEMS = 500
     }
 
     private fun database(url: String): DatabaseReference {
@@ -976,9 +975,7 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
             override fun onCancelled(error: DatabaseError) = Unit
         }
 
-        val target = dbInventario
-            .child(vehiculoKey.trim())
-            .limitToLast(MAX_INVENTARIO_RT_ITEMS)
+        val target = inventarioRoot().child(vehiculoKey.trim())
         val vehiculoId = vehiculoKey.toIntOrNull() ?: -1
 
         val childListener = object : ChildEventListener {
@@ -1042,16 +1039,14 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
             override fun onCancelled(error: DatabaseError) = Unit
         }
 
-        val target = dbLuminarias
-            .child(agenciaKey.trim())
-            .limitToLast(MAX_LUMINARIAS_RT_ITEMS)
+        val target = runBlocking {
+            luminariasRoot(agenciaKey.trim())
+        }
 
         val childListener = object : ChildEventListener {
             override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
                 scope.launch {
-                    snapshot.children.forEach { item ->
-                        parseLuminariaSnapshot(item, null)?.let { onUpsert(it) }
-                    }
+                    parseLuminariaSnapshot(snapshot, null)?.let { onUpsert(it) }
                 }
             }
 
@@ -1061,7 +1056,7 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
 
             override fun onChildRemoved(snapshot: DataSnapshot) {
                 scope.launch {
-                    val nodeId = snapshot.key?.toLongOrNull()
+                    val nodeId = parseLuminariaSnapshot(snapshot, null)?.id
                     if (nodeId != null) onRemove(nodeId)
                 }
             }
