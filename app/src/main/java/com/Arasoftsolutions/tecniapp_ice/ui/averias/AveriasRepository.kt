@@ -51,6 +51,8 @@ class AveriasRepository(private val db: AppDatabase) {
         .reference
 
     private data class SyncScope(
+        val uid: String?,
+        val rol: String?,
         val region: String?,
         val agenciaTag: String?,
         val agencia: String?
@@ -58,6 +60,37 @@ class AveriasRepository(private val db: AppDatabase) {
 
     private var cachedSyncScope: SyncScope? = null
     private var cachedSyncScopeAt: Long = 0L
+
+    private enum class ScopedRole {
+        TECNICO,
+        SUPERVISOR_AGENCIA,
+        ADMIN_REGIONAL,
+        DESCONOCIDO
+    }
+
+    private data class QueryDescriptor(
+        val field: String,
+        val value: String
+    )
+
+    private data class ScopedQueryPlan(
+        val role: ScopedRole,
+        val primary: QueryDescriptor?,
+        val fallback: QueryDescriptor?
+    )
+
+    private enum class ScopedSource {
+        PRIMARY,
+        FALLBACK
+    }
+
+    private data class MergeCandidate(
+        val entity: AveriaEntity,
+        val source: ScopedSource
+    )
+
+    private val operativeStates = setOf("Pendiente", "Asignada", "En atención")
+    private val useScopedAverias = true
 
     fun observe(agencias: List<String>, estado: String, q: String, s: String): Flow<List<AveriaEntity>> =
         dao.observe(agencias, agencias.size, estado, q)
@@ -468,23 +501,38 @@ return AveriaEntity(
     private suspend fun resolveSyncScope(forceRefresh: Boolean = false): SyncScope {
         val now = System.currentTimeMillis()
         if (!forceRefresh && cachedSyncScope != null && (now - cachedSyncScopeAt) < SYNC_SCOPE_CACHE_MS) {
-            return cachedSyncScope ?: SyncScope(null, null, null)
+            return cachedSyncScope ?: SyncScope(
+                uid = null,
+                rol = null,
+                region = null,
+                agenciaTag = null,
+                agencia = null
+            )
         }
 
         val uid = FirebaseAuth.getInstance().currentUser?.uid
         if (uid.isNullOrBlank()) {
-            val fallback = SyncScope(null, null, null)
+            val fallback = SyncScope(
+                uid = null,
+                rol = null,
+                region = null,
+                agenciaTag = null,
+                agencia = null
+            )
             cachedSyncScope = fallback
             cachedSyncScopeAt = now
             return fallback
         }
 
         val localUser = runCatching { db.usuarioDao().getByUid(uid) }.getOrNull()
+        val localRole = localUser?.rol?.trim()?.takeIf { it.isNotEmpty() }
         val localRegion = canonicalRegion(localUser?.region ?: localUser?.regionNombre)
         val localAgency = localUser?.agencia ?: localUser?.agenciaId
         val localCanon = canonicalizeAgency(localRegion, localAgency, localUser?.agencia)
-        if (!localCanon.tag.isNullOrBlank() || !localRegion.isNullOrBlank()) {
+        if (!localCanon.tag.isNullOrBlank() || !localRegion.isNullOrBlank() || !localRole.isNullOrBlank()) {
             val scope = SyncScope(
+                uid = uid,
+                rol = localRole,
                 region = localRegion,
                 agenciaTag = localCanon.tag,
                 agencia = localCanon.agencia
@@ -501,10 +549,14 @@ return AveriaEntity(
             ?: remoteSnap?.child("agencia_id")?.getValue(String::class.java)
         val remoteAgencyName = remoteSnap?.child("nombreAgencia")?.getValue(String::class.java)
             ?: remoteAgency
+        val remoteRole = remoteSnap?.child("rol")?.getValue(String::class.java)?.trim()
+            ?.takeIf { it.isNotEmpty() }
         val remoteRegion = canonicalRegion(remoteRegionRaw)
         val remoteCanon = canonicalizeAgency(remoteRegion, remoteAgency, remoteAgencyName)
 
         val scope = SyncScope(
+            uid = uid,
+            rol = remoteRole,
             region = remoteRegion,
             agenciaTag = remoteCanon.tag,
             agencia = remoteCanon.agencia
@@ -512,6 +564,128 @@ return AveriaEntity(
         cachedSyncScope = scope
         cachedSyncScopeAt = now
         return scope
+    }
+
+    private fun buildScopedQueryPlan(scope: SyncScope): ScopedQueryPlan {
+        val role = normalizeScopedRole(scope.rol)
+        val uid = scope.uid?.trim().orEmpty()
+        val agenciaTag = scope.agenciaTag?.trim().orEmpty()
+        val region = scope.region?.trim().orEmpty()
+
+        val plan = when (role) {
+            ScopedRole.TECNICO -> ScopedQueryPlan(
+                role = role,
+                primary = uid.takeIf { it.isNotEmpty() }?.let {
+                    QueryDescriptor(field = "tecnicoAsignadoUid", value = it)
+                },
+                fallback = agenciaTag.takeIf { it.isNotEmpty() }?.let {
+                    QueryDescriptor(field = "agenciaTag", value = it)
+                }
+            )
+
+            ScopedRole.SUPERVISOR_AGENCIA -> ScopedQueryPlan(
+                role = role,
+                primary = agenciaTag.takeIf { it.isNotEmpty() }?.let {
+                    QueryDescriptor(field = "agenciaTag", value = it)
+                },
+                fallback = region.takeIf { it.isNotEmpty() }?.let {
+                    QueryDescriptor(field = "region", value = it)
+                }
+            )
+
+            ScopedRole.ADMIN_REGIONAL -> ScopedQueryPlan(
+                role = role,
+                primary = region.takeIf { it.isNotEmpty() }?.let {
+                    QueryDescriptor(field = "region", value = it)
+                },
+                fallback = null
+            )
+
+            ScopedRole.DESCONOCIDO -> ScopedQueryPlan(
+                role = role,
+                primary = agenciaTag.takeIf { it.isNotEmpty() }?.let {
+                    QueryDescriptor(field = "agenciaTag", value = it)
+                },
+                fallback = region.takeIf { it.isNotEmpty() }?.let {
+                    QueryDescriptor(field = "region", value = it)
+                }
+            )
+        }
+
+        Log.i(
+            TAG,
+            "[SCOPED_PLAN] role=${plan.role} uid_present=${uid.isNotEmpty()} primary=${plan.primary?.field}:${plan.primary?.value ?: "null"} fallback=${plan.fallback?.field}:${plan.fallback?.value ?: "null"}"
+        )
+        return plan
+    }
+
+    private fun normalizeScopedRole(raw: String?): ScopedRole {
+        val value = raw?.trim()?.lowercase(Locale.getDefault()).orEmpty()
+        if (value.isBlank()) return ScopedRole.DESCONOCIDO
+
+        return when {
+            value.contains("tecnico") || value.contains("técnico") -> ScopedRole.TECNICO
+            value.contains("supervisor") || value.contains("agencia") -> ScopedRole.SUPERVISOR_AGENCIA
+            value.contains("admin") || value.contains("regional") -> ScopedRole.ADMIN_REGIONAL
+            else -> ScopedRole.DESCONOCIDO
+        }
+    }
+
+    private fun shouldRunFallback(primaryCount: Int): Boolean = primaryCount == 0
+
+    private fun buildFallbackQuery(plan: ScopedQueryPlan): Query? {
+        val fallback = plan.fallback ?: return null
+        return firebaseRef.orderByChild(fallback.field).equalTo(fallback.value)
+    }
+
+    private fun isOperativeEstado(estado: String?): Boolean {
+        val normalized = normalizeEstadoLabel(estado)
+        return normalized in operativeStates
+    }
+
+    /**
+     * Deduplica averías por caseId.
+     *
+     * Regla de conflicto:
+     * 1) Gana mayor lastUpdated.
+     * 2) Si lastUpdated empata, gana PRIMARY sobre FALLBACK.
+     */
+    private fun mergeByCaseId(
+        primary: List<AveriaEntity>,
+        fallback: List<AveriaEntity>
+    ): List<AveriaEntity> {
+        val merged = LinkedHashMap<String, MergeCandidate>()
+
+        primary.forEach { entity ->
+            val key = entity.caseId.trim()
+            if (key.isNotEmpty()) {
+                merged[key] = MergeCandidate(entity = entity, source = ScopedSource.PRIMARY)
+            }
+        }
+
+        fallback.forEach { entity ->
+            val key = entity.caseId.trim()
+            if (key.isEmpty()) return@forEach
+            val existing = merged[key]
+            if (existing == null) {
+                merged[key] = MergeCandidate(entity = entity, source = ScopedSource.FALLBACK)
+                return@forEach
+            }
+
+            val existingUpdated = existing.entity.lastUpdated
+            val incomingUpdated = entity.lastUpdated
+            val shouldReplace = when {
+                incomingUpdated > existingUpdated -> true
+                incomingUpdated < existingUpdated -> false
+                else -> existing.source != ScopedSource.PRIMARY
+            }
+
+            if (shouldReplace) {
+                merged[key] = MergeCandidate(entity = entity, source = ScopedSource.FALLBACK)
+            }
+        }
+
+        return merged.values.map { it.entity }
     }
 
     private suspend fun scopedAveriasQuery(limitToLast: Int? = null): Query {
@@ -937,10 +1111,83 @@ private fun AveriaEntity.toFirebaseAppPayload(): Map<String, Any?> = hashMapOf(
         val current = dao.all().associateBy { it.caseId }
         val hadLocalData = current.isNotEmpty()
         try {
-            val snapshot = scopedAveriasQuery().get().await()
+            Log.i(TAG, "[SCOPED_FLAG] useScopedAverias=$useScopedAverias")
+            val finalChildren = if (!useScopedAverias) {
+                val snapshot = scopedAveriasQuery().get().await()
+                snapshot.children.toList()
+            } else {
+                val scope = resolveSyncScope()
+                val plan = buildScopedQueryPlan(scope)
+                val primary = plan.primary
+                val uidPresent = !scope.uid.isNullOrBlank()
+                val agenciaTagPresent = !scope.agenciaTag.isNullOrBlank()
+                val regionPresent = !scope.region.isNullOrBlank()
+                if (primary == null) {
+                    Log.w(
+                        TAG,
+                        "[SCOPED_GUARD] global_blocked=true reason=primary_not_buildable role=${plan.role} uid_present=$uidPresent agenciaTag_present=$agenciaTagPresent region_present=$regionPresent"
+                    )
+                    return@withContext PullResult(emptyList(), hadLocalData)
+                }
+
+                Log.i(
+                    TAG,
+                    "[SCOPED_EXECUTION] stage=primary role=${plan.role} uid_present=$uidPresent agenciaTag_present=$agenciaTagPresent region_present=$regionPresent field=${primary.field} value=${primary.value}"
+                )
+                val primarySnapshot = firebaseRef.orderByChild(primary.field).equalTo(primary.value).get().await()
+                val primaryChildren = primarySnapshot.children.toList()
+                Log.i(
+                    TAG,
+                    "[SCOPED_EXECUTION] stage=primary_result role=${plan.role} field=${primary.field} value=${primary.value} count=${primaryChildren.size}"
+                )
+
+                if (shouldRunFallback(primaryChildren.size)) {
+                val fallback = plan.fallback
+                val fallbackReason = if (fallback == null) "fallback_not_buildable" else "primary_zero"
+                Log.i(
+                    TAG,
+                    "[SCOPED_FALLBACK] enabled=true reason=$fallbackReason role=${plan.role} uid_present=$uidPresent agenciaTag_present=$agenciaTagPresent region_present=$regionPresent primary_count=${primaryChildren.size}"
+                )
+                val fallbackQuery = buildFallbackQuery(plan)
+                if (fallbackQuery == null) {
+                    Log.w(
+                        TAG,
+                        "[SCOPED_GUARD] global_blocked=true reason=fallback_not_buildable role=${plan.role} uid_present=$uidPresent agenciaTag_present=$agenciaTagPresent region_present=$regionPresent primary_count=${primaryChildren.size}"
+                    )
+                    emptyList()
+                } else {
+                    Log.i(
+                        TAG,
+                        "[SCOPED_EXECUTION] stage=fallback role=${plan.role} field=${fallback?.field} value=${fallback?.value} primary_count=${primaryChildren.size}"
+                    )
+                    val fallbackSnapshot = fallbackQuery.get().await()
+                    val fallbackChildrenRaw = fallbackSnapshot.children.toList()
+                    val fallbackChildrenFiltered = if (plan.role == ScopedRole.TECNICO || plan.role == ScopedRole.SUPERVISOR_AGENCIA) {
+                        fallbackChildrenRaw.filter { child ->
+                            val estado = child.child("estado").getValue(String::class.java)
+                            isOperativeEstado(estado)
+                        }
+                    } else {
+                        fallbackChildrenRaw
+                    }
+                    Log.i(
+                        TAG,
+                        "[SCOPED_EXECUTION] stage=fallback_result role=${plan.role} field=${fallback?.field} value=${fallback?.value} rawCount=${fallbackChildrenRaw.size} filteredCount=${fallbackChildrenFiltered.size}"
+                    )
+                    fallbackChildrenFiltered
+                }
+            } else {
+                Log.i(
+                    TAG,
+                    "[SCOPED_FALLBACK] enabled=false reason=primary_has_data role=${plan.role} uid_present=$uidPresent agenciaTag_present=$agenciaTagPresent region_present=$regionPresent primary_count=${primaryChildren.size}"
+                )
+                primaryChildren
+            }
+            }
+
             val updated = mutableListOf<AveriaEntity>()
             val newlyCreated = mutableListOf<AveriaEntity>()
-            snapshot.children.forEach { child ->
+            finalChildren.forEach { child ->
                 val remote0 = child.getAveriaEntitySafe() ?: return@forEach
                 val normalizedEstado = normalizeEstadoLabel(remote0.estado)
                 val remoteBase = remote0.copy(estado = normalizedEstado, isSynced = true)
