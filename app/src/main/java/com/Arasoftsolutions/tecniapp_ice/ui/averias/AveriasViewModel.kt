@@ -193,7 +193,11 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
 
     val uiState: StateFlow<AveriasUiState> =
         combine(filteredAverias, _addresses, isLoading) { list, addresses, loading ->
-            val items = list.map { entity ->
+            val orderedByDate = list.sortedWith(
+                compareByDescending<AveriaEntity> { it.fechaInicioMillis }
+                    .thenByDescending { it.lastUpdated }
+            )
+            val items = orderedByDate.map { entity ->
                 val savedAddress = entity.direccion?.takeIf { it.isNotBlank() }
                 val address = addresses[entity.caseId] ?: savedAddress
                 if (address == null) {
