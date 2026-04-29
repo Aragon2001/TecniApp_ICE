@@ -14,6 +14,7 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
+import androidx.work.WorkInfo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.util.concurrent.TimeUnit
@@ -84,6 +85,14 @@ class AveriasSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorke
         }
 
         fun triggerNow(ctx: Context, showSyncNotification: Boolean = false) {
+            val manager = WorkManager.getInstance(ctx)
+            val runningOrEnqueued = runCatching {
+                manager.getWorkInfosForUniqueWork(UNIQUE_MANUAL_WORK).get().any { info ->
+                    info.state == WorkInfo.State.RUNNING || info.state == WorkInfo.State.ENQUEUED
+                }
+            }.getOrDefault(false)
+            if (runningOrEnqueued) return
+
             val constraints = Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.CONNECTED)
                 .build()
@@ -92,9 +101,9 @@ class AveriasSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorke
                 .setInputData(workDataOf(KEY_NOTIFY_SYNC to showSyncNotification))
                 .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
                 .build()
-            WorkManager.getInstance(ctx).enqueueUniqueWork(
+            manager.enqueueUniqueWork(
                 UNIQUE_MANUAL_WORK,
-                ExistingWorkPolicy.REPLACE,
+                ExistingWorkPolicy.KEEP,
                 request
             )
         }

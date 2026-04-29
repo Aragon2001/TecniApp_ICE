@@ -13,9 +13,12 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.Arasoftsolutions.tecniapp_ice.Database.room.AppDatabase
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
+import com.Arasoftsolutions.tecniapp_ice.Database.sync.AppSyncCoordinator
 import com.Arasoftsolutions.tecniapp_ice.Database.sync.Synchronizer
 import com.Arasoftsolutions.tecniapp_ice.fcm.TecniAppMessagingService
+import com.Arasoftsolutions.tecniapp_ice.preferences.DataStoreManager
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriaNotificationPreferences
+import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasSyncWorker
 import com.Arasoftsolutions.tecniapp_ice.ui.modal.SyncDialogFragment
 import com.google.android.material.button.MaterialButton
 import com.google.firebase.auth.FirebaseAuth
@@ -26,6 +29,7 @@ import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ServerValue
 import com.google.firebase.messaging.FirebaseMessaging
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -56,6 +60,7 @@ class LoginActivity : AppCompatActivity() {
     private lateinit var database: DatabaseReference
     private lateinit var roomRepository: RoomRepository
     private lateinit var synchronizer: Synchronizer
+    private lateinit var dataStoreManager: DataStoreManager
 
     private companion object {
         // Instancia RTDB que contiene los perfiles de usuario (colección /usuarios)
@@ -80,6 +85,7 @@ class LoginActivity : AppCompatActivity() {
         database = FirebaseDatabase.getInstance(DATABASE_URL_USERS).reference
         roomRepository = RoomRepository.getInstance(applicationContext)
         synchronizer = Synchronizer(roomRepository)
+        dataStoreManager = DataStoreManager.getInstance(applicationContext)
 
         // Si ya existe sesión (por cualquiera de los dos flags), navegar directo a Main
         sharedPreferences = getSharedPreferences(LEGACY_PREFS, MODE_PRIVATE)
@@ -220,18 +226,25 @@ class LoginActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             try {
-                val user = withContext(Dispatchers.IO) {
-                    try {
-                        roomRepository.upsertUserFromFirebase(uid)
-                    } catch (_: Exception) {
-                        createUserRtdbIfMissing(uid, email)
-                        roomRepository.upsertUserFromFirebase(uid)
-                    }
+                val bootstrap = withContext(Dispatchers.IO) {
+                    executePostLoginBootstrap(uid = uid, email = email)
                 }
 
-                val subId = user.subregion
+                val subId = bootstrap.user.subregion?.trim().orEmpty()
+                if (subId.isBlank()) {
+                    Log.i(TAG, "[BOOTSTRAP_POST_LOGIN] skip_sync_subregion reason=empty_subregion uid=$uid")
+                    AveriasSyncWorker.triggerNow(applicationContext)
+                    if (!isFinishing && !isDestroyed) {
+                        dlg.dismissAllowingStateLoss()
+                        Toast.makeText(this@LoginActivity, "Inicio de sesión exitoso", Toast.LENGTH_SHORT).show()
+                        startActivity(Intent(this@LoginActivity, ActivityMain::class.java))
+                        finish()
+                    }
+                    return@launch
+                }
+
                 synchronizer.syncSubregion(
-                    subId.toString(),
+                    subId,
                     onSyncStart = { message ->
                         if (!isFinishing && !isDestroyed) runOnUiThread { dlg.setHeader(message) }
                     },
@@ -242,6 +255,9 @@ class LoginActivity : AppCompatActivity() {
                     },
                     onSyncSuccess = {
                         if (!isFinishing && !isDestroyed) {
+                            lifecycleScope.launch(Dispatchers.IO) {
+                                AveriasSyncWorker.triggerNow(applicationContext)
+                            }
                             dlg.dismissAllowingStateLoss()
                             Toast.makeText(this@LoginActivity, "Inicio de sesión exitoso", Toast.LENGTH_SHORT).show()
                             startActivity(Intent(this@LoginActivity, ActivityMain::class.java))
@@ -308,6 +324,47 @@ class LoginActivity : AppCompatActivity() {
             .replace('[', '_')
             .replace(']', '_')
             .replace('/', '_')
+
+    private data class PostLoginBootstrapResult(
+        val user: com.Arasoftsolutions.tecniapp_ice.Database.entities.UserEntity
+    )
+
+    private suspend fun executePostLoginBootstrap(uid: String, email: String): PostLoginBootstrapResult {
+        val user = AppSyncCoordinator.runExclusive(key = "post_login_bootstrap") {
+            val currentSchemaVersion = AppDatabase.SCHEMA_VERSION
+            val lastApplied = dataStoreManager.lastSchemaVersionApplied.firstOrNull()
+            val shouldApplySchemaBootstrap = lastApplied != currentSchemaVersion
+
+            Log.i(
+                TAG,
+                "[BOOTSTRAP_POST_LOGIN] start uid=$uid schema_current=$currentSchemaVersion schema_last=$lastApplied apply_schema=$shouldApplySchemaBootstrap"
+            )
+
+            if (shouldApplySchemaBootstrap) {
+                Log.i(TAG, "[BOOTSTRAP_POST_LOGIN] step=limpiarBaseLocal")
+                roomRepository.limpiarBaseLocal()
+                Log.i(TAG, "[BOOTSTRAP_POST_LOGIN] step=syncCatalogosGenerales")
+                roomRepository.syncCatalogosGenerales()
+            }
+
+            val bootstrapUser = try {
+                roomRepository.upsertUserFromFirebase(uid)
+            } catch (_: Exception) {
+                createUserRtdbIfMissing(uid, email)
+                roomRepository.upsertUserFromFirebase(uid)
+            }
+
+            if (shouldApplySchemaBootstrap) {
+                dataStoreManager.setLastSchemaVersionApplied(currentSchemaVersion)
+                Log.i(TAG, "[BOOTSTRAP_POST_LOGIN] schema_mark_applied version=$currentSchemaVersion")
+            }
+
+            Log.i(TAG, "[BOOTSTRAP_POST_LOGIN] success uid=$uid subregion=${bootstrapUser.subregion}")
+            bootstrapUser
+        }
+
+        return PostLoginBootstrapResult(user = user)
+    }
 
     /**
      * Marcado de sesión en dos preferencias:

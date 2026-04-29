@@ -30,6 +30,7 @@ import com.Arasoftsolutions.tecniapp_ice.BuildConfig
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.apellidosCompletos
 import com.Arasoftsolutions.tecniapp_ice.Database.room.AppDatabase
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
+import com.Arasoftsolutions.tecniapp_ice.Database.sync.AppSyncCoordinator
 import com.Arasoftsolutions.tecniapp_ice.Database.sync.Synchronizer
 import com.Arasoftsolutions.tecniapp_ice.databinding.DialogNotificationFiltersBinding
 import com.Arasoftsolutions.tecniapp_ice.databinding.FragmentSettingsBinding
@@ -543,62 +544,78 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
                             ?.takeIf { it.isNotEmpty() }
                 } ?: throw IllegalStateException("Subregión no disponible")
 
-                synchronizer.syncSubregion(
-                    subregion,
-                    onSyncStart = { message ->
-                        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Main) {
-                            if (isAdded) dialog.setHeader(message)
-                        }
-                    },
-                    onSyncProgress = { done, total, msg, downloadedBytes ->
-                        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Main) {
-                            val safeContext = context ?: return@launch
-                            if (isAdded) {
-                                dialog.update(done, total, msg ?: "", downloadedBytes)
-                                SyncStatusNotifications.notifyProgress(
-                                    safeContext,
-                                    done,
-                                    total,
-                                    msg
-                                )
+                val executed = AppSyncCoordinator.runExclusiveDebounced(
+                    key = "manual_sync_subregion",
+                    minIntervalMs = 20_000L
+                ) {
+                    synchronizer.syncSubregion(
+                        subregion,
+                        onSyncStart = { message ->
+                            viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Main) {
+                                if (isAdded) dialog.setHeader(message)
                             }
-                        }
-                    },
-                    onSyncSuccess = {
-                        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Main) {
-                            val safeContext = context ?: return@launch
-                            SyncStatusNotifications.dismissProgress(safeContext)
-                            AveriasSyncWorker.triggerNow(safeContext)
-                            viewLifecycleOwner.lifecycleScope.launch {
-                                dataStore.markManualSyncNow()
-                            }
-                            viewLifecycleOwner.lifecycleScope.launch {
-                                withContext(Dispatchers.IO) {
-                                    roomRepository.refreshUsuarioActual()
+                        },
+                        onSyncProgress = { done, total, msg, downloadedBytes ->
+                            viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Main) {
+                                val safeContext = context ?: return@launch
+                                if (isAdded) {
+                                    dialog.update(done, total, msg ?: "", downloadedBytes)
+                                    SyncStatusNotifications.notifyProgress(
+                                        safeContext,
+                                        done,
+                                        total,
+                                        msg
+                                    )
                                 }
                             }
-                            SyncStatusNotifications.notifySynced(safeContext)
-                            dismissSyncDialog()
-                            Toast.makeText(
-                                safeContext,
-                                R.string.settings_sync_triggered,
-                                Toast.LENGTH_SHORT
-                            ).show()
+                        },
+                        onSyncSuccess = {
+                            viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Main) {
+                                val safeContext = context ?: return@launch
+                                SyncStatusNotifications.dismissProgress(safeContext)
+                                AveriasSyncWorker.triggerNow(safeContext)
+                                viewLifecycleOwner.lifecycleScope.launch {
+                                    dataStore.markManualSyncNow()
+                                }
+                                viewLifecycleOwner.lifecycleScope.launch {
+                                    withContext(Dispatchers.IO) {
+                                        roomRepository.refreshUsuarioActual()
+                                    }
+                                }
+                                SyncStatusNotifications.notifySynced(safeContext)
+                                dismissSyncDialog()
+                                Toast.makeText(
+                                    safeContext,
+                                    R.string.settings_sync_triggered,
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        },
+                        onSyncError = { error ->
+                            viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Main) {
+                                val safeContext = context ?: return@launch
+                                SyncStatusNotifications.dismissProgress(safeContext)
+                                dismissSyncDialog()
+                                Toast.makeText(
+                                    safeContext,
+                                    error.message ?: getString(R.string.settings_clear_cache_failure),
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            }
                         }
-                    },
-                    onSyncError = { error ->
-                        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Main) {
-                            val safeContext = context ?: return@launch
-                            SyncStatusNotifications.dismissProgress(safeContext)
-                            dismissSyncDialog()
-                            Toast.makeText(
-                                safeContext,
-                                error.message ?: getString(R.string.settings_clear_cache_failure),
-                                Toast.LENGTH_LONG
-                            ).show()
-                        }
+                    )
+                }
+
+                if (executed == null) {
+                    dismissSyncDialog()
+                    context?.let {
+                        Toast.makeText(
+                            it,
+                            "Ya hay una sincronización manual en curso o fue ejecutada recientemente",
+                            Toast.LENGTH_LONG
+                        ).show()
                     }
-                )
+                }
             } catch (_: Exception) {
                 dismissSyncDialog()
                 context?.let {
