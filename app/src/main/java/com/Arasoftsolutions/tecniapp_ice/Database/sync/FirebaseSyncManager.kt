@@ -82,6 +82,7 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
     private val luminariasChildListeners = mutableMapOf<ValueEventListener, ChildEventListener>()
     private val inventarioChildRefs = mutableMapOf<ValueEventListener, Query>()
     private val luminariasChildRefs = mutableMapOf<ValueEventListener, Query>()
+    private val localizacionesFallbackWarnThreshold = 10_000
 
     private fun database(url: String): DatabaseReference {
         return runCatching { FirebaseDatabase.getInstance(url).reference }
@@ -423,6 +424,9 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
         val node = if (dbLocal.child("pueblos").get().await().exists()) "pueblos" else "Pueblos"
         val filtro = subregionId.trim().takeIf { it.isNotEmpty() } ?: return emptyList()
         val canonicalFiltro = SubregionNormalizer.canonicalIdOrSelf(filtro) ?: filtro
+        val filtroNormalizado = normalizarClave(filtro)
+        val canonicalFiltroNormalizado = normalizarClave(canonicalFiltro)
+
         val resultadoIndexado = runCatching {
             dbLocal.child(node)
                 .orderByChild("subregion")
@@ -430,31 +434,55 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
                 .get()
                 .await()
         }.getOrNull()?.children.orEmpty().mapNotNull { child ->
-            val id = child.key?.trim()?.toIntOrNull()
-                ?: child.intValueAny("id", "Id", "ID")
-                ?: return@mapNotNull null
-            val nombre = child.stringValueAny("nombre", "Nombre", "NOMBRE")?.trim()
-                ?: return@mapNotNull null
-            val remoteSubregion = child.stringValueAny("subregion", "Subregion", "SubRegión", "Subregión")?.trim()
-            val canonical = SubregionNormalizer.canonicalIdOrSelf(remoteSubregion) ?: ""
-
-            PueblosEntity(
-                id = id,
-                nombre = nombre,
-                subregion = remoteSubregion.orEmpty(),
-                subregion_id_normalizado = canonical
-            )
+            child.toPuebloEntity()
         }.distinctBy { it.id }
+        Log.i(
+            TAG,
+            "[SYNC_FETCH][local/$node] query=orderByChild(subregion).equalTo($filtro) primaryCount=${resultadoIndexado.size}"
+        )
 
         if (resultadoIndexado.isNotEmpty()) {
+            Log.i(
+                TAG,
+                "[SYNC_FETCH][local/$node] fallback=false finalCount=${resultadoIndexado.size}"
+            )
             return resultadoIndexado
         }
 
-        Log.w(TAG, "[SYNC_FETCH][local/$node] query=orderByChild(subregion).equalTo($filtro) sin resultados; usando filtrado local de catálogo de pueblos")
-        return obtenerPueblos().filter { pueblo ->
-            pueblo.subregion.equals(filtro, ignoreCase = true) ||
-                pueblo.subregion_id_normalizado.equals(canonicalFiltro, ignoreCase = true)
-        }
+        Log.w(
+            TAG,
+            "[SYNC_FETCH][local/$node] fallback=true reason=primary_empty query=orderByChild(subregion).equalTo($filtro)"
+        )
+        val datasetCompleto = obtenerPueblos()
+        val resultadoFallback = datasetCompleto.filter { pueblo ->
+            val subregionNormalizada = normalizarClave(pueblo.subregion)
+            val canonicalPueblo = pueblo.subregion_id_normalizado
+                .ifBlank { SubregionNormalizer.canonicalIdOrSelf(pueblo.subregion).orEmpty() }
+            val canonicalPuebloNormalizada = normalizarClave(canonicalPueblo)
+            (filtroNormalizado != null && subregionNormalizada == filtroNormalizado) ||
+                (canonicalFiltroNormalizado != null && canonicalPuebloNormalizada == canonicalFiltroNormalizado)
+        }.distinctBy { it.id }
+        Log.i(
+            TAG,
+            "[SYNC_FETCH][local/$node] fallback=true datasetCount=${datasetCompleto.size} finalCount=${resultadoFallback.size}"
+        )
+        return resultadoFallback
+    }
+
+    private fun DataSnapshot.toPuebloEntity(): PueblosEntity? {
+        val id = key?.trim()?.toIntOrNull()
+            ?: intValueAny("id", "Id", "ID")
+            ?: return null
+        val nombre = stringValueAny("nombre", "Nombre", "NOMBRE")?.trim()
+            ?: return null
+        val remoteSubregion = stringValueAny("subregion", "Subregion", "SubRegión", "Subregión")?.trim()
+        val canonical = SubregionNormalizer.canonicalIdOrSelf(remoteSubregion) ?: ""
+        return PueblosEntity(
+            id = id,
+            nombre = nombre,
+            subregion = remoteSubregion.orEmpty(),
+            subregion_id_normalizado = canonical
+        )
     }
 
     suspend fun obtenerLocalizacionesPorPueblos(puebloIds: List<Int>): List<LocalizacionesEntity> {
@@ -466,24 +494,70 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
         }
         val pueblosSet = puebloIds.toSet()
         val result = mutableListOf<LocalizacionesEntity>()
+        var huboNodoPorPueblo = false
         puebloIds.forEach { puebloId ->
             val snapshot = dbLocal.child(nodeName).child(puebloId.toString()).get().await()
-            if (!snapshot.exists()) return@forEach
-            result += parseLocalizacionNode(snapshot)
+            if (!snapshot.exists()) {
+                Log.i(
+                    TAG,
+                    "[SYNC_FETCH][local/$nodeName] pueblo=$puebloId exists=false count=0"
+                )
+                return@forEach
+            }
+            huboNodoPorPueblo = true
+            val porPueblo = parseLocalizacionNode(snapshot)
+                .filter { it.pueblo != 0 && it.calle != 0 }
+            Log.i(
+                TAG,
+                "[SYNC_FETCH][local/$nodeName] pueblo=$puebloId exists=true count=${porPueblo.size}"
+            )
+            result += porPueblo
         }
 
         if (result.isNotEmpty()) {
-            return result.distinctBy { it.id }
+            val final = result.distinctBy { it.id }
+            Log.i(
+                TAG,
+                "[SYNC_FETCH][local/$nodeName] fallback=false source=por_pueblo totalFinal=${final.size}"
+            )
+            return final
         }
 
-        Log.w(TAG, "[SYNC_FETCH][local/$nodeName] sin resultados por ruta /{puebloId}; usando filtro local por campo pueblo")
+        Log.w(
+            TAG,
+            "[SYNC_FETCH][local/$nodeName] fallback=true reason=${if (huboNodoPorPueblo) "por_pueblo_vacio" else "nodos_por_pueblo_inexistentes"}"
+        )
+        if (pueblosSet.isEmpty()) {
+            Log.w(
+                TAG,
+                "[SYNC_FETCH][local/$nodeName] fallback_skipped reason=pueblos_empty"
+            )
+            return emptyList()
+        }
         val snap = dbLocal.child(nodeName).get().await()
         if (!snap.exists()) return emptyList()
+        val fallbackDatasetSize = snap.childrenCount.toInt()
+        Log.i(
+            TAG,
+            "[SYNC_FETCH][local/$nodeName] fallback_dataset_size=$fallbackDatasetSize"
+        )
+        if (fallbackDatasetSize > localizacionesFallbackWarnThreshold) {
+            Log.w(
+                TAG,
+                "[SYNC_FETCH][local/$nodeName] fallback_dataset_size_warning size=$fallbackDatasetSize threshold=$localizacionesFallbackWarnThreshold"
+            )
+        }
 
-        return snap.children
+        val final = snap.children
             .flatMap { child -> parseLocalizacionNode(child) }
+            .filter { it.pueblo != 0 && it.calle != 0 }
             .filter { it.pueblo in pueblosSet }
             .distinctBy { it.id }
+        Log.i(
+            TAG,
+            "[SYNC_FETCH][local/$nodeName] fallback=true source=dataset_completo totalFinal=${final.size}"
+        )
+        return final
     }
 
     private fun parseLocalizacionNode(
