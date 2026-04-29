@@ -83,9 +83,6 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
     private val inventarioChildRefs = mutableMapOf<ValueEventListener, Query>()
     private val luminariasChildRefs = mutableMapOf<ValueEventListener, Query>()
 
-    private companion object {
-    }
-
     private fun database(url: String): DatabaseReference {
         return runCatching { FirebaseDatabase.getInstance(url).reference }
             .getOrElse { throwable ->
@@ -844,11 +841,21 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
 
     suspend fun obtenerInventarioDeVehiculo(vehiculoKey: String): List<InventarioItemEntity> {
         val key = vehiculoKey.trim()
-        if (key.isEmpty()) return emptyList()
-        val root = inventarioRoot().child(key)
+        if (key.isEmpty()) {
+            Log.w(TAG, "[INV_DIAG][FIREBASE_INVENTARIO_SKIP] reason=vehiculoKey_blank")
+            return emptyList()
+        }
+        val base = inventarioRoot()
+        val root = base.child(key)
+        Log.i(TAG, "[INV_DIAG][FIREBASE_INVENTARIO_FETCH] basePath=${base.path} candidatePath=${root.path} key=$key")
         val snap = root.get().await()
-        if (!snap.exists()) return emptyList()
-        return parseInventarioVehiculoNode(snap)
+        if (!snap.exists()) {
+            Log.i(TAG, "[INV_DIAG][FIREBASE_INVENTARIO_FETCH] path_not_found candidatePath=${root.path} key=$key")
+            return emptyList()
+        }
+        val parsed = parseInventarioVehiculoNode(snap)
+        Log.i(TAG, "[INV_DIAG][FIREBASE_INVENTARIO_FETCH] path_found candidatePath=${root.path} key=$key items=${parsed.size}")
+        return parsed
     }
 
     suspend fun guardarInventarioVehiculo(vehiculoKey: String, vehiculoId: Int, items: List<InventarioItemEntity>) {
@@ -972,6 +979,7 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
 
     fun startInventarioRealtimeForVehiculo(
         vehiculoKey: String,
+        vehiculoIdLocal: Int,
         scope: CoroutineScope,
         onItemUpsert: suspend (InventarioItemEntity) -> Unit,
         onItemRemove: suspend (vehiculoId: Int, codigo: String) -> Unit,
@@ -984,17 +992,17 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
         }
 
         val target = inventarioRoot().child(vehiculoKey.trim())
-        val vehiculoId = vehiculoKey.toIntOrNull() ?: -1
+        Log.i(TAG, "[INV_DIAG][REALTIME_INVENTARIO] listening key=${vehiculoKey.trim()} vehiculoIdLocal=$vehiculoIdLocal path=${target.path}")
 
         val childListener = object : ChildEventListener {
             override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
                 scope.launch {
                     val codigo = snapshot.key?.trim().orEmpty()
-                    if (codigo.isBlank() || vehiculoId == -1) return@launch
+                    if (codigo.isBlank()) return@launch
 
                     val item = InventarioItemEntity(
                         id = snapshot.child("id").getValue(Long::class.java) ?: 0L,
-                        vehiculoId = vehiculoId,
+                        vehiculoId = vehiculoIdLocal,
                         codigoMaterial = codigo,
                         descripcionMaterial = snapshot.child("descripcionMaterial").getValue(String::class.java).orEmpty(),
                         cantidadDisponible = snapshot.child("cantidadDisponible").getValue(Double::class.java) ?: 0.0
@@ -1010,8 +1018,8 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
             override fun onChildRemoved(snapshot: DataSnapshot) {
                 scope.launch {
                     val codigo = snapshot.key?.trim().orEmpty()
-                    if (codigo.isBlank() || vehiculoId == -1) return@launch
-                    onItemRemove(vehiculoId, codigo)
+                    if (codigo.isBlank()) return@launch
+                    onItemRemove(vehiculoIdLocal, codigo)
                 }
             }
 
