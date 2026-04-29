@@ -59,29 +59,9 @@ class TecniApp : Application() {
         UpdateWorker.schedule(this)
         VehiculoReminderWorker.scheduleDaily(this)
 
-        applicationScope.launch {
-            val currentSchemaVersion = AppDatabase.SCHEMA_VERSION
-            val lastApplied = dataStore.lastSchemaVersionApplied.first()
-            if (lastApplied != currentSchemaVersion) {
-                val repository = RoomRepository.getInstance(this@TecniApp)
-                runCatching {
-                    repository.limpiarBaseLocal()
-                    repository.syncCatalogosGenerales()
-                    val uid = FirebaseAuth.getInstance().currentUser?.uid
-                    if (uid != null) {
-                        val user = repository.upsertUserFromFirebase(uid)
-                        val subregion = user.subregion?.trim()?.takeIf { it.isNotEmpty() }
-                        if (subregion != null) {
-                            repository.syncSubregion(subregion)
-                        }
-                    }
-                    AveriasSyncWorker.triggerNow(this@TecniApp)
-                    dataStore.setLastSchemaVersionApplied(currentSchemaVersion)
-                }.onFailure { error ->
-                   android.util.Log.e("TecniApp", "Error aplicando actualización de schema", error)
-                }
-            }
-        }
+        // Micro-paso 1:
+        // Desconectamos la sincronización pesada del arranque para evitar trabajo de red/DB
+        // en Application.onCreate(). Se mantiene el resto de inicialización liviana.
     }
 
     private fun enableFirebasePersistence() {

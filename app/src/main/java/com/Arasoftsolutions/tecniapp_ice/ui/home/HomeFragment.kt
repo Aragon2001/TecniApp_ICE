@@ -28,6 +28,7 @@ import com.Arasoftsolutions.tecniapp_ice.ui.vehiculo.TipoVehiculo
 import com.Arasoftsolutions.tecniapp_ice.ui.vehiculo.showRegistroVehiculoPendienteDialog
 import com.Arasoftsolutions.tecniapp_ice.Database.room.AppDatabase
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
+import com.Arasoftsolutions.tecniapp_ice.Database.sync.AppSyncCoordinator
 import com.Arasoftsolutions.tecniapp_ice.Database.sync.Synchronizer
 import com.Arasoftsolutions.tecniapp_ice.notifications.SyncStatusNotifications
 import com.Arasoftsolutions.tecniapp_ice.preferences.DataStoreManager
@@ -282,54 +283,70 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                 val subregion = usuarioActual?.subregion?.trim()
                     ?.takeIf { it.isNotEmpty() }
                     ?: throw IllegalStateException(getString(R.string.home_sync_unknown_error))
-                synchronizer.syncSubregion(
-                    subregion,
-                    onSyncStart = { message ->
-                        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Main) {
-                            if (isAdded) dialog.setHeader(message)
-                        }
-                    },
-                    onSyncProgress = { done, total, msg, downloadedBytes ->
-                        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Main) {
-                            if (isAdded) {
-                                dialog.update(done, total, msg ?: "", downloadedBytes)
-                                updateSyncProgress(done, total, msg)
-                                SyncStatusNotifications.notifyProgress(
-                                    requireContext(),
-                                    done,
-                                    total,
-                                    msg
+                val executed = AppSyncCoordinator.runExclusiveDebounced(
+                    key = "manual_sync_subregion",
+                    minIntervalMs = 20_000L
+                ) {
+                    synchronizer.syncSubregion(
+                        subregion,
+                        onSyncStart = { message ->
+                            viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Main) {
+                                if (isAdded) dialog.setHeader(message)
+                            }
+                        },
+                        onSyncProgress = { done, total, msg, downloadedBytes ->
+                            viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Main) {
+                                if (isAdded) {
+                                    dialog.update(done, total, msg ?: "", downloadedBytes)
+                                    updateSyncProgress(done, total, msg)
+                                    SyncStatusNotifications.notifyProgress(
+                                        requireContext(),
+                                        done,
+                                        total,
+                                        msg
+                                    )
+                                }
+                            }
+                        },
+                        onSyncSuccess = {
+                            viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Main) {
+                                if (!isAdded) return@launch
+                                SyncStatusNotifications.dismissProgress(requireContext())
+                                syncStatusText?.text = getString(R.string.home_sync_status_success)
+                                viewLifecycleOwner.lifecycleScope.launch {
+                                    dataStore.markManualSyncNow()
+                                }
+                                lastSyncValue?.text = formatRelativeSync(System.currentTimeMillis())
+                                SyncStatusNotifications.notifySynced(requireContext())
+                                dialog.dismissAllowingStateLoss()
+                            }
+                        },
+                        onSyncError = { error ->
+                            viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Main) {
+                                if (!isAdded) return@launch
+                                SyncStatusNotifications.dismissProgress(requireContext())
+                                syncStatusText?.text = getString(
+                                    R.string.home_sync_status_error,
+                                    error.message ?: getString(R.string.home_sync_unknown_error)
                                 )
+                                dialog.dismissWithError(error) {
+                                    if (isAdded) sincronizarConModal()
+                                }
                             }
                         }
-                    },
-                    onSyncSuccess = {
-                        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Main) {
-                            if (!isAdded) return@launch
-                            SyncStatusNotifications.dismissProgress(requireContext())
-                            syncStatusText?.text = getString(R.string.home_sync_status_success)
-                            viewLifecycleOwner.lifecycleScope.launch {
-                                dataStore.markManualSyncNow()
-                            }
-                            lastSyncValue?.text = formatRelativeSync(System.currentTimeMillis())
-                            SyncStatusNotifications.notifySynced(requireContext())
-                            dialog.dismissAllowingStateLoss()
-                        }
-                    },
-                    onSyncError = { error ->
-                        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Main) {
-                            if (!isAdded) return@launch
-                            SyncStatusNotifications.dismissProgress(requireContext())
-                            syncStatusText?.text = getString(
-                                R.string.home_sync_status_error,
-                                error.message ?: getString(R.string.home_sync_unknown_error)
-                            )
-                            dialog.dismissWithError(error) {
-                                if (isAdded) sincronizarConModal()
-                            }
-                        }
+                    )
+                }
+
+                if (executed == null) {
+                    context?.let {
+                        android.widget.Toast.makeText(
+                            it,
+                            "Ya hay una sincronización manual en curso o fue ejecutada recientemente",
+                            android.widget.Toast.LENGTH_LONG
+                        ).show()
                     }
-                )
+                    dialog.dismissAllowingStateLoss()
+                }
             } catch (error: Throwable) {
                 if (isAdded) {
                     SyncStatusNotifications.dismissProgress(requireContext())
