@@ -494,10 +494,18 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
     ): List<LocalizacionesEntity> {
         if (!node.exists()) return emptyList()
 
+        val calleRaw = node.stringValueAny("calle", "Calle", "CALLE")
+        val puebloRaw = node.stringValueAny("pueblo", "Pueblo", "PUEBLO")
         val calle = node.intValueAny("calle", "Calle", "CALLE")
+            ?: calleRaw.toIntLooseOrNull()
         val pueblo = node.intValueAny("pueblo", "Pueblo", "PUEBLO")
+            ?: puebloRaw.toIntLooseOrNull()
         val direccion = node.stringValueAny("direccion", "Dirección", "Direccion", "DIRECCION", "DIRECCIÓN")
-        val hasLeafData = calle != null || pueblo != null || !direccion.isNullOrBlank()
+        val hasLeafData = calle != null ||
+            pueblo != null ||
+            !calleRaw.isNullOrBlank() ||
+            !puebloRaw.isNullOrBlank() ||
+            !direccion.isNullOrBlank()
 
         if (!hasLeafData && node.childrenCount > 0) {
             return node.children.flatMap { child ->
@@ -1682,6 +1690,14 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
             fotoUrl = stringValueAnyTrim("fotoUrl", "foto_url", "foto"),
             rol = stringValueAnyTrim("rol")
         )
+    }
+
+    private fun String?.toIntLooseOrNull(): Int? {
+        val cleaned = this?.trim().orEmpty()
+        if (cleaned.isBlank()) return null
+        cleaned.toDoubleOrNull()?.toInt()?.let { return it }
+        val digits = cleaned.filter { it.isDigit() }
+        return digits.toIntOrNull()
     }
 
     private fun generarIdLocalizacion(
