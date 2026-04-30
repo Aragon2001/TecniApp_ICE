@@ -372,7 +372,7 @@ object PdfGenerator {
 
             val techniciansLines = item.tecnicosAtendieron.mapNotNull { tecnico ->
                 val nombre = tecnico.nombre.trim()
-                val cedula = tecnico.cedula.trim()
+                val cedula = tecnico.cedula?.trim().orEmpty()
                 when {
                     nombre.isNotBlank() && cedula.isNotBlank() ->
                         "${nombre} - ${cedula}"

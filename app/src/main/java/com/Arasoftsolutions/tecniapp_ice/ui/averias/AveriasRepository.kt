@@ -568,53 +568,25 @@ return AveriaEntity(
 
     private fun buildScopedQueryPlan(scope: SyncScope): ScopedQueryPlan {
         val role = normalizeScopedRole(scope.rol)
-        val uid = scope.uid?.trim().orEmpty()
         val agenciaTag = scope.agenciaTag?.trim().orEmpty()
         val region = scope.region?.trim().orEmpty()
 
-        val plan = when (role) {
-            ScopedRole.TECNICO -> ScopedQueryPlan(
-                role = role,
-                primary = uid.takeIf { it.isNotEmpty() }?.let {
-                    QueryDescriptor(field = "tecnicoAsignadoUid", value = it)
-                },
-                fallback = agenciaTag.takeIf { it.isNotEmpty() }?.let {
-                    QueryDescriptor(field = "agenciaTag", value = it)
-                }
-            )
-
-            ScopedRole.SUPERVISOR_AGENCIA -> ScopedQueryPlan(
-                role = role,
-                primary = agenciaTag.takeIf { it.isNotEmpty() }?.let {
-                    QueryDescriptor(field = "agenciaTag", value = it)
-                },
-                fallback = region.takeIf { it.isNotEmpty() }?.let {
-                    QueryDescriptor(field = "region", value = it)
-                }
-            )
-
-            ScopedRole.ADMIN_REGIONAL -> ScopedQueryPlan(
-                role = role,
-                primary = region.takeIf { it.isNotEmpty() }?.let {
-                    QueryDescriptor(field = "region", value = it)
-                },
-                fallback = null
-            )
-
-            ScopedRole.DESCONOCIDO -> ScopedQueryPlan(
-                role = role,
-                primary = agenciaTag.takeIf { it.isNotEmpty() }?.let {
-                    QueryDescriptor(field = "agenciaTag", value = it)
-                },
-                fallback = region.takeIf { it.isNotEmpty() }?.let {
-                    QueryDescriptor(field = "region", value = it)
-                }
-            )
+        val primary = region.takeIf { it.isNotEmpty() }?.let {
+            QueryDescriptor(field = "region", value = it)
         }
+        val fallback = agenciaTag.takeIf { it.isNotEmpty() }?.let {
+            QueryDescriptor(field = "agenciaTag", value = it)
+        }
+
+        val plan = ScopedQueryPlan(
+            role = role,
+            primary = primary,
+            fallback = fallback
+        )
 
         Log.i(
             TAG,
-            "[SCOPED_PLAN] role=${plan.role} uid_present=${uid.isNotEmpty()} primary=${plan.primary?.field}:${plan.primary?.value ?: "null"} fallback=${plan.fallback?.field}:${plan.fallback?.value ?: "null"}"
+            "[SCOPED_PLAN] role=${plan.role} primary=${plan.primary?.field}:${plan.primary?.value ?: "null"} fallback=${plan.fallback?.field}:${plan.fallback?.value ?: "null"}"
         )
         return plan
     }
@@ -758,6 +730,82 @@ return AveriaEntity(
         dao.eliminarPorCaseId(caseId)
     }
 
+
+    private fun mergeTecnicosAtendieron(
+        existentes: List<TecnicoAtencion>,
+        nuevos: List<TecnicoAtencion>
+    ): List<TecnicoAtencion> {
+        fun normalizedName(value: String): String = value.trim().lowercase(Locale.getDefault())
+
+        fun identityKey(tecnico: TecnicoAtencion): String {
+            val uid = tecnico.uid?.trim().orEmpty()
+            if (uid.isNotEmpty()) return "uid:$uid"
+            val cedula = tecnico.cedula?.trim().orEmpty()
+            if (cedula.isNotEmpty()) return "cedula:$cedula"
+            val nombre = normalizedName(tecnico.nombre)
+            return "nombre:$nombre"
+        }
+
+        fun mergeOne(existing: TecnicoAtencion?, incoming: TecnicoAtencion): TecnicoAtencion {
+            if (existing == null) {
+                val normalizedName = incoming.nombre.trim().ifBlank { incoming.cedula?.trim().orEmpty() }
+                return incoming.copy(nombre = normalizedName)
+            }
+            val mergedName = incoming.nombre.trim().ifBlank { existing.nombre.trim() }
+            val mergedTimestamp = maxOf(existing.timestamp ?: Long.MIN_VALUE, incoming.timestamp ?: Long.MIN_VALUE)
+                .takeIf { it != Long.MIN_VALUE }
+            return TecnicoAtencion(
+                uid = incoming.uid?.trim().takeIf { !it.isNullOrBlank() }
+                    ?: existing.uid?.trim().takeIf { !it.isNullOrBlank() },
+                cedula = incoming.cedula?.trim().takeIf { !it.isNullOrBlank() }
+                    ?: existing.cedula?.trim().takeIf { !it.isNullOrBlank() },
+                nombre = mergedName.ifBlank {
+                    incoming.cedula?.trim().orEmpty().ifBlank { existing.cedula?.trim().orEmpty() }
+                },
+                rol = incoming.rol?.trim().takeIf { !it.isNullOrBlank() }
+                    ?: existing.rol?.trim().takeIf { !it.isNullOrBlank() },
+                timestamp = mergedTimestamp,
+                fuente = incoming.fuente?.trim().takeIf { !it.isNullOrBlank() }
+                    ?: existing.fuente?.trim().takeIf { !it.isNullOrBlank() }
+            )
+        }
+
+        val merged = LinkedHashMap<String, TecnicoAtencion>()
+        existentes.forEach { tecnico ->
+            val key = identityKey(tecnico)
+            merged[key] = mergeOne(merged[key], tecnico)
+        }
+        nuevos.forEach { tecnico ->
+            val key = identityKey(tecnico)
+            merged[key] = mergeOne(merged[key], tecnico)
+        }
+        return merged.values
+            .filter { tecnico ->
+                tecnico.nombre.trim().isNotEmpty() || !tecnico.cedula.isNullOrBlank() || !tecnico.uid.isNullOrBlank()
+            }
+    }
+
+
+    private fun ensurePrincipalInTecnicos(
+        tecnicos: List<TecnicoAtencion>,
+        atendidoPorUid: String?,
+        atendidoPorNombre: String?
+    ): List<TecnicoAtencion> {
+        val uid = atendidoPorUid?.trim().takeIf { !it.isNullOrBlank() }
+        val nombre = atendidoPorNombre?.trim().takeIf { !it.isNullOrBlank() } ?: uid
+        if (uid == null && nombre.isNullOrBlank()) return tecnicos
+
+        val principal = TecnicoAtencion(
+            uid = uid,
+            cedula = null,
+            nombre = nombre,
+            rol = null,
+            timestamp = System.currentTimeMillis(),
+            fuente = "principal"
+        )
+        return mergeTecnicosAtendieron(tecnicos, listOf(principal))
+    }
+
     suspend fun enAtencion(caseId: String, data: AveriaActionData) = withContext(Dispatchers.IO) {
         val now = System.currentTimeMillis()
         val base = dao.getByCaseId(caseId)
@@ -771,7 +819,17 @@ return AveriaEntity(
         val horaLlegada = data.horaLlegadaMillis ?: base?.horaLlegadaMillis
         val resumen = MaterialesSerializer.toSummary(data.materiales).ifBlank { null }
         val detalle = MaterialesSerializer.toJson(data.materiales)
-        val tecnicosJson = TecnicosSerializer.toJson(data.tecnicos)
+        val tecnicosEntrada = ensurePrincipalInTecnicos(
+            data.tecnicos,
+            data.atendidoPorUid,
+            data.atendidoPorNombre
+        )
+        val principalPresent = data.atendidoPorUid?.isNotBlank() == true || data.atendidoPorNombre?.isNotBlank() == true
+        Log.i(TAG, "[AVERIA_TECNICOS][PRINCIPAL_ENSURE] input=${data.tecnicos.size} output=${tecnicosEntrada.size} principal_present=$principalPresent")
+        val tecnicosExistentes = TecnicosSerializer.fromJson(base?.tecnicosAtendieronJson)
+        val tecnicosMergeados = mergeTecnicosAtendieron(tecnicosExistentes, tecnicosEntrada)
+        Log.i(TAG, "[AVERIA_TECNICOS][MERGE] existing=${tecnicosExistentes.size} incoming=${tecnicosEntrada.size} result=${tecnicosMergeados.size}")
+        val tecnicosJson = TecnicosSerializer.toJson(tecnicosMergeados)
         val localizacion = data.localizacion?.trim()
         val cliente = data.cliente?.trim()
         val tipo = data.tipoAfectacion.name
@@ -821,7 +879,17 @@ return AveriaEntity(
         val horaLlegada = data.horaLlegadaMillis ?: base?.horaLlegadaMillis
         val resumen = MaterialesSerializer.toSummary(data.materiales).ifBlank { null }
         val detalle = MaterialesSerializer.toJson(data.materiales)
-        val tecnicosJson = TecnicosSerializer.toJson(data.tecnicos)
+        val tecnicosEntrada = ensurePrincipalInTecnicos(
+            data.tecnicos,
+            data.atendidoPorUid,
+            data.atendidoPorNombre
+        )
+        val principalPresent = data.atendidoPorUid?.isNotBlank() == true || data.atendidoPorNombre?.isNotBlank() == true
+        Log.i(TAG, "[AVERIA_TECNICOS][PRINCIPAL_ENSURE] input=${data.tecnicos.size} output=${tecnicosEntrada.size} principal_present=$principalPresent")
+        val tecnicosExistentes = TecnicosSerializer.fromJson(base?.tecnicosAtendieronJson)
+        val tecnicosMergeados = mergeTecnicosAtendieron(tecnicosExistentes, tecnicosEntrada)
+        Log.i(TAG, "[AVERIA_TECNICOS][MERGE] existing=${tecnicosExistentes.size} incoming=${tecnicosEntrada.size} result=${tecnicosMergeados.size}")
+        val tecnicosJson = TecnicosSerializer.toJson(tecnicosMergeados)
         val localizacion = data.localizacion?.trim()
         val cliente = data.cliente?.trim()
         val tipo = data.tipoAfectacion.name
@@ -1113,8 +1181,8 @@ private fun AveriaEntity.toFirebaseAppPayload(): Map<String, Any?> = hashMapOf(
         try {
             Log.i(TAG, "[SCOPED_FLAG] useScopedAverias=$useScopedAverias")
             val finalChildren = if (!useScopedAverias) {
-                val snapshot = scopedAveriasQuery().get().await()
-                snapshot.children.toList()
+                Log.w(TAG, "[SCOPED_GUARD] global_blocked=true reason=scoped_flag_disabled")
+                emptyList()
             } else {
                 val scope = resolveSyncScope()
                 val plan = buildScopedQueryPlan(scope)
@@ -1125,7 +1193,7 @@ private fun AveriaEntity.toFirebaseAppPayload(): Map<String, Any?> = hashMapOf(
                 if (primary == null) {
                     Log.w(
                         TAG,
-                        "[SCOPED_GUARD] global_blocked=true reason=primary_not_buildable role=${plan.role} uid_present=$uidPresent agenciaTag_present=$agenciaTagPresent region_present=$regionPresent"
+                        "[SCOPED_GUARD] global_blocked=true reason=missing_region role=${plan.role} uid_present=$uidPresent agenciaTag_present=$agenciaTagPresent region_present=$regionPresent"
                     )
                     return@withContext PullResult(emptyList(), hadLocalData)
                 }
@@ -1143,7 +1211,7 @@ private fun AveriaEntity.toFirebaseAppPayload(): Map<String, Any?> = hashMapOf(
 
                 if (shouldRunFallback(primaryChildren.size)) {
                 val fallback = plan.fallback
-                val fallbackReason = if (fallback == null) "fallback_not_buildable" else "primary_zero"
+                val fallbackReason = if (fallback == null) "missing_region" else "primary_zero"
                 Log.i(
                     TAG,
                     "[SCOPED_FALLBACK] enabled=true reason=$fallbackReason role=${plan.role} uid_present=$uidPresent agenciaTag_present=$agenciaTagPresent region_present=$regionPresent primary_count=${primaryChildren.size}"
