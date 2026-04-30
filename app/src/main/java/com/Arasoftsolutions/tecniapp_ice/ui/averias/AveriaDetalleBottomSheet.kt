@@ -1611,7 +1611,7 @@ private fun configureButtonsForRules(
     private fun agregarTecnico(t: TecnicoEntity) {
         val key = if (t.cedula.isNotBlank()) t.cedula else t.nombre
         if (key.isBlank()) return
-        tecnicosSeleccionados[key] = TecnicoAtencion(t.cedula, t.nombre)
+        tecnicosSeleccionados[key] = TecnicoAtencion(cedula = t.cedula, nombre = t.nombre, fuente = "app")
         renderTecnicos()
         refreshResolvedEditionState()
     }
@@ -1622,7 +1622,7 @@ private fun configureButtonsForRules(
         val cedula = user.cedula?.trim().orEmpty()
         val key = if (cedula.isNotBlank()) cedula else nombre
         if (!tecnicosSeleccionados.containsKey(key)) {
-            tecnicosSeleccionados[key] = TecnicoAtencion(cedula, nombre)
+            tecnicosSeleccionados[key] = TecnicoAtencion(cedula = cedula, nombre = nombre, fuente = "app")
             refreshResolvedEditionState()
         }
     }
