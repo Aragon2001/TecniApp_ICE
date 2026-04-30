@@ -1020,17 +1020,73 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
     }
 
     private fun buildAgencyKeyCandidates(agencia: String): List<String> {
-        val normalized = normalizarClave(agencia).orEmpty()
         val raw = agencia.trim()
+        val normalizedStrong = normalizeAgencyKeyForFirebase(raw)
+        val mojibakeFixed = fixCommonMojibake(raw)
+        val lower = raw.lowercase(Locale.getDefault())
         val noSpaces = raw.replace("\\s+".toRegex(), "")
         val underscore = raw.replace("\\s+".toRegex(), "_")
-        val lower = raw.lowercase(Locale.getDefault())
+        val noDiacriticsRaw = removeDiacritics(raw).lowercase(Locale.getDefault())
+        val noDiacriticsNoSpaces = noDiacriticsRaw.replace("\\s+".toRegex(), "")
+        val legacyNormalized = normalizarClave(raw).orEmpty()
+
+        Log.i(
+            TAG,
+            "[LUM_FIREBASE][AGENCY_NORMALIZE] rawLength=${raw.length} normalized=$normalizedStrong"
+        )
         val candidates = linkedSetOf<String>()
-        listOf(normalized, raw, lower, noSpaces, underscore).forEach { candidate ->
+        listOf(
+            normalizedStrong,
+            raw,
+            lower,
+            noSpaces,
+            noDiacriticsRaw,
+            noDiacriticsNoSpaces,
+            underscore,
+            legacyNormalized
+        ).forEach { candidate ->
             val key = candidate.trim()
             if (key.isNotEmpty()) candidates.add(key)
         }
         return candidates.toList()
+    }
+
+    private fun normalizeAgencyKeyForFirebase(raw: String): String {
+        val trimmed = raw.trim()
+        if (trimmed.isEmpty()) return ""
+        val mojibakeFixed = fixCommonMojibake(trimmed)
+        val withoutDiacritics = removeDiacritics(mojibakeFixed).lowercase(Locale.getDefault())
+        val noSpacesOrPunctuation = withoutDiacritics
+            .replace("[\\s_\\-]+".toRegex(), "")
+            .replace("[^a-z0-9]".toRegex(), "")
+        return noSpacesOrPunctuation
+    }
+
+    private fun removeDiacritics(value: String): String {
+        val normalized = Normalizer.normalize(value, Normalizer.Form.NFD)
+        return DIACRITIC_REGEX.replace(normalized, "")
+    }
+
+    private fun fixCommonMojibake(value: String): String {
+        var fixed = value
+        val replacements = listOf(
+            "Ã¡" to "á",
+            "Ã©" to "é",
+            "Ã­" to "í",
+            "Ã³" to "ó",
+            "Ãº" to "ú",
+            "Ã±" to "ñ",
+            "Ã" to "Á",
+            "Ã‰" to "É",
+            "Ã" to "Í",
+            "Ã“" to "Ó",
+            "Ãš" to "Ú",
+            "Ã‘" to "Ñ"
+        )
+        replacements.forEach { (broken, corrected) ->
+            fixed = fixed.replace(broken, corrected)
+        }
+        return fixed
     }
 
     suspend fun guardarKilometrajeVehicular(
