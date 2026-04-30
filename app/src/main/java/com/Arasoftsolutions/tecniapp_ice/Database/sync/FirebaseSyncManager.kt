@@ -992,11 +992,101 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
     }
 
     suspend fun obtenerLuminariasPorAgencia(agencia: String): List<LuminariaReparacionEntity> {
-        val agenciaKey = normalizarClave(agencia)?.takeIf { it.isNotBlank() } ?: agencia.trim()
-        if (agenciaKey.isBlank()) return emptyList()
-        val snap = luminariasBase().child(agenciaKey).get().await()
-        if (!snap.exists()) return emptyList()
-        return parseLuminariasSnapshot(snap)
+        val agenciaRaw = agencia.trim()
+        if (agenciaRaw.isBlank()) {
+            Log.w(TAG, "[LUM_FIREBASE][PATH_NOT_FOUND] reason=agencia_blank")
+            return emptyList()
+        }
+        val base = luminariasBase()
+        Log.i(TAG, "[LUM_FIREBASE][ROOT] path=${base.path}")
+        val candidates = buildAgencyKeyCandidates(agenciaRaw)
+        candidates.forEach { agencyKey ->
+            val node = base.child(agencyKey)
+            Log.i(TAG, "[LUM_FIREBASE][AGENCY_PATH] trying=${node.path}")
+            val snap = node.get().await()
+            if (!snap.exists()) {
+                Log.w(TAG, "[LUM_FIREBASE][PATH_NOT_FOUND] path=${node.path}")
+                return@forEach
+            }
+            val pendientesCount = snap.child("pendientes").childrenCount.toInt()
+            val reparadasCount = snap.child("reparadas").childrenCount.toInt()
+            val parsed = parseLuminariasSnapshot(snap)
+            Log.i(TAG, "[LUM_FIREBASE][PENDIENTES_COUNT] agencyKey=$agencyKey count=$pendientesCount")
+            Log.i(TAG, "[LUM_FIREBASE][REPARADAS_COUNT] agencyKey=$agencyKey count=$reparadasCount")
+            Log.i(TAG, "[LUM_FIREBASE][TOTAL_COUNT] agencyKey=$agencyKey count=${parsed.size}")
+            return parsed
+        }
+        return emptyList()
+    }
+
+    private fun buildAgencyKeyCandidates(agencia: String): List<String> {
+        val raw = agencia.trim()
+        val normalizedStrong = normalizeAgencyKeyForFirebase(raw)
+        val mojibakeFixed = fixCommonMojibake(raw)
+        val lower = raw.lowercase(Locale.getDefault())
+        val noSpaces = raw.replace("\\s+".toRegex(), "")
+        val underscore = raw.replace("\\s+".toRegex(), "_")
+        val noDiacriticsRaw = removeDiacritics(raw).lowercase(Locale.getDefault())
+        val noDiacriticsNoSpaces = noDiacriticsRaw.replace("\\s+".toRegex(), "")
+        val legacyNormalized = normalizarClave(raw).orEmpty()
+
+        Log.i(
+            TAG,
+            "[LUM_FIREBASE][AGENCY_NORMALIZE] rawLength=${raw.length} normalized=$normalizedStrong"
+        )
+        val candidates = linkedSetOf<String>()
+        listOf(
+            normalizedStrong,
+            raw,
+            lower,
+            noSpaces,
+            noDiacriticsRaw,
+            noDiacriticsNoSpaces,
+            underscore,
+            legacyNormalized
+        ).forEach { candidate ->
+            val key = candidate.trim()
+            if (key.isNotEmpty()) candidates.add(key)
+        }
+        return candidates.toList()
+    }
+
+    private fun normalizeAgencyKeyForFirebase(raw: String): String {
+        val trimmed = raw.trim()
+        if (trimmed.isEmpty()) return ""
+        val mojibakeFixed = fixCommonMojibake(trimmed)
+        val withoutDiacritics = removeDiacritics(mojibakeFixed).lowercase(Locale.getDefault())
+        val noSpacesOrPunctuation = withoutDiacritics
+            .replace("[\\s_\\-]+".toRegex(), "")
+            .replace("[^a-z0-9]".toRegex(), "")
+        return noSpacesOrPunctuation
+    }
+
+    private fun removeDiacritics(value: String): String {
+        val normalized = Normalizer.normalize(value, Normalizer.Form.NFD)
+        return DIACRITIC_REGEX.replace(normalized, "")
+    }
+
+    private fun fixCommonMojibake(value: String): String {
+        var fixed = value
+        val replacements = listOf(
+            "Ã¡" to "á",
+            "Ã©" to "é",
+            "Ã­" to "í",
+            "Ã³" to "ó",
+            "Ãº" to "ú",
+            "Ã±" to "ñ",
+            "Ã" to "Á",
+            "Ã‰" to "É",
+            "Ã" to "Í",
+            "Ã“" to "Ó",
+            "Ãš" to "Ú",
+            "Ã‘" to "Ñ"
+        )
+        replacements.forEach { (broken, corrected) ->
+            fixed = fixed.replace(broken, corrected)
+        }
+        return fixed
     }
 
     suspend fun guardarKilometrajeVehicular(
@@ -1348,7 +1438,19 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
         estadoFallback: LuminariaEstado?
     ): LuminariaReparacionEntity? {
         if (!snapshot.exists()) return null
-        val id = snapshot.longChildAny("id") ?: snapshot.key?.toLongOrNull() ?: return null
+        val idFromPayload = snapshot.longChildAny("id")
+        val idFromKey = snapshot.key?.toLongOrNull()
+        val id = idFromPayload ?: idFromKey
+        if (id == null) {
+            Log.w(
+                TAG,
+                "[LUM_PARSE][INVALID_ID] key=${snapshot.key ?: "null"} hasIdField=${idFromPayload != null}"
+            )
+            return null
+        }
+        if (id == 0L) {
+            Log.w(TAG, "[LUM_PARSE][ZERO_ID] key=${snapshot.key ?: "null"}")
+        }
         val vehiculoId = snapshot.intValueAny("vehiculoId", "vehiculo_id") ?: 0
         val localizacion = snapshot.stringChildAny("localizacion", "Localizacion", "Localización").orEmpty()
         val cliente = snapshot.stringChildAny("cliente", "Cliente")
@@ -1433,15 +1535,31 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
 
     private fun parseLuminariasSnapshot(snapshot: DataSnapshot): List<LuminariaReparacionEntity> {
         if (!snapshot.exists()) return emptyList()
-        if (snapshot.hasChild("pendientes") || snapshot.hasChild("reparadas")) {
-            return parseLuminariasFromAgencia(snapshot)
+        val parsed = if (snapshot.hasChild("pendientes") || snapshot.hasChild("reparadas")) {
+            parseLuminariasFromAgencia(snapshot)
+        } else {
+            val reparaciones = mutableListOf<LuminariaReparacionEntity>()
+            snapshot.children.forEach { agenciaNode ->
+                if (!agenciaNode.exists()) return@forEach
+                reparaciones += parseLuminariasFromAgencia(agenciaNode)
+            }
+            reparaciones
         }
-        val reparaciones = mutableListOf<LuminariaReparacionEntity>()
-        snapshot.children.forEach { agenciaNode ->
-            if (!agenciaNode.exists()) return@forEach
-            reparaciones += parseLuminariasFromAgencia(agenciaNode)
+        val duplicateIds = parsed
+            .groupBy { it.id }
+            .filterValues { it.size > 1 }
+            .keys
+        if (duplicateIds.isNotEmpty()) {
+            duplicateIds.forEach { duplicateId ->
+                Log.w(TAG, "[LUM_PARSE][DUPLICATE_ID] id=$duplicateId occurrences=${parsed.count { it.id == duplicateId }}")
+            }
         }
-        return reparaciones
+        val zeroIdCount = parsed.count { it.id == 0L }
+        Log.i(
+            TAG,
+            "[LUM_PARSE][SUMMARY] parsed=${parsed.size} duplicateIds=${duplicateIds.size} zeroIds=$zeroIdCount"
+        )
+        return parsed
     }
 
     private fun parseLuminariasFromAgencia(agenciaNode: DataSnapshot): List<LuminariaReparacionEntity> {
