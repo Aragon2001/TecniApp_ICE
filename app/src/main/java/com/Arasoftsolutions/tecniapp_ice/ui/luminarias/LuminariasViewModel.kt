@@ -1,6 +1,7 @@
 package com.Arasoftsolutions.tecniapp_ice.ui.luminarias
 
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado
@@ -83,6 +84,7 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
     private var reparacionesAgenciaCache: List<LuminariaReparacionEntity> = emptyList()
     private var vehiculoPreferidoId: Int? = null
     private val localizacionRegex = Regex("^\\d{12}$")
+    private val tag = "LuminariasViewModel"
 
     init {
         viewModelScope.launch {
@@ -99,6 +101,7 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
                 LuminariaCatalogoState(materiales, tecnicos, reparaciones, vehiculos, pueblos)
             }.collect { (materiales, tecnicos, reparaciones, vehiculos, pueblos) ->
                 val agenciaUsuario = _uiState.value.agenciaUsuario?.trim().orEmpty()
+                Log.i(tag, "[LUM_VM][ROOM_TOTAL] total=${reparaciones.size} agenciaUsuario=$agenciaUsuario")
                 val vehiculosPorId = vehiculos.associateBy { it.id }
                 val filtradasPorAgencia = if (agenciaUsuario.isBlank()) {
                     reparaciones
@@ -108,6 +111,10 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
                         agencia.equals(agenciaUsuario, ignoreCase = true)
                     }
                 }
+                Log.i(
+                    tag,
+                    "[LUM_VM][FILTER_AGENCY] agenciaUsuario=$agenciaUsuario before=${reparaciones.size} after=${filtradasPorAgencia.size} vehiculosCatalogo=${vehiculos.size}"
+                )
                 reparacionesAgenciaCache = filtradasPorAgencia
                 val vehiculosAgencia = if (agenciaUsuario.isBlank()) {
                     vehiculos
@@ -118,6 +125,10 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
                     reparacionesAgenciaCache,
                     _uiState.value.busquedaLocalizacion,
                     _uiState.value.vehiculoFiltroId
+                )
+                Log.i(
+                    tag,
+                    "[LUM_VM][FILTER_FINAL] busqueda=${_uiState.value.busquedaLocalizacion} vehiculoFiltro=${_uiState.value.vehiculoFiltroId} pendientes=${pendientes.size} reparadas=${reparadas.size}"
                 )
                 _uiState.update {
                     it.copy(

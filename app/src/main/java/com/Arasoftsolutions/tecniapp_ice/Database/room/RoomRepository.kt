@@ -958,19 +958,33 @@ class   RoomRepository(context: Context) {
 
     suspend fun syncLuminariasAgencia(agencia: String): Long = withContext(Dispatchers.IO) {
         val agenciaValue = agencia.trim()
-        if (agenciaValue.isEmpty()) return@withContext 0L
+        if (agenciaValue.isEmpty()) {
+            Log.w(TAG, "[LUM_ROOM][SKIP_REASON] reason=agencia_blank")
+            return@withContext 0L
+        }
+        Log.i(TAG, "[LUM_ROOM][FETCH_START] agencia=$agenciaValue")
         val reparacionesDirectas = firebase.obtenerLuminariasPorAgencia(agenciaValue)
         val reparaciones = reparacionesDirectas
+        Log.i(TAG, "[LUM_ROOM][FETCH_RESULT] agencia=$agenciaValue reparaciones=${reparaciones.size}")
+        Log.i(TAG, "[LUM_ROOM][PARSED_COUNT] agencia=$agenciaValue parsed=${reparaciones.size}")
+        val duplicateCount = reparaciones
+            .groupBy { it.id }
+            .values
+            .sumOf { bucket -> (bucket.size - 1).coerceAtLeast(0) }
+        Log.i(TAG, "[LUM_ROOM][DUPLICATE_COUNT] agencia=$agenciaValue duplicates=$duplicateCount")
         if (reparaciones.isEmpty()) {
             Log.i(
                 TAG,
-                "[SYNC_LUMINARIAS] Sin datos remotos para agencia=$agenciaValue; se omite fallback global para evitar descargas masivas"
+                "[LUM_ROOM][SKIP_REASON] reason=no_remote_data agencia=$agenciaValue"
             )
             return@withContext 0L
         }
         val bytes = estimateBytes(reparaciones)
         if (reparaciones.isNotEmpty()) {
             inventarioDao.insertarReparaciones(reparaciones)
+            Log.i(TAG, "[LUM_ROOM][UPSERT_COUNT] agencia=$agenciaValue upserted=${reparaciones.size}")
+            val totalLocal = inventarioDao.contarReparaciones()
+            Log.i(TAG, "[LUM_ROOM][POST_UPSERT_TOTAL] agencia=$agenciaValue totalLocal=$totalLocal")
         }
         bytes
     }
