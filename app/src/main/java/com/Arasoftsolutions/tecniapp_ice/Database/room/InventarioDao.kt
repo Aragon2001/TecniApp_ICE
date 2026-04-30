@@ -75,6 +75,9 @@ interface InventarioDao {
     @Query("SELECT * FROM luminaria_reparacion WHERE id = :id LIMIT 1")
     suspend fun obtenerReparacion(id: Long): LuminariaReparacionEntity?
 
+    @Query("SELECT COUNT(*) FROM luminaria_reparacion")
+    suspend fun contarReparaciones(): Int
+
     @Query(
         "SELECT * FROM luminaria_reparacion " +
             "WHERE localizacion = :localizacion AND estado = :estado AND vehiculoId = :vehiculoId " +
