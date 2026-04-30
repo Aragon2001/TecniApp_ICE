@@ -24,6 +24,7 @@ class Synchronizer(
         val uid = FirebaseAuth.getInstance().currentUser?.uid
         val scope = uid?.let { repository.buildUserScope(it) }
         Log.i(TAG, "[INV_DIAG][SYNC_START] uid=${uid ?: "null"} scopeVehiculoKey=${scope?.vehiculoKey ?: "null"}")
+        Log.i(TAG, "[LUM_SYNC][START] uid=${uid ?: "null"} agenciaTag=${scope?.agenciaTag ?: "null"} subregion=$subregionId")
 
         val shouldSyncVehiculo = scope?.vehiculoKey
             ?.trim()
@@ -102,13 +103,18 @@ class Synchronizer(
                     ?.takeIf { it.isNotEmpty() }
                     ?.let { agencia ->
                         try {
+                            Log.i(TAG, "[LUM_SYNC][AGENCIA_SCOPE] agencia=$agencia")
                             downloadedBytes += repository.syncLuminariasAgencia(agencia)
                             done += 100
                             onSyncProgress(done, total, "Sincronizando luminarias de agencia…", downloadedBytes)
+                            Log.i(TAG, "[LUM_SYNC][DONE] agencia=$agencia bytes=$downloadedBytes")
                         } catch (e: Exception) {
                             throw Exception("Error en syncLuminariasAgencia(): ${e.message}", e)
                         }
-                    }
+                    } ?: Log.w(
+                    TAG,
+                    "[LUM_SYNC][SKIP] reason=agenciaTag_blank uid=${uid ?: "null"}"
+                )
 
                 // FINAL
                 Log.i(TAG, "[SYNC_FLOW] completed bytes=$downloadedBytes tookMs=${System.currentTimeMillis()-syncStartedAt}")
