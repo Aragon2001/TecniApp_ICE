@@ -1611,7 +1611,7 @@ private fun configureButtonsForRules(
     private fun agregarTecnico(t: TecnicoEntity) {
         val key = if (t.cedula.isNotBlank()) t.cedula else t.nombre
         if (key.isBlank()) return
-        tecnicosSeleccionados[key] = TecnicoAtencion(t.cedula, t.nombre)
+        tecnicosSeleccionados[key] = TecnicoAtencion(cedula = t.cedula, nombre = t.nombre, fuente = "app")
         renderTecnicos()
         refreshResolvedEditionState()
     }
@@ -1622,21 +1622,33 @@ private fun configureButtonsForRules(
         val cedula = user.cedula?.trim().orEmpty()
         val key = if (cedula.isNotBlank()) cedula else nombre
         if (!tecnicosSeleccionados.containsKey(key)) {
-            tecnicosSeleccionados[key] = TecnicoAtencion(cedula, nombre)
+            tecnicosSeleccionados[key] = TecnicoAtencion(cedula = cedula, nombre = nombre, fuente = "app")
             refreshResolvedEditionState()
         }
     }
 
+    private fun buildTecnicosResumenTitulo(): String {
+        val asignadoNombre = item.tecnico.takeIf { it.isNotBlank() } ?: getString(R.string.averia_pdf_empty_value)
+        val vehiculo = item.vehiculo?.takeIf { it.isNotBlank() } ?: getString(R.string.averia_pdf_empty_value)
+        val atendio = item.atendidoPor.takeIf { it.isNotBlank() }
+            ?: item.resolvedAtendidoDisplay(getString(R.string.averia_pdf_empty_value))
+        return "Asignado a: $asignadoNombre · Vehículo: $vehiculo\nAtendió: $atendio\nEquipo que atendió"
+    }
+
     private fun renderTecnicos() {
         if (_b == null) return
-        if (estadoActual != Estado.EN_ATENCION) {
-            b.chipGroupTecnicos.removeAllViews()
+        b.chipGroupTecnicos.removeAllViews()
+        val showEquipoSection = estadoActual == Estado.EN_ATENCION ||
+            estadoActual == Estado.RESUELTA ||
+            estadoActual == Estado.ANULADA ||
+            tecnicosSeleccionados.isNotEmpty()
+        if (!showEquipoSection) {
             b.chipGroupTecnicos.isVisible = false
             b.tvTecnicosTitulo.isVisible = false
             return
         }
-        b.chipGroupTecnicos.removeAllViews()
-        val editable = inputsEditable
+        b.tvTecnicosTitulo.text = buildTecnicosResumenTitulo()
+        val editable = inputsEditable && estadoActual == Estado.EN_ATENCION
         tecnicosSeleccionados.forEach { (key, tecnico) ->
             val chip = Chip(requireContext()).apply {
                 text = tecnico.nombre.ifBlank { tecnico.cedula }
@@ -1655,8 +1667,10 @@ private fun configureButtonsForRules(
             b.chipGroupTecnicos.addView(chip)
         }
         val tieneTecnicos = tecnicosSeleccionados.isNotEmpty()
+        val hasPrincipal = item.atendidoPor.isNotBlank() || !item.atendidoPorUid.isNullOrBlank()
+        Log.i(TAG, "[AVERIA_UI][TECNICOS_RENDER] totalEquipo=${tecnicosSeleccionados.size} hasPrincipal=$hasPrincipal")
         b.chipGroupTecnicos.isVisible = tieneTecnicos
-        b.tvTecnicosTitulo.isVisible = tieneTecnicos
+        b.tvTecnicosTitulo.isVisible = true
     }
 
     private fun renderMateriales() {
