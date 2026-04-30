@@ -21,8 +21,12 @@ data class MaterialUso(
 ) : Serializable
 
 data class TecnicoAtencion(
-    val cedula: String,
-    val nombre: String
+    val uid: String? = null,
+    val cedula: String? = null,
+    val nombre: String,
+    val rol: String? = null,
+    val timestamp: Long? = null,
+    val fuente: String? = null
 ) : Serializable
 
 data class EvidenciaFoto(
@@ -168,10 +172,17 @@ object TecnicosSerializer {
         if (tecnicos.isEmpty()) return null
         val array = JSONArray()
         tecnicos.forEach { tecnico ->
-            if (tecnico.cedula.isBlank() && tecnico.nombre.isBlank()) return@forEach
+            val uid = tecnico.uid?.trim().takeIf { !it.isNullOrBlank() }
+            val cedula = tecnico.cedula?.trim().takeIf { !it.isNullOrBlank() }
+            val nombre = tecnico.nombre.trim()
+            if (uid == null && cedula == null && nombre.isBlank()) return@forEach
             val obj = JSONObject().apply {
-                put("cedula", tecnico.cedula)
-                put("nombre", tecnico.nombre)
+                put("cedula", cedula ?: "")
+                put("nombre", nombre)
+                uid?.let { put("uid", it) }
+                tecnico.rol?.trim()?.takeIf { it.isNotBlank() }?.let { put("rol", it) }
+                tecnico.timestamp?.let { put("timestamp", it) }
+                tecnico.fuente?.trim()?.takeIf { it.isNotBlank() }?.let { put("fuente", it) }
             }
             array.put(obj)
         }
@@ -185,10 +196,27 @@ object TecnicosSerializer {
             buildList {
                 for (i in 0 until array.length()) {
                     val obj = array.optJSONObject(i) ?: continue
-                    val cedula = obj.optString("cedula")
-                    val nombre = obj.optString("nombre")
-                    if (cedula.isBlank() && nombre.isBlank()) continue
-                    add(TecnicoAtencion(cedula, nombre))
+                    val uid = obj.optString("uid").trim().takeIf { it.isNotBlank() }
+                    val cedula = obj.optString("cedula").trim().takeIf { it.isNotBlank() }
+                    val nombre = obj.optString("nombre").trim()
+                    val rol = obj.optString("rol").trim().takeIf { it.isNotBlank() }
+                    val fuente = obj.optString("fuente").trim().takeIf { it.isNotBlank() }
+                    val timestamp = when (val raw = obj.opt("timestamp")) {
+                        is Number -> raw.toLong()
+                        is String -> raw.toLongOrNull()
+                        else -> null
+                    }
+                    if (nombre.isBlank() && cedula == null && uid == null) continue
+                    add(
+                        TecnicoAtencion(
+                            uid = uid,
+                            cedula = cedula,
+                            nombre = nombre,
+                            rol = rol,
+                            timestamp = timestamp,
+                            fuente = fuente
+                        )
+                    )
                 }
             }
         } catch (_: Throwable) {
