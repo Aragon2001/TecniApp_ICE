@@ -574,9 +574,9 @@ return AveriaEntity(
         val primary = region.takeIf { it.isNotEmpty() }?.let {
             QueryDescriptor(field = "region", value = it)
         }
-        val fallback = agenciaTag.takeIf { it.isNotEmpty() }?.let {
-            QueryDescriptor(field = "agenciaTag", value = it)
-        }
+        // Importante: la descarga/sincronización debe quedar acotada por región,
+        // no por una sola agencia del usuario.
+        val fallback: QueryDescriptor? = null
 
         val plan = ScopedQueryPlan(
             role = role,
@@ -603,7 +603,7 @@ return AveriaEntity(
         }
     }
 
-    private fun shouldRunFallback(primaryCount: Int): Boolean = primaryCount == 0
+    private fun shouldRunFallback(primaryCount: Int): Boolean = false
 
     private fun buildFallbackQuery(plan: ScopedQueryPlan): Query? {
         val fallback = plan.fallback ?: return null
