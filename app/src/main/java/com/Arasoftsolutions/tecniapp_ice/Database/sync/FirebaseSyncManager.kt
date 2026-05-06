@@ -387,7 +387,8 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
         if (!snap.exists()) return emptyList()
 
         return snap.children.flatMap { child ->
-            parseLocalizacionNode(child)
+            val inherited = child.key?.trim()?.toIntOrNull()
+            parseLocalizacionNode(child, inheritedPueblo = inherited)
         }.map { entity ->
             val direccionLimpia = entity.direccion.trim()
             entity.copy(
@@ -505,7 +506,7 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
                 return@forEach
             }
             huboNodoPorPueblo = true
-            val porPueblo = parseLocalizacionNode(snapshot)
+            val porPueblo = parseLocalizacionNode(snapshot, inheritedPueblo = puebloId)
                 .filter { it.pueblo != 0 && it.calle != 0 }
             Log.i(
                 TAG,
@@ -549,7 +550,10 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
         }
 
         val final = snap.children
-            .flatMap { child -> parseLocalizacionNode(child) }
+            .flatMap { child ->
+                val inherited = child.key?.trim()?.toIntOrNull()
+                parseLocalizacionNode(child, inheritedPueblo = inherited)
+            }
             .filter { it.pueblo != 0 && it.calle != 0 }
             .filter { it.pueblo in pueblosSet }
             .distinctBy { it.id }
@@ -561,7 +565,8 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
     }
 
     private fun parseLocalizacionNode(
-        node: DataSnapshot
+        node: DataSnapshot,
+        inheritedPueblo: Int? = null
     ): List<LocalizacionesEntity> {
         if (!node.exists()) return emptyList()
 
@@ -580,7 +585,7 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
 
         if (!hasLeafData && node.childrenCount > 0) {
             return node.children.flatMap { child ->
-                parseLocalizacionNode(child)
+                parseLocalizacionNode(child, inheritedPueblo = inheritedPueblo)
             }
         }
 
@@ -590,7 +595,7 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
         val alPoste = node.intValueAny("al poste", "Al poste", "al_poste", "alposte") ?: 0
 
         val calleValue = calle ?: 0
-        val puebloValue = pueblo ?: 0
+        val puebloValue = pueblo ?: inheritedPueblo ?: 0
         val direccionValue = direccion?.trim().orEmpty()
 
         val id = node.intValueAny("id", "Id", "ID")
