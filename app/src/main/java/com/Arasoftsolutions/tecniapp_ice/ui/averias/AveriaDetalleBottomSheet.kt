@@ -472,6 +472,7 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
                 val placa = vehiculosOpciones.getOrNull(position)
                 actualizarInventario(placa)
                 startKilometrajeObserver(placa)
+                refreshResolvedEditionState()
             }
             override fun onNothingSelected(parent: AdapterView<*>?) = Unit
         }
@@ -797,11 +798,10 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
     }
 
     private fun setupResolvedEditChangeListeners() {
-        val trackedFields = listOf(
+        val trackedTextFields = listOf(
             b.etLocalizacion,
             b.etCausa,
             b.etObs,
-            b.spinnerVehiculo,
             b.etHoraLlegada,
             b.etHoraInicio,
             b.etHoraFin,
@@ -810,7 +810,7 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
             b.etKmFinal,
             b.etMedidor
         )
-        trackedFields.forEach { input ->
+        trackedTextFields.forEach { input ->
             input.doAfterTextChanged { refreshResolvedEditionState() }
         }
     }
