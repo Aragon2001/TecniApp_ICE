@@ -10,6 +10,7 @@ import androidx.core.content.FileProvider
 import androidx.activity.result.contract.ActivityResultContracts
 import android.widget.LinearLayout
 import android.widget.ImageView
+import android.widget.AdapterView
 import android.net.Uri
 import android.content.Intent
 import android.graphics.Color
@@ -89,7 +90,8 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
     private var inventarioJob: Job? = null
     private var kilometrajeJob: Job? = null
     private var ultimoKmRegistrado: Double? = null
-    private var vehiculosAdapter: VehiculoAdapter? = null
+    private var vehiculosAdapter: ArrayAdapter<String>? = null
+    private var vehiculosOpciones: List<String> = emptyList()
     private var tecnicosAdapter: TecnicoAdapter? = null
     private val evidencias = mutableListOf<EvidenciaFoto>()
     private var pendingCameraUri: Uri? = null
@@ -106,19 +108,6 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
     }
 
     private enum class ValidationContext { NONE, INICIAR, RESOLVER }
-
-    private inner class VehiculoAdapter(
-        items: List<String>
-    ) : ArrayAdapter<String>(requireContext(), android.R.layout.simple_dropdown_item_1line, items.toMutableList()) {
-        private var base = items.toMutableList()
-
-        fun updateData(nuevos: List<String>) {
-            base = nuevos.toMutableList()
-            clear()
-            addAll(base)
-            notifyDataSetChanged()
-        }
-    }
 
     private inner class TecnicoAdapter(
         items: List<TecnicoEntity>
@@ -380,11 +369,15 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
 
         tecnicosSeleccionados.clear()
         val tecnicosIniciales = draft?.tecnicos?.takeIf { it.isNotEmpty() } ?: item.tecnicosAtendieron
-        tecnicosIniciales.forEach { tecnico ->
-            val key = tecnico.cedula.takeIf { it.isNotBlank() } ?: tecnico.nombre
-            if (key.isNotBlank()) tecnicosSeleccionados[key] = tecnico
+        (tecnicosIniciales as List<*>).forEach { rawTecnico ->
+            val tecnico = rawTecnico as? TecnicoAtencion ?: return@forEach
+            val cedula = tecnico.cedula?.trim().orEmpty()
+            val nombre = tecnico.nombre.trim()
+            val key = cedula.takeIf { it.isNotBlank() } ?: nombre
+            if (key.isNotBlank()) {
+                tecnicosSeleccionados[key] = tecnico.copy(nombre = nombre)
+            }
         }
-        ensureTecnicoActual()
         renderTecnicos()
 
         // Vehículos asociados a la agencia del usuario
@@ -394,11 +387,18 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
                     val opciones = lista.mapNotNull { vehiculo ->
                         vehiculo.placa.trim().takeIf { it.isNotEmpty() }
                     }.distinct()
-                    val adapter = vehiculosAdapter ?: VehiculoAdapter(opciones).also {
+                    vehiculosOpciones = opciones
+                    val adapter = vehiculosAdapter ?: ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, mutableListOf<String>()).also {
+                        it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
                         vehiculosAdapter = it
-                        b.actvVehiculo.setAdapter(it)
+                        b.spinnerVehiculo.adapter = it
                     }
-                    adapter.updateData(opciones)
+                    adapter.clear()
+                    adapter.addAll(opciones)
+                    adapter.notifyDataSetChanged()
+                    val actual = item.vehiculo?.trim().orEmpty()
+                    val idx = opciones.indexOf(actual).takeIf { it >= 0 } ?: 0
+                    if (opciones.isNotEmpty()) b.spinnerVehiculo.setSelection(idx, false)
                 }
             }
         }
@@ -425,14 +425,6 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
         }
 
 
-        // Mantén técnico actual sincronizado
-        viewLifecycleOwner.lifecycleScope.launch {
-            vm.usuarioActual.filterNotNull().collectLatest {
-                ensureTecnicoActual()
-                renderTecnicos()
-            }
-        }
-
         // Asegurar teclado y foco en autocompletes
         b.actvMaterial.inputType = InputType.TYPE_CLASS_TEXT
         b.actvMaterial.isFocusable = true
@@ -440,9 +432,6 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
         b.actvTecnico.inputType = InputType.TYPE_CLASS_TEXT
         b.actvTecnico.isFocusable = true
         b.actvTecnico.isFocusableInTouchMode = true
-        b.actvVehiculo.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS
-        b.actvVehiculo.isFocusable = true
-        b.actvVehiculo.isFocusableInTouchMode = true
 
 
         renderState()
@@ -478,13 +467,16 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
             }
         }
 
-        b.actvVehiculo.doAfterTextChanged {
-            val placa = it?.toString()
-            actualizarInventario(placa)
-            startKilometrajeObserver(placa)
+        b.spinnerVehiculo.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                val placa = vehiculosOpciones.getOrNull(position)
+                actualizarInventario(placa)
+                startKilometrajeObserver(placa)
+            }
+            override fun onNothingSelected(parent: AdapterView<*>?) = Unit
         }
 
-        val placaInicial = b.actvVehiculo.text?.toString()
+        val placaInicial = item.vehiculo
         actualizarInventario(placaInicial)
         startKilometrajeObserver(placaInicial)
     }
@@ -650,7 +642,8 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
         b.etLocalizacion.setText(draft?.localizacion ?: item.localizacion.orEmpty())
         b.etCausa.setText(draft?.causa ?: item.causa)
         b.etObs.setText(draft?.observaciones ?: item.observaciones)
-        b.actvVehiculo.setText(vehiculo.orEmpty(), false)
+        val idxVehiculo = vehiculosOpciones.indexOf(vehiculo.orEmpty())
+        if (idxVehiculo >= 0) b.spinnerVehiculo.setSelection(idxVehiculo, false)
         b.etHoraLlegada.setText(draft?.horaLlegada ?: formatHora(item.horaLlegada))
         b.etHoraInicio.setText(draft?.horaInicio ?: formatHora(item.horaAtencionInicio))
         b.etHoraFin.setText(draft?.horaFinal ?: formatHora(item.horaAtencionFinal))
@@ -808,7 +801,7 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
             b.etLocalizacion,
             b.etCausa,
             b.etObs,
-            b.actvVehiculo,
+            b.spinnerVehiculo,
             b.etHoraLlegada,
             b.etHoraInicio,
             b.etHoraFin,
@@ -1044,7 +1037,7 @@ private fun applyInputStateForRules(
 
     b.actvTecnico.isEnabled = puedeEditarCompleto
     b.actvMaterial.isEnabled = puedeEditarCompleto
-    b.actvVehiculo.isEnabled = puedeEditarInicio
+    b.spinnerVehiculo.isEnabled = puedeEditarInicio
     b.chipGroupTecnicos.isEnabled = puedeEditarCompleto
     b.chipGroupMateriales.isEnabled = puedeEditarCompleto
     b.btnAgregarEvidencia.isEnabled = puedeEditarCompleto
@@ -1616,23 +1609,11 @@ private fun configureButtonsForRules(
         refreshResolvedEditionState()
     }
 
-    private fun ensureTecnicoActual() {
-        val user = vm.usuarioActual.value ?: return
-        val nombre = vm.nombreTecnicoActual() ?: return
-        val cedula = user.cedula?.trim().orEmpty()
-        val key = if (cedula.isNotBlank()) cedula else nombre
-        if (!tecnicosSeleccionados.containsKey(key)) {
-            tecnicosSeleccionados[key] = TecnicoAtencion(cedula = cedula, nombre = nombre, fuente = "app")
-            refreshResolvedEditionState()
-        }
-    }
-
     private fun buildTecnicosResumenTitulo(): String {
-        val asignadoNombre = item.tecnico.takeIf { it.isNotBlank() } ?: getString(R.string.averia_pdf_empty_value)
         val vehiculo = item.vehiculo?.takeIf { it.isNotBlank() } ?: getString(R.string.averia_pdf_empty_value)
         val atendio = item.atendidoPor.takeIf { it.isNotBlank() }
             ?: item.resolvedAtendidoDisplay(getString(R.string.averia_pdf_empty_value))
-        return "Asignado a: $asignadoNombre · Vehículo: $vehiculo\nAtendió: $atendio\nEquipo que atendió"
+        return "Atendió: $atendio\nVehículo: $vehiculo\nEquipo que atendió"
     }
 
     private fun renderTecnicos() {
@@ -1648,7 +1629,7 @@ private fun configureButtonsForRules(
             return
         }
         b.tvTecnicosTitulo.text = buildTecnicosResumenTitulo()
-        val editable = inputsEditable && estadoActual == Estado.EN_ATENCION
+        val editable = inputsEditable
         tecnicosSeleccionados.forEach { (key, tecnico) ->
             val chip = Chip(requireContext()).apply {
                 text = tecnico.nombre.ifBlank { tecnico.cedula }
@@ -1749,7 +1730,7 @@ private fun configureButtonsForRules(
     private fun collectFormData(contexto: ValidationContext = ValidationContext.NONE): AveriaActionData? {
         val causa = b.etCausa.text?.toString()?.trim().orEmpty()
         val obs = b.etObs.text?.toString()?.trim()
-        val vehiculo = b.actvVehiculo.text?.toString()?.trim()
+        val vehiculo = vehiculosOpciones.getOrNull(b.spinnerVehiculo.selectedItemPosition)?.trim()
         val atendido = vm.nombreTecnicoActual()
         val uid = vm.usuarioActual.value?.uid ?: item.tecnicoUid
 
@@ -2022,7 +2003,7 @@ private fun configureButtonsForRules(
             localizacion = b.etLocalizacion.readText(),
             causa = b.etCausa.readText(),
             observaciones = b.etObs.readText(),
-            vehiculo = b.actvVehiculo.text?.toString()?.trim()?.takeIf { it.isNotBlank() },
+            vehiculo = vehiculosOpciones.getOrNull(b.spinnerVehiculo.selectedItemPosition)?.trim()?.takeIf { it.isNotBlank() },
             horaLlegada = b.etHoraLlegada.readText(),
             horaInicio = b.etHoraInicio.readText(),
             horaFinal = b.etHoraFin.readText(),
