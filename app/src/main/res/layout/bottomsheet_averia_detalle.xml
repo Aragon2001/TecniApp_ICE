@@ -1017,21 +1017,21 @@
 
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/tilVehiculo"
+                style="@style/Tecni.TextInput.Outlined"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="@dimen/glass_card_padding">
+                android:padding="@dimen/glass_card_padding"
+                android:hint="@string/averia_vehiculo">
 
 
 
 
-                <com.google.android.material.textfield.MaterialAutoCompleteTextView
-                    android:id="@+id/actvVehiculo"
+                <Spinner
+                    android:id="@+id/spinnerVehiculo"
                     android:layout_width="match_parent"
                     android:layout_height="60dp"
-                    android:inputType="textCapCharacters"
-                    android:paddingStart="16dp"
-                    android:paddingEnd="0dp" />
+                    android:spinnerMode="dropdown" />
             </com.google.android.material.textfield.TextInputLayout>
         </com.google.android.material.card.MaterialCardView>
 
