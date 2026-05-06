@@ -381,8 +381,10 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
         tecnicosSeleccionados.clear()
         val tecnicosIniciales = draft?.tecnicos?.takeIf { it.isNotEmpty() } ?: item.tecnicosAtendieron
         tecnicosIniciales.forEach { tecnico ->
-            val key = tecnico.cedula.takeIf { it.isNotBlank() } ?: tecnico.nombre
-            if (key.isNotBlank()) tecnicosSeleccionados[key] = tecnico
+            val cedula = tecnico.cedula?.trim().orEmpty()
+            val nombre = (tecnico.nombre as? String).orEmpty().trim()
+            val key = cedula.takeIf { it.isNotBlank() } ?: nombre
+            if (key.isNotBlank()) tecnicosSeleccionados[key] = tecnico.copy(nombre = nombre)
         }
         ensureTecnicoActual()
         renderTecnicos()
