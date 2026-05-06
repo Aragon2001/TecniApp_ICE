@@ -370,17 +370,21 @@ object PdfGenerator {
                 )
             )
 
-            val techniciansLines = item.tecnicosAtendieron.mapNotNull { tecnico ->
-                val nombre = tecnico.nombre.trim()
-                val cedula = tecnico.cedula?.trim().orEmpty()
-                when {
-                    nombre.isNotBlank() && cedula.isNotBlank() ->
-                        "${nombre} - ${cedula}"
-                    nombre.isNotBlank() -> nombre
-                    cedula.isNotBlank() -> cedula
-                    else -> null
+            val techniciansLines = item.tecnicosAtendieron
+                .mapNotNull { tecnico ->
+                    val nombre = tecnico.nombre.trim()
+                    val cedula = tecnico.cedula?.trim().orEmpty()
+                    val key = cedula.ifBlank { nombre.lowercase(Locale.getDefault()) }
+                    when {
+                        key.isBlank() -> null
+                        nombre.isNotBlank() && cedula.isNotBlank() -> key to "${nombre} - ${cedula}"
+                        nombre.isNotBlank() -> key to nombre
+                        else -> key to cedula
+                    }
                 }
-            }.ifEmpty {
+                .distinctBy { it.first }
+                .map { it.second }
+                .ifEmpty {
                 val fallback = item.resolvedAtendidoLines(emptyValue)
                     .filter { it.isNotBlank() && it != emptyValue }
                 if (fallback.isNotEmpty()) fallback else listOf(context.getString(R.string.averia_pdf_no_technicians))
