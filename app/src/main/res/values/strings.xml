@@ -378,6 +378,7 @@ Cliente: %4$s</string>
     <string name="averia_causa_hint">Causa de la avería</string>
     <string name="averia_atendido_hint">Nombre del técnico</string>
     <string name="averia_vehiculo">Vehículo</string>
+    <string name="averia_spinner_select_vehicle">Seleccione un vehículo</string>
     <string name="averia_guardar_en_atencion">Guardar atención</string>
     <string name="averia_guardar_resolucion">Guardar resolución</string>
     <string name="averia_editar">Editar</string>

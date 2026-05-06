@@ -370,6 +370,14 @@ object PdfGenerator {
                 )
             )
 
+            val principalAtendioLine = item.atendidoPor.takeIf { it.isNotBlank() }?.let { nombre ->
+                val tecnicoPrincipal = item.tecnicosAtendieron.firstOrNull { tecnico ->
+                    tecnico.uid == item.atendidoPorUid || tecnico.nombre.trim().equals(nombre.trim(), ignoreCase = true)
+                }
+                val cedulaPrincipal = tecnicoPrincipal?.cedula?.trim().orEmpty()
+                if (cedulaPrincipal.isNotBlank()) "$nombre - $cedulaPrincipal" else nombre
+            }
+
             val techniciansLines = item.tecnicosAtendieron
                 .mapNotNull { tecnico ->
                     val nombre = tecnico.nombre.trim()
@@ -384,6 +392,10 @@ object PdfGenerator {
                 }
                 .distinctBy { it.first }
                 .map { it.second }
+                .let { lines ->
+                    val withPrincipal = principalAtendioLine?.let { listOf(it) + lines } ?: lines
+                    withPrincipal.distinct()
+                }
                 .ifEmpty {
                 val fallback = item.resolvedAtendidoLines(emptyValue)
                     .filter { it.isNotBlank() && it != emptyValue }
