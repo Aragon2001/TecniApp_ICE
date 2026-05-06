@@ -384,9 +384,10 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
                 vm.vehiculosDisponibles.collectLatest { lista ->
-                    val opciones = lista.mapNotNull { vehiculo ->
+                    val opcionesBase = lista.mapNotNull { vehiculo ->
                         vehiculo.placa.trim().takeIf { it.isNotEmpty() }
                     }.distinct()
+                    val opciones = listOf(getString(R.string.averia_spinner_select_vehicle)) + opcionesBase
                     vehiculosOpciones = opciones
                     val adapter = vehiculosAdapter ?: ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, mutableListOf<String>()).also {
                         it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
@@ -397,7 +398,7 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
                     adapter.addAll(opciones)
                     adapter.notifyDataSetChanged()
                     val actual = item.vehiculo?.trim().orEmpty()
-                    val idx = opciones.indexOf(actual).takeIf { it >= 0 } ?: 0
+                    val idx = opciones.indexOf(actual).takeIf { it != null && it > 0 } ?: 0
                     if (opciones.isNotEmpty()) b.spinnerVehiculo.setSelection(idx, false)
                 }
             }
@@ -469,7 +470,7 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
 
         b.spinnerVehiculo.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                val placa = vehiculosOpciones.getOrNull(position)
+                val placa = vehiculosOpciones.getOrNull(position)?.takeUnless { it == getString(R.string.averia_spinner_select_vehicle) }
                 actualizarInventario(placa)
                 startKilometrajeObserver(placa)
                 refreshResolvedEditionState()
@@ -477,7 +478,7 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
             override fun onNothingSelected(parent: AdapterView<*>?) = Unit
         }
 
-        val placaInicial = item.vehiculo
+        val placaInicial = item.vehiculo?.takeIf { it.isNotBlank() }
         actualizarInventario(placaInicial)
         startKilometrajeObserver(placaInicial)
     }
@@ -1730,7 +1731,7 @@ private fun configureButtonsForRules(
     private fun collectFormData(contexto: ValidationContext = ValidationContext.NONE): AveriaActionData? {
         val causa = b.etCausa.text?.toString()?.trim().orEmpty()
         val obs = b.etObs.text?.toString()?.trim()
-        val vehiculo = vehiculosOpciones.getOrNull(b.spinnerVehiculo.selectedItemPosition)?.trim()
+        val vehiculo = vehiculosOpciones.getOrNull(b.spinnerVehiculo.selectedItemPosition)?.trim()?.takeUnless { it == getString(R.string.averia_spinner_select_vehicle) }
         val atendido = vm.nombreTecnicoActual()
         val uid = vm.usuarioActual.value?.uid ?: item.tecnicoUid
 
@@ -2003,7 +2004,7 @@ private fun configureButtonsForRules(
             localizacion = b.etLocalizacion.readText(),
             causa = b.etCausa.readText(),
             observaciones = b.etObs.readText(),
-            vehiculo = vehiculosOpciones.getOrNull(b.spinnerVehiculo.selectedItemPosition)?.trim()?.takeIf { it.isNotBlank() },
+            vehiculo = vehiculosOpciones.getOrNull(b.spinnerVehiculo.selectedItemPosition)?.trim()?.takeUnless { it == getString(R.string.averia_spinner_select_vehicle) }?.takeIf { it.isNotBlank() },
             horaLlegada = b.etHoraLlegada.readText(),
             horaInicio = b.etHoraInicio.readText(),
             horaFinal = b.etHoraFin.readText(),
