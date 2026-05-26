@@ -41,7 +41,7 @@ class Synchronizer(
         val syncStartedAt = System.currentTimeMillis()
         Log.i(TAG, "[SYNC_FLOW] start subregion=$subregionId totalSteps=$total scopedSteps=$scopedSteps")
         try {
-            val executed = AppSyncCoordinator.runExclusiveDebounced {
+            AppSyncCoordinator.runExclusive {
 
                 // ----------- 1. TÉCNICOS ----------------
                 onSyncStart("Descargando Datos…")
@@ -118,10 +118,6 @@ class Synchronizer(
 
                 // FINAL
                 Log.i(TAG, "[SYNC_FLOW] completed bytes=$downloadedBytes tookMs=${System.currentTimeMillis()-syncStartedAt}")
-                onSyncSuccess()
-            }
-            if (executed == null) {
-                Log.i(TAG, "[SYNC_FLOW] skipped reason=debounced/running bytes=$downloadedBytes tookMs=${System.currentTimeMillis()-syncStartedAt}")
                 onSyncSuccess()
             }
         } catch (t: Throwable) {
