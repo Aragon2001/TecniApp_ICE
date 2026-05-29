@@ -46,11 +46,15 @@ class BitacoraEventosAdapter : ListAdapter<BitacoraEventItem, BitacoraEventosAda
             binding.tvEvidencia.text = item.cantidad
         }
 
-        private fun parseLecturas(cantidad: String): Triple<String, String, String> {
+        private fun parseLecturas(cantidad: String): Triple<String?, String?, String?> {
             val partes = cantidad.split("•").map { it.trim() }
-            val inicial = partes.getOrNull(0)?.substringAfter(":", missingDelimiterValue = "").trim().ifEmpty { "-" }
-            val final = partes.getOrNull(1)?.substringAfter(":", missingDelimiterValue = "").trim().ifEmpty { "-" }
-            val diferencia = partes.getOrNull(2)?.substringAfter(":", missingDelimiterValue = "").trim().ifEmpty { "-" }
+            val inicial = partes.getOrNull(0)?.substringAfter(":", missingDelimiterValue = "")?.trim()
+                ?.ifEmpty { "-" }
+            val final = partes.getOrNull(1)?.substringAfter(":", missingDelimiterValue = "")?.trim()
+                ?.ifEmpty { "-" }
+            val diferencia = partes.getOrNull(2)?.substringAfter(":", missingDelimiterValue = "")
+                ?.trim()
+                ?.ifEmpty { "-" }
             return Triple(inicial, final, diferencia)
         }
     }

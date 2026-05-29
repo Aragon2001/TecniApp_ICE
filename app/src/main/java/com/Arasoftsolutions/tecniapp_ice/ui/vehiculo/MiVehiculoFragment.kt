@@ -90,8 +90,8 @@ class MiVehiculoFragment : Fragment() {
                         }
                         binding.ivVehiculoTipo.setImageResource(
                             when (state.tipoVehiculo) {
-                                TipoVehiculo.CAMION_GRUA -> R.drawable.grua
-                                TipoVehiculo.MAQUINARIA_PESADA -> R.drawable.maquinaria
+                                TipoVehiculo.CAMION_GRUA -> R.drawable.maquinaria
+                                TipoVehiculo.MAQUINARIA_PESADA -> R.drawable.precision_manufacturing_24px
                                 TipoVehiculo.LIVIANO -> R.drawable.liviano
                             }
                         )

@@ -798,7 +798,7 @@ return AveriaEntity(
         val principal = TecnicoAtencion(
             uid = uid,
             cedula = null,
-            nombre = nombre,
+            nombre = nombre.toString(),
             rol = null,
             timestamp = System.currentTimeMillis(),
             fuente = "principal"
