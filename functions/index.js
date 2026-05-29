@@ -169,6 +169,30 @@ function isEstadoAppResuelta(estado) {
   return estado.toString().trim().toUpperCase().includes("RESUEL");
 }
 
+function hasMeaningfulChanges(existing, payload) {
+  const fields = [
+    "estadoClor",
+    "observacionesClor",
+    "causaClor",
+    "agencia",
+    "nombreAgencia",
+    "region",
+    "nise",
+    "clientesAfectados",
+    "lat",
+    "lng",
+    "fechaInicioMillis",
+    "estado",
+  ];
+
+  return fields.some((field) => {
+    const prev = existing?.[field];
+    const next = payload?.[field];
+    if (prev === next) return false;
+    if ((prev === null || prev === undefined) && (next === null || next === undefined)) return false;
+    return String(prev ?? "") !== String(next ?? "");
+  });
+}
 
 
 
@@ -401,6 +425,10 @@ const ICE_URL = "https://agenciaelectricidad.cn.ice.go.cr/api/AveriasAranda/";
 exports.syncAveriasYNotificar = onSchedule(
   { schedule: "every 5 minutes", timeZone: "America/Costa_Rica" },
   async () => {
+    const executionStartedAt = Date.now();
+    let totalCasesRead = 0;
+    let totalCasesUpdated = 0;
+    let totalCasesSkipped = 0;
     try {
       const dbA = dbAverias;
       const dbU = dbUsers;
@@ -422,6 +450,7 @@ exports.syncAveriasYNotificar = onSchedule(
       const now = Date.now();
 
       for (const a of averias) {
+        totalCasesRead += 1;
         const caseId = String(a.noCaso || "").trim();
         if (!caseId) continue;
 
@@ -480,13 +509,20 @@ exports.syncAveriasYNotificar = onSchedule(
           causaClor: bloquearPromocionAClorResuelta
             ? (existing.causaClor ?? "")
             : String(a.causa || ""),
+          source: "clor_sync",
         };
 
         if (estadoClorEfectivo === "RESUELTA" && !bloquearPromocionAClorResuelta) {
           payload.estado = "Resuelta";
         }
 
-        await averiaRef.update(payload);
+        if (hasMeaningfulChanges(existing, payload)) {
+          payload.lastUpdated = Date.now();
+          await averiaRef.update(payload);
+          totalCasesUpdated += 1;
+        } else {
+          totalCasesSkipped += 1;
+        }
 
         // ✅ Decide si notifica (nueva PENDIENTE, o cambio a RESUELTA)
         if (!shouldNotify(prevEstado, estadoClorEfectivo, isNew)) continue;
@@ -608,6 +644,14 @@ exports.syncAveriasYNotificar = onSchedule(
       }
     } catch (e) {
       console.error("syncAveriasYNotificar ERROR:", e);
+    } finally {
+      const executionDurationMs = Date.now() - executionStartedAt;
+      console.log({
+        totalCasesRead,
+        totalCasesUpdated,
+        totalCasesSkipped,
+        executionDurationMs,
+      });
     }
   }
 );
@@ -717,6 +761,19 @@ exports.notifyAveriaAssignedToCrew = onValueWritten({
   const before = event.data?.before?.val() || {};
   const after = event.data?.after?.val() || {};
   if (!after) return;
+
+  if (String(after.source || "").trim() === "clor_sync") {
+    console.log({ totalTriggerIgnored: 1, reason: "source_clor_sync" });
+    return;
+  }
+
+  const changedVehiculo = String(before.vehiculoAsignado || "").trim() !== String(after.vehiculoAsignado || "").trim();
+  const changedEstado = String(before.estado || "").trim().toUpperCase() !== String(after.estado || "").trim().toUpperCase();
+  const changedTecnico = String(before.tecnicoAsignadoUid || "").trim() !== String(after.tecnicoAsignadoUid || "").trim();
+  if (!changedVehiculo && !changedEstado && !changedTecnico) {
+    console.log({ totalTriggerIgnored: 1, reason: "no_relevant_change" });
+    return;
+  }
 
   const estado = String(after.estado || "").trim().toUpperCase();
   const vehiculo = String(after.vehiculoAsignado || "").trim();
