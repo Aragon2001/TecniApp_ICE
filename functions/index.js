@@ -712,7 +712,7 @@ exports.sendReport = onCall(
 exports.notifyAveriaAssignedToCrew = onValueWritten({
   region: "us-central1",
   ref: "/averias/{caseId}",
-  instance: "tecniapp-ice-averias-default-rtdb"
+  instance: "tecniapp-ice-averias"
 }, async (event) => {
   const before = event.data?.before?.val() || {};
   const after = event.data?.after?.val() || {};
@@ -777,7 +777,7 @@ exports.notifyAveriaAssignedToCrew = onValueWritten({
 exports.notifyProgramacionAssigned = onValueCreated({
   region: "us-central1",
   ref: "/programaciones/{subregion}/{vehiculoId}/{programacionId}",
-  instance: "tecniapp-ice-programacion-default-rtdb"
+  instance: "tecniapp-ice-programacion"
 }, async (event) => {
   const data = event.data?.val();
   if (!data) return;

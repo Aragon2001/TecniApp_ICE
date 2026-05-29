@@ -71,8 +71,8 @@
     <!-- Contenido desplazable entre header y barra de acciones fija -->
     <androidx.core.widget.NestedScrollView
         android:id="@+id/scrollContent"
-        android:layout_width="wrap_content"
-        android:layout_height="match_parent"
+        android:layout_width="407dp"
+        android:layout_height="616dp"
         android:layout_marginTop="12dp"
         android:clipToPadding="false"
         android:fillViewport="true"
@@ -99,8 +99,8 @@
                 android:layout_height="wrap_content">
 
                 <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
+                    android:layout_width="372dp"
+                    android:layout_height="663dp"
                     android:orientation="vertical"
                     android:padding="16dp">
 
@@ -341,7 +341,6 @@
                             android:layout_height="wrap_content"
                             android:inputType="text" />
                     </com.google.android.material.textfield.TextInputLayout>
-
 
 
                     <androidx.recyclerview.widget.RecyclerView

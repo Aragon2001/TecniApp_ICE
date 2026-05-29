@@ -434,7 +434,7 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
                 .equalTo(filtro)
                 .get()
                 .await()
-        }.getOrNull()?.children.orEmpty().mapNotNull { child ->
+         }.getOrNull()?.children?.toList().orEmpty().mapNotNull { child ->
             child.toPuebloEntity()
         }.distinctBy { it.id }
         Log.i(
@@ -1146,7 +1146,7 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
             .await()
     }
 
-    fun startInventarioRealtimeForVehiculo(
+    suspend fun startInventarioRealtimeForVehiculo(
         vehiculoKey: String,
         vehiculoIdLocal: Int,
         scope: CoroutineScope,

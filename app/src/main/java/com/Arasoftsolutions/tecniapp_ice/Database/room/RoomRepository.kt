@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import androidx.room.withTransaction
+import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
 // Si usas transacciones, habilita esto y agrega la dependencia de room-ktx:
 // import androidx.room.withTransaction
@@ -1365,7 +1366,7 @@ class   RoomRepository(context: Context) {
         db.clearAllTables()
     }
 
-    fun startRealtimeSyncForScope(scope: UserScope) {
+    suspend fun startRealtimeSyncForScope(scope: UserScope) {
         stopRealtimeSync()
 
         val vehiculoLocal = runBlocking { resolveVehiculoLocal(scope) }
