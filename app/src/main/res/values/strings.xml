@@ -112,6 +112,12 @@
     <string name="mi_vehiculo_kpi_mantenimientos">Mantenimientos mes</string>
     <string name="mi_vehiculo_kpi_alertas">Alertas</string>
     <string name="mi_vehiculo_chart_placeholder">Gráfica (MPAndroidChart / Compose)</string>
+    <string name="mi_vehiculo_historial_vacio">Aún no hay mantenimientos registrados</string>
+    <string name="mi_vehiculo_dialog_fecha_mantenimiento">Fecha del mantenimiento</string>
+    <string name="mi_vehiculo_label_mantenimiento">Mantenimiento</string>
+    <string name="mi_vehiculo_label_etm">ETM</string>
+    <string name="mi_vehiculo_config_intervalo_titulo_label">Configurar intervalo</string>
+    <string name="mi_vehiculo_config_tipo_default">Tipo: —</string>
     <string name="mi_vehiculo_mantenimiento_aceite">Aceite</string>
     <string name="mi_vehiculo_mantenimiento_aceite_estado">Próximo en 450 km</string>
     <string name="mi_vehiculo_mantenimiento_frenos">Frenos</string>
@@ -457,6 +463,8 @@ Cliente: %4$s</string>
     <string name="averia_medidor_dialog_lectura_hint">Lectura inicial</string>
     <string name="averia_medidor_dialog_lectura_anterior_hint">Lectura anterior</string>
     <string name="averia_medidor_dialog_no_cambios">No requiere cambios</string>
+    <string name="averia_pdf_section_timeline_dates">Línea de tiempo</string>
+    <string name="averia_pdf_section_timeline_km">Kilometraje del vehículo</string>
     <string name="averia_medidor_dialog_lectura_anterior_no_visible">Lectura anterior no visible</string>
     <string name="averia_medidor_dialog_lecturas_anteriores_no_visibles">Lecturas anteriores no visibles</string>
     <string name="averia_medidor_error_lectura_anterior">Ingresa la lectura anterior o selecciona un motivo.</string>

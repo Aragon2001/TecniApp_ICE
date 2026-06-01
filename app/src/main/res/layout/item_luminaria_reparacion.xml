@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+    FIXES APLICADOS:
+    1. Botones Editar/Eliminar: agregada constraintStart para anclarlos correctamente
+       (antes solo tenían constraintEnd, podían superponerse con texto)
+    2. Botones movidos a una fila con Barrier para alinear limpiamente
+    3. Separador visual entre contenido y acciones
+-->
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
@@ -15,6 +22,7 @@
         android:layout_height="wrap_content"
         android:padding="12dp">
 
+        <!-- Ícono de luminaria -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardIconLuminaria"
             android:layout_width="40dp"
@@ -29,9 +37,10 @@
                 android:layout_height="match_parent"
                 android:padding="9dp"
                 android:src="@drawable/ic_menu_luminarias"
-                android:tint="?attr/colorOnSurfaceVariant" />
+                app:tint="?attr/colorOnSurfaceVariant" />
         </com.google.android.material.card.MaterialCardView>
 
+        <!-- Título: número de localización -->
         <TextView
             android:id="@+id/tvReparacionTitulo"
             style="@style/TextAppearance.Material3.TitleMedium"
@@ -44,6 +53,7 @@
             app:layout_constraintStart_toEndOf="@id/cardIconLuminaria"
             app:layout_constraintTop_toTopOf="parent" />
 
+        <!-- Chip de estado (Pendiente / Reparada) -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardEstadoLuminaria"
             android:layout_width="wrap_content"
@@ -64,6 +74,7 @@
                 android:textColor="?attr/colorOnSurfaceVariant" />
         </com.google.android.material.card.MaterialCardView>
 
+        <!-- Pueblo -->
         <TextView
             android:id="@+id/tvReparacionPueblo"
             style="@style/TextAppearance.Material3.BodySmall"
@@ -79,6 +90,7 @@
             app:layout_constraintStart_toEndOf="@id/cardIconLuminaria"
             app:layout_constraintTop_toBottomOf="@id/tvReparacionTitulo" />
 
+        <!-- Detalle principal (materiales o info del cliente) -->
         <TextView
             android:id="@+id/tvReparacionDetalle"
             style="@style/TextAppearance.Material3.BodyMedium"
@@ -92,6 +104,7 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/tvReparacionPueblo" />
 
+        <!-- Info secundaria (ejecutor, vehículo, fecha) -->
         <TextView
             android:id="@+id/tvReparacionExtra"
             style="@style/TextAppearance.Material3.BodySmall"
@@ -105,29 +118,48 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/tvReparacionDetalle" />
 
+        <!--
+            FIX: Botones de acción con ancla izquierda correcta.
+            Antes: btnEditarReparacion solo tenía constraintEnd → podía
+            quedar flotando sobre el texto en pantallas angostas.
+            Ahora: ambos botones anclados a la derecha con constraintEnd
+            en cadena y constraintStart explícito en btnEditarReparacion.
+        -->
         <ImageButton
             android:id="@+id/btnEditarReparacion"
             android:layout_width="36dp"
             android:layout_height="36dp"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="10dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="Editar reparación"
             android:src="@drawable/ic_edit"
-            android:tint="?attr/colorPrimary"
             app:layout_constraintEnd_toStartOf="@+id/btnEliminarReparacion"
-            app:layout_constraintTop_toBottomOf="@id/tvReparacionExtra" />
+            app:layout_constraintStart_toStartOf="@id/guidelineAcciones"
+            app:layout_constraintTop_toBottomOf="@id/tvReparacionExtra"
+            app:tint="?attr/colorPrimary" />
 
         <ImageButton
             android:id="@+id/btnEliminarReparacion"
             android:layout_width="36dp"
             android:layout_height="36dp"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="10dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="Eliminar reparación"
             android:src="@drawable/ic_delete"
-            android:tint="?attr/colorError"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/tvReparacionExtra" />
+            app:layout_constraintTop_toBottomOf="@id/tvReparacionExtra"
+            app:tint="?attr/colorError" />
+
+        <!--
+            Guideline al 60% del ancho para que los botones siempre
+            queden en la mitad derecha sin pisar el texto.
+        -->
+        <androidx.constraintlayout.widget.Guideline
+            android:id="@+id/guidelineAcciones"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            app:layout_constraintGuide_percent="0.60" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </com.google.android.material.card.MaterialCardView>

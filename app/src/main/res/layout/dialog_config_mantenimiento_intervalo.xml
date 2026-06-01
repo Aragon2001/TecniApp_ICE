@@ -6,11 +6,31 @@
     android:orientation="vertical"
     android:padding="16dp">
 
+    <TextView
+        android:id="@+id/tvTipoMantenimientoTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        android:text="@string/mi_vehiculo_config_intervalo_titulo_label"
+        android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/tvTipoMantenimientoSubtitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="-12dp"
+        android:layout_marginBottom="16dp"
+        android:text="@string/mi_vehiculo_config_tipo_default"
+        android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+        android:textColor="@color/on_surface_variant_light" />
+
     <com.google.android.material.textfield.TextInputLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:hint="Intervalo por KM"
-        app:endIconMode="clear_text">
+        app:endIconMode="clear_text"
+        app:helperText=" ">
 
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/etIntervaloKm"
@@ -24,7 +44,8 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="12dp"
         android:hint="Intervalo por Horas"
-        app:endIconMode="clear_text">
+        app:endIconMode="clear_text"
+        app:helperText=" ">
 
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/etIntervaloHoras"

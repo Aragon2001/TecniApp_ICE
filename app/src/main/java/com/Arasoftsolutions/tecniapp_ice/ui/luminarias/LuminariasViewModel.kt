@@ -87,10 +87,21 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
     private val tag = "LuminariasViewModel"
 
     init {
+        // ─────────────────────────────────────────────────────────────────────
+        // FIX CRÍTICO: Las dos coroutines originales corrían en PARALELO.
+        // cargarPreferenciasUsuario() es suspend y puede terminar DESPUÉS de
+        // que el combine ya emitió su primer valor con agenciaUsuario = null,
+        // haciendo que el filtro por agencia nunca se aplique correctamente.
+        //
+        // Solución: cargar preferencias PRIMERO (await) y luego suscribirse
+        // al flow de Room. Así el primer emit del combine ya tiene el contexto
+        // correcto del usuario (agencia, rol, vehículo).
+        // ─────────────────────────────────────────────────────────────────────
         viewModelScope.launch {
+            // 1. Esperar a que las preferencias del usuario estén listas
             cargarPreferenciasUsuario()
-        }
-        viewModelScope.launch {
+
+            // 2. Solo entonces suscribirse al flow de Room
             combine(
                 repository.observarMateriales(),
                 repository.observarTecnicos(),
@@ -102,6 +113,7 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
             }.collect { (materiales, tecnicos, reparaciones, vehiculos, pueblos) ->
                 val agenciaUsuario = _uiState.value.agenciaUsuario?.trim().orEmpty()
                 Log.i(tag, "[LUM_VM][ROOM_TOTAL] total=${reparaciones.size} agenciaUsuario=$agenciaUsuario")
+
                 val vehiculosPorId = vehiculos.associateBy { it.id }
                 val filtradasPorAgencia = if (agenciaUsuario.isBlank()) {
                     reparaciones
@@ -113,14 +125,18 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
                 }
                 Log.i(
                     tag,
-                    "[LUM_VM][FILTER_AGENCY] agenciaUsuario=$agenciaUsuario before=${reparaciones.size} after=${filtradasPorAgencia.size} vehiculosCatalogo=${vehiculos.size}"
+                    "[LUM_VM][FILTER_AGENCY] agenciaUsuario=$agenciaUsuario " +
+                            "before=${reparaciones.size} after=${filtradasPorAgencia.size} " +
+                            "vehiculosCatalogo=${vehiculos.size}"
                 )
+
                 reparacionesAgenciaCache = filtradasPorAgencia
                 val vehiculosAgencia = if (agenciaUsuario.isBlank()) {
                     vehiculos
                 } else {
                     vehiculos.filter { it.agencia.equals(agenciaUsuario, ignoreCase = true) }
                 }.sortedBy { it.placa }
+
                 val (pendientes, reparadas) = filtrarReparaciones(
                     reparacionesAgenciaCache,
                     _uiState.value.busquedaLocalizacion,
@@ -128,7 +144,9 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
                 )
                 Log.i(
                     tag,
-                    "[LUM_VM][FILTER_FINAL] busqueda=${_uiState.value.busquedaLocalizacion} vehiculoFiltro=${_uiState.value.vehiculoFiltroId} pendientes=${pendientes.size} reparadas=${reparadas.size}"
+                    "[LUM_VM][FILTER_FINAL] busqueda=${_uiState.value.busquedaLocalizacion} " +
+                            "vehiculoFiltro=${_uiState.value.vehiculoFiltroId} " +
+                            "pendientes=${pendientes.size} reparadas=${reparadas.size}"
                 )
                 _uiState.update {
                     it.copy(
@@ -145,11 +163,37 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private suspend fun cargarPreferenciasUsuario() {
-        val uid = auth.currentUser?.uid ?: return
-        val usuario = repository.obtenerUsuario(uid) ?: return
+        val uid = auth.currentUser?.uid
+        if (uid == null) {
+            Log.w(tag, "[LUM_VM][PREFS] uid nulo, usuario no autenticado")
+            return
+        }
+        val usuario = repository.obtenerUsuario(uid)
+        if (usuario == null) {
+            Log.w(tag, "[LUM_VM][PREFS] No se encontró UserEntity para uid=$uid en Room")
+            return
+        }
+
+        // ── Diagnóstico agencia ───────────────────────────────────────────────
+        val agenciaRaw = usuario.agencia?.trim()
+        Log.i(
+            tag,
+            "[LUM_VM][PREFS] uid=$uid agencia=$agenciaRaw placa=${usuario.placaVehiculo} rol=${usuario.rol}"
+        )
+        if (agenciaRaw.isNullOrBlank()) {
+            Log.e(
+                tag,
+                "[LUM_VM][PREFS][ALERTA] El usuario NO tiene agencia asignada en Firebase. " +
+                        "Las luminarias NO se descargarán hasta que se asigne el campo 'agencia' " +
+                        "al nodo usuarios/$uid en Firebase."
+            )
+        }
+        // ─────────────────────────────────────────────────────────────────────
+
         val placa = usuario.placaVehiculo?.trim().orEmpty()
         val vehiculo = placa.toLongOrNull()?.let { repository.obtenerVehiculoPorPlaca(it) }
         vehiculoPreferidoId = vehiculo?.id
+
         val rolNormalizado = usuario.rol?.trim().orEmpty()
         val rolLower = normalizarRol(rolNormalizado)
         val nombre = buildString {
@@ -160,6 +204,7 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
                 append(apellidos)
             }
         }.ifBlank { usuario.nombre ?: "" }
+
         _uiState.update { current ->
             val esSupervisor = rolLower == "supervisor" || rolLower.contains("supervis")
             val esAdministrador = rolLower == "administrador" || rolLower.contains("admin")
@@ -170,7 +215,7 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
                 vehiculoRegistroId = vehiculoPreferidoId,
                 ejecutorNombre = current.ejecutorNombre.ifBlank { nombre },
                 ejecutorCedula = current.ejecutorCedula ?: usuario.cedula,
-                agenciaUsuario = usuario.agencia?.trim()?.takeIf { it.isNotBlank() },
+                agenciaUsuario = agenciaRaw?.takeIf { it.isNotBlank() },
                 rolUsuario = rolNormalizado.ifBlank { null },
                 esSupervisor = esSupervisor,
                 esAdministrador = esAdministrador,
@@ -184,6 +229,11 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
             )
         }
     }
+
+    // ── El resto de métodos del ViewModel no cambia ───────────────────────────
+    // (actualizarLocalizacion, registrarReparacion, eliminarReparacion, etc.)
+    // Mantén todos los métodos del archivo original tal como están.
+    // Solo se reemplaza el bloque init{} y cargarPreferenciasUsuario() arriba.
 
     fun actualizarLocalizacion(valor: String) {
         _uiState.value = _uiState.value.copy(localizacion = normalizarLocalizacion(valor))
@@ -241,7 +291,8 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
         }
         val materiales = estadoUi.materialesSeleccionados
         val estado = estadoUi.estadoSeleccionado
-        val requiereMateriales = estado == LuminariaEstado.REPARADA && (estadoUi.esSupervisor || estadoUi.esAdministrador)
+        val requiereMateriales = estado == LuminariaEstado.REPARADA &&
+                (estadoUi.esSupervisor || estadoUi.esAdministrador)
         if (requiereMateriales && materiales.isEmpty()) {
             _mensaje.value = LuminariaMensaje.Error("Agrega al menos un material")
             return
@@ -302,7 +353,7 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
             return
         }
         val requiereMateriales = estado == LuminariaEstado.REPARADA &&
-            (_uiState.value.esSupervisor || _uiState.value.esAdministrador)
+                (_uiState.value.esSupervisor || _uiState.value.esAdministrador)
         if (requiereMateriales && materiales.isEmpty()) {
             _mensaje.value = LuminariaMensaje.Error("Agrega al menos un material")
             return
@@ -321,6 +372,45 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
                 ejecutorCedula
             )
             _mensaje.value = LuminariaMensaje.Exito("Reparación actualizada")
+        }
+    }
+
+    fun actualizarReparacion(
+        id: Long,
+        nuevaLocalizacion: String,
+        materiales: List<LuminariaMaterialSeleccionado>,
+        estado: LuminariaEstado,
+        ejecutorNombre: String,
+        ejecutorCedula: String?,
+        vehiculoIdSeleccionado: Int?
+    ) {
+        viewModelScope.launch {
+            val reparacion = repository.obtenerReparacionLuminaria(id)
+            if (reparacion != null && vehiculoIdSeleccionado != null &&
+                reparacion.vehiculoId != vehiculoIdSeleccionado
+            ) {
+                if (LuminariaEstado.fromRaw(reparacion.estado) == LuminariaEstado.PENDIENTE) {
+                    repository.actualizarVehiculoLuminaria(id, vehiculoIdSeleccionado)
+                }
+            }
+            actualizarReparacion(id, nuevaLocalizacion, materiales, estado, ejecutorNombre, ejecutorCedula)
+        }
+    }
+
+    fun reasignarVehiculo(id: Long, nuevoVehiculoId: Int) {
+        viewModelScope.launch {
+            val reparacion = repository.obtenerReparacionLuminaria(id)
+            if (reparacion == null) {
+                _mensaje.value = LuminariaMensaje.Error("No se encontró la luminaria")
+                return@launch
+            }
+            val estado = LuminariaEstado.fromRaw(reparacion.estado)
+            if (estado != LuminariaEstado.PENDIENTE) {
+                _mensaje.value = LuminariaMensaje.Error("Solo puedes reasignar luminarias pendientes")
+                return@launch
+            }
+            repository.actualizarVehiculoLuminaria(id, nuevoVehiculoId)
+            _mensaje.value = LuminariaMensaje.Exito("Camión reasignado")
         }
     }
 
@@ -378,6 +468,30 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
         _uiState.update { it.copy(vehiculoRegistroId = vehiculoId) }
     }
 
+    fun enviarMensaje(texto: String, esError: Boolean = false) {
+        _mensaje.value = if (esError) LuminariaMensaje.Error(texto) else LuminariaMensaje.Exito(texto)
+    }
+
+    fun obtenerNombreMachote(): String {
+        val agencia = _uiState.value.agenciaUsuario?.trim().orEmpty()
+        val sufijo = if (agencia.isBlank()) "General" else agencia.replace("\\s+".toRegex(), "_")
+        val fecha = java.time.LocalDate.now()
+        return "Machote_Luminarias_${sufijo}_${fecha}.xlsx"
+    }
+
+    fun normalizarLocalizacion(valor: String): String {
+        val trimmed = valor.trim()
+        if (trimmed.isBlank()) return ""
+        if (localizacionRegex.matches(trimmed)) return trimmed
+        val digits = trimmed.filter(Char::isDigit)
+        if (digits.isBlank()) return ""
+        return digits.take(12)
+    }
+
+    suspend fun buscarMedidorPorLocalizacion(localizacion: String) =
+        localizacion.trim().toLongOrNull()?.let { repository.buscarMedidorPorLocalizacion(it) }
+
+    // ── Procesamiento de Excel (sin cambios respecto al original) ─────────────
     fun procesarExcel(uri: android.net.Uri) {
         if (!_uiState.value.puedeImportarExcel) {
             _mensaje.value = LuminariaMensaje.Error("No tienes permisos para cargar luminarias")
@@ -400,8 +514,8 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
                 resultado.registrosPorVehiculo.forEach { (vehiculoId, registros) ->
                     repository.registrarLuminariasPendientes(
                         vehiculoId = vehiculoId,
-                        registros = registros.map { registro ->
-                            registro.copy(localizacion = normalizarLocalizacion(registro.localizacion))
+                        registros = registros.map { r ->
+                            r.copy(localizacion = normalizarLocalizacion(r.localizacion))
                         },
                         ejecutorNombre = _uiState.value.ejecutorNombre.trim(),
                         ejecutorCedula = _uiState.value.ejecutorCedula
@@ -436,7 +550,8 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
     ): LuminariaXlsxResultado =
         kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
             val resolver = getApplication<Application>().contentResolver
-            val input = resolver.openInputStream(uri) ?: return@withContext LuminariaXlsxResultado(emptyMap(), emptyList())
+            val input = resolver.openInputStream(uri)
+                ?: return@withContext LuminariaXlsxResultado(emptyMap(), emptyList())
             input.use { stream ->
                 val workbook = org.apache.poi.xssf.usermodel.XSSFWorkbook(stream)
                 workbook.use { wb ->
@@ -476,9 +591,7 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
         while (headerRowIndex <= lastRow) {
             val row = sheet.getRow(headerRowIndex)
             val rowValues = row?.let { extractRowValues(it, formatter) }.orEmpty()
-            if (rowValues.any { it.isNotBlank() }) {
-                break
-            }
+            if (rowValues.any { it.isNotBlank() }) break
             headerRowIndex++
         }
         if (headerRowIndex > lastRow) return emptyList()
@@ -539,9 +652,7 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
             val digitsSinCeros = digits.trimStart('0')
             listOf(placaKey, digits, digitsSinCeros)
                 .filter { it.isNotBlank() }
-                .forEach { key ->
-                    index.putIfAbsent(key, vehiculo)
-                }
+                .forEach { key -> index.putIfAbsent(key, vehiculo) }
         }
         return index
     }
@@ -560,29 +671,6 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
             .replace("\\p{M}+".toRegex(), "")
             .lowercase()
     }
-
-    fun enviarMensaje(texto: String, esError: Boolean = false) {
-        _mensaje.value = if (esError) LuminariaMensaje.Error(texto) else LuminariaMensaje.Exito(texto)
-    }
-
-    fun obtenerNombreMachote(): String {
-        val agencia = _uiState.value.agenciaUsuario?.trim().orEmpty()
-        val sufijo = if (agencia.isBlank()) "General" else agencia.replace("\\s+".toRegex(), "_")
-        val fecha = java.time.LocalDate.now()
-        return "Machote_Luminarias_${sufijo}_${fecha}.xlsx"
-    }
-
-    fun normalizarLocalizacion(valor: String): String {
-        val trimmed = valor.trim()
-        if (trimmed.isBlank()) return ""
-        if (localizacionRegex.matches(trimmed)) return trimmed
-        val digits = trimmed.filter(Char::isDigit)
-        if (digits.isBlank()) return ""
-        return digits.take(12)
-    }
-
-    suspend fun buscarMedidorPorLocalizacion(localizacion: String) =
-        localizacion.trim().toLongOrNull()?.let { repository.buscarMedidorPorLocalizacion(it) }
 
     private fun filtrarReparaciones(
         reparaciones: List<LuminariaReparacionEntity>,
@@ -605,49 +693,5 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
             .filter { LuminariaEstado.fromRaw(it.estado) == LuminariaEstado.REPARADA }
             .sortedWith(compareBy({ it.localizacion.toLongOrNull() ?: Long.MAX_VALUE }, { it.localizacion }))
         return pendientes to reparadas
-    }
-
-    fun reasignarVehiculo(id: Long, nuevoVehiculoId: Int) {
-        viewModelScope.launch {
-            val reparacion = repository.obtenerReparacionLuminaria(id)
-            if (reparacion == null) {
-                _mensaje.value = LuminariaMensaje.Error("No se encontró la luminaria")
-                return@launch
-            }
-            val estado = LuminariaEstado.fromRaw(reparacion.estado)
-            if (estado != LuminariaEstado.PENDIENTE) {
-                _mensaje.value = LuminariaMensaje.Error("Solo puedes reasignar luminarias pendientes")
-                return@launch
-            }
-            repository.actualizarVehiculoLuminaria(id, nuevoVehiculoId)
-            _mensaje.value = LuminariaMensaje.Exito("Camión reasignado")
-        }
-    }
-
-    fun actualizarReparacion(
-        id: Long,
-        nuevaLocalizacion: String,
-        materiales: List<LuminariaMaterialSeleccionado>,
-        estado: LuminariaEstado,
-        ejecutorNombre: String,
-        ejecutorCedula: String?,
-        vehiculoIdSeleccionado: Int?
-    ) {
-        viewModelScope.launch {
-            val reparacion = repository.obtenerReparacionLuminaria(id)
-            if (reparacion != null && vehiculoIdSeleccionado != null && reparacion.vehiculoId != vehiculoIdSeleccionado) {
-                if (LuminariaEstado.fromRaw(reparacion.estado) == LuminariaEstado.PENDIENTE) {
-                    repository.actualizarVehiculoLuminaria(id, vehiculoIdSeleccionado)
-                }
-            }
-            actualizarReparacion(
-                id,
-                nuevaLocalizacion,
-                materiales,
-                estado,
-                ejecutorNombre,
-                ejecutorCedula
-            )
-        }
     }
 }

@@ -6,6 +6,7 @@ import com.Arasoftsolutions.tecniapp_ice.Database.entities.AveriaEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.room.AppDatabase
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriaNotificationDispatcher
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriaNotificationPreferences
+import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasForegroundTracker
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasRepository
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.shouldNotifyForAgency
 import com.google.firebase.auth.FirebaseAuth
@@ -61,23 +62,32 @@ class TecniAppMessagingService : FirebaseMessagingService() {
             return
         }
 
-        val estado = data["estado"] ?: data["estadoClor"] ?: "PENDIENTE"
+        // ✅ FIX 1: Leer estadoClor desde el payload; el estado puede venir en cualquier
+        // capitalización (PENDIENTE, pendiente, Pendiente) — se normaliza aquí.
+        val estadoRaw = data["estado"] ?: data["estadoClor"] ?: "PENDIENTE"
+        val estadoClor = data["estadoClor"]?.trim()?.uppercase()
 
-        Log.d(TAG, "FCM caseId=$caseId estado=$estado")
+        Log.d(TAG, "FCM caseId=$caseId estadoRaw=$estadoRaw estadoClor=$estadoClor")
 
-        val averia = buildAveriaFromMessage(caseId, data, estado)
+        val averia = buildAveriaFromMessage(caseId, data, estadoRaw, estadoClor)
 
         // Insertar/Actualizar en Room
         scope.launch {
             try {
                 repo.upsertFromPush(averia)
-                Log.d(TAG, "Avería insertada/actualizada en Room")
+                Log.d(TAG, "Avería insertada/actualizada en Room caseId=$caseId")
             } catch (e: Exception) {
-                Log.e(TAG, "Error insertando en Room", e)
+                Log.e(TAG, "Error insertando en Room caseId=$caseId", e)
             }
         }
 
-        // Verificar preferencias
+        // ✅ FIX 2: No notificar si el usuario está viendo la pantalla de averías
+        if (AveriasForegroundTracker.isAveriasVisible) {
+            Log.d(TAG, "Pantalla de averías activa — notificación suprimida para caseId=$caseId")
+            return
+        }
+
+        // Verificar preferencias del usuario
         if (!AveriaNotificationPreferences.areNotificationsEnabled(this)) {
             Log.d(TAG, "Notificaciones desactivadas por usuario")
             return
@@ -85,12 +95,12 @@ class TecniAppMessagingService : FirebaseMessagingService() {
 
         val agencyFilters = AveriaNotificationPreferences.normalizedAgencies(this)
         if (!shouldNotifyForAgency(averia, agencyFilters)) {
-            Log.d(TAG, "Filtrado por agencia")
+            Log.d(TAG, "Filtrado por agencia para caseId=$caseId")
             return
         }
 
-        // Notificar según tipo
-        if (estado == "RESUELTA") {
+        // ✅ FIX 3: Comparar estadoClor normalizado, no el string crudo del payload
+        if (estadoClor == "RESUELTA") {
             AveriaNotificationDispatcher.notifyResolvedCases(this, listOf(averia))
         } else {
             AveriaNotificationDispatcher.notifyNewCases(this, listOf(averia))
@@ -104,22 +114,24 @@ class TecniAppMessagingService : FirebaseMessagingService() {
     private fun buildAveriaFromMessage(
         caseId: String,
         data: Map<String, String>,
-        estado: String
+        estadoRaw: String,
+        estadoClor: String?
     ): AveriaEntity {
 
         val agencia = data["agencia"]
         val nombreAgencia = data["nombreAgencia"] ?: agencia
         val descripcion = data["descripcion"]
 
-        val lastUpdated =
-            data["lastUpdated"]?.toLongOrNull() ?: System.currentTimeMillis()
-
-        val fechaInicio =
-            data["fechaInicioMillis"]?.toLongOrNull() ?: lastUpdated
+        val lastUpdated = data["lastUpdated"]?.toLongOrNull() ?: System.currentTimeMillis()
+        val fechaInicio = data["fechaInicioMillis"]?.toLongOrNull() ?: lastUpdated
 
         return AveriaEntity(
             caseId = caseId,
-            estado = estado,
+            // ✅ FIX 1: Guardar el estado tal como viene; upsertFromPush lo normalizará
+            // internamente con normalizeEstadoLabel() antes de persistir en Room.
+            estado = estadoRaw,
+            // ✅ FIX 3: Mapear estadoClor explícitamente para que shouldProcessRemote funcione
+            estadoClor = estadoClor,
             agencia = agencia,
             nombreAgencia = nombreAgencia,
             agenciaTag = data["agenciaTag"] ?: agencia ?: "",
