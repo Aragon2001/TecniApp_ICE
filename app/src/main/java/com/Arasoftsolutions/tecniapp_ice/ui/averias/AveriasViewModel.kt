@@ -916,7 +916,6 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
                     repo.pullFromFirebaseOnce()
                 }
                 roomRepo.refreshUsuarioActual()
-                AveriasSyncWorker.triggerNow(getApplication(), showSyncNotification = false)
             }.onFailure { error ->
                 Log.e(TAG, "Error al refrescar averías manualmente", error)
                 _messages.tryEmit(
