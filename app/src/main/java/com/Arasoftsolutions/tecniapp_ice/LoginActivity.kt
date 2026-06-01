@@ -31,6 +31,7 @@ import com.google.firebase.messaging.FirebaseMessaging
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 
 /**
@@ -130,40 +131,39 @@ class LoginActivity : AppCompatActivity() {
      * Se persiste también "email_lower" para futuras búsquedas internas case-insensitive
      * (no se usa en login; la verificación de cuenta se hace con FirebaseAuth).
      */
-    private fun createUserRtdbIfMissing(uid: String, email: String) {
-        val userRef = FirebaseDatabase.getInstance(DATABASE_URL_USERS)
-            .reference.child("usuarios").child(uid)
+    private suspend fun createUserRtdbIfMissing(uid: String, email: String) {
+        try {
+            val userRef = database.child("usuarios").child(uid)
+            val snap = userRef.get().await()
 
-        userRef.get()
-            .addOnSuccessListener { snap ->
-                if (!snap.exists()) {
-                    val emailLower = email.trim().lowercase()
-                    val userMap = mapOf(
-                        "uid" to uid,
-                        "email" to email,
-                        "email_lower" to emailLower,
-                        "nombre" to "",
-                        "apellidos" to "",
-                        "primer_apellido" to "",
-                        "segundo_apellido" to "",
-                        "cedula" to "",
-                        "region" to "",
-                        "region_nombre" to "",
-                        "subregion" to "",
-                        "subregion_nombre" to "",
-                        "agencia" to "",
-                        "agencia_id" to "",
-                        "placaVehiculo" to "",
-                        "telefono" to "",
-                        "password" to "",
-                        "rol" to ""
-                    )
-                    userRef.setValue(userMap)
-                }
+            if (!snap.exists()) {
+                val emailLower = email.trim().lowercase()
+                val userMap = mapOf(
+                    "uid" to uid,
+                    "email" to email,
+                    "email_lower" to emailLower,
+                    "nombre" to "",
+                    "apellidos" to "",
+                    "primer_apellido" to "",
+                    "segundo_apellido" to "",
+                    "cedula" to "",
+                    "region" to "",
+                    "region_nombre" to "",
+                    "subregion" to "",
+                    "subregion_nombre" to "",
+                    "agencia" to "",
+                    "agencia_id" to "",
+                    "placaVehiculo" to "",
+                    "telefono" to "",
+                    "password" to "",
+                    "rol" to ""
+                )
+                userRef.setValue(userMap).await()
+                Log.i(TAG, "Perfil de usuario creado exitosamente en RTDB.")
             }
-            .addOnFailureListener {
-                Log.w(TAG, "No se pudo verificar/crear nodo de usuario en RTDB: ${it.message}", it)
-            }
+        } catch (e: Exception) {
+            Log.w(TAG, "No se pudo verificar/crear nodo de usuario en RTDB: ${e.message}", e)
+        }
     }
 
     /**
@@ -212,12 +212,6 @@ class LoginActivity : AppCompatActivity() {
         // Persistencia de estado de sesión (compatibilidad)
         markLoggedIn()
 
-        // ✅ 1) Guardar token FCM en RTDB en el login
-        saveFcmTokenOnLogin(uid)
-
-        // ✅ 2) Subir filtros de notificación (si el usuario los tiene configurados)
-        AveriaNotificationPreferences.pushFiltersToFirebase(this)
-
         // Diálogo de progreso de sincronización
         val dlg = SyncDialogFragment.show(supportFragmentManager).apply {
             setHeader("Sincronizando…")
@@ -229,6 +223,13 @@ class LoginActivity : AppCompatActivity() {
                 val bootstrap = withContext(Dispatchers.IO) {
                     executePostLoginBootstrap(uid = uid, email = email)
                 }
+
+                // ✅ 1) Guardar token FCM en RTDB en el login
+                // Se hace después del bootstrap para asegurar que el nodo /usuarios/{uid} ya existe.
+                saveFcmTokenOnLogin(uid)
+
+                // ✅ 2) Subir filtros de notificación (si el usuario los tiene configurados)
+                AveriaNotificationPreferences.pushFiltersToFirebase(this@LoginActivity)
 
                 val subId = bootstrap.user.subregion?.trim().orEmpty()
                 if (subId.isBlank()) {
@@ -299,8 +300,7 @@ class LoginActivity : AppCompatActivity() {
                 "fcm/tokens/${token.toFirebaseKey()}" to token
             )
 
-            FirebaseDatabase.getInstance(DATABASE_URL_USERS)
-                .getReference("usuarios")
+            database.child("usuarios")
                 .child(uid)
                 .updateChildren(updates)
                 .addOnSuccessListener {

@@ -60,6 +60,25 @@
             </LinearLayout>
 
             <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilFechaMantenimiento"
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:hint="@string/mi_vehiculo_dialog_fecha_mantenimiento"
+                app:endIconMode="none"
+                app:startIconDrawable="@drawable/ic_calendar">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etFechaMantenimiento"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:focusable="false"
+                    android:inputType="none"
+                    android:text="" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/tilValorActual"
                 style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                 android:layout_width="match_parent"
@@ -71,7 +90,9 @@
                     android:id="@+id/etValorActual"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:inputType="numberDecimal" />
+                    android:imeOptions="actionNext"
+                    android:inputType="numberDecimal"
+                    android:nextFocusDown="@id/etObservaciones" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <TextView
@@ -89,13 +110,14 @@
                 android:layout_marginTop="8dp"
                 app:singleSelection="true">
 
+                <!-- TODO: reemplazar con ic_oil cuando esté disponible -->
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chipAceite"
                     style="@style/Tecni.Chip"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/mi_vehiculo_chip_aceite"
-                    app:chipIcon="@drawable/ic_settings"
+                    app:chipIcon="@drawable/ic_car"
                     app:chipIconTint="@color/ice_yellow" />
 
                 <com.google.android.material.chip.Chip
@@ -156,6 +178,7 @@
                     android:id="@+id/etObservaciones"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:imeOptions="actionDone"
                     android:inputType="textCapSentences|textMultiLine"
                     android:minLines="2" />
             </com.google.android.material.textfield.TextInputLayout>

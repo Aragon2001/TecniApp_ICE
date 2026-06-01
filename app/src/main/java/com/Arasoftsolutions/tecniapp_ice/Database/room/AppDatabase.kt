@@ -46,10 +46,11 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun tecnicoDao(): TecnicoDao
     abstract fun averiaDao(): AveriaDao
     abstract fun inventarioDao(): InventarioDao
+    abstract fun luminariaReparacionDao(): LuminariaReparacionDao
     abstract fun programacionDao(): ProgramacionDao
 
     companion object {
-        const val SCHEMA_VERSION = 27
+        const val SCHEMA_VERSION = 28
 
         val MIGRATION_24_25 = object : Migration(24, 25) {
             override fun migrate(db: SupportSQLiteDatabase) {
@@ -135,6 +136,42 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+
+
+        val MIGRATION_27_28 = object : Migration(27, 28) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // IF NOT EXISTS protege a instalaciones que ya tenían la tabla
+                // por haber arrancado en v27 como instalación nueva.
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `luminaria_reparacion` (
+                        `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                        `vehiculoId` INTEGER NOT NULL,
+                        `localizacion` TEXT NOT NULL,
+                        `cliente` TEXT,
+                        `contacto` TEXT,
+                        `observaciones` TEXT,
+                        `materialesJson` TEXT,
+                        `estado` TEXT NOT NULL,
+                        `ejecutorNombre` TEXT NOT NULL,
+                        `ejecutorCedula` TEXT,
+                        `fechaRegistro` INTEGER NOT NULL,
+                        `fechaCarga` INTEGER NOT NULL,
+                        `fechaReparacion` INTEGER
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_luminaria_reparacion_vehiculoId` " +
+                        "ON `luminaria_reparacion` (`vehiculoId`)"
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_luminaria_reparacion_estado` " +
+                        "ON `luminaria_reparacion` (`estado`)"
+                )
+            }
+        }
+
         @Volatile private var INSTANCE: AppDatabase? = null
 
         fun getInstance(context: Context): AppDatabase =
@@ -144,7 +181,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "tecniapp_room.db"
                 )
-                     .addMigrations(MIGRATION_24_25, MIGRATION_25_26, MIGRATION_26_27)
+                    .addMigrations(MIGRATION_24_25, MIGRATION_25_26, MIGRATION_26_27, MIGRATION_27_28)
                     .fallbackToDestructiveMigrationFrom(true, 23)
                     .fallbackToDestructiveMigrationOnDowngrade(true)
                     .build()

@@ -45,18 +45,23 @@ class AveriasSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorke
 
         runCatching {
             AppSyncCoordinator.runExclusive {
-            val db = AppDatabase.getInstance(applicationContext)
-            val repo = AveriasRepository(db)
-            // 1. Sube los pendientes a Firebase
-            repo.syncPendientesConFirebase()
+                val db = AppDatabase.getInstance(applicationContext)
+                val repo = AveriasRepository(db)
+                // 1. Sube los pendientes a Firebase
+                repo.syncPendientesConFirebase()
 
-            // 2. Refresca Room desde Firebase cuando aplique
-            repo.pullFromFirebaseOnce()
+                // 2. Refresca Room desde Firebase cuando aplique
+                val pullResult = repo.pullFromFirebaseOnce()
 
-            val uid = auth.currentUser?.uid
-            if (!uid.isNullOrBlank()) {
-                RoomRepository.getInstance(applicationContext).upsertUserFromFirebase(uid)
-            }
+                // ✅ FIX 3: notificar averías nuevas detectadas en el pull
+                if (pullResult.newCases.isNotEmpty() && !AveriasForegroundTracker.isAveriasVisible) {
+                    AveriaNotificationDispatcher.notifyNewCases(applicationContext, pullResult.newCases)
+                }
+
+                val uid = auth.currentUser?.uid
+                if (!uid.isNullOrBlank()) {
+                    RoomRepository.getInstance(applicationContext).upsertUserFromFirebase(uid)
+                }
             }
         }.onFailure { return@withContext Result.retry() }
         if (shouldNotifySync) {
