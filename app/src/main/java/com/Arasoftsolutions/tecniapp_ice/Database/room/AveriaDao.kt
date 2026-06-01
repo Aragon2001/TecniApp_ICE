@@ -194,6 +194,9 @@ fun observe(
     @Query("DELETE FROM averias WHERE caseId IN (:caseIds)")
     suspend fun eliminarPorCaseIds(caseIds: List<String>)
 
+    @Query("SELECT COUNT(*) FROM averias WHERE lower(estado) NOT IN ('resuelta', 'anulada')")
+    fun observeActivasCount(): Flow<Int>
+
     @Query(
         """
         UPDATE averias SET

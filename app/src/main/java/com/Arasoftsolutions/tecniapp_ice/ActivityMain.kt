@@ -13,7 +13,9 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.GravityCompat
 import androidx.core.view.isVisible
 import androidx.drawerlayout.widget.DrawerLayout
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.findNavController
 import androidx.navigation.NavOptions
 import androidx.navigation.ui.AppBarConfiguration
@@ -24,6 +26,7 @@ import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.UserEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.apellidosCompletos
+import com.Arasoftsolutions.tecniapp_ice.Database.room.AppDatabase
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
 import com.Arasoftsolutions.tecniapp_ice.databinding.ActivityMainBinding
 import com.Arasoftsolutions.tecniapp_ice.databinding.NavHeaderMainBinding
@@ -92,7 +95,8 @@ class ActivityMain : AppCompatActivity() {
             loadUserDataFromDatabase()
         }
         observeUserUpdates()
-         val currentUser = auth.currentUser
+        observeAveriasActivasBadge()
+        val currentUser = auth.currentUser
         if (currentUser != null) {
             triggerInitialAveriasSyncIfIdle()
         }
@@ -380,6 +384,45 @@ class ActivityMain : AppCompatActivity() {
                     updateAdminMenuVisibility(usuario)
                 }
             }
+        }
+    }
+
+    private fun observeAveriasActivasBadge() {
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                AppDatabase.getInstance(applicationContext)
+                    .averiaDao()
+                    .observeActivasCount()
+                    .collect { count -> updateAveriaBadge(count) }
+            }
+        }
+    }
+
+    private fun updateAveriaBadge(count: Int) {
+        val menuItem = navView.menu.findItem(R.id.nav_averias) ?: return
+        if (count > 0) {
+            val label = if (count > 99) "99+" else count.toString()
+            val existing = menuItem.actionView
+            if (existing is android.widget.TextView) {
+                existing.text = label
+            } else {
+                val tv = android.widget.TextView(this)
+                tv.text = label
+                val bg = android.graphics.drawable.GradientDrawable().apply {
+                    shape = android.graphics.drawable.GradientDrawable.OVAL
+                    setColor(0xFFB00020.toInt())
+                }
+                tv.background = bg
+                tv.setTextColor(android.graphics.Color.WHITE)
+                val px = (6 * resources.displayMetrics.density).toInt()
+                tv.setPadding(px, 0, px, 0)
+                tv.minimumWidth = (20 * resources.displayMetrics.density).toInt()
+                tv.gravity = android.view.Gravity.CENTER
+                tv.setTextAppearance(com.google.android.material.R.style.TextAppearance_Material3_LabelSmall)
+                menuItem.actionView = tv
+            }
+        } else {
+            menuItem.actionView = null
         }
     }
 
