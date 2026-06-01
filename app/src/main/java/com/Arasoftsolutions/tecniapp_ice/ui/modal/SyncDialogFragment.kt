@@ -44,18 +44,19 @@ class SyncDialogFragment : DialogFragment() {
 
     fun update(done: Int, total: Int, msg: String?, downloadedBytes: Long = 0L) {
         tvMessage?.text = msg.orEmpty()
-        val counter = if (total <= 0) {
-            "—"
+        if (total <= 0) {
+            tvCounter?.text = "—"
+            runCatching { progressBar?.isIndeterminate = true }
         } else {
+            runCatching { progressBar?.isIndeterminate = false }
             val safeTotal = total.coerceAtLeast(1)
             val safeDone = done.coerceAtLeast(0).coerceAtMost(safeTotal)
             val percent = (safeDone.toDouble() / safeTotal.toDouble()) * 100
             val percentLabel = String.format(Locale.getDefault(), "%.2f", percent)
             val progressValue = (percent * 100).toInt().coerceIn(0, 10000)
             progressBar?.setProgressCompat(progressValue, true)
-            "$safeDone / $safeTotal • $percentLabel%"
+            tvCounter?.text = "$safeDone / $safeTotal • $percentLabel%"
         }
-        tvCounter?.text = counter
         val mb = downloadedBytes.coerceAtLeast(0L).toDouble() / (1024 * 1024).toDouble()
         tvBytes?.text = String.format(Locale.getDefault(), "%.2f MB", mb)
     }

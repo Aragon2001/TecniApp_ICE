@@ -47,21 +47,21 @@ class TecniApp : Application() {
             }
         }
         applicationScope.launch {
+            val uid = FirebaseAuth.getInstance().currentUser?.uid
             val autoSyncEnabled = dataStore.autoSyncEnabled.first()
-            if (autoSyncEnabled) {
+            if (!uid.isNullOrBlank() && autoSyncEnabled) {
                 AveriasSyncWorker.schedule(this@TecniApp)
             } else {
                 WorkManager.getInstance(this@TecniApp)
                     .cancelUniqueWork(AveriasSyncWorker.UNIQUE_PERIODIC_WORK)
             }
+            if (!uid.isNullOrBlank()) {
+                VehiculoReminderWorker.scheduleDaily(this@TecniApp)
+            }
         }
 
         UpdateWorker.schedule(this)
-        VehiculoReminderWorker.scheduleDaily(this)
-
-        // Micro-paso 1:
-        // Desconectamos la sincronización pesada del arranque para evitar trabajo de red/DB
-        // en Application.onCreate(). Se mantiene el resto de inicialización liviana.
+        registerRealtimeSyncObserver()
     }
 
     private fun enableFirebasePersistence() {

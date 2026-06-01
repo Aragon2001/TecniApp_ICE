@@ -34,12 +34,13 @@ class AveriasSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorke
         val shouldNotifySync = inputData.getBoolean(KEY_NOTIFY_SYNC, false)
         val auth = FirebaseAuth.getInstance()
         val currentUser = auth.currentUser
-        if (currentUser != null) {
-            val reloadResult = runCatching { currentUser.reload().await() }
-            if (reloadResult.exceptionOrNull() is FirebaseAuthInvalidUserException) {
-                SessionManager.signOutAndClear(applicationContext)
-                return@withContext Result.success()
-            }
+
+        if (currentUser == null) return@withContext Result.success()
+
+        val reloadResult = runCatching { currentUser.reload().await() }
+        if (reloadResult.exceptionOrNull() is FirebaseAuthInvalidUserException) {
+            SessionManager.signOutAndClear(applicationContext)
+            return@withContext Result.success()
         }
 
         runCatching {
