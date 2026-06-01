@@ -255,9 +255,7 @@ class LoginActivity : AppCompatActivity() {
                     },
                     onSyncSuccess = {
                         if (!isFinishing && !isDestroyed) {
-                            lifecycleScope.launch(Dispatchers.IO) {
-                                AveriasSyncWorker.triggerNow(applicationContext)
-                            }
+                            AveriasSyncWorker.triggerNow(applicationContext)
                             dlg.dismissAllowingStateLoss()
                             Toast.makeText(this@LoginActivity, "Inicio de sesión exitoso", Toast.LENGTH_SHORT).show()
                             startActivity(Intent(this@LoginActivity, ActivityMain::class.java))
@@ -379,40 +377,6 @@ class LoginActivity : AppCompatActivity() {
         getSharedPreferences(SYNC_PREFS, MODE_PRIVATE).edit()
             .putBoolean(SYNC_KEY_LOGGED_IN, true)
             .apply()
-    }
-
-    /**
-     * Lectura auxiliar del perfil por UID (solo para logging o precarga).
-     * No es necesaria para el login en sí, ya que la sincronización persiste en Room.
-     */
-    private fun loadUserDataByUid(uid: String) {
-        FirebaseDatabase.getInstance(DATABASE_URL_USERS)
-            .reference.child("usuarios").child(uid)
-            .get()
-            .addOnSuccessListener { snap ->
-                if (!snap.exists()) {
-                    Log.w(TAG, "Perfil no encontrado en RTDB para uid=$uid")
-                    return@addOnSuccessListener
-                }
-                val nombre = snap.child("nombre").getValue(String::class.java).orEmpty()
-                val apellido1 = snap.child("primer_apellido").getValue(String::class.java).orEmpty()
-                val apellido2 = snap.child("segundo_apellido").getValue(String::class.java).orEmpty()
-                val apellidos = listOf(apellido1, apellido2)
-                    .filter { it.isNotBlank() }
-                    .joinToString(" ")
-                    .ifBlank { snap.child("apellidos").getValue(String::class.java).orEmpty() }
-                val placa = snap.child("placaVehiculo").getValue(String::class.java).orEmpty()
-                val subR = snap.child("subregion").getValue(String::class.java).orEmpty()
-                val region = snap.child("region").getValue(String::class.java).orEmpty()
-                val agencia = snap.child("agencia").getValue(String::class.java).orEmpty()
-                Log.d(
-                    TAG,
-                    "Perfil RTDB -> $nombre $apellidos, region=$region, agencia=$agencia, placa=$placa, subregion=$subR"
-                )
-            }
-            .addOnFailureListener { e ->
-                Log.e(TAG, "Error leyendo perfil por UID: ${e.message}", e)
-            }
     }
 
     /**
