@@ -105,6 +105,7 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         setupAdminPreferences()
         setupAccountSection()
         setupUpdateSection()
+        setupLegalSection()
     }
 
     private fun setupNotificationPreferences() {
@@ -238,6 +239,15 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
             onConfirmUpdate = { updateDownloadManager.startDownload(requireActivity(), it) }
         }
         dialog.show(manager, UPDATE_DIALOG_TAG)
+    }
+
+    private fun setupLegalSection() {
+        binding.btnAbout.setOnClickListener {
+            findNavController().navigate(R.id.nav_help)
+        }
+        binding.btnPrivacy.setOnClickListener {
+            findNavController().navigate(R.id.nav_privacy)
+        }
     }
 
     companion object {
