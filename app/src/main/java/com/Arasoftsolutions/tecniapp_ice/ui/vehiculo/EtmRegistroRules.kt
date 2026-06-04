@@ -69,9 +69,16 @@ suspend fun RoomRepository.obtenerEstadoEtmVehiculo(uid: String): EtmEstadoVehic
         parseRegistrosDiarios(vehiculo.registrosDiariosJson)
     }
 
+    // Group by date and find the most recent date where no closed log exists.
+    // This handles vehiculo_log having separate "open" and "close" entries per day:
+    // a date is only considered pending-close when NONE of its records are marked cerrado.
+    // Also fixed: use <= hoy so today's open ETM is included (previous bug used < hoy).
     val registroPendiente = registrosEtm
-        .filter { !it.cerrado && it.fecha.isNotBlank() && it.fecha < hoy }
-        .maxByOrNull { it.fecha }
+        .filter { it.fecha.isNotBlank() && it.fecha < hoy }
+        .groupBy { it.fecha }
+        .filter { (_, records) -> records.none { it.cerrado } }
+        .entries.maxByOrNull { (date, _) -> date }
+        ?.value?.firstOrNull { !it.cerrado }
 
     val tieneRegistroHoy = registrosEtm.any { it.fecha == hoy }
 

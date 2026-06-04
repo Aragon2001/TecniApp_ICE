@@ -71,15 +71,19 @@ class AveriasFragment : Fragment() {
     // TODO(Codex): Guardar referencia al ítem de menú para refrescar el icono de notificaciones
 
 
-    override fun onStart() {
-    super.onStart()
-    AveriasForegroundTracker.isAveriasVisible = true
-}
+    // FIX 1: Usar onResume/onPause en lugar de onStart/onStop.
+    // onResume/onPause son síncronos con la visibilidad real del Fragment,
+    // lo que evita el flag zombie donde isAveriasVisible queda en `true`
+    // después de salir de la pantalla y suprime todas las notificaciones.
+    override fun onResume() {
+        super.onResume()
+        AveriasForegroundTracker.isAveriasVisible = true
+    }
 
-override fun onStop() {
-    AveriasForegroundTracker.isAveriasVisible = false
-    super.onStop()
-}
+    override fun onPause() {
+        AveriasForegroundTracker.isAveriasVisible = false
+        super.onPause()
+    }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _b = FragmentAveriasBinding.inflate(inflater, container, false)

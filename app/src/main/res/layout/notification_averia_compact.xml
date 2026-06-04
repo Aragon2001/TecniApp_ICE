@@ -1,65 +1,99 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<!--
+    notification_averia_compact.xml
+    Vista colapsada de la notificación de avería.
+
+    CAMBIOS vs versión anterior:
+    - LinearLayout anidado → ConstraintLayout (más eficiente, sin mediciones recursivas)
+    - Se agrega android:id="@+id/icon" con src por defecto para evitar NPE en RemoteViews
+    - Colores via @color (compatibles con night mode / themes)
+    - Se usa ?attr/colorControlNormal en lugar de @color/dark_gray para el address
+    - Padding uniforme via dimen para facilitar ajustes globales
+-->
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="horizontal"
-    android:gravity="center_vertical"
-    android:padding="8dp">
+    android:paddingStart="@dimen/averia_notification_padding"
+    android:paddingEnd="@dimen/averia_notification_padding"
+    android:paddingTop="@dimen/averia_notification_padding"
+    android:paddingBottom="@dimen/averia_notification_padding">
 
+    <!-- Ícono de estado -->
     <ImageView
         android:id="@+id/icon"
         android:layout_width="@dimen/averia_notification_icon_size"
         android:layout_height="@dimen/averia_notification_icon_size"
-        android:layout_marginEnd="8dp"
         android:background="@drawable/bg_averia_notification"
         android:padding="8dp"
         android:scaleType="centerInside"
-        android:contentDescription="@string/averia_notificacion_map_placeholder" />
+        android:src="@drawable/ic_notification_bolt"
+        android:contentDescription="@string/averia_notificacion_map_placeholder"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent" />
 
-    <LinearLayout
+    <!-- Título: "Nueva avería" / "Avería resuelta" -->
+    <TextView
+        android:id="@+id/title"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_weight="1"
-        android:orientation="vertical">
+        android:layout_marginStart="8dp"
+        android:textColor="@color/averia_notification_on_surface"
+        android:textStyle="bold"
+        android:textSize="14sp"
+        android:maxLines="1"
+        android:ellipsize="end"
+        app:layout_constraintStart_toEndOf="@id/icon"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@id/icon" />
 
-        <TextView
-            android:id="@+id/title"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textColor="@color/averia_notification_on_surface"
-            android:textStyle="bold"
-            android:textSize="14sp"
-            android:maxLines="1"
-            android:ellipsize="end" />
+    <!-- Localización / dirección -->
+    <TextView
+        android:id="@+id/address"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="@dimen/averia_notification_line_spacing"
+        android:textColor="@color/averia_notification_on_surface_variant"
+        android:textSize="12sp"
+        android:maxLines="1"
+        android:ellipsize="end"
+        app:layout_constraintStart_toEndOf="@id/icon"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/title" />
 
-        <TextView
-            android:id="@+id/address"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textColor="@color/dark_gray"
-            android:textSize="13sp"
-            android:maxLines="1"
-            android:ellipsize="end"
-            android:layout_marginTop="@dimen/averia_notification_line_spacing" />
+    <!-- Número de caso -->
+    <TextView
+        android:id="@+id/case_line"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="@dimen/averia_notification_line_spacing"
+        android:textColor="@color/averia_notification_on_surface"
+        android:textSize="12sp"
+        android:maxLines="1"
+        android:ellipsize="end"
+        app:layout_constraintStart_toEndOf="@id/icon"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/address" />
 
-        <TextView
-            android:id="@+id/case_line"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textColor="@color/averia_notification_on_surface"
-            android:textSize="12sp"
-            android:maxLines="1"
-            android:ellipsize="end"
-            android:layout_marginTop="@dimen/averia_notification_line_spacing" />
+    <!-- Estado (color dinámico vía setTextColor en el Dispatcher) -->
+    <TextView
+        android:id="@+id/state_line"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="@dimen/averia_notification_line_spacing"
+        android:textColor="@color/averia_notification_pending"
+        android:textSize="12sp"
+        android:textStyle="bold"
+        android:maxLines="1"
+        android:ellipsize="end"
+        app:layout_constraintStart_toEndOf="@id/icon"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/case_line"
+        app:layout_constraintBottom_toBottomOf="parent" />
 
-        <TextView
-            android:id="@+id/state_line"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textColor="@color/averia_notification_pending"
-            android:textSize="12sp"
-            android:maxLines="1"
-            android:ellipsize="end"
-            android:layout_marginTop="@dimen/averia_notification_line_spacing" />
-    </LinearLayout>
-</LinearLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

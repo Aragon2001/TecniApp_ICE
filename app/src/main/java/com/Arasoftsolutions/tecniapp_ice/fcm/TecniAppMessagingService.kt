@@ -62,12 +62,17 @@ class TecniAppMessagingService : FirebaseMessagingService() {
             return
         }
 
-        // ✅ FIX 1: Leer estadoClor desde el payload; el estado puede venir en cualquier
-        // capitalización (PENDIENTE, pendiente, Pendiente) — se normaliza aquí.
+        val evento = data["evento"]?.trim()?.lowercase()
+        // Solo procesar eventos de nueva avería o avería asignada
+        if (evento != null && evento != "nueva_averia" && evento != "averia_asignada" && evento != "averia_resuelta") {
+            Log.d(TAG, "Evento ignorado: evento=$evento caseId=$caseId")
+            return
+        }
+
         val estadoRaw = data["estado"] ?: data["estadoClor"] ?: "PENDIENTE"
         val estadoClor = data["estadoClor"]?.trim()?.uppercase()
 
-        Log.d(TAG, "FCM caseId=$caseId estadoRaw=$estadoRaw estadoClor=$estadoClor")
+        Log.d(TAG, "FCM caseId=$caseId evento=$evento estadoRaw=$estadoRaw estadoClor=$estadoClor")
 
         val averia = buildAveriaFromMessage(caseId, data, estadoRaw, estadoClor)
 
@@ -81,7 +86,13 @@ class TecniAppMessagingService : FirebaseMessagingService() {
             }
         }
 
-        // ✅ FIX 2: No notificar si el usuario está viendo la pantalla de averías
+        // FIX 1: Log explícito del estado del tracker ANTES de la guarda, para
+        // detectar si isAveriasVisible quedó en true incorrectamente (flag zombie).
+        // Si ves "isAveriasVisible=true" en logcat cuando la pantalla está cerrada,
+        // revisa que el Fragment llame a AveriasForegroundTracker.isAveriasVisible = false
+        // en onPause() y onDestroyView().
+        Log.d(TAG, "isAveriasVisible=${AveriasForegroundTracker.isAveriasVisible} — caseId=$caseId")
+
         if (AveriasForegroundTracker.isAveriasVisible) {
             Log.d(TAG, "Pantalla de averías activa — notificación suprimida para caseId=$caseId")
             return
@@ -99,11 +110,13 @@ class TecniAppMessagingService : FirebaseMessagingService() {
             return
         }
 
-        // ✅ FIX 3: Comparar estadoClor normalizado, no el string crudo del payload
-        if (estadoClor == "RESUELTA") {
-            AveriaNotificationDispatcher.notifyResolvedCases(this, listOf(averia))
-        } else {
-            AveriaNotificationDispatcher.notifyNewCases(this, listOf(averia))
+        when {
+            estadoClor == "RESUELTA" || evento == "averia_resuelta" ->
+                AveriaNotificationDispatcher.notifyResolvedCases(this, listOf(averia))
+            evento == "averia_asignada" ->
+                AveriaNotificationDispatcher.notifyAssignedCase(this, averia)
+            else ->
+                AveriaNotificationDispatcher.notifyNewCases(this, listOf(averia))
         }
     }
 
@@ -125,18 +138,21 @@ class TecniAppMessagingService : FirebaseMessagingService() {
         val lastUpdated = data["lastUpdated"]?.toLongOrNull() ?: System.currentTimeMillis()
         val fechaInicio = data["fechaInicioMillis"]?.toLongOrNull() ?: lastUpdated
 
+        // localizacion comes from the FCM payload (may be blank for CLOR-sourced events);
+        // do NOT substitute descripcion here — that causes the notification to show the
+        // observaciones text labeled as "Localización".
+        val localizacion = data["localizacion"]?.takeIf { it.isNotBlank() }
+
         return AveriaEntity(
             caseId = caseId,
-            // ✅ FIX 1: Guardar el estado tal como viene; upsertFromPush lo normalizará
-            // internamente con normalizeEstadoLabel() antes de persistir en Room.
             estado = estadoRaw,
-            // ✅ FIX 3: Mapear estadoClor explícitamente para que shouldProcessRemote funcione
             estadoClor = estadoClor,
             agencia = agencia,
             nombreAgencia = nombreAgencia,
             agenciaTag = data["agenciaTag"] ?: agencia ?: "",
             region = data["region"],
-            localizacion = descripcion ?: nombreAgencia,
+            localizacion = localizacion,
+            direccion = data["direccion"]?.takeIf { it.isNotBlank() },
             observaciones = descripcion,
             nise = data["nise"],
             causa = data["causa"],
@@ -205,7 +221,7 @@ class TecniAppMessagingService : FirebaseMessagingService() {
         fun flushPendingToken(context: Context, uid: String?) {
             if (uid.isNullOrBlank()) return
 
-            val prefs = context.getSharedPreferences(FCM_PREFS, MODE_PRIVATE)
+            val prefs = context.getSharedPreferences(FCM_PREFS, Context.MODE_PRIVATE)
             val pending = prefs.getString(KEY_PENDING_TOKEN, null) ?: return
 
             val safeKey = pending.replace("[.#$\\[\\]/]".toRegex(), "_")

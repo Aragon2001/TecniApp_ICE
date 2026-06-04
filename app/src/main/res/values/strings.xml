@@ -113,6 +113,7 @@
     <string name="mi_vehiculo_kpi_alertas">Alertas</string>
     <string name="mi_vehiculo_chart_placeholder">Gráfica (MPAndroidChart / Compose)</string>
     <string name="mi_vehiculo_historial_vacio">Aún no hay mantenimientos registrados</string>
+    <string name="mi_vehiculo_historial_ver_todo">Ver todo</string>
     <string name="mi_vehiculo_dialog_fecha_mantenimiento">Fecha del mantenimiento</string>
     <string name="mi_vehiculo_label_mantenimiento">Mantenimiento</string>
     <string name="mi_vehiculo_label_etm">ETM</string>
@@ -140,6 +141,7 @@
     <string name="registro_pendiente_modo_inicial_info">Modo rápido: solo registra el km/orímetro inicial para desbloquear la app. Podrás completar el cierre después.</string>
     <string name="registro_pendiente_modo_cierre_info">Modo cierre: ingresa el km final y los datos de jornada para cerrar el registro.</string>
     <string name="registro_pendiente_cierre_campos_requeridos">Para cerrar el registro completa: km final, horas laboradas, actividad y lugar.</string>
+    <string name="registro_pendiente_cierre_label">Campos de cierre</string>
     <string name="menu_reportes">Reportes</string>
     <string name="menu_planillas">Planillas</string>
     <string name="menu_programacion">Programación</string>
@@ -328,6 +330,29 @@ Cliente: %4$s</string>
     <string name="permission_unknown_sources_required">Permite instalar apps de orígenes desconocidos para completar actualizaciones.</string>
     <string name="permission_notification_required">Activa las notificaciones para recibir alertas operativas y de averías.</string>
     <string name="permission_location_required">Activa el acceso a ubicación para habilitar georreferencia y seguimiento.</string>
+
+    <!-- PermissionsActivity — pantalla guiada de permisos -->
+    <string name="permissions_title">Permisos necesarios</string>
+    <string name="permissions_subtitle">Para funcionar correctamente, TecniApp ICE\nnecesita acceso a los siguientes recursos.</string>
+    <string name="permissions_action_grant_all">Solicitar permisos</string>
+    <string name="permissions_action_continue">Continuar a la app</string>
+    <string name="permissions_action_exit">Salir de la aplicación</string>
+    <string name="permissions_exit_title">¿Salir de TecniApp?</string>
+    <string name="permissions_exit_message">Sin los permisos requeridos la aplicación no puede funcionar correctamente.</string>
+    <string name="permissions_exit_confirm">Salir</string>
+    <string name="permissions_exit_cancel">Cancelar</string>
+
+    <!-- Títulos y razones por permiso -->
+    <string name="perm_title_notifications">Notificaciones</string>
+    <string name="perm_reason_notifications">Recibe alertas de averías, actualizaciones y asignaciones en tiempo real.</string>
+    <string name="perm_title_location">Ubicación precisa</string>
+    <string name="perm_reason_location">Georreferencia de postes, navegación en campo y seguimiento de cuadrillas.</string>
+    <string name="perm_title_background_location">Ubicación en segundo plano</string>
+    <string name="perm_reason_background_location">Monitoreo continuo de campo aunque la app no esté en primer plano.</string>
+    <string name="perm_title_storage">Acceso a almacenamiento</string>
+    <string name="perm_reason_storage">Gestión de reportes, imágenes y recursos técnicos descargados.</string>
+    <string name="perm_title_install_packages">Instalar actualizaciones</string>
+    <string name="perm_reason_install_packages">Permite recibir e instalar actualizaciones de la app directamente desde ICE.</string>
     <string name="averia_notificacion_switch_label">Recibir notificaciones</string>
     <string name="averia_notificacion_switch_helper">Desactiva esta opción cuando no necesites alertas (por ejemplo, cuando otra cuadrilla está de turno).</string>
     <string name="averia_notificacion_filtro_titulo">Filtrar notificaciones por agencia</string>
@@ -351,6 +376,7 @@ Cliente: %4$s</string>
     <string name="averia_error_km_llegada_menor">El kilometraje de llegada no puede ser menor al inicial.</string>
     <string name="averia_error_km_inicio_menor_ultimo">El kilometraje inicial no puede ser menor al último registrado (último: %1$s).</string>
     <string name="averia_error_localizacion_requerida">La localización es requerida.</string>
+    <string name="averia_error_localizacion_digitos">La localización debe tener entre 9 y 12 dígitos.</string>
     <string name="averia_error_hora_inicio_requerida">Ingresa la hora de inicio.</string>
     <string name="averia_error_hora_fin_requerida">Ingresa la hora de fin.</string>
     <string name="averia_error_km_inicio_requerido">Ingresa el kilometraje inicial.</string>
@@ -491,6 +517,15 @@ Cliente: %4$s</string>
 ¿Deseas abrir el panel de administración para actualizar el inventario?</string>
     <string name="averia_medidor_admin_ir">Abrir panel</string>
     <string name="averia_medidor_admin_luego">Más tarde</string>
+    <string name="averia_medidor_limpiar">Limpiar medidor</string>
+    <string name="averia_medidor_anterior_label">Medidor reportado en la avería</string>
+    <string name="averia_medidor_nuevo_existe">El medidor ingresado ya existe en la base de datos. Verifique el número antes de continuar.</string>
+    <string name="averia_medidor_igual_anterior">El medidor instalado no puede ser igual al medidor anterior.</string>
+    <string name="averia_vehiculo_titulo_seccion">Vehículo responsable</string>
+    <string name="averia_cuadrilla_titulo">DETALLES DE LA CUADRILLA</string>
+    <string name="averia_revertir_resuelta">Revertir a pendiente</string>
+    <string name="averia_exito_revertida_resuelta">Avería revertida a pendiente.</string>
+    <string name="averia_error_revertir_no_autorizado">No tienes permisos para revertir esta avería.</string>
     <string name="averia_reporte_titulo">Reporte de avería</string>
     <string name="averia_estado_pdf">Estado: %1$s</string>
     <string name="averia_reporte_region">Región: %1$s</string>
@@ -777,6 +812,8 @@ Cliente: %4$s</string>
     <string name="medidor_chip_poste_format"> %1$s</string>
     <string name="medidor_chip_metros_format"> %1$s</string>
     <string name="medidor_chip_pueblo_format"> %1$s</string>
+    <string name="medidor_opciones_fab">Opciones del medidor</string>
+    <string name="medidor_copiado_exito">Información copiada al portapapeles</string>
 
     <!-- Localización -->
     <string name="localizacion_estado_sin_subregion">No se pudo determinar la subregión del usuario.</string>
@@ -848,6 +885,11 @@ Cliente: %4$s</string>
     <string name="localizacion_toggle_seguir_ubicacion">Seguir mi ubicación actual</string>
     <string name="localizacion_toast_sin_ubicacion">No se pudo obtener la ubicación actual.</string>
     <string name="localizacion_toast_sin_disponibilidad">La ubicación no está disponible en este momento.</string>
+    <string name="localizacion_gps_no_disponible">Sin señal GPS</string>
+    <string name="localizacion_gps_reintentar">Activar</string>
+    <string name="localizacion_fab_reubicar">Mi ubicación</string>
+    <string name="localizacion_fab_zoom_in">Acercar</string>
+    <string name="localizacion_fab_zoom_out">Alejar</string>
     <string name="localizacion_fieldmaps_no_disponible">Field Maps no está instalado. Abriendo Google Maps.</string>
     <string name="localizacion_navegacion_chooser">Selecciona una aplicación para navegar</string>
     <string name="localizacion_estado_sync_error">No se pudo sincronizar la información. Intenta nuevamente.</string>

@@ -1,7 +1,9 @@
 package com.Arasoftsolutions.tecniapp_ice.ui.luminarias
 
+import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
@@ -9,6 +11,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaReparacionEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.VehiculosEntity
+import com.Arasoftsolutions.tecniapp_ice.R
 import com.Arasoftsolutions.tecniapp_ice.databinding.ItemLuminariaReparacionBinding
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -112,6 +115,15 @@ class LuminariaReparacionAdapter(
                 else -> "-"
             }
             val vehiculoPlaca = vehiculosById[item.vehiculoId]?.placa?.toString().orEmpty().ifBlank { "-" }
+
+            val ctx = binding.root.context
+            val (badgeBg, badgeText) = if (estado == LuminariaEstado.PENDIENTE) {
+                Pair(ContextCompat.getColor(ctx, R.color.chip_pendiente), Color.WHITE)
+            } else {
+                Pair(ContextCompat.getColor(ctx, R.color.chip_resuelta), Color.WHITE)
+            }
+            binding.cardEstadoLuminaria.setCardBackgroundColor(badgeBg)
+            binding.tvReparacionEstado.setTextColor(badgeText)
 
             binding.tvReparacionTitulo.text = "Localización $localizacionFormateada"
             binding.tvReparacionEstado.text = estadoTexto

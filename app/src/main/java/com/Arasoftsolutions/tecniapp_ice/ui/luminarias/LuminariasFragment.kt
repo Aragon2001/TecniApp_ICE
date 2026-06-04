@@ -1,6 +1,8 @@
 package com.Arasoftsolutions.tecniapp_ice.ui.luminarias
 
 import android.content.Intent
+import android.content.res.ColorStateList
+import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
 import android.graphics.Paint
@@ -13,6 +15,7 @@ import androidx.appcompat.widget.PopupMenu
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.widget.AppCompatEditText
+import androidx.core.content.ContextCompat
 import androidx.core.view.children
 import androidx.core.view.isVisible
 import androidx.core.widget.doAfterTextChanged
@@ -72,6 +75,7 @@ class LuminariasFragment : Fragment() {
 
     private var vehiculosFilterCache: List<Int> = emptyList()
     private var isUpdatingVehiculoFilter = false
+    private var isFabOpen = false
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -86,25 +90,16 @@ class LuminariasFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         setupAdapters()
 
-        binding.btnRegistrarLuminaria.setOnClickListener { mostrarRegistroBottomSheet() }
-        binding.btnImportarLuminariasExcel.setOnClickListener {
-            excelLauncher.launch(
-                arrayOf(
-                    "application/vnd.ms-excel",
-                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                )
-            )
-        }
-        binding.btnDescargarMachote.setOnClickListener { prepararMachote() }
-        binding.btnEnviarMachoteCorreo.setOnClickListener { prepararMachoteCorreo() }
         binding.etBuscarLocalizacion.doAfterTextChanged {
             viewModel.actualizarBusquedaLocalizacion(it?.toString().orEmpty())
         }
-        binding.chipGroupEstado.isSingleSelection = true
-        binding.chipPendientes.isChecked = true
-        binding.chipReparadas.isChecked = false
-        binding.chipPendientes.setOnCheckedChangeListener { _, _ -> actualizarVisibilidadListas() }
-        binding.chipReparadas.setOnCheckedChangeListener { _, _ -> actualizarVisibilidadListas() }
+        binding.toggleGroupEstado.check(R.id.btnTogglePendientes)
+        updateToggleEstadoColors()
+        binding.toggleGroupEstado.addOnButtonCheckedListener { _, _, _ ->
+            updateToggleEstadoColors()
+            actualizarVisibilidadListas()
+        }
+        setupFab()
 
         binding.toggleGroupVehiculos.addOnButtonCheckedListener { group, checkedId, isChecked ->
             if (!isChecked || isUpdatingVehiculoFilter) return@addOnButtonCheckedListener
@@ -170,11 +165,10 @@ class LuminariasFragment : Fragment() {
                     val vehiculosById = state.vehiculosAgencia.associateBy { it.id }
                     reparacionesPendientesAdapter.updateCatalogs(pueblosById, vehiculosById)
                     reparacionesReparadasAdapter.updateCatalogs(pueblosById, vehiculosById)
-                    binding.btnRegistrarLuminaria.isVisible = state.puedeRegistrarReparacion
-                    binding.btnImportarLuminariasExcel.isVisible = state.puedeImportarExcel
-                    binding.btnDescargarMachote.isVisible = state.puedeDescargarMachote
-                    binding.btnEnviarMachoteCorreo.isVisible = state.puedeEnviarMachote
-                    actualizarModoChip()
+                    binding.rowFabRegistrar.isVisible = state.puedeRegistrarReparacion
+                    binding.rowFabImportar.isVisible = state.puedeImportarExcel
+                    binding.rowFabDescargar.isVisible = state.puedeDescargarMachote
+                    binding.rowFabEmail.isVisible = state.puedeEnviarMachote
                     renderVehiculoFilters(state)
 
                     reparacionesPendientesAdapter.updatePermissions(
@@ -732,17 +726,80 @@ class LuminariasFragment : Fragment() {
     }
 
     private fun actualizarVisibilidadListas() {
-        val pendientesActivas = binding.chipPendientes.isChecked
-        val reparadasActivas = binding.chipReparadas.isChecked
-        binding.cardPendientes.isVisible = pendientesActivas
-        binding.cardReparadas.isVisible = reparadasActivas
+        binding.cardPendientes.isVisible =
+            binding.toggleGroupEstado.checkedButtonId == R.id.btnTogglePendientes
+        binding.cardReparadas.isVisible =
+            binding.toggleGroupEstado.checkedButtonId == R.id.btnToggleReparadas
     }
 
-    private fun actualizarModoChip() {
-        binding.chipGroupEstado.isSingleSelection = true
-        if (binding.chipPendientes.isChecked && binding.chipReparadas.isChecked) {
-            binding.chipReparadas.isChecked = false
+    private fun updateToggleEstadoColors() {
+        val ctx = requireContext()
+        val redColor = ContextCompat.getColor(ctx, R.color.chip_pendiente)
+        val greenColor = ContextCompat.getColor(ctx, R.color.chip_resuelta)
+        val pendienteChecked = binding.toggleGroupEstado.checkedButtonId == R.id.btnTogglePendientes
+        val reparadaChecked = binding.toggleGroupEstado.checkedButtonId == R.id.btnToggleReparadas
+
+        binding.btnTogglePendientes.backgroundTintList =
+            ColorStateList.valueOf(if (pendienteChecked) redColor else Color.TRANSPARENT)
+        binding.btnTogglePendientes.setTextColor(if (pendienteChecked) Color.WHITE else redColor)
+        binding.btnTogglePendientes.strokeColor = ColorStateList.valueOf(redColor)
+
+        binding.btnToggleReparadas.backgroundTintList =
+            ColorStateList.valueOf(if (reparadaChecked) greenColor else Color.TRANSPARENT)
+        binding.btnToggleReparadas.setTextColor(if (reparadaChecked) Color.WHITE else greenColor)
+        binding.btnToggleReparadas.strokeColor = ColorStateList.valueOf(greenColor)
+    }
+
+    private fun setupFab() {
+        binding.fabPrincipal.setOnClickListener { toggleFab() }
+        binding.fabScrim.setOnClickListener { closeFab() }
+        binding.fabRegistrar.setOnClickListener {
+            closeFab()
+            mostrarRegistroBottomSheet()
         }
+        binding.fabImportar.setOnClickListener {
+            closeFab()
+            excelLauncher.launch(
+                arrayOf(
+                    "application/vnd.ms-excel",
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                )
+            )
+        }
+        binding.fabDescargar.setOnClickListener {
+            closeFab()
+            prepararMachote()
+        }
+        binding.fabEmail.setOnClickListener {
+            closeFab()
+            prepararMachoteCorreo()
+        }
+    }
+
+    private fun toggleFab() {
+        if (isFabOpen) closeFab() else openFab()
+    }
+
+    private fun openFab() {
+        isFabOpen = true
+        binding.fabSpeedDialContainer.isVisible = true
+        binding.fabScrim.isVisible = true
+        binding.fabPrincipal.animate().rotation(45f).setDuration(200).start()
+        binding.fabSpeedDialContainer.alpha = 0f
+        binding.fabSpeedDialContainer.translationY = 40f
+        binding.fabSpeedDialContainer.animate()
+            .alpha(1f).translationY(0f).setDuration(200).start()
+    }
+
+    private fun closeFab() {
+        isFabOpen = false
+        binding.fabPrincipal.animate().rotation(0f).setDuration(200).start()
+        binding.fabSpeedDialContainer.animate()
+            .alpha(0f).translationY(40f).setDuration(200)
+            .withEndAction {
+                binding.fabSpeedDialContainer.isVisible = false
+                binding.fabScrim.isVisible = false
+            }.start()
     }
 
     private fun renderVehiculoFilters(state: LuminariaUiState) {

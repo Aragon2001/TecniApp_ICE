@@ -15,7 +15,8 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:paddingBottom="80dp">
 
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardConsulta"
@@ -114,47 +115,13 @@
                         android:layout_marginTop="6dp"
                         android:textColor="?attr/colorOnSurfaceVariant" />
 
-                    <androidx.constraintlayout.widget.ConstraintLayout
+                    <TextView
+                        android:id="@+id/chipNumero"
+                        style="@style/TextAppearance.Material3.TitleLarge"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="16dp">
-
-                        <TextView
-                            android:id="@+id/chipNumero"
-                            style="@style/TextAppearance.Material3.TitleLarge"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:textColor="?attr/colorOnSurface"
-                            app:layout_constraintStart_toStartOf="parent"
-                            app:layout_constraintTop_toTopOf="parent"
-                            app:layout_constraintEnd_toStartOf="@id/groupResultChips" />
-
-                        <com.google.android.material.chip.ChipGroup
-                            android:id="@+id/groupResultChips"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="12dp"
-                            app:chipSpacingHorizontal="8dp"
-                            app:layout_constraintEnd_toEndOf="parent"
-                            app:layout_constraintTop_toTopOf="parent">
-
-                            <com.google.android.material.chip.Chip
-                                android:id="@+id/chipEstadoMedidor"
-                                style="@style/Widget.Material3.Chip.Assist"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="@string/medidor_chip_status_ok"
-                                app:chipIcon="@drawable/ic_check" />
-
-                            <com.google.android.material.chip.Chip
-                                android:id="@+id/chipSyncResultado"
-                                style="@style/Widget.Material3.Chip.Assist"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="@string/medidor_chip_sync_ok"
-                                app:chipIcon="@drawable/ic_cloud_download" />
-                        </com.google.android.material.chip.ChipGroup>
-                    </androidx.constraintlayout.widget.ConstraintLayout>
+                        android:layout_marginTop="16dp"
+                        android:textColor="?attr/colorOnSurface" />
 
                     <com.google.android.material.card.MaterialCardView
                         android:layout_width="match_parent"
@@ -298,119 +265,8 @@
                                 app:layout_columnWeight="1" />
                         </androidx.gridlayout.widget.GridLayout>
                     </com.google.android.material.card.MaterialCardView>
-
-                    <com.google.android.material.card.MaterialCardView
-                        android:id="@+id/cardLecturas"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="16dp"
-                        app:cardBackgroundColor="@color/glass_light"
-                        app:cardCornerRadius="20dp"
-                        app:cardElevation="0dp"
-                        app:strokeColor="@color/glass_light"
-                        app:strokeWidth="1dp">
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="vertical"
-                            android:padding="16dp">
-
-                            <TextView
-                                style="@style/TextAppearance.Material3.TitleMedium"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:text="@string/medidor_lecturas_title"
-                                android:textColor="?attr/colorOnSurface" />
-
-                            <TextView
-                                android:id="@+id/textLecturaActual"
-                                style="@style/TextAppearance.Material3.BodyLarge"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="10dp"
-                                android:text="@string/medidor_lectura_actual_label"
-                                android:textColor="?attr/colorOnSurface" />
-
-                            <TextView
-                                android:id="@+id/textLecturaAnterior"
-                                style="@style/TextAppearance.Material3.BodyMedium"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="6dp"
-                                android:text="@string/medidor_lectura_anterior_label"
-                                android:textColor="?attr/colorOnSurfaceVariant" />
-
-                            <com.google.android.material.divider.MaterialDivider
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="12dp"
-                                android:layout_marginBottom="12dp" />
-
-                            <TextView
-                                android:id="@+id/textLecturaFecha"
-                                style="@style/TextAppearance.Material3.LabelLarge"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:text="@string/medidor_lectura_fecha_label"
-                                android:textColor="?attr/colorOnSurfaceVariant" />
-                        </LinearLayout>
-                    </com.google.android.material.card.MaterialCardView>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
-
-            <LinearLayout
-                android:id="@+id/layoutAcciones"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:layout_marginBottom="16dp"
-                android:orientation="vertical"
-                android:visibility="gone">
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnRegistrarLectura"
-                    style="@style/Tecni.Button.Primary"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/medidor_registrar_lectura"
-                    app:icon="@drawable/ic_check"
-                    app:iconGravity="textStart"
-                    app:iconPadding="8dp" />
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:orientation="horizontal">
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnCopiar"
-                        style="@style/Tecni.Button.Outlined"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="@string/medidor_copy"
-                        app:icon="@drawable/ic_copy"
-                        app:iconGravity="textStart"
-                        app:iconPadding="8dp" />
-
-                    <Space
-                        android:layout_width="12dp"
-                        android:layout_height="wrap_content" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnCompartir"
-                        style="@style/Tecni.Button.Outlined"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="@string/medidor_sincronizar"
-                        app:icon="@drawable/ic_cloud_download"
-                        app:iconGravity="textStart"
-                        app:iconPadding="8dp" />
-                </LinearLayout>
-            </LinearLayout>
 
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardNoEncontrado"
@@ -460,4 +316,100 @@
             </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
+
+    <!-- Overlay semitransparente para cerrar el FAB expandido -->
+    <View
+        android:id="@+id/fabOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#80000000"
+        android:visibility="gone" />
+
+    <!-- FAB mini: Compartir -->
+    <LinearLayout
+        android:id="@+id/fabCompartirContainer"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_marginBottom="144dp"
+        android:layout_marginEnd="12dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:visibility="gone">
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            app:cardCornerRadius="8dp"
+            app:cardElevation="2dp">
+
+            <TextView
+                style="@style/TextAppearance.Material3.LabelLarge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="6dp"
+                android:text="@string/medidor_compartir"
+                android:textColor="?attr/colorOnSurface" />
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fabCompartir"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:contentDescription="@string/medidor_compartir"
+            app:fabSize="mini"
+            app:srcCompat="@drawable/ic_share" />
+    </LinearLayout>
+
+    <!-- FAB mini: Copiar -->
+    <LinearLayout
+        android:id="@+id/fabCopiarContainer"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_marginBottom="88dp"
+        android:layout_marginEnd="12dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:visibility="gone">
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            app:cardCornerRadius="8dp"
+            app:cardElevation="2dp">
+
+            <TextView
+                style="@style/TextAppearance.Material3.LabelLarge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="6dp"
+                android:text="@string/medidor_copy"
+                android:textColor="?attr/colorOnSurface" />
+        </com.google.android.material.card.MaterialCardView>
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fabCopiar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:contentDescription="@string/medidor_copy"
+            app:fabSize="mini"
+            app:srcCompat="@drawable/ic_copy" />
+    </LinearLayout>
+
+    <!-- FAB principal de opciones -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabOpciones"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="16dp"
+        android:contentDescription="@string/medidor_opciones_fab"
+        android:visibility="gone"
+        app:srcCompat="@drawable/ic_more_vert" />
+
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

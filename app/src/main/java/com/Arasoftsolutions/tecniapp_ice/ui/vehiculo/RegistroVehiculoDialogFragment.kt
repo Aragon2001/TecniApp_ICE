@@ -50,6 +50,14 @@ class RegistroVehiculoDialogFragment : DialogFragment() {
             actualizarProximoMantenimiento()
         }
 
+        // Pre-fill km field with the current vehicle reading.
+        val currentKm = viewModel.uiState.value.valorActual
+        if (currentKm != null && currentKm > 0) {
+            val kmTexto = String.format(Locale.getDefault(), "%.0f", currentKm)
+            binding.etValorActual.setText(kmTexto)
+            binding.etValorActual.setSelection(kmTexto.length)
+        }
+
         binding.etValorActual.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit
@@ -72,6 +80,14 @@ class RegistroVehiculoDialogFragment : DialogFragment() {
         if (valor == null || valor < 0) {
             binding.tilValorActual.error = getString(
                 com.Arasoftsolutions.tecniapp_ice.R.string.mi_vehiculo_valor_invalido
+            )
+            return
+        }
+        val lecturaActual = viewModel.uiState.value.valorActual ?: 0.0
+        if (valor < lecturaActual) {
+            binding.tilValorActual.error = getString(
+                com.Arasoftsolutions.tecniapp_ice.R.string.averia_error_km_inicio_menor_ultimo,
+                String.format(Locale.getDefault(), "%.0f", lecturaActual)
             )
             return
         }

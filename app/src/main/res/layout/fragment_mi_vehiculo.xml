@@ -1,266 +1,403 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.core.widget.NestedScrollView
+<FrameLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:clipToPadding="false"
-    android:padding="16dp"
-    android:paddingBottom="32dp"
+    android:background="@color/bg_dark"
     tools:context=".ui.vehiculo.MiVehiculoFragment">
 
-    <LinearLayout
+    <!-- ── SCROLLABLE CONTENT ── -->
+    <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:animateLayoutChanges="true"
-        android:orientation="vertical">
+        android:layout_height="match_parent"
+        android:clipToPadding="false"
+        android:paddingBottom="100dp">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:padding="16dp">
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnRegistrarMantenimiento"
-                style="@style/Tecni.Button.Elevated"
+            <!-- ── HERO CARD ── -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardVehiculoHeader"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp"
-                android:icon="@drawable/ic_add"
-                android:text="@string/mi_vehiculo_cta_registrar"
-                app:iconTint="@color/white"
-                app:cornerRadius="16dp" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnRegistroEtm"
-                style="@style/Tecni.Button.Elevated"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp"
-                android:icon="@drawable/ic_edit"
-                android:text="@string/mi_vehiculo_cta_registro_etm"
-                app:iconTint="@color/ice_blue"
-                app:cornerRadius="16dp" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnConfigurarVehiculo"
-                style="@style/Tecni.Button.Elevated"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:icon="@drawable/ic_settings"
-                android:text="@string/mi_vehiculo_cta_configurar"
-                app:cornerRadius="16dp" />
-        </LinearLayout>
-
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/cardVehiculoHeader"
-            style="@style/Tecni.DashboardCard"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            app:cardBackgroundColor="@color/transparent">
-
-            <FrameLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="@drawable/bg_dashboard_header"
-                android:padding="20dp">
+                android:layout_marginBottom="16dp"
+                app:cardBackgroundColor="@android:color/transparent"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="0dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical">
+                    android:layout_height="match_parent"
+                    android:background="@drawable/bg_hero_vehiculo"
+                    android:orientation="vertical"
+                    android:padding="20dp">
 
-                    <TextView
-                        android:id="@+id/tvVehiculoPlaca"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:textAppearance="@style/TextAppearance.Material3.TitleLarge"
-                        android:textColor="@color/white"
-                        android:textStyle="bold"
-                        tools:text="Camión: T-07" />
-
-                    <TextView
-                        android:id="@+id/tvVehiculoTipo"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:textAppearance="@style/TextAppearance.Material3.BodySmall"
-                        android:textColor="@color/white_translucent"
-                        tools:text="Camión grúa" />
-
-                    <TextView
-                        android:id="@+id/tvVehiculoAgencia"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:textAppearance="@style/TextAppearance.Material3.BodySmall"
-                        android:textColor="@color/white_translucent"
-                        tools:text="Agencia · Subregión" />
-
-                    <TextView
-                        android:id="@+id/tvVehiculoSubregion"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:textAppearance="@style/TextAppearance.Material3.BodySmall"
-                        android:textColor="@color/white_translucent"
-                        tools:text="Subregión" />
-
+                    <!-- Top row: info + vehicle icon -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:gravity="center_vertical"
+                        android:gravity="top"
                         android:orientation="horizontal">
 
                         <LinearLayout
-                            android:layout_width="wrap_content"
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
+                            android:layout_weight="1"
                             android:orientation="vertical">
+
+
+
+                            <TextView
+                                android:id="@+id/tvVehiculoPlaca"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textColor="@color/on_dark"
+                                android:textSize="28sp"
+                                android:textStyle="bold"
+                                android:letterSpacing="-0.02"
+                                tools:text="T-07" />
+
+                            <TextView
+                                android:id="@+id/tvVehiculoTipo"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:textColor="@color/on_surface_variant_dark"
+                                android:textSize="12sp"
+                                tools:text="Grúa canasta" />
+
+                            <TextView
+                                android:id="@+id/tvVehiculoAgencia"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textColor="@color/on_surface_variant_dark"
+                                android:textSize="12sp"
+                                tools:text="Agencia Norte · Subregión A" />
+
+                            <TextView
+                                android:id="@+id/tvVehiculoSubregion"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textColor="@color/on_surface_variant_dark"
+                                android:textSize="11sp"
+                                android:visibility="gone" />
+                        </LinearLayout>
+
+                        <!-- Vehicle icon box -->
+                        <LinearLayout
+                            android:layout_width="72dp"
+                            android:layout_height="72dp"
+                            android:background="@drawable/bg_icon_wrap_blue"
+                            android:gravity="center"
+                            android:layout_marginStart="12dp">
+
+                            <ImageView
+                                android:id="@+id/ivVehiculoTipo"
+                                android:layout_width="44dp"
+                                android:layout_height="44dp"
+                                android:contentDescription="@string/mi_vehiculo_imagen_content"
+                                android:src="@drawable/ic_car"
+                                app:tint="@color/status_in_progress" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <!-- Status chips row -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp"
+                        android:orientation="horizontal">
+
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/chipEstadoHeader"
+                            style="@style/Widget.Material3.Chip.Suggestion"
+                            android:layout_width="wrap_content"
+                            android:layout_height="28dp"
+                            android:layout_marginEnd="8dp"
+                            android:textColor="@color/white"
+                            android:textSize="11sp"
+                            app:chipBackgroundColor="@color/success_500"
+                            tools:text="Mantenimiento ÓPTIMO" />
+
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/chipEtmEstadoHeader"
+                            style="@style/Widget.Material3.Chip.Suggestion"
+                            android:layout_width="wrap_content"
+                            android:layout_height="28dp"
+                            android:textColor="@color/white"
+                            android:textSize="11sp"
+                            app:chipBackgroundColor="@color/error_500"
+                            tools:text="ETM pendiente" />
+                    </LinearLayout>
+
+                    <!-- Stats row -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:orientation="horizontal">
+
+                        <!-- Lectura actual -->
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:layout_marginEnd="6dp"
+                            android:background="@drawable/bg_card_dark"
+                            android:orientation="vertical"
+                            android:padding="10dp">
+
+                            <TextView
+                                android:id="@+id/tvValorActualLabel"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textColor="@color/on_surface_variant_dark"
+                                android:textSize="10sp"
+                                android:textAllCaps="true"
+                                android:letterSpacing="0.05"
+                                tools:text="kilometraje " />
+
+                            <TextView
+                                android:id="@+id/tvValorActual"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:textColor="@color/status_in_progress"
+                                android:textSize="16sp"
+                                android:textStyle="bold"
+                                tools:text="75,320 km" />
+                        </LinearLayout>
+
+                        <!-- km hoy -->
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:layout_marginEnd="6dp"
+                            android:background="@drawable/bg_card_dark"
+                            android:orientation="vertical"
+                            android:padding="10dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/mi_vehiculo_kpi_km_hoy"
+                                android:textColor="@color/on_surface_variant_dark"
+                                android:textSize="10sp"
+                                android:textAllCaps="true"
+                                android:letterSpacing="0.05" />
+
+                            <TextView
+                                android:id="@+id/tvHeroKmHoy"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:textColor="@color/on_dark"
+                                android:textSize="16sp"
+                                android:textStyle="bold"
+                                tools:text="120 km" />
+                        </LinearLayout>
+
+                        <!-- Estado mensaje -->
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:background="@drawable/bg_card_dark"
+                            android:orientation="vertical"
+                            android:padding="10dp">
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="@string/mi_vehiculo_label_mantenimiento"
-                                android:textColor="@color/white_translucent"
-                                android:textSize="10sp" />
-
-                            <com.google.android.material.chip.Chip
-                                android:id="@+id/chipEstadoHeader"
-                                style="@style/Tecni.StatusChip"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="ÓPTIMO"
-                                android:textColor="@color/white"
-                                app:chipBackgroundColor="@color/success_500" />
-                        </LinearLayout>
-
-                        <LinearLayout
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="12dp"
-                            android:orientation="vertical">
+                                android:textColor="@color/on_surface_variant_dark"
+                                android:textSize="10sp"
+                                android:textAllCaps="true"
+                                android:letterSpacing="0.05" />
 
                             <TextView
+                                android:id="@+id/tvEstadoMensaje"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="@string/mi_vehiculo_label_etm"
-                                android:textColor="@color/white_translucent"
-                                android:textSize="10sp" />
-
-                            <com.google.android.material.chip.Chip
-                                android:id="@+id/chipEtmEstadoHeader"
-                                style="@style/Tecni.StatusChip"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="ATM pendiente"
-                                android:textColor="@color/white"
-                                app:chipBackgroundColor="@color/error_500" />
+                                android:layout_marginTop="2dp"
+                                android:textColor="@color/success_green"
+                                android:textSize="16sp"
+                                android:textStyle="bold"
+                                tools:text="ÓPTIMO" />
                         </LinearLayout>
                     </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- ── KPI CARDS ROW ── -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:orientation="horizontal">
+
+                <!-- km hoy KPI -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="6dp"
+                    android:orientation="vertical"
+                    android:background="@drawable/bg_motivacion_card"
+                    android:padding="14dp">
+
+                    <!-- top accent line -->
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="2dp"
+                        android:layout_marginBottom="8dp"
+                        android:background="@color/status_in_progress" />
 
                     <TextView
-                        android:id="@+id/tvEstadoMensaje"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:text="@string/mi_vehiculo_header_microcopy"
-                        android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
-                        android:textColor="@color/white_translucent" />
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="16dp"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            android:id="@+id/tvValorActualLabel"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:textColor="@color/white_translucent"
-                            android:textSize="12sp"
-                            tools:text="Lectura actual" />
-
-                        <TextView
-                            android:id="@+id/tvValorActual"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="12dp"
-                            android:textColor="@color/white"
-                            android:textSize="22sp"
-                            android:textStyle="bold"
-                            tools:text="75,320 km" />
-                    </LinearLayout>
-                </LinearLayout>
-
-                <ImageView
-                    android:id="@+id/ivVehiculoTipo"
-                    android:layout_width="96dp"
-                    android:layout_height="96dp"
-                    android:layout_gravity="end|center_vertical"
-                    android:contentDescription="@string/mi_vehiculo_imagen_content"
-                    android:src="@drawable/ic_car"
-                    app:tint="@color/white" />
-            </FrameLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            android:orientation="horizontal">
-
-            <com.google.android.material.card.MaterialCardView
-                style="@style/Tecni.KpiCard"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="6dp"
-                android:layout_weight="1"
-                app:cardBackgroundColor="@color/surface_light">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
-
-                    <ImageView
-                        android:layout_width="28dp"
-                        android:layout_height="28dp"
-                        android:contentDescription="@string/mi_vehiculo_kpi_km_hoy"
-                        android:src="@drawable/ic_speedometer"
-                        app:tint="@color/ice_blue" />
+                        android:text="⏱️"
+                        android:textSize="20sp" />
 
                     <TextView
                         android:id="@+id/tvKpiKmHoy"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+                        android:layout_marginTop="6dp"
+                        android:textColor="@color/status_in_progress"
+                        android:textSize="22sp"
                         android:textStyle="bold"
                         tools:text="120" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
                         android:text="@string/mi_vehiculo_kpi_km_hoy"
-                        android:textAppearance="@style/TextAppearance.Material3.BodySmall"
-                        android:textColor="@color/on_surface_variant_light" />
+                        android:textColor="@color/on_surface_variant_dark"
+                        android:textSize="10sp" />
                 </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
 
+                <!-- mantenimientos KPI -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardKpiMantenimientos"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="6dp"
+                    app:cardBackgroundColor="@color/surface_dark"
+                    app:cardCornerRadius="0dp"
+                    app:cardElevation="0dp"
+                    app:strokeWidth="0dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:background="@drawable/bg_motivacion_card"
+                        android:padding="14dp">
+
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="2dp"
+                            android:layout_marginBottom="8dp"
+                            android:background="@color/status_assigned" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="🔧"
+                            android:textSize="20sp" />
+
+                        <TextView
+                            android:id="@+id/tvKpiMantenimientos"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="6dp"
+                            android:textColor="@color/status_assigned"
+                            android:textSize="22sp"
+                            android:textStyle="bold"
+                            tools:text="3" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="@string/mi_vehiculo_kpi_mantenimientos"
+                            android:textColor="@color/on_surface_variant_dark"
+                            android:textSize="10sp" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- alertas KPI -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardKpiAlertas"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    app:cardBackgroundColor="@color/surface_dark"
+                    app:cardCornerRadius="0dp"
+                    app:cardElevation="0dp"
+                    app:strokeWidth="0dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:background="@drawable/bg_motivacion_card"
+                        android:padding="14dp">
+
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="2dp"
+                            android:layout_marginBottom="8dp"
+                            android:background="@color/danger_red" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="⚡"
+                            android:textSize="20sp" />
+
+                        <TextView
+                            android:id="@+id/tvKpiAlertas"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="6dp"
+                            android:textColor="@color/danger_red"
+                            android:textSize="22sp"
+                            android:textStyle="bold"
+                            tools:text="1" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="@string/mi_vehiculo_kpi_alertas"
+                            android:textColor="@color/on_surface_variant_dark"
+                            android:textSize="10sp" />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+            </LinearLayout>
+
+            <!-- ── CHART CARD ── -->
             <com.google.android.material.card.MaterialCardView
-                android:id="@+id/cardKpiMantenimientos"
-                style="@style/Tecni.KpiCard"
-                android:layout_width="0dp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="6dp"
-                android:layout_marginEnd="6dp"
-                android:layout_weight="1"
-                app:cardBackgroundColor="@color/surface_light">
+                android:layout_marginBottom="16dp"
+                app:cardBackgroundColor="@color/surface_dark"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp"
+                app:strokeColor="@color/outline_variant_dark"
+                app:strokeWidth="1dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -268,354 +405,363 @@
                     android:orientation="vertical"
                     android:padding="16dp">
 
-                    <ImageView
-                        android:layout_width="28dp"
-                        android:layout_height="28dp"
-                        android:contentDescription="@string/mi_vehiculo_kpi_mantenimientos"
-                        android:src="@drawable/ic_settings"
-                        app:tint="@color/ice_yellow" />
+                    <TextView
+                        android:id="@+id/tvTituloUsoMensual"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="12dp"
+                        android:text="@string/mi_vehiculo_uso_mensual"
+                        android:textColor="@color/on_dark"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <LinearLayout
+                        android:id="@+id/containerUsoMensual"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical" />
+
+                    <!-- legacy static bar rows kept hidden (not used by Fragment) -->
+                    <LinearLayout
+                        android:id="@+id/containerBarChart"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:visibility="gone">
+
+                        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="6dp" android:gravity="center_vertical" android:orientation="horizontal">
+                            <TextView android:id="@+id/tvMesLabel_ene" android:layout_width="40dp" android:layout_height="wrap_content" android:textColor="@color/on_surface_variant_dark" android:textSize="11sp" tools:text="Ene"/>
+                            <View android:id="@+id/viewBarra_ene" android:layout_width="0dp" android:layout_height="8dp" android:layout_marginStart="8dp" android:layout_weight="1" android:background="@color/status_in_progress"/>
+                        </LinearLayout>
+                        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="6dp" android:gravity="center_vertical" android:orientation="horizontal">
+                            <TextView android:id="@+id/tvMesLabel_feb" android:layout_width="40dp" android:layout_height="wrap_content" android:textColor="@color/on_surface_variant_dark" android:textSize="11sp" tools:text="Feb"/>
+                            <View android:id="@+id/viewBarra_feb" android:layout_width="0dp" android:layout_height="8dp" android:layout_marginStart="8dp" android:layout_weight="1" android:background="@color/status_in_progress"/>
+                        </LinearLayout>
+                        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="6dp" android:gravity="center_vertical" android:orientation="horizontal">
+                            <TextView android:id="@+id/tvMesLabel_mar" android:layout_width="40dp" android:layout_height="wrap_content" android:textColor="@color/on_surface_variant_dark" android:textSize="11sp" tools:text="Mar"/>
+                            <View android:id="@+id/viewBarra_mar" android:layout_width="0dp" android:layout_height="8dp" android:layout_marginStart="8dp" android:layout_weight="1" android:background="@color/status_in_progress"/>
+                        </LinearLayout>
+                        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="6dp" android:gravity="center_vertical" android:orientation="horizontal">
+                            <TextView android:id="@+id/tvMesLabel_abr" android:layout_width="40dp" android:layout_height="wrap_content" android:textColor="@color/on_surface_variant_dark" android:textSize="11sp" tools:text="Abr"/>
+                            <View android:id="@+id/viewBarra_abr" android:layout_width="0dp" android:layout_height="8dp" android:layout_marginStart="8dp" android:layout_weight="1" android:background="@color/status_in_progress"/>
+                        </LinearLayout>
+                        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="6dp" android:gravity="center_vertical" android:orientation="horizontal">
+                            <TextView android:id="@+id/tvMesLabel_may" android:layout_width="40dp" android:layout_height="wrap_content" android:textColor="@color/on_surface_variant_dark" android:textSize="11sp" tools:text="May"/>
+                            <View android:id="@+id/viewBarra_may" android:layout_width="0dp" android:layout_height="8dp" android:layout_marginStart="8dp" android:layout_weight="1" android:background="@color/status_in_progress"/>
+                        </LinearLayout>
+                        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:orientation="horizontal">
+                            <TextView android:id="@+id/tvMesLabel_jun" android:layout_width="40dp" android:layout_height="wrap_content" android:textColor="@color/on_surface_variant_dark" android:textSize="11sp" tools:text="Jun"/>
+                            <View android:id="@+id/viewBarra_jun" android:layout_width="0dp" android:layout_height="8dp" android:layout_marginStart="8dp" android:layout_weight="1" android:background="@color/status_in_progress"/>
+                        </LinearLayout>
+                    </LinearLayout>
 
                     <TextView
-                        android:id="@+id/tvKpiMantenimientos"
-                        android:layout_width="wrap_content"
+                        android:id="@+id/tvChartPlaceholder"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
-                        android:textStyle="bold"
-                        tools:text="3" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/mi_vehiculo_kpi_mantenimientos"
-                        android:textAppearance="@style/TextAppearance.Material3.BodySmall"
-                        android:textColor="@color/on_surface_variant_light" />
+                        android:layout_marginTop="12dp"
+                        android:gravity="center"
+                        android:text="@string/mi_vehiculo_uso_mensual_placeholder"
+                        android:textColor="@color/on_surface_variant_dark"
+                        android:textSize="13sp"
+                        android:visibility="gone" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/cardKpiAlertas"
-                style="@style/Tecni.KpiCard"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="6dp"
-                android:layout_weight="1"
-                app:cardBackgroundColor="@color/surface_light">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
-
-                    <ImageView
-                        android:layout_width="28dp"
-                        android:layout_height="28dp"
-                        android:contentDescription="@string/mi_vehiculo_kpi_alertas"
-                        android:src="@drawable/ic_notification_bolt"
-                        app:tint="@color/error_500" />
-
-                    <TextView
-                        android:id="@+id/tvKpiAlertas"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
-                        android:textStyle="bold"
-                        tools:text="1" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/mi_vehiculo_kpi_alertas"
-                        android:textAppearance="@style/TextAppearance.Material3.BodySmall"
-                        android:textColor="@color/on_surface_variant_light" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-        </LinearLayout>
-
-        <com.google.android.material.card.MaterialCardView
-            style="@style/Tecni.DashboardCard"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            app:cardBackgroundColor="@color/surface_light">
-
+            <!-- ── SECTION: PRÓXIMOS MANTENIMIENTOS ── -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
+                android:layout_marginBottom="12dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
 
                 <TextView
-                    android:id="@+id/tvTituloUsoMensual"
-                    android:layout_width="match_parent"
+                    android:id="@+id/tvTituloMantenimientos"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:text="@string/mi_vehiculo_uso_mensual"
-                    android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+                    android:layout_weight="1"
+                    android:text="@string/mi_vehiculo_reportes_inteligentes_titulo"
+                    android:textAllCaps="true"
+                    android:textColor="@color/on_surface_variant_dark"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:letterSpacing="0.08" />
+
+                <TextView
+                    android:id="@+id/tvAccionRegistrar"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/mi_vehiculo_cta_registrar"
+                    android:textColor="@color/status_in_progress"
+                    android:textSize="12sp"
                     android:textStyle="bold" />
+            </LinearLayout>
 
-                <LinearLayout
-                    android:id="@+id/containerBarChart"
+            <LinearLayout
+                android:id="@+id/containerMantenimientos"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:orientation="vertical" />
+
+            <!-- ── SECTION: HISTORIAL RECIENTE ── -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="12dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/tvTituloHistorialMantenimientos"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/mi_vehiculo_historial_mantenimientos_titulo"
+                    android:textAllCaps="true"
+                    android:textColor="@color/on_surface_variant_dark"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:letterSpacing="0.08" />
+
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/containerHistorialMantenimientos"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/tvHistorialVacio"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
-                    android:orientation="vertical">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="6dp"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            android:id="@+id/tvMesLabel"
-                            android:layout_width="40dp"
-                            android:layout_height="wrap_content"
-                            android:textAppearance="@style/TextAppearance.Material3.BodySmall"
-                            android:textColor="@color/on_surface_variant_light"
-                            tools:text="Ene" />
-
-                        <View
-                            android:id="@+id/viewBarra"
-                            android:layout_width="0dp"
-                            android:layout_height="8dp"
-                            android:layout_marginStart="8dp"
-                            android:layout_weight="1"
-                            android:background="@color/ice_blue" />
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="6dp"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            android:id="@+id/tvMesLabel"
-                            android:layout_width="40dp"
-                            android:layout_height="wrap_content"
-                            android:textAppearance="@style/TextAppearance.Material3.BodySmall"
-                            android:textColor="@color/on_surface_variant_light"
-                            tools:text="Feb" />
-
-                        <View
-                            android:id="@+id/viewBarra"
-                            android:layout_width="0dp"
-                            android:layout_height="8dp"
-                            android:layout_marginStart="8dp"
-                            android:layout_weight="1"
-                            android:background="@color/ice_blue" />
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="6dp"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            android:id="@+id/tvMesLabel"
-                            android:layout_width="40dp"
-                            android:layout_height="wrap_content"
-                            android:textAppearance="@style/TextAppearance.Material3.BodySmall"
-                            android:textColor="@color/on_surface_variant_light"
-                            tools:text="Mar" />
-
-                        <View
-                            android:id="@+id/viewBarra"
-                            android:layout_width="0dp"
-                            android:layout_height="8dp"
-                            android:layout_marginStart="8dp"
-                            android:layout_weight="1"
-                            android:background="@color/ice_blue" />
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="6dp"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            android:id="@+id/tvMesLabel"
-                            android:layout_width="40dp"
-                            android:layout_height="wrap_content"
-                            android:textAppearance="@style/TextAppearance.Material3.BodySmall"
-                            android:textColor="@color/on_surface_variant_light"
-                            tools:text="Abr" />
-
-                        <View
-                            android:id="@+id/viewBarra"
-                            android:layout_width="0dp"
-                            android:layout_height="8dp"
-                            android:layout_marginStart="8dp"
-                            android:layout_weight="1"
-                            android:background="@color/ice_blue" />
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="6dp"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            android:id="@+id/tvMesLabel"
-                            android:layout_width="40dp"
-                            android:layout_height="wrap_content"
-                            android:textAppearance="@style/TextAppearance.Material3.BodySmall"
-                            android:textColor="@color/on_surface_variant_light"
-                            tools:text="May" />
-
-                        <View
-                            android:id="@+id/viewBarra"
-                            android:layout_width="0dp"
-                            android:layout_height="8dp"
-                            android:layout_marginStart="8dp"
-                            android:layout_weight="1"
-                            android:background="@color/ice_blue" />
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            android:id="@+id/tvMesLabel"
-                            android:layout_width="40dp"
-                            android:layout_height="wrap_content"
-                            android:textAppearance="@style/TextAppearance.Material3.BodySmall"
-                            android:textColor="@color/on_surface_variant_light"
-                            tools:text="Jun" />
-
-                        <View
-                            android:id="@+id/viewBarra"
-                            android:layout_width="0dp"
-                            android:layout_height="8dp"
-                            android:layout_marginStart="8dp"
-                            android:layout_weight="1"
-                            android:background="@color/ice_blue" />
-                    </LinearLayout>
-                </LinearLayout>
-
-                <LinearLayout
-                    android:id="@+id/containerUsoMensual"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:text="@string/mi_vehiculo_historial_vacio"
+                    android:textColor="@color/on_surface_variant_dark"
+                    android:textSize="13sp"
                     android:visibility="gone" />
             </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
 
-        <TextView
-            android:id="@+id/tvTituloMantenimientos"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/mi_vehiculo_reportes_inteligentes_titulo"
-            android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
-            android:textStyle="bold" />
-
-        <LinearLayout
-            android:id="@+id/containerMantenimientos"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:orientation="vertical" />
-
-        <TextView
-            android:id="@+id/tvTituloHistorialMantenimientos"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="@string/mi_vehiculo_historial_mantenimientos_titulo"
-            android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
-            android:textStyle="bold" />
-
-        <LinearLayout
-            android:id="@+id/containerHistorialMantenimientos"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:orientation="vertical">
-
-            <TextView
-                android:id="@+id/tvHistorialVacio"
+            <!-- ── MOTIVACIÓN CARD ── -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardMotivacion"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:gravity="center"
-                android:text="@string/mi_vehiculo_historial_vacio"
-                android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
-                android:textColor="@color/on_surface_variant_light"
-                android:visibility="gone" />
-        </LinearLayout>
+                android:layout_marginTop="16dp"
+                app:cardBackgroundColor="@android:color/transparent"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="0dp">
 
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/cardMotivacion"
-            style="@style/Tecni.DashboardCard"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            app:cardBackgroundColor="@color/surface_light">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="20dp">
-
-                <TextView
-                    android:id="@+id/tvMotivacion"
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="@string/mi_vehiculo_motivacion"
-                    android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+                    android:background="@drawable/bg_motivacion_card"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="18dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="14dp"
+                        android:text="⭐"
+                        android:textSize="28sp" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/mi_vehiculo_motivacion"
+                            android:textColor="@color/on_dark"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tvMotivacion"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:text="@string/mi_vehiculo_motivacion_detalle"
+                            android:textColor="@color/on_surface_variant_dark"
+                            android:textSize="12sp"
+                            android:lineSpacingMultiplier="1.4" />
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- ── SIN VEHÍCULO STATE ── -->
+            <LinearLayout
+                android:id="@+id/layoutSinVehiculo"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="48dp"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:visibility="gone"
+                tools:visibility="visible">
+
+                <ImageView
+                    android:layout_width="56dp"
+                    android:layout_height="56dp"
+                    android:contentDescription="@string/mi_vehiculo_sin_asignar"
+                    android:src="@drawable/ic_warning"
+                    app:tint="@color/status_assigned" />
+
+                <TextView
+                    android:id="@+id/tvSinVehiculo"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:gravity="center"
+                    android:text="@string/mi_vehiculo_sin_asignar"
+                    android:textColor="@color/on_surface_variant_dark"
+                    android:textSize="14sp" />
+            </LinearLayout>
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+    <!-- ── FAB GROUP (floating overlay bottom-right) ── -->
+    <LinearLayout
+        android:id="@+id/layoutFabGroup"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_marginBottom="24dp"
+        android:layout_marginEnd="20dp"
+        android:gravity="end"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <!-- Mini FABs (collapsible group) -->
+        <LinearLayout
+            android:id="@+id/layoutFabMiniGroup"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:gravity="end"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <!-- Configurar vehículo -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="10dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="10dp"
+                    android:background="@drawable/bg_fab_label"
+                    android:paddingStart="12dp"
+                    android:paddingTop="7dp"
+                    android:paddingEnd="12dp"
+                    android:paddingBottom="7dp"
+                    android:text="@string/mi_vehiculo_cta_configurar"
+                    android:textColor="@color/on_dark"
+                    android:textSize="12sp"
                     android:textStyle="bold" />
 
-                <TextView
-                    android:layout_width="match_parent"
+                <com.google.android.material.floatingactionbutton.FloatingActionButton
+                    android:id="@+id/btnConfigurarVehiculo"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:text="@string/mi_vehiculo_motivacion_detalle"
-                    android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
-                    android:textColor="@color/on_primary_container_light" />
+                    android:contentDescription="@string/mi_vehiculo_cta_configurar"
+                    android:src="@drawable/ic_settings"
+                    app:backgroundTint="@color/surface_variant_dark"
+                    app:fabSize="mini"
+                    app:tint="@color/on_dark" />
             </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
 
-        <LinearLayout
-            android:id="@+id/layoutSinVehiculo"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:gravity="center"
-            android:orientation="vertical"
-            android:visibility="gone"
-            tools:visibility="visible">
-
-            <ImageView
-                android:layout_width="56dp"
-                android:layout_height="56dp"
-                android:contentDescription="@string/mi_vehiculo_sin_asignar"
-                android:src="@drawable/ic_warning"
-                app:tint="@color/ice_yellow" />
-
-            <TextView
-                android:id="@+id/tvSinVehiculo"
-                android:layout_width="match_parent"
+            <!-- Registro ETM -->
+            <LinearLayout
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:gravity="center"
-                android:text="@string/mi_vehiculo_sin_asignar"
-                android:textAppearance="@style/TextAppearance.Material3.BodyMedium" />
+                android:layout_marginBottom="10dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="10dp"
+                    android:background="@drawable/bg_fab_label"
+                    android:paddingStart="12dp"
+                    android:paddingTop="7dp"
+                    android:paddingEnd="12dp"
+                    android:paddingBottom="7dp"
+                    android:text="@string/mi_vehiculo_cta_registro_etm"
+                    android:textColor="@color/on_dark"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+
+                <com.google.android.material.floatingactionbutton.FloatingActionButton
+                    android:id="@+id/btnRegistroEtm"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:contentDescription="@string/mi_vehiculo_cta_registro_etm"
+                    android:src="@drawable/ic_edit"
+                    app:backgroundTint="#1E3D9CFF"
+                    app:fabSize="mini"
+                    app:tint="@color/status_in_progress" />
+            </LinearLayout>
+
+            <!-- Registrar mantenimiento -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="10dp"
+                    android:background="@drawable/bg_fab_label"
+                    android:paddingStart="12dp"
+                    android:paddingTop="7dp"
+                    android:paddingEnd="12dp"
+                    android:paddingBottom="7dp"
+                    android:text="@string/mi_vehiculo_cta_registrar"
+                    android:textColor="@color/on_dark"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+
+                <com.google.android.material.floatingactionbutton.FloatingActionButton
+                    android:id="@+id/btnRegistrarMantenimiento"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:contentDescription="@string/mi_vehiculo_cta_registrar"
+                    android:src="@drawable/ic_add"
+                    app:backgroundTint="#1E27AE60"
+                    app:fabSize="mini"
+                    app:tint="@color/success_green" />
+            </LinearLayout>
         </LinearLayout>
+
+        <!-- Main FAB -->
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/btnFabMain"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:contentDescription="@string/mi_vehiculo_cta_registrar"
+            android:src="@drawable/ic_add"
+            app:backgroundTint="@color/status_in_progress"
+            app:fabSize="normal"
+            app:tint="@color/white" />
     </LinearLayout>
-</androidx.core.widget.NestedScrollView>
+
+</FrameLayout>

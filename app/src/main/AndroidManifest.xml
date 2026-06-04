@@ -81,6 +81,12 @@
             android:exported="true"
             android:theme="@style/Theme.TecniAppICE" />
 
+        <!-- Permissions Onboarding Activity -->
+        <activity
+            android:name=".permissions.PermissionsActivity"
+            android:exported="false"
+            android:theme="@style/Theme.TecniAppICE" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"

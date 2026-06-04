@@ -26,7 +26,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.FrameLayout
-import android.widget.ImageView
 import android.widget.ArrayAdapter
 import android.widget.TextView
 import android.widget.Toast
@@ -96,7 +95,6 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
     private val CLAVE_STREET_VIEW_BUNDLE = "ClaveStreetViewBundle"
     private var streetViewPanoramaView: StreetViewPanoramaView? = null
     private var streetViewContainer: FrameLayout? = null
-    private var streetViewDynamicMarker: ImageView? = null
     private var streetViewPanorama: StreetViewPanorama? = null
     private var streetViewHasPanorama = false
     private var streetViewLoading = false
@@ -165,10 +163,9 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
     private var followLocationEnabled = true
     private var hasCenteredOnUser = false
     private var lastLocationReceivedAt = 0L
-    private var lastLocationErrorAt = 0L
     private var singleLocationToken: CancellationTokenSource? = null
-    private val LOCATION_ERROR_TOAST_INTERVAL_MS = 10_000L
-    private val LOCATION_STALE_THRESHOLD_MS = 5_000L
+    private val LOCATION_STALE_THRESHOLD_MS = 15_000L
+    private var gpsActivarPromptShown = false
 
     // --- Requests de ubicación ---
     private val locationRequest = com.google.android.gms.location.LocationRequest.Builder(
@@ -183,26 +180,18 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
 
     private val locationCallback = object : LocationCallback() {
         override fun onLocationResult(locationResult: LocationResult) {
-            val location: Location? = locationResult.lastLocation
-            if (location == null) {
-                mostrarToastUbicacionSiNecesario(getString(R.string.localizacion_toast_sin_ubicacion))
-                return
-            }
+            val location = locationResult.lastLocation ?: return
             manejarUbicacionUsuario(location)
-            // Si quisieras seguir al usuario, podrías mover la cámara aquí;
-            // se deja sin mover para no interferir con el poste seleccionado.
-            // val yo = LatLng(location.latitude, location.longitude)
         }
 
         override fun onLocationAvailability(locationAvailability: LocationAvailability) {
             if (!locationAvailability.isLocationAvailable) {
                 val now = SystemClock.elapsedRealtime()
-                val isStale = now - lastLocationReceivedAt >= LOCATION_STALE_THRESHOLD_MS
-                if (isStale) {
-                    mostrarToastUbicacionSiNecesario(getString(R.string.localizacion_toast_sin_disponibilidad))
+                if (now - lastLocationReceivedAt >= LOCATION_STALE_THRESHOLD_MS) {
+                    mostrarIndicadorGpsNoDisponible()
                 }
             } else {
-                lastLocationErrorAt = 0L
+                ocultarIndicadorGps()
             }
         }
     }
@@ -375,6 +364,30 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
         binding.streetViewActionExpand.setOnClickListener { expandirStreetView() }
         binding.streetViewActionMinimize.setOnClickListener { minimizarStreetView() }
         binding.streetViewActionClose.setOnClickListener { cerrarStreetView() }
+
+        // FABs de control del mapa
+        binding.fabRelocate.setOnClickListener {
+            followLocationEnabled = true
+            hasCenteredOnUser = false
+            gpsActivarPromptShown = false  // permitir prompt si GPS sigue apagado
+            solicitarUbicacionActual(force = true)
+        }
+        binding.fabZoomIn.setOnClickListener {
+            mapaGoogle?.animateCamera(CameraUpdateFactory.zoomIn())
+        }
+        binding.fabZoomOut.setOnClickListener {
+            mapaGoogle?.animateCamera(CameraUpdateFactory.zoomOut())
+        }
+
+        // Botón de reintentar GPS desde el indicador discreto
+        binding.gpsRetryButton.setOnClickListener {
+            if (!isLocationEnabled()) {
+                startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+            } else {
+                ocultarIndicadorGps()
+                solicitarUbicacionActual(force = true)
+            }
+        }
         binding.actionStreetView.isEnabled = false
         binding.actionCopy.isEnabled = false
         binding.actionCenter.isEnabled = false
@@ -429,9 +442,9 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
             return
         }
 
-        // Solo si todo está válido bajamos opacidad
+        // Reducir opacidad del mapa para dejar ver Street View, pero suficiente para ver el marcador
         binding.mapView.animate()
-            .alpha(0.3f)
+            .alpha(0.45f)
             .setDuration(250)
             .start()
 
@@ -489,48 +502,6 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
 }
 
 
-private fun attachDynamicStreetMarker(
-    panorama: StreetViewPanorama,
-    target: LatLng
-) {
-
-    panorama.setOnStreetViewPanoramaCameraChangeListener { camera ->
-
-        val location = panorama.location ?: return@setOnStreetViewPanoramaCameraChangeListener
-        val links = location.links ?: return@setOnStreetViewPanoramaCameraChangeListener
-
-        val bearingToTarget = links.firstOrNull()?.bearing ?: return@setOnStreetViewPanoramaCameraChangeListener
-
-        val delta = abs(((camera.bearing - bearingToTarget + 540f) % 360f) - 180f)
-
-
-        val visible = delta < 30f
-
-        val markerView = streetViewDynamicMarker ?: return@setOnStreetViewPanoramaCameraChangeListener
-
-        if (visible && !markerView.isVisible) {
-            markerView.alpha = 0f
-            markerView.isVisible = true
-            markerView.animate()
-                .alpha(1f)
-                .setDuration(200)
-                .start()
-        } else if (!visible && markerView.isVisible) {
-            markerView.animate()
-                .alpha(0f)
-                .setDuration(200)
-                .withEndAction {
-                    markerView.isVisible = false
-                }
-                .start()
-        }
-
-        // efecto leve de escala cuando está centrado
-        val scale = if (delta < 10f) 1.15f else 1f
-        markerView.scaleX = scale
-        markerView.scaleY = scale
-    }
-}
 
 
     private fun ensureStreetViewInflatedAndInitialized() {
@@ -541,7 +512,6 @@ private fun attachDynamicStreetMarker(
             val inflated = binding.streetViewStub.inflate()
             streetViewContainer = inflated as? FrameLayout
             streetViewPanoramaView = streetViewContainer?.findViewById(R.id.streetViewPanorama)
-            streetViewDynamicMarker = streetViewContainer?.findViewById(R.id.streetViewDynamicMarker)
         }
 
         val panoramaView = streetViewPanoramaView ?: return
@@ -594,19 +564,12 @@ private fun attachDynamicStreetMarker(
                streetViewLoading = true
                panorama.setPosition(target)
 
-val camera = StreetViewPanoramaCamera.Builder()
-    .zoom(1f)
-    .tilt(0f)
-    .bearing(0f)
-    .build()
-
-panorama.animateTo(camera, 800)
-
-attachDynamicStreetMarker(panorama, target)
-
-
-
-
+               val camera = StreetViewPanoramaCamera.Builder()
+                   .zoom(0f)
+                   .tilt(0f)
+                   .bearing(0f)
+                   .build()
+               panorama.animateTo(camera, 800)
             }
         }
 
@@ -715,18 +678,20 @@ attachDynamicStreetMarker(panorama, target)
 
         // Controles de UI
         mapaGoogle?.uiSettings?.apply {
-            isZoomControlsEnabled = true
-            isMyLocationButtonEnabled = true
+            isZoomControlsEnabled = false        // reemplazado por fabZoomIn/fabZoomOut
+            isMyLocationButtonEnabled = false    // reemplazado por fabRelocate
             isMapToolbarEnabled = false
             isZoomGesturesEnabled = true
             isTiltGesturesEnabled = true
-
             isCompassEnabled = true
             isRotateGesturesEnabled = true
             isScrollGesturesEnabledDuringRotateOrZoom = true
             isScrollGesturesEnabled = true
             isIndoorLevelPickerEnabled = false
         }
+        // Empujar la brújula nativa hacia abajo para que no quede tapada por overlayTop
+        val topPadPx = (140 * resources.displayMetrics.density).toInt()
+        mapaGoogle?.setPadding(0, topPadPx, 0, 0)
         mapaGoogle?.apply {
             currentMapLayerIndex = mapLayers.indexOf(mapType).takeIf { it >= 0 } ?: 0
             // Mapa más liviano: desactivamos capas pesadas para reducir uso de memoria/GPU.
@@ -834,6 +799,7 @@ attachDynamicStreetMarker(panorama, target)
 
         mapaGoogle?.isMyLocationEnabled = true
         if (!locationUpdatesActive) {
+            lastLocationReceivedAt = SystemClock.elapsedRealtime()
             fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper())
             locationUpdatesActive = true
         }
@@ -1379,9 +1345,6 @@ attachDynamicStreetMarker(panorama, target)
         viewModel.actualizarStreetViewEstado(LocalizacionViewModel.StreetViewState.LOADING)
         actualizarStreetViewUi()
         panorama.setPosition(target)
-        attachDynamicStreetMarker(panorama, target)
-
-
     }
 
     private fun actualizarStreetViewUi() {
@@ -1402,7 +1365,8 @@ attachDynamicStreetMarker(panorama, target)
     }
 
     private fun pedirActivarUbicacionSiOcupa() {
-        if (!isLocationEnabled()) {
+        if (!isLocationEnabled() && !gpsActivarPromptShown) {
+            gpsActivarPromptShown = true
             Snackbar.make(
                 binding.root,
                 "Ubicación desactivada. Activá GPS para centrar.",
@@ -1459,8 +1423,8 @@ attachDynamicStreetMarker(panorama, target)
     }
 
     private fun manejarUbicacionUsuario(location: Location) {
-        lastLocationErrorAt = 0L
         lastLocationReceivedAt = SystemClock.elapsedRealtime()
+        ocultarIndicadorGps()
         if (followLocationEnabled && !userIsInteracting) {
             moverCamaraAUbicacion(location, animate = hasCenteredOnUser)
             hasCenteredOnUser = true
@@ -1472,23 +1436,35 @@ attachDynamicStreetMarker(panorama, target)
         val latLng = LatLng(location.latitude, location.longitude)
         val currentPosition = map.cameraPosition
         val zoom = max(currentPosition.zoom, 17f)
-        val position = CameraPosition.Builder(currentPosition)
+
+        // Usar el bearing del GPS cuando el dispositivo está en movimiento (> 0.5 m/s ≈ 1.8 km/h)
+        val bearing = if (location.hasBearing() && location.speed > 0.5f) {
+            normalizeBearing(location.bearing)
+        } else {
+            currentPosition.bearing
+        }
+
+        val position = CameraPosition.Builder()
             .target(latLng)
             .zoom(zoom)
+            .bearing(bearing)
+            .tilt(currentPosition.tilt)
             .build()
+
         if (animate) {
-            map.animateCamera(CameraUpdateFactory.newCameraPosition(position))
+            // Duración = intervalo de actualización de ubicación → movimiento continuo y fluido
+            map.animateCamera(CameraUpdateFactory.newCameraPosition(position), 750, null)
         } else {
             map.moveCamera(CameraUpdateFactory.newCameraPosition(position))
         }
-        lastCompassBearing = normalizeBearing(position.bearing)
+        lastCompassBearing = normalizeBearing(bearing)
     }
 
-    private fun mostrarToastUbicacionSiNecesario(mensaje: String) {
-        val now = SystemClock.elapsedRealtime()
-        if (now - lastLocationErrorAt >= LOCATION_ERROR_TOAST_INTERVAL_MS) {
-            lastLocationErrorAt = now
-            Toast.makeText(requireContext(), mensaje, Toast.LENGTH_SHORT).show()
-        }
+    private fun mostrarIndicadorGpsNoDisponible() {
+        _binding?.gpsStatusRow?.visibility = View.VISIBLE
+    }
+
+    private fun ocultarIndicadorGps() {
+        _binding?.gpsStatusRow?.isVisible = false
     }
 }

@@ -11,6 +11,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.Query
+import com.google.firebase.functions.FirebaseFunctions
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.tasks.await
@@ -1040,6 +1041,9 @@ class AveriasRepository(private val db: AppDatabase) {
         }?.key
     }
 
+    suspend fun medidorExisteEnRoom(numero: String): Boolean =
+        medidorDao.buscarPorNumero(numero.trim()) != null
+
     private suspend fun actualizarCambioMedidorSiAplica(
         caseId: String,
         medidorAnterior: String?,
@@ -1051,9 +1055,46 @@ class AveriasRepository(private val db: AppDatabase) {
         val nuevo = data.numeroMedidor?.trim().orEmpty()
         if (anterior.isBlank() || nuevo.isBlank() || anterior.equals(nuevo, ignoreCase = true)) return
 
-        val medidorActual = medidorDao.buscarPorNumero(anterior) ?: return
-        val medidorActualizado = medidorActual.copy(medidorNumber = nuevo)
+        // Find the meter material to extract readings and label
+        val materialMedidor = data.materiales.firstOrNull { uso ->
+            uso.medidorInstalado != null &&
+                uso.medidorInstalado.numero?.trim()?.equals(nuevo, ignoreCase = true) == true
+        } ?: data.materiales.firstOrNull { uso ->
+            "${uso.codigo} ${uso.descripcion}".lowercase().contains("medidor")
+        }
+        val meta = materialMedidor?.medidorInstalado
+        val (lecturaNueva, lecturaAnterior) = MaterialesSerializer.decodeLectura(meta?.lectura)
+        val lecturaAnteriorVisible = lecturaAnterior != null
 
+        val cambioData = CambioMedidorData(
+            numeroCaso = caseId,
+            medidorAnterior = anterior.ifBlank { null },
+            medidorInstalado = nuevo,
+            lecturaAnteriorVisible = lecturaAnteriorVisible,
+            lecturaAnterior = lecturaAnterior,
+            lecturaNueva = lecturaNueva,
+            materialUsado = materialMedidor?.descripcion?.ifBlank { materialMedidor.codigo },
+            tecnicoUid = data.atendidoPorUid,
+            tecnicoNombre = data.atendidoPorNombre,
+            fechaCambio = CambioMedidorSerializer.now()
+        )
+        val cambioJson = CambioMedidorSerializer.toJson(cambioData)
+
+        // Save audit trail to Room
+        dao.actualizarCambioMedidorJson(caseId, cambioJson, System.currentTimeMillis())
+
+        // Swap meter in medidores catalog (Room)
+        val medidorActual = medidorDao.buscarPorNumero(anterior) ?: run {
+            // Meter not in local catalog — record the change and notify supervisor, skip the swap
+            runCatching {
+                firebaseRef.child(caseId).child("cambioMedidor")
+                    .setValue(CambioMedidorSerializer.toFirebaseMap(cambioData)).await()
+            }.onFailure { Log.w(TAG, "No se pudo escribir cambioMedidor en Firebase para avería=$caseId", it) }
+            runCatching { notificarSupervisorCambioMedidor(cambioData) }
+                .onFailure { Log.w(TAG, "No se pudo invocar notifyCambioMedidorSupervisor para avería=$caseId", it) }
+            return
+        }
+        val medidorActualizado = medidorActual.copy(medidorNumber = nuevo)
         medidorDao.insertAll(listOf(medidorActualizado))
         medidorDao.eliminarPorNumero(anterior)
 
@@ -1062,6 +1103,45 @@ class AveriasRepository(private val db: AppDatabase) {
         }.onFailure {
             Log.w(TAG, "No se pudo actualizar el medidor en Firebase para avería=$caseId", it)
         }
+
+        // Write structured cambioMedidor node to Firebase
+        runCatching {
+            firebaseRef.child(caseId).child("cambioMedidor")
+                .setValue(CambioMedidorSerializer.toFirebaseMap(cambioData)).await()
+        }.onFailure {
+            Log.w(TAG, "No se pudo escribir cambioMedidor en Firebase para avería=$caseId", it)
+        }
+
+        // Notify supervisor via Cloud Function — failure must NOT revert the change
+        runCatching {
+            notificarSupervisorCambioMedidor(cambioData)
+        }.onFailure {
+            Log.w(TAG, "No se pudo invocar notifyCambioMedidorSupervisor para avería=$caseId", it)
+        }
+    }
+
+    private suspend fun notificarSupervisorCambioMedidor(cambio: CambioMedidorData) {
+        val averia = dao.getByCaseId(cambio.numeroCaso)
+        val agencia = averia?.agencia?.takeIf { it.isNotBlank() } ?: ""
+        val nombreAgencia = averia?.nombreAgencia?.takeIf { it.isNotBlank() } ?: agencia
+        val payload = mapOf(
+            "caseId" to cambio.numeroCaso,
+            "agencia" to agencia,
+            "nombreAgencia" to nombreAgencia,
+            "tecnicoNombre" to (cambio.tecnicoNombre ?: ""),
+            "tecnicoUid" to (cambio.tecnicoUid ?: ""),
+            "medidorAnterior" to (cambio.medidorAnterior ?: ""),
+            "medidorInstalado" to cambio.medidorInstalado,
+            "lecturaAnteriorVisible" to cambio.lecturaAnteriorVisible,
+            "lecturaAnterior" to (cambio.lecturaAnterior ?: ""),
+            "lecturaNueva" to (cambio.lecturaNueva ?: ""),
+            "materialUsado" to (cambio.materialUsado ?: ""),
+            "fechaCambio" to cambio.fechaCambio
+        )
+        FirebaseFunctions.getInstance()
+            .getHttpsCallable("notifyCambioMedidorSupervisor")
+            .call(payload)
+            .await()
     }
 
     private suspend fun actualizarMedidorEnFirebase(anterior: MedidorEntity, nuevo: MedidorEntity) {
@@ -1161,6 +1241,7 @@ class AveriasRepository(private val db: AppDatabase) {
         "medidorMetros" to medidorMetros,
         "medidorPoste" to medidorPoste,
         "evidenciasJson" to evidenciasJson,
+        "cambioMedidorJson" to cambioMedidorJson,
 
         // ===== HOUSEKEEPING =====
         "lastUpdated" to lastUpdated,

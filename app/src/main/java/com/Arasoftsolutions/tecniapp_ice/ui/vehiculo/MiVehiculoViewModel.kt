@@ -114,23 +114,22 @@ class MiVehiculoViewModel(app: Application) : AndroidViewModel(app) {
     // ─── CARGA INICIAL ────────────────────────────────────────────────────────
     private fun cargarDashboard() {
         viewModelScope.launch {
-            val uid       = auth.currentUser?.uid ?: return@launch
-            val usuario   = repository.obtenerUsuario(uid) ?: return@launch
-            val placaStr  = usuario.placaVehiculo?.trim().orEmpty()
+            val uid      = auth.currentUser?.uid ?: return@launch
+            val usuario  = repository.obtenerUsuario(uid) ?: return@launch
+            val placaStr = usuario.placaVehiculo?.trim().orEmpty()
             if (placaStr.isBlank()) {
                 _uiState.value = MiVehiculoUiState(isLoading = false)
                 return@launch
             }
             val placaLong = VehiculoPlacaUtils.parsePlacaLong(placaStr) ?: return@launch
 
-            // FIX-2: sincronizar desde Firebase al iniciar para recuperar
-            // historial ETM en teléfonos nuevos o después de reinstalar.
+            // Sync inicial desde Firebase — recupera historial ETM + mantenimientos.
+            // runCatching: si no hay red, el dashboard carga con datos locales.
             val vehiculoLocal = repository.obtenerVehiculoPorPlaca(placaLong)
             if (vehiculoLocal != null) {
                 runCatching {
                     repository.syncVehiculoDesdeFirebase(vehiculoLocal.vehiculoId)
                 }
-                // Si el pull falló (sin red), continuamos con datos locales — sin crash.
             }
 
             repository.observarVehiculoPorPlaca(placaLong)
@@ -139,41 +138,51 @@ class MiVehiculoViewModel(app: Application) : AndroidViewModel(app) {
                 .flatMapLatest { vehiculo ->
                     val tipo = inferirTipoVehiculo(vehiculo.tipo)
                     repository.observarRegistrosDiarios(vehiculo.vehiculoId)
-                        .combine(repository.observarMantenimientos(vehiculo.vehiculoId)) { registros, mants ->
-                            Triple(vehiculo, tipo, Pair(registros, mants))
+                        .combine(repository.observarMantenimientos(vehiculo.vehiculoId)) { registros, mantenimientos ->
+                            Triple(vehiculo, tipo, Pair(registros, mantenimientos))
                         }
                 }
                 .onStart { _uiState.value = _uiState.value.copy(isLoading = true) }
                 .collect { (vehiculo, tipo, data) ->
                     val (registros, mantenimientos) = data
-                    val unidad       = tipo.unidadTexto
-                    val valorActual  = if (tipo.usaKilometraje) vehiculo.kmActual
-                    else vehiculo.orimetroActual
+                    val unidad      = tipo.unidadTexto
+                    val valorActual = if (tipo.usaKilometraje) vehiculo.kmActual
+                                      else vehiculo.orimetroActual
 
-                    val ultimoMant  = mantenimientos.firstOrNull()
-                    val estado      = calcularEstado(valorActual, ultimoMant, tipo)
+                    // El "último mantenimiento" es el más reciente de TODOS los tipos.
+                    // Para alertas, se usa el tipo cuyo proximoKm esté más cerca.
+                    val ultimoMantenimiento = mantenimientos.firstOrNull()
+                    val mantenimientoMasCritico = mantenimientos
+                        .filter { it.proximoMantenimiento > 0 }
+                        .minByOrNull { it.proximoMantenimiento - (valorActual ?: 0.0) }
+                        ?: ultimoMantenimiento
+
+                    val estado       = calcularEstado(valorActual, mantenimientoMasCritico, tipo)
                     val estadoMensaje = construirMensajeEstado(estado)
-                    val cards       = construirCards(ultimoMant, valorActual, unidad, estado)
-                    val grafica     = construirUsoMensual(registros)
-                    val kmHoy       = calcularUsoHoy(registros, vehiculo, valorActual)
-                    val mantsMes    = contarMantenimientosMes(mantenimientos)
-                    val alertas     = calcularAlertas(valorActual, ultimoMant, tipo)
+                    val cards        = construirCards(ultimoMantenimiento, valorActual, unidad, estado)
+                    val grafica      = construirUsoMensual(registros)
+                    val kmHoy        = calcularUsoHoy(registros, vehiculo, valorActual)
+                    val mantsMes     = contarMantenimientosMes(mantenimientos)
+                    val alertas      = calcularAlertas(valorActual, mantenimientoMasCritico, tipo)
 
                     if (alertas > ultimaCantidadAlertasNotificada && alertas > 0) {
-                        val tipoAlerta    = ultimoMant?.tipoMantenimiento?.ifBlank { "General" } ?: "General"
+                        val tipoAlerta    = mantenimientoMasCritico?.tipoMantenimiento?.ifBlank { "General" } ?: "General"
                         val placaVehiculo = vehiculo.placaRaw.ifBlank { vehiculo.vehiculoId }
                         val estadoAlerta  = if (estado == EstadoVehiculo.VENCIDO) "atraso" else "próximo mantenimiento"
-                        val objetivo      = ultimoMant?.proximoMantenimiento?.let { formatearValor(it, unidad) } ?: "sin meta"
+                        val objetivo      = mantenimientoMasCritico?.proximoMantenimiento
+                            ?.let { formatearValor(it, unidad) } ?: "sin meta"
                         VehiculoNotifications.notifyMantenimientoProximo(
                             getApplication(),
                             "Alerta de $tipoAlerta",
                             "$placaVehiculo · $estadoAlerta",
-                            "Tipo: $tipoAlerta\nLectura actual: ${valorActual?.let { formatearValor(it, unidad) } ?: "sin lectura"}\nPróximo mantenimiento: $objetivo"
+                            "Tipo: $tipoAlerta\n" +
+                            "Lectura actual: ${valorActual?.let { formatearValor(it, unidad) } ?: "sin lectura"}\n" +
+                            "Próximo mantenimiento: $objetivo"
                         )
                     }
                     ultimaCantidadAlertasNotificada = alertas
 
-                    val historialAlertas         = construirHistorialAlertas(alertas, estado, ultimoMant, valorActual, unidad)
+                    val historialAlertas         = construirHistorialAlertas(alertas, estado, mantenimientoMasCritico, valorActual, unidad)
                     val historialMantenimientosUi = construirHistorialMantenimientosUi(mantenimientos, unidad)
                     val historialMantenimientos   = construirHistorialMantenimientos(mantenimientos, unidad)
                     val (etmEstadoTexto, etmEstadoCerrado) = calcularEstadoEtm(vehiculo)
@@ -204,16 +213,16 @@ class MiVehiculoViewModel(app: Application) : AndroidViewModel(app) {
 
     // ─── ETM ──────────────────────────────────────────────────────────────────
     private fun calcularEstadoEtm(vehiculo: VehiculoEntity): Pair<String, Boolean> {
-        val hoy            = fechaHoy()
-        val registrosEtm   = parseRegistrosDiarios(vehiculo.registrosDiariosJson)
+        val hoy = fechaHoy()
+        val registrosEtm = parseRegistrosDiarios(vehiculo.registrosDiariosJson)
         val pendienteAnterior = registrosEtm.any { !it.cerrado && it.fecha.isNotBlank() && it.fecha < hoy }
-        val registroHoy    = registrosEtm.firstOrNull { it.fecha == hoy }
-        val cerrado        = !pendienteAnterior && (registroHoy?.cerrado == true)
-        return if (cerrado) {
-            getApplication<Application>().getString(R.string.mi_vehiculo_etm_cerrado) to true
-        } else {
-            getApplication<Application>().getString(R.string.mi_vehiculo_etm_pendiente) to false
-        }
+        val registroHoy = registrosEtm.firstOrNull { it.fecha == hoy }
+        val cerrado = !pendienteAnterior && (registroHoy?.cerrado == true)
+        // Return ISO date so fragment can format it; fragment uses color for status, not text
+        val fechaMasReciente = registrosEtm
+            .filter { it.fecha.isNotBlank() }
+            .maxByOrNull { it.fecha }?.fecha ?: hoy
+        return fechaMasReciente to cerrado
     }
 
     // ─── ACCIONES DEL USUARIO ─────────────────────────────────────────────────

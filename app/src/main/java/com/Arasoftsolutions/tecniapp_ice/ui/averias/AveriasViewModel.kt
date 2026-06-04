@@ -442,6 +442,9 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
     fun nombreTecnicoActual(): String? = _usuario.value?.let { nombreCompleto(it) }
     fun vehiculoPreferido(): String? = _usuario.value?.placaVehiculo
 
+    suspend fun medidorExisteEnRoom(numero: String): Boolean =
+        withContext(Dispatchers.IO) { repo.medidorExisteEnRoom(numero) }
+
     private fun matchesEstado(entity: AveriaEntity, estadoSeleccionado: Estado?): Boolean {
         if (estadoSeleccionado == null) return true
         val estadoEntity = if (entity.estadoClor.equals("RESUELTA", ignoreCase = true)) {
@@ -1005,6 +1008,22 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
             }
             repo.revertirAPendiente(ui.id)
             _messages.tryEmit(getApplication<Application>().getString(R.string.averia_exito_revertida))
+        }
+    }
+
+    fun onRevertirResuelta(ui: AveriaUI) {
+        viewModelScope.launch {
+            if (!ensureSubregionAllowed(ui)) return@launch
+            if (Estado.fromLabel(ui.estado) != Estado.RESUELTA) return@launch
+            val user = requireUsuario() ?: return@launch
+            if (!isSupervisorRole(user)) {
+                _messages.tryEmit(getApplication<Application>().getString(R.string.averia_error_revertir_no_autorizado))
+                return@launch
+            }
+            repo.revertirAPendiente(ui.id)
+            clearDraft(ui.id)
+            _messages.tryEmit(getApplication<Application>().getString(R.string.averia_exito_revertida_resuelta))
+            AveriasSyncWorker.triggerNow(getApplication(), showSyncNotification = false)
         }
     }
 
