@@ -123,9 +123,7 @@ class ActivityMain : AppCompatActivity() {
                 R.id.nav_planillas,
                 R.id.nav_programacion,
                 R.id.nav_account,
-                R.id.nav_settings,
-                R.id.nav_help,
-                R.id.nav_privacy
+                R.id.nav_settings
             ),
             drawerLayout
         )
