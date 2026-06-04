@@ -630,6 +630,8 @@ Cliente: %4$s</string>
     <string name="settings_admin_privileges_enable">Activar privilegios de administrador</string>
     <string name="settings_admin_privileges_summary">Usa esta opción de pruebas para permitir o bloquear el acceso a módulos administrativos.</string>
     <string name="settings_check_updates">Buscar actualizaciones</string>
+    <string name="settings_about_summary">Información sobre TecniApp ICE</string>
+    <string name="settings_privacy_summary">Política de privacidad y términos de uso</string>
     <string name="update_dialog_title">Nueva versión disponible</string>
     <string name="update_dialog_message">Hay una nueva versión (%1$s) disponible.</string>
     <string name="update_dialog_notes_title">Notas de la versión:</string>
