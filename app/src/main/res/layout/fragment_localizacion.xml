@@ -55,6 +55,44 @@
                     android:text="@string/localizacion_placeholder_coordenadas"
                     android:textColor="?attr/colorOnSurfaceVariant" />
 
+                <!-- GPS unavailable indicator -->
+                <LinearLayout
+                    android:id="@+id/gpsStatusRow"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:visibility="gone">
+
+                    <ImageView
+                        android:layout_width="14dp"
+                        android:layout_height="14dp"
+                        android:src="@drawable/ic_location"
+                        android:importantForAccessibility="no"
+                        app:tint="?attr/colorError" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="6dp"
+                        android:text="@string/localizacion_gps_no_disponible"
+                        android:textSize="11sp"
+                        android:textColor="?attr/colorError" />
+
+                    <TextView
+                        android:id="@+id/gpsRetryButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/localizacion_gps_reintentar"
+                        android:textSize="11sp"
+                        android:textColor="?attr/colorPrimary"
+                        android:padding="4dp"
+                        android:clickable="true"
+                        android:focusable="true" />
+                </LinearLayout>
+
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -357,6 +395,59 @@
 
         </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
+
+        <!-- Map FAB controls: zoom + relocate, right side above the bottom action bar -->
+        <LinearLayout
+            android:id="@+id/mapFabStack"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end|bottom"
+            android:layout_marginEnd="8dp"
+            android:layout_marginBottom="96dp"
+            android:orientation="vertical"
+            android:gravity="center_horizontal">
+
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/fabRelocate"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:contentDescription="@string/localizacion_fab_reubicar"
+                android:stateListAnimator="@null"
+                app:fabSize="mini"
+                app:srcCompat="@drawable/center_focus_weak_24px"
+                app:backgroundTint="@color/primary"
+                app:tint="@color/white"
+                app:elevation="0dp"
+                app:pressedTranslationZ="0dp" />
+
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/fabZoomIn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:contentDescription="@string/localizacion_fab_zoom_in"
+                android:stateListAnimator="@null"
+                app:fabSize="mini"
+                app:srcCompat="@drawable/ic_add"
+                app:backgroundTint="@color/primary"
+                app:tint="@color/white"
+                app:elevation="0dp"
+                app:pressedTranslationZ="0dp" />
+
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/fabZoomOut"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:contentDescription="@string/localizacion_fab_zoom_out"
+                android:stateListAnimator="@null"
+                app:fabSize="mini"
+                app:srcCompat="@drawable/ic_remove"
+                app:backgroundTint="@color/primary"
+                app:tint="@color/white"
+                app:elevation="0dp"
+                app:pressedTranslationZ="0dp" />
+        </LinearLayout>
 
         <com.google.android.material.progressindicator.CircularProgressIndicator
             android:id="@+id/progressBar"

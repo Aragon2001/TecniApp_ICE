@@ -176,6 +176,10 @@
     <color name="status_assigned">#FFB020</color>
     <color name="status_done">#2EBE7E</color>
 
+    <!-- Inputs ETM -->
+    <color name="hint_color">#AAAAAA</color>
+    <color name="input_text_color">#FFFFFF</color>
+
     <!-- Grises legacy -->
     <color name="light_gray">#A9AFBC</color>
     <color name="dark_gray">#7E8796</color>
@@ -189,5 +193,6 @@
     <color name="on_secondary_container_dark">@color/on_secondary_container</color>
     <color name="tertiary_container_dark">@color/tertiary_container</color>
     <color name="on_tertiary_container_dark">@color/on_tertiary_container</color>
-
+    <color name="averia_notification_on_surface_variant">#CAC4D0</color>
+    <color name="averia_notification_divider">#3A3A3A</color>
 </resources>

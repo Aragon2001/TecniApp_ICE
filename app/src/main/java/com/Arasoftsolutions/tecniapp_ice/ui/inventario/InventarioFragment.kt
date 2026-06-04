@@ -29,6 +29,7 @@ class InventarioFragment : Fragment() {
     private val viewModel: InventarioViewModel by viewModels()
     private lateinit var adapter: InventarioAdapter
     private var vehiculosAdapter: ArrayAdapter<String>? = null
+    private var fabExpanded = false
 
     private val csvLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
         uri?.let { viewModel.procesarCsv(it) }
@@ -62,8 +63,29 @@ class InventarioFragment : Fragment() {
     }
 
     private fun setupListeners() {
-        binding.btnImportarCsv.setOnClickListener { csvLauncher.launch("text/csv") }
-        binding.btnImportarPdf.setOnClickListener { pdfLauncher.launch("application/pdf") }
+        binding.btnFabMain.setOnClickListener { toggleFab() }
+        binding.btnFabCsv.setOnClickListener {
+            collapseFab()
+            csvLauncher.launch("text/csv")
+        }
+        binding.btnFabPdf.setOnClickListener {
+            collapseFab()
+            pdfLauncher.launch("application/pdf")
+        }
+    }
+
+    private fun toggleFab() {
+        fabExpanded = !fabExpanded
+        binding.layoutFabMiniGroup.isVisible = fabExpanded
+        binding.btnFabMain.setImageResource(
+            if (fabExpanded) R.drawable.ic_close_sheet else R.drawable.ic_add
+        )
+    }
+
+    private fun collapseFab() {
+        fabExpanded = false
+        binding.layoutFabMiniGroup.isVisible = false
+        binding.btnFabMain.setImageResource(R.drawable.ic_add)
     }
 
     private fun observarEstado() {

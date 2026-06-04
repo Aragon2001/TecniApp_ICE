@@ -1,34 +1,45 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="12dp"
-    app:cardBackgroundColor="@color/glass_light"
+    android:layout_marginBottom="10dp"
+    app:cardBackgroundColor="@color/surface_dark"
     app:cardCornerRadius="16dp"
-    app:cardElevation="4dp"
-    app:strokeColor="@color/outline_variant_light"
-    app:strokeWidth="0dp">
+    app:cardElevation="0dp"
+    app:strokeColor="@color/outline_variant_dark"
+    app:strokeWidth="1dp">
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:padding="16dp">
+        android:padding="14dp">
 
-        <ImageView
-            android:id="@+id/ivMantenimientoIcon"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:contentDescription="@string/mi_vehiculo_mantenimiento_item"
-            android:src="@drawable/ic_settings"
-            app:tint="@color/ice_blue" />
+        <!-- Icon wrap -->
+        <LinearLayout
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="@drawable/bg_icon_wrap_blue"
+            android:gravity="center"
+            android:layout_marginEnd="14dp">
 
+            <ImageView
+                android:id="@+id/ivMantenimientoIcon"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:contentDescription="@string/mi_vehiculo_mantenimiento_item"
+                android:src="@drawable/ic_settings"
+                app:tint="@color/status_in_progress" />
+        </LinearLayout>
+
+        <!-- Info -->
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
             android:layout_weight="1"
             android:orientation="vertical">
 
@@ -36,27 +47,29 @@
                 android:id="@+id/tvMantenimientoTitulo"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textAppearance="@style/TextAppearance.Material3.TitleSmall"
+                android:textColor="@color/on_dark"
+                android:textSize="13sp"
                 android:textStyle="bold"
-                android:textColor="@color/on_surface_variant_light"
                 tools:text="Último mantenimiento" />
 
             <TextView
                 android:id="@+id/tvMantenimientoDetalle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:textAppearance="@style/TextAppearance.Material3.BodySmall"
-                android:textColor="@color/on_surface_variant_light"
-                tools:text="Aceite • 75.000 km" />
+                android:layout_marginTop="3dp"
+                android:textColor="@color/on_surface_variant_dark"
+                android:textSize="11sp"
+                tools:text="Aceite · 75,000 km" />
         </LinearLayout>
 
+        <!-- Status icon -->
         <ImageView
             android:id="@+id/ivEstado"
             android:layout_width="20dp"
             android:layout_height="20dp"
+            android:layout_marginStart="10dp"
             android:contentDescription="@string/mi_vehiculo_estado"
             android:src="@drawable/ic_check"
-            app:tint="@color/success_500" />
+            app:tint="@color/success_green" />
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

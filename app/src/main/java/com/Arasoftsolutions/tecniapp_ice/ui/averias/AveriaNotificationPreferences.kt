@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.callbackFlow
 /**
  * Gestor centralizado de preferencias relacionadas con las notificaciones de averías.
  *
- * Además, sincroniza los filtros seleccionados hacia Firebase Realtime:
+ * Sincroniza los filtros seleccionados hacia Firebase Realtime:
  * /usuarios/{uid}/notificationAgencies : ["GUACIMO","GUAPILES",...]
  * /usuarios/{uid}/notificationEnabled  : true/false
  */
@@ -33,7 +33,6 @@ object AveriaNotificationPreferences {
 
     fun setNotificationsEnabled(context: Context, enabled: Boolean) {
         prefs(context).edit { putBoolean(KEY_ENABLED, enabled) }
-        // ✅ Sync server (no bloquea)
         pushFiltersToFirebase(context)
     }
 
@@ -51,7 +50,6 @@ object AveriaNotificationPreferences {
         prefs(context).edit {
             putStringSet(KEY_AGENCIES, cleaned.toSet())
         }
-        // ✅ Sync server (no bloquea)
         pushFiltersToFirebase(context)
     }
 
@@ -79,20 +77,11 @@ object AveriaNotificationPreferences {
         setSelectedAgencies(context, current)
     }
 
-    /**
-     * Versión normalizada para comparar contra agencia/agenciaTag/nombreAgencia.
-     * OJO: esto ya es lo ideal para mandar al server.
-     */
     fun normalizedAgencies(context: Context): Set<String> =
         getSelectedAgencies(context).map { normalizeAveriaText(it) }
             .filter { it.isNotBlank() }
             .toSet()
 
-    /**
-     * ✅ Subir filtros a Realtime DB.
-     * - Si no hay usuario logueado, no hace nada (para no tirar NPE).
-     * - Se recomienda llamarlo cuando el usuario guarda filtros y al iniciar sesión.
-     */
     fun pushFiltersToFirebase(context: Context) {
         val uid = FirebaseAuth.getInstance().currentUser?.uid
         if (uid.isNullOrBlank()) {

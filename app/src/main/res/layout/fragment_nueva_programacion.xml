@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
@@ -9,22 +10,167 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <Spinner android:id="@+id/spinnerVehiculo" android:layout_width="match_parent" android:layout_height="wrap_content" />
-        <Spinner android:id="@+id/spinnerTecnico" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp"/>
-        <com.google.android.material.textfield.TextInputEditText android:id="@+id/etLocalizacion" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Localización"/>
-        <com.google.android.material.textfield.TextInputEditText android:id="@+id/etCircuito" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Circuito"/>
-        <com.google.android.material.textfield.TextInputEditText android:id="@+id/etCuenta" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Cuenta"/>
-        <com.google.android.material.textfield.TextInputEditText android:id="@+id/etActividad" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Actividad"/>
-        <com.google.android.material.textfield.TextInputEditText android:id="@+id/etDescripcion" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Descripción"/>
-        <com.google.android.material.textfield.TextInputEditText android:id="@+id/etLat" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Lat"/>
-        <com.google.android.material.textfield.TextInputEditText android:id="@+id/etLng" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="Lng"/>
-        <com.google.android.material.textfield.TextInputEditText android:id="@+id/etFotos" android:layout_width="match_parent" android:layout_height="wrap_content" android:hint="URLs fotos asignación (separadas por coma)"/>
+        <!-- Localización con feedback de validación -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilLocalizacion"
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Localización (9, 10 o 12 dígitos)"
+            app:helperText="Ej: 4830-817-001-00 o 483081700100">
 
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etLocalizacion"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="number"
+                android:maxLength="20" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Localización normalizada (solo lectura, muestra el resultado) -->
+        <TextView
+            android:id="@+id/tvLocNormalizada"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:layout_marginBottom="8dp"
+            android:textSize="12sp"
+            android:alpha="0.7"
+            android:visibility="gone" />
+
+        <!-- Detalle del trabajo -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilDetalleTrabajo"
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:hint="Detalle del trabajo">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etDetalleTrabajo"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textMultiLine"
+                android:minLines="2"
+                android:maxLines="5" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Vehículo / camión -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="Camión asignado"
+            android:textStyle="bold"
+            android:textSize="14sp" />
+
+        <Spinner
+            android:id="@+id/spinnerVehiculo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp" />
+
+        <!-- Georreferencia -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="Georreferencia (opcional)"
+            android:textStyle="bold"
+            android:textSize="14sp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="4dp">
+
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:hint="Latitud">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etLat"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="numberDecimal|numberSigned" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:hint="Longitud">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etLng"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="numberDecimal|numberSigned" />
+            </com.google.android.material.textfield.TextInputLayout>
+        </LinearLayout>
+
+        <!-- Fotos iniciales (URLs separadas por coma) -->
+        <com.google.android.material.textfield.TextInputLayout
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:hint="URLs fotos iniciales (separadas por coma)">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etFotos"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="textMultiLine"
+                android:minLines="2" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Botón crear -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnAsignar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:text="Asignar"/>
+            android:layout_marginTop="16dp"
+            android:text="Crear orden"
+            app:icon="@drawable/ic_add" />
+
+        <!-- Campos legacy (ocultos, para compatibilidad interna) -->
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etCircuito"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:visibility="gone" />
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etCuenta"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:visibility="gone" />
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etActividad"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:visibility="gone" />
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etDescripcion"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:visibility="gone" />
+
+        <Spinner
+            android:id="@+id/spinnerTecnico"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:visibility="gone" />
+
     </LinearLayout>
 </ScrollView>

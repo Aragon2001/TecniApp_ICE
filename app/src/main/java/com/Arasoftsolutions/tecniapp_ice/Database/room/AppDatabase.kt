@@ -50,7 +50,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun programacionDao(): ProgramacionDao
 
     companion object {
-        const val SCHEMA_VERSION = 28
+        const val SCHEMA_VERSION = 30
 
         val MIGRATION_24_25 = object : Migration(24, 25) {
             override fun migrate(db: SupportSQLiteDatabase) {
@@ -172,6 +172,74 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_28_29 = object : Migration(28, 29) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Campos de planificación (supervisor)
+                db.execSQL("ALTER TABLE programaciones ADD COLUMN localizacionOriginal TEXT")
+                db.execSQL("ALTER TABLE programaciones ADD COLUMN localizacionNormalizada TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE programaciones ADD COLUMN agenciaTag TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE programaciones ADD COLUMN cuadrillaAsignada TEXT")
+                db.execSQL("ALTER TABLE programaciones ADD COLUMN supervisorNombre TEXT")
+                db.execSQL("ALTER TABLE programaciones ADD COLUMN fotosSupervisorJson TEXT")
+
+                // Campos de atención (técnico)
+                db.execSQL("ALTER TABLE programaciones ADD COLUMN tecnicoPrincipalUid TEXT")
+                db.execSQL("ALTER TABLE programaciones ADD COLUMN tecnicoPrincipalNombre TEXT")
+                db.execSQL("ALTER TABLE programaciones ADD COLUMN tecnicosAtendieronJson TEXT")
+                db.execSQL("ALTER TABLE programaciones ADD COLUMN descripcionAtencion TEXT")
+                db.execSQL("ALTER TABLE programaciones ADD COLUMN fotosAtencionJson TEXT")
+                db.execSQL("ALTER TABLE programaciones ADD COLUMN gastoMateriales INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE programaciones ADD COLUMN materialesJson TEXT")
+
+                // Fechas de atención
+                db.execSQL("ALTER TABLE programaciones ADD COLUMN fechaInicioAtencion INTEGER")
+                db.execSQL("ALTER TABLE programaciones ADD COLUMN fechaFinalizacion INTEGER")
+
+                // Reapertura
+                db.execSQL("ALTER TABLE programaciones ADD COLUMN reabierta INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE programaciones ADD COLUMN fechaReapertura INTEGER")
+                db.execSQL("ALTER TABLE programaciones ADD COLUMN reabiertaPorUid TEXT")
+                db.execSQL("ALTER TABLE programaciones ADD COLUMN motivoReapertura TEXT")
+
+                // Cancelación
+                db.execSQL("ALTER TABLE programaciones ADD COLUMN canceladaPorUid TEXT")
+                db.execSQL("ALTER TABLE programaciones ADD COLUMN fechaCancelacion INTEGER")
+                db.execSQL("ALTER TABLE programaciones ADD COLUMN motivoCancelacion TEXT")
+
+                // Eliminación lógica
+                db.execSQL("ALTER TABLE programaciones ADD COLUMN eliminada INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE programaciones ADD COLUMN eliminadaPorUid TEXT")
+                db.execSQL("ALTER TABLE programaciones ADD COLUMN fechaEliminacion INTEGER")
+                db.execSQL("ALTER TABLE programaciones ADD COLUMN motivoEliminacion TEXT")
+
+                // Sincronización
+                db.execSQL("ALTER TABLE programaciones ADD COLUMN syncState TEXT NOT NULL DEFAULT 'PENDING'")
+
+                // Nuevos índices
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_programaciones_eliminada` ON `programaciones` (`eliminada`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_programaciones_tecnicoPrincipalUid` ON `programaciones` (`tecnicoPrincipalUid`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_programaciones_agenciaTag` ON `programaciones` (`agenciaTag`)")
+
+                // Migrar estados anteriores al nuevo esquema
+                db.execSQL("UPDATE programaciones SET estado = 'EN_ATENCION' WHERE estado = 'EN_PROCESO'")
+                db.execSQL("UPDATE programaciones SET estado = 'ATENDIDA' WHERE estado = 'EJECUTADA'")
+
+                // Inicializar tecnicoPrincipalUid desde tecnicoId en órdenes ya atendidas
+                db.execSQL("""
+                    UPDATE programaciones
+                    SET tecnicoPrincipalUid = tecnicoId
+                    WHERE estado IN ('ATENDIDA', 'EN_ATENCION')
+                    AND tecnicoPrincipalUid IS NULL
+                """.trimIndent())
+            }
+        }
+
+        val MIGRATION_29_30 = object : Migration(29, 30) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE averias ADD COLUMN cambioMedidorJson TEXT")
+            }
+        }
+
         @Volatile private var INSTANCE: AppDatabase? = null
 
         fun getInstance(context: Context): AppDatabase =
@@ -181,7 +249,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "tecniapp_room.db"
                 )
-                    .addMigrations(MIGRATION_24_25, MIGRATION_25_26, MIGRATION_26_27, MIGRATION_27_28)
+                    .addMigrations(MIGRATION_24_25, MIGRATION_25_26, MIGRATION_26_27, MIGRATION_27_28, MIGRATION_28_29, MIGRATION_29_30)
                     .fallbackToDestructiveMigrationFrom(true, 23)
                     .fallbackToDestructiveMigrationOnDowngrade(true)
                     .build()

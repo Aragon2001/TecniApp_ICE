@@ -37,7 +37,7 @@ import kotlinx.coroutines.withContext
 /**
  * Pantalla de inicio de sesión orientada a “Room-first”.
  *
- * Decisiones clave:
+ * Decisiones clave:2
  * - La verificación de existencia de cuenta se hace con FirebaseAuth (fetchSignInMethodsForEmail)
  *   para evitar reglas de lectura amplias en RTDB.
  * - El perfil del usuario en RTDB se maneja por UID (nodo /usuarios/{uid}).

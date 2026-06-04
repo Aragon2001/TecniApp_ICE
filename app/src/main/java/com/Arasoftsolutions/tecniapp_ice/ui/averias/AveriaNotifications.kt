@@ -20,11 +20,25 @@ import java.util.Locale
 
 
 object AveriaNotifications {
-    const val CHANNEL_ID = "averias_channel"
+
+    // FIX 3: Se versiona el canal para forzar recreación si la importancia era menor
+    // en instalaciones previas. Cambiar a "averias_channel_v2", "v3", etc. si se
+    // necesita forzar reseteo nuevamente en el futuro.
+    const val CHANNEL_ID = "averias_channel_v2"
 
     fun ensureChannel(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val manager = context.getSystemService(NotificationManager::class.java) ?: return
+
+            // FIX 3: Si el canal actual existe pero tiene importancia menor a HIGH,
+            // eliminarlo para que se recree con la configuración correcta.
+            // Nota: esto también limpia las preferencias del usuario para ese canal,
+            // por eso se usa un nuevo CHANNEL_ID en lugar de borrar en caliente.
+            val existing = manager.getNotificationChannel(CHANNEL_ID)
+            if (existing != null && existing.importance < NotificationManager.IMPORTANCE_HIGH) {
+                manager.deleteNotificationChannel(CHANNEL_ID)
+            }
+
             val sound = Uri.parse("android.resource://${context.packageName}/${R.raw.beep}")
             val attributes = AudioAttributes.Builder()
                 .setUsage(AudioAttributes.USAGE_NOTIFICATION_EVENT)
@@ -87,8 +101,6 @@ object AveriaNotifications {
             .build()
     }
 
-
-
     fun formatDateTime(millis: Long?): String? {
         if (millis == null || millis <= 0) return null
         val formatter = SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault())
@@ -118,6 +130,5 @@ object AveriaNotifications {
             .setContentIntent(notificationPreferencesPendingIntent(context))
             .build()
         manager.notify(2001, notification)
-        // TODO(Codex): Emitir notificación informativa al cambiar estado de la campana
     }
 }

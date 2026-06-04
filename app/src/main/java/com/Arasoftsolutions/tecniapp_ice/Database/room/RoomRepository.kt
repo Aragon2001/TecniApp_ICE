@@ -255,39 +255,39 @@ class   RoomRepository(context: Context) {
 
     suspend fun actualizarMantenimiento(
         vehiculoId: Int,
-        mantenimientoUltimo: String?,
-        mantenimientoProximo: String?,
+        mantenimientoUltimo: String?,   // ignorado — no se persiste, solo km
+        mantenimientoProximo: String?,  // ignorado — se calcula desde vehiculo_log
         valorActual: Double? = null,
         usaKilometraje: Boolean = true
     ) = withContext(Dispatchers.IO) {
         val vehiculo = vehiculoDao.buscarPorId(vehiculoId) ?: return@withContext
-        val kilometrajeBase = vehiculo.kmActual.takeIf { it > 0.0 } ?: (vehiculo.kmActual ?: 0.0)
-        val orimetroBase = vehiculo.orimetroActual ?: 0.0
-        val nuevoKilometraje = if (usaKilometraje && valorActual != null) {
-            maxOf(kilometrajeBase, valorActual)
-        } else {
-            kilometrajeBase
-        }
-        val nuevoOrimetro = if (!usaKilometraje && valorActual != null) {
-            maxOf(orimetroBase, valorActual)
-        } else {
+
+        val nuevoKm = if (usaKilometraje && valorActual != null)
+            maxOf(vehiculo.kmActual, valorActual)
+        else
+            vehiculo.kmActual
+
+        val nuevoOrimetro = if (!usaKilometraje && valorActual != null)
+            maxOf(vehiculo.orimetroActual ?: 0.0, valorActual)
+        else
             vehiculo.orimetroActual
-        }
 
         val actualizado = vehiculo.copy(
-            mantenimientoUltimo = mantenimientoUltimo,
-            mantenimientoProximo = mantenimientoProximo,
-            kmActual = nuevoKilometraje,
+            kmActual       = nuevoKm,
             orimetroActual = nuevoOrimetro,
-            updatedAt = System.currentTimeMillis()
+            updatedAt      = System.currentTimeMillis()
+            // mantenimientoUltimo y mantenimientoProximo deliberadamente no se tocan
         )
         vehiculoDao.upsertVehiculo(actualizado)
-        firebase.actualizarVehiculoCampos(actualizado.vehiculoId, mapOf(
-            "kmActual" to actualizado.kmActual,
-            "registroCerrado" to actualizado.registroCerrado,
-            "mantenimientoUltimo" to actualizado.mantenimientoUltimo,
-            "mantenimientoProximo" to actualizado.mantenimientoProximo
-        ))
+
+        // Solo sube km y registroCerrado — sin resumen de mantenimiento
+        firebase.actualizarVehiculoCampos(
+            actualizado.vehiculoId,
+            mapOf(
+                "kmActual"        to actualizado.kmActual,
+                "registroCerrado" to actualizado.registroCerrado
+            )
+        )
     }
 
     suspend fun actualizarRegistroDiarioVehiculo(
@@ -453,35 +453,42 @@ class   RoomRepository(context: Context) {
     suspend fun syncVehiculoDesdeFirebase(vehiculoId: String) = withContext(Dispatchers.IO) {
         val remoto = firebaseVehicleDs.pullVehiculoBase(vehiculoId) ?: return@withContext
         val local  = vehiculoDao.buscarPorVehiculoId(vehiculoId)
+
         val merged = if (local == null) {
             remoto
         } else {
             local.copy(
-                kmActual             = maxOf(local.kmActual, remoto.kmActual),
-                orimetroActual       = maxOf(local.orimetroActual ?: 0.0, remoto.orimetroActual ?: 0.0)
+                // km siempre el mayor entre local y Firebase
+                kmActual       = maxOf(local.kmActual, remoto.kmActual),
+                orimetroActual = maxOf(local.orimetroActual ?: 0.0, remoto.orimetroActual ?: 0.0)
                     .takeIf { it > 0.0 } ?: local.orimetroActual,
-                registroCerrado      = remoto.registroCerrado || local.registroCerrado,
-                mantenimientoUltimo  = remoto.mantenimientoUltimo ?: local.mantenimientoUltimo,
-                mantenimientoProximo = remoto.mantenimientoProximo ?: local.mantenimientoProximo,
+                registroCerrado = remoto.registroCerrado || local.registroCerrado,
+                // registrosDiariosJson: preferir local si ya tiene datos (fue quien los registró)
+                // usar remoto solo si local está vacío (dispositivo nuevo)
                 registrosDiariosJson = if (local.registrosDiariosJson.isNullOrBlank())
-                    remoto.registrosDiariosJson else local.registrosDiariosJson,
+                    remoto.registrosDiariosJson
+                else
+                    local.registrosDiariosJson,
+                // mantenimientoUltimo y mantenimientoProximo no se copian:
+                // se reconstruyen automáticamente desde vehiculo_log
                 updatedAt = System.currentTimeMillis()
             )
         }
         vehiculoDao.upsertVehiculo(merged)
 
-        // ── NUEVO: jalar logs de mantenimiento desde Firebase ──────────────
+        // Pull de logs de mantenimiento desde Firebase → pobla vehiculo_log
+        // Esencial para dispositivos nuevos que no tienen historial en Room.
+        // upsert con OnConflictStrategy.REPLACE: logIds "_pull" no colisionan
+        // con los locales "_UUID", así que no hay riesgo de sobreescribir
+        // registros propios del dispositivo.
         val mantLogs = firebaseVehicleDs.pullMantenimientosLogs(vehiculoId)
-        mantLogs.forEach { log ->
-            // Solo insertar si no existe ya en local (REPLACE haría duplicados
-            // visuales si el usuario ya registró desde este teléfono)
-            val existe = vehiculoLogDao.findLastByTipo(log.vehiculoId, "MANTENIMIENTO")
-                ?.logId == log.logId
-            if (!existe) vehiculoLogDao.upsert(log)
-        }
-        // ───────────────────────────────────────────────────────────────────
+        mantLogs.forEach { log -> vehiculoLogDao.upsert(log) }
 
-        Log.i("RoomRepositorySync", "[SYNC_VEHICULO_FIREBASE] vehiculoId=$vehiculoId kmMerged=${merged.kmActual} mantLogs=${mantLogs.size}")
+        Log.i(
+            "RoomRepositorySync",
+            "[SYNC_VEHICULO_FIREBASE] vehiculoId=$vehiculoId " +
+            "kmMerged=${merged.kmActual} mantLogsPulled=${mantLogs.size}"
+        )
     }
 
     suspend fun obtenerMaterialPorCodigo(codigo: String): MaterialEntity? =

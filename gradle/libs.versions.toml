@@ -1,6 +1,6 @@
 [versions]
-agp = "8.13.2"
-kotlin = "2.1.10"
+agp = "9.2.1"
+kotlin = "2.2.10"
 
 coreKtx = "1.13.1"
 junit = "4.13.2"
@@ -24,7 +24,7 @@ firebaseBom = "33.2.0"
 room = "2.7.2"
 
 # KSP emparejado con Kotlin 2.1.10
-ksp = "2.1.10-1.0.30"
+ksp = "2.3.2"
 datastoreCoreOkioJvm = "1.1.7"
 runtime = "1.0.0-alpha05"
 swiperefreshlayout = "1.1.0"

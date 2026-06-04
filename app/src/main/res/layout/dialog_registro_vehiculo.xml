@@ -6,37 +6,47 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content">
 
-    <com.google.android.material.card.MaterialCardView
-        style="@style/Tecni.Glass.Card"
+    <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:background="@color/surface_dark"
             android:orientation="vertical"
             android:padding="20dp">
 
+            <!-- Handle bar -->
+            <View
+                android:layout_width="40dp"
+                android:layout_height="4dp"
+                android:layout_gravity="center_horizontal"
+                android:layout_marginBottom="16dp"
+                android:background="@color/outline_variant_dark" />
+
+            <!-- Header -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:gravity="center_vertical"
-                android:orientation="horizontal">
+                android:orientation="horizontal"
+                android:layout_marginBottom="20dp">
 
                 <ImageView
                     android:id="@+id/ivDialogIcon"
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
-                    android:background="@drawable/bg_kpi_glow"
+                    android:layout_width="50dp"
+                    android:layout_height="50dp"
+                    android:background="@drawable/bg_icon_wrap_yellow"
                     android:contentDescription="@string/mi_vehiculo_dialog_titulo"
-                    android:padding="10dp"
+                    android:padding="12dp"
                     android:src="@drawable/ic_settings"
-                    app:tint="@color/ice_yellow" />
+                    app:tint="@color/status_assigned" />
 
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="12dp"
+                    android:layout_marginStart="14dp"
                     android:layout_weight="1"
                     android:orientation="vertical">
 
@@ -45,45 +55,28 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/mi_vehiculo_dialog_titulo"
-                        android:textAppearance="@style/TextAppearance.Material3.TitleLarge"
+                        android:textColor="@color/on_dark"
+                        android:textSize="18sp"
                         android:textStyle="bold" />
 
                     <TextView
                         android:id="@+id/tvDialogSubtitle"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
+                        android:layout_marginTop="2dp"
                         android:text="@string/mi_vehiculo_dialog_subtitulo"
-                        android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
-                        android:textColor="@color/on_surface_variant_light" />
+                        android:textColor="@color/on_surface_variant_dark"
+                        android:textSize="12sp" />
                 </LinearLayout>
             </LinearLayout>
 
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/tilFechaMantenimiento"
-                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
-                android:hint="@string/mi_vehiculo_dialog_fecha_mantenimiento"
-                app:endIconMode="none"
-                app:startIconDrawable="@drawable/ic_calendar">
-
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/etFechaMantenimiento"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:focusable="false"
-                    android:inputType="none"
-                    android:text="" />
-            </com.google.android.material.textfield.TextInputLayout>
-
+            <!-- Lectura actual -->
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/tilValorActual"
                 style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
+                android:layout_marginBottom="16dp"
                 android:hint="@string/mi_vehiculo_dialog_valor_hint">
 
                 <com.google.android.material.textfield.TextInputEditText
@@ -92,25 +85,29 @@
                     android:layout_height="wrap_content"
                     android:imeOptions="actionNext"
                     android:inputType="numberDecimal"
-                    android:nextFocusDown="@id/etObservaciones" />
+                    android:nextFocusDown="@id/etObservaciones"
+                    android:textColor="@color/on_dark" />
             </com.google.android.material.textfield.TextInputLayout>
 
+            <!-- Tipo de mantenimiento -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
+                android:layout_marginBottom="8dp"
                 android:text="@string/mi_vehiculo_dialog_tipo"
-                android:textAppearance="@style/TextAppearance.Material3.TitleSmall"
-                android:textStyle="bold" />
+                android:textColor="@color/on_surface_variant_dark"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textAllCaps="true"
+                android:letterSpacing="0.05" />
 
             <com.google.android.material.chip.ChipGroup
                 android:id="@+id/chipGroupMantenimiento"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_marginBottom="16dp"
                 app:singleSelection="true">
 
-                <!-- TODO: reemplazar con ic_oil cuando esté disponible -->
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chipAceite"
                     style="@style/Tecni.Chip"
@@ -118,7 +115,7 @@
                     android:layout_height="wrap_content"
                     android:text="@string/mi_vehiculo_chip_aceite"
                     app:chipIcon="@drawable/ic_car"
-                    app:chipIconTint="@color/ice_yellow" />
+                    app:chipIconTint="@color/status_assigned" />
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chipFrenos"
@@ -127,7 +124,7 @@
                     android:layout_height="wrap_content"
                     android:text="@string/mi_vehiculo_chip_frenos"
                     app:chipIcon="@drawable/ic_warning"
-                    app:chipIconTint="@color/error_500" />
+                    app:chipIconTint="@color/danger_red" />
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chipRevision"
@@ -136,7 +133,7 @@
                     android:layout_height="wrap_content"
                     android:text="@string/mi_vehiculo_chip_revision"
                     app:chipIcon="@drawable/ic_check"
-                    app:chipIconTint="@color/ice_blue" />
+                    app:chipIconTint="@color/success_green" />
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chipLlantas"
@@ -145,7 +142,7 @@
                     android:layout_height="wrap_content"
                     android:text="@string/mi_vehiculo_chip_llantas"
                     app:chipIcon="@drawable/ic_layers"
-                    app:chipIconTint="@color/ice_blue_dark" />
+                    app:chipIconTint="@color/status_in_progress" />
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chipFiltros"
@@ -154,7 +151,7 @@
                     android:layout_height="wrap_content"
                     android:text="@string/mi_vehiculo_chip_filtros"
                     app:chipIcon="@drawable/ic_filter_list"
-                    app:chipIconTint="@color/tertiary_container_light" />
+                    app:chipIconTint="@color/status_in_progress" />
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chipOtros"
@@ -162,16 +159,45 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/mi_vehiculo_chip_otros"
-                    app:chipIcon="@drawable/ic_car"
-                    app:chipIconTint="@color/ice_blue_dark" />
+                    app:chipIcon="@drawable/ic_settings"
+                    app:chipIconTint="@color/on_surface_variant_dark" />
             </com.google.android.material.chip.ChipGroup>
 
+            <!-- Próximo mantenimiento box -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_proximo_mant_box"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="12dp"
+                android:layout_marginBottom="16dp">
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:layout_marginEnd="10dp"
+                    android:contentDescription="@string/mi_vehiculo_dialog_proximo"
+                    android:src="@drawable/ic_calendar"
+                    app:tint="@color/success_green" />
+
+                <TextView
+                    android:id="@+id/tvProximoMantenimiento"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/success_green"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    tools:text="Próximo mantenimiento estimado: 80,320 km" />
+            </LinearLayout>
+
+            <!-- Observaciones -->
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/tilObservaciones"
                 style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
+                android:layout_marginBottom="20dp"
                 android:hint="@string/mi_vehiculo_dialog_observaciones">
 
                 <com.google.android.material.textfield.TextInputEditText
@@ -180,63 +206,34 @@
                     android:layout_height="wrap_content"
                     android:imeOptions="actionDone"
                     android:inputType="textCapSentences|textMultiLine"
-                    android:minLines="2" />
+                    android:minLines="2"
+                    android:textColor="@color/on_dark" />
             </com.google.android.material.textfield.TextInputLayout>
 
-            <com.google.android.material.card.MaterialCardView
-                style="@style/Tecni.Glass.Card"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                app:cardBackgroundColor="@color/glass_light">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:padding="12dp">
-
-                    <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:contentDescription="@string/mi_vehiculo_dialog_proximo"
-                        android:src="@drawable/ic_calendar"
-                        app:tint="@color/bg_dark" />
-
-                    <TextView
-                        android:id="@+id/tvProximoMantenimiento"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="10dp"
-                        android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
-                        android:textColor="@color/on_surface_variant"
-                        tools:text="Próximo en ~ 4,800 km" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
+            <!-- Buttons -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
-                android:gravity="end"
                 android:orientation="horizontal">
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnCancelar"
-                    style="@style/Tecni.Button.Outlined.Danger"
-                    android:layout_width="wrap_content"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:text="@string/mi_vehiculo_dialog_cancelar" />
+                    android:layout_weight="1"
+                    android:layout_marginEnd="8dp"
+                    android:text="@string/mi_vehiculo_dialog_cancelar"
+                    android:textColor="@color/on_surface_variant_dark" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnGuardar"
                     style="@style/Tecni.Button.Primary"
-                    android:layout_width="wrap_content"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
+                    android:layout_weight="1"
                     android:text="@string/mi_vehiculo_dialog_guardar_upper" />
             </LinearLayout>
         </LinearLayout>
-    </com.google.android.material.card.MaterialCardView>
+    </androidx.core.widget.NestedScrollView>
 </FrameLayout>

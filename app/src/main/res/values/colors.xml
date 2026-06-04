@@ -99,6 +99,10 @@
     <color name="warning_yellow">#F5D400</color>
     <color name="danger_red">#E5484D</color>
 
+    <!-- Inputs ETM -->
+    <color name="hint_color">#757575</color>
+    <color name="input_text_color">#212121</color>
+
     <!-- Texto y grises -->
     <color name="light_gray">#B3B3B3</color>
     <color name="dark_gray">#616161</color>
@@ -204,6 +208,7 @@
 
 <color name="tertiary_container_light">@color/tertiary_container</color>
 <color name="on_tertiary_container_light">@color/on_tertiary_container</color>
-
+    <color name="averia_notification_on_surface_variant">#49454F</color>
+    <color name="averia_notification_divider">#E0E0E0</color>
 
 </resources>
