@@ -1,6 +1,5 @@
 package com.Arasoftsolutions.tecniapp_ice.ui.medidor
 
-import android.animation.AnimatorSet
 import android.animation.ObjectAnimator
 import android.content.ClipData
 import android.content.ClipboardManager
@@ -9,6 +8,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.animation.AccelerateDecelerateInterpolator
 import android.view.inputmethod.EditorInfo
 import android.widget.ArrayAdapter
 import android.widget.Toast
@@ -47,8 +47,8 @@ class MedidorFragment : Fragment() {
     private var consultaNubeDialog: AlertDialog? = null
     private var wasManualInfoShown = false
 
-    /** Controla si el FAB expandible está abierto o cerrado */
-    private var isFabExpanded = false
+    /** Controla si la tarjeta de resultado ya estaba visible (para no re-animar) */
+    private var resultadoYaVisible = false
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -63,7 +63,7 @@ class MedidorFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         viewModel.initialize()
         configurarUi()
-        configurarFab()
+        iniciarAnimacionHero()
         observarEstado()
     }
 
@@ -85,6 +85,10 @@ class MedidorFragment : Fragment() {
                 false
             }
         }
+
+        binding.btnCopiarInline.setOnClickListener { copiarInformacion() }
+        binding.btnCompartirInline.setOnClickListener { compartirInformacion() }
+
         binding.btnMostrarRegistro.setOnClickListener {
             viewModel.habilitarRegistroManual()
             registroBinding?.let { registro ->
@@ -101,62 +105,48 @@ class MedidorFragment : Fragment() {
     }
 
     // ─────────────────────────────────────────────────────────────
-    //  FAB expandible (Copiar / Compartir)
+    //  Animación del ícono hero (pulso suave e infinito)
     // ─────────────────────────────────────────────────────────────
 
-    private fun configurarFab() {
-        binding.fabOpciones.setOnClickListener { toggleFab() }
-        binding.fabOverlay.setOnClickListener { collapseFab() }
-
-        binding.fabCopiar.setOnClickListener {
-            collapseFab()
-            copiarInformacion()
+    private fun iniciarAnimacionHero() {
+        val iconContainer = binding.heroIconContainer
+        val scaleX = ObjectAnimator.ofFloat(iconContainer, "scaleX", 1f, 1.06f, 1f).apply {
+            duration = 2400
+            repeatCount = ObjectAnimator.INFINITE
+            interpolator = AccelerateDecelerateInterpolator()
         }
-        binding.fabCompartir.setOnClickListener {
-            collapseFab()
-            compartirInformacion()
+        val scaleY = ObjectAnimator.ofFloat(iconContainer, "scaleY", 1f, 1.06f, 1f).apply {
+            duration = 2400
+            repeatCount = ObjectAnimator.INFINITE
+            interpolator = AccelerateDecelerateInterpolator()
         }
+        scaleX.start()
+        scaleY.start()
     }
 
-    private fun toggleFab() {
-        if (isFabExpanded) collapseFab() else expandFab()
-    }
+    // ─────────────────────────────────────────────────────────────
+    //  Animación de entrada para la tarjeta de resultado
+    // ─────────────────────────────────────────────────────────────
 
-    private fun expandFab() {
-        isFabExpanded = true
-        binding.fabOverlay.isVisible = true
-        binding.fabCopiarContainer.isVisible = true
-        binding.fabCompartirContainer.isVisible = true
-
-        // Rotar el ícono del FAB principal para indicar estado "abierto"
-        binding.fabOpciones.animate().rotation(45f).setDuration(200).start()
-
-        // Animar entrada de los mini-FABs desde abajo
-        listOf(binding.fabCopiarContainer, binding.fabCompartirContainer).forEachIndexed { i, v ->
-            v.alpha = 0f
-            v.translationY = 60f
-            v.animate()
+    private fun mostrarResultadoConAnimacion() {
+        if (resultadoYaVisible) return
+        resultadoYaVisible = true
+        binding.cardResultado.apply {
+            alpha = 0f
+            translationY = 48f
+            isVisible = true
+            animate()
                 .alpha(1f)
                 .translationY(0f)
-                .setStartDelay((i * 60).toLong())
-                .setDuration(200)
+                .setDuration(350)
+                .setInterpolator(AccelerateDecelerateInterpolator())
                 .start()
         }
     }
 
-    private fun collapseFab() {
-        isFabExpanded = false
-        binding.fabOverlay.isVisible = false
-        binding.fabOpciones.animate().rotation(0f).setDuration(200).start()
-
-        listOf(binding.fabCopiarContainer, binding.fabCompartirContainer).forEach { v ->
-            v.animate()
-                .alpha(0f)
-                .translationY(60f)
-                .setDuration(150)
-                .withEndAction { v.isVisible = false }
-                .start()
-        }
+    private fun ocultarResultado() {
+        resultadoYaVisible = false
+        binding.cardResultado.isVisible = false
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -168,14 +158,17 @@ class MedidorFragment : Fragment() {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.uiState.collect { estado ->
                     binding.btnConsultar.isEnabled = !estado.isLoading && !estado.isRegistering
-                    binding.cardResultado.isVisible = estado.medidor != null
-                    binding.cardNoEncontrado.isVisible = estado.notFoundNumero != null && !estado.showManualForm
+                    binding.progressBusqueda.isVisible = estado.isLoading
                     binding.btnMostrarRegistro.isEnabled = !estado.isRegistering
 
-                    // Mostrar/ocultar FAB según si hay resultado
                     val hayMedidor = estado.medidor != null
-                    binding.fabOpciones.isVisible = hayMedidor
-                    if (!hayMedidor && isFabExpanded) collapseFab()
+                    if (hayMedidor) {
+                        mostrarResultadoConAnimacion()
+                    } else {
+                        ocultarResultado()
+                    }
+
+                    binding.cardNoEncontrado.isVisible = estado.notFoundNumero != null && !estado.showManualForm
 
                     actualizarSubregionAdapter(estado.subregionOptions)
                     actualizarPuebloAdapter(estado.puebloOptions)
@@ -290,17 +283,15 @@ class MedidorFragment : Fragment() {
             return
         }
         binding.layoutMedidor.error = null
+        // Reiniciar animación de entrada para el nuevo resultado
+        resultadoYaVisible = false
         viewModel.buscar(numero)
     }
 
     // ─────────────────────────────────────────────────────────────
-    //  Copiar / Compartir — formato profesional de campo
+    //  Copiar / Compartir
     // ─────────────────────────────────────────────────────────────
 
-    /**
-     * Construye el texto formateado para operación de campo.
-     * Requiere que haya un medidor activo en el estado.
-     */
     private fun construirTextoMedidor(): String? {
         val medidor = viewModel.obtenerMedidorActual() ?: return null
         val estado = viewModel.uiState.value
@@ -331,6 +322,12 @@ class MedidorFragment : Fragment() {
         val clipboard = ContextCompat.getSystemService(requireContext(), ClipboardManager::class.java)
         clipboard?.setPrimaryClip(ClipData.newPlainText("Medidor", texto))
         Toast.makeText(requireContext(), R.string.medidor_copiado_exito, Toast.LENGTH_SHORT).show()
+
+        // Feedback visual en el botón
+        binding.btnCopiarInline.animate().scaleX(0.93f).scaleY(0.93f).setDuration(80)
+            .withEndAction {
+                binding.btnCopiarInline.animate().scaleX(1f).scaleY(1f).setDuration(120).start()
+            }.start()
     }
 
     private fun compartirInformacion() {

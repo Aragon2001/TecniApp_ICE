@@ -1,0 +1,360 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingBottom="32dp">
+
+        <!-- Handle -->
+        <View
+            android:layout_width="36dp"
+            android:layout_height="4dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="10dp"
+            android:background="?attr/colorOutlineVariant"
+            android:backgroundTint="?attr/colorOutlineVariant" />
+
+        <!-- ── HEADER ── -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="20dp"
+            android:paddingTop="14dp"
+            android:paddingBottom="14dp">
+
+            <ImageView
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:layout_marginEnd="10dp"
+                android:src="@drawable/ic_filter_list"
+                app:tint="?attr/colorPrimary" />
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/averias_filtros_avanzados_titulo"
+                android:textColor="?attr/colorOnSurface"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnFiltroLimpiarTodo"
+                style="@style/Tecni.Button.Text.Compact"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/averias_limpiar_filtros"
+                android:textSize="13sp"
+                android:textColor="?attr/colorError" />
+
+        </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:alpha="0.4"
+            android:background="?attr/colorOutlineVariant" />
+
+        <!-- ── CONTENIDO ── -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingHorizontal="16dp"
+            android:paddingTop="12dp">
+
+            <!-- ══ SECCIÓN: FECHA Y HORA ══ -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="10dp"
+                app:cardBackgroundColor="?attr/colorSurfaceVariant"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="0dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="14dp">
+
+                    <!-- Cabecera sección -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:layout_marginBottom="10dp">
+
+                        <ImageView
+                            android:layout_width="16dp"
+                            android:layout_height="16dp"
+                            android:layout_marginEnd="6dp"
+                            android:src="@drawable/ic_calendar"
+                            app:tint="?attr/colorPrimary" />
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/averias_fecha_y_hora"
+                            android:textColor="?attr/colorPrimary"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:letterSpacing="0.06"
+                            android:textAllCaps="true" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnFiltroClearFecha"
+                            style="@style/Tecni.Button.Text.Compact"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:minHeight="0dp"
+                            android:paddingHorizontal="4dp"
+                            android:text="@string/averias_filtro_fecha_limpiar"
+                            android:textColor="?attr/colorError"
+                            android:textSize="11sp"
+                            android:visibility="gone"
+                            tools:visibility="visible" />
+
+                    </LinearLayout>
+
+                    <!-- Botón rango de fechas -->
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnFiltroFecha"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="44dp"
+                        android:ellipsize="end"
+                        android:gravity="start|center_vertical"
+                        android:maxLines="1"
+                        android:paddingHorizontal="14dp"
+                        android:text="@string/averias_filtro_fecha_todas"
+                        android:textSize="13sp"
+                        app:icon="@drawable/ic_calendar"
+                        app:iconGravity="textStart"
+                        app:iconPadding="8dp"
+                        app:iconSize="16dp"
+                        app:iconTint="?attr/colorOnSurfaceVariant"
+                        app:strokeColor="?attr/colorOutlineVariant"
+                        app:strokeWidth="1dp" />
+
+                    <!-- Fila de horas: Inicio | Final -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:orientation="horizontal">
+
+                        <!-- Hora Inicio -->
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnFiltroHoraInicio"
+                            style="@style/Widget.Material3.Button.OutlinedButton"
+                            android:layout_width="0dp"
+                            android:layout_height="44dp"
+                            android:layout_weight="1"
+                            android:gravity="start|center_vertical"
+                            android:paddingHorizontal="12dp"
+                            android:text="@string/averias_hora_inicio_btn"
+                            android:textSize="12sp"
+                            app:icon="@drawable/ic_clock_outline"
+                            app:iconGravity="textStart"
+                            app:iconPadding="6dp"
+                            app:iconSize="14dp"
+                            app:iconTint="?attr/colorOnSurfaceVariant"
+                            app:strokeColor="?attr/colorOutlineVariant"
+                            app:strokeWidth="1dp"
+                            tools:text="Inicio: 08:00" />
+
+                        <View
+                            android:layout_width="8dp"
+                            android:layout_height="1dp" />
+
+                        <!-- Hora Final -->
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnFiltroHoraFin"
+                            style="@style/Widget.Material3.Button.OutlinedButton"
+                            android:layout_width="0dp"
+                            android:layout_height="44dp"
+                            android:layout_weight="1"
+                            android:gravity="start|center_vertical"
+                            android:paddingHorizontal="12dp"
+                            android:text="@string/averias_hora_fin_btn"
+                            android:textSize="12sp"
+                            app:icon="@drawable/ic_clock_outline"
+                            app:iconGravity="textStart"
+                            app:iconPadding="6dp"
+                            app:iconSize="14dp"
+                            app:iconTint="?attr/colorOnSurfaceVariant"
+                            app:strokeColor="?attr/colorOutlineVariant"
+                            app:strokeWidth="1dp"
+                            tools:text="Final: 18:00" />
+
+                    </LinearLayout>
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- ══ SECCIÓN: AGENCIA (supervisor + administrador) ══ -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardFiltroAgencia"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="10dp"
+                android:visibility="gone"
+                app:cardBackgroundColor="?attr/colorSurfaceVariant"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="0dp"
+                tools:visibility="visible">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="14dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:layout_marginBottom="10dp">
+
+                        <ImageView
+                            android:id="@+id/tvFiltroAgenciaLabel"
+                            android:layout_width="16dp"
+                            android:layout_height="16dp"
+                            android:layout_marginEnd="6dp"
+                            android:src="@drawable/ic_person"
+                            app:tint="?attr/colorPrimary" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/averias_filtrar_agencia"
+                            android:textColor="?attr/colorPrimary"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:letterSpacing="0.06"
+                            android:textAllCaps="true" />
+
+                    </LinearLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tilFiltroAgencia"
+                        style="@style/Tecni.Dropdown.Pill"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="@string/averias_filtrar_agencia"
+                        app:endIconMode="dropdown_menu">
+
+                        <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                            android:id="@+id/actvFiltroAgencia"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="none"
+                            android:singleLine="true"
+                            android:textSize="14sp" />
+
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- ══ SECCIÓN: REGIÓN (solo administrador) ══ -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardFiltroRegion"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="10dp"
+                android:visibility="gone"
+                app:cardBackgroundColor="?attr/colorSurfaceVariant"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="0dp"
+                tools:visibility="visible">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="14dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:layout_marginBottom="10dp">
+
+                        <ImageView
+                            android:id="@+id/tvFiltroRegionLabel"
+                            android:layout_width="16dp"
+                            android:layout_height="16dp"
+                            android:layout_marginEnd="6dp"
+                            android:src="@drawable/ic_share_location24"
+                            app:tint="?attr/colorPrimary" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/averias_filtrar_region"
+                            android:textColor="?attr/colorPrimary"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:letterSpacing="0.06"
+                            android:textAllCaps="true" />
+
+                    </LinearLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tilFiltroRegion"
+                        style="@style/Tecni.Dropdown.Pill"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="@string/averias_filtrar_region"
+                        app:endIconMode="dropdown_menu">
+
+                        <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                            android:id="@+id/actvFiltroRegion"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="none"
+                            android:singleLine="true"
+                            android:textSize="14sp" />
+
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- ── BOTÓN APLICAR ── -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnFiltroAplicar"
+                style="@style/Tecni.Button.Primary"
+                android:layout_width="match_parent"
+                android:layout_height="52dp"
+                android:layout_marginTop="8dp"
+                android:minHeight="0dp"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:text="@string/averias_aplicar_filtros"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>

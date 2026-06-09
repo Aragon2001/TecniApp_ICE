@@ -10,7 +10,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:animateLayoutChanges="true"
-        android:background="@color/surface_dark"
+        android:background="@color/surface"
         android:orientation="vertical"
         android:padding="20dp">
 
@@ -20,15 +20,15 @@
             android:layout_height="4dp"
             android:layout_gravity="center_horizontal"
             android:layout_marginBottom="16dp"
-            android:background="@color/outline_variant_dark" />
+            android:background="@color/outline_variant" />
 
         <!-- Header -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:layout_marginBottom="16dp">
+            android:layout_marginBottom="16dp"
+            android:orientation="horizontal">
 
             <ImageView
                 android:layout_width="50dp"
@@ -50,7 +50,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/registro_pendiente_title"
-                    android:textColor="@color/on_dark"
+                    android:textColor="@color/on_surface"
                     android:textSize="18sp"
                     android:textStyle="bold" />
 
@@ -59,7 +59,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="2dp"
-                    android:textColor="@color/on_surface_variant_dark"
+                    android:textColor="@color/on_surface_variant"
                     android:textSize="12sp"
                     tools:text="Hoy · lunes" />
             </LinearLayout>
@@ -71,9 +71,9 @@
             android:layout_height="wrap_content"
             android:background="@drawable/bg_info_box_yellow"
             android:gravity="center_vertical"
+            android:layout_marginBottom="16dp"
             android:orientation="horizontal"
-            android:padding="12dp"
-            android:layout_marginBottom="16dp">
+            android:padding="12dp">
 
             <ImageView
                 android:layout_width="18dp"
@@ -96,12 +96,16 @@
         <!-- Fecha (read-only, pre-filled) -->
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilRegistroFecha"
-            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            style="@style/Tecni.TextInput.Outlined"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="12dp"
             android:enabled="false"
-            android:hint="@string/vehiculo_registro_fecha">
+            android:hint="@string/vehiculo_registro_fecha"
+            app:boxStrokeColor="@color/outline_variant"
+            app:hintTextColor="@color/on_surface_variant"
+            app:startIconDrawable="@drawable/ic_calendar"
+            app:startIconTint="@color/on_surface_variant">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/etRegistroFecha"
@@ -109,26 +113,28 @@
                 android:layout_height="wrap_content"
                 android:focusable="false"
                 android:inputType="none"
-                android:textColor="@color/on_dark" />
+                android:textColor="@color/on_surface" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <!-- Lectura inicial -->
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilRegistroValor"
-            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            style="@style/Tecni.TextInput.Outlined"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="12dp"
             android:hint="@string/vehiculo_registro_km_orimetro"
-            app:hintTextColor="@color/hint_color">
+            app:boxStrokeColor="@color/outline_variant"
+            app:hintTextColor="@color/on_surface_variant"
+            app:startIconDrawable="@drawable/ic_speedometer"
+            app:startIconTint="@color/on_surface_variant">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/etRegistroValor"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="numberDecimal"
-                android:textColorHint="@color/hint_color"
-                android:textColor="@color/input_text_color" />
+                android:textColor="@color/on_surface" />
         </com.google.android.material.textfield.TextInputLayout>
 
         <!-- Switch: cerrar registro -->
@@ -139,7 +145,7 @@
             android:layout_marginBottom="8dp"
             android:contentDescription="@string/registro_pendiente_cerrar_label"
             android:text="@string/registro_pendiente_cerrar_label"
-            android:textColor="@color/on_dark" />
+            android:textColor="@color/on_surface" />
 
         <TextView
             android:id="@+id/tvRegistroModoInfo"
@@ -147,10 +153,10 @@
             android:layout_height="wrap_content"
             android:layout_marginBottom="12dp"
             android:text="@string/registro_pendiente_modo_inicial_info"
-            android:textColor="@color/on_surface_variant_dark"
+            android:textColor="@color/on_surface_variant"
             android:textSize="12sp" />
 
-        <!-- Collapse section: cierre fields -->
+        <!-- Sección de cierre (expandible) -->
         <LinearLayout
             android:id="@+id/layoutRegistroCierre"
             android:layout_width="match_parent"
@@ -167,27 +173,29 @@
                 android:gravity="center"
                 android:text="@string/registro_pendiente_cierre_label"
                 android:textAllCaps="true"
-                android:textColor="@color/on_surface_variant_dark"
+                android:textColor="@color/on_surface_variant"
                 android:textSize="11sp"
                 android:letterSpacing="0.08" />
 
             <!-- Km Final -->
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/tilRegistroKmFinal"
-                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                style="@style/Tecni.TextInput.Outlined"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="12dp"
                 android:hint="@string/mi_vehiculo_registro_km_final_hint"
-                app:hintTextColor="@color/hint_color">
+                app:boxStrokeColor="@color/outline_variant"
+                app:hintTextColor="@color/on_surface_variant"
+                app:startIconDrawable="@drawable/ic_speedometer"
+                app:startIconTint="@color/on_surface_variant">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/etRegistroKmFinal"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:inputType="numberDecimal"
-                    android:textColorHint="@color/hint_color"
-                    android:textColor="@color/input_text_color" />
+                    android:textColor="@color/on_surface" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <!-- Combustible + Horas -->
@@ -199,59 +207,59 @@
 
                 <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/tilRegistroCombustible"
-                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                    style="@style/Tecni.TextInput.Outlined"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:layout_marginEnd="8dp"
                     android:hint="@string/vehiculo_registro_combustible"
-                    app:hintTextColor="@color/hint_color">
+                    app:boxStrokeColor="@color/outline_variant"
+                    app:hintTextColor="@color/on_surface_variant">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/etRegistroCombustible"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:inputType="numberDecimal"
-                        android:textColorHint="@color/hint_color"
-                        android:textColor="@color/input_text_color" />
+                        android:textColor="@color/on_surface" />
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/tilRegistroHoras"
-                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                    style="@style/Tecni.TextInput.Outlined"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:hint="@string/mi_vehiculo_registro_horas_hint"
-                    app:hintTextColor="@color/hint_color">
+                    app:boxStrokeColor="@color/outline_variant"
+                    app:hintTextColor="@color/on_surface_variant">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/etRegistroHoras"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:inputType="number"
-                        android:textColorHint="@color/hint_color"
-                        android:textColor="@color/input_text_color" />
+                        android:textColor="@color/on_surface" />
                 </com.google.android.material.textfield.TextInputLayout>
             </LinearLayout>
 
             <!-- Actividad -->
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/tilRegistroActividad"
-                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                style="@style/Tecni.TextInput.Outlined"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="12dp"
                 android:hint="@string/mi_vehiculo_registro_actividad_hint"
-                app:hintTextColor="@color/hint_color">
+                app:boxStrokeColor="@color/outline_variant"
+                app:hintTextColor="@color/on_surface_variant">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/etRegistroActividad"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:inputType="textCapSentences"
-                    android:textColorHint="@color/hint_color"
-                    android:textColor="@color/input_text_color" />
+                    android:textColor="@color/on_surface" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <!-- Cuenta + N° Caso -->
@@ -263,70 +271,73 @@
 
                 <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/tilRegistroCuenta"
-                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                    style="@style/Tecni.TextInput.Outlined"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:layout_marginEnd="8dp"
                     android:hint="@string/mi_vehiculo_registro_cuenta_hint"
-                    app:hintTextColor="@color/hint_color">
+                    app:boxStrokeColor="@color/outline_variant"
+                    app:hintTextColor="@color/on_surface_variant">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/etRegistroCuenta"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:inputType="number"
-                        android:textColorHint="@color/hint_color"
-                        android:textColor="@color/input_text_color" />
+                        android:textColor="@color/on_surface" />
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/tilRegistroCaso"
-                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                    style="@style/Tecni.TextInput.Outlined"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:hint="@string/mi_vehiculo_registro_caso_hint"
-                    app:hintTextColor="@color/hint_color">
+                    app:boxStrokeColor="@color/outline_variant"
+                    app:hintTextColor="@color/on_surface_variant">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/etRegistroCaso"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:inputType="textCapSentences"
-                        android:textColorHint="@color/hint_color"
-                        android:textColor="@color/input_text_color" />
+                        android:textColor="@color/on_surface" />
                 </com.google.android.material.textfield.TextInputLayout>
             </LinearLayout>
 
             <!-- Lugar -->
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/tilRegistroLugar"
-                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                style="@style/Tecni.TextInput.Outlined"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="12dp"
                 android:hint="@string/mi_vehiculo_registro_lugar_hint"
-                app:hintTextColor="@color/hint_color">
+                app:boxStrokeColor="@color/outline_variant"
+                app:hintTextColor="@color/on_surface_variant"
+                app:startIconDrawable="@drawable/ic_location"
+                app:startIconTint="@color/on_surface_variant">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/etRegistroLugar"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:inputType="textCapSentences"
-                    android:textColorHint="@color/hint_color"
-                    android:textColor="@color/input_text_color" />
+                    android:textColor="@color/on_surface" />
             </com.google.android.material.textfield.TextInputLayout>
 
             <!-- Observaciones -->
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/tilRegistroObservaciones"
-                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                style="@style/Tecni.TextInput.Outlined"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="12dp"
                 android:hint="@string/vehiculo_registro_observaciones"
-                app:hintTextColor="@color/hint_color">
+                app:boxStrokeColor="@color/outline_variant"
+                app:hintTextColor="@color/on_surface_variant">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/etRegistroObservaciones"
@@ -334,15 +345,14 @@
                     android:layout_height="wrap_content"
                     android:inputType="textCapSentences|textMultiLine"
                     android:minLines="2"
-                    android:textColorHint="@color/hint_color"
-                    android:textColor="@color/input_text_color" />
+                    android:textColor="@color/on_surface" />
             </com.google.android.material.textfield.TextInputLayout>
         </LinearLayout>
 
         <!-- Registrar button -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnRegistroDialogRegistrar"
-            style="@style/Tecni.Button.Elevated"
+            style="@style/Tecni.Button.Primary"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
@@ -351,12 +361,10 @@
         <!-- Sin vehículo button -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnRegistroDialogSinVehiculo"
-            style="@style/Widget.Material3.Button.OutlinedButton"
+            style="@style/Tecni.Button.Outlined.Danger"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="@string/registro_pendiente_sin_vehiculo"
-            android:textColor="@color/danger_red"
-            app:strokeColor="@color/danger_red" />
+            android:text="@string/registro_pendiente_sin_vehiculo" />
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>

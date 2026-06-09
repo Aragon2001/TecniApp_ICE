@@ -5,48 +5,182 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="20dp">
+    android:paddingStart="24dp"
+    android:paddingEnd="24dp"
+    android:paddingTop="28dp"
+    android:paddingBottom="32dp"
+    android:clipChildren="false"
+    android:clipToPadding="false">
 
-    <com.google.android.material.textview.MaterialTextView
+    <!-- Animación nube + gotas -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginBottom="20dp"
+        android:clipChildren="false"
+        android:clipToPadding="false">
+
+        <ImageView
+            android:id="@+id/imgCloud"
+            android:layout_width="72dp"
+            android:layout_height="50dp"
+            android:layout_gravity="center_horizontal"
+            android:src="@drawable/ic_cloud_sync"
+            app:tint="?attr/colorPrimary" />
+
+        <!-- Gotas de lluvia (animadas desde código) -->
+        <LinearLayout
+            android:layout_width="68dp"
+            android:layout_height="40dp"
+            android:orientation="horizontal"
+            android:layout_gravity="center_horizontal"
+            android:clipChildren="false"
+            android:clipToPadding="false">
+
+            <View
+                android:id="@+id/rainDrop1"
+                android:layout_width="4dp"
+                android:layout_height="10dp"
+                android:layout_gravity="top|center_horizontal"
+                android:background="@drawable/bg_rain_drop"
+                android:alpha="0" />
+
+            <View
+                android:layout_width="12dp"
+                android:layout_height="0dp" />
+
+            <View
+                android:id="@+id/rainDrop2"
+                android:layout_width="4dp"
+                android:layout_height="10dp"
+                android:layout_gravity="top|center_horizontal"
+                android:background="@drawable/bg_rain_drop"
+                android:alpha="0" />
+
+            <View
+                android:layout_width="12dp"
+                android:layout_height="0dp" />
+
+            <View
+                android:id="@+id/rainDrop3"
+                android:layout_width="4dp"
+                android:layout_height="10dp"
+                android:layout_gravity="top|center_horizontal"
+                android:background="@drawable/bg_rain_drop"
+                android:alpha="0" />
+
+            <View
+                android:layout_width="12dp"
+                android:layout_height="0dp" />
+
+            <View
+                android:id="@+id/rainDrop4"
+                android:layout_width="4dp"
+                android:layout_height="10dp"
+                android:layout_gravity="top|center_horizontal"
+                android:background="@drawable/bg_rain_drop"
+                android:alpha="0" />
+
+            <View
+                android:layout_width="12dp"
+                android:layout_height="0dp" />
+
+            <View
+                android:id="@+id/rainDrop5"
+                android:layout_width="4dp"
+                android:layout_height="10dp"
+                android:layout_gravity="top|center_horizontal"
+                android:background="@drawable/bg_rain_drop"
+                android:alpha="0" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Título -->
+    <TextView
         android:id="@+id/tvHeader"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:gravity="center"
+        android:layout_marginBottom="6dp"
         android:text="Sincronizando…"
         android:textAppearance="@style/TextAppearance.Material3.HeadlineSmall"
-        android:paddingBottom="8dp"/>
+        android:textColor="?attr/colorOnSurface" />
 
-    <!-- ProgressBar con estilo Material Design 3 -->
+    <!-- Mensaje del paso actual -->
+    <TextView
+        android:id="@+id/tvMessage"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:minHeight="36dp"
+        android:layout_marginBottom="20dp"
+        android:text="Preparando…"
+        android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
+        android:textColor="?attr/colorOnSurfaceVariant" />
+
+    <!-- Barra de progreso -->
     <com.google.android.material.progressindicator.LinearProgressIndicator
         android:id="@+id/progressBar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginBottom="10dp"
         android:indeterminate="false"
         android:max="10000"
         app:indicatorColor="?attr/colorPrimary"
-        android:layout_marginTop="4dp"
-        android:layout_marginBottom="4dp"/>
+        app:trackColor="?attr/colorSurfaceVariant"
+        app:trackCornerRadius="4dp"
+        app:trackThickness="8dp" />
 
-    <com.google.android.material.textview.MaterialTextView
-        android:id="@+id/tvMessage"
+    <!-- Contador de pasos + porcentaje -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Preparando…"
-        android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
-        android:paddingTop="12dp"/>
+        android:layout_marginBottom="6dp"
+        android:orientation="horizontal">
 
-    <com.google.android.material.textview.MaterialTextView
-        android:id="@+id/tvCounter"
+        <TextView
+            android:id="@+id/tvCounter"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="—"
+            android:textAppearance="@style/TextAppearance.Material3.LabelMedium"
+            android:textColor="?attr/colorOnSurfaceVariant" />
+
+        <TextView
+            android:id="@+id/tvPercent"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="—"
+            android:textAppearance="@style/TextAppearance.Material3.LabelMedium"
+            android:textColor="?attr/colorPrimary"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <!-- Datos descargados + tiempo transcurrido -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="0 / 0"
-        android:textAppearance="@style/TextAppearance.Material3.BodySmall"
-        android:paddingTop="4dp"/>
+        android:orientation="horizontal">
 
-    <com.google.android.material.textview.MaterialTextView
-        android:id="@+id/tvBytes"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="0.00 MB"
-        android:textAppearance="@style/TextAppearance.Material3.BodySmall"
-        android:paddingTop="2dp"/>
+        <TextView
+            android:id="@+id/tvBytes"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="0.00 MB"
+            android:textAppearance="@style/TextAppearance.Material3.LabelSmall"
+            android:textColor="?attr/colorOnSurfaceVariant" />
+
+        <TextView
+            android:id="@+id/tvElapsed"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="00:00"
+            android:textAppearance="@style/TextAppearance.Material3.LabelSmall"
+            android:textColor="?attr/colorOnSurfaceVariant" />
+    </LinearLayout>
+
 </LinearLayout>

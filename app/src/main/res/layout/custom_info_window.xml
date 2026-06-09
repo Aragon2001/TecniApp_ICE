@@ -3,36 +3,42 @@
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="8dp"
-    android:background="@drawable/rounded_bg_f0f2f4"
-    android:layout_gravity="center"
-    android:layout_margin="4dp"
-    android:gravity="center">
+    android:minWidth="130dp"
+    android:background="@drawable/bg_info_window_modern"
+    android:clipToOutline="true">
 
-    <!-- Título del InfoWindow -->
+    <!-- Blue header: Poste NNN -->
     <TextView
         android:id="@+id/titulo"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textColor="#000000"
-        android:textSize="12sp"
+        android:background="#005DAA"
+        android:paddingHorizontal="14dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp"
+        android:textColor="#FFFFFF"
+        android:textSize="13sp"
         android:textStyle="bold"
+        android:gravity="center"
         android:maxLines="1"
         android:ellipsize="end"
-        android:gravity="center"
-        android:text="Título" />
+        android:text="Poste 001" />
 
-    <!-- Snippet del InfoWindow -->
+    <!-- White body: location code -->
     <TextView
         android:id="@+id/snippet"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textColor="#333333"
+        android:background="#FFFFFF"
+        android:paddingHorizontal="14dp"
+        android:paddingTop="5dp"
+        android:paddingBottom="5dp"
+        android:textColor="#444444"
         android:textSize="10sp"
-        android:textStyle="bold"
+        android:gravity="center"
+        android:fontFamily="monospace"
         android:maxLines="1"
         android:ellipsize="end"
-        android:gravity="center"
-        android:text="Snippet" />
+        android:text="0000-000-000-00" />
 
 </LinearLayout>

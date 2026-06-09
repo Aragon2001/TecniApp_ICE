@@ -1057,11 +1057,11 @@ private fun applyInputStateForRules(
     b.cardTecnicos.isVisible = showCompleto
     b.cardMateriales.isVisible = showCompleto && !esResuelta
     b.cardEvidencias.isVisible = showCompleto
-    b.tvSeccionRegistro.isVisible = showInicio || showCompleto
+    b.tvSeccionRegistro.isVisible = showCompleto
     // Ocultar tipo afectación y medidor cuando está resuelta
     b.cardTipoAfectacion.isVisible = showCompleto && !esResuelta
     b.cardMedidorInput.isVisible = showCompleto && !esResuelta && tipoSeleccionado == TipoAfectacion.CLIENTE
-    b.cardLocalizacionInput.isVisible = showInicio || showCompleto
+    b.cardLocalizacionInput.isVisible = showCompleto
     b.cardDetallesAtencion.isVisible = showCompleto
     b.tvHorarioInicioLabel.isVisible = showInicio
     b.rowHorarioInicio.isVisible = showInicio
@@ -1078,7 +1078,7 @@ private fun applyInputStateForRules(
     b.tilTecnicoBuscar.isVisible = showCompleto && (!esResuelta || enEdicionResuelta)
     b.tilMaterialBuscar.isVisible = showCompleto && !esResuelta
     b.tilMedidor.isVisible = showCompleto && !esResuelta && tipoSeleccionado == TipoAfectacion.CLIENTE
-    b.tilLocalizacion.isVisible = showInicio || showCompleto
+    b.tilLocalizacion.isVisible = showCompleto
     b.tilCausa.isVisible = showCompleto
     b.tilObs.isVisible = showCompleto
     b.tilHoraLlegada.isVisible = showCompleto
@@ -1103,7 +1103,7 @@ private fun applyInputStateForRules(
     b.tilTecnicoBuscar.setEnabledDeep(puedeEditarCompleto)
     b.tilMaterialBuscar.setEnabledDeep(puedeEditarCompleto)
     b.tilMedidor.setEnabledDeep(puedeEditarCompleto && tipoSeleccionado == TipoAfectacion.CLIENTE)
-    b.tilLocalizacion.setEnabledDeep(puedeEditarCompleto || puedeEditarInicio)
+    b.tilLocalizacion.setEnabledDeep(puedeEditarCompleto)
     b.tilCausa.setEnabledDeep(puedeEditarCompleto)
     b.tilObs.setEnabledDeep(puedeEditarCompleto)
     b.tilHoraLlegada.setEnabledDeep(puedeEditarCompleto)
@@ -1943,7 +1943,7 @@ private fun configureButtonsForRules(
         val medidorPoste = if (tipo == TipoAfectacion.CLIENTE) medidorSeleccionado?.poste?.trim() else null
         val localizacionTexto = b.etLocalizacion.text?.toString()?.trim()?.takeIf { it.isNotBlank() }
         val cliente = clienteSeleccionado ?: item.cliente
-        if (contexto == ValidationContext.RESOLVER || contexto == ValidationContext.INICIAR) {
+        if (contexto == ValidationContext.RESOLVER) {
             if (localizacionTexto.isNullOrBlank()) {
                 b.tilLocalizacion.error = getString(R.string.averia_error_localizacion_requerida)
                 return null

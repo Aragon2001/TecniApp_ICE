@@ -2,160 +2,191 @@
 <com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="12dp"
+    android:layout_marginBottom="10dp"
     app:cardBackgroundColor="@color/glass_light"
-    app:cardCornerRadius="18dp"
-    app:cardElevation="4dp"
-    app:strokeColor="@color/outline_variant_light"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="3dp"
     app:strokeWidth="0dp">
 
-    <LinearLayout
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="16dp">
+        android:layout_height="wrap_content">
+
+        <!-- Left status accent bar -->
+        <View
+            android:id="@+id/viewAveriaAccent"
+            android:layout_width="4dp"
+            android:layout_height="0dp"
+            android:background="@color/chip_en_atencion"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
         <LinearLayout
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
-
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                app:cardBackgroundColor="@color/bg_light"
-                app:cardElevation="0dp"
-                app:strokeColor="@color/outline_variant_light"
-                app:strokeWidth="1dp">
-
-                <ImageView
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:contentDescription="@null"
-                    android:padding="8dp"
-                    android:src="@drawable/ic_summary_case"
-                    app:tint="@color/ice_blue_dark" />
-            </com.google.android.material.card.MaterialCardView>
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="12dp"
-                android:layout_weight="1"
-                android:orientation="vertical">
-
-                <TextView
-                    android:id="@+id/tvAveriaCaso"
-                    style="@style/TextAppearance.Material3.TitleSmall"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:textStyle="bold"
-                    android:text="Caso" />
-
-                <TextView
-                    android:id="@+id/tvAveriaFechas"
-                    style="@style/TextAppearance.Material3.BodySmall"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:textColor="@color/dark_gray"
-                    android:text="Fechas" />
-            </LinearLayout>
-
-            <com.google.android.material.chip.Chip
-                android:id="@+id/chipAveriaEstado"
-                style="@style/Widget.Material3.Chip.Assist"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Estado" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:orientation="horizontal"
-            android:weightSum="2">
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical">
-
-                <TextView
-                    style="@style/TextAppearance.Material3.LabelMedium"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/reportes_item_nise_label" />
-
-                <TextView
-                    android:id="@+id/tvAveriaNise"
-                    style="@style/TextAppearance.Material3.BodyMedium"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:text="NISE" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="12dp"
-                android:layout_weight="1"
-                android:orientation="vertical">
-
-                <TextView
-                    style="@style/TextAppearance.Material3.LabelMedium"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/reportes_item_ubicacion_label" />
-
-                <TextView
-                    android:id="@+id/tvAveriaUbicacion"
-                    style="@style/TextAppearance.Material3.BodyMedium"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="2dp"
-                    android:text="Ubicación" />
-            </LinearLayout>
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/containerDetallesExtra"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
+            android:layout_marginStart="4dp"
             android:orientation="vertical"
-            android:visibility="gone">
+            android:padding="14dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@id/viewAveriaAccent"
+            app:layout_constraintTop_toTopOf="parent">
 
-            <TextView
-                style="@style/TextAppearance.Material3.LabelMedium"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/reportes_item_materiales_label" />
-
-            <TextView
-                android:id="@+id/tvAveriaMateriales"
-                style="@style/TextAppearance.Material3.BodyMedium"
+            <!-- Header row: icon + case + status chip -->
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:text="Materiales" />
-        </LinearLayout>
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnToggleDetalles"
-            style="@style/Widget.Material3.Button.TextButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="@string/reportes_item_ver_mas"
-            app:icon="@drawable/ic_expand_more"
-            app:iconGravity="textEnd"
-            app:iconPadding="6dp" />
-    </LinearLayout>
+                <FrameLayout
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:background="@drawable/bg_report_file_pdf">
+
+                    <ImageView
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
+                        android:layout_gravity="center"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_summary_case"
+                        app:tint="@color/danger_red" />
+                </FrameLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/tvAveriaCaso"
+                        style="@style/TextAppearance.Material3.TitleSmall"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textStyle="bold"
+                        tools:text="Caso #82614" />
+
+                    <TextView
+                        android:id="@+id/tvAveriaFechas"
+                        style="@style/TextAppearance.Material3.BodySmall"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:textColor="@color/dark_gray"
+                        tools:text="02 jun 2026 – 03 jun 2026" />
+                </LinearLayout>
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipAveriaEstado"
+                    style="@style/Widget.Material3.Chip.Assist"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="11sp"
+                    tools:text="En atención" />
+            </LinearLayout>
+
+            <!-- Metadata grid: NISE | Ubicación -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:background="@drawable/bg_report_header_kpi"
+                android:backgroundTint="#F7F8FC"
+                android:orientation="horizontal"
+                android:padding="10dp"
+                android:weightSum="2">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        style="@style/TextAppearance.Material3.LabelSmall"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/reportes_item_nise_label"
+                        android:textColor="@color/dark_gray" />
+
+                    <TextView
+                        android:id="@+id/tvAveriaNise"
+                        style="@style/TextAppearance.Material3.BodyMedium"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:textStyle="bold"
+                        tools:text="0401-0014522" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        style="@style/TextAppearance.Material3.LabelSmall"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/reportes_item_ubicacion_label"
+                        android:textColor="@color/dark_gray" />
+
+                    <TextView
+                        android:id="@+id/tvAveriaUbicacion"
+                        style="@style/TextAppearance.Material3.BodyMedium"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:textStyle="bold"
+                        tools:text="Tibás centro" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Expandable materials section -->
+            <LinearLayout
+                android:id="@+id/containerDetallesExtra"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView
+                    style="@style/TextAppearance.Material3.LabelSmall"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/reportes_item_materiales_label"
+                    android:textColor="@color/dark_gray" />
+
+                <TextView
+                    android:id="@+id/tvAveriaMateriales"
+                    style="@style/TextAppearance.Material3.BodyMedium"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    tools:text="Fusible 15A x2, Cable 10mm x5m" />
+            </LinearLayout>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnToggleDetalles"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:paddingStart="0dp"
+                android:text="@string/reportes_item_ver_mas"
+                android:textSize="12sp"
+                app:icon="@drawable/ic_expand_more"
+                app:iconGravity="textEnd"
+                app:iconPadding="4dp"
+                app:iconSize="16dp" />
+        </LinearLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
 </com.google.android.material.card.MaterialCardView>

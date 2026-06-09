@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Rayo eléctrico decorativo para tarjeta de Averías asignadas
+  viewport: 200×220
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="200dp"
+    android:height="220dp"
+    android:viewportWidth="200"
+    android:viewportHeight="220">
+
+    <!-- ── Rayo principal (lightning bolt) ───────────────── -->
+    <path
+        android:pathData="M 118,10 L 72,112 L 102,112 L 82,210 L 128,108 L 98,108 Z"
+        android:fillColor="#FFFFFF" />
+
+    <!-- ── Destello superior derecho ─────────────────────── -->
+    <path
+        android:pathData="M 160,22 L 172,12"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="4"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M 164,35 L 180,30"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:alpha="0.7" />
+    <path
+        android:pathData="M 152,18 L 158,8"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:alpha="0.7" />
+
+    <!-- ── Destello izquierdo ─────────────────────────────── -->
+    <path
+        android:pathData="M 38,75 L 24,68"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="4"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M 40,88 L 24,90"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:alpha="0.7" />
+    <path
+        android:pathData="M 46,64 L 40,52"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:alpha="0.7" />
+
+    <!-- ── Destello inferior derecho ─────────────────────── -->
+    <path
+        android:pathData="M 158,165 L 172,160"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:alpha="0.6" />
+    <path
+        android:pathData="M 162,178 L 175,180"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:alpha="0.5" />
+
+    <!-- ── Pequeño círculo de energía alrededor del rayo ─── -->
+    <path
+        android:pathData="M 100,110 m -48,0 a 48,48 0 1,0 96,0 a 48,48 0 1,0 -96,0"
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.5"
+        android:alpha="0.25" />
+
+</vector>

@@ -10,6 +10,8 @@ import com.Arasoftsolutions.tecniapp_ice.Database.entities.MedidorEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.UserEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.room.AppDatabase
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
+import com.Arasoftsolutions.tecniapp_ice.network.NetworkHealth
+import com.Arasoftsolutions.tecniapp_ice.network.NetworkHealthMonitor
 import com.Arasoftsolutions.tecniapp_ice.preferences.DataStoreManager
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriaNotificationPreferences
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasRepository
@@ -29,11 +31,6 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.util.Locale
 
-/**
- * Opción A: AndroidViewModel con constructor (Application).
- * El factory por defecto puede instanciarlo sin errores.
- *
- */
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class HomeViewModel(app: Application) : AndroidViewModel(app) {
 
@@ -42,10 +39,10 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     private val averiasRepository = AveriasRepository(database)
     private val dataStore = DataStoreManager.getInstance(app)
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
+    private val networkMonitor = NetworkHealthMonitor.getInstance(app)
 
     private val sharing = SharingStarted.WhileSubscribed(5_000)
 
-    // Subregión activa que define las consultas a Room
     private val _subregion = MutableStateFlow<String?>(null)
     fun setSubregion(id: String) { _subregion.value = id }
 
@@ -55,7 +52,22 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
 
     data class AveriasPendientesPorAgencia(val agencia: String, val pendientes: Int)
 
-    // Lista observable de medidores para la subregión (lectura 100% Room)
+    data class DashboardStats(
+        val averiasAsignadas: Int = 0,
+        val averiasResueltasHoy: Int = 0,
+        val luminariasPendientes: Int = 0,
+        val agenciasConPendientes: Int = 0,
+        val vehiculoValorEtm: Double? = null,
+        val usaKilometraje: Boolean = true,
+        val registroEtmPendiente: Boolean = false,
+        val lastSyncMillis: Long? = null,
+        val averiasPorAgencia: List<AveriasPendientesPorAgencia> = emptyList()
+    )
+
+    /** Estado de salud de la red en tiempo real. */
+    val networkHealth: StateFlow<NetworkHealth> = networkMonitor.health
+        .stateIn(viewModelScope, sharing, NetworkHealth.OFFLINE)
+
     val medidores: StateFlow<List<MedidorEntity>> =
         _subregion
             .flatMapLatest { id ->
@@ -97,21 +109,17 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
 
     val averiasAsignadasCount: StateFlow<Int> =
         combine(averias, usuarioUid) { lista, uid ->
-            if (uid.isNullOrBlank()) {
-                0
-            } else {
-                lista.count { averia ->
-                    averia.tecnicoAsignadoUid.equals(uid, ignoreCase = true) &&
-                        !averia.estado.equals("Resuelta", ignoreCase = true)
-                }
+            if (uid.isNullOrBlank()) 0
+            else lista.count { averia ->
+                averia.tecnicoAsignadoUid.equals(uid, ignoreCase = true) &&
+                    !averia.estado.equals("Resuelta", ignoreCase = true)
             }
         }.stateIn(viewModelScope, sharing, 0)
 
     val averiasResueltasHoyCount: StateFlow<Int> =
         combine(averias, usuarioUid) { lista, uid ->
-            if (uid.isNullOrBlank()) {
-                0
-            } else {
+            if (uid.isNullOrBlank()) 0
+            else {
                 val hoy = LocalDate.now()
                 lista.count { averia ->
                     averia.atendidoPorUid.equals(uid, ignoreCase = true) &&
@@ -132,21 +140,14 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
             if (agencias.isNotEmpty()) {
                 agencias.map { agencia ->
                     val normalized = normalizeAveriaText(agencia)
-                    val count = if (normalized.isBlank()) {
-                        0
-                    } else {
-                        pendientes.count { averia ->
-                            shouldNotifyForAgency(averia, setOf(normalized))
-                        }
-                    }
+                    val count = if (normalized.isBlank()) 0
+                    else pendientes.count { averia -> shouldNotifyForAgency(averia, setOf(normalized)) }
                     AveriasPendientesPorAgencia(agencia, count)
                 }
             } else {
                 pendientes
                     .groupBy { it.agencia ?: it.nombreAgencia ?: "Sin agencia" }
-                    .map { (agencia, items) ->
-                        AveriasPendientesPorAgencia(agencia, items.size)
-                    }
+                    .map { (agencia, items) -> AveriasPendientesPorAgencia(agencia, items.size) }
                     .sortedByDescending { it.pendientes }
             }
         }.stateIn(viewModelScope, sharing, emptyList())
@@ -160,11 +161,8 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
         placaVehiculo
             .flatMapLatest { placa ->
                 val placaLong = VehiculoPlacaUtils.parsePlacaLong(placa)
-                if (placaLong == null) {
-                    flowOf(null)
-                } else {
-                    repo.observarVehiculoPorPlaca(placaLong)
-                }
+                if (placaLong == null) flowOf(null)
+                else repo.observarVehiculoPorPlaca(placaLong)
             }
             .stateIn(viewModelScope, sharing, null)
 
@@ -177,7 +175,11 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
                         emit(true)
                     } else {
                         val estadoEtm = repo.obtenerEstadoEtmVehiculo(uid)
-                        emit(estadoEtm.vehiculo == null || estadoEtm.registroPendienteCierre != null || !estadoEtm.tieneRegistroHoy)
+                        emit(
+                            estadoEtm.vehiculo == null ||
+                                estadoEtm.registroPendienteCierre != null ||
+                                !estadoEtm.tieneRegistroHoy
+                        )
                     }
                 }
             }
@@ -195,13 +197,9 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
             .stateIn(viewModelScope, sharing, TipoVehiculo.LIVIANO)
 
     val valorEtmActual: StateFlow<Double?> =
-        combine(vehiculoAsignado,tipoVehiculo) { vehiculo, tipo ->
+        combine(vehiculoAsignado, tipoVehiculo) { vehiculo, tipo ->
             if (vehiculo == null) return@combine null
-            if (tipo.usaKilometraje) {
-                vehiculo.kmActual
-            } else {
-                vehiculo.orimetroActual
-            }
+            if (tipo.usaKilometraje) vehiculo.kmActual else vehiculo.orimetroActual
         }.stateIn(viewModelScope, sharing, null)
 
     val lastManualSync: StateFlow<Long?> =
@@ -227,17 +225,46 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     val luminariasPendientesCount: StateFlow<Int> =
         combine(reparacionesLuminarias, usuario, vehiculoUsuarioId) { reparaciones, user, vehiculoId ->
             val rol = user?.rol?.trim()?.lowercase(Locale.getDefault())
-            val esSupervisor = rol == "supervisor"
-            val esAdministrador = rol == "administrador"
-            val visibles = if (esSupervisor || esAdministrador) {
-                reparaciones
-            } else {
-                reparaciones.filter { reparacion -> reparacion.vehiculoId == vehiculoId }
-            }
-            visibles.count { reparacion ->
-                    LuminariaEstado.fromRaw(reparacion.estado) == LuminariaEstado.PENDIENTE
-            }
+            val esSupervisorOAdmin = rol == "supervisor" || rol == "administrador"
+            val visibles = if (esSupervisorOAdmin) reparaciones
+            else reparaciones.filter { it.vehiculoId == vehiculoId }
+            visibles.count { LuminariaEstado.fromRaw(it.estado) == LuminariaEstado.PENDIENTE }
         }.stateIn(viewModelScope, sharing, 0)
+
+    // Combina todas las métricas en un único objeto para observación eficiente
+    private data class PartialStats(
+        val asignadas: Int,
+        val resueltas: Int,
+        val luminarias: Int,
+        val porAgencia: List<AveriasPendientesPorAgencia>,
+        val etm: Double?
+    )
+
+    val dashboardStats: StateFlow<DashboardStats> = combine(
+        combine(
+            averiasAsignadasCount,
+            averiasResueltasHoyCount,
+            luminariasPendientesCount,
+            averiasPendientesPorAgencia,
+            valorEtmActual
+        ) { asignadas, resueltas, luminarias, porAgencia, etm ->
+            PartialStats(asignadas, resueltas, luminarias, porAgencia, etm)
+        },
+        combine(tipoVehiculo, registroEtmPendiente, lastManualSync) { t, r, l -> Triple(t, r, l) }
+    ) { partial, triple ->
+        val (tipo, reg, sync) = triple
+        DashboardStats(
+            averiasAsignadas = partial.asignadas,
+            averiasResueltasHoy = partial.resueltas,
+            luminariasPendientes = partial.luminarias,
+            averiasPorAgencia = partial.porAgencia,
+            agenciasConPendientes = partial.porAgencia.count { it.pendientes > 0 },
+            vehiculoValorEtm = partial.etm,
+            usaKilometraje = tipo.usaKilometraje,
+            registroEtmPendiente = reg,
+            lastSyncMillis = sync
+        )
+    }.stateIn(viewModelScope, sharing, DashboardStats())
 
     fun loadUsuarioActual() {
         if (usuarioObserverStarted) return

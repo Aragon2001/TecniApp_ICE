@@ -474,37 +474,46 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent">
 
+            <!-- Handle pill -->
             <View
                 android:id="@+id/streetViewHandle"
                 android:layout_width="@dimen/street_view_handle_width"
                 android:layout_height="@dimen/street_view_handle_height"
-                android:layout_marginTop="12dp"
-
+                android:layout_marginTop="8dp"
+                android:background="@drawable/bg_bottom_sheet_handle"
                 app:layout_constraintTop_toTopOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent" />
 
-            <TextView
-                android:id="@+id/streetViewTitle"
-                style="@style/TextAppearance.Material3.TitleMedium"
+            <!-- Header row: icon + title + expand/minimize/close -->
+            <LinearLayout
+                android:id="@+id/streetViewHeaderRow"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="16dp"
-                android:layout_marginTop="12dp"
-                android:text="@string/localizacion_street_view_title"
+                android:layout_marginEnd="4dp"
+                android:layout_marginTop="4dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
                 app:layout_constraintTop_toBottomOf="@id/streetViewHandle"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toStartOf="@id/streetViewActions" />
-
-            <LinearLayout
-                android:id="@+id/streetViewActions"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="8dp"
-                android:orientation="horizontal"
-                app:layout_constraintTop_toTopOf="@id/streetViewTitle"
-                app:layout_constraintBottom_toBottomOf="@id/streetViewTitle"
                 app:layout_constraintEnd_toEndOf="parent">
+
+                <ImageView
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:src="@drawable/photo_prints_24px"
+                    android:importantForAccessibility="no"
+                    app:tint="?attr/colorPrimary" />
+
+                <TextView
+                    android:id="@+id/streetViewTitle"
+                    style="@style/TextAppearance.Material3.TitleSmall"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="8dp"
+                    android:text="@string/localizacion_street_view_title" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/streetViewActionExpand"
@@ -531,12 +540,53 @@
                     app:icon="@drawable/ic_close_sheet" />
             </LinearLayout>
 
+            <!-- Location address + code badge -->
+            <LinearLayout
+                android:id="@+id/streetViewAddressRow"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginEnd="16dp"
+                android:layout_marginTop="1dp"
+                android:layout_marginBottom="4dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                app:layout_constraintTop_toBottomOf="@id/streetViewHeaderRow"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent">
+
+                <TextView
+                    android:id="@+id/streetViewAddressText"
+                    style="@style/TextAppearance.Material3.BodySmall"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    android:maxLines="1"
+                    android:ellipsize="end"
+                    android:text="" />
+
+                <TextView
+                    android:id="@+id/streetViewCodeBadge"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:background="@drawable/bg_badge_primary"
+                    android:paddingHorizontal="8dp"
+                    android:paddingVertical="3dp"
+                    android:textColor="@color/white"
+                    android:textSize="9sp"
+                    android:fontFamily="monospace"
+                    android:text=""
+                    android:visibility="gone" />
+            </LinearLayout>
+
+            <!-- Panorama content area -->
             <FrameLayout
                 android:id="@+id/streetViewContent"
                 android:layout_width="0dp"
                 android:layout_height="0dp"
-                android:layout_marginTop="12dp"
-                app:layout_constraintTop_toBottomOf="@id/streetViewTitle"
+                app:layout_constraintTop_toBottomOf="@id/streetViewAddressRow"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent">
@@ -547,8 +597,6 @@
                     android:layout_height="match_parent"
                     android:inflatedId="@+id/streetViewPanoramaContainer"
                     android:layout="@layout/include_streetview_panorama" />
-
-
 
                 <LinearLayout
                     android:id="@+id/streetViewLoadingContainer"
