@@ -8,11 +8,13 @@ import androidx.recyclerview.widget.RecyclerView
 import com.Arasoftsolutions.tecniapp_ice.R
 import com.Arasoftsolutions.tecniapp_ice.databinding.ItemReporteMisLuminariasBinding
 
-class MisLuminariasAdapter : ListAdapter<MisLuminariaReportItem, MisLuminariasAdapter.ViewHolder>(Diff) {
+class MisLuminariasAdapter(
+    private val onItemClick: ((MisLuminariaReportItem) -> Unit)? = null
+) : ListAdapter<MisLuminariaReportItem, MisLuminariasAdapter.ViewHolder>(Diff) {
 
     object Diff : DiffUtil.ItemCallback<MisLuminariaReportItem>() {
         override fun areItemsTheSame(oldItem: MisLuminariaReportItem, newItem: MisLuminariaReportItem): Boolean =
-            oldItem.localizacion == newItem.localizacion && oldItem.fecha == newItem.fecha
+            oldItem.id == newItem.id
 
         override fun areContentsTheSame(oldItem: MisLuminariaReportItem, newItem: MisLuminariaReportItem): Boolean =
             oldItem == newItem
@@ -25,11 +27,13 @@ class MisLuminariasAdapter : ListAdapter<MisLuminariaReportItem, MisLuminariasAd
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        holder.bind(getItem(position))
+        val item = getItem(position)
+        holder.bind(item, onItemClick?.let { cb -> { cb(item) } })
     }
 
     class ViewHolder(private val binding: ItemReporteMisLuminariasBinding) : RecyclerView.ViewHolder(binding.root) {
-        fun bind(item: MisLuminariaReportItem) {
+        fun bind(item: MisLuminariaReportItem, onItemClick: (() -> Unit)? = null) {
+            binding.root.setOnClickListener { onItemClick?.invoke() }
             val context = binding.root.context
             binding.tvLuminariaLocalizacion.text = context.getString(
                 R.string.reportes_item_localizacion,

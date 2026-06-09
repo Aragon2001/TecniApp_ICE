@@ -2,8 +2,7 @@
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="?attr/colorBackground">
+    android:layout_height="match_parent">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -17,18 +16,26 @@
         <!-- ══════════════════════════════════════════════════════
              PERFIL DE USUARIO  (header premium)
              ══════════════════════════════════════════════════════ -->
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:layout_marginStart="4dp"
+            android:letterSpacing="0.08"
+            android:text="CUENTA"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            style="@style/TextAppearance.Material3.LabelSmall" />
+
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardAccount"
+            style="@style/Tecni.SectionCard"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="24dp"
             android:clickable="true"
             android:focusable="true"
-            android:foreground="?attr/selectableItemBackground"
-            app:cardBackgroundColor="?attr/colorPrimaryContainer"
-            app:cardCornerRadius="24dp"
-            app:cardElevation="0dp"
-            app:strokeWidth="0dp">
+            android:foreground="?attr/selectableItemBackground">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -43,17 +50,21 @@
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
 
-                    <!-- Avatar circular -->
-                    <com.google.android.material.imageview.ShapeableImageView
-                        android:layout_width="60dp"
-                        android:layout_height="60dp"
-                        android:backgroundTint="?attr/colorPrimary"
-                        android:contentDescription="@string/nav_header_desc"
-                        android:padding="14dp"
-                        android:src="@drawable/ic_person"
-                        android:tint="?attr/colorOnPrimary"
-                        app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full"
-                        app:strokeWidth="0dp" />
+                    <!-- Avatar con fondo colorPrimaryContainer -->
+                    <LinearLayout
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:background="@drawable/bg_settings_icon"
+                        android:gravity="center"
+                        android:orientation="horizontal">
+
+                        <ImageView
+                            android:layout_width="26dp"
+                            android:layout_height="26dp"
+                            android:contentDescription="@string/nav_header_desc"
+                            android:src="@drawable/ic_person"
+                            app:tint="?attr/colorPrimary" />
+                    </LinearLayout>
 
                     <!-- Nombre, email y agencia -->
                     <LinearLayout
@@ -69,7 +80,7 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:text="@string/settings_account_name_placeholder"
-                            android:textColor="?attr/colorOnPrimaryContainer"
+                            android:textColor="?attr/colorOnSurface"
                             android:textStyle="bold" />
 
                         <TextView
@@ -78,9 +89,8 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="3dp"
-                            android:alpha="0.78"
                             android:text="@string/settings_account_email_placeholder"
-                            android:textColor="?attr/colorOnPrimaryContainer" />
+                            android:textColor="?attr/colorOnSurfaceVariant" />
 
                         <TextView
                             android:id="@+id/textAccountAgency"
@@ -112,12 +122,9 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/settings_open_profile"
-                        android:textColor="?attr/colorOnPrimaryContainer"
                         app:icon="@drawable/ic_person"
                         app:iconGravity="textStart"
-                        app:iconPadding="6dp"
-                        app:iconTint="?attr/colorOnPrimaryContainer"
-                        app:strokeColor="?attr/colorOnPrimaryContainer" />
+                        app:iconPadding="6dp" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnCerrarSesion"
@@ -292,7 +299,7 @@
         </com.google.android.material.card.MaterialCardView>
 
         <!-- ══════════════════════════════════════════════════════
-             SECCIÓN: SINCRONIZACIÓN
+             SECCIÓN: ALMACENAMIENTO
              ══════════════════════════════════════════════════════ -->
         <TextView
             android:layout_width="match_parent"
@@ -300,7 +307,7 @@
             android:layout_marginBottom="8dp"
             android:layout_marginStart="4dp"
             android:letterSpacing="0.08"
-            android:text="SINCRONIZACIÓN"
+            android:text="ALMACENAMIENTO"
             android:textColor="?attr/colorOnSurfaceVariant"
             style="@style/TextAppearance.Material3.LabelSmall" />
 
@@ -315,16 +322,152 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
 
-                <!-- Fila: Sincronización automática -->
+                <!-- Cabecera: ícono + total -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center_vertical"
-                    android:minHeight="64dp"
                     android:orientation="horizontal"
-                    android:paddingEnd="8dp"
                     android:paddingStart="16dp"
-                    android:paddingTop="8dp"
+                    android:paddingEnd="16dp"
+                    android:paddingTop="16dp"
+                    android:paddingBottom="8dp">
+
+                    <LinearLayout
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:background="@drawable/bg_settings_icon"
+                        android:gravity="center"
+                        android:orientation="horizontal">
+
+                        <ImageView
+                            android:layout_width="22dp"
+                            android:layout_height="22dp"
+                            android:src="@drawable/ic_cloud_sync"
+                            app:tint="?attr/colorPrimary" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="14dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            style="@style/TextAppearance.Material3.BodyLarge"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Uso de almacenamiento" />
+
+                        <TextView
+                            android:id="@+id/textStorageTotal"
+                            style="@style/TextAppearance.Material3.BodySmall"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="Calculando…"
+                            android:textColor="?attr/colorOnSurfaceVariant" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- Barra de uso (caché / total) -->
+                <com.google.android.material.progressindicator.LinearProgressIndicator
+                    android:id="@+id/progressStorage"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:indeterminate="true"
+                    android:max="100"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginEnd="16dp"
+                    android:layout_marginBottom="12dp"
+                    app:trackThickness="6dp"
+                    app:trackCornerRadius="3dp"
+                    app:indicatorColor="?attr/colorPrimary"
+                    app:trackColor="?attr/colorSurfaceVariant" />
+
+                <!-- Desglose: datos + caché -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:paddingBottom="12dp">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:gravity="center_horizontal">
+
+                        <TextView
+                            android:id="@+id/textStorageData"
+                            style="@style/TextAppearance.Material3.TitleSmall"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="—"
+                            android:textColor="?attr/colorPrimary"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            style="@style/TextAppearance.Material3.LabelSmall"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="App + BD"
+                            android:textColor="?attr/colorOnSurfaceVariant" />
+                    </LinearLayout>
+
+                    <View
+                        android:layout_width="1dp"
+                        android:layout_height="32dp"
+                        android:layout_gravity="center_vertical"
+                        android:background="?attr/colorOutlineVariant" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:gravity="center_horizontal">
+
+                        <TextView
+                            android:id="@+id/textStorageCache"
+                            style="@style/TextAppearance.Material3.TitleSmall"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="—"
+                            android:textColor="@color/ice_yellow_dark"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            style="@style/TextAppearance.Material3.LabelSmall"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="Caché"
+                            android:textColor="?attr/colorOnSurfaceVariant" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginStart="16dp"
+                    android:layout_marginEnd="16dp"
+                    android:background="?attr/colorOutlineVariant" />
+
+                <!-- Sincronizar datos -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:paddingTop="14dp"
                     android:paddingBottom="4dp">
 
                     <LinearLayout
@@ -337,7 +480,6 @@
                         <ImageView
                             android:layout_width="22dp"
                             android:layout_height="22dp"
-                            android:contentDescription="@string/settings_section_sync"
                             android:src="@drawable/ic_refresh"
                             app:tint="?attr/colorPrimary" />
                     </LinearLayout>
@@ -353,39 +495,25 @@
                             style="@style/TextAppearance.Material3.BodyLarge"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="@string/settings_auto_sync_toggle" />
+                            android:text="Sincronizar datos" />
 
                         <TextView
-                            android:id="@+id/textAutoSyncSummary"
                             style="@style/TextAppearance.Material3.BodySmall"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="2dp"
-                            android:text="@string/settings_auto_sync_summary_disabled"
+                            android:text="Descarga averías, luminarias y catálogos actualizados desde la base de datos central de ICE."
                             android:textColor="?attr/colorOnSurfaceVariant" />
                     </LinearLayout>
-
-                    <com.google.android.material.materialswitch.MaterialSwitch
-                        android:id="@+id/switchAutoSync"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp" />
                 </LinearLayout>
 
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:layout_marginStart="70dp"
-                    android:background="?attr/colorOutlineVariant" />
-
-                <!-- Sincronizar ahora + último sync -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
                     android:paddingStart="16dp"
                     android:paddingEnd="16dp"
-                    android:paddingTop="12dp"
+                    android:paddingTop="8dp"
                     android:paddingBottom="4dp">
 
                     <com.google.android.material.button.MaterialButton
@@ -405,6 +533,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="6dp"
                         android:paddingStart="4dp"
+                        android:paddingEnd="4dp"
                         android:text="@string/settings_last_sync_never"
                         android:textColor="?attr/colorOnSurfaceVariant" />
                 </LinearLayout>
@@ -414,80 +543,32 @@
                     android:layout_height="1dp"
                     android:layout_marginStart="16dp"
                     android:layout_marginEnd="16dp"
-                    android:layout_marginTop="8dp"
+                    android:layout_marginTop="12dp"
                     android:background="?attr/colorOutlineVariant" />
 
-                <!-- Limpiar caché -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:paddingStart="16dp"
-                    android:paddingEnd="16dp"
-                    android:paddingTop="8dp"
-                    android:paddingBottom="12dp">
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnClearCache"
-                        style="@style/Widget.Material3.Button.TonalButton"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="@string/settings_clear_cache"
-                        app:icon="@drawable/ic_refresh"
-                        app:iconGravity="textStart"
-                        app:iconPadding="8dp" />
-                </LinearLayout>
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- ══════════════════════════════════════════════════════
-             SECCIÓN: UBICACIÓN
-             ══════════════════════════════════════════════════════ -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
-            android:layout_marginStart="4dp"
-            android:letterSpacing="0.08"
-            android:text="UBICACIÓN"
-            android:textColor="?attr/colorOnSurfaceVariant"
-            style="@style/TextAppearance.Material3.LabelSmall" />
-
-        <com.google.android.material.card.MaterialCardView
-            style="@style/Tecni.SectionCard"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="20dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical">
-
-                <!-- Fila: GPS -->
+                <!-- Restablecer datos locales -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center_vertical"
-                    android:minHeight="64dp"
                     android:orientation="horizontal"
-                    android:paddingEnd="8dp"
                     android:paddingStart="16dp"
-                    android:paddingTop="8dp"
+                    android:paddingEnd="16dp"
+                    android:paddingTop="14dp"
                     android:paddingBottom="4dp">
 
                     <LinearLayout
                         android:layout_width="40dp"
                         android:layout_height="40dp"
-                        android:background="@drawable/bg_settings_icon"
+                        android:background="@drawable/bg_settings_icon_error"
                         android:gravity="center"
                         android:orientation="horizontal">
 
                         <ImageView
                             android:layout_width="22dp"
                             android:layout_height="22dp"
-                            android:contentDescription="@string/settings_section_location"
-                            android:src="@drawable/ic_location"
-                            app:tint="?attr/colorPrimary" />
+                            android:src="@drawable/ic_delete_sweep"
+                            app:tint="?attr/colorError" />
                     </LinearLayout>
 
                     <LinearLayout
@@ -501,47 +582,33 @@
                             style="@style/TextAppearance.Material3.BodyLarge"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="@string/settings_gps_toggle" />
+                            android:text="Restablecer datos locales" />
 
                         <TextView
-                            android:id="@+id/textGpsSummary"
                             style="@style/TextAppearance.Material3.BodySmall"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="2dp"
-                            android:text="@string/settings_gps_summary_off"
+                            android:text="Borra la base de datos local y la reconstruye desde Firebase. Recomendado si hay datos corruptos o inconsistentes."
                             android:textColor="?attr/colorOnSurfaceVariant" />
                     </LinearLayout>
-
-                    <com.google.android.material.materialswitch.MaterialSwitch
-                        android:id="@+id/switchGps"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp" />
                 </LinearLayout>
 
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:layout_marginStart="70dp"
-                    android:background="?attr/colorOutlineVariant" />
-
-                <!-- Abrir configuración de ubicación -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:paddingStart="16dp"
                     android:paddingEnd="16dp"
                     android:paddingTop="8dp"
-                    android:paddingBottom="12dp">
+                    android:paddingBottom="16dp">
 
                     <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnOpenLocationSettings"
-                        style="@style/Tecni.Button.Text"
+                        android:id="@+id/btnClearCache"
+                        style="@style/Tecni.Button.Outlined"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="@string/settings_open_location_settings"
-                        app:icon="@drawable/ic_settings"
+                        android:text="@string/settings_clear_cache"
+                        app:icon="@drawable/ic_refresh"
                         app:iconGravity="textStart"
                         app:iconPadding="8dp" />
                 </LinearLayout>
@@ -831,7 +898,7 @@
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnCheckUpdates"
-                        style="@style/Widget.Material3.Button.TonalButton"
+                        style="@style/Tecni.Button.Outlined"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="@string/settings_check_updates" />

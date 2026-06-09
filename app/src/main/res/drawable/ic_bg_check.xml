@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Check / palomita decorativa para tarjeta "Atendidas hoy"
+  viewport: 200×200
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="200dp"
+    android:height="200dp"
+    android:viewportWidth="200"
+    android:viewportHeight="200">
+
+    <!-- ── Círculo exterior ───────────────────────────────── -->
+    <path
+        android:pathData="M 100,100 m -82,0 a 82,82 0 1,0 164,0 a 82,82 0 1,0 -164,0"
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="7" />
+
+    <!-- ── Círculo interior (aura doble) ─────────────────── -->
+    <path
+        android:pathData="M 100,100 m -68,0 a 68,68 0 1,0 136,0 a 68,68 0 1,0 -136,0"
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.5"
+        android:alpha="0.35" />
+
+    <!-- ── Palomita / checkmark gruesa ───────────────────── -->
+    <path
+        android:pathData="M 38,100 L 78,140 L 162,52"
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="18"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+
+    <!-- ── Pequeños arcos de brillo alrededor ────────────── -->
+    <!-- Brillo arriba-derecha -->
+    <path
+        android:pathData="M 155,28 A 12,12 0 0,1 168,38"
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round"
+        android:alpha="0.6" />
+    <!-- Brillo abajo-izquierda -->
+    <path
+        android:pathData="M 32,162 A 12,12 0 0,1 42,172"
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round"
+        android:alpha="0.6" />
+    <!-- Brillo arriba-izquierda -->
+    <path
+        android:pathData="M 30,40 A 10,10 0 0,1 40,30"
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:alpha="0.45" />
+
+</vector>

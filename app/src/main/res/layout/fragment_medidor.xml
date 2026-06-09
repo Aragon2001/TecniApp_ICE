@@ -9,46 +9,140 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:clipToPadding="false"
-        android:fillViewport="true"
-        android:padding="24dp">
+        android:fillViewport="true">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingBottom="80dp">
+            android:padding="20dp"
+            android:paddingBottom="32dp">
 
+            <!-- ═══════════════════════════════════════════════════
+                 HERO BANNER — siempre visible
+                 ═══════════════════════════════════════════════════ -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                app:cardBackgroundColor="?attr/colorPrimaryContainer"
+                app:cardCornerRadius="28dp"
+                app:cardElevation="0dp"
+                app:strokeColor="?attr/colorOutlineVariant"
+                app:strokeWidth="1dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <!-- Franja amarilla ICE en la parte superior -->
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="5dp"
+                        android:background="@color/secondary_container" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:padding="20dp"
+                        android:paddingBottom="16dp">
+
+                        <!-- Ícono principal en círculo azul sólido -->
+                        <com.google.android.material.card.MaterialCardView
+                            android:id="@+id/heroIconContainer"
+                            android:layout_width="72dp"
+                            android:layout_height="72dp"
+                            app:cardBackgroundColor="?attr/colorPrimary"
+                            app:cardCornerRadius="36dp"
+                            app:cardElevation="4dp">
+
+                            <ImageView
+                                android:layout_width="38dp"
+                                android:layout_height="38dp"
+                                android:layout_gravity="center"
+                                android:importantForAccessibility="no"
+                                android:src="@drawable/ic_menu_medidor"
+                                app:tint="?attr/colorOnPrimary" />
+                        </com.google.android.material.card.MaterialCardView>
+
+                        <!-- Título y descripción -->
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="16dp"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                style="@style/TextAppearance.Material3.LabelMedium"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:letterSpacing="0.12"
+                                android:text="ICE · CAMPO"
+                                android:textColor="?attr/colorPrimary"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                style="@style/TextAppearance.Material3.TitleLarge"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:text="@string/medidor_consulta_title"
+                                android:textColor="?attr/colorOnPrimaryContainer"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                style="@style/TextAppearance.Material3.BodySmall"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:text="@string/medidor_consulta_descripcion"
+                                android:textColor="?attr/colorOnPrimaryContainer"
+                                android:alpha="0.75" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <!-- Barra de progreso (visible durante la búsqueda) -->
+                    <com.google.android.material.progressindicator.LinearProgressIndicator
+                        android:id="@+id/progressBusqueda"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:indeterminate="true"
+                        android:visibility="gone"
+                        app:indicatorColor="?attr/colorPrimary"
+                        app:trackColor="?attr/colorPrimaryContainer"
+                        app:trackCornerRadius="0dp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- ═══════════════════════════════════════════════════
+                 BÚSQUEDA — siempre visible
+                 ═══════════════════════════════════════════════════ -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardConsulta"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
-                app:cardBackgroundColor="@color/glass_light"
+                android:layout_marginTop="16dp"
+                app:cardBackgroundColor="?attr/colorSurface"
                 app:cardCornerRadius="24dp"
-                app:cardElevation="3dp"
-                app:strokeColor="@color/glass_light"
+                app:cardElevation="2dp"
+                app:strokeColor="?attr/colorOutlineVariant"
                 app:strokeWidth="1dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="24dp">
+                    android:padding="20dp">
 
                     <TextView
-                        style="@style/TextAppearance.Material3.TitleLarge"
-                        android:layout_width="match_parent"
+                        style="@style/TextAppearance.Material3.LabelLarge"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="@string/medidor_consulta_title"
-                        android:textStyle="bold"
-                        android:textColor="?attr/colorOnSurface" />
-
-                    <TextView
-                        style="@style/TextAppearance.Material3.BodyMedium"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="6dp"
-                        android:text="@string/medidor_consulta_descripcion"
+                        android:text="Número de medidor"
                         android:textColor="?attr/colorOnSurfaceVariant" />
 
                     <com.google.android.material.textfield.TextInputLayout
@@ -56,7 +150,7 @@
                         style="@style/Tecni.TextInput.Outlined"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="20dp"
+                        android:layout_marginTop="10dp"
                         android:hint="@string/medidor_numero_hint"
                         app:startIconDrawable="@drawable/ic_round_search_24">
 
@@ -74,7 +168,7 @@
                         style="@style/Tecni.Button.Primary"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="20dp"
+                        android:layout_marginTop="14dp"
                         android:text="@string/medidor_consultar"
                         app:icon="@drawable/ic_round_search_24"
                         app:iconGravity="textStart"
@@ -82,217 +176,516 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
+            <!-- ═══════════════════════════════════════════════════
+                 RESULTADO — visible solo cuando hay medidor
+                 ═══════════════════════════════════════════════════ -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardResultado"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
+                android:layout_marginTop="16dp"
                 android:visibility="gone"
-                app:cardBackgroundColor="@color/glass_light"
+                app:cardBackgroundColor="?attr/colorSurface"
                 app:cardCornerRadius="24dp"
                 app:cardElevation="3dp"
-                app:strokeColor="@color/bg_light"
+                app:strokeColor="?attr/colorOutlineVariant"
                 app:strokeWidth="1dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="24dp">
+                    android:orientation="vertical">
 
-                    <TextView
-                        style="@style/TextAppearance.Material3.TitleMedium"
+                    <!-- Franja verde "Encontrado" al tope -->
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="4dp"
+                        android:background="@color/tertiary_container" />
+
+                    <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="@string/medidor_result_title"
-                        android:textColor="?attr/colorOnSurface" />
+                        android:orientation="vertical"
+                        android:padding="20dp">
 
-                    <TextView
-                        android:id="@+id/valueSubregionHeader"
-                        style="@style/TextAppearance.Material3.BodyMedium"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="6dp"
-                        android:textColor="?attr/colorOnSurfaceVariant" />
-
-                    <TextView
-                        android:id="@+id/chipNumero"
-                        style="@style/TextAppearance.Material3.TitleLarge"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="16dp"
-                        android:textColor="?attr/colorOnSurface" />
-
-                    <com.google.android.material.card.MaterialCardView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="16dp"
-                        app:cardBackgroundColor="@color/glass_light"
-                        app:cardCornerRadius="20dp"
-                        app:cardElevation="0dp"
-                        app:strokeColor="@color/glass_light"
-                        app:strokeWidth="1dp">
-
-                        <androidx.gridlayout.widget.GridLayout
+                        <!-- Cabecera: icono + número de medidor -->
+                        <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:padding="16dp"
-                            app:columnCount="2"
-                            app:rowCount="6">
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
 
-                            <TextView
-                                style="@style/TextAppearance.Material3.LabelLarge"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginBottom="12dp"
-                                android:text="@string/medidor_cliente_label"
-                                android:textColor="?attr/colorOnSurfaceVariant"
-                                app:layout_column="0"
-                                app:layout_row="0" />
+                            <com.google.android.material.card.MaterialCardView
+                                android:layout_width="52dp"
+                                android:layout_height="52dp"
+                                app:cardBackgroundColor="?attr/colorPrimaryContainer"
+                                app:cardCornerRadius="26dp"
+                                app:cardElevation="0dp">
 
-                            <TextView
-                                android:id="@+id/chipCliente"
-                                style="@style/TextAppearance.Material3.BodyMedium"
+                                <ImageView
+                                    android:layout_width="26dp"
+                                    android:layout_height="26dp"
+                                    android:layout_gravity="center"
+                                    android:importantForAccessibility="no"
+                                    android:src="@drawable/ic_menu_medidor"
+                                    app:tint="?attr/colorPrimary" />
+                            </com.google.android.material.card.MaterialCardView>
+
+                            <LinearLayout
                                 android:layout_width="0dp"
                                 android:layout_height="wrap_content"
-                                android:layout_marginBottom="12dp"
-                                android:textColor="?attr/colorOnSurface"
-                                app:layout_column="1"
-                                app:layout_row="0"
-                                app:layout_columnWeight="1" />
+                                android:layout_marginStart="14dp"
+                                android:layout_weight="1"
+                                android:orientation="vertical">
 
-                            <TextView
-                                style="@style/TextAppearance.Material3.LabelLarge"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginBottom="12dp"
-                                android:text="@string/medidor_localizacion_label"
-                                android:textColor="?attr/colorOnSurfaceVariant"
-                                app:layout_column="0"
-                                app:layout_row="1" />
+                                <TextView
+                                    style="@style/TextAppearance.Material3.LabelSmall"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:letterSpacing="0.1"
+                                    android:text="@string/medidor_result_title"
+                                    android:textAllCaps="true"
+                                    android:textColor="?attr/colorOnSurfaceVariant" />
 
-                            <TextView
-                                android:id="@+id/chipLocalizacion"
-                                style="@style/TextAppearance.Material3.BodyMedium"
+                                <TextView
+                                    android:id="@+id/chipNumero"
+                                    style="@style/TextAppearance.Material3.HeadlineSmall"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="2dp"
+                                    android:fontFamily="monospace"
+                                    android:textColor="?attr/colorPrimary"
+                                    android:textStyle="bold" />
+                            </LinearLayout>
+                        </LinearLayout>
+
+                        <!-- Badge de subregión -->
+                        <TextView
+                            android:id="@+id/valueSubregionHeader"
+                            style="@style/TextAppearance.Material3.LabelMedium"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="12dp"
+                            android:background="@drawable/bg_medidor_number_badge"
+                            android:paddingHorizontal="12dp"
+                            android:paddingVertical="5dp"
+                            android:textColor="?attr/colorOnPrimaryContainer"
+                            android:textStyle="bold" />
+
+                        <!-- Separador -->
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:layout_marginVertical="16dp"
+                            android:background="?attr/colorOutlineVariant" />
+
+                        <!-- Fila: Cliente -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal"
+                            android:paddingVertical="8dp">
+
+                            <FrameLayout
+                                android:layout_width="40dp"
+                                android:layout_height="40dp"
+                                android:background="@drawable/bg_medidor_icon_primary">
+
+                                <ImageView
+                                    android:layout_width="20dp"
+                                    android:layout_height="20dp"
+                                    android:layout_gravity="center"
+                                    android:importantForAccessibility="no"
+                                    android:src="@drawable/ic_person"
+                                    app:tint="?attr/colorPrimary" />
+                            </FrameLayout>
+
+                            <LinearLayout
                                 android:layout_width="0dp"
                                 android:layout_height="wrap_content"
-                                android:layout_marginBottom="12dp"
-                                android:textColor="?attr/colorOnSurface"
-                                app:layout_column="1"
-                                app:layout_row="1"
-                                app:layout_columnWeight="1" />
+                                android:layout_marginStart="14dp"
+                                android:layout_weight="1"
+                                android:orientation="vertical">
 
-                            <TextView
-                                style="@style/TextAppearance.Material3.LabelLarge"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginBottom="12dp"
-                                android:text="@string/medidor_calle_label"
-                                android:textColor="?attr/colorOnSurfaceVariant"
-                                app:layout_column="0"
-                                app:layout_row="2" />
+                                <TextView
+                                    style="@style/TextAppearance.Material3.LabelSmall"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/medidor_cliente_label"
+                                    android:textColor="?attr/colorOnSurfaceVariant" />
 
-                            <TextView
-                                android:id="@+id/chipCalle"
-                                style="@style/TextAppearance.Material3.BodyMedium"
+                                <TextView
+                                    android:id="@+id/chipCliente"
+                                    style="@style/TextAppearance.Material3.BodyMedium"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="2dp"
+                                    android:textColor="?attr/colorOnSurface"
+                                    android:textStyle="bold" />
+                            </LinearLayout>
+                        </LinearLayout>
+
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:layout_marginStart="54dp"
+                            android:alpha="0.5"
+                            android:background="?attr/colorOutlineVariant" />
+
+                        <!-- Fila: Localización -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal"
+                            android:paddingVertical="8dp">
+
+                            <FrameLayout
+                                android:layout_width="40dp"
+                                android:layout_height="40dp"
+                                android:background="@drawable/bg_medidor_icon_primary">
+
+                                <ImageView
+                                    android:layout_width="20dp"
+                                    android:layout_height="20dp"
+                                    android:layout_gravity="center"
+                                    android:importantForAccessibility="no"
+                                    android:src="@drawable/ic_location"
+                                    app:tint="?attr/colorPrimary" />
+                            </FrameLayout>
+
+                            <LinearLayout
                                 android:layout_width="0dp"
                                 android:layout_height="wrap_content"
-                                android:layout_marginBottom="12dp"
-                                android:textColor="?attr/colorOnSurface"
-                                app:layout_column="1"
-                                app:layout_row="2"
-                                app:layout_columnWeight="1" />
+                                android:layout_marginStart="14dp"
+                                android:layout_weight="1"
+                                android:orientation="vertical">
 
-                            <TextView
-                                style="@style/TextAppearance.Material3.LabelLarge"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginBottom="12dp"
-                                android:text="@string/medidor_poste_label"
-                                android:textColor="?attr/colorOnSurfaceVariant"
-                                app:layout_column="0"
-                                app:layout_row="3" />
+                                <TextView
+                                    style="@style/TextAppearance.Material3.LabelSmall"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/medidor_localizacion_label"
+                                    android:textColor="?attr/colorOnSurfaceVariant" />
 
-                            <TextView
-                                android:id="@+id/chipPoste"
-                                style="@style/TextAppearance.Material3.BodyMedium"
+                                <TextView
+                                    android:id="@+id/chipLocalizacion"
+                                    style="@style/TextAppearance.Material3.BodyMedium"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="2dp"
+                                    android:fontFamily="monospace"
+                                    android:textColor="?attr/colorOnSurface"
+                                    android:textStyle="bold" />
+                            </LinearLayout>
+                        </LinearLayout>
+
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:layout_marginStart="54dp"
+                            android:alpha="0.5"
+                            android:background="?attr/colorOutlineVariant" />
+
+                        <!-- Fila: Calle -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal"
+                            android:paddingVertical="8dp">
+
+                            <FrameLayout
+                                android:layout_width="40dp"
+                                android:layout_height="40dp"
+                                android:background="@drawable/bg_medidor_icon_secondary">
+
+                                <ImageView
+                                    android:layout_width="20dp"
+                                    android:layout_height="20dp"
+                                    android:layout_gravity="center"
+                                    android:importantForAccessibility="no"
+                                    android:src="@drawable/ic_menu_localizacion"
+                                    app:tint="?attr/colorSecondary" />
+                            </FrameLayout>
+
+                            <LinearLayout
                                 android:layout_width="0dp"
                                 android:layout_height="wrap_content"
-                                android:layout_marginBottom="12dp"
-                                android:textColor="?attr/colorOnSurface"
-                                app:layout_column="1"
-                                app:layout_row="3"
-                                app:layout_columnWeight="1" />
+                                android:layout_marginStart="14dp"
+                                android:layout_weight="1"
+                                android:orientation="vertical">
 
-                            <TextView
-                                style="@style/TextAppearance.Material3.LabelLarge"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginBottom="12dp"
-                                android:text="@string/medidor_metros_label"
-                                android:textColor="?attr/colorOnSurfaceVariant"
-                                app:layout_column="0"
-                                app:layout_row="4" />
+                                <TextView
+                                    style="@style/TextAppearance.Material3.LabelSmall"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/medidor_calle_label"
+                                    android:textColor="?attr/colorOnSurfaceVariant" />
 
-                            <TextView
-                                android:id="@+id/chipMetros"
-                                style="@style/TextAppearance.Material3.BodyMedium"
+                                <TextView
+                                    android:id="@+id/chipCalle"
+                                    style="@style/TextAppearance.Material3.BodyMedium"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="2dp"
+                                    android:textColor="?attr/colorOnSurface"
+                                    android:textStyle="bold" />
+                            </LinearLayout>
+                        </LinearLayout>
+
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:layout_marginStart="54dp"
+                            android:alpha="0.5"
+                            android:background="?attr/colorOutlineVariant" />
+
+                        <!-- Fila: Poste -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal"
+                            android:paddingVertical="8dp">
+
+                            <FrameLayout
+                                android:layout_width="40dp"
+                                android:layout_height="40dp"
+                                android:background="@drawable/bg_medidor_icon_secondary">
+
+                                <ImageView
+                                    android:layout_width="20dp"
+                                    android:layout_height="20dp"
+                                    android:layout_gravity="center"
+                                    android:importantForAccessibility="no"
+                                    android:src="@drawable/ic_poste"
+                                    app:tint="?attr/colorSecondary" />
+                            </FrameLayout>
+
+                            <LinearLayout
                                 android:layout_width="0dp"
                                 android:layout_height="wrap_content"
-                                android:layout_marginBottom="12dp"
-                                android:textColor="?attr/colorOnSurface"
-                                app:layout_column="1"
-                                app:layout_row="4"
-                                app:layout_columnWeight="1" />
+                                android:layout_marginStart="14dp"
+                                android:layout_weight="1"
+                                android:orientation="vertical">
 
-                            <TextView
-                                style="@style/TextAppearance.Material3.LabelLarge"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="@string/medidor_pueblo_label"
-                                android:textColor="?attr/colorOnSurfaceVariant"
-                                app:layout_column="0"
-                                app:layout_row="5" />
+                                <TextView
+                                    style="@style/TextAppearance.Material3.LabelSmall"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/medidor_poste_label"
+                                    android:textColor="?attr/colorOnSurfaceVariant" />
 
-                            <TextView
-                                android:id="@+id/chipPueblo"
-                                style="@style/TextAppearance.Material3.BodyMedium"
+                                <TextView
+                                    android:id="@+id/chipPoste"
+                                    style="@style/TextAppearance.Material3.BodyMedium"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="2dp"
+                                    android:textColor="?attr/colorOnSurface"
+                                    android:textStyle="bold" />
+                            </LinearLayout>
+                        </LinearLayout>
+
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:layout_marginStart="54dp"
+                            android:alpha="0.5"
+                            android:background="?attr/colorOutlineVariant" />
+
+                        <!-- Fila: Metros -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal"
+                            android:paddingVertical="8dp">
+
+                            <FrameLayout
+                                android:layout_width="40dp"
+                                android:layout_height="40dp"
+                                android:background="@drawable/bg_medidor_icon_secondary">
+
+                                <ImageView
+                                    android:layout_width="20dp"
+                                    android:layout_height="20dp"
+                                    android:layout_gravity="center"
+                                    android:importantForAccessibility="no"
+                                    android:src="@drawable/ic_speedometer"
+                                    app:tint="?attr/colorSecondary" />
+                            </FrameLayout>
+
+                            <LinearLayout
                                 android:layout_width="0dp"
                                 android:layout_height="wrap_content"
-                                android:textColor="?attr/colorOnSurface"
-                                app:layout_column="1"
-                                app:layout_row="5"
-                                app:layout_columnWeight="1" />
-                        </androidx.gridlayout.widget.GridLayout>
-                    </com.google.android.material.card.MaterialCardView>
+                                android:layout_marginStart="14dp"
+                                android:layout_weight="1"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    style="@style/TextAppearance.Material3.LabelSmall"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/medidor_metros_label"
+                                    android:textColor="?attr/colorOnSurfaceVariant" />
+
+                                <TextView
+                                    android:id="@+id/chipMetros"
+                                    style="@style/TextAppearance.Material3.BodyMedium"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="2dp"
+                                    android:textColor="?attr/colorOnSurface"
+                                    android:textStyle="bold" />
+                            </LinearLayout>
+                        </LinearLayout>
+
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:layout_marginStart="54dp"
+                            android:alpha="0.5"
+                            android:background="?attr/colorOutlineVariant" />
+
+                        <!-- Fila: Pueblo -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal"
+                            android:paddingVertical="8dp">
+
+                            <FrameLayout
+                                android:layout_width="40dp"
+                                android:layout_height="40dp"
+                                android:background="@drawable/bg_medidor_icon_primary">
+
+                                <ImageView
+                                    android:layout_width="20dp"
+                                    android:layout_height="20dp"
+                                    android:layout_gravity="center"
+                                    android:importantForAccessibility="no"
+                                    android:src="@drawable/ic_map_placeholder"
+                                    app:tint="?attr/colorPrimary" />
+                            </FrameLayout>
+
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="14dp"
+                                android:layout_weight="1"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    style="@style/TextAppearance.Material3.LabelSmall"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/medidor_pueblo_label"
+                                    android:textColor="?attr/colorOnSurfaceVariant" />
+
+                                <TextView
+                                    android:id="@+id/chipPueblo"
+                                    style="@style/TextAppearance.Material3.BodyMedium"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="2dp"
+                                    android:textColor="?attr/colorOnSurface"
+                                    android:textStyle="bold" />
+                            </LinearLayout>
+                        </LinearLayout>
+
+                        <!-- Separador antes de acciones -->
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:layout_marginTop="12dp"
+                            android:background="?attr/colorOutlineVariant" />
+
+                        <!-- Botones de acción inline -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="14dp"
+                            android:gravity="end"
+                            android:orientation="horizontal">
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnCopiarInline"
+                                style="@style/Widget.Material3.Button.OutlinedButton"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="@string/medidor_copy"
+                                app:icon="@drawable/ic_copy"
+                                app:iconGravity="textStart"
+                                app:iconPadding="6dp" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnCompartirInline"
+                                style="@style/Tecni.Button.Primary"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="10dp"
+                                android:layout_weight="1"
+                                android:text="@string/medidor_compartir"
+                                app:icon="@drawable/ic_share"
+                                app:iconGravity="textStart"
+                                app:iconPadding="6dp" />
+                        </LinearLayout>
+                    </LinearLayout>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
+            <!-- ═══════════════════════════════════════════════════
+                 NO ENCONTRADO — visible cuando falla la búsqueda
+                 ═══════════════════════════════════════════════════ -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardNoEncontrado"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="20dp"
+                android:layout_marginTop="16dp"
                 android:visibility="gone"
-                app:cardBackgroundColor="@color/glass_light"
+                app:cardBackgroundColor="?attr/colorSurface"
                 app:cardCornerRadius="24dp"
-                app:cardElevation="3dp"
-                app:strokeColor="@color/glass_light"
+                app:cardElevation="2dp"
+                app:strokeColor="?attr/colorError"
                 app:strokeWidth="1dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:gravity="center_horizontal"
                     android:orientation="vertical"
                     android:padding="24dp">
+
+                    <!-- Ícono de advertencia en círculo -->
+                    <FrameLayout
+                        android:layout_width="64dp"
+                        android:layout_height="64dp"
+                        android:background="@drawable/bg_medidor_icon_warning">
+
+                        <ImageView
+                            android:layout_width="32dp"
+                            android:layout_height="32dp"
+                            android:layout_gravity="center"
+                            android:importantForAccessibility="no"
+                            android:src="@drawable/ic_warning"
+                            app:tint="?attr/colorError" />
+                    </FrameLayout>
 
                     <TextView
                         android:id="@+id/textNoEncontradoTitle"
                         style="@style/TextAppearance.Material3.TitleMedium"
-                        android:layout_width="match_parent"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp"
+                        android:gravity="center"
                         android:text="@string/medidor_no_encontrado_titulo"
-                        android:textColor="?attr/colorOnSurface" />
+                        android:textColor="?attr/colorOnSurface"
+                        android:textStyle="bold" />
 
                     <TextView
                         android:id="@+id/textNoEncontradoDescription"
@@ -300,12 +693,13 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
+                        android:gravity="center"
                         android:textColor="?attr/colorOnSurfaceVariant" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnMostrarRegistro"
                         style="@style/Tecni.Button.Primary"
-                        android:layout_width="wrap_content"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="20dp"
                         android:text="@string/medidor_no_encontrado_accion"
@@ -314,102 +708,8 @@
                         app:iconPadding="8dp" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
+
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
-
-    <!-- Overlay semitransparente para cerrar el FAB expandido -->
-    <View
-        android:id="@+id/fabOverlay"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="#80000000"
-        android:visibility="gone" />
-
-    <!-- FAB mini: Compartir -->
-    <LinearLayout
-        android:id="@+id/fabCompartirContainer"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom|end"
-        android:layout_marginBottom="144dp"
-        android:layout_marginEnd="12dp"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:visibility="gone">
-
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="8dp"
-            app:cardCornerRadius="8dp"
-            app:cardElevation="2dp">
-
-            <TextView
-                style="@style/TextAppearance.Material3.LabelLarge"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:paddingHorizontal="12dp"
-                android:paddingVertical="6dp"
-                android:text="@string/medidor_compartir"
-                android:textColor="?attr/colorOnSurface" />
-        </com.google.android.material.card.MaterialCardView>
-
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fabCompartir"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:contentDescription="@string/medidor_compartir"
-            app:fabSize="mini"
-            app:srcCompat="@drawable/ic_share" />
-    </LinearLayout>
-
-    <!-- FAB mini: Copiar -->
-    <LinearLayout
-        android:id="@+id/fabCopiarContainer"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom|end"
-        android:layout_marginBottom="88dp"
-        android:layout_marginEnd="12dp"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:visibility="gone">
-
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="8dp"
-            app:cardCornerRadius="8dp"
-            app:cardElevation="2dp">
-
-            <TextView
-                style="@style/TextAppearance.Material3.LabelLarge"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:paddingHorizontal="12dp"
-                android:paddingVertical="6dp"
-                android:text="@string/medidor_copy"
-                android:textColor="?attr/colorOnSurface" />
-        </com.google.android.material.card.MaterialCardView>
-
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fabCopiar"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:contentDescription="@string/medidor_copy"
-            app:fabSize="mini"
-            app:srcCompat="@drawable/ic_copy" />
-    </LinearLayout>
-
-    <!-- FAB principal de opciones -->
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fabOpciones"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom|end"
-        android:layout_margin="16dp"
-        android:contentDescription="@string/medidor_opciones_fab"
-        android:visibility="gone"
-        app:srcCompat="@drawable/ic_more_vert" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

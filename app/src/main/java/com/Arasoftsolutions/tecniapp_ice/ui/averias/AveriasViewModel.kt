@@ -113,6 +113,10 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
     val notificationAgencies: StateFlow<List<String>> = _notificationAgencies.asStateFlow()
     private val _notificationSuggestions = MutableStateFlow<List<String>>(emptyList())
     val notificationSuggestions: StateFlow<List<String>> = _notificationSuggestions.asStateFlow()
+    private val _notificationRegionAgencies = MutableStateFlow<List<AgenciaUI>>(emptyList())
+    val notificationRegionAgencies: StateFlow<List<AgenciaUI>> = _notificationRegionAgencies.asStateFlow()
+    private val _userRegionLabel = MutableStateFlow("")
+    val userRegionLabel: StateFlow<String> = _userRegionLabel.asStateFlow()
 
     private val _regiones = MutableStateFlow(listOf(RegionUI(null, allRegionsLabel)))
     val regiones: StateFlow<List<RegionUI>> = _regiones.asStateFlow()
@@ -156,17 +160,21 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
     private val drafts = mutableMapOf<String, AveriaDraft>()
 
     data class FechaFiltro(val inicioMillis: Long, val finExclusiveMillis: Long)
+    data class HoraFiltro(val inicioMinutos: Int, val finMinutos: Int)
 
     private data class FilterConfig(
         val query: String,
         val estado: Estado?,
         val region: RegionUI,
         val agencia: AgenciaUI,
-        val fecha: FechaFiltro?
+        val fecha: FechaFiltro?,
+        val hora: HoraFiltro? = null
     )
 
     private val fechaFiltro = MutableStateFlow<FechaFiltro?>(null)
     val fechaFiltroState: StateFlow<FechaFiltro?> = fechaFiltro.asStateFlow()
+    private val horaFiltro = MutableStateFlow<HoraFiltro?>(null)
+    val horaFiltroState: StateFlow<HoraFiltro?> = horaFiltro.asStateFlow()
     private val zoneId: ZoneId = ZoneId.systemDefault()
 
     private val filteredAverias =
@@ -179,6 +187,7 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
         ) { qv, est, regionSel, agenciaSel, fechaSel ->
             FilterConfig(qv, est, regionSel, agenciaSel, fechaSel)
         }
+            .combine(horaFiltro) { config, hora -> config.copy(hora = hora) }
             .flatMapLatest { config ->
                 repo.observe(emptyList(), "", config.query, "")
                     .map { list ->
@@ -186,7 +195,7 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
                             matchesEstado(entity, config.estado) &&
                                     matchesRegion(entity, config.region) &&
                                     matchesAgencia(entity, config.agencia) &&
-                                    matchesFecha(entity, config.fecha)
+                                    matchesFecha(entity, config.fecha, config.hora)
                         }
                     }
             }
@@ -314,6 +323,39 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
         fechaFiltro.value = null
     }
 
+    fun setHoraFiltro(inicioH: Int, inicioM: Int, finH: Int, finM: Int) {
+        horaFiltro.value = HoraFiltro(inicioH * 60 + inicioM, finH * 60 + finM)
+    }
+
+    fun clearHoraFiltro() {
+        horaFiltro.value = null
+    }
+
+    /** Guarda el rango con millis precisos (incluye hora). Llamado desde el filtro avanzado. */
+    fun setFechaFiltroPreciso(inicioMillis: Long, finExclusiveMillis: Long) {
+        fechaFiltro.value = FechaFiltro(inicioMillis, finExclusiveMillis)
+    }
+
+    fun getUserDefaultRegionIndex(): Int {
+        val user = _usuario.value ?: return 0
+        val userRegionId = user.region?.trim()
+        val userRegionNombre = user.regionNombre?.trim()
+        return _regiones.value.indexOfFirst { region ->
+            (userRegionId != null && region.id?.equals(userRegionId, ignoreCase = true) == true) ||
+            (userRegionNombre != null && region.nombreVisible.equals(userRegionNombre, ignoreCase = true))
+        }.takeIf { it >= 0 } ?: 0
+    }
+
+    fun getUserDefaultAgenciaIndex(): Int {
+        val user = _usuario.value ?: return 0
+        val userAgenciaId = user.agenciaId?.trim()
+        val userAgenciaNombre = user.agencia?.trim()
+        return _agencias.value.indexOfFirst { ag ->
+            (userAgenciaId != null && ag.id?.equals(userAgenciaId, ignoreCase = true) == true) ||
+            (userAgenciaNombre != null && ag.nombreVisible.equals(userAgenciaNombre, ignoreCase = true))
+        }.takeIf { it >= 0 } ?: 0
+    }
+
     fun observarInventarioPorPlaca(placa: String?): Flow<List<InventarioConVehiculo>> {
         val texto = placa?.trim().orEmpty()
         if (texto.isBlank()) return flowOf(emptyList<InventarioConVehiculo>())
@@ -359,6 +401,29 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
         _notificationAgencies.value = AveriaNotificationPreferences.getSelectedAgencies(getApplication())
     }
 
+    fun setNotificationAgencies(agencies: Set<String>) {
+        AveriaNotificationPreferences.setSelectedAgencies(getApplication(), agencies)
+        _notificationAgencies.value = AveriaNotificationPreferences.getSelectedAgencies(getApplication())
+    }
+
+    private fun updateNotificationRegionAgencies() {
+        val user = _usuario.value
+        val userRegionId = user?.region?.takeIf { it.isNotBlank() }
+        val userRegionName = user?.regionNombre?.takeIf { it.isNotBlank() }
+            ?: _regionSeleccionada.value.nombreVisible.takeIf { it != allRegionsLabel }
+
+        val effectiveRegionId = userRegionId ?: _regionSeleccionada.value.id
+        val agenciasParaNotif = buildAgencias(effectiveRegionId).drop(1)
+        _notificationRegionAgencies.value = agenciasParaNotif
+
+        val sugerencias = agenciasParaNotif.map { it.nombreVisible }
+            .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it })
+        _notificationSuggestions.value = sugerencias
+
+        if (!userRegionName.isNullOrBlank() && userRegionName != allRegionsLabel) {
+            _userRegionLabel.value = userRegionName
+        }
+    }
 
     fun setRegionIndex(idx: Int) = viewModelScope.launch {
         filtersTouchedByUser = true
@@ -480,12 +545,19 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
         return normalizedId.isNotBlank() && haystack.contains(normalizedId)
     }
 
-    private fun matchesFecha(entity: AveriaEntity, filtro: FechaFiltro?): Boolean {
-        filtro ?: return true
-        val fecha = entity.fechaInicioMillis
-        if (fecha <= 0L) return false
-        if (fecha < filtro.inicioMillis) return false
-        if (fecha >= filtro.finExclusiveMillis) return false
+    private fun matchesFecha(entity: AveriaEntity, filtro: FechaFiltro?, hora: HoraFiltro?): Boolean {
+        val fechaMs = entity.fechaInicioMillis
+        if (fechaMs <= 0L) return (filtro == null && hora == null)
+        if (filtro != null) {
+            if (fechaMs < filtro.inicioMillis) return false
+            if (fechaMs >= filtro.finExclusiveMillis) return false
+        }
+        if (hora != null) {
+            val localTime = java.time.Instant.ofEpochMilli(fechaMs)
+                .atZone(zoneId).toLocalTime()
+            val minutos = localTime.hour * 60 + localTime.minute
+            if (minutos < hora.inicioMinutos || minutos > hora.finMinutos) return false
+        }
         return true
     }
 
@@ -1137,11 +1209,7 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
                         .map { RegionUI(it.id, it.nombre) }
                 _regiones.emit(regionItems)
 
-                val sugerencias = buildAgencias(null)
-                    .drop(1)
-                    .map { it.nombreVisible }
-                    .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it })
-                _notificationSuggestions.value = sugerencias
+                updateNotificationRegionAgencies()
 
                 val applied = applyPendingSelectionsIfPossible(regionItems)
                 if (!applied) {

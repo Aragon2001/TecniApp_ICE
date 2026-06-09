@@ -4,21 +4,56 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="20dp">
+    android:padding="24dp">
 
-    <TextView
-        android:id="@+id/tvRegistroFinalResumen"
-        style="@style/TextAppearance.Material3.BodyMedium"
+    <!-- Header -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/mi_vehiculo_registro_final_resumen" />
+        android:gravity="center_vertical"
+        android:layout_marginBottom="24dp"
+        android:orientation="horizontal">
+
+        <ImageView
+            android:layout_width="52dp"
+            android:layout_height="52dp"
+            android:background="@drawable/bg_icon_wrap_yellow"
+            android:padding="12dp"
+            android:src="@drawable/ic_speedometer"
+            android:contentDescription="@null"
+            app:tint="@color/status_assigned" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="14dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tvRegistroFinalResumen"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/mi_vehiculo_registro_final_resumen"
+                android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvRegistroFinalHint"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="@string/mi_vehiculo_registro_final_hint"
+                android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+                android:textColor="?attr/colorOnSurfaceVariant" />
+        </LinearLayout>
+    </LinearLayout>
 
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/tilRegistroFinal"
-        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+        style="@style/Tecni.TextInput.Outlined"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
         app:startIconDrawable="@drawable/ic_speedometer">
 
         <com.google.android.material.textfield.TextInputEditText
@@ -28,11 +63,4 @@
             android:inputType="numberDecimal" />
     </com.google.android.material.textfield.TextInputLayout>
 
-    <TextView
-        android:id="@+id/tvRegistroFinalHint"
-        style="@style/TextAppearance.Material3.BodySmall"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:text="@string/mi_vehiculo_registro_final_hint" />
 </LinearLayout>

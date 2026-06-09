@@ -211,4 +211,9 @@
     <color name="averia_notification_on_surface_variant">#49454F</color>
     <color name="averia_notification_divider">#E0E0E0</color>
 
+    <!-- Descargo de material – chips por origen -->
+    <color name="chip_bg_luminaria">#FFF3E0</color>
+    <color name="chip_bg_averia">#FFEBEE</color>
+    <color name="chip_bg_programacion">#E3F2FD</color>
+
 </resources>

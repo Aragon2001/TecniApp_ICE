@@ -19,6 +19,7 @@ import com.Arasoftsolutions.tecniapp_ice.fcm.TecniAppMessagingService
 import com.Arasoftsolutions.tecniapp_ice.preferences.DataStoreManager
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriaNotificationPreferences
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasSyncWorker
+import com.Arasoftsolutions.tecniapp_ice.network.NetworkHealthMonitor
 import com.Arasoftsolutions.tecniapp_ice.ui.modal.SyncDialogFragment
 import com.google.android.material.button.MaterialButton
 import com.google.firebase.auth.FirebaseAuth
@@ -189,6 +190,13 @@ class LoginActivity : AppCompatActivity() {
         }
         if (password.isEmpty()) {
             passwordEditText.error = "La contraseña es requerida"
+            return
+        }
+
+        // El login requiere conexión real a internet (no solo red local / portal cautivo)
+        val networkHealth = NetworkHealthMonitor.getInstance(applicationContext)
+        if (networkHealth.health.value.blocksLogin) {
+            Toast.makeText(this, getString(R.string.home_login_blocked_offline), Toast.LENGTH_LONG).show()
             return
         }
 

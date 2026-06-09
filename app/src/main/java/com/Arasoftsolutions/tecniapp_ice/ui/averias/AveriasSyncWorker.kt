@@ -25,12 +25,17 @@ import com.Arasoftsolutions.tecniapp_ice.session.SessionManager
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import kotlinx.coroutines.tasks.await
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import com.Arasoftsolutions.tecniapp_ice.notifications.SyncStatusNotifications
 
 
 class AveriasSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx, params) {
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
+        // Validación extra: rechaza redes sin internet validado (portales cautivos, etc.)
+        if (!hasValidatedInternet()) return@withContext Result.retry()
+
         val shouldNotifySync = inputData.getBoolean(KEY_NOTIFY_SYNC, false)
         val auth = FirebaseAuth.getInstance()
         val currentUser = auth.currentUser
@@ -53,9 +58,15 @@ class AveriasSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorke
                 // 2. Refresca Room desde Firebase cuando aplique
                 val pullResult = repo.pullFromFirebaseOnce()
 
-                // ✅ FIX 3: notificar averías nuevas detectadas en el pull
-                if (pullResult.newCases.isNotEmpty() && !AveriasForegroundTracker.isAveriasVisible) {
-                    AveriaNotificationDispatcher.notifyNewCases(applicationContext, pullResult.newCases)
+                if (pullResult.newCases.isNotEmpty() && !AveriasForegroundTracker.isAveriasVisible &&
+                    AveriaNotificationPreferences.areNotificationsEnabled(applicationContext)
+                ) {
+                    val agencyFilters = AveriaNotificationPreferences.normalizedAgencies(applicationContext)
+                    val toNotify = if (agencyFilters.isEmpty()) pullResult.newCases
+                        else pullResult.newCases.filter { shouldNotifyForAgency(it, agencyFilters) }
+                    if (toNotify.isNotEmpty()) {
+                        AveriaNotificationDispatcher.notifyNewCases(applicationContext, toNotify)
+                    }
                 }
 
                 val uid = auth.currentUser?.uid
@@ -68,6 +79,14 @@ class AveriasSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorke
             SyncStatusNotifications.notifySynced(applicationContext)
         }
         Result.success()
+    }
+
+    /** Confirma que la red activa tiene internet validado (no solo conectividad local). */
+    private fun hasValidatedInternet(): Boolean {
+        val cm = applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val caps = cm.getNetworkCapabilities(cm.activeNetwork ?: return false) ?: return false
+        return caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+            caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
     }
 
     companion object {

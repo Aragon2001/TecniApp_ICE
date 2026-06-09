@@ -21,23 +21,12 @@ import java.util.Locale
 
 object AveriaNotifications {
 
-    // FIX 3: Se versiona el canal para forzar recreación si la importancia era menor
-    // en instalaciones previas. Cambiar a "averias_channel_v2", "v3", etc. si se
-    // necesita forzar reseteo nuevamente en el futuro.
-    const val CHANNEL_ID = "averias_channel_v2"
+    const val CHANNEL_ID = "averias_channel_v3"
 
     fun ensureChannel(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val manager = context.getSystemService(NotificationManager::class.java) ?: return
-
-            // FIX 3: Si el canal actual existe pero tiene importancia menor a HIGH,
-            // eliminarlo para que se recree con la configuración correcta.
-            // Nota: esto también limpia las preferencias del usuario para ese canal,
-            // por eso se usa un nuevo CHANNEL_ID en lugar de borrar en caliente.
-            val existing = manager.getNotificationChannel(CHANNEL_ID)
-            if (existing != null && existing.importance < NotificationManager.IMPORTANCE_HIGH) {
-                manager.deleteNotificationChannel(CHANNEL_ID)
-            }
+            if (manager.getNotificationChannel(CHANNEL_ID) != null) return
 
             val sound = Uri.parse("android.resource://${context.packageName}/${R.raw.beep}")
             val attributes = AudioAttributes.Builder()

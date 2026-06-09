@@ -27,6 +27,7 @@ import com.Arasoftsolutions.tecniapp_ice.Database.entities.*
         InventarioMovimientoAveriaEntity::class,
         ProgramacionEntity::class,
         ProgramacionFotoEntity::class,
+        ReporteGeneradoEntity::class,
     ],
     version = AppDatabase.SCHEMA_VERSION,
     exportSchema = true
@@ -48,9 +49,10 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun inventarioDao(): InventarioDao
     abstract fun luminariaReparacionDao(): LuminariaReparacionDao
     abstract fun programacionDao(): ProgramacionDao
+    abstract fun reporteGeneradoDao(): ReporteGeneradoDao
 
     companion object {
-        const val SCHEMA_VERSION = 30
+        const val SCHEMA_VERSION = 31
 
         val MIGRATION_24_25 = object : Migration(24, 25) {
             override fun migrate(db: SupportSQLiteDatabase) {
@@ -240,6 +242,31 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_30_31 = object : Migration(30, 31) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `reporte_generado` (
+                        `id` TEXT NOT NULL,
+                        `tipoReporte` TEXT NOT NULL,
+                        `formato` TEXT NOT NULL,
+                        `nombreArchivo` TEXT NOT NULL,
+                        `rutaLocal` TEXT NOT NULL,
+                        `fechaGeneracion` INTEGER NOT NULL,
+                        `enviadoCorreo` INTEGER NOT NULL DEFAULT 0,
+                        `correoDestino` TEXT,
+                        `fechaEnvio` INTEGER,
+                        `usuarioUid` TEXT NOT NULL DEFAULT '',
+                        `errorEnvio` INTEGER NOT NULL DEFAULT 0,
+                        PRIMARY KEY(`id`)
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_reporte_generado_usuarioUid` ON `reporte_generado` (`usuarioUid`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_reporte_generado_fechaGeneracion` ON `reporte_generado` (`fechaGeneracion`)")
+            }
+        }
+
         @Volatile private var INSTANCE: AppDatabase? = null
 
         fun getInstance(context: Context): AppDatabase =
@@ -249,7 +276,11 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "tecniapp_room.db"
                 )
-                    .addMigrations(MIGRATION_24_25, MIGRATION_25_26, MIGRATION_26_27, MIGRATION_27_28, MIGRATION_28_29, MIGRATION_29_30)
+                    .addMigrations(
+                        MIGRATION_24_25, MIGRATION_25_26, MIGRATION_26_27,
+                        MIGRATION_27_28, MIGRATION_28_29, MIGRATION_29_30,
+                        MIGRATION_30_31
+                    )
                     .fallbackToDestructiveMigrationFrom(true, 23)
                     .fallbackToDestructiveMigrationOnDowngrade(true)
                     .build()

@@ -46,6 +46,13 @@ data class LuminariaUiState(
     val puedeReasignarVehiculo: Boolean = false,
     val puedeFiltrarVehiculo: Boolean = false,
     val puedeEliminarLuminarias: Boolean = false,
+    // Permisos granulares por rol
+    val puedeAtenderPendientes: Boolean = false,
+    val puedeEditarPendienteAdmin: Boolean = false,
+    val puedeEditarReparadaTecnico: Boolean = false,
+    val puedeAgregarMateriales: Boolean = true,
+    val puedeCambiarAReparada: Boolean = true,
+    val puedeDevolverAPendiente: Boolean = false,
     val localizacion: String = "",
     val materialesSeleccionados: List<LuminariaMaterialSeleccionado> = emptyList(),
     val estadoSeleccionado: LuminariaEstado = LuminariaEstado.REPARADA,
@@ -205,12 +212,14 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
             }
         }.ifBlank { usuario.nombre ?: "" }
 
+        val permisos = LuminariasPermissionResolver.resolverPara(rolNormalizado)
         _uiState.update { current ->
             val esSupervisor = rolLower == "supervisor" || rolLower.contains("supervis")
             val esAdministrador = rolLower == "administrador" || rolLower.contains("admin")
             val puedeFiltrarVehiculo = esSupervisor || esAdministrador
             current.copy(
                 vehiculoUsuarioId = vehiculoPreferidoId,
+                // Técnico queda bloqueado a su propio camión; gestor puede filtrar todos
                 vehiculoFiltroId = if (puedeFiltrarVehiculo) null else vehiculoPreferidoId,
                 vehiculoRegistroId = vehiculoPreferidoId,
                 ejecutorNombre = current.ejecutorNombre.ifBlank { nombre },
@@ -219,13 +228,20 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
                 rolUsuario = rolNormalizado.ifBlank { null },
                 esSupervisor = esSupervisor,
                 esAdministrador = esAdministrador,
-                puedeImportarExcel = esSupervisor || esAdministrador,
-                puedeDescargarMachote = esSupervisor || esAdministrador,
-                puedeEnviarMachote = esSupervisor || esAdministrador,
+                puedeImportarExcel = permisos.puedeCargarMachote,
+                puedeDescargarMachote = permisos.puedeDescargarMachote,
+                puedeEnviarMachote = permisos.puedeEnviarMachote,
                 puedeRegistrarReparacion = true,
-                puedeReasignarVehiculo = esSupervisor || esAdministrador,
+                puedeReasignarVehiculo = permisos.puedeAsignarCamion,
                 puedeFiltrarVehiculo = puedeFiltrarVehiculo,
-                puedeEliminarLuminarias = esSupervisor || esAdministrador || rolLower == "tecnico"
+                // Solo el técnico puede "eliminar" reparadas (= devolver a pendiente)
+                puedeEliminarLuminarias = !esSupervisor && !esAdministrador,
+                puedeAtenderPendientes = permisos.puedeAtender,
+                puedeEditarPendienteAdmin = permisos.puedeEditarPendienteAdmin,
+                puedeEditarReparadaTecnico = permisos.puedeEditarReparadaTecnico,
+                puedeAgregarMateriales = permisos.puedeAgregarMateriales,
+                puedeCambiarAReparada = permisos.puedeCambiarAReparada,
+                puedeDevolverAPendiente = permisos.puedeDevolverAPendiente
             )
         }
     }

@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Ícono "Planillas de Trabajo" — documento con cuadrícula + llave inglesa
+  Diseñado como ícono monocromo (se tinta con app:tint)
+  viewport: 24×24
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+
+    <!-- ── Cuerpo del documento con esquina doblada (top-right) ── -->
+    <path
+        android:fillColor="@android:color/transparent"
+        android:pathData="M 4.5,3 Q 4.5,2 5.5,2 L 14,2 L 19.5,7.5 L 19.5,21 Q 19.5,22 18.5,22 L 5.5,22 Q 4.5,22 4.5,21 Z"
+        android:strokeColor="#FFFFFF"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:strokeWidth="1.6" />
+
+    <!-- ── Doblez de la esquina superior derecha ─────────────── -->
+    <path
+        android:fillColor="@android:color/transparent"
+        android:pathData="M 14,2 L 14,7.5 L 19.5,7.5"
+        android:strokeColor="#FFFFFF"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:strokeWidth="1.6" />
+
+    <!-- ── Barra de encabezado de tabla ──────────────────────── -->
+    <path
+        android:fillColor="@android:color/transparent"
+        android:pathData="M 4.5,10 L 19.5,10"
+        android:strokeColor="#FFFFFF"
+        android:strokeLineCap="round"
+        android:strokeWidth="1.5" />
+
+    <!-- ── Separador vertical de columnas ────────────────────── -->
+    <path
+        android:fillColor="@android:color/transparent"
+        android:pathData="M 10.5,10 L 10.5,17.5"
+        android:strokeColor="#FFFFFF"
+        android:strokeLineCap="round"
+        android:strokeWidth="1"
+        android:alpha="0.7" />
+
+    <!-- ── Fila 1 ─────────────────────────────────────────────── -->
+    <path
+        android:fillColor="@android:color/transparent"
+        android:pathData="M 4.5,13 L 19.5,13"
+        android:strokeColor="#FFFFFF"
+        android:strokeLineCap="round"
+        android:strokeWidth="1"
+        android:alpha="0.6" />
+
+    <!-- ── Fila 2 (corta, deja espacio a la llave) ────────────── -->
+    <path
+        android:fillColor="@android:color/transparent"
+        android:pathData="M 4.5,16 L 12.5,16"
+        android:strokeColor="#FFFFFF"
+        android:strokeLineCap="round"
+        android:strokeWidth="1"
+        android:alpha="0.6" />
+
+    <!-- ══════════════════════════════════════════════════════════
+         LLAVE INGLESA — superpuesta en la esquina inferior derecha
+         ══════════════════════════════════════════════════════════ -->
+
+    <!-- Cabeza circular de la llave (anillo abierto) -->
+    <path
+        android:fillColor="@android:color/transparent"
+        android:pathData="M 18.3,13.2 m -2.8,0 a 2.8,2.8 0 1,0 5.6,0 a 2.8,2.8 0 1,0 -5.6,0"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.8" />
+
+    <!-- Abertura de la boca de la llave (recorte / gap) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M 17.1,10.9 L 19.5,10.9 L 19.5,12.0 L 17.1,12.0 Z"
+        android:strokeColor="@android:color/transparent"
+        android:strokeWidth="0" />
+
+    <!-- Mango de la llave (diagonal hacia abajo-izquierda) -->
+    <path
+        android:fillColor="@android:color/transparent"
+        android:pathData="M 16.2,15.5 L 13,19.5"
+        android:strokeColor="#FFFFFF"
+        android:strokeLineCap="round"
+        android:strokeWidth="2.4" />
+
+    <!-- Extremo del mango (pequeño corte transversal) -->
+    <path
+        android:fillColor="@android:color/transparent"
+        android:pathData="M 12,20.5 L 14,18.5"
+        android:strokeColor="#FFFFFF"
+        android:strokeLineCap="round"
+        android:strokeWidth="1.8" />
+
+</vector>

@@ -2,80 +2,122 @@
 <com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="12dp"
+    android:layout_marginBottom="10dp"
     app:cardBackgroundColor="@color/glass_light"
     app:cardCornerRadius="16dp"
-    app:cardElevation="4dp"
+    app:cardElevation="2dp"
     app:strokeColor="@color/outline_variant_light"
     app:strokeWidth="1dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
         android:padding="14dp">
 
+        <!-- File type icon circle -->
+        <FrameLayout
+            android:id="@+id/frameHistoryFileIcon"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="@drawable/bg_report_file_excel">
+
+            <ImageView
+                android:id="@+id/ivHistoryFileIcon"
+                android:layout_width="26dp"
+                android:layout_height="26dp"
+                android:layout_gravity="center"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_excel"
+                app:tint="@color/success_green" />
+        </FrameLayout>
+
+        <!-- File info -->
         <LinearLayout
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
+            android:layout_marginStart="12dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
 
             <TextView
                 android:id="@+id/tvHistoryName"
                 style="@style/TextAppearance.Material3.TitleSmall"
-                android:layout_width="0dp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
+                android:ellipsize="end"
+                android:maxLines="1"
                 android:textStyle="bold"
-                android:text="Reporte.pdf" />
+                tools:text="Reporte_MI_RESUMEN_20260601.xlsx" />
 
-            <com.google.android.material.chip.Chip
-                android:id="@+id/chipHistoryStatus"
-                style="@style/Widget.Material3.Chip.Assist"
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="OK" />
+                android:layout_marginTop="4dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/chipHistoryStatus"
+                    style="@style/Widget.Material3.Chip.Assist"
+                    android:layout_width="wrap_content"
+                    android:layout_height="26dp"
+                    android:textSize="10sp"
+                    tools:text="XLSX" />
+
+                <TextView
+                    android:id="@+id/tvHistoryMeta"
+                    style="@style/TextAppearance.Material3.BodySmall"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:layout_weight="1"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:textColor="@color/dark_gray"
+                    tools:text="05 jun 2026 · 14:32 · 1.4 MB" />
+            </LinearLayout>
         </LinearLayout>
 
-        <TextView
-            android:id="@+id/tvHistoryMeta"
-            style="@style/TextAppearance.Material3.BodySmall"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:textColor="@color/dark_gray"
-            android:text="PDF · 20 oct 2025 · 1.2MB" />
-
+        <!-- Action icon buttons -->
         <LinearLayout
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:gravity="end"
+            android:layout_marginStart="8dp"
+            android:gravity="center_vertical"
             android:orientation="horizontal">
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnHistoryOpen"
-                style="@style/Widget.Material3.Button.TextButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/reportes_historial_abrir" />
+                style="@style/Widget.Material3.Button.IconButton"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:contentDescription="@string/reportes_historial_abrir"
+                app:icon="@drawable/ic_eye"
+                app:iconSize="18dp" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnHistoryShare"
-                style="@style/Widget.Material3.Button.TextButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/reportes_historial_compartir" />
+                style="@style/Widget.Material3.Button.IconButton"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:contentDescription="@string/reportes_historial_compartir"
+                app:icon="@drawable/ic_share"
+                app:iconSize="18dp" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnHistoryDelete"
-                style="@style/Widget.Material3.Button.TextButton"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/reportes_historial_eliminar" />
+                style="@style/Widget.Material3.Button.IconButton"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:contentDescription="@string/reportes_historial_eliminar"
+                app:icon="@drawable/ic_delete"
+                app:iconSize="18dp"
+                app:iconTint="@color/danger_red" />
         </LinearLayout>
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>
