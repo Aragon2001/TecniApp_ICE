@@ -1,0 +1,1590 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 30,
+    "identityHash": "f1dfc4618c224791de6f1cacd30db47c",
+    "entities": [
+      {
+        "tableName": "usuarios",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`uid` TEXT NOT NULL, `email` TEXT, `email_lower` TEXT, `nombre` TEXT, `apellidos` TEXT, `primerApellido` TEXT, `segundoApellido` TEXT, `cedula` TEXT, `region` TEXT, `regionNombre` TEXT, `subregion` TEXT, `subregionNombre` TEXT, `agenciaId` TEXT, `agencia` TEXT, `placaVehiculo` TEXT, `telefono` TEXT, `password` TEXT, `fotoUrl` TEXT, `rol` TEXT, PRIMARY KEY(`uid`))",
+        "fields": [
+          {
+            "fieldPath": "uid",
+            "columnName": "uid",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "email",
+            "columnName": "email",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "email_lower",
+            "columnName": "email_lower",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "nombre",
+            "columnName": "nombre",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "apellidos",
+            "columnName": "apellidos",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "primerApellido",
+            "columnName": "primerApellido",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "segundoApellido",
+            "columnName": "segundoApellido",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "cedula",
+            "columnName": "cedula",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "region",
+            "columnName": "region",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "regionNombre",
+            "columnName": "regionNombre",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "subregion",
+            "columnName": "subregion",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "subregionNombre",
+            "columnName": "subregionNombre",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "agenciaId",
+            "columnName": "agenciaId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "agencia",
+            "columnName": "agencia",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "placaVehiculo",
+            "columnName": "placaVehiculo",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "telefono",
+            "columnName": "telefono",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "password",
+            "columnName": "password",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "fotoUrl",
+            "columnName": "fotoUrl",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "rol",
+            "columnName": "rol",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "uid"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_usuarios_email_lower",
+            "unique": false,
+            "columnNames": [
+              "email_lower"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_usuarios_email_lower` ON `${TABLE_NAME}` (`email_lower`)"
+          },
+          {
+            "name": "index_usuarios_cedula",
+            "unique": false,
+            "columnNames": [
+              "cedula"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_usuarios_cedula` ON `${TABLE_NAME}` (`cedula`)"
+          },
+          {
+            "name": "index_usuarios_telefono",
+            "unique": false,
+            "columnNames": [
+              "telefono"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_usuarios_telefono` ON `${TABLE_NAME}` (`telefono`)"
+          }
+        ]
+      },
+      {
+        "tableName": "regiones",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `nombre` TEXT NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nombre",
+            "columnName": "nombre",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "agencias",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `nombre` TEXT NOT NULL, `regionId` TEXT, `subregion` TEXT, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nombre",
+            "columnName": "nombre",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "regionId",
+            "columnName": "regionId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "subregion",
+            "columnName": "subregion",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "localizaciones",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `calle` INTEGER NOT NULL, `direccion` TEXT NOT NULL, `latitud` REAL NOT NULL, `longitud` REAL NOT NULL, `pueblo` INTEGER NOT NULL, `alPoste` INTEGER NOT NULL, `delPoste` INTEGER NOT NULL, `subregion` TEXT, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "calle",
+            "columnName": "calle",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "direccion",
+            "columnName": "direccion",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "latitud",
+            "columnName": "latitud",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "longitud",
+            "columnName": "longitud",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pueblo",
+            "columnName": "pueblo",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "alPoste",
+            "columnName": "alPoste",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "delPoste",
+            "columnName": "delPoste",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "subregion",
+            "columnName": "subregion",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_localizaciones_pueblo",
+            "unique": false,
+            "columnNames": [
+              "pueblo"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_localizaciones_pueblo` ON `${TABLE_NAME}` (`pueblo`)"
+          }
+        ]
+      },
+      {
+        "tableName": "medidores",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`medidorNumber` TEXT NOT NULL, `calle` TEXT, `cliente` TEXT, `localizacion` INTEGER, `metros` TEXT, `poste` TEXT, `pueblo` TEXT, `subregion` TEXT, PRIMARY KEY(`medidorNumber`))",
+        "fields": [
+          {
+            "fieldPath": "medidorNumber",
+            "columnName": "medidorNumber",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "calle",
+            "columnName": "calle",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "cliente",
+            "columnName": "cliente",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "localizacion",
+            "columnName": "localizacion",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "metros",
+            "columnName": "metros",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "poste",
+            "columnName": "poste",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "pueblo",
+            "columnName": "pueblo",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "subregion",
+            "columnName": "subregion",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "medidorNumber"
+          ]
+        }
+      },
+      {
+        "tableName": "pueblos",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `nombre` TEXT NOT NULL, `subregion` TEXT NOT NULL, `subregion_id_normalizado` TEXT NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nombre",
+            "columnName": "nombre",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "subregion",
+            "columnName": "subregion",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "subregion_id_normalizado",
+            "columnName": "subregion_id_normalizado",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_pueblos_subregion_id_normalizado",
+            "unique": false,
+            "columnNames": [
+              "subregion_id_normalizado"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_pueblos_subregion_id_normalizado` ON `${TABLE_NAME}` (`subregion_id_normalizado`)"
+          }
+        ]
+      },
+      {
+        "tableName": "subregiones",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `nombre` TEXT NOT NULL, `regionId` TEXT NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nombre",
+            "columnName": "nombre",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "regionId",
+            "columnName": "regionId",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "vehiculo",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`vehiculoId` TEXT NOT NULL, `placaRaw` TEXT NOT NULL, `subregion` TEXT, `tipo` TEXT NOT NULL, `agencia` TEXT NOT NULL, `kmActual` REAL NOT NULL, `kilometrajeActual` REAL, `updatedAt` INTEGER NOT NULL, `placa` INTEGER NOT NULL, `orimetroActual` REAL, `id` INTEGER NOT NULL, `registroFecha` TEXT, `registroInicial` REAL, `registroFinal` REAL, `registroCerrado` INTEGER NOT NULL, `registrosDiariosJson` TEXT, `mantenimientoUltimo` TEXT, `mantenimientoProximo` TEXT, PRIMARY KEY(`vehiculoId`))",
+        "fields": [
+          {
+            "fieldPath": "vehiculoId",
+            "columnName": "vehiculoId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "placaRaw",
+            "columnName": "placaRaw",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "subregion",
+            "columnName": "subregion",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "tipo",
+            "columnName": "tipo",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "agencia",
+            "columnName": "agencia",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "kmActual",
+            "columnName": "kmActual",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "kilometrajeActual",
+            "columnName": "kilometrajeActual",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "placa",
+            "columnName": "placa",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "orimetroActual",
+            "columnName": "orimetroActual",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "registroFecha",
+            "columnName": "registroFecha",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "registroInicial",
+            "columnName": "registroInicial",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "registroFinal",
+            "columnName": "registroFinal",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "registroCerrado",
+            "columnName": "registroCerrado",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "registrosDiariosJson",
+            "columnName": "registrosDiariosJson",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "mantenimientoUltimo",
+            "columnName": "mantenimientoUltimo",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "mantenimientoProximo",
+            "columnName": "mantenimientoProximo",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "vehiculoId"
+          ]
+        }
+      },
+      {
+        "tableName": "vehiculo_log",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`logId` TEXT NOT NULL, `vehiculoId` TEXT NOT NULL, `tipo` TEXT NOT NULL, `timestamp` INTEGER NOT NULL, `km` REAL, `payloadJson` TEXT NOT NULL, `syncState` TEXT NOT NULL, `updatedAt` INTEGER NOT NULL, PRIMARY KEY(`logId`))",
+        "fields": [
+          {
+            "fieldPath": "logId",
+            "columnName": "logId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "vehiculoId",
+            "columnName": "vehiculoId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tipo",
+            "columnName": "tipo",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "timestamp",
+            "columnName": "timestamp",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "km",
+            "columnName": "km",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "payloadJson",
+            "columnName": "payloadJson",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "syncState",
+            "columnName": "syncState",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "logId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_vehiculo_log_vehiculoId_timestamp",
+            "unique": false,
+            "columnNames": [
+              "vehiculoId",
+              "timestamp"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_vehiculo_log_vehiculoId_timestamp` ON `${TABLE_NAME}` (`vehiculoId`, `timestamp`)"
+          },
+          {
+            "name": "index_vehiculo_log_vehiculoId_syncState",
+            "unique": false,
+            "columnNames": [
+              "vehiculoId",
+              "syncState"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_vehiculo_log_vehiculoId_syncState` ON `${TABLE_NAME}` (`vehiculoId`, `syncState`)"
+          }
+        ]
+      },
+      {
+        "tableName": "materiales",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `codigo` TEXT NOT NULL, `descripcion` TEXT NOT NULL, `unidad` TEXT NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "codigo",
+            "columnName": "codigo",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "descripcion",
+            "columnName": "descripcion",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "unidad",
+            "columnName": "unidad",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_materiales_codigo",
+            "unique": true,
+            "columnNames": [
+              "codigo"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_materiales_codigo` ON `${TABLE_NAME}` (`codigo`)"
+          }
+        ]
+      },
+      {
+        "tableName": "tecnicos",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`cedula` TEXT NOT NULL, `nombre` TEXT NOT NULL, PRIMARY KEY(`cedula`))",
+        "fields": [
+          {
+            "fieldPath": "cedula",
+            "columnName": "cedula",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nombre",
+            "columnName": "nombre",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "cedula"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_tecnicos_nombre",
+            "unique": false,
+            "columnNames": [
+              "nombre"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_tecnicos_nombre` ON `${TABLE_NAME}` (`nombre`)"
+          }
+        ]
+      },
+      {
+        "tableName": "averias",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`caseId` TEXT NOT NULL, `region` TEXT, `provincia` INTEGER, `agencia` TEXT, `nombreAgencia` TEXT, `nise` TEXT, `causa` TEXT, `observaciones` TEXT, `estado` TEXT NOT NULL, `idEstadoAve` INTEGER, `idEstadoAranda` INTEGER, `lat` REAL, `lng` REAL, `clientesAfectados` TEXT, `fechaInicioMillis` INTEGER NOT NULL, `horaInicioMillis` INTEGER, `horaFinalMillis` INTEGER, `atencionHoraInicioMillis` INTEGER, `atencionHoraFinalMillis` INTEGER, `horaLlegadaMillis` INTEGER, `kilometrajeInicio` REAL, `kilometrajeLlegada` REAL, `kilometrajeFinal` REAL, `agenciaTag` TEXT NOT NULL, `vehiculoAsignado` TEXT, `tecnicoAsignadoUid` TEXT, `tecnicoAsignadoNombre` TEXT, `atendidoPorUid` TEXT, `atendidoPorNombre` TEXT, `materialesTexto` TEXT, `materialesDetalleJson` TEXT, `tecnicosAtendieronJson` TEXT, `cliente` TEXT, `localizacion` TEXT, `direccion` TEXT, `tipoAfectacion` TEXT, `numeroMedidor` TEXT, `medidorCalle` TEXT, `medidorPueblo` TEXT, `medidorMetros` TEXT, `medidorPoste` TEXT, `isSynced` INTEGER NOT NULL, `lastUpdated` INTEGER NOT NULL, `estadoClor` TEXT, `causaClor` TEXT, `observacionesClor` TEXT, `evidenciasJson` TEXT, `cambioMedidorJson` TEXT, PRIMARY KEY(`caseId`))",
+        "fields": [
+          {
+            "fieldPath": "caseId",
+            "columnName": "caseId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "region",
+            "columnName": "region",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "provincia",
+            "columnName": "provincia",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "agencia",
+            "columnName": "agencia",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "nombreAgencia",
+            "columnName": "nombreAgencia",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "nise",
+            "columnName": "nise",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "causa",
+            "columnName": "causa",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "observaciones",
+            "columnName": "observaciones",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "estado",
+            "columnName": "estado",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "idEstadoAve",
+            "columnName": "idEstadoAve",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "idEstadoAranda",
+            "columnName": "idEstadoAranda",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "lat",
+            "columnName": "lat",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "lng",
+            "columnName": "lng",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "clientesAfectados",
+            "columnName": "clientesAfectados",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "fechaInicioMillis",
+            "columnName": "fechaInicioMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "horaInicioMillis",
+            "columnName": "horaInicioMillis",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "horaFinalMillis",
+            "columnName": "horaFinalMillis",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "atencionHoraInicioMillis",
+            "columnName": "atencionHoraInicioMillis",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "atencionHoraFinalMillis",
+            "columnName": "atencionHoraFinalMillis",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "horaLlegadaMillis",
+            "columnName": "horaLlegadaMillis",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "kilometrajeInicio",
+            "columnName": "kilometrajeInicio",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "kilometrajeLlegada",
+            "columnName": "kilometrajeLlegada",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "kilometrajeFinal",
+            "columnName": "kilometrajeFinal",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "agenciaTag",
+            "columnName": "agenciaTag",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "vehiculoAsignado",
+            "columnName": "vehiculoAsignado",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "tecnicoAsignadoUid",
+            "columnName": "tecnicoAsignadoUid",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "tecnicoAsignadoNombre",
+            "columnName": "tecnicoAsignadoNombre",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "atendidoPorUid",
+            "columnName": "atendidoPorUid",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "atendidoPorNombre",
+            "columnName": "atendidoPorNombre",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "materialesTexto",
+            "columnName": "materialesTexto",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "materialesDetalleJson",
+            "columnName": "materialesDetalleJson",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "tecnicosAtendieronJson",
+            "columnName": "tecnicosAtendieronJson",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "cliente",
+            "columnName": "cliente",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "localizacion",
+            "columnName": "localizacion",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "direccion",
+            "columnName": "direccion",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "tipoAfectacion",
+            "columnName": "tipoAfectacion",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "numeroMedidor",
+            "columnName": "numeroMedidor",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "medidorCalle",
+            "columnName": "medidorCalle",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "medidorPueblo",
+            "columnName": "medidorPueblo",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "medidorMetros",
+            "columnName": "medidorMetros",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "medidorPoste",
+            "columnName": "medidorPoste",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "isSynced",
+            "columnName": "isSynced",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lastUpdated",
+            "columnName": "lastUpdated",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "estadoClor",
+            "columnName": "estadoClor",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "causaClor",
+            "columnName": "causaClor",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "observacionesClor",
+            "columnName": "observacionesClor",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "evidenciasJson",
+            "columnName": "evidenciasJson",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "cambioMedidorJson",
+            "columnName": "cambioMedidorJson",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "caseId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_averias_caseId",
+            "unique": true,
+            "columnNames": [
+              "caseId"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_averias_caseId` ON `${TABLE_NAME}` (`caseId`)"
+          },
+          {
+            "name": "index_averias_estado",
+            "unique": false,
+            "columnNames": [
+              "estado"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_averias_estado` ON `${TABLE_NAME}` (`estado`)"
+          },
+          {
+            "name": "index_averias_agenciaTag",
+            "unique": false,
+            "columnNames": [
+              "agenciaTag"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_averias_agenciaTag` ON `${TABLE_NAME}` (`agenciaTag`)"
+          },
+          {
+            "name": "index_averias_fechaInicioMillis",
+            "unique": false,
+            "columnNames": [
+              "fechaInicioMillis"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_averias_fechaInicioMillis` ON `${TABLE_NAME}` (`fechaInicioMillis`)"
+          }
+        ]
+      },
+      {
+        "tableName": "inventario_material",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `vehiculoId` INTEGER NOT NULL, `codigoMaterial` TEXT NOT NULL, `descripcionMaterial` TEXT NOT NULL, `cantidadDisponible` REAL NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "vehiculoId",
+            "columnName": "vehiculoId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "codigoMaterial",
+            "columnName": "codigoMaterial",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "descripcionMaterial",
+            "columnName": "descripcionMaterial",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cantidadDisponible",
+            "columnName": "cantidadDisponible",
+            "affinity": "REAL",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_inventario_material_vehiculoId_codigoMaterial",
+            "unique": true,
+            "columnNames": [
+              "vehiculoId",
+              "codigoMaterial"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_inventario_material_vehiculoId_codigoMaterial` ON `${TABLE_NAME}` (`vehiculoId`, `codigoMaterial`)"
+          }
+        ]
+      },
+      {
+        "tableName": "luminaria_reparacion",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `vehiculoId` INTEGER NOT NULL, `localizacion` TEXT NOT NULL, `cliente` TEXT, `contacto` TEXT, `observaciones` TEXT, `materialesJson` TEXT, `estado` TEXT NOT NULL, `ejecutorNombre` TEXT NOT NULL, `ejecutorCedula` TEXT, `fechaRegistro` INTEGER NOT NULL, `fechaCarga` INTEGER NOT NULL, `fechaReparacion` INTEGER)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "vehiculoId",
+            "columnName": "vehiculoId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "localizacion",
+            "columnName": "localizacion",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cliente",
+            "columnName": "cliente",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "contacto",
+            "columnName": "contacto",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "observaciones",
+            "columnName": "observaciones",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "materialesJson",
+            "columnName": "materialesJson",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "estado",
+            "columnName": "estado",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ejecutorNombre",
+            "columnName": "ejecutorNombre",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ejecutorCedula",
+            "columnName": "ejecutorCedula",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "fechaRegistro",
+            "columnName": "fechaRegistro",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fechaCarga",
+            "columnName": "fechaCarga",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fechaReparacion",
+            "columnName": "fechaReparacion",
+            "affinity": "INTEGER"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_luminaria_reparacion_vehiculoId",
+            "unique": false,
+            "columnNames": [
+              "vehiculoId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_luminaria_reparacion_vehiculoId` ON `${TABLE_NAME}` (`vehiculoId`)"
+          },
+          {
+            "name": "index_luminaria_reparacion_estado",
+            "unique": false,
+            "columnNames": [
+              "estado"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_luminaria_reparacion_estado` ON `${TABLE_NAME}` (`estado`)"
+          }
+        ]
+      },
+      {
+        "tableName": "inventario_movimiento_averia",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `averiaId` TEXT NOT NULL, `vehiculoId` INTEGER NOT NULL, `materialCodigo` TEXT NOT NULL, `cantidad` REAL NOT NULL, `fechaRegistro` INTEGER NOT NULL, `tecnicoUid` TEXT, `tecnicoNombre` TEXT)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "averiaId",
+            "columnName": "averiaId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "vehiculoId",
+            "columnName": "vehiculoId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "materialCodigo",
+            "columnName": "materialCodigo",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cantidad",
+            "columnName": "cantidad",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fechaRegistro",
+            "columnName": "fechaRegistro",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tecnicoUid",
+            "columnName": "tecnicoUid",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "tecnicoNombre",
+            "columnName": "tecnicoNombre",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "programaciones",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`programacionId` TEXT NOT NULL, `vehiculoId` TEXT NOT NULL, `placa` TEXT NOT NULL, `localizacion` TEXT NOT NULL, `circuito` TEXT NOT NULL, `cuenta` TEXT NOT NULL, `actividad` TEXT NOT NULL, `descripcion` TEXT, `lat` REAL, `lng` REAL, `estado` TEXT NOT NULL, `observaciones` TEXT, `fechaAsignacion` INTEGER NOT NULL, `fechaEjecucion` INTEGER, `supervisorId` TEXT NOT NULL, `tecnicoId` TEXT NOT NULL, `subregion` TEXT NOT NULL, `updatedAt` INTEGER NOT NULL, `localizacionOriginal` TEXT, `localizacionNormalizada` TEXT NOT NULL, `agenciaTag` TEXT NOT NULL, `cuadrillaAsignada` TEXT, `supervisorNombre` TEXT, `fotosSupervisorJson` TEXT, `tecnicoPrincipalUid` TEXT, `tecnicoPrincipalNombre` TEXT, `tecnicosAtendieronJson` TEXT, `descripcionAtencion` TEXT, `fotosAtencionJson` TEXT, `gastoMateriales` INTEGER NOT NULL, `materialesJson` TEXT, `fechaInicioAtencion` INTEGER, `fechaFinalizacion` INTEGER, `reabierta` INTEGER NOT NULL, `fechaReapertura` INTEGER, `reabiertaPorUid` TEXT, `motivoReapertura` TEXT, `canceladaPorUid` TEXT, `fechaCancelacion` INTEGER, `motivoCancelacion` TEXT, `eliminada` INTEGER NOT NULL, `eliminadaPorUid` TEXT, `fechaEliminacion` INTEGER, `motivoEliminacion` TEXT, `syncState` TEXT NOT NULL, PRIMARY KEY(`programacionId`))",
+        "fields": [
+          {
+            "fieldPath": "programacionId",
+            "columnName": "programacionId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "vehiculoId",
+            "columnName": "vehiculoId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "placa",
+            "columnName": "placa",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "localizacion",
+            "columnName": "localizacion",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "circuito",
+            "columnName": "circuito",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cuenta",
+            "columnName": "cuenta",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "actividad",
+            "columnName": "actividad",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "descripcion",
+            "columnName": "descripcion",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "lat",
+            "columnName": "lat",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "lng",
+            "columnName": "lng",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "estado",
+            "columnName": "estado",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "observaciones",
+            "columnName": "observaciones",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "fechaAsignacion",
+            "columnName": "fechaAsignacion",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fechaEjecucion",
+            "columnName": "fechaEjecucion",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "supervisorId",
+            "columnName": "supervisorId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tecnicoId",
+            "columnName": "tecnicoId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "subregion",
+            "columnName": "subregion",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "localizacionOriginal",
+            "columnName": "localizacionOriginal",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "localizacionNormalizada",
+            "columnName": "localizacionNormalizada",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "agenciaTag",
+            "columnName": "agenciaTag",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cuadrillaAsignada",
+            "columnName": "cuadrillaAsignada",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "supervisorNombre",
+            "columnName": "supervisorNombre",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "fotosSupervisorJson",
+            "columnName": "fotosSupervisorJson",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "tecnicoPrincipalUid",
+            "columnName": "tecnicoPrincipalUid",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "tecnicoPrincipalNombre",
+            "columnName": "tecnicoPrincipalNombre",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "tecnicosAtendieronJson",
+            "columnName": "tecnicosAtendieronJson",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "descripcionAtencion",
+            "columnName": "descripcionAtencion",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "fotosAtencionJson",
+            "columnName": "fotosAtencionJson",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "gastoMateriales",
+            "columnName": "gastoMateriales",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "materialesJson",
+            "columnName": "materialesJson",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "fechaInicioAtencion",
+            "columnName": "fechaInicioAtencion",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "fechaFinalizacion",
+            "columnName": "fechaFinalizacion",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "reabierta",
+            "columnName": "reabierta",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fechaReapertura",
+            "columnName": "fechaReapertura",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "reabiertaPorUid",
+            "columnName": "reabiertaPorUid",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "motivoReapertura",
+            "columnName": "motivoReapertura",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "canceladaPorUid",
+            "columnName": "canceladaPorUid",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "fechaCancelacion",
+            "columnName": "fechaCancelacion",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "motivoCancelacion",
+            "columnName": "motivoCancelacion",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "eliminada",
+            "columnName": "eliminada",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "eliminadaPorUid",
+            "columnName": "eliminadaPorUid",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "fechaEliminacion",
+            "columnName": "fechaEliminacion",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "motivoEliminacion",
+            "columnName": "motivoEliminacion",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "syncState",
+            "columnName": "syncState",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "programacionId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_programaciones_vehiculoId",
+            "unique": false,
+            "columnNames": [
+              "vehiculoId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_programaciones_vehiculoId` ON `${TABLE_NAME}` (`vehiculoId`)"
+          },
+          {
+            "name": "index_programaciones_tecnicoId",
+            "unique": false,
+            "columnNames": [
+              "tecnicoId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_programaciones_tecnicoId` ON `${TABLE_NAME}` (`tecnicoId`)"
+          },
+          {
+            "name": "index_programaciones_subregion",
+            "unique": false,
+            "columnNames": [
+              "subregion"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_programaciones_subregion` ON `${TABLE_NAME}` (`subregion`)"
+          },
+          {
+            "name": "index_programaciones_estado",
+            "unique": false,
+            "columnNames": [
+              "estado"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_programaciones_estado` ON `${TABLE_NAME}` (`estado`)"
+          },
+          {
+            "name": "index_programaciones_updatedAt",
+            "unique": false,
+            "columnNames": [
+              "updatedAt"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_programaciones_updatedAt` ON `${TABLE_NAME}` (`updatedAt`)"
+          },
+          {
+            "name": "index_programaciones_eliminada",
+            "unique": false,
+            "columnNames": [
+              "eliminada"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_programaciones_eliminada` ON `${TABLE_NAME}` (`eliminada`)"
+          },
+          {
+            "name": "index_programaciones_tecnicoPrincipalUid",
+            "unique": false,
+            "columnNames": [
+              "tecnicoPrincipalUid"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_programaciones_tecnicoPrincipalUid` ON `${TABLE_NAME}` (`tecnicoPrincipalUid`)"
+          },
+          {
+            "name": "index_programaciones_agenciaTag",
+            "unique": false,
+            "columnNames": [
+              "agenciaTag"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_programaciones_agenciaTag` ON `${TABLE_NAME}` (`agenciaTag`)"
+          }
+        ]
+      },
+      {
+        "tableName": "programacion_fotos",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`fotoId` TEXT NOT NULL, `programacionId` TEXT NOT NULL, `url` TEXT NOT NULL, `tipo` TEXT NOT NULL, PRIMARY KEY(`fotoId`), FOREIGN KEY(`programacionId`) REFERENCES `programaciones`(`programacionId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "fotoId",
+            "columnName": "fotoId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "programacionId",
+            "columnName": "programacionId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "url",
+            "columnName": "url",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tipo",
+            "columnName": "tipo",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "fotoId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_programacion_fotos_programacionId",
+            "unique": false,
+            "columnNames": [
+              "programacionId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_programacion_fotos_programacionId` ON `${TABLE_NAME}` (`programacionId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "programaciones",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "programacionId"
+            ],
+            "referencedColumns": [
+              "programacionId"
+            ]
+          }
+        ]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'f1dfc4618c224791de6f1cacd30db47c')"
+    ]
+  }
+}
