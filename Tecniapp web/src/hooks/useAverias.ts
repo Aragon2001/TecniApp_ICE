@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { ref, onValue, update, off } from 'firebase/database';
 import { rtdbAverias } from '../firebase/config';
 
@@ -49,7 +49,7 @@ export function useAverias(filters?: UseAveriasFilter): UseAveriasResult {
 
     const averiasRef = ref(rtdbAverias, '/averias');
 
-    const unsubscribe = onValue(
+    onValue(
       averiasRef,
       (snapshot) => {
         try {
@@ -126,7 +126,7 @@ export function useAveria(caseId: string | null) {
 
     const averiaRef = ref(rtdbAverias, `/averias/${caseId}`);
 
-    const unsubscribe = onValue(
+    onValue(
       averiaRef,
       (snapshot) => {
         const data = snapshot.val();

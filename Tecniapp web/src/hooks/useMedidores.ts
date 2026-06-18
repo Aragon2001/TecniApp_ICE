@@ -40,7 +40,7 @@ export function useMedidores(): UseMedidoresResult {
 
     const medidoresRef = ref(rtdbMain, '/medidores');
 
-    const unsubscribe = onValue(
+    onValue(
       medidoresRef,
       (snapshot) => {
         try {
