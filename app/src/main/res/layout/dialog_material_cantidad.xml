@@ -45,18 +45,16 @@
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnMaterialMenos"
             style="@style/Widget.Material3.Button.TonalButton"
-                android:layout_width="36dp"
-                android:layout_height="36dp"
-                android:layout_marginStart="8dp"
-                android:insetTop="0dp"
-                android:insetBottom="0dp"
-                android:paddingHorizontal="10dp"
-                app:backgroundTint="@color/red"
-                app:icon="@drawable/horizontal_rule_24px"
-                app:iconPadding="4dp"
-                app:iconSize="16dp"
-                app:iconTint="@color/black"
-                />
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:paddingHorizontal="0dp"
+            app:backgroundTint="?attr/colorErrorContainer"
+            app:icon="@drawable/horizontal_rule_24px"
+            app:iconTint="?attr/colorOnErrorContainer"
+            app:iconSize="20dp"
+            app:iconPadding="0dp" />
 
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilCantidad"
@@ -80,19 +78,17 @@
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnMaterialMas"
-             style="@style/Widget.Material3.Button.TonalButton"
-                android:layout_width="36dp"
-                android:layout_height="36dp"
-                android:layout_marginStart="8dp"
-                android:insetTop="0dp"
-                android:insetBottom="0dp"
-                android:paddingHorizontal="10dp"
-                app:backgroundTint="@color/success_500"
-                app:icon="@drawable/ic_add"
-                app:iconPadding="4dp"
-                app:iconSize="16dp"
-                app:iconTint="@color/black"
-                />
+            style="@style/Widget.Material3.Button.TonalButton"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:paddingHorizontal="0dp"
+            app:backgroundTint="?attr/colorTertiaryContainer"
+            app:icon="@drawable/ic_add"
+            app:iconTint="?attr/colorOnTertiaryContainer"
+            app:iconSize="20dp"
+            app:iconPadding="0dp" />
     </LinearLayout>
 
     <TextView
@@ -120,29 +116,45 @@
         app:layout_constraintTop_toBottomOf="@id/tvMaterialDisponible"
         tools:visibility="visible">
 
-        <TextView
-            android:id="@+id/tvWarningMaterial"
-            style="@style/TextAppearance.Material3.BodySmall"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:padding="12dp"
-            android:text="La cantidad supera el stock disponible."
-            android:textColor="?attr/colorOnErrorContainer" />
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:padding="12dp">
+
+            <ImageView
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:layout_marginEnd="8dp"
+                android:src="@drawable/ic_warning"
+                android:contentDescription="@null"
+                app:tint="?attr/colorOnErrorContainer" />
+
+            <TextView
+                android:id="@+id/tvWarningMaterial"
+                style="@style/TextAppearance.Material3.BodySmall"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="La cantidad supera el stock disponible."
+                android:textColor="?attr/colorOnErrorContainer" />
+        </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnConfirmarMaterial"
-        style="@style/Widget.Material3.Button"
+        style="@style/Tecni.Button.Primary"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
-        android:icon="@drawable/ic_check"
+        app:icon="@drawable/ic_check"
         android:text="Confirmar"
         app:iconGravity="textStart"
         app:iconPadding="8dp"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/cardWarningMaterial" />
 
-    <!-- Nota UX: aplicar haptic feedback en + / - y confirmar desde Kotlin. -->
 </androidx.constraintlayout.widget.ConstraintLayout>

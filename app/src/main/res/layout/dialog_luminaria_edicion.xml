@@ -20,6 +20,7 @@
             android:layout_height="56dp"
             android:contentDescription="@string/app_name"
             android:padding="12dp"
+            app:backgroundTint="?attr/colorPrimaryContainer"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full"
@@ -351,7 +352,7 @@
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnCancelarLuminariaEdicion"
-                style="@style/Widget.Material3.Button.TonalButton"
+                style="@style/Tecni.Button.Outlined"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="8dp"
@@ -360,11 +361,11 @@
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnGuardarLuminariaEdicion"
-                style="@style/Widget.Material3.Button"
+                style="@style/Tecni.Button.Primary"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:icon="@drawable/ic_save"
+                app:icon="@drawable/ic_save"
                 android:text="Guardar"
                 app:iconGravity="textStart"
                 app:iconPadding="8dp" />

@@ -64,7 +64,8 @@ data class AveriaEntity(
     val estadoClor: String? = null,
     val causaClor: String? = null,
     val observacionesClor: String? = null,
-    val evidenciasJson: String? = null
+    val evidenciasJson: String? = null,
+    val cambioMedidorJson: String? = null
 
 ) {
     constructor() : this(
@@ -116,6 +117,7 @@ data class AveriaEntity(
         causaClor= null,
         observacionesClor = null,
         evidenciasJson = null,
+        cambioMedidorJson = null,
         lastUpdated = 0L
     )
 }

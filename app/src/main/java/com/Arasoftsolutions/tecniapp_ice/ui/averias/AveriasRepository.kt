@@ -11,6 +11,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.Query
+import com.google.firebase.functions.FirebaseFunctions
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.tasks.await
@@ -243,8 +244,14 @@ class AveriasRepository(private val db: AppDatabase) {
     // Regiones canónicas
     private val REGION_CANON = mapOf(
         "huetar atlantica" to "Huetar Atlántica",
+        "huetar atlantico" to "Huetar Atlántica",
         "atlantica" to "Huetar Atlántica",
+        "atlantico" to "Huetar Atlántica",
         "caribe" to "Huetar Atlántica",
+        // ✅ "HUETAR" solo puede venir del perfil de usuario como alias truncado
+        // Lo mapeamos a Atlántica porque es la región más común con ese prefijo en ICE
+        // Si el usuario es de Norte, su perfil tendrá "HUETAR NORTE" o "NORTE"
+        "huetar" to "Huetar Atlántica",
         "huetar norte" to "Huetar Norte",
         "norte" to "Huetar Norte",
         "pacifico central" to "Pacífico Central",
@@ -321,46 +328,46 @@ class AveriasRepository(private val db: AppDatabase) {
     // ---------------------------------------------------------------------------------------------
     // Estado + utilitarios
     // ---------------------------------------------------------------------------------------------
-/**
- * ✅ Devuelve true si este remote vale la pena procesarlo.
- * Regla: si CLOR ya cerró (RESUELTA), SIEMPRE procesamos para bloquear UI y reflejar verdad.
- * Si no, procesamos si el estado de app es Pendiente/Resuelta (tu regla base).
- */
-private fun shouldProcessRemote(estadoApp: String?, estadoClor: String?): Boolean {
-    val app = normalizeEstadoLabel(estadoApp)
-    val clor = estadoClor?.trim()?.uppercase(Locale.getDefault())
-    return app == "Pendiente" ||
-        app == "Asignada" ||
-        app == "En atención" ||
-        app == "Resuelta" ||
-        clor == "RESUELTA"
-}
-
-/**
- * ✅ Helpers para "preferir" campos CLOR: si viene remoto con valor, lo usamos;
- * si viene vacío/no registra, dejamos el existente.
- */
-private fun preferMeaningfulClor(remote: String?, existing: String?): String? {
-    val r = remote?.trim()
-    if (r.isNullOrBlank()) return existing
-    if (r.equals("No registra", true)) return existing
-    if (r.equals("Pendiente de verificar", true)) return existing
-    return r
-}
-
- private fun normalizeEstadoLabel(raw: String?): String {
-    if (raw.isNullOrBlank()) return "Pendiente"
-    val v = raw.trim().lowercase(Locale.getDefault())
-    return when {
-        v.contains("anul") -> "Anulada"
-        v.contains("resuel") -> "Resuelta"
-        v.contains("en at") || v.contains("atenci") -> "En atención"
-        v.contains("asign") -> "Asignada"
-        v.contains("pendien") -> "Pendiente"   // ✅ FIX: acepta PENDIENTE / pendiente
-        v.contains("nuevo") -> "Pendiente"
-        else -> "Pendiente" // ✅ opcional: yo lo dejaría así para no inventar estados raros
+    /**
+     * ✅ Devuelve true si este remote vale la pena procesarlo.
+     * Regla: si CLOR ya cerró (RESUELTA), SIEMPRE procesamos para bloquear UI y reflejar verdad.
+     * Si no, procesamos si el estado de app es Pendiente/Resuelta (tu regla base).
+     */
+    private fun shouldProcessRemote(estadoApp: String?, estadoClor: String?): Boolean {
+        val app = normalizeEstadoLabel(estadoApp)
+        val clor = estadoClor?.trim()?.uppercase(Locale.getDefault())
+        return app == "Pendiente" ||
+                app == "Asignada" ||
+                app == "En atención" ||
+                app == "Resuelta" ||
+                clor == "RESUELTA"
     }
-}
+
+    /**
+     * ✅ Helpers para "preferir" campos CLOR: si viene remoto con valor, lo usamos;
+     * si viene vacío/no registra, dejamos el existente.
+     */
+    private fun preferMeaningfulClor(remote: String?, existing: String?): String? {
+        val r = remote?.trim()
+        if (r.isNullOrBlank()) return existing
+        if (r.equals("No registra", true)) return existing
+        if (r.equals("Pendiente de verificar", true)) return existing
+        return r
+    }
+
+    private fun normalizeEstadoLabel(raw: String?): String {
+        if (raw.isNullOrBlank()) return "Pendiente"
+        val v = raw.trim().lowercase(Locale.getDefault())
+        return when {
+            v.contains("anul") -> "Anulada"
+            v.contains("resuel") -> "Resuelta"
+            v.contains("en at") || v.contains("atenci") -> "En atención"
+            v.contains("asign") -> "Asignada"
+            v.contains("pendien") -> "Pendiente"   // ✅ FIX: acepta PENDIENTE / pendiente
+            v.contains("nuevo") -> "Pendiente"
+            else -> "Pendiente" // ✅ opcional: yo lo dejaría así para no inventar estados raros
+        }
+    }
 
 
     private fun isClorResuelta(estadoClor: String?): Boolean =
@@ -445,56 +452,56 @@ private fun preferMeaningfulClor(remote: String?, existing: String?): String? {
             ?: key?.trim()
             ?: return null
 
-return AveriaEntity(
-    caseId = caseId,
-    region = map["region"].asStringOrNull(),
-    provincia = map["provincia"].asIntOrNull(), // ✅ ERA String, debe ser Int?
-    agencia = map["agencia"].asStringOrNull(),
-    nombreAgencia = map["nombreAgencia"].asStringOrNull(),
-    nise = map["nise"].asStringOrNull(),
-    causa = map["causa"].asStringOrNull(),
-    observaciones = map["observaciones"].asStringOrNull()
-        ?: map["descripcion"].asStringOrNull(),
-    estado = map["estado"].asStringOrNull() ?: "Pendiente",
-    idEstadoAve = map["idEstadoAve"].asIntOrNull(),
-    idEstadoAranda = map["idEstadoAranda"].asIntOrNull(),
-    lat = map["lat"].asDoubleOrNull(),
-    lng = map["lng"].asDoubleOrNull(),
-    clientesAfectados = map["clientesAfectados"].asStringOrNull(),
-    fechaInicioMillis = map["fechaInicioMillis"].asLongOrNull() ?: 0L,
-    horaInicioMillis = map["horaInicioMillis"].asLongOrNull(),
-    horaFinalMillis = map["horaFinalMillis"].asLongOrNull(),
-    atencionHoraInicioMillis = map["atencionHoraInicioMillis"].asLongOrNull(),
-    atencionHoraFinalMillis = map["atencionHoraFinalMillis"].asLongOrNull(),
-    horaLlegadaMillis = map["horaLlegadaMillis"].asLongOrNull(),
-    kilometrajeInicio = map["kilometrajeInicio"].asDoubleOrNull(),
-    kilometrajeLlegada = map["kilometrajeLlegada"].asDoubleOrNull(),
-    kilometrajeFinal = map["kilometrajeFinal"].asDoubleOrNull(),
-    agenciaTag = map["agenciaTag"].asStringOrNull() ?: "", // ✅ ERA nullable, aquí no puede
-    vehiculoAsignado = map["vehiculoAsignado"].asStringOrNull(),
-    tecnicoAsignadoUid = map["tecnicoAsignadoUid"].asStringOrNull(),
-    tecnicoAsignadoNombre = map["tecnicoAsignadoNombre"].asStringOrNull(),
-    atendidoPorUid = map["atendidoPorUid"].asStringOrNull(),
-    atendidoPorNombre = map["atendidoPorNombre"].asStringOrNull(),
-    materialesTexto = map["materialesTexto"].asStringOrNull(),
-    materialesDetalleJson = map["materialesDetalleJson"].asStringOrNull(),
-    tecnicosAtendieronJson = map["tecnicosAtendieronJson"].asStringOrNull(),
-    cliente = map["cliente"].asStringOrNull(),
-    localizacion = map["localizacion"].asStringOrNull(),
-    direccion = map["direccion"].asStringOrNull(),
-    tipoAfectacion = map["tipoAfectacion"].asStringOrNull(),
-    numeroMedidor = map["numeroMedidor"].asStringOrNull(),
-    medidorCalle = map["medidorCalle"].asStringOrNull(),
-    medidorPueblo = map["medidorPueblo"].asStringOrNull(),
-    medidorMetros = map["medidorMetros"].asStringOrNull(),
-    estadoClor = map["estadoClor"].asStringOrNull(),
-    causaClor = map["causaClor"].asStringOrNull(),
-    observacionesClor = map["observacionesClor"].asStringOrNull(),
-    medidorPoste = map["medidorPoste"].asStringOrNull(),
-    evidenciasJson = map["evidenciasJson"].asStringOrNull(),
-    isSynced = true,
-    lastUpdated = map["lastUpdated"].asLongOrNull() ?: 0L
-)
+        return AveriaEntity(
+            caseId = caseId,
+            region = map["region"].asStringOrNull(),
+            provincia = map["provincia"].asIntOrNull(), // ✅ ERA String, debe ser Int?
+            agencia = map["agencia"].asStringOrNull(),
+            nombreAgencia = map["nombreAgencia"].asStringOrNull(),
+            nise = map["nise"].asStringOrNull(),
+            causa = map["causa"].asStringOrNull(),
+            observaciones = map["observaciones"].asStringOrNull()
+                ?: map["descripcion"].asStringOrNull(),
+            estado = map["estado"].asStringOrNull() ?: "Pendiente",
+            idEstadoAve = map["idEstadoAve"].asIntOrNull(),
+            idEstadoAranda = map["idEstadoAranda"].asIntOrNull(),
+            lat = map["lat"].asDoubleOrNull(),
+            lng = map["lng"].asDoubleOrNull(),
+            clientesAfectados = map["clientesAfectados"].asStringOrNull(),
+            fechaInicioMillis = map["fechaInicioMillis"].asLongOrNull() ?: 0L,
+            horaInicioMillis = map["horaInicioMillis"].asLongOrNull(),
+            horaFinalMillis = map["horaFinalMillis"].asLongOrNull(),
+            atencionHoraInicioMillis = map["atencionHoraInicioMillis"].asLongOrNull(),
+            atencionHoraFinalMillis = map["atencionHoraFinalMillis"].asLongOrNull(),
+            horaLlegadaMillis = map["horaLlegadaMillis"].asLongOrNull(),
+            kilometrajeInicio = map["kilometrajeInicio"].asDoubleOrNull(),
+            kilometrajeLlegada = map["kilometrajeLlegada"].asDoubleOrNull(),
+            kilometrajeFinal = map["kilometrajeFinal"].asDoubleOrNull(),
+            agenciaTag = map["agenciaTag"].asStringOrNull() ?: "", // ✅ ERA nullable, aquí no puede
+            vehiculoAsignado = map["vehiculoAsignado"].asStringOrNull(),
+            tecnicoAsignadoUid = map["tecnicoAsignadoUid"].asStringOrNull(),
+            tecnicoAsignadoNombre = map["tecnicoAsignadoNombre"].asStringOrNull(),
+            atendidoPorUid = map["atendidoPorUid"].asStringOrNull(),
+            atendidoPorNombre = map["atendidoPorNombre"].asStringOrNull(),
+            materialesTexto = map["materialesTexto"].asStringOrNull(),
+            materialesDetalleJson = map["materialesDetalleJson"].asStringOrNull(),
+            tecnicosAtendieronJson = map["tecnicosAtendieronJson"].asStringOrNull(),
+            cliente = map["cliente"].asStringOrNull(),
+            localizacion = map["localizacion"].asStringOrNull(),
+            direccion = map["direccion"].asStringOrNull(),
+            tipoAfectacion = map["tipoAfectacion"].asStringOrNull(),
+            numeroMedidor = map["numeroMedidor"].asStringOrNull(),
+            medidorCalle = map["medidorCalle"].asStringOrNull(),
+            medidorPueblo = map["medidorPueblo"].asStringOrNull(),
+            medidorMetros = map["medidorMetros"].asStringOrNull(),
+            estadoClor = map["estadoClor"].asStringOrNull(),
+            causaClor = map["causaClor"].asStringOrNull(),
+            observacionesClor = map["observacionesClor"].asStringOrNull(),
+            medidorPoste = map["medidorPoste"].asStringOrNull(),
+            evidenciasJson = map["evidenciasJson"].asStringOrNull(),
+            isSynced = true,
+            lastUpdated = map["lastUpdated"].asLongOrNull() ?: 0L
+        )
 
     }
 
@@ -603,7 +610,51 @@ return AveriaEntity(
         }
     }
 
-    private fun shouldRunFallback(primaryCount: Int): Boolean = false
+    private fun shouldRunFallback(primaryCount: Int): Boolean = primaryCount == 0
+
+    private fun buildRegionVariants(canonical: String): List<String> {
+        if (canonical.isBlank()) return emptyList()
+        val variants = mutableSetOf<String>()
+
+        // ✅ Expandir alias cortos/truncados que pueden venir del perfil del usuario
+        // El campo 'region' en Room puede estar guardado como "HUETAR", "HUETAR ATLANTICA",
+        // "Huetar Norte", etc. Expandimos a todos los valores posibles que Firebase puede tener.
+        val expansions = when {
+            canonical.contains("HUETAR", ignoreCase = true) && canonical.contains("ATL", ignoreCase = true) ->
+                listOf("Huetar Atlántica", "Huetar Atlantica", "HUETAR ATLANTICA", "huetar atlantica")
+            canonical.equals("HUETAR", ignoreCase = true) ->
+                // Ambiguo — podría ser Atlántica o Norte; intentamos ambas
+                listOf(
+                    "Huetar Atlántica", "Huetar Atlantica", "HUETAR ATLANTICA", "huetar atlantica",
+                    "Huetar Norte", "HUETAR NORTE", "huetar norte"
+                )
+            canonical.contains("HUETAR", ignoreCase = true) && canonical.contains("NORTE", ignoreCase = true) ->
+                listOf("Huetar Norte", "HUETAR NORTE", "huetar norte")
+            canonical.contains("CENTRAL", ignoreCase = true) ->
+                listOf("Central", "CENTRAL", "central")
+            canonical.contains("CHOROTEGA", ignoreCase = true) ->
+                listOf("Chorotega", "CHOROTEGA", "chorotega")
+            canonical.contains("BRUNCA", ignoreCase = true) ->
+                listOf("Brunca", "BRUNCA", "brunca")
+            canonical.contains("PACIF", ignoreCase = true) ->
+                listOf("Pacífico Central", "Pacifico Central", "PACIFICO CENTRAL", "pacifico central")
+            else -> emptyList()
+        }
+        variants += expansions
+
+        // Agregar el valor original y sus variantes normalizadas
+        variants += canonical
+        variants += canonical.trim()
+        val noAccents = Normalizer.normalize(canonical, Normalizer.Form.NFD)
+            .replace("\\p{InCombiningDiacriticalMarks}+".toRegex(), "")
+        variants += noAccents
+        variants += noAccents.uppercase(Locale.getDefault())
+        variants += noAccents.lowercase(Locale.getDefault())
+        variants += canonical.uppercase(Locale.getDefault())
+        variants += canonical.lowercase(Locale.getDefault())
+
+        return variants.filter { it.isNotBlank() }.distinct()
+    }
 
     private fun buildFallbackQuery(plan: ScopedQueryPlan): Query? {
         val fallback = plan.fallback ?: return null
@@ -990,6 +1041,9 @@ return AveriaEntity(
         }?.key
     }
 
+    suspend fun medidorExisteEnRoom(numero: String): Boolean =
+        medidorDao.buscarPorNumero(numero.trim()) != null
+
     private suspend fun actualizarCambioMedidorSiAplica(
         caseId: String,
         medidorAnterior: String?,
@@ -1001,9 +1055,46 @@ return AveriaEntity(
         val nuevo = data.numeroMedidor?.trim().orEmpty()
         if (anterior.isBlank() || nuevo.isBlank() || anterior.equals(nuevo, ignoreCase = true)) return
 
-        val medidorActual = medidorDao.buscarPorNumero(anterior) ?: return
-        val medidorActualizado = medidorActual.copy(medidorNumber = nuevo)
+        // Find the meter material to extract readings and label
+        val materialMedidor = data.materiales.firstOrNull { uso ->
+            uso.medidorInstalado != null &&
+                uso.medidorInstalado.numero?.trim()?.equals(nuevo, ignoreCase = true) == true
+        } ?: data.materiales.firstOrNull { uso ->
+            "${uso.codigo} ${uso.descripcion}".lowercase().contains("medidor")
+        }
+        val meta = materialMedidor?.medidorInstalado
+        val (lecturaNueva, lecturaAnterior) = MaterialesSerializer.decodeLectura(meta?.lectura)
+        val lecturaAnteriorVisible = lecturaAnterior != null
 
+        val cambioData = CambioMedidorData(
+            numeroCaso = caseId,
+            medidorAnterior = anterior.ifBlank { null },
+            medidorInstalado = nuevo,
+            lecturaAnteriorVisible = lecturaAnteriorVisible,
+            lecturaAnterior = lecturaAnterior,
+            lecturaNueva = lecturaNueva,
+            materialUsado = materialMedidor?.descripcion?.ifBlank { materialMedidor.codigo },
+            tecnicoUid = data.atendidoPorUid,
+            tecnicoNombre = data.atendidoPorNombre,
+            fechaCambio = CambioMedidorSerializer.now()
+        )
+        val cambioJson = CambioMedidorSerializer.toJson(cambioData)
+
+        // Save audit trail to Room
+        dao.actualizarCambioMedidorJson(caseId, cambioJson, System.currentTimeMillis())
+
+        // Swap meter in medidores catalog (Room)
+        val medidorActual = medidorDao.buscarPorNumero(anterior) ?: run {
+            // Meter not in local catalog — record the change and notify supervisor, skip the swap
+            runCatching {
+                firebaseRef.child(caseId).child("cambioMedidor")
+                    .setValue(CambioMedidorSerializer.toFirebaseMap(cambioData)).await()
+            }.onFailure { Log.w(TAG, "No se pudo escribir cambioMedidor en Firebase para avería=$caseId", it) }
+            runCatching { notificarSupervisorCambioMedidor(cambioData) }
+                .onFailure { Log.w(TAG, "No se pudo invocar notifyCambioMedidorSupervisor para avería=$caseId", it) }
+            return
+        }
+        val medidorActualizado = medidorActual.copy(medidorNumber = nuevo)
         medidorDao.insertAll(listOf(medidorActualizado))
         medidorDao.eliminarPorNumero(anterior)
 
@@ -1012,6 +1103,45 @@ return AveriaEntity(
         }.onFailure {
             Log.w(TAG, "No se pudo actualizar el medidor en Firebase para avería=$caseId", it)
         }
+
+        // Write structured cambioMedidor node to Firebase
+        runCatching {
+            firebaseRef.child(caseId).child("cambioMedidor")
+                .setValue(CambioMedidorSerializer.toFirebaseMap(cambioData)).await()
+        }.onFailure {
+            Log.w(TAG, "No se pudo escribir cambioMedidor en Firebase para avería=$caseId", it)
+        }
+
+        // Notify supervisor via Cloud Function — failure must NOT revert the change
+        runCatching {
+            notificarSupervisorCambioMedidor(cambioData)
+        }.onFailure {
+            Log.w(TAG, "No se pudo invocar notifyCambioMedidorSupervisor para avería=$caseId", it)
+        }
+    }
+
+    private suspend fun notificarSupervisorCambioMedidor(cambio: CambioMedidorData) {
+        val averia = dao.getByCaseId(cambio.numeroCaso)
+        val agencia = averia?.agencia?.takeIf { it.isNotBlank() } ?: ""
+        val nombreAgencia = averia?.nombreAgencia?.takeIf { it.isNotBlank() } ?: agencia
+        val payload = mapOf(
+            "caseId" to cambio.numeroCaso,
+            "agencia" to agencia,
+            "nombreAgencia" to nombreAgencia,
+            "tecnicoNombre" to (cambio.tecnicoNombre ?: ""),
+            "tecnicoUid" to (cambio.tecnicoUid ?: ""),
+            "medidorAnterior" to (cambio.medidorAnterior ?: ""),
+            "medidorInstalado" to cambio.medidorInstalado,
+            "lecturaAnteriorVisible" to cambio.lecturaAnteriorVisible,
+            "lecturaAnterior" to (cambio.lecturaAnterior ?: ""),
+            "lecturaNueva" to (cambio.lecturaNueva ?: ""),
+            "materialUsado" to (cambio.materialUsado ?: ""),
+            "fechaCambio" to cambio.fechaCambio
+        )
+        FirebaseFunctions.getInstance()
+            .getHttpsCallable("notifyCambioMedidorSupervisor")
+            .call(payload)
+            .await()
     }
 
     private suspend fun actualizarMedidorEnFirebase(anterior: MedidorEntity, nuevo: MedidorEntity) {
@@ -1058,64 +1188,65 @@ return AveriaEntity(
     }
 
     /**
- * ✅ Subida App → Firebase sin borrar campos CLOR.
- * IMPORTANTE: usar updateChildren (NO setValue) para no reventar estadoClor/obsClor/causaClor.
- */
-private suspend fun pushToFirebase(entity: AveriaEntity) {
-    val payload = entity.toFirebaseAppPayload()
-    firebaseRef.child(entity.caseId).updateChildren(payload).await()
-}
+     * ✅ Subida App → Firebase sin borrar campos CLOR.
+     * IMPORTANTE: usar updateChildren (NO setValue) para no reventar estadoClor/obsClor/causaClor.
+     */
+    private suspend fun pushToFirebase(entity: AveriaEntity) {
+        val payload = entity.toFirebaseAppPayload()
+        firebaseRef.child(entity.caseId).updateChildren(payload).await()
+    }
 
 
 
-private fun AveriaEntity.toFirebaseAppPayload(): Map<String, Any?> = hashMapOf(
-    "caseId" to caseId,
+    private fun AveriaEntity.toFirebaseAppPayload(): Map<String, Any?> = hashMapOf(
+        "caseId" to caseId,
 
-    // ===== ESTADO Y NOTAS DEL TÉCNICO =====
-    "estado" to estado,
-    "causa" to causa,
-    "observaciones" to observaciones,
+        // ===== ESTADO Y NOTAS DEL TÉCNICO =====
+        "estado" to estado,
+        "causa" to causa,
+        "observaciones" to observaciones,
 
-    // ===== TIEMPOS DE ATENCIÓN =====
-    "horaInicioMillis" to horaInicioMillis,
-    "horaFinalMillis" to horaFinalMillis,
-    "atencionHoraInicioMillis" to atencionHoraInicioMillis,
-    "atencionHoraFinalMillis" to atencionHoraFinalMillis,
-    "horaLlegadaMillis" to horaLlegadaMillis,
+        // ===== TIEMPOS DE ATENCIÓN =====
+        "horaInicioMillis" to horaInicioMillis,
+        "horaFinalMillis" to horaFinalMillis,
+        "atencionHoraInicioMillis" to atencionHoraInicioMillis,
+        "atencionHoraFinalMillis" to atencionHoraFinalMillis,
+        "horaLlegadaMillis" to horaLlegadaMillis,
 
-    // ===== VEHÍCULO / KILOMETRAJE =====
-    "kilometrajeInicio" to kilometrajeInicio,
-    "kilometrajeLlegada" to kilometrajeLlegada,
-    "kilometrajeFinal" to kilometrajeFinal,
-    "vehiculoAsignado" to vehiculoAsignado,
+        // ===== VEHÍCULO / KILOMETRAJE =====
+        "kilometrajeInicio" to kilometrajeInicio,
+        "kilometrajeLlegada" to kilometrajeLlegada,
+        "kilometrajeFinal" to kilometrajeFinal,
+        "vehiculoAsignado" to vehiculoAsignado,
 
-    // ===== ASIGNACIÓN =====
-    "tecnicoAsignadoUid" to tecnicoAsignadoUid,
-    "tecnicoAsignadoNombre" to tecnicoAsignadoNombre,
-    "atendidoPorUid" to atendidoPorUid,
-    "atendidoPorNombre" to atendidoPorNombre,
+        // ===== ASIGNACIÓN =====
+        "tecnicoAsignadoUid" to tecnicoAsignadoUid,
+        "tecnicoAsignadoNombre" to tecnicoAsignadoNombre,
+        "atendidoPorUid" to atendidoPorUid,
+        "atendidoPorNombre" to atendidoPorNombre,
 
-    // ===== MATERIALES / TÉCNICOS =====
-    "materialesTexto" to materialesTexto,
-    "materialesDetalleJson" to materialesDetalleJson,
-    "tecnicosAtendieronJson" to tecnicosAtendieronJson,
+        // ===== MATERIALES / TÉCNICOS =====
+        "materialesTexto" to materialesTexto,
+        "materialesDetalleJson" to materialesDetalleJson,
+        "tecnicosAtendieronJson" to tecnicosAtendieronJson,
 
-    // ===== DATOS COMPLEMENTARIOS APP =====
-    "cliente" to cliente,
-    "localizacion" to localizacion,
-    "direccion" to direccion,
-    "tipoAfectacion" to tipoAfectacion,
-    "numeroMedidor" to numeroMedidor,
-    "medidorCalle" to medidorCalle,
-    "medidorPueblo" to medidorPueblo,
-    "medidorMetros" to medidorMetros,
-    "medidorPoste" to medidorPoste,
-    "evidenciasJson" to evidenciasJson,
+        // ===== DATOS COMPLEMENTARIOS APP =====
+        "cliente" to cliente,
+        "localizacion" to localizacion,
+        "direccion" to direccion,
+        "tipoAfectacion" to tipoAfectacion,
+        "numeroMedidor" to numeroMedidor,
+        "medidorCalle" to medidorCalle,
+        "medidorPueblo" to medidorPueblo,
+        "medidorMetros" to medidorMetros,
+        "medidorPoste" to medidorPoste,
+        "evidenciasJson" to evidenciasJson,
+        "cambioMedidorJson" to cambioMedidorJson,
 
-    // ===== HOUSEKEEPING =====
-    "lastUpdated" to lastUpdated,
-    "isSynced" to true
-)
+        // ===== HOUSEKEEPING =====
+        "lastUpdated" to lastUpdated,
+        "isSynced" to true
+    )
 
     private suspend fun registrarMaterialesUsados(caseId: String, data: AveriaActionData) {
         val vehiculoId = resolveVehiculoId(data.vehiculo)
@@ -1198,59 +1329,82 @@ private fun AveriaEntity.toFirebaseAppPayload(): Map<String, Any?> = hashMapOf(
                     return@withContext PullResult(emptyList(), hadLocalData)
                 }
 
+                // ✅ FIX 1: Intentar múltiples variantes del valor de región para tolerar
+                // diferencias de tildes/mayúsculas entre lo que Firebase guarda y lo canónico.
+                val regionVariants = buildRegionVariants(primary.value)
                 Log.i(
                     TAG,
-                    "[SCOPED_EXECUTION] stage=primary role=${plan.role} uid_present=$uidPresent agenciaTag_present=$agenciaTagPresent region_present=$regionPresent field=${primary.field} value=${primary.value}"
+                    "[SCOPED_EXECUTION] stage=primary role=${plan.role} field=${primary.field} variants=$regionVariants"
                 )
-                val primarySnapshot = firebaseRef.orderByChild(primary.field).equalTo(primary.value).get().await()
-                val primaryChildren = primarySnapshot.children.toList()
+
+                val allPrimaryChildren = mutableListOf<DataSnapshot>()
+                val seenKeys = mutableSetOf<String>()
+                for (variant in regionVariants) {
+                    val snap = firebaseRef.orderByChild(primary.field).equalTo(variant).get().await()
+                    val children = snap.children.toList()
+                    Log.i(TAG, "[SCOPED_EXECUTION] stage=primary_variant variant=$variant count=${children.size}")
+                    for (child in children) {
+                        val key = child.key ?: continue
+                        if (seenKeys.add(key)) allPrimaryChildren += child
+                    }
+                }
+                val primaryChildren = allPrimaryChildren
+
                 Log.i(
                     TAG,
-                    "[SCOPED_EXECUTION] stage=primary_result role=${plan.role} field=${primary.field} value=${primary.value} count=${primaryChildren.size}"
+                    "[SCOPED_EXECUTION] stage=primary_result role=${plan.role} field=${primary.field} total_count=${primaryChildren.size}"
                 )
 
                 if (shouldRunFallback(primaryChildren.size)) {
-                val fallback = plan.fallback
-                val fallbackReason = if (fallback == null) "missing_region" else "primary_zero"
-                Log.i(
-                    TAG,
-                    "[SCOPED_FALLBACK] enabled=true reason=$fallbackReason role=${plan.role} uid_present=$uidPresent agenciaTag_present=$agenciaTagPresent region_present=$regionPresent primary_count=${primaryChildren.size}"
-                )
-                val fallbackQuery = buildFallbackQuery(plan)
-                if (fallbackQuery == null) {
+                    val fallback = plan.fallback
+                    val fallbackReason = if (fallback == null) "region_variants_zero" else "primary_zero"
                     Log.w(
                         TAG,
-                        "[SCOPED_GUARD] global_blocked=true reason=fallback_not_buildable role=${plan.role} uid_present=$uidPresent agenciaTag_present=$agenciaTagPresent region_present=$regionPresent primary_count=${primaryChildren.size}"
+                        "[SCOPED_FALLBACK] enabled=true reason=$fallbackReason role=${plan.role} " +
+                                "region=${scope.region} agenciaTag=${scope.agenciaTag} " +
+                                "uid_present=$uidPresent primary_count=${primaryChildren.size} " +
+                                "HINT: verifica que el campo 'region' en Firebase coincida con alguna variante de '${scope.region}'"
                     )
-                    emptyList()
+                    // ✅ No usamos fallback por agenciaTag: eso limitaría la descarga a una sola
+                    // agencia en vez de toda la región. Si todas las variantes de región
+                    // devuelven 0, significa que el valor de 'region' en Firebase no coincide
+                    // con ninguna variante conocida — revisar los logs para diagnosticar.
+                    val fallbackQuery = buildFallbackQuery(plan)
+                    if (fallbackQuery == null) {
+                        Log.w(
+                            TAG,
+                            "[SCOPED_GUARD] global_blocked=true reason=fallback_not_buildable role=${plan.role} " +
+                                    "Acción: agrega el valor exacto del campo 'region' en Firebase al mapa REGION_CANON"
+                        )
+                        emptyList()
+                    } else {
+                        Log.i(
+                            TAG,
+                            "[SCOPED_EXECUTION] stage=fallback role=${plan.role} field=${fallback?.field} value=${fallback?.value} primary_count=${primaryChildren.size}"
+                        )
+                        val fallbackSnapshot = fallbackQuery.get().await()
+                        val fallbackChildrenRaw = fallbackSnapshot.children.toList()
+                        val fallbackChildrenFiltered = if (plan.role == ScopedRole.TECNICO || plan.role == ScopedRole.SUPERVISOR_AGENCIA) {
+                            fallbackChildrenRaw.filter { child ->
+                                val estado = child.child("estado").getValue(String::class.java)
+                                isOperativeEstado(estado)
+                            }
+                        } else {
+                            fallbackChildrenRaw
+                        }
+                        Log.i(
+                            TAG,
+                            "[SCOPED_EXECUTION] stage=fallback_result role=${plan.role} field=${fallback?.field} value=${fallback?.value} rawCount=${fallbackChildrenRaw.size} filteredCount=${fallbackChildrenFiltered.size}"
+                        )
+                        fallbackChildrenFiltered
+                    }
                 } else {
                     Log.i(
                         TAG,
-                        "[SCOPED_EXECUTION] stage=fallback role=${plan.role} field=${fallback?.field} value=${fallback?.value} primary_count=${primaryChildren.size}"
+                        "[SCOPED_FALLBACK] enabled=false reason=primary_has_data role=${plan.role} primary_count=${primaryChildren.size}"
                     )
-                    val fallbackSnapshot = fallbackQuery.get().await()
-                    val fallbackChildrenRaw = fallbackSnapshot.children.toList()
-                    val fallbackChildrenFiltered = if (plan.role == ScopedRole.TECNICO || plan.role == ScopedRole.SUPERVISOR_AGENCIA) {
-                        fallbackChildrenRaw.filter { child ->
-                            val estado = child.child("estado").getValue(String::class.java)
-                            isOperativeEstado(estado)
-                        }
-                    } else {
-                        fallbackChildrenRaw
-                    }
-                    Log.i(
-                        TAG,
-                        "[SCOPED_EXECUTION] stage=fallback_result role=${plan.role} field=${fallback?.field} value=${fallback?.value} rawCount=${fallbackChildrenRaw.size} filteredCount=${fallbackChildrenFiltered.size}"
-                    )
-                    fallbackChildrenFiltered
+                    primaryChildren
                 }
-            } else {
-                Log.i(
-                    TAG,
-                    "[SCOPED_FALLBACK] enabled=false reason=primary_has_data role=${plan.role} uid_present=$uidPresent agenciaTag_present=$agenciaTagPresent region_present=$regionPresent primary_count=${primaryChildren.size}"
-                )
-                primaryChildren
-            }
             }
 
             val updated = mutableListOf<AveriaEntity>()
@@ -1270,92 +1424,92 @@ private fun AveriaEntity.toFirebaseAppPayload(): Map<String, Any?> = hashMapOf(
                         newlyCreated += remote
                     }
 
-                   existing.isSynced && remote.lastUpdated >= existing.lastUpdated -> {
-    // ✅ Estado app se decide con tu lógica (pickEstadoPreferAdvanced)
-        val estadoElegido = pickEstadoPreferAdvanced(existing.estado, remote.estado, remote.estadoClor)
-    val idEstadoElegido = idEstadoFromLabel(estadoElegido)
-    val bloquearPromocionAClorResuelta =
-        normalizeEstadoLabel(existing.estado) == "Resuelta" &&
-            !isClorResuelta(existing.estadoClor) &&
-            isClorResuelta(remote.estadoClor)
+                    existing.isSynced && remote.lastUpdated >= existing.lastUpdated -> {
+                        // ✅ Estado app se decide con tu lógica (pickEstadoPreferAdvanced)
+                        val estadoElegido = pickEstadoPreferAdvanced(existing.estado, remote.estado, remote.estadoClor)
+                        val idEstadoElegido = idEstadoFromLabel(estadoElegido)
+                        val bloquearPromocionAClorResuelta =
+                            normalizeEstadoLabel(existing.estado) == "Resuelta" &&
+                                    !isClorResuelta(existing.estadoClor) &&
+                                    isClorResuelta(remote.estadoClor)
 
-    updated += existing.copy(
-        // ==========================================================
-        // NEUTROS / API (se pueden refrescar sin romper al técnico)
-        // ==========================================================
-        region = remote.region,
-        provincia = remote.provincia,
-        agencia = remote.agencia,
-        nombreAgencia = remote.nombreAgencia,
-        nise = remote.nise,
-        clientesAfectados = remote.clientesAfectados,
-        lat = remote.lat,
-        lng = remote.lng,
-        fechaInicioMillis = remote.fechaInicioMillis,
-        horaInicioMillis = remote.horaInicioMillis,
-        horaFinalMillis = remote.horaFinalMillis,
-        horaLlegadaMillis = existing.horaLlegadaMillis,
+                        updated += existing.copy(
+                            // ==========================================================
+                            // NEUTROS / API (se pueden refrescar sin romper al técnico)
+                            // ==========================================================
+                            region = remote.region,
+                            provincia = remote.provincia,
+                            agencia = remote.agencia,
+                            nombreAgencia = remote.nombreAgencia,
+                            nise = remote.nise,
+                            clientesAfectados = remote.clientesAfectados,
+                            lat = remote.lat,
+                            lng = remote.lng,
+                            fechaInicioMillis = remote.fechaInicioMillis,
+                            horaInicioMillis = remote.horaInicioMillis,
+                            horaFinalMillis = remote.horaFinalMillis,
+                            horaLlegadaMillis = existing.horaLlegadaMillis,
 
-        // ==========================================================
-        // ✅ APP/TÉCNICO: usar remoto si está más nuevo (sin borrar datos útiles)
-        // ==========================================================
-        estado = estadoElegido,
-        idEstadoAve = idEstadoElegido,
-        idEstadoAranda = if (bloquearPromocionAClorResuelta) existing.idEstadoAranda else remote.idEstadoAranda,
-        causa = preferMeaningful(remote.causa, existing.causa),
-        observaciones = preferMeaningful(remote.observaciones, existing.observaciones),
+                            // ==========================================================
+                            // ✅ APP/TÉCNICO: usar remoto si está más nuevo (sin borrar datos útiles)
+                            // ==========================================================
+                            estado = estadoElegido,
+                            idEstadoAve = idEstadoElegido,
+                            idEstadoAranda = if (bloquearPromocionAClorResuelta) existing.idEstadoAranda else remote.idEstadoAranda,
+                            causa = preferMeaningful(remote.causa, existing.causa),
+                            observaciones = preferMeaningful(remote.observaciones, existing.observaciones),
 
-        atencionHoraInicioMillis = remote.atencionHoraInicioMillis,
-        atencionHoraFinalMillis = remote.atencionHoraFinalMillis,
-        kilometrajeInicio = remote.kilometrajeInicio,
-        kilometrajeLlegada = remote.kilometrajeLlegada,
-        kilometrajeFinal = remote.kilometrajeFinal,
-        vehiculoAsignado = remote.vehiculoAsignado,
-        tecnicoAsignadoUid = remote.tecnicoAsignadoUid,
-        tecnicoAsignadoNombre = remote.tecnicoAsignadoNombre,
-        atendidoPorUid = remote.atendidoPorUid,
-        atendidoPorNombre = remote.atendidoPorNombre,
-        materialesTexto = preferMeaningful(remote.materialesTexto, existing.materialesTexto),
-        materialesDetalleJson = preferMeaningful(remote.materialesDetalleJson, existing.materialesDetalleJson),
-        tecnicosAtendieronJson = mergeRemoteString(remote.tecnicosAtendieronJson, existing.tecnicosAtendieronJson),
-        evidenciasJson = mergeRemoteString(remote.evidenciasJson, existing.evidenciasJson),
-        cliente = preferMeaningful(remote.cliente, existing.cliente),
-        localizacion = preferMeaningful(remote.localizacion, existing.localizacion),
-        direccion = preferMeaningful(remote.direccion, existing.direccion),
-        tipoAfectacion = preferMeaningful(remote.tipoAfectacion, existing.tipoAfectacion),
-        numeroMedidor = preferMeaningful(remote.numeroMedidor, existing.numeroMedidor),
-        medidorCalle = preferMeaningful(remote.medidorCalle, existing.medidorCalle),
-        medidorPueblo = preferMeaningful(remote.medidorPueblo, existing.medidorPueblo),
-        medidorMetros = preferMeaningful(remote.medidorMetros, existing.medidorMetros),
-        medidorPoste = preferMeaningful(remote.medidorPoste, existing.medidorPoste),
-        agenciaTag = remote.agenciaTag,
+                            atencionHoraInicioMillis = remote.atencionHoraInicioMillis,
+                            atencionHoraFinalMillis = remote.atencionHoraFinalMillis,
+                            kilometrajeInicio = remote.kilometrajeInicio,
+                            kilometrajeLlegada = remote.kilometrajeLlegada,
+                            kilometrajeFinal = remote.kilometrajeFinal,
+                            vehiculoAsignado = remote.vehiculoAsignado,
+                            tecnicoAsignadoUid = remote.tecnicoAsignadoUid,
+                            tecnicoAsignadoNombre = remote.tecnicoAsignadoNombre,
+                            atendidoPorUid = remote.atendidoPorUid,
+                            atendidoPorNombre = remote.atendidoPorNombre,
+                            materialesTexto = preferMeaningful(remote.materialesTexto, existing.materialesTexto),
+                            materialesDetalleJson = preferMeaningful(remote.materialesDetalleJson, existing.materialesDetalleJson),
+                            tecnicosAtendieronJson = mergeRemoteString(remote.tecnicosAtendieronJson, existing.tecnicosAtendieronJson),
+                            evidenciasJson = mergeRemoteString(remote.evidenciasJson, existing.evidenciasJson),
+                            cliente = preferMeaningful(remote.cliente, existing.cliente),
+                            localizacion = preferMeaningful(remote.localizacion, existing.localizacion),
+                            direccion = preferMeaningful(remote.direccion, existing.direccion),
+                            tipoAfectacion = preferMeaningful(remote.tipoAfectacion, existing.tipoAfectacion),
+                            numeroMedidor = preferMeaningful(remote.numeroMedidor, existing.numeroMedidor),
+                            medidorCalle = preferMeaningful(remote.medidorCalle, existing.medidorCalle),
+                            medidorPueblo = preferMeaningful(remote.medidorPueblo, existing.medidorPueblo),
+                            medidorMetros = preferMeaningful(remote.medidorMetros, existing.medidorMetros),
+                            medidorPoste = preferMeaningful(remote.medidorPoste, existing.medidorPoste),
+                            agenciaTag = remote.agenciaTag,
 
-        // ==========================================================
-        // ✅ CLOR separado (estos sí deben actualizarse desde remote)
-        // ==========================================================
-        estadoClor = if (bloquearPromocionAClorResuelta) {
-            existing.estadoClor
-        } else {
-            preferMeaningfulClor(remote.estadoClor, existing.estadoClor)
-        },
-        causaClor = if (bloquearPromocionAClorResuelta) {
-            existing.causaClor
-        } else {
-            preferMeaningfulClor(remote.causaClor, existing.causaClor)
-        },
-        observacionesClor = if (bloquearPromocionAClorResuelta) {
-            existing.observacionesClor
-        } else {
-            preferMeaningfulClor(remote.observacionesClor, existing.observacionesClor)
-        },
+                            // ==========================================================
+                            // ✅ CLOR separado (estos sí deben actualizarse desde remote)
+                            // ==========================================================
+                            estadoClor = if (bloquearPromocionAClorResuelta) {
+                                existing.estadoClor
+                            } else {
+                                preferMeaningfulClor(remote.estadoClor, existing.estadoClor)
+                            },
+                            causaClor = if (bloquearPromocionAClorResuelta) {
+                                existing.causaClor
+                            } else {
+                                preferMeaningfulClor(remote.causaClor, existing.causaClor)
+                            },
+                            observacionesClor = if (bloquearPromocionAClorResuelta) {
+                                existing.observacionesClor
+                            } else {
+                                preferMeaningfulClor(remote.observacionesClor, existing.observacionesClor)
+                            },
 
-        // ==========================================================
-        // Housekeeping
-        // ==========================================================
-        lastUpdated = maxOf(existing.lastUpdated, remote.lastUpdated),
-        isSynced = true
-    )
-}
+                            // ==========================================================
+                            // Housekeeping
+                            // ==========================================================
+                            lastUpdated = maxOf(existing.lastUpdated, remote.lastUpdated),
+                            isSynced = true
+                        )
+                    }
 
                 }
             }

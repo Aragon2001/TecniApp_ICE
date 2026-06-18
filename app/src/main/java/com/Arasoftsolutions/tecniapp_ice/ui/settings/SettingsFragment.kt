@@ -1,26 +1,19 @@
 package com.Arasoftsolutions.tecniapp_ice.ui.settings
 
-import android.Manifest
-import android.content.ActivityNotFoundException
 import android.content.Context.MODE_PRIVATE
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.os.Bundle
 import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.widget.ArrayAdapter
 import android.widget.TextView
 import android.widget.Toast
-import android.provider.Settings
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatDelegate
-import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.navigation.fragment.findNavController
 import com.Arasoftsolutions.tecniapp_ice.ActivityMain
@@ -28,7 +21,6 @@ import com.Arasoftsolutions.tecniapp_ice.LoginActivity
 import com.Arasoftsolutions.tecniapp_ice.R
 import com.Arasoftsolutions.tecniapp_ice.BuildConfig
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.apellidosCompletos
-import com.Arasoftsolutions.tecniapp_ice.Database.room.AppDatabase
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
 import com.Arasoftsolutions.tecniapp_ice.Database.sync.AppSyncCoordinator
 import com.Arasoftsolutions.tecniapp_ice.Database.sync.Synchronizer
@@ -50,9 +42,12 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
+import java.io.File
 import java.text.DateFormat
 import java.util.Date
 import java.util.Locale
@@ -69,28 +64,11 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
     private val roomRepository by lazy { RoomRepository.getInstance(requireContext()) }
     private val synchronizer by lazy { Synchronizer(roomRepository) }
     private var availableNotificationAgencies: List<String> = emptyList()
-    private var latestAutoSyncInfo: WorkInfo? = null
+    private var userRegionNameForNotifications: String? = null
     private val updateDownloadManager by lazy { UpdateDownloadManager(requireContext()) }
     private var manualSyncInProgress = false
     private var cacheClearInProgress = false
-    private var updatingGpsToggle = false
-
-    private val gpsPermissionLauncher =
-        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { results ->
-            val granted = results[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
-                results[Manifest.permission.ACCESS_COARSE_LOCATION] == true ||
-                hasLocationPermission()
-            if (granted) {
-                setGpsPreference(true)
-            } else {
-                setGpsPreference(false)
-                Toast.makeText(
-                    requireContext(),
-                    R.string.settings_gps_permission_denied,
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
-        }
+    private var updatingDarkTheme = false
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -100,11 +78,11 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
 
         setupNotificationPreferences()
         setupSyncPreferences()
-        setupLocationPreferences()
         setupAppearancePreferences()
         setupAdminPreferences()
         setupAccountSection()
         setupUpdateSection()
+        setupLegalSection()
     }
 
     private fun setupNotificationPreferences() {
@@ -137,72 +115,91 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
             }
         }
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                roomRepository.observarAgenciasCatalogo().collect { agencias ->
-                    availableNotificationAgencies = agencias.mapNotNull { it.nombre?.takeIf { nombre ->
-                        nombre.isNotBlank()
-                    }?.trim() }
-                        .distinctBy { it.lowercase(Locale.getDefault()) }
-                        .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it })
+        // Cargar SOLO agencias de la región del usuario
+        @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+        fun loadRegionAgencies() {
+            viewLifecycleOwner.lifecycleScope.launch {
+                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                    val uid = auth.currentUser?.uid
+                    val agenciasFlow = if (uid != null) {
+                        roomRepository.observarUsuario(uid)
+                            .flatMapLatest { user ->
+                                userRegionNameForNotifications = user?.regionNombre?.takeIf { it.isNotBlank() }
+                                val regionId = user?.region?.takeIf { it.isNotBlank() }
+                                if (regionId != null) roomRepository.observarAgencias(regionId)
+                                else roomRepository.observarAgenciasCatalogo()
+                            }
+                    } else {
+                        roomRepository.observarAgenciasCatalogo()
+                    }
+                    agenciasFlow.collect { agencias ->
+                        availableNotificationAgencies = agencias
+                            .map { it.nombre.trim() }
+                            .filter { it.isNotBlank() }
+                            .distinctBy { it.lowercase(Locale.getDefault()) }
+                            .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it })
+                    }
                 }
             }
         }
+        loadRegionAgencies()
     }
 
     private fun setupSyncPreferences() {
         setManualSyncInProgress(false)
-        updateAutoSyncSummary(binding.switchAutoSync.isChecked, latestAutoSyncInfo)
 
-        binding.switchAutoSync.setOnCheckedChangeListener { _, isChecked ->
-            viewLifecycleOwner.lifecycleScope.launch {
-                dataStore.setAutoSyncEnabled(isChecked)
-            }
-            if (isChecked) {
-                AveriasSyncWorker.schedule(requireContext())
-                updateAutoSyncSummary(true, latestAutoSyncInfo)
-            } else {
-                WorkManager.getInstance(requireContext())
-                    .cancelUniqueWork(AveriasSyncWorker.UNIQUE_PERIODIC_WORK)
-                updateAutoSyncSummary(false, latestAutoSyncInfo)
-            }
-        }
-
-        binding.btnSincronizarAhora.setOnClickListener {
-            launchManualSync()
-        }
-
+        binding.btnSincronizarAhora.setOnClickListener { launchManualSync() }
         binding.btnClearCache.setOnClickListener { confirmClearCache() }
-
-        WorkManager.getInstance(requireContext())
-            .getWorkInfosForUniqueWorkLiveData(AveriasSyncWorker.UNIQUE_PERIODIC_WORK)
-            .observe(viewLifecycleOwner) { infos ->
-                latestAutoSyncInfo = infos.firstOrNull()
-                updateAutoSyncSummary(binding.switchAutoSync.isChecked, latestAutoSyncInfo)
-            }
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                launch {
-                    dataStore.autoSyncEnabled.collect { enabled ->
-                        if (binding.switchAutoSync.isChecked != enabled) {
-                            binding.switchAutoSync.isChecked = enabled
-                        }
-                        updateAutoSyncSummary(enabled, latestAutoSyncInfo)
-                    }
-                }
-
-                launch {
-                    dataStore.lastManualSyncMillis.collect { timestamp ->
-                        binding.textLastSync.text = if (timestamp == null) {
-                            getString(R.string.settings_last_sync_never)
-                        } else {
-                            val formatted = DateFormat.getDateTimeInstance().format(Date(timestamp))
-                            getString(R.string.settings_last_sync_format, formatted)
-                        }
+                dataStore.lastManualSyncMillis.collect { timestamp ->
+                    binding.textLastSync.text = if (timestamp == null) {
+                        getString(R.string.settings_last_sync_never)
+                    } else {
+                        val formatted = DateFormat.getDateTimeInstance().format(Date(timestamp))
+                        getString(R.string.settings_last_sync_format, formatted)
                     }
                 }
             }
+        }
+
+        loadStorageInfo()
+    }
+
+    private fun loadStorageInfo() {
+        binding.textStorageTotal.text = "Calculando…"
+        binding.textStorageData.text = "—"
+        binding.textStorageCache.text = "—"
+        binding.progressStorage.isIndeterminate = true
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            val (totalBytes, cacheBytes) = withContext(Dispatchers.IO) {
+                val total = requireContext().dataDir.dirSize()
+                val cache = requireContext().cacheDir.dirSize()
+                Pair(total, cache)
+            }
+            val dataBytes = (totalBytes - cacheBytes).coerceAtLeast(0L)
+            binding.textStorageTotal.text = totalBytes.toStorageMb()
+            binding.textStorageData.text  = dataBytes.toStorageMb()
+            binding.textStorageCache.text = cacheBytes.toStorageMb()
+            binding.progressStorage.isIndeterminate = false
+            val cachePercent = if (totalBytes > 0L) (cacheBytes * 100L / totalBytes).toInt() else 0
+            binding.progressStorage.setProgressCompat(cachePercent.coerceIn(0, 100), true)
+        }
+    }
+
+    private fun File.dirSize(): Long =
+        if (!exists()) 0L
+        else if (isFile) length()
+        else walkTopDown().filter { it.isFile }.sumOf { it.length() }
+
+    private fun Long.toStorageMb(): String {
+        val mb = toDouble() / (1024.0 * 1024.0)
+        return when {
+            mb < 0.01 -> "< 0.01 MB"
+            mb < 1.0  -> String.format(Locale.getDefault(), "%.2f MB", mb)
+            else      -> String.format(Locale.getDefault(), "%.1f MB", mb)
         }
     }
 
@@ -240,72 +237,40 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         dialog.show(manager, UPDATE_DIALOG_TAG)
     }
 
+    private fun setupLegalSection() {
+        binding.btnAbout.setOnClickListener {
+            findNavController().navigate(R.id.nav_help)
+        }
+        binding.btnPrivacy.setOnClickListener {
+            findNavController().navigate(R.id.nav_privacy)
+        }
+    }
+
     companion object {
         private const val UPDATE_DIALOG_TAG = "update_dialog"
     }
 
-    private fun setupLocationPreferences() {
-        binding.switchGps.setOnCheckedChangeListener { _, isChecked ->
-            if (updatingGpsToggle) return@setOnCheckedChangeListener
-            if (isChecked) {
-                if (hasLocationPermission()) {
-                    setGpsPreference(true)
-                } else {
-                    gpsPermissionLauncher.launch(
-                        arrayOf(
-                            Manifest.permission.ACCESS_FINE_LOCATION,
-                            Manifest.permission.ACCESS_COARSE_LOCATION
-                        )
-                    )
-                }
-            } else {
-                setGpsPreference(false)
-            }
-        }
-
-        binding.btnOpenLocationSettings.setOnClickListener {
-            try {
-                startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
-            } catch (error: ActivityNotFoundException) {
-                Toast.makeText(requireContext(), R.string.settings_location_settings_error, Toast.LENGTH_SHORT).show()
-            }
-        }
-
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                dataStore.gpsEnabled.collect { enabled ->
-                    updateGpsSwitch(enabled)
-                }
-            }
-        }
-        updateGpsSwitch(binding.switchGps.isChecked)
-    }
 
     private fun setupAppearancePreferences() {
+        // Usa lifecycleScope (no viewLifecycleOwner) para que el save en DataStore complete
+        // antes de que setDefaultNightMode cause la recreación de la Activity.
         binding.switchDarkTheme.setOnCheckedChangeListener { _, isChecked ->
-            viewLifecycleOwner.lifecycleScope.launch {
+            if (updatingDarkTheme) return@setOnCheckedChangeListener
+            lifecycleScope.launch {
                 dataStore.setDarkThemeEnabled(isChecked)
+                val mode = if (isChecked) AppCompatDelegate.MODE_NIGHT_YES else AppCompatDelegate.MODE_NIGHT_NO
+                AppCompatDelegate.setDefaultNightMode(mode)
             }
-            val mode = if (isChecked) {
-                AppCompatDelegate.MODE_NIGHT_YES
-            } else {
-                AppCompatDelegate.MODE_NIGHT_NO
-            }
-            AppCompatDelegate.setDefaultNightMode(mode)
         }
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 dataStore.darkThemeEnabled.collect { enabled ->
+                    updatingDarkTheme = true
                     if (binding.switchDarkTheme.isChecked != enabled) {
                         binding.switchDarkTheme.isChecked = enabled
                     }
-                    val mode = if (enabled) {
-                        AppCompatDelegate.MODE_NIGHT_YES
-                    } else {
-                        AppCompatDelegate.MODE_NIGHT_NO
-                    }
-                    AppCompatDelegate.setDefaultNightMode(mode)
+                    updatingDarkTheme = false
                 }
             }
         }
@@ -399,29 +364,32 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         val dialog = BottomSheetDialog(requireContext())
         dialog.setContentView(dialogBinding.root)
 
-        fun updateNotificationList() {
-            val agencies = AveriaNotificationPreferences.getSelectedAgencies(requireContext())
-            dialogBinding.tvNotificationFiltersEmpty.isVisible = agencies.isEmpty()
-            dialogBinding.chipGroupNotificationAgencies.removeAllViews()
+        // Etiqueta de región
+        val regionLabel = userRegionNameForNotifications
+            ?: getString(R.string.averia_notificacion_todas_regiones)
+        dialogBinding.tvUserRegionLabel.text =
+            getString(R.string.averia_notificacion_region_label, regionLabel)
+
+        // Construir chips toggle con las agencias de la región del usuario
+        fun buildToggleChips() {
+            val selected = AveriaNotificationPreferences.getSelectedAgencies(requireContext())
+                .map { it.lowercase(Locale.getDefault()) }.toSet()
+            val group = dialogBinding.chipGroupRegionAgencias
+            group.removeAllViews()
+            val agencies = availableNotificationAgencies
+            if (agencies.isEmpty()) {
+                dialogBinding.tvNotificationFiltersEmpty.isVisible = true
+                return
+            }
+            dialogBinding.tvNotificationFiltersEmpty.isVisible = false
             agencies.forEach { agency ->
                 val chip = Chip(requireContext()).apply {
                     text = agency
-                    isCloseIconVisible = true
-                    setOnCloseIconClickListener {
-                        AveriaNotificationPreferences.removeAgency(requireContext(), agency)
-                        updateNotificationSummary()
-                        updateNotificationList()
-                    }
+                    isCheckable = true
+                    isChecked = selected.contains(agency.lowercase(Locale.getDefault()))
                 }
-                dialogBinding.chipGroupNotificationAgencies.addView(chip)
+                group.addView(chip)
             }
-            val suggestions = (availableNotificationAgencies + agencies)
-                .map { it.trim() }
-                .filter { it.isNotEmpty() }
-                .distinctBy { it.lowercase(Locale.getDefault()) }
-                .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it })
-            val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, suggestions)
-            dialogBinding.actvNotificationAgency.setAdapter(adapter)
         }
 
         dialogBinding.switchNotifications.setOnCheckedChangeListener { _, isChecked ->
@@ -430,92 +398,34 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
             viewLifecycleOwner.lifecycleScope.launch {
                 dataStore.setNotificationsEnabled(isChecked)
             }
+            val alpha = if (isChecked) 1f else 0.5f
+            dialogBinding.chipGroupRegionAgencias.alpha = alpha
+            val group = dialogBinding.chipGroupRegionAgencias
+            for (i in 0 until group.childCount) {
+                (group.getChildAt(i) as? Chip)?.isEnabled = isChecked
+            }
             updateNotificationSummary()
         }
 
         dialogBinding.btnGuardarNotificaciones.setOnClickListener {
+            val selected = mutableSetOf<String>()
+            val group = dialogBinding.chipGroupRegionAgencias
+            for (i in 0 until group.childCount) {
+                val chip = group.getChildAt(i) as? Chip ?: continue
+                if (chip.isChecked) selected.add(chip.text.toString())
+            }
+            AveriaNotificationPreferences.setSelectedAgencies(requireContext(), selected)
             updateNotificationSummary()
             Toast.makeText(requireContext(), R.string.settings_notifications_saved, Toast.LENGTH_SHORT)
                 .show()
             dialog.dismiss()
         }
 
-        fun addAgency(value: String) {
-            if (value.isBlank()) return
-            AveriaNotificationPreferences.addAgency(requireContext(), value)
-            dialogBinding.actvNotificationAgency.setText("", false)
-            updateNotificationSummary()
-            updateNotificationList()
-        }
-
-        dialogBinding.actvNotificationAgency.setOnItemClickListener { parent, _, position, _ ->
-            val value = parent.getItemAtPosition(position)?.toString()?.trim().orEmpty()
-            addAgency(value)
-        }
-
-        dialogBinding.actvNotificationAgency.setOnEditorActionListener { textView, actionId, _ ->
-            if (actionId == EditorInfo.IME_ACTION_DONE) {
-                val value = textView.text?.toString()?.trim().orEmpty()
-                addAgency(value)
-                true
-            } else {
-                false
-            }
-        }
-
-        dialog.setOnDismissListener {
-            dialogBinding.actvNotificationAgency.setOnItemClickListener(null)
-            dialogBinding.actvNotificationAgency.setOnEditorActionListener(null)
-        }
+        dialog.setOnDismissListener { notificationDialog = null }
 
         notificationDialog = dialog
-        updateNotificationList()
+        buildToggleChips()
         dialog.show()
-    }
-
-    private fun updateAutoSyncSummary(enabled: Boolean, workInfo: WorkInfo?) {
-        binding.textAutoSyncSummary.text = when {
-            !enabled -> getString(R.string.settings_auto_sync_summary_disabled)
-            workInfo?.state == WorkInfo.State.RUNNING -> getString(R.string.settings_auto_sync_summary_running)
-            workInfo?.state == WorkInfo.State.ENQUEUED || workInfo?.state == WorkInfo.State.BLOCKED ->
-                getString(R.string.settings_auto_sync_summary_enabled)
-            workInfo?.state?.isFinished == true -> getString(R.string.settings_auto_sync_summary_enabled)
-            else -> getString(R.string.settings_auto_sync_summary_enabled)
-        }
-    }
-
-    private fun updateGpsSummary(enabled: Boolean) {
-        binding.textGpsSummary.text = if (enabled) {
-            getString(R.string.settings_gps_summary_on)
-        } else {
-            getString(R.string.settings_gps_summary_off)
-        }
-    }
-
-    private fun updateGpsSwitch(enabled: Boolean) {
-        updatingGpsToggle = true
-        binding.switchGps.isChecked = enabled
-        updateGpsSummary(enabled)
-        updatingGpsToggle = false
-    }
-
-    private fun setGpsPreference(enabled: Boolean) {
-        viewLifecycleOwner.lifecycleScope.launch {
-            dataStore.setGpsEnabled(enabled)
-        }
-        updateGpsSwitch(enabled)
-    }
-
-    private fun hasLocationPermission(): Boolean {
-        val fine = ContextCompat.checkSelfPermission(
-            requireContext(),
-            Manifest.permission.ACCESS_FINE_LOCATION
-        ) == PackageManager.PERMISSION_GRANTED
-        val coarse = ContextCompat.checkSelfPermission(
-            requireContext(),
-            Manifest.permission.ACCESS_COARSE_LOCATION
-        ) == PackageManager.PERMISSION_GRANTED
-        return fine || coarse
     }
 
     private fun updateAdminPrivilegesLabel(enabled: Boolean) {
@@ -791,7 +701,6 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         } else {
             getString(R.string.settings_sync_now)
         }
-
         val clearEnabled = !cacheClearInProgress
         binding.btnClearCache.isEnabled = clearEnabled
         binding.btnClearCache.alpha = if (clearEnabled) 1f else 0.6f

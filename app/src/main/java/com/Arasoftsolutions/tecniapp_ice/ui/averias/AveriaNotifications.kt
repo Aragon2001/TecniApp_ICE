@@ -20,11 +20,14 @@ import java.util.Locale
 
 
 object AveriaNotifications {
-    const val CHANNEL_ID = "averias_channel"
+
+    const val CHANNEL_ID = "averias_channel_v3"
 
     fun ensureChannel(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val manager = context.getSystemService(NotificationManager::class.java) ?: return
+            if (manager.getNotificationChannel(CHANNEL_ID) != null) return
+
             val sound = Uri.parse("android.resource://${context.packageName}/${R.raw.beep}")
             val attributes = AudioAttributes.Builder()
                 .setUsage(AudioAttributes.USAGE_NOTIFICATION_EVENT)
@@ -87,8 +90,6 @@ object AveriaNotifications {
             .build()
     }
 
-
-
     fun formatDateTime(millis: Long?): String? {
         if (millis == null || millis <= 0) return null
         val formatter = SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault())
@@ -118,6 +119,5 @@ object AveriaNotifications {
             .setContentIntent(notificationPreferencesPendingIntent(context))
             .build()
         manager.notify(2001, notification)
-        // TODO(Codex): Emitir notificación informativa al cambiar estado de la campana
     }
 }

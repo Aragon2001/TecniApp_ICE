@@ -12,6 +12,7 @@ import com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaReparacionEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.MaterialEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.ProgramacionEntity
+import com.Arasoftsolutions.tecniapp_ice.Database.entities.ReporteGeneradoEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.UserEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.room.AppDatabase
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
@@ -26,6 +27,7 @@ import com.google.firebase.functions.FirebaseFunctions
 import android.util.Base64
 import java.io.ByteArrayOutputStream
 import java.text.DecimalFormat
+import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -130,6 +132,7 @@ data class MisAveriaReportItem(
 )
 
 data class MisLuminariaReportItem(
+    val id: Int = 0,
     val localizacion: String,
     val estado: String,
     val fecha: String,
@@ -223,6 +226,34 @@ data class ReportSectionState<T>(
     val hasContent: Boolean = false
 )
 
+enum class DescargoOrigen { LUMINARIA, AVERIA, PROGRAMACION }
+
+data class DescargoMaterialItem(
+    val origenTipo: DescargoOrigen,
+    val origenId: String,
+    val localizacion: String,
+    val pueblo: String,
+    val cliente: String,
+    val agencia: String,
+    val fechaAtencion: String,
+    val fechaResolucion: String,
+    val material: String,
+    val cantidad: Double,
+    val tecnico: String,
+    val observaciones: String
+)
+
+data class ResumenChartData(
+    val averiasAtendidas: Int = 0,
+    val averiasPendientes: Int = 0,
+    val luminariasReparadas: Int = 0,
+    val luminariasPendientes: Int = 0,
+    val horasPorDia: List<Float> = List(7) { 0f },
+    val semanaLabel: String = "",
+    val ordenesAsignadas: Int = 0,
+    val ordenesEjecutadas: Int = 0
+)
+
 data class ResumenTotales(
     val totalAverias: Int,
     val totalMateriales: Int,
@@ -272,7 +303,9 @@ data class ReportesUiState(
     val miEtmState: ReportSectionState<BitacoraEventItem> = ReportSectionState(),
     val miBitacoraResumen: BitacoraResumen? = null,
     val miInventarioMovimientos: InventarioMovimientoResumen? = null,
-    val miInventarioConsumos: List<InventarioConsumoItem> = emptyList()
+    val miInventarioConsumos: List<InventarioConsumoItem> = emptyList(),
+    val resumenChartData: ResumenChartData? = null,
+    val placaVehiculo: String? = null
 )
 
 private data class DatosBase(
@@ -340,6 +373,9 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
                 filtrosSeleccionados = state.filtrosSeleccionados.copy(tecnico = tecnico)
             )
         }
+        cargarHistorialDesdeRoom()
+        cargarPlacaVehiculo()
+        generarReporte(ReportType.MI_RESUMEN)
     }
 
     fun actualizarRangoFechas(inicio: LocalDate, fin: LocalDate) {
@@ -352,6 +388,7 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
         val current = uiState.value
         if (current.fechaInicio == nuevoInicio && current.fechaFin == nuevoFin) return
 
+        val tipoActual = current.reporteSeleccionado
         cachedBase = null
         cachedRange = null
 
@@ -368,9 +405,11 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
                     rango = buildRangeText(nuevoInicio, nuevoFin)
                 ),
                 historialExports = it.historialExports,
-                secciones = it.secciones
+                secciones = it.secciones,
+                placaVehiculo = it.placaVehiculo
             )
         }
+        generarReporte(tipoActual)
     }
 
     fun restablecerRango() {
@@ -389,6 +428,7 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
                 )
             )
         }
+        generarReporte(tipo)
     }
 
     fun seleccionarTab(tab: ReportTab) {
@@ -402,6 +442,9 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun eliminarHistorial(item: ExportHistoryItem) {
+        viewModelScope.launch(Dispatchers.IO) {
+            database.reporteGeneradoDao().eliminarPorId(item.id)
+        }
         _uiState.update { state ->
             state.copy(historialExports = state.historialExports.filterNot { it.id == item.id })
         }
@@ -419,18 +462,13 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
                 when (tipo) {
                     ReportType.MI_RESUMEN -> {
                         val resumen = construirResumenKpis(state.fechaInicio, state.fechaFin)
+                        val chartData = calcularChartData(state.fechaInicio, state.fechaFin)
                         val resumenCards = ResumenTotales(
-                            totalAverias = resumen.firstOrNull {
-                                it.titulo == getString(R.string.reportes_kpi_averias_atendidas)
-                            }?.valor?.toIntOrNull() ?: 0,
-                            totalMateriales = resumen.firstOrNull {
-                                it.titulo == getString(R.string.reportes_kpi_material_consumido)
-                            }?.valor?.toIntOrNull() ?: 0,
-                            totalMaterialesDistintos = resumen.firstOrNull {
-                                it.titulo == getString(R.string.reportes_kpi_luminarias_reparadas)
-                            }?.valor?.toIntOrNull() ?: 0
+                            totalAverias = chartData.averiasAtendidas,
+                            totalMateriales = chartData.luminariasReparadas,
+                            totalMaterialesDistintos = chartData.ordenesEjecutadas
                         )
-                        setResumenSuccess(resumen, resumenCards)
+                        setResumenSuccess(resumen, resumenCards, chartData)
                     }
                     ReportType.MIS_AVERIAS -> {
                         val datos = construirMisAverias(state.fechaInicio, state.fechaFin)
@@ -865,6 +903,7 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
                 LuminariaEstado.REPARADA -> getString(R.string.reportes_estado_luminaria_reparada)
             }
             MisLuminariaReportItem(
+                id = reparacion.id.toInt(),
                 localizacion = reparacion.localizacion,
                 estado = estado,
                 fecha = formatDateTime(reparacion.fechaRegistro),
@@ -999,12 +1038,17 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    private fun setResumenSuccess(items: List<ResumenKpiItem>, resumen: ResumenTotales) {
+    private fun setResumenSuccess(
+        items: List<ResumenKpiItem>,
+        resumen: ResumenTotales,
+        chartData: ResumenChartData? = null
+    ) {
         _uiState.update { current ->
             current.copy(
                 isGlobalLoading = false,
                 resumen = resumen,
                 resumenState = ReportSectionState(isLoading = false, items = items, hasContent = true),
+                resumenChartData = chartData ?: current.resumenChartData,
                 misAveriasState = current.misAveriasState.copy(isLoading = false),
                 misLuminariasState = current.misLuminariasState.copy(isLoading = false),
                 miInventarioState = current.miInventarioState.copy(isLoading = false),
@@ -1584,4 +1628,244 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun getString(@StringRes resId: Int, vararg args: Any): String =
         getApplication<Application>().getString(resId, *args)
+
+    // ========== Historial Room ==========
+
+    private fun cargarHistorialDesdeRoom() {
+        val uid = auth.currentUser?.uid ?: return
+        viewModelScope.launch {
+            database.reporteGeneradoDao().observarReportes(uid).collect { entidades ->
+                val items = entidades.map { e ->
+                    ExportHistoryItem(
+                        id = e.id,
+                        fileName = e.nombreArchivo,
+                        fileType = if (e.formato == "PDF") ReportFileType.PDF else ReportFileType.EXCEL,
+                        dateTime = java.time.format.DateTimeFormatter
+                            .ofPattern("dd MMM yyyy · HH:mm", Locale.getDefault())
+                            .format(Instant.ofEpochMilli(e.fechaGeneracion).atZone(ZoneId.systemDefault()).toLocalDateTime()),
+                        fileSize = runCatching { java.io.File(e.rutaLocal).length().toString() }.getOrDefault(""),
+                        status = when {
+                            e.errorEnvio -> ReportExportStatus.ERROR
+                            else -> ReportExportStatus.OK
+                        },
+                        uri = e.rutaLocal
+                    )
+                }
+                _uiState.update { it.copy(historialExports = items) }
+            }
+        }
+    }
+
+    fun persistirReporte(entity: ReporteGeneradoEntity) {
+        viewModelScope.launch(Dispatchers.IO) {
+            database.reporteGeneradoDao().insertar(entity)
+        }
+    }
+
+    // ========== Placa vehículo (para título Inventario) ==========
+
+    private fun cargarPlacaVehiculo() {
+        viewModelScope.launch {
+            val uid = auth.currentUser?.uid ?: return@launch
+            val usuario = withContext(Dispatchers.IO) { repository.obtenerUsuario(uid) }
+            val placa = usuario?.placaVehiculo?.trim()?.takeIf { it.isNotBlank() }
+            if (placa != null) {
+                _uiState.update { it.copy(placaVehiculo = placa) }
+            }
+        }
+    }
+
+    // ========== Chart data ==========
+
+    private suspend fun calcularChartData(inicio: LocalDate, fin: LocalDate): ResumenChartData {
+        val base = obtenerDatosBase(inicio, fin)
+        val luminarias = construirMisLuminarias(inicio, fin)
+
+        val lunes = LocalDate.now().with(DayOfWeek.MONDAY)
+        val domingo = lunes.plusDays(6)
+        val zona = ZoneId.systemDefault()
+        val todosLosAverias = withContext(Dispatchers.IO) { database.averiaDao().all() }
+        val uid = auth.currentUser?.uid
+        val horasPorDia = (0..6).map { offset ->
+            val dia = lunes.plusDays(offset.toLong())
+            val diaInicioMs = dia.atStartOfDay(zona).toInstant().toEpochMilli()
+            val diaFinMs = dia.plusDays(1).atStartOfDay(zona).toInstant().toEpochMilli()
+            val averiasDelDia = todosLosAverias.filter { av ->
+                val start = av.atencionHoraInicioMillis ?: av.horaInicioMillis ?: 0L
+                start in diaInicioMs until diaFinMs &&
+                    (uid == null || av.atendidoPorUid?.equals(uid, ignoreCase = true) == true ||
+                        av.tecnicoAsignadoUid?.equals(uid, ignoreCase = true) == true)
+            }
+            val millis = averiasDelDia.sumOf { av ->
+                val start = av.atencionHoraInicioMillis ?: av.horaInicioMillis
+                val end = av.atencionHoraFinalMillis ?: av.horaFinalMillis
+                if (start != null && end != null && end > start) end - start else 0L
+            }
+            (millis / 3_600_000.0).toFloat()
+        }
+
+        val semanaLabel = "${lunes.format(rangeFormatter)} – ${domingo.format(rangeFormatter)}"
+
+        val (ordenesAsignadas, ordenesEjecutadas) = calcularProgramacionesCount()
+
+        return ResumenChartData(
+            averiasAtendidas = base.averias.size,
+            averiasPendientes = base.pendientes.size,
+            luminariasReparadas = luminarias.count { it.estado.contains("repar", true) },
+            luminariasPendientes = luminarias.count { it.estado.contains("pend", true) },
+            horasPorDia = horasPorDia,
+            semanaLabel = semanaLabel,
+            ordenesAsignadas = ordenesAsignadas,
+            ordenesEjecutadas = ordenesEjecutadas
+        )
+    }
+
+    private suspend fun calcularProgramacionesCount(): Pair<Int, Int> {
+        val uid = auth.currentUser?.uid ?: return 0 to 0
+        val programaciones = withContext(Dispatchers.IO) {
+            database.programacionDao().observeAll().first()
+        }
+        val mias = programaciones.filter { p ->
+            !p.eliminada &&
+                (p.tecnicoId.equals(uid, ignoreCase = true) ||
+                    p.tecnicoPrincipalUid?.equals(uid, ignoreCase = true) == true)
+        }
+        val asignadas = mias.count { p ->
+            p.estado in listOf("PENDIENTE", "ASIGNADA", "EN_ATENCION")
+        }
+        val ejecutadas = mias.count { p ->
+            p.estado in listOf("ATENDIDA", "EJECUTADA")
+        }
+        return asignadas to ejecutadas
+    }
+
+    // ========== Nombres de archivo profesionales ==========
+
+    fun generarNombreArchivoProfesional(tipo: ReportType, formato: String, fechaDisplay: String): String {
+        val fechaLimpia = fechaDisplay.replace("/", "-").replace(" ", "_")
+        return when (tipo) {
+            ReportType.MI_RESUMEN -> "Mi_Resumen_Operativo_$fechaLimpia.$formato"
+            ReportType.MIS_AVERIAS -> "Reporte_Averias_$fechaLimpia.$formato"
+            ReportType.MIS_LUMINARIAS -> "Reporte_Luminarias_$fechaLimpia.$formato"
+            ReportType.MI_INVENTARIO -> {
+                val placa = uiState.value.placaVehiculo ?: "vehiculo"
+                "Inventario_Vehiculo_${placa}_$fechaLimpia.$formato"
+            }
+            ReportType.MI_BITACORA -> {
+                val nombre = auth.currentUser?.displayName?.split(" ")?.firstOrNull() ?: "tecnico"
+                "Bitacora_Tecnica_${nombre}_$fechaLimpia.$formato"
+            }
+            ReportType.MI_ETM_CAMION -> {
+                val placa = uiState.value.placaVehiculo ?: "vehiculo"
+                "ETM_Camion_${placa}_$fechaLimpia.$formato"
+            }
+        }
+    }
+
+    // ========== Descargo de material (3 orígenes) ==========
+
+    suspend fun generarDescargoDeMaterial(inicio: LocalDate, fin: LocalDate): List<DescargoMaterialItem> {
+        val contexto = obtenerUserContext()
+        val uid = auth.currentUser?.uid
+        val zona = ZoneId.systemDefault()
+        val inicioMs = inicio.atStartOfDay(zona).toInstant().toEpochMilli()
+        val finMs = fin.plusDays(1).atStartOfDay(zona).toInstant().toEpochMilli()
+        val items = mutableListOf<DescargoMaterialItem>()
+
+        // Origen 1: Luminarias
+        val luminarias = withContext(Dispatchers.IO) {
+            database.inventarioDao().observarReparaciones().first()
+        }
+        luminarias.filter { r ->
+            r.fechaRegistro in inicioMs until finMs &&
+                coincideConVehiculo(r, contexto.vehiculoId) &&
+                coincideConEjecutor(r, contexto.nombres)
+        }.forEach { rep ->
+            val materiales = com.Arasoftsolutions.tecniapp_ice.ui.luminarias.LuminariaMaterialSerializer
+                .fromJson(rep.materialesJson)
+            materiales.forEach { mat ->
+                items.add(DescargoMaterialItem(
+                    origenTipo = DescargoOrigen.LUMINARIA,
+                    origenId = rep.id.toString(),
+                    localizacion = rep.localizacion,
+                    pueblo = rep.cliente?.takeIf { it.isNotBlank() } ?: "-",
+                    cliente = rep.cliente?.takeIf { it.isNotBlank() } ?: "-",
+                    agencia = "-",
+                    fechaAtencion = formatDateTime(rep.fechaRegistro),
+                    fechaResolucion = rep.fechaReparacion?.let { formatDateTime(it) }.orEmpty(),
+                    material = mat.descripcion.ifBlank { mat.codigo },
+                    cantidad = mat.cantidad.toDouble(),
+                    tecnico = rep.ejecutorNombre,
+                    observaciones = rep.observaciones.orEmpty()
+                ))
+            }
+        }
+
+        // Origen 2: Averías
+        val averias = withContext(Dispatchers.IO) { database.averiaDao().all() }
+        averias.filter { av ->
+            av.fechaInicioMillis in inicioMs until finMs &&
+                (uid == null || av.atendidoPorUid?.equals(uid, ignoreCase = true) == true ||
+                    av.tecnicoAsignadoUid?.equals(uid, ignoreCase = true) == true)
+        }.forEach { av ->
+            val materiales = obtenerMateriales(av, emptyMap(), emptyMap())
+            materiales.forEach { mat ->
+                items.add(DescargoMaterialItem(
+                    origenTipo = DescargoOrigen.AVERIA,
+                    origenId = av.caseId,
+                    localizacion = av.localizacion.orEmpty(),
+                    pueblo = av.medidorPueblo.orEmpty().ifBlank { "-" },
+                    cliente = av.cliente.orEmpty(),
+                    agencia = av.nombreAgencia.orEmpty().ifBlank { av.agencia.orEmpty() },
+                    fechaAtencion = av.fechaInicioMillis.let { formatDateTime(it) },
+                    fechaResolucion = obtenerFechaAtencion(av)?.let { formatDateTime(it) }.orEmpty(),
+                    material = mat.descripcion.ifBlank { mat.codigo },
+                    cantidad = mat.cantidad.toDouble(),          // MaterialUso.cantidad = Int
+                    tecnico = av.atendidoPorNombre.orEmpty().ifBlank { av.tecnicoAsignadoNombre.orEmpty() },
+                    observaciones = av.observaciones.orEmpty()
+                ))
+            }
+        }
+
+        // Origen 3: Órdenes programadas
+        val programaciones = withContext(Dispatchers.IO) {
+            database.programacionDao().observeAll().first()
+        }
+        programaciones.filter { p ->
+            !p.eliminada &&
+                (p.tecnicoId.equals(uid, ignoreCase = true) || p.tecnicoPrincipalUid?.equals(uid, ignoreCase = true) == true) &&
+                (p.fechaFinalizacion ?: p.updatedAt) in inicioMs until finMs
+        }.forEach { prog ->
+            if (!prog.materialesJson.isNullOrBlank()) {
+                val materiales = MaterialesSerializer.fromJson(prog.materialesJson)
+                materiales.forEach { mat ->
+                    items.add(DescargoMaterialItem(
+                        origenTipo = DescargoOrigen.PROGRAMACION,
+                        origenId = prog.programacionId,
+                        localizacion = prog.localizacion,
+                        pueblo = prog.localizacion,
+                        cliente = "-",
+                        agencia = prog.subregion,
+                        fechaAtencion = prog.fechaInicioAtencion?.let { formatDateTime(it) } ?: "-",
+                        fechaResolucion = prog.fechaFinalizacion?.let { formatDateTime(it) }.orEmpty(),
+                        material = mat.descripcion.ifBlank { mat.codigo },
+                        cantidad = mat.cantidad.toDouble(),
+                        tecnico = prog.tecnicoPrincipalNombre.orEmpty().ifBlank { prog.tecnicoId },
+                        observaciones = prog.descripcionAtencion.orEmpty()
+                    ))
+                }
+            }
+        }
+
+        return items.sortedByDescending { it.fechaAtencion }
+    }
+
+    fun obtenerSubfolder(tipo: ReportType): String = when (tipo) {
+        ReportType.MI_RESUMEN -> "MiResumen"
+        ReportType.MIS_AVERIAS -> "Averias"
+        ReportType.MIS_LUMINARIAS -> "Luminarias"
+        ReportType.MI_INVENTARIO -> "Inventario"
+        ReportType.MI_BITACORA -> "Bitacora"
+        ReportType.MI_ETM_CAMION -> "ETM"
+    }
 }

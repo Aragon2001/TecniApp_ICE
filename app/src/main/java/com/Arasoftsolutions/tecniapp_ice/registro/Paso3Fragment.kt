@@ -6,10 +6,10 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.core.widget.doAfterTextChanged
-import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import com.Arasoftsolutions.tecniapp_ice.R
@@ -23,9 +23,11 @@ import com.google.firebase.database.FirebaseDatabase
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
-class Paso3Fragment : Fragment() {
+// FIX: hereda de BaseRegistroFragment
+class Paso3Fragment : BaseRegistroFragment() {
 
     private lateinit var viewModel: RegistroViewModel
+    private var _progressBar: ProgressBar? = null
     private var _etFirstName: TextInputEditText? = null
     private var _etLastName: TextInputEditText? = null
     private var _etLastName2: TextInputEditText? = null
@@ -34,21 +36,19 @@ class Paso3Fragment : Fragment() {
     private var _chipCedula: Chip? = null
     private var _chipDimex: Chip? = null
     private var _chipGroupTipoId: ChipGroup? = null
-
     private var _tvFirstNameError: TextView? = null
     private var _tvLastNameError: TextView? = null
     private var _tvLastNameError2: TextView? = null
     private var _tvIDError: TextView? = null
 
+    private val progressBar get() = requireNotNull(_progressBar)
     private val etFirstName get() = requireNotNull(_etFirstName)
     private val etLastName get() = requireNotNull(_etLastName)
     private val etLastName2 get() = requireNotNull(_etLastName2)
     private val etID get() = requireNotNull(_etID)
     private val btnContinueToStep4 get() = requireNotNull(_btnContinueToStep4)
     private val chipCedula get() = requireNotNull(_chipCedula)
-    private val chipDimex get() = requireNotNull(_chipDimex)
     private val chipGroupTipoId get() = requireNotNull(_chipGroupTipoId)
-
     private val tvFirstNameError get() = requireNotNull(_tvFirstNameError)
     private val tvLastNameError get() = requireNotNull(_tvLastNameError)
     private val tvLastNameError2 get() = requireNotNull(_tvLastNameError2)
@@ -57,15 +57,10 @@ class Paso3Fragment : Fragment() {
     private val CEDULA_DIGITS = 9
     private val DIMEX_DIGITS = 12
 
-    private fun isCedulaSelected(): Boolean = chipCedula.isChecked
+    private fun isCedulaSelected(): Boolean = _chipCedula?.isChecked == true
 
-    private data class PersonalData(
-        val nombre: String,
-        val primerApellido: String,
-        val segundoApellido: String
-    )
+    private data class PersonalData(val nombre: String, val primerApellido: String, val segundoApellido: String)
 
-    // RTDB users (mismo host que Paso1/2/4)
     private val usersDb: DatabaseReference by lazy {
         FirebaseDatabase.getInstance("https://tecniapp-ice-user.firebaseio.com").reference
     }
@@ -74,7 +69,6 @@ class Paso3Fragment : Fragment() {
         FirebaseDatabase.getInstance("https://tecniapp-ice-personal.firebaseio.com").reference
     }
 
-    // Solo dígitos, 9 posiciones (clave de índice)
     private fun cedulaKey(raw: String): String = raw.filter { it.isDigit() }
 
     private var personalData: PersonalData? = null
@@ -89,6 +83,7 @@ class Paso3Fragment : Fragment() {
 
         viewModel = ViewModelProvider(requireActivity())[RegistroViewModel::class.java]
 
+        _progressBar = view.findViewById(R.id.progressBar)
         _etFirstName = view.findViewById(R.id.etFirstName)
         _etLastName = view.findViewById(R.id.etLastName)
         _etLastName2 = view.findViewById(R.id.etLastName2)
@@ -97,16 +92,13 @@ class Paso3Fragment : Fragment() {
         _chipCedula = view.findViewById(R.id.chipCedula)
         _chipDimex = view.findViewById(R.id.chipDimex)
         _chipGroupTipoId = view.findViewById(R.id.chipGroupTipoId)
-
         _tvFirstNameError = view.findViewById(R.id.tvFirstNameError)
         _tvLastNameError = view.findViewById(R.id.tvLastNameError)
         _tvLastNameError2 = view.findViewById(R.id.tvLastNameError2)
         _tvIDError = view.findViewById(R.id.tvIDError)
 
         applyTipoIdSelection()
-        chipGroupTipoId.setOnCheckedStateChangeListener { _, _ ->
-            applyTipoIdSelection()
-        }
+        chipGroupTipoId.setOnCheckedStateChangeListener { _, _ -> applyTipoIdSelection() }
 
         lockNameFields()
 
@@ -132,10 +124,17 @@ class Paso3Fragment : Fragment() {
         return view
     }
 
+    // FIX: animar barra al 75% al entrar
+    override fun onResume() {
+        super.onResume()
+        _progressBar?.let { animateProgress(it, 75) }
+    }
+
     override fun onDestroyView() {
         super.onDestroyView()
         _btnContinueToStep4?.setOnClickListener(null)
         _chipGroupTipoId?.setOnCheckedStateChangeListener(null)
+        _progressBar = null
         _etFirstName = null
         _etLastName = null
         _etLastName2 = null
@@ -173,10 +172,9 @@ class Paso3Fragment : Fragment() {
         clearErrors()
 
         val cedulaRaw = etID.text?.toString()?.trim().orEmpty()
-        val cedKey    = cedulaKey(cedulaRaw)
+        val cedKey = cedulaKey(cedulaRaw)
         val expectedLen = if (isCedulaSelected()) CEDULA_DIGITS else DIMEX_DIGITS
 
-        // Validación local
         if (cedKey.isBlank()) return showFieldError(tvIDError, getString(R.string.registro_paso3_error_vacio))
         if (!cedKey.all { it.isDigit() }) return showFieldError(tvIDError, getString(R.string.registro_paso3_error_solo_numeros))
         if (cedKey.length != expectedLen) {
@@ -190,17 +188,16 @@ class Paso3Fragment : Fragment() {
             return
         }
 
-        // Verificar unicidad de cédula usando /idcards/{cedulaKey} (patrón PRO)
         setLoading(true)
         viewLifecycleOwner.lifecycleScope.launch {
             try {
                 val exists = usersDb.child("idcards").child(cedKey).get().await().exists()
+                if (!isFragmentAlive()) return@launch
                 if (exists) {
                     showFieldError(tvIDError, "Esta cédula ya está registrada.")
                     return@launch
                 }
 
-                // OK → guarda en VM y avanza a Paso 4
                 val data = personalData
                 if (data == null) {
                     showFieldError(tvIDError, "No se encontraron datos del personal para esa cédula.")
@@ -210,52 +207,46 @@ class Paso3Fragment : Fragment() {
                 (activity as? RegistroActivity)?.goToNextStep(3)
 
             } catch (_: Throwable) {
+                if (!isFragmentAlive()) return@launch
                 Toast.makeText(requireContext(), "No se pudo validar la cédula. Intenta de nuevo.", Toast.LENGTH_SHORT).show()
             } finally {
-                setLoading(false)
+                if (isFragmentAlive()) setLoading(false)
             }
         }
     }
 
     private fun setLoading(b: Boolean) {
+        if (!isFragmentAlive()) return
         btnContinueToStep4.isEnabled = !b
     }
 
     private fun showFieldError(tv: TextView, msg: String) {
+        if (!isFragmentAlive()) return
         tv.text = msg
         tv.visibility = View.VISIBLE
         Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show()
     }
 
     private fun clearErrors() {
-        tvFirstNameError.visibility = View.GONE
-        tvLastNameError.visibility = View.GONE
-        tvLastNameError2.visibility = View.GONE
-        tvIDError.visibility = View.GONE
+        _tvFirstNameError?.visibility = View.GONE
+        _tvLastNameError?.visibility = View.GONE
+        _tvLastNameError2?.visibility = View.GONE
+        _tvIDError?.visibility = View.GONE
     }
 
     private fun lockNameFields() {
-        etFirstName.isEnabled = false
-        etLastName.isEnabled = false
-        etLastName2.isEnabled = false
-        etFirstName.hint = getString(R.string.registro_paso3_hint_auto)
-        etLastName.hint = getString(R.string.registro_paso3_hint_auto)
-        etLastName2.hint = getString(R.string.registro_paso3_hint_auto)
-    }
-
-    private fun unlockNameFields() {
-        etFirstName.isEnabled = true
-        etLastName.isEnabled = true
-        etLastName2.isEnabled = true
-        etFirstName.hint = getString(R.string.registro_paso3_hint_nombre_manual)
-        etLastName.hint = getString(R.string.registro_paso3_hint_apellido1_manual)
-        etLastName2.hint = getString(R.string.registro_paso3_hint_apellido2_manual)
+        _etFirstName?.isEnabled = false
+        _etLastName?.isEnabled = false
+        _etLastName2?.isEnabled = false
+        _etFirstName?.hint = getString(R.string.registro_paso3_hint_auto)
+        _etLastName?.hint = getString(R.string.registro_paso3_hint_auto)
+        _etLastName2?.hint = getString(R.string.registro_paso3_hint_auto)
     }
 
     private fun clearNameFields() {
-        etFirstName.setText("")
-        etLastName.setText("")
-        etLastName2.setText("")
+        _etFirstName?.setText("")
+        _etLastName?.setText("")
+        _etLastName2?.setText("")
     }
 
     private fun lookupPersonalData(cedula: String) {
@@ -267,6 +258,7 @@ class Paso3Fragment : Fragment() {
                 val root = personalDb.get().await()
                 val base = if (root.hasChild("personal")) root.child("personal") else root
                 val person = base.child(cedula)
+                if (!isFragmentAlive()) return@launch
                 if (!person.exists()) {
                     personalData = null
                     clearNameFields()
@@ -275,6 +267,7 @@ class Paso3Fragment : Fragment() {
                 }
 
                 val parsed = parsePersonalData(person)
+                if (!isFragmentAlive()) return@launch
                 if (parsed == null) {
                     personalData = null
                     clearNameFields()
@@ -288,11 +281,12 @@ class Paso3Fragment : Fragment() {
                 etLastName2.setText(parsed.segundoApellido)
                 clearErrors()
             } catch (_: Throwable) {
+                if (!isFragmentAlive()) return@launch
                 personalData = null
                 clearNameFields()
                 showFieldError(tvIDError, "No se pudo validar la cédula. Intenta de nuevo.")
             } finally {
-                setLoading(false)
+                if (isFragmentAlive()) setLoading(false)
             }
         }
     }

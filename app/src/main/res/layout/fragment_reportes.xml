@@ -25,10 +25,7 @@
         android:layout_height="0dp"
         android:clipToPadding="false"
         android:fillViewport="true"
-        android:paddingStart="16dp"
-        android:paddingTop="16dp"
-        android:paddingEnd="16dp"
-        android:paddingBottom="132dp"
+        android:paddingBottom="100dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -37,122 +34,77 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:paddingTop="12dp">
 
+            <!-- ===== HERO HEADER ===== -->
             <com.google.android.material.card.MaterialCardView
-                android:id="@+id/cardFiltro"
-                style="@style/Tecni.Glass.Card"
+                android:id="@+id/cardHeader"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp">
+                android:layout_marginStart="16dp"
+                android:layout_marginEnd="16dp"
+                android:layout_marginBottom="12dp"
+                app:cardBackgroundColor="@android:color/transparent"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="10dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:background="@drawable/bg_report_header"
                     android:orientation="vertical"
-                    android:padding="16dp">
+                    android:padding="20dp">
 
                     <TextView
-                        android:id="@+id/tvFiltroTitulo"
-                        style="@style/TextAppearance.Material3.TitleSmall"
-                        android:layout_width="match_parent"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="@string/reportes_filtros_titulo"
-                        android:textStyle="bold" />
-
-
+                        android:fontFamily="sans-serif-medium"
+                        android:letterSpacing="0.12"
+                        android:text="ANALÍTICA DE CAMPO"
+                        android:textColor="#99FFFFFF"
+                        android:textSize="10sp" />
 
                     <TextView
+                        android:id="@+id/tvResumenTitulo"
+                        style="@style/TextAppearance.Material3.HeadlineSmall"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:text="@string/reportes_tipo_spinner_label"
-                        style="@style/TextAppearance.Material3.BodyMedium" />
-
-                    <Spinner
-                        android:id="@+id/spinnerTipoReporte"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:layout_marginBottom="16dp" />
+                        android:layout_marginTop="4dp"
+                        android:textColor="@android:color/white"
+                        android:textStyle="bold"
+                        tools:text="Mi Resumen" />
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
+                        android:layout_marginTop="4dp"
                         android:gravity="center_vertical"
                         android:orientation="horizontal">
 
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnCambiarFechas"
-                            style="@style/Tecni.Button.Outlined.Compact"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:ellipsize="end"
-                            android:maxLines="1"
-                            android:minHeight="40dp"
-                            android:paddingHorizontal="12dp"
-                            android:paddingVertical="8dp"
-                            android:text="@string/reportes_btn_rango"
-                            android:textSize="12sp"
-                            app:icon="@drawable/ic_calendar"
-                            app:iconGravity="textStart"
-                            app:iconPadding="8dp"
-                            app:iconSize="18dp" />
+                        <ImageView
+                            android:layout_width="14dp"
+                            android:layout_height="14dp"
+                            android:contentDescription="@null"
+                            android:src="@drawable/ic_calendar"
+                            app:tint="#80FFFFFF" />
 
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnGenerarReporte"
-                            style="@style/Tecni.Button.Primary"
-                            android:layout_width="0dp"
+                        <TextView
+                            android:id="@+id/tvResumenRango"
+                            style="@style/TextAppearance.Material3.BodyMedium"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginStart="12dp"
-                            android:layout_weight="1"
-                            android:text="@string/reportes_btn_generar"
-                            app:icon="@drawable/ic_play_arrow"
-                            app:iconGravity="textStart"
-                            app:iconPadding="8dp" />
+                            android:layout_marginStart="6dp"
+                            android:textColor="#B3FFFFFF"
+                            tools:text="01 jun 2026 – 05 jun 2026" />
                     </LinearLayout>
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
 
-
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/cardResumen"
-                style="@style/Tecni.Glass.Card"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
-
-                    <TextView
-                        android:id="@+id/tvResumenTitulo"
-                        style="@style/TextAppearance.Material3.TitleMedium"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:textStyle="bold"
-                        tools:text="Mi resumen" />
-
-                    <TextView
-                        android:id="@+id/tvResumenRango"
-                        style="@style/TextAppearance.Material3.BodyMedium"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:textColor="@color/dark_gray"
-                        tools:text="20 oct 2025 – 27 oct 2025" />
-
+                    <!-- Mini KPI row -->
                     <LinearLayout
                         android:id="@+id/resumenCardsContainer"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:gravity="center"
+                        android:layout_marginTop="16dp"
                         android:orientation="horizontal"
                         android:visibility="gone"
                         android:weightSum="3"
@@ -161,70 +113,56 @@
                         <LinearLayout
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:layout_marginEnd="8dp"
+                            android:layout_marginEnd="6dp"
                             android:layout_weight="1"
-                            android:background="@drawable/bg_report_summary_card"
+                            android:background="@drawable/bg_report_header_kpi"
                             android:orientation="vertical"
-                            android:padding="14dp">
-
-                            <ImageView
-                                android:layout_width="20dp"
-                                android:layout_height="20dp"
-                                android:contentDescription="@null"
-                                android:src="@drawable/ic_summary_case"
-                                app:tint="@color/ice_blue" />
+                            android:padding="12dp">
 
                             <TextView
                                 android:id="@+id/tvResumenTotalAverias"
                                 style="@style/TextAppearance.Material3.TitleLarge"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:layout_marginTop="6dp"
-                                android:textColor="@color/ice_blue_dark"
+                                android:textColor="@android:color/white"
+                                android:textStyle="bold"
                                 tools:text="5" />
 
                             <TextView
                                 android:id="@+id/tvResumenLabelAverias"
-                                style="@style/TextAppearance.Material3.BodySmall"
+                                style="@style/TextAppearance.Material3.LabelSmall"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="2dp"
-                                android:textColor="@color/dark_gray"
+                                android:textColor="#80FFFFFF"
                                 tools:text="Averías" />
                         </LinearLayout>
 
                         <LinearLayout
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:layout_marginEnd="8dp"
+                            android:layout_marginEnd="6dp"
                             android:layout_weight="1"
-                            android:background="@drawable/bg_report_summary_card"
+                            android:background="@drawable/bg_report_header_kpi"
                             android:orientation="vertical"
-                            android:padding="14dp">
-
-                            <ImageView
-                                android:layout_width="20dp"
-                                android:layout_height="20dp"
-                                android:contentDescription="@null"
-                                android:src="@drawable/ic_summary_material"
-                                app:tint="@color/success_500" />
+                            android:padding="12dp">
 
                             <TextView
                                 android:id="@+id/tvResumenTotalMateriales"
                                 style="@style/TextAppearance.Material3.TitleLarge"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:layout_marginTop="6dp"
-                                android:textColor="@color/success_500"
+                                android:textColor="@android:color/white"
+                                android:textStyle="bold"
                                 tools:text="12" />
 
                             <TextView
                                 android:id="@+id/tvResumenLabelMateriales"
-                                style="@style/TextAppearance.Material3.BodySmall"
+                                style="@style/TextAppearance.Material3.LabelSmall"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="2dp"
-                                android:textColor="@color/dark_gray"
+                                android:textColor="#80FFFFFF"
                                 tools:text="Materiales" />
                         </LinearLayout>
 
@@ -232,526 +170,1019 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:background="@drawable/bg_report_summary_card"
+                            android:background="@drawable/bg_report_header_kpi"
                             android:orientation="vertical"
-                            android:padding="14dp">
-
-                            <ImageView
-                                android:layout_width="20dp"
-                                android:layout_height="20dp"
-                                android:contentDescription="@null"
-                                android:src="@drawable/ic_summary_codes"
-                                app:tint="@color/ice_blue" />
+                            android:padding="12dp">
 
                             <TextView
                                 android:id="@+id/tvResumenTotalCodigos"
                                 style="@style/TextAppearance.Material3.TitleLarge"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:layout_marginTop="6dp"
-                                android:textColor="@color/ice_blue_dark"
+                                android:textColor="@android:color/white"
+                                android:textStyle="bold"
                                 tools:text="3" />
 
                             <TextView
                                 android:id="@+id/tvResumenLabelCodigos"
-                                style="@style/TextAppearance.Material3.BodySmall"
+                                style="@style/TextAppearance.Material3.LabelSmall"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="2dp"
-                                android:textColor="@color/dark_gray"
+                                android:textColor="#80FFFFFF"
                                 tools:text="Códigos" />
                         </LinearLayout>
                     </LinearLayout>
 
                     <TextView
                         android:id="@+id/tvResumenPlaceholder"
-                        style="@style/TextAppearance.Material3.BodyMedium"
+                        style="@style/TextAppearance.Material3.BodySmall"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="12dp"
-                        android:background="@drawable/bg_report_summary_card"
                         android:drawableStart="@drawable/ic_report_placeholder"
-                        android:drawablePadding="12dp"
+                        android:drawablePadding="8dp"
+                        android:drawableTint="#80FFFFFF"
                         android:gravity="center_vertical"
-                        android:padding="16dp"
                         android:text="@string/reportes_resumen_empty"
-                        android:textColor="@color/dark_gray"
+                        android:textColor="#80FFFFFF"
                         android:visibility="gone"
                         tools:visibility="gone" />
+
+                    <!-- Date range button only (sin botón Generar – auto-recalcula) -->
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnCambiarFechas"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="40dp"
+                        android:layout_marginTop="16dp"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:paddingHorizontal="12dp"
+                        android:text="@string/reportes_btn_rango"
+                        android:textColor="@android:color/white"
+                        android:textSize="12sp"
+                        app:icon="@drawable/ic_calendar"
+                        app:iconGravity="textStart"
+                        app:iconPadding="6dp"
+                        app:iconSize="15dp"
+                        app:iconTint="@android:color/white"
+                        app:strokeColor="#66FFFFFF" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
+            <!-- ===== SELECTOR DE TIPO DE REPORTE (Spinner) ===== -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/layoutSpinnerTipoReporte"
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginEnd="16dp"
+                android:layout_marginBottom="12dp"
+                android:hint="@string/reportes_selector_titulo">
+
+                <AutoCompleteTextView
+                    android:id="@+id/spinnerTipoReporte"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="none"
+                    android:text="@string/reportes_tipo_mi_resumen"
+                    tools:text="Mi resumen" />
+
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- ===== SECCIÓN: Mi Resumen ===== -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardMiResumen"
                 style="@style/Tecni.Glass.Card"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                tools:visibility="visible">
+                android:layout_marginStart="16dp"
+                android:layout_marginEnd="16dp"
+                android:layout_marginBottom="14dp">
 
-                <LinearLayout
+                <androidx.constraintlayout.widget.ConstraintLayout
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
+                    android:layout_height="wrap_content">
 
-                    <TextView
-                        android:id="@+id/tvTituloMiResumen"
-                        style="@style/TextAppearance.Material3.TitleMedium"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/reportes_mi_resumen_titulo"
-                        android:textStyle="bold" />
-
-                    <androidx.recyclerview.widget.RecyclerView
-                        android:id="@+id/recyclerMiResumen"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:nestedScrollingEnabled="false"
-                        android:overScrollMode="never"
-                        tools:listitem="@layout/item_reporte_kpi"
-                        tools:visibility="gone" />
-
-                    <TextView
-                        android:id="@+id/tvMiResumenVacio"
-                        style="@style/TextAppearance.Material3.BodyMedium"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:drawableStart="@drawable/ic_report_placeholder"
-                        android:drawablePadding="12dp"
-                        android:gravity="center_vertical"
-                        android:text="@string/reportes_estado_pendiente"
-                        tools:visibility="visible" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/cardMisAverias"
-                style="@style/Tecni.Card"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                android:visibility="gone">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
-
-                    <TextView
-                        android:id="@+id/tvTituloMisAverias"
-                        style="@style/TextAppearance.Material3.TitleMedium"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/reportes_mis_averias_titulo"
-                        android:textStyle="bold" />
-
-                    <androidx.recyclerview.widget.RecyclerView
-                        android:id="@+id/recyclerMisAverias"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:nestedScrollingEnabled="false"
-                        android:overScrollMode="never"
-                        tools:listitem="@layout/item_reporte_mis_averias"
-                        tools:visibility="gone" />
-
-                    <TextView
-                        android:id="@+id/tvMisAveriasVacio"
-                        style="@style/TextAppearance.Material3.BodyMedium"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:drawableStart="@drawable/ic_report_placeholder"
-                        android:drawablePadding="12dp"
-                        android:gravity="center_vertical"
-                        android:text="@string/reportes_estado_pendiente"
-                        tools:visibility="visible" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/cardMisLuminarias"
-                style="@style/Tecni.Card"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                android:visibility="gone">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
-
-                    <TextView
-                        android:id="@+id/tvTituloMisLuminarias"
-                        style="@style/TextAppearance.Material3.TitleMedium"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="@string/reportes_mis_luminarias_titulo"
-                        android:textStyle="bold" />
-
-                    <androidx.recyclerview.widget.RecyclerView
-                        android:id="@+id/recyclerMisLuminarias"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:nestedScrollingEnabled="false"
-                        android:overScrollMode="never"
-                        tools:listitem="@layout/item_reporte_mis_luminarias"
-                        tools:visibility="gone" />
-
-                    <TextView
-                        android:id="@+id/tvMisLuminariasVacio"
-                        style="@style/TextAppearance.Material3.BodyMedium"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:drawableStart="@drawable/ic_report_placeholder"
-                        android:drawablePadding="12dp"
-                        android:gravity="center_vertical"
-                        android:text="@string/reportes_estado_pendiente"
-                        tools:visibility="visible" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/cardMiInventario"
-                style="@style/Tecni.Card"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                android:visibility="gone">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
-
-                    <TextView
-                        android:id="@+id/tvTituloMiInventario"
-                        style="@style/TextAppearance.Material3.TitleMedium"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="@string/reportes_mi_inventario_titulo"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:id="@+id/tvInventarioCriticoTitulo"
-                        style="@style/TextAppearance.Material3.BodyLarge"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:text="@string/reportes_inventario_critico_titulo"
-                        android:textStyle="bold" />
-
-                    <androidx.recyclerview.widget.RecyclerView
-                        android:id="@+id/recyclerInventarioCritico"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:nestedScrollingEnabled="false"
-                        android:overScrollMode="never"
-                        tools:listitem="@layout/item_reporte_inventario"
-                        tools:visibility="gone" />
-
-                    <TextView
-                        android:id="@+id/tvInventarioCriticoVacio"
-                        style="@style/TextAppearance.Material3.BodyMedium"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:drawableStart="@drawable/ic_report_placeholder"
-                        android:drawablePadding="12dp"
-                        android:gravity="center_vertical"
-                        android:text="@string/reportes_inventario_critico_vacio"
-                        tools:visibility="visible" />
-
-                    <TextView
-                        android:id="@+id/tvInventarioGeneralTitulo"
-                        style="@style/TextAppearance.Material3.BodyLarge"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="16dp"
-                        android:text="@string/reportes_inventario_general_titulo"
-                        android:textStyle="bold" />
-
-                    <androidx.recyclerview.widget.RecyclerView
-                        android:id="@+id/recyclerInventarioGeneral"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:nestedScrollingEnabled="false"
-                        android:overScrollMode="never"
-                        tools:listitem="@layout/item_reporte_inventario"
-                        tools:visibility="gone" />
-
-                    <TextView
-                        android:id="@+id/tvInventarioGeneralVacio"
-                        style="@style/TextAppearance.Material3.BodyMedium"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:drawableStart="@drawable/ic_report_placeholder"
-                        android:drawablePadding="12dp"
-                        android:gravity="center_vertical"
-                        android:text="@string/reportes_inventario_general_vacio"
-                        tools:visibility="visible" />
-
-                    <TextView
-                        android:id="@+id/tvInventarioMovimientosTitulo"
-                        style="@style/TextAppearance.Material3.BodyLarge"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="16dp"
-                        android:text="@string/reportes_inventario_movimientos_titulo"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:id="@+id/tvInventarioMovimientosDetalle"
-                        style="@style/TextAppearance.Material3.BodyMedium"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:textColor="@color/dark_gray"
-                        tools:text="Entradas: 0 • Salidas: 4 • Neto: -4" />
-
-                    <TextView
-                        android:id="@+id/tvInventarioConsumosTitulo"
-                        style="@style/TextAppearance.Material3.BodyLarge"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="16dp"
-                        android:text="@string/reportes_inventario_consumos_titulo"
-                        android:textStyle="bold" />
-
-                    <androidx.recyclerview.widget.RecyclerView
-                        android:id="@+id/recyclerInventarioConsumos"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:nestedScrollingEnabled="false"
-                        android:overScrollMode="never"
-                        tools:listitem="@layout/item_reporte_inventario_consumo"
-                        tools:visibility="gone" />
-
-                    <TextView
-                        android:id="@+id/tvInventarioConsumosVacio"
-                        style="@style/TextAppearance.Material3.BodyMedium"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:drawableStart="@drawable/ic_report_placeholder"
-                        android:drawablePadding="12dp"
-                        android:gravity="center_vertical"
-                        android:text="@string/reportes_inventario_consumos_vacio"
-                        tools:visibility="visible" />
-
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/cardMiBitacora"
-                style="@style/Tecni.Card"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                android:visibility="gone">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
-
-                    <TextView
-                        android:id="@+id/tvTituloMiBitacora"
-                        style="@style/TextAppearance.Material3.TitleMedium"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="@string/reportes_mi_bitacora_titulo"
-                        android:textStyle="bold" />
+                    <View
+                        android:id="@+id/accentMiResumen"
+                        android:layout_width="4dp"
+                        android:layout_height="0dp"
+                        android:background="@color/ice_blue"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent" />
 
                     <LinearLayout
-                        android:id="@+id/bitacoraResumenContainer"
-                        android:layout_width="match_parent"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:orientation="vertical">
+                        android:layout_marginStart="4dp"
+                        android:orientation="vertical"
+                        android:padding="16dp"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toEndOf="@id/accentMiResumen"
+                        app:layout_constraintTop_toTopOf="parent">
 
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <FrameLayout
+                                android:layout_width="32dp"
+                                android:layout_height="32dp"
+                                android:background="@drawable/bg_report_icon_circle">
+
+                                <ImageView
+                                    android:layout_width="18dp"
+                                    android:layout_height="18dp"
+                                    android:layout_gravity="center"
+                                    android:contentDescription="@null"
+                                    android:src="@drawable/ic_summary_codes"
+                                    app:tint="@color/ice_blue_dark" />
+                            </FrameLayout>
+
+                            <TextView
+                                android:id="@+id/tvTituloMiResumen"
+                                style="@style/TextAppearance.Material3.TitleSmall"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="10dp"
+                                android:layout_weight="1"
+                                android:text="@string/reportes_mi_resumen_titulo"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+
+                        <!-- Placeholder/vacío -->
                         <TextView
-                            android:id="@+id/tvBitacoraHoras"
+                            android:id="@+id/tvMiResumenVacio"
                             style="@style/TextAppearance.Material3.BodyMedium"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            tools:text="Horas trabajadas: 12" />
+                            android:layout_marginTop="12dp"
+                            android:drawableStart="@drawable/ic_report_placeholder"
+                            android:drawablePadding="10dp"
+                            android:gravity="center_vertical"
+                            android:text="@string/reportes_estado_cargando"
+                            android:textColor="@color/dark_gray"
+                            android:visibility="gone" />
 
-                        <TextView
-                            android:id="@+id/tvBitacoraKm"
-                            style="@style/TextAppearance.Material3.BodyMedium"
+                        <!-- Contenedor de gráficas (visible cuando hay datos) -->
+                        <LinearLayout
+                            android:id="@+id/containerResumenCharts"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            tools:text="Km: 80" />
+                            android:orientation="vertical"
+                            android:visibility="gone"
+                            tools:visibility="visible">
 
-                        <TextView
-                            android:id="@+id/tvBitacoraAverias"
-                            style="@style/TextAppearance.Material3.BodyMedium"
+                            <!-- Gráfica 1 + 2: Averías y Luminarias en fila -->
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="12dp"
+                                android:orientation="horizontal"
+                                android:weightSum="2">
+
+                                <!-- Gráfica Averías -->
+                                <LinearLayout
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginEnd="6dp"
+                                    android:layout_weight="1"
+                                    android:background="@drawable/bg_card_subtle"
+                                    android:orientation="vertical"
+                                    android:padding="10dp">
+
+                                    <TextView
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="@string/reportes_chart_averias_titulo"
+                                        android:textColor="@color/ice_blue_dark"
+                                        android:textSize="11sp"
+                                        android:textStyle="bold" />
+
+                                    <com.github.mikephil.charting.charts.PieChart
+                                        android:id="@+id/chartAverias"
+                                        android:layout_width="match_parent"
+                                        android:layout_height="140dp"
+                                        android:layout_marginTop="4dp" />
+
+                                    <LinearLayout
+                                        android:layout_width="match_parent"
+                                        android:layout_height="wrap_content"
+                                        android:orientation="horizontal"
+                                        android:gravity="center">
+
+                                        <TextView
+                                            android:id="@+id/tvAveriasAtendidas"
+                                            android:layout_width="wrap_content"
+                                            android:layout_height="wrap_content"
+                                            android:textSize="10sp"
+                                            android:textColor="#4CAF50"
+                                            tools:text="5 Atendidas" />
+
+                                        <TextView
+                                            android:layout_width="wrap_content"
+                                            android:layout_height="wrap_content"
+                                            android:layout_marginStart="6dp"
+                                            android:layout_marginEnd="6dp"
+                                            android:text="·"
+                                            android:textSize="10sp" />
+
+                                        <TextView
+                                            android:id="@+id/tvAveriasPendientes"
+                                            android:layout_width="wrap_content"
+                                            android:layout_height="wrap_content"
+                                            android:textSize="10sp"
+                                            android:textColor="#F44336"
+                                            tools:text="2 Pendientes" />
+                                    </LinearLayout>
+                                </LinearLayout>
+
+                                <!-- Gráfica Luminarias -->
+                                <LinearLayout
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginStart="6dp"
+                                    android:layout_weight="1"
+                                    android:background="@drawable/bg_card_subtle"
+                                    android:orientation="vertical"
+                                    android:padding="10dp">
+
+                                    <TextView
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="@string/reportes_chart_luminarias_titulo"
+                                        android:textColor="#F57C00"
+                                        android:textSize="11sp"
+                                        android:textStyle="bold" />
+
+                                    <com.github.mikephil.charting.charts.PieChart
+                                        android:id="@+id/chartLuminarias"
+                                        android:layout_width="match_parent"
+                                        android:layout_height="140dp"
+                                        android:layout_marginTop="4dp" />
+
+                                    <LinearLayout
+                                        android:layout_width="match_parent"
+                                        android:layout_height="wrap_content"
+                                        android:orientation="horizontal"
+                                        android:gravity="center">
+
+                                        <TextView
+                                            android:id="@+id/tvLuminariasReparadas"
+                                            android:layout_width="wrap_content"
+                                            android:layout_height="wrap_content"
+                                            android:textSize="10sp"
+                                            android:textColor="#4CAF50"
+                                            tools:text="3 Reparadas" />
+
+                                        <TextView
+                                            android:layout_width="wrap_content"
+                                            android:layout_height="wrap_content"
+                                            android:layout_marginStart="6dp"
+                                            android:layout_marginEnd="6dp"
+                                            android:text="·"
+                                            android:textSize="10sp" />
+
+                                        <TextView
+                                            android:id="@+id/tvLuminariasPendientes"
+                                            android:layout_width="wrap_content"
+                                            android:layout_height="wrap_content"
+                                            android:textSize="10sp"
+                                            android:textColor="#FF9800"
+                                            tools:text="1 Pendiente" />
+                                    </LinearLayout>
+                                </LinearLayout>
+                            </LinearLayout>
+
+                            <!-- Gráfica 3: Horas semanales -->
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="12dp"
+                                android:background="@drawable/bg_card_subtle"
+                                android:orientation="vertical"
+                                android:padding="10dp">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/reportes_chart_horas_titulo"
+                                    android:textColor="@color/ice_blue_dark"
+                                    android:textSize="11sp"
+                                    android:textStyle="bold" />
+
+                                <TextView
+                                    android:id="@+id/tvSemanaLabel"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="2dp"
+                                    android:textSize="10sp"
+                                    android:textColor="@color/dark_gray"
+                                    tools:text="Semana: lun 1 jun – dom 7 jun 2026" />
+
+                                <com.github.mikephil.charting.charts.BarChart
+                                    android:id="@+id/chartHorasSemanales"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="160dp"
+                                    android:layout_marginTop="8dp" />
+                            </LinearLayout>
+
+                            <!-- Gráfica 4: Órdenes de trabajo -->
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="12dp"
+                                android:background="@drawable/bg_card_subtle"
+                                android:orientation="vertical"
+                                android:padding="10dp">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/reportes_chart_ordenes_titulo"
+                                    android:textColor="@color/ice_blue_dark"
+                                    android:textSize="11sp"
+                                    android:textStyle="bold" />
+
+                                <com.github.mikephil.charting.charts.HorizontalBarChart
+                                    android:id="@+id/chartOrdenes"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="100dp"
+                                    android:layout_marginTop="8dp" />
+
+                                <LinearLayout
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="4dp"
+                                    android:orientation="horizontal"
+                                    android:gravity="center">
+
+                                    <TextView
+                                        android:id="@+id/tvOrdenesAsignadas"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:textSize="10sp"
+                                        android:textColor="#FF9800"
+                                        tools:text="4 Asignadas" />
+
+                                    <TextView
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:layout_marginStart="6dp"
+                                        android:layout_marginEnd="6dp"
+                                        android:text="·"
+                                        android:textSize="10sp" />
+
+                                    <TextView
+                                        android:id="@+id/tvOrdenesEjecutadas"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:textSize="10sp"
+                                        android:textColor="#4CAF50"
+                                        tools:text="7 Ejecutadas" />
+                                </LinearLayout>
+                            </LinearLayout>
+
+                            <!-- Botón Exportar PDF (solo Mi Resumen) -->
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnExportarResumenPdf"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="16dp"
+                                android:text="@string/reportes_btn_exportar_pdf_resumen"
+                                app:icon="@drawable/ic_report_placeholder"
+                                app:iconGravity="textStart" />
+
+                        </LinearLayout>
+
+                        <!-- RecyclerView KPI (oculto, compatible con exportador) -->
+                        <androidx.recyclerview.widget.RecyclerView
+                            android:id="@+id/recyclerMiResumen"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            tools:text="Averías atendidas: 5" />
-
-                        <TextView
-                            android:id="@+id/tvBitacoraLuminarias"
-                            style="@style/TextAppearance.Material3.BodyMedium"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            tools:text="Luminarias reparadas: 4" />
-
-                        <TextView
-                            android:id="@+id/tvBitacoraLabores"
-                            style="@style/TextAppearance.Material3.BodyMedium"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            tools:text="Labores ejecutadas: 3" />
-
-                        <TextView
-                            android:id="@+id/tvBitacoraKmInicial"
-                            style="@style/TextAppearance.Material3.BodyMedium"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            tools:text="Kilometraje inicial: 25010" />
-
-                        <TextView
-                            android:id="@+id/tvBitacoraKmFinal"
-                            style="@style/TextAppearance.Material3.BodyMedium"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            tools:text="Kilometraje final: 25090" />
-
-                        <TextView
-                            android:id="@+id/tvBitacoraMaterial"
-                            style="@style/TextAppearance.Material3.BodyMedium"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            tools:text="Material top 5: Cable, Fusible" />
+                            android:layout_marginTop="8dp"
+                            android:nestedScrollingEnabled="false"
+                            android:overScrollMode="never"
+                            android:visibility="gone"
+                            tools:listitem="@layout/item_reporte_kpi" />
                     </LinearLayout>
-
-                    <androidx.recyclerview.widget.RecyclerView
-                        android:id="@+id/recyclerBitacora"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:nestedScrollingEnabled="false"
-                        android:overScrollMode="never"
-                        tools:listitem="@layout/item_etm_registro"
-                        tools:visibility="gone" />
-
-                    <TextView
-                        android:id="@+id/tvBitacoraVacio"
-                        style="@style/TextAppearance.Material3.BodyMedium"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:drawableStart="@drawable/ic_report_placeholder"
-                        android:drawablePadding="12dp"
-                        android:gravity="center_vertical"
-                        android:text="@string/reportes_estado_pendiente"
-                        tools:visibility="visible" />
-                </LinearLayout>
+                </androidx.constraintlayout.widget.ConstraintLayout>
             </com.google.android.material.card.MaterialCardView>
+
+            <!-- ===== SECCIÓN: Mis Averías ===== -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardMisAverias"
+                style="@style/Tecni.Glass.Card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginEnd="16dp"
+                android:layout_marginBottom="14dp"
+                android:visibility="gone">
+
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <View
+                        android:id="@+id/accentMisAverias"
+                        android:layout_width="4dp"
+                        android:layout_height="0dp"
+                        android:background="@color/danger_red"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:orientation="vertical"
+                        android:padding="16dp"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toEndOf="@id/accentMisAverias"
+                        app:layout_constraintTop_toTopOf="parent">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <FrameLayout
+                                android:layout_width="32dp"
+                                android:layout_height="32dp"
+                                android:background="@drawable/bg_report_file_pdf">
+
+                                <ImageView
+                                    android:layout_width="18dp"
+                                    android:layout_height="18dp"
+                                    android:layout_gravity="center"
+                                    android:contentDescription="@null"
+                                    android:src="@drawable/ic_summary_case"
+                                    app:tint="@color/danger_red" />
+                            </FrameLayout>
+
+                            <TextView
+                                android:id="@+id/tvTituloMisAverias"
+                                style="@style/TextAppearance.Material3.TitleSmall"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="10dp"
+                                android:layout_weight="1"
+                                android:text="@string/reportes_mis_averias_titulo"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+
+                        <androidx.recyclerview.widget.RecyclerView
+                            android:id="@+id/recyclerMisAverias"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="12dp"
+                            android:nestedScrollingEnabled="false"
+                            android:overScrollMode="never"
+                            tools:listitem="@layout/item_reporte_mis_averias"
+                            tools:visibility="gone" />
+
+                        <TextView
+                            android:id="@+id/tvMisAveriasVacio"
+                            style="@style/TextAppearance.Material3.BodyMedium"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="12dp"
+                            android:drawableStart="@drawable/ic_report_placeholder"
+                            android:drawablePadding="10dp"
+                            android:gravity="center_vertical"
+                            android:text="@string/reportes_estado_pendiente"
+                            android:textColor="@color/dark_gray"
+                            tools:visibility="visible" />
+                    </LinearLayout>
+                </androidx.constraintlayout.widget.ConstraintLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- ===== SECCIÓN: Mis Luminarias ===== -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardMisLuminarias"
+                style="@style/Tecni.Glass.Card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginEnd="16dp"
+                android:layout_marginBottom="14dp"
+                android:visibility="gone">
+
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <View
+                        android:id="@+id/accentMisLuminarias"
+                        android:layout_width="4dp"
+                        android:layout_height="0dp"
+                        android:background="@color/success_green"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:orientation="vertical"
+                        android:padding="16dp"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toEndOf="@id/accentMisLuminarias"
+                        app:layout_constraintTop_toTopOf="parent">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <FrameLayout
+                                android:layout_width="32dp"
+                                android:layout_height="32dp"
+                                android:background="@drawable/bg_report_file_excel">
+
+                                <ImageView
+                                    android:layout_width="18dp"
+                                    android:layout_height="18dp"
+                                    android:layout_gravity="center"
+                                    android:contentDescription="@null"
+                                    android:src="@drawable/ic_poste"
+                                    app:tint="@color/success_green" />
+                            </FrameLayout>
+
+                            <TextView
+                                android:id="@+id/tvTituloMisLuminarias"
+                                style="@style/TextAppearance.Material3.TitleSmall"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="10dp"
+                                android:layout_weight="1"
+                                android:text="@string/reportes_mis_luminarias_titulo"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+
+                        <androidx.recyclerview.widget.RecyclerView
+                            android:id="@+id/recyclerMisLuminarias"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="12dp"
+                            android:nestedScrollingEnabled="false"
+                            android:overScrollMode="never"
+                            tools:listitem="@layout/item_reporte_mis_luminarias"
+                            tools:visibility="gone" />
+
+                        <TextView
+                            android:id="@+id/tvMisLuminariasVacio"
+                            style="@style/TextAppearance.Material3.BodyMedium"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="12dp"
+                            android:drawableStart="@drawable/ic_report_placeholder"
+                            android:drawablePadding="10dp"
+                            android:gravity="center_vertical"
+                            android:text="@string/reportes_estado_pendiente"
+                            android:textColor="@color/dark_gray"
+                            tools:visibility="visible" />
+                    </LinearLayout>
+                </androidx.constraintlayout.widget.ConstraintLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- ===== SECCIÓN: Mi Inventario ===== -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardMiInventario"
+                style="@style/Tecni.Glass.Card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginEnd="16dp"
+                android:layout_marginBottom="14dp"
+                android:visibility="gone">
+
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <View
+                        android:id="@+id/accentMiInventario"
+                        android:layout_width="4dp"
+                        android:layout_height="0dp"
+                        android:background="@color/chip_asignada"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:orientation="vertical"
+                        android:padding="16dp"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toEndOf="@id/accentMiInventario"
+                        app:layout_constraintTop_toTopOf="parent">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <FrameLayout
+                                android:layout_width="32dp"
+                                android:layout_height="32dp"
+                                android:background="@drawable/bg_report_file_warning">
+
+                                <ImageView
+                                    android:layout_width="18dp"
+                                    android:layout_height="18dp"
+                                    android:layout_gravity="center"
+                                    android:contentDescription="@null"
+                                    android:src="@drawable/ic_summary_material"
+                                    app:tint="@color/chip_asignada" />
+                            </FrameLayout>
+
+                            <TextView
+                                android:id="@+id/tvTituloMiInventario"
+                                style="@style/TextAppearance.Material3.TitleSmall"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="10dp"
+                                android:layout_weight="1"
+                                android:text="@string/reportes_mi_inventario_titulo"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+
+                        <!-- Crítico -->
+                        <TextView
+                            android:id="@+id/tvInventarioCriticoTitulo"
+                            style="@style/TextAppearance.Material3.LabelLarge"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="14dp"
+                            android:drawableStart="@drawable/ic_warning"
+                            android:drawablePadding="6dp"
+                            android:drawableTint="@color/danger_red"
+                            android:gravity="center_vertical"
+                            android:text="@string/reportes_inventario_critico_titulo"
+                            android:textColor="@color/danger_red"
+                            android:textStyle="bold" />
+
+                        <androidx.recyclerview.widget.RecyclerView
+                            android:id="@+id/recyclerInventarioCritico"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:nestedScrollingEnabled="false"
+                            android:overScrollMode="never"
+                            tools:listitem="@layout/item_reporte_inventario"
+                            tools:visibility="gone" />
+
+                        <TextView
+                            android:id="@+id/tvInventarioCriticoVacio"
+                            style="@style/TextAppearance.Material3.BodyMedium"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:drawableStart="@drawable/ic_report_placeholder"
+                            android:drawablePadding="10dp"
+                            android:gravity="center_vertical"
+                            android:text="@string/reportes_inventario_critico_vacio"
+                            android:textColor="@color/dark_gray"
+                            tools:visibility="visible" />
+
+                        <!-- General -->
+                        <TextView
+                            android:id="@+id/tvInventarioGeneralTitulo"
+                            style="@style/TextAppearance.Material3.LabelLarge"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="16dp"
+                            android:text="@string/reportes_inventario_general_titulo"
+                            android:textStyle="bold" />
+
+                        <androidx.recyclerview.widget.RecyclerView
+                            android:id="@+id/recyclerInventarioGeneral"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:nestedScrollingEnabled="false"
+                            android:overScrollMode="never"
+                            tools:listitem="@layout/item_reporte_inventario"
+                            tools:visibility="gone" />
+
+                        <TextView
+                            android:id="@+id/tvInventarioGeneralVacio"
+                            style="@style/TextAppearance.Material3.BodyMedium"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:drawableStart="@drawable/ic_report_placeholder"
+                            android:drawablePadding="10dp"
+                            android:gravity="center_vertical"
+                            android:text="@string/reportes_inventario_general_vacio"
+                            android:textColor="@color/dark_gray"
+                            tools:visibility="visible" />
+
+                        <!-- Movimientos -->
+                        <TextView
+                            android:id="@+id/tvInventarioMovimientosTitulo"
+                            style="@style/TextAppearance.Material3.LabelLarge"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="16dp"
+                            android:text="@string/reportes_inventario_movimientos_titulo"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tvInventarioMovimientosDetalle"
+                            style="@style/TextAppearance.Material3.BodyMedium"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:textColor="@color/dark_gray"
+                            tools:text="Entradas: 0 · Salidas: 4 · Neto: -4" />
+
+                        <!-- Consumos -->
+                        <TextView
+                            android:id="@+id/tvInventarioConsumosTitulo"
+                            style="@style/TextAppearance.Material3.LabelLarge"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="16dp"
+                            android:text="@string/reportes_inventario_consumos_titulo"
+                            android:textStyle="bold" />
+
+                        <androidx.recyclerview.widget.RecyclerView
+                            android:id="@+id/recyclerInventarioConsumos"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:nestedScrollingEnabled="false"
+                            android:overScrollMode="never"
+                            tools:listitem="@layout/item_reporte_inventario_consumo"
+                            tools:visibility="gone" />
+
+                        <TextView
+                            android:id="@+id/tvInventarioConsumosVacio"
+                            style="@style/TextAppearance.Material3.BodyMedium"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:drawableStart="@drawable/ic_report_placeholder"
+                            android:drawablePadding="10dp"
+                            android:gravity="center_vertical"
+                            android:text="@string/reportes_inventario_consumos_vacio"
+                            android:textColor="@color/dark_gray"
+                            tools:visibility="visible" />
+
+                        <!-- Separador -->
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:layout_marginTop="16dp"
+                            android:layout_marginBottom="4dp"
+                            android:background="#15000000" />
+
+                        <!-- Botón Generar descargo de material -->
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnGenerarDescargo"
+                            style="@style/Widget.Material3.Button.TonalButton"
+                            android:layout_width="match_parent"
+                            android:layout_height="48dp"
+                            android:layout_marginTop="8dp"
+                            android:text="@string/reportes_inventario_generar_descargo"
+                            android:textSize="13sp"
+                            app:backgroundTint="#1A004C8C"
+                            app:icon="@drawable/ic_summary_material"
+                            app:iconGravity="textStart"
+                            app:iconPadding="8dp"
+                            app:iconSize="18dp"
+                            app:iconTint="@color/ice_blue_dark"
+                            app:strokeColor="@color/ice_blue_dark"
+                            app:strokeWidth="1dp" />
+
+                    </LinearLayout>
+                </androidx.constraintlayout.widget.ConstraintLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- ===== SECCIÓN: Mi Bitácora / ETM ===== -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardMiBitacora"
+                style="@style/Tecni.Glass.Card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="16dp"
+                android:layout_marginEnd="16dp"
+                android:layout_marginBottom="14dp"
+                android:visibility="gone">
+
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <View
+                        android:id="@+id/accentMiBitacora"
+                        android:layout_width="4dp"
+                        android:layout_height="0dp"
+                        android:background="@color/ice_cyan"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:orientation="vertical"
+                        android:padding="16dp"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toEndOf="@id/accentMiBitacora"
+                        app:layout_constraintTop_toTopOf="parent">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <FrameLayout
+                                android:layout_width="32dp"
+                                android:layout_height="32dp"
+                                android:background="@drawable/bg_report_file_email">
+
+                                <ImageView
+                                    android:layout_width="18dp"
+                                    android:layout_height="18dp"
+                                    android:layout_gravity="center"
+                                    android:contentDescription="@null"
+                                    android:src="@drawable/ic_report_clock"
+                                    app:tint="@color/ice_cyan" />
+                            </FrameLayout>
+
+                            <TextView
+                                android:id="@+id/tvTituloMiBitacora"
+                                style="@style/TextAppearance.Material3.TitleSmall"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="10dp"
+                                android:layout_weight="1"
+                                android:text="@string/reportes_mi_bitacora_titulo"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+
+                        <!-- Resumen de bitácora -->
+                        <LinearLayout
+                            android:id="@+id/bitacoraResumenContainer"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="12dp"
+                            android:background="@drawable/bg_report_summary_card"
+                            android:orientation="vertical"
+                            android:padding="12dp">
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal"
+                                android:weightSum="2">
+
+                                <LinearLayout
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:orientation="vertical">
+
+                                    <TextView
+                                        android:id="@+id/tvBitacoraHoras"
+                                        style="@style/TextAppearance.Material3.BodySmall"
+                                        android:layout_width="match_parent"
+                                        android:layout_height="wrap_content"
+                                        android:textColor="@color/on_surface"
+                                        tools:text="Horas: 12" />
+
+                                    <TextView
+                                        android:id="@+id/tvBitacoraKm"
+                                        style="@style/TextAppearance.Material3.BodySmall"
+                                        android:layout_width="match_parent"
+                                        android:layout_height="wrap_content"
+                                        android:layout_marginTop="4dp"
+                                        android:textColor="@color/on_surface"
+                                        tools:text="Km: 80" />
+
+                                    <TextView
+                                        android:id="@+id/tvBitacoraAverias"
+                                        style="@style/TextAppearance.Material3.BodySmall"
+                                        android:layout_width="match_parent"
+                                        android:layout_height="wrap_content"
+                                        android:layout_marginTop="4dp"
+                                        android:textColor="@color/on_surface"
+                                        tools:text="Averías: 5" />
+
+                                    <TextView
+                                        android:id="@+id/tvBitacoraLuminarias"
+                                        style="@style/TextAppearance.Material3.BodySmall"
+                                        android:layout_width="match_parent"
+                                        android:layout_height="wrap_content"
+                                        android:layout_marginTop="4dp"
+                                        android:textColor="@color/on_surface"
+                                        tools:text="Luminarias: 4" />
+                                </LinearLayout>
+
+                                <LinearLayout
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:orientation="vertical">
+
+                                    <TextView
+                                        android:id="@+id/tvBitacoraLabores"
+                                        style="@style/TextAppearance.Material3.BodySmall"
+                                        android:layout_width="match_parent"
+                                        android:layout_height="wrap_content"
+                                        android:textColor="@color/on_surface"
+                                        tools:text="Labores: 3" />
+
+                                    <TextView
+                                        android:id="@+id/tvBitacoraKmInicial"
+                                        style="@style/TextAppearance.Material3.BodySmall"
+                                        android:layout_width="match_parent"
+                                        android:layout_height="wrap_content"
+                                        android:layout_marginTop="4dp"
+                                        android:textColor="@color/on_surface"
+                                        tools:text="Km inicial: 25010" />
+
+                                    <TextView
+                                        android:id="@+id/tvBitacoraKmFinal"
+                                        style="@style/TextAppearance.Material3.BodySmall"
+                                        android:layout_width="match_parent"
+                                        android:layout_height="wrap_content"
+                                        android:layout_marginTop="4dp"
+                                        android:textColor="@color/on_surface"
+                                        tools:text="Km final: 25090" />
+
+                                    <TextView
+                                        android:id="@+id/tvBitacoraMaterial"
+                                        style="@style/TextAppearance.Material3.BodySmall"
+                                        android:layout_width="match_parent"
+                                        android:layout_height="wrap_content"
+                                        android:layout_marginTop="4dp"
+                                        android:textColor="@color/on_surface"
+                                        tools:text="Top: Cable, Fusible" />
+                                </LinearLayout>
+                            </LinearLayout>
+                        </LinearLayout>
+
+                        <androidx.recyclerview.widget.RecyclerView
+                            android:id="@+id/recyclerBitacora"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="12dp"
+                            android:nestedScrollingEnabled="false"
+                            android:overScrollMode="never"
+                            tools:listitem="@layout/item_etm_registro"
+                            tools:visibility="gone" />
+
+                        <TextView
+                            android:id="@+id/tvBitacoraVacio"
+                            style="@style/TextAppearance.Material3.BodyMedium"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="12dp"
+                            android:drawableStart="@drawable/ic_report_placeholder"
+                            android:drawablePadding="10dp"
+                            android:gravity="center_vertical"
+                            android:text="@string/reportes_estado_pendiente"
+                            android:textColor="@color/dark_gray"
+                            tools:visibility="visible" />
+                    </LinearLayout>
+                </androidx.constraintlayout.widget.ConstraintLayout>
+            </com.google.android.material.card.MaterialCardView>
+
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 
-    <View
-        android:id="@+id/speedDialScrim"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:background="#80000000"
-        android:visibility="gone"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <LinearLayout
-        android:id="@+id/speedDialActions"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:gravity="end"
-        android:orientation="vertical"
-        android:padding="16dp"
-        android:visibility="gone"
-        app:layout_constraintBottom_toTopOf="@id/fabSpeedDial"
-        app:layout_constraintEnd_toEndOf="parent">
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/actionExportExcel"
-            style="@style/Widget.Material3.Button.OutlinedButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"
-            android:text="@string/reportes_action_export_excel"
-            app:icon="@drawable/ic_excel"
-            app:iconGravity="textStart"
-            app:iconPadding="8dp" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/actionExportPdf"
-            style="@style/Widget.Material3.Button.OutlinedButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"
-            android:text="@string/reportes_action_export_pdf"
-            app:icon="@drawable/ic_pdf"
-            app:iconGravity="textStart"
-            app:iconPadding="8dp" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/actionShareLast"
-            style="@style/Widget.Material3.Button.OutlinedButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"
-            android:text="@string/reportes_action_share_last"
-            app:icon="@drawable/ic_share"
-            app:iconGravity="textStart"
-            app:iconPadding="8dp" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/actionHistory"
-            style="@style/Widget.Material3.Button.OutlinedButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="12dp"
-            android:text="@string/reportes_action_history"
-            app:icon="@drawable/ic_history"
-            app:iconGravity="textStart"
-            app:iconPadding="8dp" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/actionConfig"
-            style="@style/Widget.Material3.Button.OutlinedButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/reportes_action_config"
-            app:icon="@drawable/ic_settings"
-            app:iconGravity="textStart"
-            app:iconPadding="8dp" />
-    </LinearLayout>
-
+    <!-- FAB único de exportar -->
     <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fabSpeedDial"
+        android:id="@+id/fabExportar"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:contentDescription="@string/reportes_action_fab"
         android:layout_margin="16dp"
+        android:contentDescription="@string/reportes_action_fab"
+        android:visibility="gone"
         app:backgroundTint="@color/ice_blue"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:srcCompat="@drawable/ic_add" />
+        app:srcCompat="@drawable/ic_share"
+        app:tint="@android:color/white" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -1,75 +1,65 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="16dp"
     tools:context=".ui.inventario.InventarioFragment">
 
-    <LinearLayout
+    <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:layout_height="match_parent"
+        android:padding="16dp">
 
-        <com.google.android.material.card.MaterialCardView
-            style="@style/Tecni.Glass.Card"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp">
+            android:orientation="vertical">
 
-            <LinearLayout
+            <com.google.android.material.card.MaterialCardView
+                style="@style/Tecni.Glass.Card"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <TextView
-                    style="@style/TextAppearance.Material3.TitleMedium"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:drawableStart="@drawable/ic_summary_material"
-                    android:drawablePadding="8dp"
-                    android:text="@string/inventario_gestion_titulo"
-                    android:textStyle="bold" />
-
-                <TextView
-                    style="@style/TextAppearance.Material3.BodyMedium"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:text="@string/inventario_gestion_descripcion" />
-
-                <com.google.android.material.textfield.MaterialAutoCompleteTextView
-                    android:id="@+id/spVehiculos"
-                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:hint="Vehículo"
-                    android:inputType="none"
-                    android:editable="false" />
+                android:layout_marginBottom="16dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:orientation="vertical">
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        style="@style/TextAppearance.Material3.TitleMedium"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:drawableStart="@drawable/ic_summary_material"
+                        android:drawablePadding="8dp"
+                        android:text="@string/inventario_gestion_titulo"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        style="@style/TextAppearance.Material3.BodyMedium"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="@string/inventario_gestion_descripcion" />
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:gravity="center_vertical"
                         android:orientation="horizontal">
 
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnImportarCsv"
-                            style="@style/Tecni.Button"
+                        <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                            android:id="@+id/spVehiculos"
+                            style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:text="@string/inventario_importar_csv"
-                            app:icon="@drawable/ic_excel"
-                            app:iconPadding="8dp" />
+                            android:editable="false"
+                            android:hint="Vehículo"
+                            android:inputType="none" />
 
                         <ProgressBar
                             android:id="@+id/progressInventario"
@@ -79,21 +69,8 @@
                             android:layout_marginStart="8dp"
                             android:visibility="gone" />
                     </LinearLayout>
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnImportarPdf"
-                        style="@style/Tecni.Button"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:text="@string/inventario_importar_pdf"
-                        app:icon="@drawable/ic_menu_reportes"
-                        app:iconPadding="8dp" />
                 </LinearLayout>
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-
+            </com.google.android.material.card.MaterialCardView>
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -130,5 +107,106 @@
                     android:visibility="gone" />
             </LinearLayout>
 
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+    <!-- FAB speed-dial (bottom-right) -->
+    <LinearLayout
+        android:id="@+id/layoutFabGroup"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_marginBottom="24dp"
+        android:layout_marginEnd="20dp"
+        android:gravity="end"
+        android:orientation="vertical">
+
+        <!-- Mini FABs (collapsible) -->
+        <LinearLayout
+            android:id="@+id/layoutFabMiniGroup"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:gravity="end"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <!-- Cargar CSV -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="10dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="10dp"
+                    android:background="@drawable/bg_fab_label"
+                    android:paddingStart="12dp"
+                    android:paddingTop="7dp"
+                    android:paddingEnd="12dp"
+                    android:paddingBottom="7dp"
+                    android:text="@string/inventario_importar_csv"
+                    android:textColor="@color/on_dark"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+
+                <com.google.android.material.floatingactionbutton.FloatingActionButton
+                    android:id="@+id/btnFabCsv"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:contentDescription="@string/inventario_importar_csv"
+                    android:src="@drawable/ic_excel"
+                    app:backgroundTint="@color/chip_resuelta"
+                    app:fabSize="mini"
+                    app:tint="@color/averia_notification_chip_text" />
+            </LinearLayout>
+
+            <!-- Cargar PDF -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="10dp"
+                    android:background="@drawable/bg_fab_label"
+                    android:paddingStart="12dp"
+                    android:paddingTop="7dp"
+                    android:paddingEnd="12dp"
+                    android:paddingBottom="7dp"
+                    android:text="@string/inventario_importar_pdf"
+                    android:textColor="@color/on_dark"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+
+                <com.google.android.material.floatingactionbutton.FloatingActionButton
+                    android:id="@+id/btnFabPdf"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:contentDescription="@string/inventario_importar_pdf"
+                    android:src="@drawable/ic_menu_reportes"
+                    app:backgroundTint="@color/error"
+                    app:fabSize="mini"
+                    app:tint="@color/averia_notification_chip_text" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Main FAB -->
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/btnFabMain"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:contentDescription="@string/inventario_importar_csv"
+            android:src="@drawable/ic_add"
+            app:backgroundTint="@color/admin_header_end"
+            app:fabSize="normal"
+            app:tint="@color/white" />
     </LinearLayout>
-</androidx.core.widget.NestedScrollView>
+
+</FrameLayout>

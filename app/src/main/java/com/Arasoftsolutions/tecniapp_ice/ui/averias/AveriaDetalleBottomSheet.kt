@@ -10,7 +10,6 @@ import androidx.core.content.FileProvider
 import androidx.activity.result.contract.ActivityResultContracts
 import android.widget.LinearLayout
 import android.widget.ImageView
-import android.widget.AdapterView
 import android.net.Uri
 import android.content.Intent
 import android.graphics.Color
@@ -46,7 +45,6 @@ import com.google.android.material.button.MaterialButton
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
-import androidx.navigation.findNavController
 import com.Arasoftsolutions.tecniapp_ice.ui.admin.MapCoordinatePickerBottomSheet.Companion.TAG
 import com.Arasoftsolutions.tecniapp_ice.ui.materiales.MaterialMetadataRules
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -94,6 +92,7 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
     private var ultimoKmRegistrado: Double? = null
     private var vehiculosAdapter: ArrayAdapter<String>? = null
     private var vehiculosOpciones: List<String> = emptyList()
+    private var vehiculoSeleccionado: String? = null
     private var tecnicosAdapter: TecnicoAdapter? = null
     private val evidencias = mutableListOf<EvidenciaFoto>()
     private var pendingCameraUri: Uri? = null
@@ -306,6 +305,11 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
 
         b.etHoraInicio.setOnClickListener {
             if (!horaInicioEditable) return@setOnClickListener
+            if (vehiculoSeleccionado.isNullOrBlank()) {
+                b.tilVehiculo.error = getString(R.string.averia_error_vehiculo_requerido)
+                Snackbar.make(b.root, R.string.averia_error_vehiculo_requerido, Snackbar.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
             openTimePicker { h, m ->
                 b.etHoraInicio.setText(String.format(Locale.getDefault(), "%02d:%02d", h, m))
             }
@@ -386,22 +390,34 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
                 vm.vehiculosDisponibles.collectLatest { lista ->
-                    val opcionesBase = lista.mapNotNull { vehiculo ->
-                        vehiculo.placa.trim().takeIf { it.isNotEmpty() }
+                    val opcionesBase = lista.mapNotNull { v ->
+                        v.placa.trim().takeIf { it.isNotEmpty() }
                     }.distinct()
-                    val opciones = listOf(getString(R.string.averia_spinner_select_vehicle)) + opcionesBase
-                    vehiculosOpciones = opciones
-                    val adapter = vehiculosAdapter ?: ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, mutableListOf<String>()).also {
-                        it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+                    vehiculosOpciones = opcionesBase
+                    val adapter = vehiculosAdapter ?: ArrayAdapter(
+                        requireContext(),
+                        android.R.layout.simple_dropdown_item_1line,
+                        mutableListOf<String>()
+                    ).also {
                         vehiculosAdapter = it
-                        b.spinnerVehiculo.adapter = it
+                        b.actvVehiculo.setAdapter(it)
+                        b.actvVehiculo.threshold = 0
                     }
                     adapter.clear()
-                    adapter.addAll(opciones)
+                    adapter.addAll(opcionesBase)
                     adapter.notifyDataSetChanged()
-                    val actual = item.vehiculo?.trim().orEmpty()
-                    val idx = opciones.indexOf(actual).takeIf { it != null && it > 0 } ?: 0
-                    if (opciones.isNotEmpty()) b.spinnerVehiculo.setSelection(idx, false)
+                    // Pre-fill if not yet set
+                    if (b.actvVehiculo.text.isNullOrBlank()) {
+                        val draft = vm.getDraft(item.id)
+                        val prefill = draft?.vehiculo ?: item.vehiculo ?: vm.vehiculoPreferido()
+                        if (!prefill.isNullOrBlank() && opcionesBase.contains(prefill.trim())) {
+                            vehiculoSeleccionado = prefill.trim()
+                            b.actvVehiculo.setText(prefill.trim(), false)
+                            // vehiculoSeleccionado == placa en doAfterTextChanged, así que
+                            // la visibilidad no se recalcula allí; forzar aquí explícitamente.
+                            updateHorariosVisibility()
+                        }
+                    }
                 }
             }
         }
@@ -470,19 +486,41 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
             }
         }
 
-        b.spinnerVehiculo.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                val placa = vehiculosOpciones.getOrNull(position)?.takeUnless { it == getString(R.string.averia_spinner_select_vehicle) }
-                actualizarInventario(placa)
-                startKilometrajeObserver(placa)
-                refreshResolvedEditionState()
-            }
-            override fun onNothingSelected(parent: AdapterView<*>?) = Unit
+        b.actvVehiculo.setOnItemClickListener { _, _, position, _ ->
+            val placa = vehiculosOpciones.getOrNull(position)
+            vehiculoSeleccionado = placa
+            b.tilVehiculo.error = null
+            actualizarInventario(placa)
+            startKilometrajeObserver(placa)
+            refreshResolvedEditionState()
+            updateHorariosVisibility()
+        }
+        // Campo no editable: click abre dropdown directamente
+        b.actvVehiculo.setOnClickListener {
+            if (b.actvVehiculo.isEnabled) b.actvVehiculo.showDropDown()
+        }
+        b.tilVehiculo.setEndIconOnClickListener {
+            if (b.actvVehiculo.isEnabled) b.actvVehiculo.showDropDown()
         }
 
         val placaInicial = item.vehiculo?.takeIf { it.isNotBlank() }
+        vehiculoSeleccionado = placaInicial
         actualizarInventario(placaInicial)
         startKilometrajeObserver(placaInicial)
+        updateHorariosVisibility()
+    }
+
+    private fun updateHorariosVisibility() {
+        if (_b == null) return
+        val hayVehiculo = !vehiculoSeleccionado.isNullOrBlank()
+        val showInicio = estadoActual == Estado.PENDIENTE ||
+            estadoActual == Estado.ASIGNADA ||
+            estadoActual == Estado.EN_ATENCION
+        val showHorarios = showInicio && hayVehiculo
+        b.tvSeccionHorarios.isVisible = showHorarios
+        b.cardHorarios.isVisible = showHorarios
+        b.etHoraInicio.isEnabled = showInicio && hayVehiculo
+        b.etKmInicio.isEnabled = showInicio && hayVehiculo
     }
 
     private fun startKilometrajeObserver(placa: String?) {
@@ -559,12 +597,6 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
             text = cliente
         }
 
-        val coordsText = if (item.lat != 0.0 && item.lng != 0.0) {
-            String.format(Locale.getDefault(), "%.5f, %.5f", item.lat, item.lng)
-        } else {
-            emptyValue
-        }
-        b.tvCoordenadas.text = coordsText
         val hasCoords = item.lat != 0.0 && item.lng != 0.0
         b.cardMapaDireccion.isVisible = hasCoords
         if (hasCoords) {
@@ -589,7 +621,16 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
                 }
             }
         }
+
+        // Localización siempre visible en card principal
+        val locNumero = item.localizacion?.takeIf { it.isNotBlank() }
+        b.tvLocalizacionLabel.isVisible = true
+        b.tvLocalizacionPrincipal.apply {
+            isVisible = true
+            text = locNumero ?: "—"
+        }
         val direccionGps = item.direccion?.takeIf { it.isNotBlank() }
+        b.tvDireccionLabel.isVisible = !direccionGps.isNullOrBlank()
         b.tvDireccionGps.apply {
             isVisible = !direccionGps.isNullOrBlank()
             text = direccionGps.orEmpty()
@@ -629,25 +670,27 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
                 add(getString(R.string.averia_medidor_metros, it))
             }
         }
-        b.tvLocalizacionActual.text = if (detalleParts.isNotEmpty()) {
-            getString(
-                R.string.averia_localizacion_detalle_format,
-                localizacion,
-                detalleParts.joinToString(" • ")
-            )
-        } else {
-            localizacion
-        }
     }
 
     private fun bindInputs() {
         val draft = vm.getDraft(item.id)
         val vehiculo = draft?.vehiculo ?: item.vehiculo ?: vm.vehiculoPreferido()
         b.etLocalizacion.setText(draft?.localizacion ?: item.localizacion.orEmpty())
-        b.etCausa.setText(draft?.causa ?: item.causa)
-        b.etObs.setText(draft?.observaciones ?: item.observaciones)
-        val idxVehiculo = vehiculosOpciones.indexOf(vehiculo.orEmpty())
-        if (idxVehiculo >= 0) b.spinnerVehiculo.setSelection(idxVehiculo, false)
+
+        // causa/obs start blank when first attending; show saved values when in atención or resuelta
+        val esNuevaAtencion = estadoActual == Estado.PENDIENTE || estadoActual == Estado.ASIGNADA
+        if (esNuevaAtencion && draft == null) {
+            b.etCausa.setText("")
+            b.etObs.setText("")
+        } else {
+            b.etCausa.setText(draft?.causa ?: item.causa)
+            b.etObs.setText(draft?.observaciones ?: item.observaciones)
+        }
+
+        if (!vehiculo.isNullOrBlank() && b.actvVehiculo.text.isNullOrBlank()) {
+            vehiculoSeleccionado = vehiculo.trim()
+            b.actvVehiculo.setText(vehiculo.trim(), false)
+        }
         b.etHoraLlegada.setText(draft?.horaLlegada ?: formatHora(item.horaLlegada))
         b.etHoraInicio.setText(draft?.horaInicio ?: formatHora(item.horaAtencionInicio))
         b.etHoraFin.setText(draft?.horaFinal ?: formatHora(item.horaAtencionFinal))
@@ -760,6 +803,7 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
                             R.string.averia_medidor_encontrado,
                             state.medidor.medidorNumber
                         )
+                        b.btnLimpiarMedidor.isVisible = inputsEditable
                         lastMedidorLookup = state.medidor.medidorNumber.trim()
                         val numero = state.medidor.medidorNumber.takeIf { it.isNotBlank() }
                         if (!numero.isNullOrBlank()) {
@@ -797,7 +841,25 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
             }
         }
 
+        b.btnLimpiarMedidor.setOnClickListener {
+            limpiarMedidor()
+        }
+
         renderMedidorInfo(if (tipoSeleccionado == TipoAfectacion.CLIENTE) medidorSeleccionado else null)
+    }
+
+    private fun limpiarMedidor() {
+        medidorLookupJob?.cancel()
+        lastMedidorLookup = null
+        medidorSeleccionado = null
+        clienteSeleccionado = item.cliente
+        b.etMedidor.setText("")
+        b.etLocalizacion.setText("")
+        b.tilMedidor.error = null
+        b.tilMedidor.helperText = null
+        b.btnLimpiarMedidor.isVisible = false
+        vm.resetMedidorEstado()
+        renderMedidorInfo(null)
     }
 
     private fun setupResolvedEditChangeListeners() {
@@ -816,6 +878,7 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
         trackedTextFields.forEach { input ->
             input.doAfterTextChanged { refreshResolvedEditionState() }
         }
+        b.actvVehiculo.doAfterTextChanged { refreshResolvedEditionState() }
     }
 
     private fun refreshResolvedEditionState() {
@@ -905,14 +968,15 @@ class AveriaDetalleBottomSheet : BottomSheetDialogFragment() {
         val numero = medidor?.medidorNumber?.takeIf { it.isNotBlank() } ?: item.numeroMedidor
         b.tvMedidorActual.text = numero?.takeIf { it.isNotBlank() }
             ?: getString(R.string.averia_medidor_sin_datos)
-        b.tvMedidorResumen.apply {
-            text = detalleParts.joinToString(" • ")
-            isVisible = text.isNotBlank()
-        }
+        b.tvMedidorResumen.isVisible = false
         b.tvMedidorDetalle.apply {
             text = detalleParts.joinToString(" • ")
             isVisible = esCliente && detalleParts.isNotEmpty()
         }
+
+        // Ocultar medidor y cliente en card principal cuando afectación es SECTOR
+        b.layoutMedidorCardPrincipal.isVisible = esCliente
+        b.layoutClienteCardPrincipal.isVisible = esCliente
     }
 
 private fun renderState() {
@@ -974,36 +1038,46 @@ private fun applyInputStateForRules(
 ) {
     val showInicio = estado == Estado.PENDIENTE || estado == Estado.ASIGNADA || estado == Estado.EN_ATENCION
     val showCompleto = estado == Estado.EN_ATENCION || estado == Estado.RESUELTA
+    val esResuelta = estado == Estado.RESUELTA
+    val enEdicionResuelta = esResuelta && habilitarEdicionResuelta
 
     inputsEditable = puedeEditarCompleto
     finalInputsEnabled = puedeEditarCompleto
     horaInicioEditable = puedeEditarInicio
 
+    // Vehículo: card visible (excepto ANULADA), selector deshabilitado fuera de PENDIENTE/ASIGNADA
+    val puedeSeleccionarVehiculo = puedeEditarInicio && (estado == Estado.PENDIENTE || estado == Estado.ASIGNADA)
+    b.cardVehiculo.isVisible = estado != Estado.ANULADA
+    b.tilVehiculo.isVisible = estado != Estado.ANULADA
+    b.tvVehiculoAsignado.isVisible = false
+    b.actvVehiculo.isEnabled = puedeSeleccionarVehiculo
+
+    // Técnicos y materiales: visible en EN_ATENCION/RESUELTA, pero editables no cuando resuelta sin edición
     b.tvSeccionTecnicos.isVisible = showCompleto
     b.cardTecnicos.isVisible = showCompleto
-    b.cardMateriales.isVisible = showCompleto
+    b.cardMateriales.isVisible = showCompleto && !esResuelta
     b.cardEvidencias.isVisible = showCompleto
     b.tvSeccionRegistro.isVisible = showCompleto
-    b.cardTipoAfectacion.isVisible = showCompleto
-    b.cardMedidorInput.isVisible = showCompleto && tipoSeleccionado == TipoAfectacion.CLIENTE
+    // Ocultar tipo afectación y medidor cuando está resuelta
+    b.cardTipoAfectacion.isVisible = showCompleto && !esResuelta
+    b.cardMedidorInput.isVisible = showCompleto && !esResuelta && tipoSeleccionado == TipoAfectacion.CLIENTE
+    b.cardLocalizacionInput.isVisible = showCompleto
     b.cardDetallesAtencion.isVisible = showCompleto
-    b.tvSeccionHorarios.isVisible = showInicio
-    b.cardHorarios.isVisible = showInicio
     b.tvHorarioInicioLabel.isVisible = showInicio
     b.rowHorarioInicio.isVisible = showInicio
     b.tvHorarioLlegadaLabel.isVisible = showCompleto
     b.rowHorarioLlegada.isVisible = showCompleto
     b.tvHorarioFinalLabel.isVisible = showCompleto
     b.rowHorarioFinal.isVisible = showCompleto
-    b.cardVehiculo.isVisible = showInicio
 
-    b.toggleTipoAfectacion.isVisible = showCompleto
+    b.toggleTipoAfectacion.isVisible = showCompleto && !esResuelta
     b.toggleTipoAfectacion.isEnabled = puedeEditarCompleto
     b.btnTipoCliente.isEnabled = puedeEditarCompleto
     b.btnTipoSector.isEnabled = puedeEditarCompleto
-    b.tilTecnicoBuscar.isVisible = showCompleto
-    b.tilMaterialBuscar.isVisible = showCompleto
-    b.tilMedidor.isVisible = showCompleto && tipoSeleccionado == TipoAfectacion.CLIENTE
+    // Ocultar búsqueda de técnico y material cuando resuelta (sin edición)
+    b.tilTecnicoBuscar.isVisible = showCompleto && (!esResuelta || enEdicionResuelta)
+    b.tilMaterialBuscar.isVisible = showCompleto && !esResuelta
+    b.tilMedidor.isVisible = showCompleto && !esResuelta && tipoSeleccionado == TipoAfectacion.CLIENTE
     b.tilLocalizacion.isVisible = showCompleto
     b.tilCausa.isVisible = showCompleto
     b.tilObs.isVisible = showCompleto
@@ -1012,9 +1086,12 @@ private fun applyInputStateForRules(
     b.tilKmLlegada.isVisible = showCompleto
     b.tilKmFinal.isVisible = showCompleto
 
-    b.tilVehiculo.isVisible = showInicio
     b.tilHoraInicio.isVisible = showInicio
     b.tilKmInicio.isVisible = showInicio
+
+    // Botón agregar evidencia: ocultar cuando resuelta sin edición habilitada
+    b.btnAgregarEvidencia.isVisible = !esResuelta || enEdicionResuelta
+    b.btnLimpiarMedidor.isVisible = inputsEditable && medidorSeleccionado != null
 
     fun TextInputLayout.setEnabledDeep(enabled: Boolean) {
         isEnabled = enabled
@@ -1034,16 +1111,22 @@ private fun applyInputStateForRules(
     b.tilKmLlegada.setEnabledDeep(puedeEditarCompleto)
     b.tilKmFinal.setEnabledDeep(puedeEditarCompleto)
 
-    b.tilVehiculo.setEnabledDeep(puedeEditarInicio)
     b.tilHoraInicio.setEnabledDeep(puedeEditarInicio)
     b.tilKmInicio.setEnabledDeep(puedeEditarInicio)
 
     b.actvTecnico.isEnabled = puedeEditarCompleto
     b.actvMaterial.isEnabled = puedeEditarCompleto
-    b.spinnerVehiculo.isEnabled = puedeEditarInicio
     b.chipGroupTecnicos.isEnabled = puedeEditarCompleto
     b.chipGroupMateriales.isEnabled = puedeEditarCompleto
     b.btnAgregarEvidencia.isEnabled = puedeEditarCompleto
+
+    // Horas y km: panel completo oculto si no hay vehículo seleccionado
+    val hayVehiculo = !vehiculoSeleccionado.isNullOrBlank()
+    val showHorarios = showInicio && hayVehiculo
+    b.tvSeccionHorarios.isVisible = showHorarios
+    b.cardHorarios.isVisible = showHorarios
+    b.etHoraInicio.isEnabled = puedeEditarInicio && hayVehiculo
+    b.etKmInicio.isEnabled = puedeEditarInicio && hayVehiculo
 
     renderTecnicos()
     renderMateriales()
@@ -1064,6 +1147,7 @@ private fun configureButtonsForRules(
     b.btnEditar.isVisible = false
     b.btnExportar.isVisible = false
     b.btnEliminar.isVisible = false
+    b.btnRevertirPendiente.isVisible = false
 
     if (regionMismatch) return
 
@@ -1171,6 +1255,22 @@ private fun configureButtonsForRules(
             b.btnExportar.setOnClickListener {
                 viewLifecycleOwner.lifecycleScope.launch { PdfGenerator.exportAveria(requireContext(), item) }
             }
+
+            // Revertir a pendiente: solo supervisor/admin
+            val esSupervisor = vm.canAssignToCrew()
+            b.btnRevertirPendiente.isVisible = esSupervisor
+            b.btnRevertirPendiente.setOnClickListener {
+                if (!esSupervisor) return@setOnClickListener
+                MaterialAlertDialogBuilder(requireContext())
+                    .setTitle(R.string.averia_revertir_resuelta)
+                    .setMessage("¿Deseas revertir esta avería al estado Pendiente?")
+                    .setPositiveButton(R.string.averia_medidor_confirm_positive) { _, _ ->
+                        vm.onRevertirResuelta(item)
+                        dismissAllowingStateLoss()
+                    }
+                    .setNegativeButton(android.R.string.cancel, null)
+                    .show()
+            }
         }
 
         Estado.ANULADA -> {
@@ -1253,7 +1353,6 @@ private fun configureButtonsForRules(
             actualizarMaterial(material, cantidad, metadata)
             if (cantidad > 0 && metadata != null) {
                 sincronizarMedidorDesdeMaterial(metadata)
-                solicitarAbrirPanelAdminMedidor(metadata)
             }
         }
     }
@@ -1439,34 +1538,25 @@ private fun configureButtonsForRules(
             binding.etNumero.setText(numeroPrefill)
             binding.etNumero.setSelection(binding.etNumero.text?.length ?: 0)
         }
+        // Mostrar medidor anterior (read-only)
+        val medidorAnteriorNumero = item.numeroMedidor?.trim().orEmpty().ifBlank { getString(R.string.averia_medidor_sin_datos) }
+        binding.tvMedidorAnteriorValor.text = medidorAnteriorNumero
+
         val (lecturaNueva, lecturaAnterior) = parseLecturas(metadataInicial?.lectura)
         binding.etLecturaNueva.setText(lecturaNueva)
         binding.etLecturaAnterior.setText(lecturaAnterior)
 
         fun updateLecturasEnabled() {
-            val sinCambios = binding.switchNoCambios.isChecked
             val lecturaAnteriorNoVisible = binding.switchLecturaAnteriorNoVisible.isChecked
-            binding.tilLecturaNueva.isEnabled = !sinCambios
-            binding.tilLecturaAnterior.isEnabled = !sinCambios && !lecturaAnteriorNoVisible
-            if (sinCambios || lecturaAnteriorNoVisible) {
-                binding.tilLecturaNueva.error = null
-                binding.tilLecturaAnterior.error = null
-            }
+            binding.tilLecturaAnterior.isEnabled = !lecturaAnteriorNoVisible
+            binding.cardLecturaAnterior.isVisible = !lecturaAnteriorNoVisible
             if (lecturaAnteriorNoVisible) {
+                binding.tilLecturaAnterior.error = null
                 binding.etLecturaAnterior.setText("")
             }
         }
 
-        binding.switchNoCambios.setOnCheckedChangeListener { _, isChecked ->
-            if (isChecked) {
-                binding.switchLecturaAnteriorNoVisible.isChecked = false
-            }
-            updateLecturasEnabled()
-        }
-        binding.switchLecturaAnteriorNoVisible.setOnCheckedChangeListener { _, isChecked ->
-            if (isChecked) {
-                binding.switchNoCambios.isChecked = false
-            }
+        binding.switchLecturaAnteriorNoVisible.setOnCheckedChangeListener { _, _ ->
             binding.tilLecturaAnterior.error = null
             updateLecturasEnabled()
         }
@@ -1492,21 +1582,26 @@ private fun configureButtonsForRules(
             val numero = binding.etNumero.text?.toString()?.trim().orEmpty()
             val lecturaNuevaTexto = binding.etLecturaNueva.text?.toString()?.trim().orEmpty()
             val lecturaAnteriorTexto = binding.etLecturaAnterior.text?.toString()?.trim().orEmpty()
-            val sinCambios = binding.switchNoCambios.isChecked
             val lecturaAnteriorNoVisible = binding.switchLecturaAnteriorNoVisible.isChecked
+
             if (numero.isBlank()) {
                 binding.tilNumero.error = getString(R.string.averia_medidor_error_numero)
                 return null
             }
-            if (!sinCambios && lecturaNuevaTexto.isBlank()) {
+            // No puede ser igual al medidor anterior
+            if (item.numeroMedidor?.trim()?.equals(numero, ignoreCase = true) == true) {
+                binding.tilNumero.error = getString(R.string.averia_medidor_igual_anterior)
+                return null
+            }
+            if (lecturaNuevaTexto.isBlank()) {
                 binding.tilLecturaNueva.error = getString(R.string.averia_medidor_error_lectura)
                 return null
             }
-            if (!sinCambios && lecturaAnteriorTexto.isBlank() && !lecturaAnteriorNoVisible) {
+            if (lecturaAnteriorTexto.isBlank() && !lecturaAnteriorNoVisible) {
                 binding.tilLecturaAnterior.error = getString(R.string.averia_medidor_error_lectura_anterior)
                 return null
             }
-            val payload = if (sinCambios) null else buildLecturaPayload(lecturaNuevaTexto, lecturaAnteriorTexto)
+            val payload = buildLecturaPayload(lecturaNuevaTexto, if (lecturaAnteriorNoVisible) null else lecturaAnteriorTexto)
             val metadata = MedidorInstalacion(numero, payload)
             return cantidad to metadata
         }
@@ -1519,20 +1614,50 @@ private fun configureButtonsForRules(
             }
             val resultado = buildMetadata(cantidad) ?: return@setOnClickListener
             val (cantidadFinal, metadataFinal) = resultado
-            val mensaje = if (cantidadFinal == 0) {
-                getString(R.string.averia_medidor_confirm_eliminar)
-            } else {
-                getString(R.string.averia_medidor_confirm_guardar, metadataFinal?.numero.orEmpty())
+
+            // Removal — no existence check needed
+            if (cantidadFinal == 0) {
+                MaterialAlertDialogBuilder(requireContext())
+                    .setTitle(R.string.averia_medidor_confirm_title)
+                    .setMessage(getString(R.string.averia_medidor_confirm_eliminar))
+                    .setPositiveButton(R.string.averia_medidor_confirm_positive) { _, _ ->
+                        onResultado(cantidadFinal, metadataFinal)
+                        dialog.dismiss()
+                    }
+                    .setNegativeButton(android.R.string.cancel, null)
+                    .show()
+                return@setOnClickListener
             }
-            MaterialAlertDialogBuilder(requireContext())
-                .setTitle(R.string.averia_medidor_confirm_title)
-                .setMessage(mensaje)
-                .setPositiveButton(R.string.averia_medidor_confirm_positive) { _, _ ->
-                    onResultado(cantidadFinal, metadataFinal)
-                    dialog.dismiss()
+
+            val numeroNuevo = metadataFinal?.numero.orEmpty()
+            binding.btnGuardar.isEnabled = false
+
+            // Async check: new meter must not already exist in Room catalog
+            viewLifecycleOwner.lifecycleScope.launch {
+                val yaExiste = runCatching { vm.medidorExisteEnRoom(numeroNuevo) }.getOrDefault(false)
+
+                if (!isAdded || _b == null || !dialog.isShowing) {
+                    binding.btnGuardar.isEnabled = true
+                    return@launch
                 }
-                .setNegativeButton(android.R.string.cancel, null)
-                .show()
+                binding.btnGuardar.isEnabled = true
+
+                if (yaExiste) {
+                    binding.tilNumero.error = getString(R.string.averia_medidor_nuevo_existe)
+                    return@launch
+                }
+
+                binding.tilNumero.error = null
+                MaterialAlertDialogBuilder(requireContext())
+                    .setTitle(R.string.averia_medidor_confirm_title)
+                    .setMessage(getString(R.string.averia_medidor_confirm_guardar, numeroNuevo))
+                    .setPositiveButton(R.string.averia_medidor_confirm_positive) { _, _ ->
+                        onResultado(cantidadFinal, metadataFinal)
+                        dialog.dismiss()
+                    }
+                    .setNegativeButton(android.R.string.cancel, null)
+                    .show()
+            }
         }
 
         binding.btnCancelar.setOnClickListener {
@@ -1547,7 +1672,6 @@ private fun configureButtonsForRules(
         }
 
         dialog.show()
-        // TODO(Codex): Migrar flujo de material medidor a BottomSheet con confirmaciones
     }
 
     private fun esMaterialMedidor(material: MaterialEntity): Boolean {
@@ -1572,38 +1696,6 @@ private fun configureButtonsForRules(
         return partes.takeIf { it.isNotEmpty() }?.joinToString(" • ")
     }
 
-    private fun solicitarAbrirPanelAdminMedidor(metadata: MedidorInstalacion) {
-        val (lecturaNueva, lecturaAnterior) = parseLecturas(metadata.lectura)
-        val mensaje = if (lecturaAnterior.isNullOrBlank()) {
-            getString(
-                R.string.averia_medidor_admin_message,
-                metadata.numero.orEmpty(),
-                lecturaNueva.orEmpty()
-            )
-        } else {
-            getString(
-                R.string.averia_medidor_admin_message_prev,
-                metadata.numero.orEmpty(),
-                lecturaNueva.orEmpty(),
-                lecturaAnterior
-            )
-        }
-        MaterialAlertDialogBuilder(requireContext())
-            .setTitle(R.string.averia_medidor_admin_title)
-            .setMessage(mensaje)
-            .setPositiveButton(R.string.averia_medidor_admin_ir) { _, _ ->
-                if (!isAdded) return@setPositiveButton
-                dismissAllowingStateLoss()
-                runCatching {
-                    requireActivity()
-                        .findNavController(R.id.nav_host_fragment_content_main)
-                        .navigate(R.id.nav_admin)
-                }
-            }
-            .setNegativeButton(R.string.averia_medidor_admin_luego, null)
-            .show()
-    }
-
     private fun agregarTecnico(t: TecnicoEntity) {
         val key = if (t.cedula.isNotBlank()) t.cedula else t.nombre
         if (key.isBlank()) return
@@ -1616,7 +1708,7 @@ private fun configureButtonsForRules(
         val vehiculo = item.vehiculo?.takeIf { it.isNotBlank() } ?: getString(R.string.averia_pdf_empty_value)
         val atendio = item.atendidoPor.takeIf { it.isNotBlank() }
             ?: item.resolvedAtendidoDisplay(getString(R.string.averia_pdf_empty_value))
-        return "Atendió: $atendio\nVehículo: $vehiculo\nEquipo que atendió"
+        return "Asignado a: $atendio\nVehículo: $vehiculo\nEquipo que atendió"
     }
 
     private fun renderTecnicos() {
@@ -1689,7 +1781,6 @@ private fun configureButtonsForRules(
                                 actualizarMaterial(materialBase, cantidadActualizada, metadata)
                                 if (cantidadActualizada > 0 && metadata != null) {
                                     sincronizarMedidorDesdeMaterial(metadata)
-                                    solicitarAbrirPanelAdminMedidor(metadata)
                                 }
                             }
                         } else {
@@ -1733,7 +1824,8 @@ private fun configureButtonsForRules(
     private fun collectFormData(contexto: ValidationContext = ValidationContext.NONE): AveriaActionData? {
         val causa = b.etCausa.text?.toString()?.trim().orEmpty()
         val obs = b.etObs.text?.toString()?.trim()
-        val vehiculo = vehiculosOpciones.getOrNull(b.spinnerVehiculo.selectedItemPosition)?.trim()?.takeUnless { it == getString(R.string.averia_spinner_select_vehicle) }
+        val vehiculo = b.actvVehiculo.text?.toString()?.trim()?.takeIf { it.isNotBlank() && vehiculosOpciones.contains(it) }
+            ?: vehiculoSeleccionado?.takeIf { it.isNotBlank() }
         val atendido = vm.nombreTecnicoActual()
         val uid = vm.usuarioActual.value?.uid ?: item.tecnicoUid
 
@@ -1851,9 +1943,15 @@ private fun configureButtonsForRules(
         val medidorPoste = if (tipo == TipoAfectacion.CLIENTE) medidorSeleccionado?.poste?.trim() else null
         val localizacionTexto = b.etLocalizacion.text?.toString()?.trim()?.takeIf { it.isNotBlank() }
         val cliente = clienteSeleccionado ?: item.cliente
-        if (contexto == ValidationContext.RESOLVER && localizacionTexto.isNullOrBlank()) {
-            b.tilLocalizacion.error = getString(R.string.averia_error_localizacion_requerida)
-            return null
+        if (contexto == ValidationContext.RESOLVER) {
+            if (localizacionTexto.isNullOrBlank()) {
+                b.tilLocalizacion.error = getString(R.string.averia_error_localizacion_requerida)
+                return null
+            }
+            if (!localizacionTexto.all { it.isDigit() } || localizacionTexto.length < 9 || localizacionTexto.length > 12) {
+                b.tilLocalizacion.error = getString(R.string.averia_error_localizacion_digitos)
+                return null
+            }
         }
 
         return AveriaActionData(
@@ -2006,7 +2104,7 @@ private fun configureButtonsForRules(
             localizacion = b.etLocalizacion.readText(),
             causa = b.etCausa.readText(),
             observaciones = b.etObs.readText(),
-            vehiculo = vehiculosOpciones.getOrNull(b.spinnerVehiculo.selectedItemPosition)?.trim()?.takeUnless { it == getString(R.string.averia_spinner_select_vehicle) }?.takeIf { it.isNotBlank() },
+            vehiculo = (b.actvVehiculo.text?.toString()?.trim()?.takeIf { it.isNotBlank() && vehiculosOpciones.contains(it) } ?: vehiculoSeleccionado)?.takeIf { it.isNotBlank() },
             horaLlegada = b.etHoraLlegada.readText(),
             horaInicio = b.etHoraInicio.readText(),
             horaFinal = b.etHoraFin.readText(),
