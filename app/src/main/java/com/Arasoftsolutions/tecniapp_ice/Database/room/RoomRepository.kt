@@ -22,6 +22,8 @@ import kotlinx.coroutines.withContext
 import androidx.room.withTransaction
 import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
+import java.util.UUID
+import com.Arasoftsolutions.tecniapp_ice.ui.vehiculo.FirebaseVehicleDataSource
 // Si usas transacciones, habilita esto y agrega la dependencia de room-ktx:
 // import androidx.room.withTransaction
 
@@ -41,8 +43,10 @@ class   RoomRepository(context: Context) {
     private val db = AppDatabase.getInstance(context.applicationContext)
     private val firebase = FirebaseSyncManager(context.applicationContext)
     private val vehiculoDao = db.vehiculoDao()
+    private val firebaseVehicleDs = FirebaseVehicleDataSource()
     private val vehiculoLogDao = db.vehiculoLogDao()
     private val inventarioDao = db.inventarioDao()
+    private val luminariaReparacionDao = db.luminariaReparacionDao()
 
     private val realtimeScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var inventarioRealtimeListener: ValueEventListener? = null
@@ -181,13 +185,27 @@ class   RoomRepository(context: Context) {
 
     suspend fun insertarRegistroDiario(registro: RegistroDiarioEntity) = withContext(Dispatchers.IO) {
         val vehiculoKey = resolveVehiculoKey(registro.vehiculoId)
+        val uniqueId = UUID.randomUUID().toString().replace("-", "").take(12)
         val log = VehiculoLogEntity(
-            logId = "diario_${vehiculoKey}_${registro.registradoEn}",
+            logId = "diario_${vehiculoKey}_${registro.registradoEn}_$uniqueId",
             vehiculoId = vehiculoKey,
             tipo = "DIARIO",
             timestamp = registro.registradoEn,
             km = registro.valor,
-            payloadJson = JSONObject().put("fecha", registro.fecha).put("unidad", registro.unidad).put("registradoPor", registro.registradoPor).toString(),
+            payloadJson = JSONObject()
+                .put("fecha",          registro.fecha)
+                .put("unidad",         registro.unidad)
+                .put("registradoPor",  registro.registradoPor)
+                .put("cerrado",        registro.cerrado)
+                .put("kmFinal",        registro.kmFinal)
+                .put("actividad",      registro.actividad)
+                .put("cuenta",         registro.cuenta)
+                .put("numeroCaso",     registro.numeroCaso)
+                .put("lugar",          registro.lugar)
+                .put("horasLaboradas", registro.horasLaboradas)
+                .put("combustible",    registro.combustible)
+                .put("observaciones",  registro.observaciones)
+                .toString(),
             syncState = "PENDING"
         )
         addLogAndUpdateKm(log)
@@ -195,8 +213,9 @@ class   RoomRepository(context: Context) {
 
     suspend fun insertarRegistroMantenimiento(registro: RegistroMantenimientoEntity) = withContext(Dispatchers.IO) {
         val vehiculoKey = resolveVehiculoKey(registro.vehiculoId)
+        val uniqueId = UUID.randomUUID().toString().replace("-", "").take(12)
         val log = VehiculoLogEntity(
-            logId = "mant_${vehiculoKey}_${registro.creadoEn}",
+            logId = "mant_${vehiculoKey}_${registro.creadoEn}_$uniqueId",
             vehiculoId = vehiculoKey,
             tipo = "MANTENIMIENTO",
             timestamp = registro.creadoEn,
@@ -236,39 +255,39 @@ class   RoomRepository(context: Context) {
 
     suspend fun actualizarMantenimiento(
         vehiculoId: Int,
-        mantenimientoUltimo: String?,
-        mantenimientoProximo: String?,
+        mantenimientoUltimo: String?,   // ignorado — no se persiste, solo km
+        mantenimientoProximo: String?,  // ignorado — se calcula desde vehiculo_log
         valorActual: Double? = null,
         usaKilometraje: Boolean = true
     ) = withContext(Dispatchers.IO) {
         val vehiculo = vehiculoDao.buscarPorId(vehiculoId) ?: return@withContext
-        val kilometrajeBase = vehiculo.kmActual.takeIf { it > 0.0 } ?: (vehiculo.kmActual ?: 0.0)
-        val orimetroBase = vehiculo.orimetroActual ?: 0.0
-        val nuevoKilometraje = if (usaKilometraje && valorActual != null) {
-            maxOf(kilometrajeBase, valorActual)
-        } else {
-            kilometrajeBase
-        }
-        val nuevoOrimetro = if (!usaKilometraje && valorActual != null) {
-            maxOf(orimetroBase, valorActual)
-        } else {
+
+        val nuevoKm = if (usaKilometraje && valorActual != null)
+            maxOf(vehiculo.kmActual, valorActual)
+        else
+            vehiculo.kmActual
+
+        val nuevoOrimetro = if (!usaKilometraje && valorActual != null)
+            maxOf(vehiculo.orimetroActual ?: 0.0, valorActual)
+        else
             vehiculo.orimetroActual
-        }
 
         val actualizado = vehiculo.copy(
-            mantenimientoUltimo = mantenimientoUltimo,
-            mantenimientoProximo = mantenimientoProximo,
-            kmActual = nuevoKilometraje,
+            kmActual       = nuevoKm,
             orimetroActual = nuevoOrimetro,
-            updatedAt = System.currentTimeMillis()
+            updatedAt      = System.currentTimeMillis()
+            // mantenimientoUltimo y mantenimientoProximo deliberadamente no se tocan
         )
         vehiculoDao.upsertVehiculo(actualizado)
-        firebase.actualizarVehiculoCampos(actualizado.vehiculoId, mapOf(
-            "kmActual" to actualizado.kmActual,
-            "registroCerrado" to actualizado.registroCerrado,
-            "mantenimientoUltimo" to actualizado.mantenimientoUltimo,
-            "mantenimientoProximo" to actualizado.mantenimientoProximo
-        ))
+
+        // Solo sube km y registroCerrado — sin resumen de mantenimiento
+        firebase.actualizarVehiculoCampos(
+            actualizado.vehiculoId,
+            mapOf(
+                "kmActual"        to actualizado.kmActual,
+                "registroCerrado" to actualizado.registroCerrado
+            )
+        )
     }
 
     suspend fun actualizarRegistroDiarioVehiculo(
@@ -287,8 +306,11 @@ class   RoomRepository(context: Context) {
             registroInicial = inicial,
             registroFinal = final,
             registroCerrado = cerrado,
-            kmActual = kilometrajeActual ?: vehiculo.kmActual,
-            orimetroActual = orimetroActual ?: vehiculo.orimetroActual,
+            kmActual = maxOf(vehiculo.kmActual, kilometrajeActual ?: 0.0)
+                .takeIf { it > 0.0 } ?: vehiculo.kmActual,
+            orimetroActual = maxOf(vehiculo.orimetroActual ?: 0.0, orimetroActual ?: 0.0)
+                .takeIf { it > 0.0 } ?: vehiculo.orimetroActual,
+            updatedAt = System.currentTimeMillis(),
             registrosDiariosJson = registrosJson
         )
         firebase.actualizarVehiculoCampos(actualizado.vehiculoId, mapOf(
@@ -299,7 +321,7 @@ class   RoomRepository(context: Context) {
     }
 
     fun observarReparaciones(): Flow<List<LuminariaReparacionEntity>> =
-        inventarioDao.observarReparaciones()
+        luminariaReparacionDao.observarTodas()
 
     fun observarRegiones(): Flow<List<RegionEntity>> = db.regionDao().observarTodas()
 
@@ -370,8 +392,8 @@ class   RoomRepository(context: Context) {
         UserScope(
             regionId = user?.region?.trim()?.takeIf { it.isNotEmpty() },
             subregionId = user?.subregion?.trim()?.takeIf { it.isNotEmpty() },
-            agenciaTag = user?.agenciaId?.trim()?.takeIf { it.isNotEmpty() }
-                ?: user?.agencia?.trim()?.takeIf { it.isNotEmpty() },
+            agenciaTag = user?.agencia?.trim()?.takeIf { it.isNotEmpty() }
+                ?: user?.agenciaId?.trim()?.takeIf { it.isNotEmpty() },
             vehiculoKey = user?.placaVehiculo?.trim()?.takeIf { it.isNotEmpty() }
         )
     }
@@ -417,6 +439,56 @@ class   RoomRepository(context: Context) {
         val vehiculoKey = resolveVehiculoKey(vehiculoId)
         return vehiculoLogDao.findLastByTipo(vehiculoKey, "MANTENIMIENTO")
             ?.toRegistroMantenimientoEntity(vehiculoId)
+    }
+
+    suspend fun obtenerTodosRegistrosDiarios(vehiculoId: String): List<RegistroDiarioEntity> =
+        withContext(Dispatchers.IO) {
+            val numericId = vehiculoId.toIntOrNull()
+            val vehiculoKey = if (numericId != null) resolveVehiculoKey(numericId) else vehiculoId
+            vehiculoLogDao.getAll(vehiculoKey, "DIARIO").map { log ->
+                log.toRegistroDiarioEntity(vehiculoKey.toIntOrNull() ?: 0)
+            }
+        }
+
+    suspend fun syncVehiculoDesdeFirebase(vehiculoId: String) = withContext(Dispatchers.IO) {
+        val remoto = firebaseVehicleDs.pullVehiculoBase(vehiculoId) ?: return@withContext
+        val local  = vehiculoDao.buscarPorVehiculoId(vehiculoId)
+
+        val merged = if (local == null) {
+            remoto
+        } else {
+            local.copy(
+                // km siempre el mayor entre local y Firebase
+                kmActual       = maxOf(local.kmActual, remoto.kmActual),
+                orimetroActual = maxOf(local.orimetroActual ?: 0.0, remoto.orimetroActual ?: 0.0)
+                    .takeIf { it > 0.0 } ?: local.orimetroActual,
+                registroCerrado = remoto.registroCerrado || local.registroCerrado,
+                // registrosDiariosJson: preferir local si ya tiene datos (fue quien los registró)
+                // usar remoto solo si local está vacío (dispositivo nuevo)
+                registrosDiariosJson = if (local.registrosDiariosJson.isNullOrBlank())
+                    remoto.registrosDiariosJson
+                else
+                    local.registrosDiariosJson,
+                // mantenimientoUltimo y mantenimientoProximo no se copian:
+                // se reconstruyen automáticamente desde vehiculo_log
+                updatedAt = System.currentTimeMillis()
+            )
+        }
+        vehiculoDao.upsertVehiculo(merged)
+
+        // Pull de logs de mantenimiento desde Firebase → pobla vehiculo_log
+        // Esencial para dispositivos nuevos que no tienen historial en Room.
+        // upsert con OnConflictStrategy.REPLACE: logIds "_pull" no colisionan
+        // con los locales "_UUID", así que no hay riesgo de sobreescribir
+        // registros propios del dispositivo.
+        val mantLogs = firebaseVehicleDs.pullMantenimientosLogs(vehiculoId)
+        mantLogs.forEach { log -> vehiculoLogDao.upsert(log) }
+
+        Log.i(
+            "RoomRepositorySync",
+            "[SYNC_VEHICULO_FIREBASE] vehiculoId=$vehiculoId " +
+            "kmMerged=${merged.kmActual} mantLogsPulled=${mantLogs.size}"
+        )
     }
 
     suspend fun obtenerMaterialPorCodigo(codigo: String): MaterialEntity? =
@@ -620,7 +692,7 @@ class   RoomRepository(context: Context) {
             fechaCarga = ahora,
             fechaReparacion = fechaReparacion
         )
-        val reparacionId = inventarioDao.registrarReparacion(reparacion)
+        val reparacionId = luminariaReparacionDao.insertar(reparacion)
         val agencia = db.vehiculoDao().buscarPorId(vehiculoId)?.agencia
         firebase.guardarReparacionLuminaria(reparacion.copy(id = reparacionId), agencia)
         materiales.forEach { material ->
@@ -639,7 +711,7 @@ class   RoomRepository(context: Context) {
         registros
             .mapNotNull { it.localizacion.trim().takeIf(String::isNotEmpty)?.let { loc -> it.copy(localizacion = loc) } }
             .forEach { registro ->
-                val existente = inventarioDao.obtenerReparacionPorLocalizacionYEstado(
+                val existente = luminariaReparacionDao.obtenerPorLocalizacionYEstado(
                     registro.localizacion,
                     com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado.PENDIENTE.name,
                     vehiculoId
@@ -654,7 +726,7 @@ class   RoomRepository(context: Context) {
                         observaciones = existente.observaciones ?: observaciones
                     )
                     if (actualizado != existente) {
-                        inventarioDao.actualizarReparacion(actualizado)
+                        luminariaReparacionDao.actualizar(actualizado)
                         firebase.guardarReparacionLuminaria(actualizado, agencia)
                     }
                     return@forEach
@@ -674,14 +746,14 @@ class   RoomRepository(context: Context) {
                     fechaRegistro = ahora,
                     fechaCarga = ahora
                 )
-                val reparacionId = inventarioDao.registrarReparacion(reparacion)
+                val reparacionId = luminariaReparacionDao.insertar(reparacion)
                 firebase.guardarReparacionLuminaria(reparacion.copy(id = reparacionId), agencia)
             }
     }
 
     suspend fun eliminarReparacionLuminaria(id: Long) = withContext(Dispatchers.IO) {
-        val reparacion = inventarioDao.obtenerReparacion(id) ?: return@withContext
-        inventarioDao.eliminarReparacion(id)
+        val reparacion = luminariaReparacionDao.obtenerPorId(id) ?: return@withContext
+        luminariaReparacionDao.eliminar(id)
         val agencia = db.vehiculoDao().buscarPorId(reparacion.vehiculoId)?.agencia
         firebase.eliminarReparacionLuminaria(id, agencia)
         val materiales = com.Arasoftsolutions.tecniapp_ice.ui.luminarias.LuminariaMaterialSerializer
@@ -697,7 +769,7 @@ class   RoomRepository(context: Context) {
     }
 
     suspend fun marcarReparacionLuminariaPendiente(id: Long) = withContext(Dispatchers.IO) {
-        val reparacion = inventarioDao.obtenerReparacion(id) ?: return@withContext
+        val reparacion = luminariaReparacionDao.obtenerPorId(id) ?: return@withContext
         if (com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado.fromRaw(reparacion.estado) !=
             com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado.REPARADA
         ) {
@@ -711,7 +783,7 @@ class   RoomRepository(context: Context) {
                 .toJson(emptyList()),
             fechaReparacion = null
         )
-        inventarioDao.actualizarReparacion(actualizado)
+        luminariaReparacionDao.actualizar(actualizado)
         val agencia = db.vehiculoDao().buscarPorId(reparacion.vehiculoId)?.agencia
         firebase.guardarReparacionLuminaria(actualizado, agencia)
         materialesPrevios.forEach { material ->
@@ -725,16 +797,16 @@ class   RoomRepository(context: Context) {
     }
 
     suspend fun obtenerReparacionLuminaria(id: Long): LuminariaReparacionEntity? = withContext(Dispatchers.IO) {
-        inventarioDao.obtenerReparacion(id)
+        luminariaReparacionDao.obtenerPorId(id)
     }
 
     suspend fun actualizarVehiculoLuminaria(id: Long, nuevoVehiculoId: Int) = withContext(Dispatchers.IO) {
-        val reparacion = inventarioDao.obtenerReparacion(id) ?: return@withContext
+        val reparacion = luminariaReparacionDao.obtenerPorId(id) ?: return@withContext
         if (reparacion.vehiculoId == nuevoVehiculoId) return@withContext
         val agenciaAnterior = db.vehiculoDao().buscarPorId(reparacion.vehiculoId)?.agencia
         val agenciaNueva = db.vehiculoDao().buscarPorId(nuevoVehiculoId)?.agencia
         val actualizado = reparacion.copy(vehiculoId = nuevoVehiculoId)
-        inventarioDao.actualizarReparacion(actualizado)
+        luminariaReparacionDao.actualizar(actualizado)
         if (!agenciaAnterior.equals(agenciaNueva, ignoreCase = true)) {
             firebase.eliminarReparacionLuminaria(id, agenciaAnterior)
         }
@@ -749,7 +821,7 @@ class   RoomRepository(context: Context) {
         nuevoEjecutorNombre: String,
         nuevoEjecutorCedula: String?
     ) = withContext(Dispatchers.IO) {
-        val reparacion = inventarioDao.obtenerReparacion(id) ?: return@withContext
+        val reparacion = luminariaReparacionDao.obtenerPorId(id) ?: return@withContext
         val materialesPrevios = com.Arasoftsolutions.tecniapp_ice.ui.luminarias.LuminariaMaterialSerializer
             .fromJson(reparacion.materialesJson)
         val mapPrevio = materialesPrevios.associateBy({ it.codigo }, { it })
@@ -761,7 +833,7 @@ class   RoomRepository(context: Context) {
             reparacion.fechaReparacion
         }
         val agencia = db.vehiculoDao().buscarPorId(reparacion.vehiculoId)?.agencia
-        inventarioDao.actualizarReparacion(
+        luminariaReparacionDao.actualizar(
             reparacion.copy(
                 localizacion = nuevaLocalizacion,
                 materialesJson = com.Arasoftsolutions.tecniapp_ice.ui.luminarias.LuminariaMaterialSerializer
@@ -855,8 +927,8 @@ class   RoomRepository(context: Context) {
             val key = "${remoto.vehiculoId}:${remoto.codigoMaterial}"
             val local = locales[key]
             local == null ||
-                local.descripcionMaterial != remoto.descripcionMaterial ||
-                local.cantidadDisponible != remoto.cantidadDisponible
+                    local.descripcionMaterial != remoto.descripcionMaterial ||
+                    local.cantidadDisponible != remoto.cantidadDisponible
         }
         if (cambios.isNotEmpty()) {
             inventarioDao.insertAll(cambios)
@@ -869,7 +941,7 @@ class   RoomRepository(context: Context) {
         val reparaciones = firebase.obtenerLuminarias(agencia)
         val bytes = estimateBytes(reparaciones)
         if (reparaciones.isNotEmpty()) {
-            inventarioDao.insertarReparaciones(reparaciones)
+            luminariaReparacionDao.insertarTodas(reparaciones)
         }
         bytes
     }
@@ -917,8 +989,8 @@ class   RoomRepository(context: Context) {
         val cambios = inventarioMapped.filter { remoto ->
             val local = locales[remoto.codigoMaterial]
             local == null ||
-                local.descripcionMaterial != remoto.descripcionMaterial ||
-                local.cantidadDisponible != remoto.cantidadDisponible
+                    local.descripcionMaterial != remoto.descripcionMaterial ||
+                    local.cantidadDisponible != remoto.cantidadDisponible
         }
         if (cambios.isNotEmpty()) {
             inventarioDao.insertAll(cambios)
@@ -964,29 +1036,26 @@ class   RoomRepository(context: Context) {
             return@withContext 0L
         }
         Log.i(TAG, "[LUM_ROOM][FETCH_START] agencia=$agenciaValue")
-        val reparacionesDirectas = firebase.obtenerLuminariasPorAgencia(agenciaValue)
-        val reparaciones = reparacionesDirectas
+        val reparaciones = firebase.obtenerLuminariasPorAgencia(agenciaValue)
         Log.i(TAG, "[LUM_ROOM][FETCH_RESULT] agencia=$agenciaValue reparaciones=${reparaciones.size}")
-        Log.i(TAG, "[LUM_ROOM][PARSED_COUNT] agencia=$agenciaValue parsed=${reparaciones.size}")
         val duplicateCount = reparaciones
             .groupBy { it.id }
             .values
             .sumOf { bucket -> (bucket.size - 1).coerceAtLeast(0) }
         Log.i(TAG, "[LUM_ROOM][DUPLICATE_COUNT] agencia=$agenciaValue duplicates=$duplicateCount")
         if (reparaciones.isEmpty()) {
-            Log.i(
-                TAG,
-                "[LUM_ROOM][SKIP_REASON] reason=no_remote_data agencia=$agenciaValue"
-            )
+            Log.i(TAG, "[LUM_ROOM][SKIP_REASON] reason=no_remote_data agencia=$agenciaValue")
             return@withContext 0L
         }
         val bytes = estimateBytes(reparaciones)
-        if (reparaciones.isNotEmpty()) {
-            inventarioDao.insertarReparaciones(reparaciones)
-            Log.i(TAG, "[LUM_ROOM][UPSERT_COUNT] agencia=$agenciaValue upserted=${reparaciones.size}")
-            val totalLocal = inventarioDao.contarReparaciones()
-            Log.i(TAG, "[LUM_ROOM][POST_UPSERT_TOTAL] agencia=$agenciaValue totalLocal=$totalLocal")
+        // Swap atómico: eliminar registros locales de la agencia e insertar los remotos en una sola transacción.
+        db.withTransaction {
+            luminariaReparacionDao.eliminarPorAgencia(agenciaValue)
+            luminariaReparacionDao.insertarTodas(reparaciones)
         }
+        Log.i(TAG, "[LUM_ROOM][SYNC_ATOMIC] agencia=$agenciaValue synced=${reparaciones.size}")
+        val totalLocal = luminariaReparacionDao.contar()
+        Log.i(TAG, "[LUM_ROOM][POST_SYNC_TOTAL] agencia=$agenciaValue totalLocal=$totalLocal")
         bytes
     }
 
@@ -1123,8 +1192,19 @@ class   RoomRepository(context: Context) {
         progress(done, total, "Descargando pueblos…", downloadedBytes)
         Log.i(TAG, "[SYNC_SUBREGION] step=$done/$total source=local/pueblos count=${pueblosASincronizar.size} bytes=$downloadedBytes")
 
-        val idsPueblos = pueblosASincronizar.map { it.id }
-        val localizacionesFiltradas = firebase.obtenerLocalizacionesPorPueblos(idsPueblos)
+        // Combina IDs descargados ahora + IDs ya guardados en Room para esta subregión.
+        // Esto evita que un fallo puntual en la descarga de pueblos deje sin localizaciones.
+        val idsPueblosDescargados = pueblosASincronizar.map { it.id }
+        val idsPueblosLocales = db.puebloDao().obtenerIdsPorSubregion(canonicalSubregion)
+        val idsPueblos = (idsPueblosDescargados + idsPueblosLocales).distinct()
+        Log.i(TAG, "[SYNC_SUBREGION] idsPueblos total=${idsPueblos.size} (descargados=${idsPueblosDescargados.size} locales=${idsPueblosLocales.size})")
+
+        val localizacionesFiltradas = if (idsPueblos.isNotEmpty()) {
+            firebase.obtenerLocalizacionesPorPueblos(idsPueblos, canonicalSubregion)
+        } else {
+            Log.w(TAG, "[SYNC_SUBREGION] sin idsPueblos — se omite descarga de localizaciones")
+            emptyList()
+        }
         downloadedBytes += estimateBytes(localizacionesFiltradas)
         if (localizacionesFiltradas.isNotEmpty()) {
             val locales = idsPueblos.flatMap { db.localizacionDao().obtenerPorPueblo(it) }.associateBy { it.id }
@@ -1270,13 +1350,13 @@ class   RoomRepository(context: Context) {
 
     private fun estimateMedidorBytes(medidor: MedidorEntity): Long {
         return estimateBytes(medidor.medidorNumber) +
-            estimateBytes(medidor.subregion) +
-            estimateBytes(medidor.cliente) +
-            estimateBytes(medidor.calle) +
-            estimateBytes(medidor.poste) +
-            estimateBytes(medidor.metros) +
-            estimateBytes(medidor.pueblo) +
-            8L
+                estimateBytes(medidor.subregion) +
+                estimateBytes(medidor.cliente) +
+                estimateBytes(medidor.calle) +
+                estimateBytes(medidor.poste) +
+                estimateBytes(medidor.metros) +
+                estimateBytes(medidor.pueblo) +
+                8L
     }
 
     private fun estimateMedidoresBatchBytes(batchSize: Int): Long {
@@ -1310,8 +1390,9 @@ class   RoomRepository(context: Context) {
                 remoto
             } else {
                 remoto.copy(
-                    kmActual = remoto.kmActual ?: local.kmActual,
-                    orimetroActual = remoto.orimetroActual ?: local.orimetroActual,
+                    kmActual = maxOf(remoto.kmActual, local.kmActual),
+                    orimetroActual = maxOf(remoto.orimetroActual ?: 0.0, local.orimetroActual ?: 0.0)
+                        .takeIf { it > 0.0 } ?: local.orimetroActual,
                     registroFecha = remoto.registroFecha ?: local.registroFecha,
                     registroInicial = remoto.registroInicial ?: local.registroInicial,
                     registroFinal = remoto.registroFinal ?: local.registroFinal,
@@ -1350,8 +1431,9 @@ class   RoomRepository(context: Context) {
             placa = if (base.placa != 0L) base.placa else otro.placa,
             tipo = base.tipo.ifBlank { otro.tipo },
             subregion = base.subregion ?: otro.subregion,
-            kmActual = base.kmActual ?: otro.kmActual,
-            orimetroActual = base.orimetroActual ?: otro.orimetroActual,
+            kmActual = maxOf(base.kmActual, otro.kmActual),
+            orimetroActual = maxOf(base.orimetroActual ?: 0.0, otro.orimetroActual ?: 0.0)
+                .takeIf { it > 0.0 } ?: base.orimetroActual,
             registroFecha = base.registroFecha ?: otro.registroFecha,
             registroInicial = base.registroInicial ?: otro.registroInicial,
             registroFinal = base.registroFinal ?: otro.registroFinal,
@@ -1401,10 +1483,10 @@ class   RoomRepository(context: Context) {
                 agenciaKey = agenciaTag,
                 scope = realtimeScope,
                 onUpsert = { rep ->
-                    inventarioDao.upsertReparacion(rep)
+                    luminariaReparacionDao.upsert(rep)
                 },
                 onRemove = { id ->
-                    inventarioDao.eliminarReparacionPorId(id)
+                    luminariaReparacionDao.eliminar(id)
                 },
                 onError = { err ->
                     Log.e("RoomRepository", "Luminarias realtime cancelado", err.toException())
@@ -1427,13 +1509,22 @@ class   RoomRepository(context: Context) {
 
 private fun VehiculoLogEntity.toRegistroDiarioEntity(vehiculoId: Int): RegistroDiarioEntity {
     return RegistroDiarioEntity(
-        vehiculoId = vehiculoId,
-        fecha = payloadJson.optStringSafe("fecha"),
-        valor = km ?: 0.0,
-        unidad = payloadJson.optStringSafe("unidad", "km"),
-        registradoEn = timestamp,
+        vehiculoId    = vehiculoId,
+        fecha         = payloadJson.optStringSafe("fecha"),
+        valor         = km ?: 0.0,
+        unidad        = payloadJson.optStringSafe("unidad", "km"),
+        registradoEn  = timestamp,
         registradoPor = payloadJson.optStringSafe("registradoPor").ifBlank { null },
-        syncStatus = syncState
+        syncStatus    = syncState,
+        cerrado       = payloadJson.optBoolSafe("cerrado"),
+        kmFinal       = payloadJson.optDoubleSafe("kmFinal").takeIf { it > 0.0 },
+        actividad     = payloadJson.optStringSafe("actividad").ifBlank { null },
+        cuenta        = payloadJson.optStringSafe("cuenta").ifBlank { null },
+        numeroCaso    = payloadJson.optStringSafe("numeroCaso").ifBlank { null },
+        lugar         = payloadJson.optStringSafe("lugar").ifBlank { null },
+        horasLaboradas = payloadJson.optIntSafe("horasLaboradas").takeIf { it > 0 },
+        combustible   = payloadJson.optStringSafe("combustible").ifBlank { null },
+        observaciones = payloadJson.optStringSafe("observaciones").ifBlank { null }
     )
 }
 
@@ -1455,3 +1546,9 @@ private fun String.optStringSafe(key: String, default: String = ""): String =
 
 private fun String.optDoubleSafe(key: String, default: Double = 0.0): Double =
     runCatching { JSONObject(this).optDouble(key, default) }.getOrDefault(default)
+
+private fun String.optBoolSafe(key: String, default: Boolean = false): Boolean =
+    runCatching { JSONObject(this).optBoolean(key, default) }.getOrDefault(default)
+
+private fun String.optIntSafe(key: String, default: Int = 0): Int =
+    runCatching { JSONObject(this).optInt(key, default) }.getOrDefault(default)

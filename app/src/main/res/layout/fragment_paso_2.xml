@@ -1,166 +1,160 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="16dp"
-    tools:context=".registro.Paso2Fragment">
+    android:fillViewport="true">
 
-    <!-- Layout horizontal para el icono de regreso y bandera del país -->
-    <LinearLayout
-        android:id="@+id/countryLayout"
-        android:layout_width="wrap_content"
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:orientation="horizontal"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        android:paddingStart="@dimen/padding_screen"
+        android:paddingEnd="@dimen/padding_screen"
+        android:paddingTop="16dp"
+        android:paddingBottom="32dp"
+        tools:context=".registro.Paso2Fragment">
 
         <!-- Flecha de regreso -->
-        <ImageView
-            android:id="@+id/backArrow"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:contentDescription="Volver"
-            android:src="@drawable/ic_arrow_back" />
-    </LinearLayout>
-
-    <!-- Título de la pantalla -->
-    <TextView
-        android:id="@+id/tvTitle"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:text="Verifica tu cuenta"
-        android:textSize="24sp"
-        android:textStyle="bold"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/countryLayout" />
-
-    <!-- Barra de progreso para mostrar el paso actual -->
-    <ProgressBar
-        android:id="@+id/progressBar"
-        style="attr/progressBarStyleHorizontal"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:max="100"
-        android:progress="50"
-        android:progressDrawable="@drawable/progress_bar"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tvTitle" />
-
-    <!-- Texto indicando el paso actual -->
-    <TextView
-        android:id="@+id/tvStep"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:text="Paso 2 de 3"
-        android:textSize="14sp"
-        android:textStyle="bold"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/progressBar" />
-
-    <!-- Instrucciones para el usuario -->
-    <TextView
-        android:id="@+id/tvInstructions"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:text="Ingresa el código de verificación enviado a tu correo."
-        android:textSize="14sp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tvStep" />
-
-    <!-- Layout para el Paso 2: Información adicional -->
-    <LinearLayout
-        android:id="@+id/step2Layout"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="40dp"
-        android:orientation="vertical"
-        android:visibility="visible"
-        app:layout_constraintTop_toBottomOf="@id/tvInstructions">
-
-        <!-- Descripción del código de verificación de correo -->
-        <TextView
+        <LinearLayout
+            android:id="@+id/countryLayout"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:text="Código de verificación (Correo):"
-            android:textColor="@color/ice_blue_dark"
-            android:textSize="18sp"
-            android:textStyle="bold" />
+            android:orientation="horizontal"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
 
-        <!-- Campo para ingresar el código de verificación de correo -->
+            <ImageView
+                android:id="@+id/backArrow"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:contentDescription="Volver"
+                android:src="@drawable/ic_arrow_back" />
+        </LinearLayout>
 
-
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/etVerificationCodeEmail"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@drawable/rounded_bg_f0f2f4"
-            android:hint="Ingrese el código"
-            android:inputType="text"
-            android:padding="12dp"
-            android:textColor="@color/dark_gray"
-            android:textColorHint="@color/light_gray" />
-
-
-        <!-- Mensaje de error -->
+        <!-- Título -->
         <TextView
-            android:id="@+id/tvVerificationError"
+            android:id="@+id/tvTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:text="El código ingresado no es válido."
-            android:textColor="@color/red"
-            android:textSize="12sp"
-            android:visibility="gone" />
+            android:layout_marginTop="16dp"
+            android:text="Verifica tu cuenta"
+            android:textSize="@dimen/text_size_title"
+            android:textStyle="bold"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/countryLayout" />
 
-        <!-- Opción para reenviar el código de verificación por correo -->
-        <TextView
-            android:id="@+id/tvResendEmail"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="Reenviar código al correo"
-            android:textColor="@color/ice_blue"
-            android:textSize="14sp"
-            android:textStyle="bold" />
-
-        <!-- Contador para reenvíos -->
-        <TextView
-            android:id="@+id/resendEmailCountDown"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="Puedes reenviar el código en 60 segundos"
-            android:textColor="@color/red"
-            android:textSize="14sp"
-            android:visibility="gone" />
-
-        <!-- Separador -->
-        <View
+        <!-- Barra de progreso animada (progress=0, se anima a 50 en onResume) -->
+        <ProgressBar
+            android:id="@+id/progressBar"
+            style="?android:attr/progressBarStyleHorizontal"
             android:layout_width="0dp"
-            android:layout_height="1dp"
-            android:layout_marginTop="16dp"
-            android:background="@color/light_gray" />
+            android:layout_height="8dp"
+            android:layout_marginTop="12dp"
+            android:max="100"
+            android:progress="0"
+            android:progressDrawable="@drawable/progress_bar"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tvTitle" />
 
-    </LinearLayout>
+        <TextView
+            android:id="@+id/tvStep"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="Paso 2 de 4"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/progressBar" />
 
-    <!-- Botón para verificar el código ingresado -->
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btnVerifyCode"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="90dp"
-        android:backgroundTint="@color/ice_blue_dark"
-        android:text="VERIFICAR"
-        android:textColor="@color/white"
-        app:cornerRadius="32dp"
-        app:layout_constraintBottom_toBottomOf="parent" />
-</androidx.constraintlayout.widget.ConstraintLayout>
+        <TextView
+            android:id="@+id/tvInstructions"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="Ingresa el código de verificación enviado a tu correo."
+            android:textSize="14sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tvStep" />
+
+        <!-- Formulario verificación -->
+        <LinearLayout
+            android:id="@+id/step2Layout"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="40dp"
+            android:orientation="vertical"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tvInstructions">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="Código de verificación:"
+                android:textColor="@color/ice_blue_dark"
+                android:textSize="@dimen/text_size_label"
+                android:textStyle="bold" />
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etVerificationCodeEmail"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/rounded_bg_f0f2f4"
+                android:hint="Ingrese el código"
+                android:inputType="text"
+                android:padding="12dp"
+                android:textColor="@color/dark_gray"
+                android:textColorHint="@color/light_gray" />
+
+            <TextView
+                android:id="@+id/tvVerificationError"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="El código ingresado no es válido."
+                android:textColor="@color/red"
+                android:textSize="12sp"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/tvResendEmail"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="Reenviar código al correo"
+                android:textColor="@color/ice_blue"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/resendEmailCountDown"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:textColor="@color/red"
+                android:textSize="13sp"
+                android:visibility="gone" />
+
+        </LinearLayout>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnVerifyCode"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="32dp"
+            android:backgroundTint="@color/ice_blue_dark"
+            android:text="VERIFICAR"
+            android:textColor="@color/white"
+            app:cornerRadius="32dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/step2Layout" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</ScrollView>

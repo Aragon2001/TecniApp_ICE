@@ -6,14 +6,18 @@
 package com.Arasoftsolutions.tecniapp_ice
 
 import android.content.Intent
+import android.graphics.Color
 import android.os.Bundle
 import android.util.Log
+import android.view.View
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.GravityCompat
 import androidx.core.view.isVisible
 import androidx.drawerlayout.widget.DrawerLayout
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.findNavController
 import androidx.navigation.NavOptions
 import androidx.navigation.ui.AppBarConfiguration
@@ -24,12 +28,14 @@ import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.UserEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.apellidosCompletos
+import com.Arasoftsolutions.tecniapp_ice.Database.room.AppDatabase
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
 import com.Arasoftsolutions.tecniapp_ice.databinding.ActivityMainBinding
 import com.Arasoftsolutions.tecniapp_ice.databinding.NavHeaderMainBinding
 import com.Arasoftsolutions.tecniapp_ice.notifications.VehiculoNotifications
 import com.Arasoftsolutions.tecniapp_ice.preferences.DataStoreManager
 import com.Arasoftsolutions.tecniapp_ice.permissions.PermissionInitializer
+import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriaDeepLink
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasSyncWorker
 import com.Arasoftsolutions.tecniapp_ice.ui.legal.StructuredTextFormatter
 import com.Arasoftsolutions.tecniapp_ice.ui.legal.StructuredTextParser
@@ -60,6 +66,9 @@ class ActivityMain : AppCompatActivity() {
     private lateinit var permissionInitializer: PermissionInitializer
     private var adminRoleEligible = false
     private var adminPrivilegesEnabled = true
+
+    private val isTablet by lazy { resources.configuration.smallestScreenWidthDp >= 600 }
+
     private val authStateListener = FirebaseAuth.AuthStateListener { firebaseAuth ->
         if (firebaseAuth.currentUser == null) {
             navigateToLogin()
@@ -69,37 +78,28 @@ class ActivityMain : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-
-        // ViewBinding
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
         ensureTermsAccepted()
         checkPendingUpdate()
 
-        // Toolbar
         setSupportActionBar(binding.appBarMain.toolbar)
 
-        // Firebase Auth
         auth = FirebaseAuth.getInstance()
-
-        // Room Repository
         repository = RoomRepository.getInstance(applicationContext)
         permissionInitializer = PermissionInitializer(this, dataStore)
 
-        // Cargar datos del usuario local (Room)
-        lifecycleScope.launch {
-            loadUserDataFromDatabase()
-        }
+        lifecycleScope.launch { loadUserDataFromDatabase() }
         observeUserUpdates()
-         val currentUser = auth.currentUser
+
+        val currentUser = auth.currentUser
         if (currentUser != null) {
             triggerInitialAveriasSyncIfIdle()
         }
 
         permissionInitializer.initializeIfNeeded()
 
-        // Drawer + Navigation
         val drawerLayout: DrawerLayout = binding.drawerLayout
         navView = binding.navView
         val navController = findNavController(R.id.nav_host_fragment_content_main)
@@ -110,40 +110,48 @@ class ActivityMain : AppCompatActivity() {
             header.root.setOnClickListener { openUserFragment() }
         }
 
-        appBarConfiguration = AppBarConfiguration(
-            setOf(
-                R.id.nav_home,
-                R.id.nav_medidor,
-                R.id.nav_localizacion,
-                R.id.nav_averias,
-                R.id.nav_luminarias,
-                R.id.nav_inventario,
-                R.id.nav_mi_vehiculo,
-                R.id.nav_reportes,
-                R.id.nav_planillas,
-                R.id.nav_programacion,
-                R.id.nav_account,
-                R.id.nav_settings,
-                R.id.nav_help,
-                R.id.nav_privacy
-            ),
-            drawerLayout
+        val topLevelDestinations = setOf(
+            R.id.nav_home,
+            R.id.nav_medidor,
+            R.id.nav_localizacion,
+            R.id.nav_averias,
+            R.id.nav_luminarias,
+            R.id.nav_inventario,
+            R.id.nav_mi_vehiculo,
+            R.id.nav_reportes,
+            R.id.nav_planillas,
+            R.id.nav_programacion,
+            R.id.nav_settings
         )
+
+        // En tablet no asociamos el drawer al AppBarConfiguration — no aparece hamburguesa
+        appBarConfiguration = if (isTablet) {
+            AppBarConfiguration(topLevelDestinations)
+        } else {
+            AppBarConfiguration(topLevelDestinations, drawerLayout)
+        }
 
         setupActionBarWithNavController(navController, appBarConfiguration)
         navView.setupWithNavController(navController)
+
         navView.setNavigationItemSelectedListener { item ->
             val currentId = navController.currentDestination?.id
             if (currentId == item.itemId) {
-                binding.drawerLayout.closeDrawer(GravityCompat.START)
+                if (!isTablet) drawerLayout.closeDrawer(GravityCompat.START)
                 return@setNavigationItemSelectedListener true
             }
             validarEtmAntesDeNavegar(item.itemId) {
-                navController.navigate(item.itemId, null, buildDrawerNavOptions(navController.graph.startDestinationId))
+                navController.navigate(
+                    item.itemId,
+                    null,
+                    buildDrawerNavOptions(navController.graph.startDestinationId)
+                )
             }
-            binding.drawerLayout.closeDrawer(GravityCompat.START)
+            if (!isTablet) drawerLayout.closeDrawer(GravityCompat.START)
             true
         }
+
+        setupAdaptiveLayout(drawerLayout)
 
         lifecycleScope.launch {
             dataStore.adminPrivilegesEnabled.collect { enabled ->
@@ -155,6 +163,46 @@ class ActivityMain : AppCompatActivity() {
         handleIntentNavigation(intent)
     }
 
+    /**
+     * Configuración adaptativa: en tablet el drawer queda siempre abierto y sin animación de
+     * deslizamiento; en teléfono se aplica el efecto paralax sobre el contenido principal.
+     */
+    private fun setupAdaptiveLayout(drawerLayout: DrawerLayout) {
+        if (isTablet) {
+            drawerLayout.setDrawerLockMode(DrawerLayout.LOCK_MODE_LOCKED_OPEN)
+            // Scrim transparente en tablet (el drawer es permanente, no overlay)
+            drawerLayout.setScrimColor(Color.TRANSPARENT)
+        } else {
+            // Scrim azul oscuro en lugar del negro estándar
+            drawerLayout.setScrimColor(Color.argb(200, 7, 20, 40))
+            addDrawerParallaxAnimation(drawerLayout)
+        }
+    }
+
+    /** Efecto de escala/translación sobre el contenido al abrir el drawer. */
+    private fun addDrawerParallaxAnimation(drawerLayout: DrawerLayout) {
+        val contentView = binding.appBarMain.root
+        drawerLayout.addDrawerListener(object : DrawerLayout.DrawerListener {
+            override fun onDrawerSlide(drawerView: View, slideOffset: Float) {
+                val scale = 1f - 0.04f * slideOffset
+                contentView.scaleX = scale
+                contentView.scaleY = scale
+                contentView.pivotX = 0f
+                contentView.pivotY = contentView.height / 2f
+                contentView.translationX = drawerView.width * slideOffset * 0.06f
+            }
+
+            override fun onDrawerOpened(drawerView: View) = Unit
+            override fun onDrawerClosed(drawerView: View) {
+                contentView.scaleX = 1f
+                contentView.scaleY = 1f
+                contentView.translationX = 0f
+            }
+
+            override fun onDrawerStateChanged(newState: Int) = Unit
+        })
+    }
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
@@ -162,15 +210,35 @@ class ActivityMain : AppCompatActivity() {
     }
 
     private fun handleIntentNavigation(intent: Intent?) {
-        if (intent?.getBooleanExtra(VehiculoNotifications.EXTRA_OPEN_MIVEHICULO, false) != true) return
-        intent.removeExtra(VehiculoNotifications.EXTRA_OPEN_MIVEHICULO)
-        val navController = findNavController(R.id.nav_host_fragment_content_main)
-        if (navController.currentDestination?.id != R.id.nav_mi_vehiculo) {
-            navController.navigate(
-                R.id.nav_mi_vehiculo,
-                null,
-                buildDrawerNavOptions(navController.graph.startDestinationId)
-            )
+        if (intent == null) return
+
+        val caseId = intent.getStringExtra("open_averia") ?: intent.getStringExtra("caseId")
+        if (!caseId.isNullOrBlank() && intent.getBooleanExtra("openAveriaDetail", false)) {
+            intent.removeExtra("open_averia")
+            intent.removeExtra("caseId")
+            intent.removeExtra("openAveriaDetail")
+            AveriaDeepLink.pendingCaseId = caseId
+            val navController = findNavController(R.id.nav_host_fragment_content_main)
+            if (navController.currentDestination?.id != R.id.nav_averias) {
+                navController.navigate(
+                    R.id.nav_averias,
+                    null,
+                    buildDrawerNavOptions(navController.graph.startDestinationId)
+                )
+            }
+            return
+        }
+
+        if (intent.getBooleanExtra(VehiculoNotifications.EXTRA_OPEN_MIVEHICULO, false)) {
+            intent.removeExtra(VehiculoNotifications.EXTRA_OPEN_MIVEHICULO)
+            val navController = findNavController(R.id.nav_host_fragment_content_main)
+            if (navController.currentDestination?.id != R.id.nav_mi_vehiculo) {
+                navController.navigate(
+                    R.id.nav_mi_vehiculo,
+                    null,
+                    buildDrawerNavOptions(navController.graph.startDestinationId)
+                )
+            }
         }
     }
 
@@ -253,9 +321,6 @@ class ActivityMain : AppCompatActivity() {
         private const val UPDATE_DIALOG_TAG = "update_dialog"
     }
 
-    /**
-     * Carga el usuario desde Room usando el UID del usuario autenticado.
-     */
     private suspend fun loadUserDataFromDatabase() {
         val uid = auth.currentUser?.uid
         val user: UserEntity? = if (uid != null) {
@@ -297,6 +362,12 @@ class ActivityMain : AppCompatActivity() {
             displayValue(usuario.agencia)
         )
 
+        headerBinding.textViewRole.text = when (usuario.rol?.trim()?.lowercase()) {
+            "administrador" -> "ADMINISTRADOR"
+            "supervisor" -> "SUPERVISOR"
+            else -> "TÉCNICO"
+        }
+
         val vehiculo = usuario.placaVehiculo?.takeUnless { it.isBlank() }
         if (vehiculo.isNullOrBlank()) {
             headerBinding.textViewVehicle.isVisible = false
@@ -329,7 +400,7 @@ class ActivityMain : AppCompatActivity() {
     private fun openUserFragment() {
         val navController = findNavController(R.id.nav_host_fragment_content_main)
         if (navController.currentDestination?.id == R.id.nav_account) {
-            binding.drawerLayout.closeDrawer(GravityCompat.START)
+            if (!isTablet) binding.drawerLayout.closeDrawer(GravityCompat.START)
             return
         }
         navController.navigate(
@@ -337,7 +408,7 @@ class ActivityMain : AppCompatActivity() {
             null,
             buildDrawerNavOptions(navController.graph.startDestinationId)
         )
-        binding.drawerLayout.closeDrawer(GravityCompat.START)
+        if (!isTablet) binding.drawerLayout.closeDrawer(GravityCompat.START)
     }
 
     private fun buildDrawerNavOptions(startDestinationId: Int): NavOptions =
@@ -345,6 +416,10 @@ class ActivityMain : AppCompatActivity() {
             .setLaunchSingleTop(true)
             .setRestoreState(true)
             .setPopUpTo(startDestinationId, inclusive = false, saveState = true)
+            .setEnterAnim(R.anim.nav_enter_anim)
+            .setExitAnim(R.anim.nav_exit_anim)
+            .setPopEnterAnim(R.anim.nav_enter_anim)
+            .setPopExitAnim(R.anim.nav_exit_anim)
             .build()
 
     override fun onSupportNavigateUp(): Boolean {

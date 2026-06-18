@@ -6,6 +6,7 @@ import com.Arasoftsolutions.tecniapp_ice.Database.entities.AveriaEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.room.AppDatabase
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriaNotificationDispatcher
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriaNotificationPreferences
+import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasForegroundTracker
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasRepository
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.shouldNotifyForAgency
 import com.google.firebase.auth.FirebaseAuth
@@ -61,23 +62,43 @@ class TecniAppMessagingService : FirebaseMessagingService() {
             return
         }
 
-        val estado = data["estado"] ?: data["estadoClor"] ?: "PENDIENTE"
+        val evento = data["evento"]?.trim()?.lowercase()
+        // Solo procesar eventos de nueva avería o avería asignada
+        if (evento != null && evento != "nueva_averia" && evento != "averia_asignada" && evento != "averia_resuelta") {
+            Log.d(TAG, "Evento ignorado: evento=$evento caseId=$caseId")
+            return
+        }
 
-        Log.d(TAG, "FCM caseId=$caseId estado=$estado")
+        val estadoRaw = data["estado"] ?: data["estadoClor"] ?: "PENDIENTE"
+        val estadoClor = data["estadoClor"]?.trim()?.uppercase()
 
-        val averia = buildAveriaFromMessage(caseId, data, estado)
+        Log.d(TAG, "FCM caseId=$caseId evento=$evento estadoRaw=$estadoRaw estadoClor=$estadoClor")
+
+        val averia = buildAveriaFromMessage(caseId, data, estadoRaw, estadoClor)
 
         // Insertar/Actualizar en Room
         scope.launch {
             try {
                 repo.upsertFromPush(averia)
-                Log.d(TAG, "Avería insertada/actualizada en Room")
+                Log.d(TAG, "Avería insertada/actualizada en Room caseId=$caseId")
             } catch (e: Exception) {
-                Log.e(TAG, "Error insertando en Room", e)
+                Log.e(TAG, "Error insertando en Room caseId=$caseId", e)
             }
         }
 
-        // Verificar preferencias
+        // FIX 1: Log explícito del estado del tracker ANTES de la guarda, para
+        // detectar si isAveriasVisible quedó en true incorrectamente (flag zombie).
+        // Si ves "isAveriasVisible=true" en logcat cuando la pantalla está cerrada,
+        // revisa que el Fragment llame a AveriasForegroundTracker.isAveriasVisible = false
+        // en onPause() y onDestroyView().
+        Log.d(TAG, "isAveriasVisible=${AveriasForegroundTracker.isAveriasVisible} — caseId=$caseId")
+
+        if (AveriasForegroundTracker.isAveriasVisible) {
+            Log.d(TAG, "Pantalla de averías activa — notificación suprimida para caseId=$caseId")
+            return
+        }
+
+        // Verificar preferencias del usuario
         if (!AveriaNotificationPreferences.areNotificationsEnabled(this)) {
             Log.d(TAG, "Notificaciones desactivadas por usuario")
             return
@@ -85,15 +106,17 @@ class TecniAppMessagingService : FirebaseMessagingService() {
 
         val agencyFilters = AveriaNotificationPreferences.normalizedAgencies(this)
         if (!shouldNotifyForAgency(averia, agencyFilters)) {
-            Log.d(TAG, "Filtrado por agencia")
+            Log.d(TAG, "Filtrado por agencia para caseId=$caseId")
             return
         }
 
-        // Notificar según tipo
-        if (estado == "RESUELTA") {
-            AveriaNotificationDispatcher.notifyResolvedCases(this, listOf(averia))
-        } else {
-            AveriaNotificationDispatcher.notifyNewCases(this, listOf(averia))
+        when {
+            estadoClor == "RESUELTA" || evento == "averia_resuelta" ->
+                AveriaNotificationDispatcher.notifyResolvedCases(this, listOf(averia))
+            evento == "averia_asignada" ->
+                AveriaNotificationDispatcher.notifyAssignedCase(this, averia)
+            else ->
+                AveriaNotificationDispatcher.notifyNewCases(this, listOf(averia))
         }
     }
 
@@ -104,27 +127,32 @@ class TecniAppMessagingService : FirebaseMessagingService() {
     private fun buildAveriaFromMessage(
         caseId: String,
         data: Map<String, String>,
-        estado: String
+        estadoRaw: String,
+        estadoClor: String?
     ): AveriaEntity {
 
         val agencia = data["agencia"]
         val nombreAgencia = data["nombreAgencia"] ?: agencia
         val descripcion = data["descripcion"]
 
-        val lastUpdated =
-            data["lastUpdated"]?.toLongOrNull() ?: System.currentTimeMillis()
+        val lastUpdated = data["lastUpdated"]?.toLongOrNull() ?: System.currentTimeMillis()
+        val fechaInicio = data["fechaInicioMillis"]?.toLongOrNull() ?: lastUpdated
 
-        val fechaInicio =
-            data["fechaInicioMillis"]?.toLongOrNull() ?: lastUpdated
+        // localizacion comes from the FCM payload (may be blank for CLOR-sourced events);
+        // do NOT substitute descripcion here — that causes the notification to show the
+        // observaciones text labeled as "Localización".
+        val localizacion = data["localizacion"]?.takeIf { it.isNotBlank() }
 
         return AveriaEntity(
             caseId = caseId,
-            estado = estado,
+            estado = estadoRaw,
+            estadoClor = estadoClor,
             agencia = agencia,
             nombreAgencia = nombreAgencia,
             agenciaTag = data["agenciaTag"] ?: agencia ?: "",
             region = data["region"],
-            localizacion = descripcion ?: nombreAgencia,
+            localizacion = localizacion,
+            direccion = data["direccion"]?.takeIf { it.isNotBlank() },
             observaciones = descripcion,
             nise = data["nise"],
             causa = data["causa"],
@@ -193,7 +221,7 @@ class TecniAppMessagingService : FirebaseMessagingService() {
         fun flushPendingToken(context: Context, uid: String?) {
             if (uid.isNullOrBlank()) return
 
-            val prefs = context.getSharedPreferences(FCM_PREFS, MODE_PRIVATE)
+            val prefs = context.getSharedPreferences(FCM_PREFS, Context.MODE_PRIVATE)
             val pending = prefs.getString(KEY_PENDING_TOKEN, null) ?: return
 
             val safeKey = pending.replace("[.#$\\[\\]/]".toRegex(), "_")

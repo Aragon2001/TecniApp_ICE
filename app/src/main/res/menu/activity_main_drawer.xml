@@ -9,15 +9,12 @@
         Desarrollado para el Instituto Costarricense de Electricidad (ICE).
     -->
 
+    <!-- OPERACIONES: trabajo de campo principal -->
     <group android:checkableBehavior="single">
         <item
             android:id="@+id/nav_home"
             android:icon="@drawable/ic_menu_home"
             android:title="@string/menu_home" />
-        <item
-            android:id="@+id/nav_account"
-            android:icon="@drawable/ic_person"
-            android:title="@string/menu_account" />
         <item
             android:id="@+id/nav_medidor"
             android:icon="@drawable/ic_menu_medidor"
@@ -33,27 +30,31 @@
         <item
             android:id="@+id/nav_luminarias"
             android:icon="@drawable/ic_menu_luminarias"
-            android:title="@string/menu_luminarias"
-            />
+            android:title="@string/menu_luminarias" />
+    </group>
+
+    <!-- GESTIÓN: activos, vehículo, reportes -->
+    <group android:checkableBehavior="single">
         <item
             android:id="@+id/nav_inventario"
             android:icon="@drawable/ic_menu_inventario"
-            android:title="@string/menu_inventario"
-            />
+            android:title="@string/menu_inventario" />
         <item
             android:id="@+id/nav_mi_vehiculo"
             android:icon="@drawable/ic_car"
-            android:title="@string/menu_mi_vehiculo"
-            />
+            android:title="@string/menu_mi_vehiculo" />
         <item
             android:id="@+id/nav_reportes"
             android:icon="@drawable/ic_menu_reportes"
-            android:title="@string/menu_reportes"
-           />
+            android:title="@string/menu_reportes" />
         <item
             android:id="@+id/nav_planillas"
             android:icon="@drawable/ic_menu_reportes"
             android:title="@string/menu_planillas" />
+    </group>
+
+    <!-- SISTEMA: administración, planificación, configuración -->
+    <group android:checkableBehavior="single">
         <item
             android:id="@+id/nav_admin"
             android:icon="@drawable/ic_menu_admin"
@@ -62,18 +63,11 @@
             android:id="@+id/nav_programacion"
             android:icon="@drawable/ic_menu_programacion"
             android:title="@string/menu_programacion"
-            android:visible="false"/>
+            android:visible="true" />
         <item
             android:id="@+id/nav_settings"
             android:icon="@drawable/ic_settings"
             android:title="@string/menu_settings" />
-        <item
-            android:id="@+id/nav_help"
-            android:icon="@drawable/ic_menu_help"
-            android:title="@string/menu_help" />
-        <item
-            android:id="@+id/nav_privacy"
-            android:icon="@drawable/ic_menu_policy"
-            android:title="@string/menu_privacy" />
     </group>
+
 </menu>

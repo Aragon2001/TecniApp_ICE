@@ -19,6 +19,7 @@ import com.Arasoftsolutions.tecniapp_ice.fcm.TecniAppMessagingService
 import com.Arasoftsolutions.tecniapp_ice.preferences.DataStoreManager
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriaNotificationPreferences
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasSyncWorker
+import com.Arasoftsolutions.tecniapp_ice.network.NetworkHealthMonitor
 import com.Arasoftsolutions.tecniapp_ice.ui.modal.SyncDialogFragment
 import com.google.android.material.button.MaterialButton
 import com.google.firebase.auth.FirebaseAuth
@@ -31,12 +32,13 @@ import com.google.firebase.messaging.FirebaseMessaging
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 
 /**
  * Pantalla de inicio de sesión orientada a “Room-first”.
  *
- * Decisiones clave:
+ * Decisiones clave:2
  * - La verificación de existencia de cuenta se hace con FirebaseAuth (fetchSignInMethodsForEmail)
  *   para evitar reglas de lectura amplias en RTDB.
  * - El perfil del usuario en RTDB se maneja por UID (nodo /usuarios/{uid}).
@@ -130,40 +132,39 @@ class LoginActivity : AppCompatActivity() {
      * Se persiste también "email_lower" para futuras búsquedas internas case-insensitive
      * (no se usa en login; la verificación de cuenta se hace con FirebaseAuth).
      */
-    private fun createUserRtdbIfMissing(uid: String, email: String) {
-        val userRef = FirebaseDatabase.getInstance(DATABASE_URL_USERS)
-            .reference.child("usuarios").child(uid)
+    private suspend fun createUserRtdbIfMissing(uid: String, email: String) {
+        try {
+            val userRef = database.child("usuarios").child(uid)
+            val snap = userRef.get().await()
 
-        userRef.get()
-            .addOnSuccessListener { snap ->
-                if (!snap.exists()) {
-                    val emailLower = email.trim().lowercase()
-                    val userMap = mapOf(
-                        "uid" to uid,
-                        "email" to email,
-                        "email_lower" to emailLower,
-                        "nombre" to "",
-                        "apellidos" to "",
-                        "primer_apellido" to "",
-                        "segundo_apellido" to "",
-                        "cedula" to "",
-                        "region" to "",
-                        "region_nombre" to "",
-                        "subregion" to "",
-                        "subregion_nombre" to "",
-                        "agencia" to "",
-                        "agencia_id" to "",
-                        "placaVehiculo" to "",
-                        "telefono" to "",
-                        "password" to "",
-                        "rol" to ""
-                    )
-                    userRef.setValue(userMap)
-                }
+            if (!snap.exists()) {
+                val emailLower = email.trim().lowercase()
+                val userMap = mapOf(
+                    "uid" to uid,
+                    "email" to email,
+                    "email_lower" to emailLower,
+                    "nombre" to "",
+                    "apellidos" to "",
+                    "primer_apellido" to "",
+                    "segundo_apellido" to "",
+                    "cedula" to "",
+                    "region" to "",
+                    "region_nombre" to "",
+                    "subregion" to "",
+                    "subregion_nombre" to "",
+                    "agencia" to "",
+                    "agencia_id" to "",
+                    "placaVehiculo" to "",
+                    "telefono" to "",
+                    "password" to "",
+                    "rol" to ""
+                )
+                userRef.setValue(userMap).await()
+                Log.i(TAG, "Perfil de usuario creado exitosamente en RTDB.")
             }
-            .addOnFailureListener {
-                Log.w(TAG, "No se pudo verificar/crear nodo de usuario en RTDB: ${it.message}", it)
-            }
+        } catch (e: Exception) {
+            Log.w(TAG, "No se pudo verificar/crear nodo de usuario en RTDB: ${e.message}", e)
+        }
     }
 
     /**
@@ -192,6 +193,13 @@ class LoginActivity : AppCompatActivity() {
             return
         }
 
+        // El login requiere conexión real a internet (no solo red local / portal cautivo)
+        val networkHealth = NetworkHealthMonitor.getInstance(applicationContext)
+        if (networkHealth.health.value.blocksLogin) {
+            Toast.makeText(this, getString(R.string.home_login_blocked_offline), Toast.LENGTH_LONG).show()
+            return
+        }
+
         signInButton.isEnabled = false
 
         auth.signInWithEmailAndPassword(email, password)
@@ -212,12 +220,6 @@ class LoginActivity : AppCompatActivity() {
         // Persistencia de estado de sesión (compatibilidad)
         markLoggedIn()
 
-        // ✅ 1) Guardar token FCM en RTDB en el login
-        saveFcmTokenOnLogin(uid)
-
-        // ✅ 2) Subir filtros de notificación (si el usuario los tiene configurados)
-        AveriaNotificationPreferences.pushFiltersToFirebase(this)
-
         // Diálogo de progreso de sincronización
         val dlg = SyncDialogFragment.show(supportFragmentManager).apply {
             setHeader("Sincronizando…")
@@ -229,6 +231,13 @@ class LoginActivity : AppCompatActivity() {
                 val bootstrap = withContext(Dispatchers.IO) {
                     executePostLoginBootstrap(uid = uid, email = email)
                 }
+
+                // ✅ 1) Guardar token FCM en RTDB en el login
+                // Se hace después del bootstrap para asegurar que el nodo /usuarios/{uid} ya existe.
+                saveFcmTokenOnLogin(uid)
+
+                // ✅ 2) Subir filtros de notificación (si el usuario los tiene configurados)
+                AveriaNotificationPreferences.pushFiltersToFirebase(this@LoginActivity)
 
                 val subId = bootstrap.user.subregion?.trim().orEmpty()
                 if (subId.isBlank()) {
@@ -255,9 +264,7 @@ class LoginActivity : AppCompatActivity() {
                     },
                     onSyncSuccess = {
                         if (!isFinishing && !isDestroyed) {
-                            lifecycleScope.launch(Dispatchers.IO) {
-                                AveriasSyncWorker.triggerNow(applicationContext)
-                            }
+                            AveriasSyncWorker.triggerNow(applicationContext)
                             dlg.dismissAllowingStateLoss()
                             Toast.makeText(this@LoginActivity, "Inicio de sesión exitoso", Toast.LENGTH_SHORT).show()
                             startActivity(Intent(this@LoginActivity, ActivityMain::class.java))
@@ -301,8 +308,7 @@ class LoginActivity : AppCompatActivity() {
                 "fcm/tokens/${token.toFirebaseKey()}" to token
             )
 
-            FirebaseDatabase.getInstance(DATABASE_URL_USERS)
-                .getReference("usuarios")
+            database.child("usuarios")
                 .child(uid)
                 .updateChildren(updates)
                 .addOnSuccessListener {
@@ -379,40 +385,6 @@ class LoginActivity : AppCompatActivity() {
         getSharedPreferences(SYNC_PREFS, MODE_PRIVATE).edit()
             .putBoolean(SYNC_KEY_LOGGED_IN, true)
             .apply()
-    }
-
-    /**
-     * Lectura auxiliar del perfil por UID (solo para logging o precarga).
-     * No es necesaria para el login en sí, ya que la sincronización persiste en Room.
-     */
-    private fun loadUserDataByUid(uid: String) {
-        FirebaseDatabase.getInstance(DATABASE_URL_USERS)
-            .reference.child("usuarios").child(uid)
-            .get()
-            .addOnSuccessListener { snap ->
-                if (!snap.exists()) {
-                    Log.w(TAG, "Perfil no encontrado en RTDB para uid=$uid")
-                    return@addOnSuccessListener
-                }
-                val nombre = snap.child("nombre").getValue(String::class.java).orEmpty()
-                val apellido1 = snap.child("primer_apellido").getValue(String::class.java).orEmpty()
-                val apellido2 = snap.child("segundo_apellido").getValue(String::class.java).orEmpty()
-                val apellidos = listOf(apellido1, apellido2)
-                    .filter { it.isNotBlank() }
-                    .joinToString(" ")
-                    .ifBlank { snap.child("apellidos").getValue(String::class.java).orEmpty() }
-                val placa = snap.child("placaVehiculo").getValue(String::class.java).orEmpty()
-                val subR = snap.child("subregion").getValue(String::class.java).orEmpty()
-                val region = snap.child("region").getValue(String::class.java).orEmpty()
-                val agencia = snap.child("agencia").getValue(String::class.java).orEmpty()
-                Log.d(
-                    TAG,
-                    "Perfil RTDB -> $nombre $apellidos, region=$region, agencia=$agencia, placa=$placa, subregion=$subR"
-                )
-            }
-            .addOnFailureListener { e ->
-                Log.e(TAG, "Error leyendo perfil por UID: ${e.message}", e)
-            }
     }
 
     /**

@@ -5,12 +5,11 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
-import androidx.work.WorkManager
-import com.Arasoftsolutions.tecniapp_ice.Database.room.AppDatabase
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
 import com.Arasoftsolutions.tecniapp_ice.preferences.DataStoreManager
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriaNotifications
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasSyncWorker
+import com.Arasoftsolutions.tecniapp_ice.network.NetworkHealthMonitor
 import com.Arasoftsolutions.tecniapp_ice.ui.common.NetworkAlertManager
 import com.Arasoftsolutions.tecniapp_ice.update.UpdateWorker
 import com.Arasoftsolutions.tecniapp_ice.ui.vehiculo.worker.VehiculoReminderWorker
@@ -33,6 +32,7 @@ class TecniApp : Application() {
         android.util.Log.d("TecniApp", "Application onCreate() ejecutado ✅")
         AveriaNotifications.ensureChannel(this)
         networkAlertManager.start()
+        NetworkHealthMonitor.getInstance(this)
         enableFirebasePersistence()
         val dataStore = DataStoreManager.getInstance(this)
         applicationScope.launch {
@@ -47,21 +47,15 @@ class TecniApp : Application() {
             }
         }
         applicationScope.launch {
-            val autoSyncEnabled = dataStore.autoSyncEnabled.first()
-            if (autoSyncEnabled) {
+            val uid = FirebaseAuth.getInstance().currentUser?.uid
+            if (!uid.isNullOrBlank()) {
                 AveriasSyncWorker.schedule(this@TecniApp)
-            } else {
-                WorkManager.getInstance(this@TecniApp)
-                    .cancelUniqueWork(AveriasSyncWorker.UNIQUE_PERIODIC_WORK)
+                VehiculoReminderWorker.scheduleDaily(this@TecniApp)
             }
         }
 
         UpdateWorker.schedule(this)
-        VehiculoReminderWorker.scheduleDaily(this)
-
-        // Micro-paso 1:
-        // Desconectamos la sincronización pesada del arranque para evitar trabajo de red/DB
-        // en Application.onCreate(). Se mantiene el resto de inicialización liviana.
+        registerRealtimeSyncObserver()
     }
 
     private fun enableFirebasePersistence() {

@@ -25,43 +25,68 @@ import com.Arasoftsolutions.tecniapp_ice.session.SessionManager
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import kotlinx.coroutines.tasks.await
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import com.Arasoftsolutions.tecniapp_ice.notifications.SyncStatusNotifications
 
 
 class AveriasSyncWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx, params) {
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
+        // Validación extra: rechaza redes sin internet validado (portales cautivos, etc.)
+        if (!hasValidatedInternet()) return@withContext Result.retry()
+
         val shouldNotifySync = inputData.getBoolean(KEY_NOTIFY_SYNC, false)
         val auth = FirebaseAuth.getInstance()
         val currentUser = auth.currentUser
-        if (currentUser != null) {
-            val reloadResult = runCatching { currentUser.reload().await() }
-            if (reloadResult.exceptionOrNull() is FirebaseAuthInvalidUserException) {
-                SessionManager.signOutAndClear(applicationContext)
-                return@withContext Result.success()
-            }
+
+        if (currentUser == null) return@withContext Result.success()
+
+        val reloadResult = runCatching { currentUser.reload().await() }
+        if (reloadResult.exceptionOrNull() is FirebaseAuthInvalidUserException) {
+            SessionManager.signOutAndClear(applicationContext)
+            return@withContext Result.success()
         }
 
         runCatching {
             AppSyncCoordinator.runExclusive {
-            val db = AppDatabase.getInstance(applicationContext)
-            val repo = AveriasRepository(db)
-            // 1. Sube los pendientes a Firebase
-            repo.syncPendientesConFirebase()
+                val db = AppDatabase.getInstance(applicationContext)
+                val repo = AveriasRepository(db)
+                // 1. Sube los pendientes a Firebase
+                repo.syncPendientesConFirebase()
 
-            // 2. Refresca Room desde Firebase cuando aplique
-            repo.pullFromFirebaseOnce()
+                // 2. Refresca Room desde Firebase cuando aplique
+                val pullResult = repo.pullFromFirebaseOnce()
 
-            val uid = auth.currentUser?.uid
-            if (!uid.isNullOrBlank()) {
-                RoomRepository.getInstance(applicationContext).upsertUserFromFirebase(uid)
-            }
+                if (pullResult.newCases.isNotEmpty() && !AveriasForegroundTracker.isAveriasVisible &&
+                    AveriaNotificationPreferences.areNotificationsEnabled(applicationContext)
+                ) {
+                    val agencyFilters = AveriaNotificationPreferences.normalizedAgencies(applicationContext)
+                    val toNotify = if (agencyFilters.isEmpty()) pullResult.newCases
+                        else pullResult.newCases.filter { shouldNotifyForAgency(it, agencyFilters) }
+                    if (toNotify.isNotEmpty()) {
+                        AveriaNotificationDispatcher.notifyNewCases(applicationContext, toNotify)
+                    }
+                }
+
+                val uid = auth.currentUser?.uid
+                if (!uid.isNullOrBlank()) {
+                    RoomRepository.getInstance(applicationContext).upsertUserFromFirebase(uid)
+                }
             }
         }.onFailure { return@withContext Result.retry() }
         if (shouldNotifySync) {
             SyncStatusNotifications.notifySynced(applicationContext)
         }
         Result.success()
+    }
+
+    /** Confirma que la red activa tiene internet validado (no solo conectividad local). */
+    private fun hasValidatedInternet(): Boolean {
+        val cm = applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val caps = cm.getNetworkCapabilities(cm.activeNetwork ?: return false) ?: return false
+        return caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+            caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
     }
 
     companion object {

@@ -11,55 +11,49 @@ import com.Arasoftsolutions.tecniapp_ice.registro.Paso3Fragment
 import com.Arasoftsolutions.tecniapp_ice.registro.Paso4Fragment
 import com.Arasoftsolutions.tecniapp_ice.registro.RegistroViewModel
 
-
 class RegistroActivity : AppCompatActivity() {
 
     private lateinit var viewModel: RegistroViewModel
 
-    private val stepFragmentMap = mapOf(
-        1 to Paso2Fragment(),
-        2 to Paso3Fragment(),
-        3 to Paso4Fragment()
-    )
+    // FIX: eliminado el stepFragmentMap que creaba 3 instancias de Fragment
+    // en onCreate (y en cada rotación). Ahora se instancian solo cuando se
+    // necesitan dentro de goToNextStep.
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_registro)
 
-        // Inicialización del ViewModel
         viewModel = ViewModelProvider(this).get(RegistroViewModel::class.java)
 
-        // Cargar el primer fragmento al iniciar la actividad
         if (savedInstanceState == null) {
             loadFragment(Paso1Fragment())
         }
     }
 
-    // Función para cargar un fragmento
     private fun loadFragment(fragment: Fragment) {
-        val transaction = supportFragmentManager.beginTransaction()
-        transaction.replace(R.id.fragment_container, fragment)
-        transaction.addToBackStack(null) // Añadir la transacción al stack para poder navegar atrás
-        transaction.commit()
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.fragment_container, fragment)
+            .addToBackStack(null)
+            .commit()
     }
 
     fun goToLogin() {
-        // Verificar si la actividad de login ya está en la pila
-        val intent = Intent(this, LoginActivity::class.java)
-
-        // Opcional: agregar flags para evitar múltiples instancias de la actividad de login
-        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
-
+        val intent = Intent(this, LoginActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
         startActivity(intent)
-
-        // Cerrar la actividad actual
-        finish() // Esto cerrará la actividad actual (RegistroActivity)
+        finish()
     }
 
-    // Método para ir al siguiente paso
+    // FIX: instanciar el fragmento en el momento de navegar para que el
+    // sistema de fragmentos gestione correctamente su ciclo de vida.
     fun goToNextStep(step: Int) {
-        stepFragmentMap[step]?.let { fragment ->
-            loadFragment(fragment)
+        val fragment: Fragment = when (step) {
+            1 -> Paso2Fragment()
+            2 -> Paso3Fragment()
+            3 -> Paso4Fragment()
+            else -> return
         }
+        loadFragment(fragment)
     }
 }

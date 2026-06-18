@@ -12,7 +12,7 @@
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:clipToPadding="false"
-        android:paddingBottom="24dp"
+        android:paddingBottom="32dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -23,6 +23,9 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
+            <!-- ══════════════════════════════════════════
+                 HEADER  — gradiente ICE azul
+                 ══════════════════════════════════════════ -->
             <LinearLayout
                 android:id="@+id/home_header_container"
                 android:layout_width="match_parent"
@@ -30,8 +33,8 @@
                 android:background="@drawable/bg_home_header"
                 android:orientation="vertical"
                 android:paddingHorizontal="24dp"
-                android:paddingTop="48dp"
-                android:paddingBottom="32dp"
+                android:paddingTop="52dp"
+                android:paddingBottom="28dp"
                 tools:ignore="UseCompoundDrawables">
 
                 <TextView
@@ -40,14 +43,15 @@
                     android:layout_height="wrap_content"
                     android:fontFamily="sans-serif-medium"
                     android:textColor="@color/white"
-                    android:textSize="24sp"
+                    android:textSize="22sp"
                     android:textStyle="bold"
                     tools:text="Bienvenido, Juan Pérez" />
 
+                <!-- Dot de estado de red -->
                 <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
+                    android:layout_marginTop="10dp"
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
 
@@ -55,16 +59,17 @@
                         android:id="@+id/view_status_indicator"
                         android:layout_width="10dp"
                         android:layout_height="10dp"
+                        android:layout_marginEnd="8dp"
                         android:background="@drawable/bg_home_status_online"
-                        android:contentDescription="@string/home_status_online"
-                        android:layout_marginEnd="8dp" />
+                        android:contentDescription="@string/home_status_online" />
 
                     <TextView
                         android:id="@+id/text_status"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:alpha="0.9"
                         android:textColor="@color/white"
-                        android:textSize="14sp"
+                        android:textSize="13sp"
                         tools:text="Online" />
                 </LinearLayout>
 
@@ -72,54 +77,98 @@
                     android:id="@+id/text_assignment"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
+                    android:layout_marginTop="8dp"
+                    android:alpha="0.85"
                     android:textColor="@color/white"
-                    android:textSize="14sp"
+                    android:textSize="13sp"
                     tools:text="Subregión Cartago • Agencia Paraíso • ICE 1234" />
 
                 <TextView
                     android:id="@+id/text_date"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
+                    android:layout_marginTop="8dp"
+                    android:alpha="0.75"
                     android:textColor="@color/white"
-                    android:textSize="14sp"
-                    tools:text="martes, 3 de octubre · 09:41" />
+                    android:textSize="12sp"
+                    tools:text="martes, 3 de octubre · 09:41:22" />
             </LinearLayout>
 
-            <LinearLayout
+            <!-- ══════════════════════════════════════════
+                 BANNER DE SALUD DE RED
+                 Oculto cuando STABLE; aparece animado al degradarse
+                 ══════════════════════════════════════════ -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/card_network_banner"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="0dp"
-                android:orientation="vertical"
-                android:paddingHorizontal="16dp">
-
-                <com.google.android.material.card.MaterialCardView
-                    android:id="@+id/card_etm_alert"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
-                    app:cardBackgroundColor="@color/error_container"
-                    app:cardCornerRadius="18dp"
-                    app:cardElevation="0dp">
-
-                    <TextView
-                        android:id="@+id/text_etm_alert"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:paddingHorizontal="16dp"
-                        android:paddingVertical="12dp"
-                        android:text="ETM pendiente"
-                        android:textColor="@color/error"
-                        android:textSize="14sp"
-                        android:textStyle="bold"
-                        tools:text="ETM pendiente: debes cerrar el registro de hoy." />
-                </com.google.android.material.card.MaterialCardView>
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginTop="12dp"
+                android:visibility="gone"
+                app:cardBackgroundColor="@color/error_500"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp"
+                tools:visibility="visible">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="29dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="16dp"
+                    android:paddingVertical="12dp">
+
+                    <ImageView
+                        android:id="@+id/ic_network_status"
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
+                        android:layout_marginEnd="12dp"
+                        android:src="@drawable/ic_cloud_sync"
+                        app:tint="@color/white"
+                        tools:ignore="ContentDescription" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/text_network_label"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/white"
+                            android:textSize="13sp"
+                            android:textStyle="bold"
+                            tools:text="Sin conexión" />
+
+                        <TextView
+                            android:id="@+id/text_network_detail"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:alpha="0.85"
+                            android:textColor="@color/white"
+                            android:textSize="12sp"
+                            tools:text="No hay red disponible. Trabajando en modo local." />
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- ══════════════════════════════════════════
+                 TARJETAS DE ESTADÍSTICAS — 2x2
+                 ══════════════════════════════════════════ -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingHorizontal="16dp">
+
+                <!-- Fila 1: Averías asignadas (azul) | Resueltas hoy (verde) -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
                     android:orientation="horizontal"
                     android:weightSum="2">
 
@@ -127,200 +176,354 @@
                         android:id="@+id/card_pending"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_marginEnd="8dp"
+                        android:layout_marginEnd="6dp"
                         android:layout_weight="1"
                         android:clickable="true"
                         android:focusable="true"
                         android:foreground="?attr/selectableItemBackground"
-                        app:cardBackgroundColor="@color/glass_light"
+                        app:cardBackgroundColor="@android:color/transparent"
                         app:cardCornerRadius="24dp"
-                        app:cardElevation="4dp">
+                        app:cardElevation="6dp">
 
-                        <LinearLayout
+                        <FrameLayout
                             android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="vertical"
-                            android:padding="16dp">
+                            android:layout_height="wrap_content">
 
+                            <!-- Fondo degradado azul -->
+                            <View
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:background="@drawable/bg_stat_card_blue" />
+
+                            <!-- Rayo eléctrico decorativo -->
                             <ImageView
-                                android:layout_width="24dp"
-                                android:layout_height="24dp"
-                                android:contentDescription="@string/home_card_pending_title"
-                                android:src="@drawable/ic_menu_averias"
-                                app:tint="@color/ice_blue" />
+                                android:layout_width="95dp"
+                                android:layout_height="105dp"
+                                android:layout_gravity="bottom|end"
+                                android:alpha="0.17"
+                                android:scaleType="fitCenter"
+                                android:src="@drawable/ic_bg_averia"
+                                android:translationX="12dp"
+                                android:translationY="10dp"
+                                tools:ignore="ContentDescription" />
 
-                            <TextView
-                                android:id="@+id/text_pending_count"
-                                android:layout_width="wrap_content"
+                            <!-- Contenido -->
+                            <LinearLayout
+                                android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:layout_marginTop="12dp"
-                                android:fontFamily="sans-serif-medium"
-                                android:textColor="?attr/colorOnSurface"
-                                android:textSize="28sp"
-                                android:textStyle="bold"
-                                tools:text="5" />
+                                android:orientation="vertical"
+                                android:padding="18dp">
 
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="4dp"
-                                android:text="@string/home_card_pending_title"
-                                android:textColor="?attr/colorOnSurfaceVariant"
-                                android:textSize="14sp" />
-                        </LinearLayout>
+                                <ImageView
+                                    android:layout_width="26dp"
+                                    android:layout_height="26dp"
+                                    android:contentDescription="@string/home_card_pending_title"
+                                    android:src="@drawable/ic_menu_averias"
+                                    app:tint="@color/white" />
+
+                                <TextView
+                                    android:id="@+id/text_pending_count"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="10dp"
+                                    android:fontFamily="sans-serif-medium"
+                                    android:textColor="@color/white"
+                                    android:textSize="22sp"
+                                    android:textStyle="bold"
+                                    tools:text="5" />
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="2dp"
+                                    android:alpha="0.85"
+                                    android:text="@string/home_card_pending_title"
+                                    android:textColor="@color/white"
+                                    android:textSize="12sp" />
+                            </LinearLayout>
+                        </FrameLayout>
                     </com.google.android.material.card.MaterialCardView>
 
                     <com.google.android.material.card.MaterialCardView
                         android:id="@+id/card_attended"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
+                        android:layout_marginStart="6dp"
                         android:layout_weight="1"
                         android:clickable="true"
                         android:focusable="true"
                         android:foreground="?attr/selectableItemBackground"
-                        app:cardBackgroundColor="@color/glass_light"
+                        app:cardBackgroundColor="@android:color/transparent"
                         app:cardCornerRadius="24dp"
-                        app:cardElevation="4dp">
+                        app:cardElevation="6dp">
 
-                        <LinearLayout
+                        <FrameLayout
                             android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="vertical"
-                            android:padding="16dp">
+                            android:layout_height="wrap_content">
 
+                            <!-- Fondo degradado verde -->
+                            <View
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:background="@drawable/bg_stat_card_green" />
+
+                            <!-- Check / palomita decorativa -->
                             <ImageView
-                                android:layout_width="24dp"
-                                android:layout_height="24dp"
-                                android:contentDescription="@string/home_card_attended_title"
-                                android:src="@drawable/ic_check"
-                                app:tint="@color/ice_blue" />
+                                android:layout_width="100dp"
+                                android:layout_height="100dp"
+                                android:layout_gravity="bottom|end"
+                                android:alpha="0.17"
+                                android:scaleType="fitCenter"
+                                android:src="@drawable/ic_bg_check"
+                                android:translationX="10dp"
+                                android:translationY="10dp"
+                                tools:ignore="ContentDescription" />
 
-                            <TextView
-                                android:id="@+id/text_attended_count"
-                                android:layout_width="wrap_content"
+                            <!-- Contenido -->
+                            <LinearLayout
+                                android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:layout_marginTop="12dp"
-                                android:fontFamily="sans-serif-medium"
-                                android:textColor="@color/on_light"
-                                android:textSize="28sp"
-                                android:textStyle="bold"
-                                tools:text="3" />
+                                android:orientation="vertical"
+                                android:padding="18dp">
 
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="4dp"
-                                android:text="@string/home_card_attended_title"
-                                android:textColor="?attr/colorOnSurfaceVariant"
-                                android:textSize="14sp" />
-                        </LinearLayout>
+                                <ImageView
+                                    android:layout_width="26dp"
+                                    android:layout_height="26dp"
+                                    android:contentDescription="@string/home_card_attended_title"
+                                    android:src="@drawable/ic_check"
+                                    app:tint="@color/white" />
+
+                                <TextView
+                                    android:id="@+id/text_attended_count"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="10dp"
+                                    android:fontFamily="sans-serif-medium"
+                                    android:textColor="@color/white"
+                                    android:textSize="22sp"
+                                    android:textStyle="bold"
+                                    tools:text="3" />
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="2dp"
+                                    android:alpha="0.85"
+                                    android:text="@string/home_card_attended_title"
+                                    android:textColor="@color/white"
+                                    android:textSize="12sp" />
+                            </LinearLayout>
+                        </FrameLayout>
                     </com.google.android.material.card.MaterialCardView>
                 </LinearLayout>
 
+                <!-- Fila 2: Luminarias (naranja) | Km/Orimetro (teal) -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="19dp"
+                    android:layout_marginTop="12dp"
                     android:orientation="horizontal"
                     android:weightSum="2">
+
+                    <com.google.android.material.card.MaterialCardView
+                        android:id="@+id/card_luminarias_stat"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="6dp"
+                        android:layout_weight="1"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:foreground="?attr/selectableItemBackground"
+                        app:cardBackgroundColor="@android:color/transparent"
+                        app:cardCornerRadius="24dp"
+                        app:cardElevation="6dp">
+
+                        <FrameLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content">
+
+                            <!-- Fondo degradado naranja -->
+                            <View
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:background="@drawable/bg_stat_card_orange" />
+
+                            <!-- Imagen decorativa: farola translúcida, espejada a la izquierda -->
+                            <ImageView
+                                android:layout_width="95dp"
+                                android:layout_height="105dp"
+                                android:layout_gravity="bottom|end"
+                                android:alpha="0.18"
+                                android:scaleType="fitEnd"
+                                android:scaleX="-1"
+                                android:src="@drawable/ic_bg_luminaria"
+                                android:translationX="10dp"
+                                android:translationY="8dp"
+                                tools:ignore="ContentDescription" />
+
+                            <!-- Contenido -->
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:orientation="vertical"
+                                android:padding="18dp">
+
+                                <ImageView
+                                    android:layout_width="26dp"
+                                    android:layout_height="26dp"
+                                    android:contentDescription="@string/home_stats_damaged_lights"
+                                    android:src="@drawable/ic_menu_luminarias"
+                                    app:tint="@color/white" />
+
+                                <TextView
+                                    android:id="@+id/text_stats_damaged_lights"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="10dp"
+                                    android:fontFamily="sans-serif-medium"
+                                    android:text="@string/home_cards_placeholder"
+                                    android:textColor="@color/white"
+                                    android:textSize="22sp"
+                                    android:textStyle="bold"
+                                    tools:text="7" />
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="2dp"
+                                    android:alpha="0.85"
+                                    android:text="@string/home_card_luminarias_title"
+                                    android:textColor="@color/white"
+                                    android:textSize="12sp" />
+                            </LinearLayout>
+                        </FrameLayout>
+                    </com.google.android.material.card.MaterialCardView>
 
                     <com.google.android.material.card.MaterialCardView
                         android:id="@+id/card_kilometraje"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_marginEnd="8dp"
+                        android:layout_marginStart="6dp"
                         android:layout_weight="1"
-                        app:cardBackgroundColor="@color/glass_light"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:foreground="?attr/selectableItemBackground"
+                        app:cardBackgroundColor="@android:color/transparent"
                         app:cardCornerRadius="24dp"
-                        app:cardElevation="4dp">
+                        app:cardElevation="6dp">
 
-                        <LinearLayout
+                        <FrameLayout
                             android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="vertical"
-                            android:padding="16dp">
+                            android:layout_height="wrap_content">
 
+                            <!-- Fondo degradado teal -->
+                            <View
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:background="@drawable/bg_stat_card_teal" />
+
+                            <!-- Imagen decorativa: velocímetro translúcido -->
                             <ImageView
-                                android:layout_width="24dp"
-                                android:layout_height="24dp"
-                                android:contentDescription="@string/home_card_kilometraje_title"
-                                android:src="@drawable/ic_menu_localizacion"
-                                app:tint="@color/ice_blue" />
+                                android:layout_width="110dp"
+                                android:layout_height="110dp"
+                                android:layout_gravity="bottom|end"
+                                android:alpha="0.18"
+                                android:scaleType="fitCenter"
+                                android:src="@drawable/ic_bg_velocimetro"
+                                android:translationX="14dp"
+                                android:translationY="14dp"
+                                tools:ignore="ContentDescription" />
 
-                            <TextView
-                                android:id="@+id/text_kilometraje"
-                                android:layout_width="wrap_content"
+                            <!-- Contenido -->
+                            <LinearLayout
+                                android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:layout_marginTop="12dp"
-                                android:fontFamily="sans-serif-medium"
-                                android:textColor="@color/on_light"
-                                android:textSize="24sp"
-                                android:textStyle="bold"
-                                tools:text="147 km" />
+                                android:orientation="vertical"
+                                android:padding="18dp">
 
-                            <TextView
-                                android:id="@+id/text_kilometraje_label"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="4dp"
-                                android:text="@string/home_card_kilometraje_title"
-                                android:textColor="@color/dark_gray"
-                                android:textSize="14sp" />
-                        </LinearLayout>
-                    </com.google.android.material.card.MaterialCardView>
+                                <ImageView
+                                    android:layout_width="26dp"
+                                    android:layout_height="26dp"
+                                    android:contentDescription="@string/home_card_kilometraje_title"
+                                    android:src="@drawable/ic_menu_vehiculo"
+                                    app:tint="@color/white" />
 
-                    <com.google.android.material.card.MaterialCardView
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_marginStart="8dp"
-                        android:layout_weight="1"
-                        app:cardBackgroundColor="@color/glass_light"
-                        app:cardCornerRadius="24dp"
-                        app:cardElevation="4dp">
+                                <TextView
+                                    android:id="@+id/text_kilometraje"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="10dp"
+                                    android:fontFamily="sans-serif-medium"
+                                    android:textColor="@color/white"
+                                    android:textSize="22sp"
+                                    android:textStyle="bold"
+                                    tools:text="147 km" />
 
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="vertical"
-                            android:padding="16dp">
-
-                            <ImageView
-                                android:layout_width="24dp"
-                                android:layout_height="24dp"
-                                android:contentDescription="@string/home_card_last_sync_title"
-                                android:src="@drawable/ic_cloud_download"
-                                app:tint="@color/ice_blue" />
-
-                            <TextView
-                                android:id="@+id/text_last_sync_value"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="12dp"
-                                android:fontFamily="sans-serif-medium"
-                                android:textColor="@color/on_light"
-                                android:textSize="24sp"
-                                android:textStyle="bold"
-                                tools:text="Hace 5 min" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="4dp"
-                                android:text="@string/home_card_last_sync_title"
-                                android:textColor="@color/dark_gray"
-                                android:textSize="14sp" />
-                        </LinearLayout>
+                                <TextView
+                                    android:id="@+id/text_kilometraje_label"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="2dp"
+                                    android:alpha="0.85"
+                                    android:text="@string/home_card_kilometraje_title"
+                                    android:textColor="@color/white"
+                                    android:textSize="12sp" />
+                            </LinearLayout>
+                        </FrameLayout>
                     </com.google.android.material.card.MaterialCardView>
                 </LinearLayout>
+
+                <!-- Alerta ETM -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/card_etm_alert"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:visibility="gone"
+                    app:cardBackgroundColor="@color/error_container"
+                    app:cardCornerRadius="18dp"
+                    app:cardElevation="0dp"
+                    tools:visibility="gone">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingHorizontal="16dp"
+                        android:paddingVertical="12dp">
+
+                        <ImageView
+                            android:layout_width="18dp"
+                            android:layout_height="18dp"
+                            android:layout_marginEnd="8dp"
+                            android:src="@drawable/ic_menu_vehiculo"
+                            app:tint="@color/error"
+                            tools:ignore="ContentDescription" />
+
+                        <TextView
+                            android:id="@+id/text_etm_alert"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/home_etm_alert_pendiente"
+                            android:textColor="@color/error"
+                            android:textSize="13sp"
+                            android:textStyle="bold"
+                            tools:text="ETM pendiente: cierra el registro para continuar." />
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
             </LinearLayout>
 
+            <!-- ══════════════════════════════════════════
+                 GRÁFICA COMPACTA — Averías por agencia
+                 ══════════════════════════════════════════ -->
             <com.google.android.material.card.MaterialCardView
-                android:id="@+id/card_stats"
+                android:id="@+id/card_agency_chart"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginHorizontal="16dp"
-                android:layout_marginTop="24dp"
+                android:layout_marginTop="16dp"
                 app:cardBackgroundColor="@color/glass_light"
                 app:cardCornerRadius="24dp"
                 app:cardElevation="4dp">
@@ -331,131 +534,384 @@
                     android:orientation="vertical"
                     android:padding="20dp">
 
-                    <TextView
-                        android:id="@+id/text_stats_title"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/home_stats_title"
-                        android:textColor="@color/on_light"
-                        android:textSize="18sp"
-                        android:textStyle="bold" />
-
+                    <!-- Título + badge de agencias con pendientes -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
                         android:gravity="center_vertical"
                         android:orientation="horizontal">
 
                         <ImageView
-                            android:layout_width="20dp"
-                            android:layout_height="20dp"
-                            android:contentDescription="@string/home_stats_pending_averias"
+                            android:layout_width="18dp"
+                            android:layout_height="18dp"
+                            android:layout_marginEnd="8dp"
                             android:src="@drawable/ic_menu_averias"
-                            app:tint="@color/ice_blue" />
+                            app:tint="@color/ice_blue"
+                            tools:ignore="ContentDescription" />
 
                         <TextView
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:layout_marginStart="12dp"
                             android:layout_weight="1"
-                            android:text="@string/home_stats_pending_averias"
-                            android:textColor="@color/dark_gray"
-                            android:textSize="14sp" />
-
-                        <TextView
-                            android:id="@+id/text_stats_pending_averias"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/home_cards_placeholder"
+                            android:text="@string/home_chart_title"
                             android:textColor="@color/on_light"
                             android:textSize="16sp"
-                            android:textStyle="bold"
-                            tools:text="12" />
-                    </LinearLayout>
-
-                    <View
-                        android:layout_width="match_parent"
-                        android:layout_height="1dp"
-                        android:layout_marginTop="12dp"
-                        android:background="@color/bg_light" />
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-
-                        <ImageView
-                            android:layout_width="20dp"
-                            android:layout_height="20dp"
-                            android:contentDescription="@string/home_stats_damaged_lights"
-                            android:src="@drawable/ic_menu_luminarias"
-                            app:tint="@color/ice_blue" />
-
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="12dp"
-                            android:layout_weight="1"
-                            android:text="@string/home_stats_damaged_lights"
-                            android:textColor="@color/dark_gray"
-                            android:textSize="14sp" />
-
-                        <TextView
-                            android:id="@+id/text_stats_damaged_lights"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/home_cards_placeholder"
-                            android:textColor="@color/on_light"
-                            android:textSize="16sp"
-                            android:textStyle="bold"
-                            tools:text="7" />
-                    </LinearLayout>
-
-                    <View
-                        android:layout_width="match_parent"
-                        android:layout_height="1dp"
-                        android:layout_marginTop="12dp"
-                        android:background="@color/bg_light" />
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-
-                        <ImageView
-                            android:layout_width="20dp"
-                            android:layout_height="20dp"
-                            android:contentDescription="@string/home_stats_scheduled_visits"
-                            android:src="@drawable/ic_menu_reportes"
-                            app:tint="@color/ice_blue" />
-
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="12dp"
-                            android:layout_weight="1"
-                            android:text="@string/home_stats_scheduled_visits"
-                            android:textColor="@color/dark_gray"
-                            android:textSize="14sp" />
+                            android:textStyle="bold" />
 
                         <TextView
                             android:id="@+id/text_stats_scheduled_visits"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:background="@drawable/bg_badge_primary"
+                            android:paddingHorizontal="10dp"
+                            android:paddingVertical="4dp"
                             android:text="@string/home_cards_placeholder"
-                            android:textColor="@color/on_light"
-                            android:textSize="16sp"
+                            android:textColor="@color/on_primary_container"
+                            android:textSize="12sp"
                             android:textStyle="bold"
                             tools:text="4" />
                     </LinearLayout>
+
+                    <!-- Filas del mini gráfico (pobladas programáticamente) -->
+                    <LinearLayout
+                        android:id="@+id/layout_chart_rows"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:orientation="vertical" />
+
+                    <!-- Texto resumen (oculto, actualizado para compatibilidad) -->
+                    <TextView
+                        android:id="@+id/text_stats_pending_averias"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:visibility="gone"
+                        tools:text="• Cartago 5" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
+
+            <!-- ══════════════════════════════════════════
+                 ACCESOS RÁPIDOS — 2 filas de 4
+                 ══════════════════════════════════════════ -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="16dp"
+                android:layout_marginTop="20dp"
+                android:layout_marginBottom="8dp"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    android:text="@string/home_quick_actions_title"
+                    android:textColor="@color/on_light"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+
+                <!-- Fila 1 -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:weightSum="4">
+
+                    <LinearLayout
+                        android:id="@+id/action_averias"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="6dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_quick_action_glass"
+                        android:elevation="3dp"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:foreground="?attr/selectableItemBackgroundBorderless"
+                        android:gravity="center"
+                        android:orientation="vertical"
+                        android:paddingHorizontal="8dp"
+                        android:paddingVertical="14dp"
+                        tools:ignore="TouchTargetSizeCheck">
+
+                        <ImageView
+                            android:layout_width="26dp"
+                            android:layout_height="26dp"
+                            android:contentDescription="@string/home_quick_action_averias"
+                            android:src="@drawable/ic_menu_averias"
+                            app:tint="@color/ice_blue" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="6dp"
+                            android:gravity="center"
+                            android:text="@string/home_quick_action_averias"
+                            android:textColor="@color/on_light"
+                            android:textSize="11sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/action_medidor"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginHorizontal="6dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_quick_action_glass"
+                        android:elevation="3dp"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:foreground="?attr/selectableItemBackgroundBorderless"
+                        android:gravity="center"
+                        android:orientation="vertical"
+                        android:paddingHorizontal="8dp"
+                        android:paddingVertical="14dp"
+                        tools:ignore="TouchTargetSizeCheck">
+
+                        <ImageView
+                            android:layout_width="26dp"
+                            android:layout_height="26dp"
+                            android:contentDescription="@string/home_quick_action_medidor"
+                            android:src="@drawable/ic_menu_medidor"
+                            app:tint="@color/ice_blue" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="6dp"
+                            android:gravity="center"
+                            android:text="@string/home_quick_action_medidor"
+                            android:textColor="@color/on_light"
+                            android:textSize="11sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/action_luminarias"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginHorizontal="6dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_quick_action_glass"
+                        android:elevation="3dp"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:foreground="?attr/selectableItemBackgroundBorderless"
+                        android:gravity="center"
+                        android:orientation="vertical"
+                        android:paddingHorizontal="8dp"
+                        android:paddingVertical="14dp"
+                        tools:ignore="TouchTargetSizeCheck">
+
+                        <ImageView
+                            android:layout_width="26dp"
+                            android:layout_height="26dp"
+                            android:contentDescription="@string/home_quick_action_luminarias"
+                            android:src="@drawable/ic_menu_luminarias"
+                            app:tint="@color/ice_blue" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="6dp"
+                            android:gravity="center"
+                            android:text="@string/home_quick_action_luminarias"
+                            android:textColor="@color/on_light"
+                            android:textSize="11sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/action_vehiculo"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_quick_action_glass"
+                        android:elevation="3dp"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:foreground="?attr/selectableItemBackgroundBorderless"
+                        android:gravity="center"
+                        android:orientation="vertical"
+                        android:paddingHorizontal="8dp"
+                        android:paddingVertical="14dp"
+                        tools:ignore="TouchTargetSizeCheck">
+
+                        <ImageView
+                            android:layout_width="26dp"
+                            android:layout_height="26dp"
+                            android:contentDescription="@string/home_quick_action_vehiculo"
+                            android:src="@drawable/ic_menu_vehiculo"
+                            app:tint="@color/ice_blue" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="6dp"
+                            android:gravity="center"
+                            android:text="@string/home_quick_action_vehiculo"
+                            android:textColor="@color/on_light"
+                            android:textSize="11sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- Fila 2 -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:orientation="horizontal"
+                    android:weightSum="4">
+
+                    <LinearLayout
+                        android:id="@+id/action_inventario"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="6dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_quick_action_glass"
+                        android:elevation="3dp"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:foreground="?attr/selectableItemBackgroundBorderless"
+                        android:gravity="center"
+                        android:orientation="vertical"
+                        android:paddingHorizontal="8dp"
+                        android:paddingVertical="14dp"
+                        tools:ignore="TouchTargetSizeCheck">
+
+                        <ImageView
+                            android:layout_width="26dp"
+                            android:layout_height="26dp"
+                            android:contentDescription="@string/home_quick_action_inventario"
+                            android:src="@drawable/ic_menu_inventario"
+                            app:tint="@color/ice_blue" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="6dp"
+                            android:gravity="center"
+                            android:text="@string/home_quick_action_inventario"
+                            android:textColor="@color/on_light"
+                            android:textSize="11sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/action_reportes"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginHorizontal="6dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_quick_action_glass"
+                        android:elevation="3dp"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:foreground="?attr/selectableItemBackgroundBorderless"
+                        android:gravity="center"
+                        android:orientation="vertical"
+                        android:paddingHorizontal="8dp"
+                        android:paddingVertical="14dp"
+                        tools:ignore="TouchTargetSizeCheck">
+
+                        <ImageView
+                            android:layout_width="26dp"
+                            android:layout_height="26dp"
+                            android:contentDescription="@string/home_quick_action_reportes"
+                            android:src="@drawable/ic_menu_reportes"
+                            app:tint="@color/ice_blue" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="6dp"
+                            android:gravity="center"
+                            android:text="@string/home_quick_action_reportes"
+                            android:textColor="@color/on_light"
+                            android:textSize="11sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/action_planillas"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginHorizontal="6dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_quick_action_glass"
+                        android:elevation="3dp"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:foreground="?attr/selectableItemBackgroundBorderless"
+                        android:gravity="center"
+                        android:orientation="vertical"
+                        android:paddingHorizontal="8dp"
+                        android:paddingVertical="14dp"
+                        tools:ignore="TouchTargetSizeCheck">
+
+                        <ImageView
+                            android:layout_width="26dp"
+                            android:layout_height="26dp"
+                            android:contentDescription="@string/home_quick_action_planillas"
+                            android:src="@drawable/ic_menu_planillas"
+                            app:tint="@color/ice_blue" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="6dp"
+                            android:gravity="center"
+                            android:text="@string/home_quick_action_planillas"
+                            android:textColor="@color/on_light"
+                            android:textSize="11sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/action_settings"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_quick_action_glass"
+                        android:elevation="3dp"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:foreground="?attr/selectableItemBackgroundBorderless"
+                        android:gravity="center"
+                        android:orientation="vertical"
+                        android:paddingHorizontal="8dp"
+                        android:paddingVertical="14dp"
+                        tools:ignore="TouchTargetSizeCheck">
+
+                        <ImageView
+                            android:layout_width="26dp"
+                            android:layout_height="26dp"
+                            android:contentDescription="@string/home_quick_action_settings"
+                            android:src="@drawable/ic_settings"
+                            app:tint="@color/ice_blue" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="6dp"
+                            android:gravity="center"
+                            android:text="@string/home_quick_action_settings"
+                            android:textColor="@color/on_light"
+                            android:textSize="11sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- ══════════════════════════════════════════
+               SINCRONIZACIÓN
+               ══════════════════════════════════════════ -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/card_sync_status"
                 android:layout_width="match_parent"
@@ -472,30 +928,61 @@
                     android:orientation="vertical"
                     android:padding="20dp">
 
-                    <TextView
-                        android:id="@+id/text_sync_title"
-                        android:layout_width="wrap_content"
+                    <!-- Header: icono + título + última sync -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="@string/home_sync_status_title"
-                        android:textColor="@color/on_light"
-                        android:textSize="18sp"
-                        android:textStyle="bold" />
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:layout_marginEnd="12dp"
+                            android:src="@drawable/ic_cloud_sync"
+                            app:tint="@color/ice_blue"
+                            tools:ignore="ContentDescription" />
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/home_sync_status_title"
+                                android:textColor="@color/on_light"
+                                android:textSize="15sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/text_last_sync_value"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:textColor="@color/dark_gray"
+                                android:textSize="12sp"
+                                tools:text="Hace 5 min" />
+                        </LinearLayout>
+                    </LinearLayout>
 
                     <TextView
                         android:id="@+id/text_sync_status"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
+                        android:layout_marginTop="10dp"
                         android:text="@string/home_sync_status_idle"
                         android:textColor="@color/dark_gray"
-                        android:textSize="14sp" />
+                        android:textSize="13sp" />
 
                     <com.google.android.material.progressindicator.LinearProgressIndicator
                         android:id="@+id/progress_sync"
                         style="@style/Widget.Material3.LinearProgressIndicator"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="16dp"
+                        android:layout_marginTop="12dp"
                         android:visibility="gone"
                         app:trackCornerRadius="8dp" />
 
@@ -503,9 +990,9 @@
                         android:id="@+id/text_sync_progress"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
+                        android:layout_marginTop="6dp"
                         android:textColor="@color/dark_gray"
-                        android:textSize="14sp"
+                        android:textSize="13sp"
                         android:visibility="gone"
                         tools:text="Paso 2 de 5 • Medidores" />
 
@@ -514,7 +1001,7 @@
                         style="@style/Widget.Material3.Button"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="20dp"
+                        android:layout_marginTop="16dp"
                         android:text="@string/home_sync_now"
                         app:cornerRadius="20dp"
                         app:icon="@drawable/ic_refresh"
@@ -522,148 +1009,6 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginHorizontal="16dp"
-                android:layout_marginTop="24dp"
-                android:layout_marginBottom="16dp"
-                android:gravity="center"
-                android:orientation="horizontal"
-                android:weightSum="4">
-
-                <LinearLayout
-                    android:id="@+id/action_averias"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginEnd="8dp"
-                    android:layout_weight="1"
-                    android:background="@drawable/bg_home_quick_action"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:gravity="center"
-                    android:orientation="vertical"
-                    android:paddingVertical="16dp"
-                    android:paddingHorizontal="12dp"
-                    android:foreground="?attr/selectableItemBackgroundBorderless"
-                    tools:ignore="TouchTargetSizeCheck">
-
-                    <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:contentDescription="@string/home_quick_action_averias"
-                        android:src="@drawable/ic_menu_averias"
-                        app:tint="@color/ice_blue" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:text="@string/home_quick_action_averias"
-                        android:textColor="@color/on_light"
-                        android:textSize="12sp"
-                        android:textStyle="bold" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:id="@+id/action_medidor"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginHorizontal="8dp"
-                    android:layout_weight="1"
-                    android:background="@drawable/bg_home_quick_action"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:gravity="center"
-                    android:orientation="vertical"
-                    android:paddingVertical="16dp"
-                    android:paddingHorizontal="12dp"
-                    android:foreground="?attr/selectableItemBackgroundBorderless"
-                    tools:ignore="TouchTargetSizeCheck">
-
-                    <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:contentDescription="@string/home_quick_action_medidor"
-                        android:src="@drawable/ic_menu_medidor"
-                        app:tint="@color/ice_blue" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:text="@string/home_quick_action_medidor"
-                        android:textColor="@color/on_light"
-                        android:textSize="12sp"
-                        android:textStyle="bold" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:id="@+id/action_reportes"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginHorizontal="8dp"
-                    android:layout_weight="1"
-                    android:background="@drawable/bg_home_quick_action"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:gravity="center"
-                    android:orientation="vertical"
-                    android:paddingVertical="16dp"
-                    android:paddingHorizontal="12dp"
-                    android:foreground="?attr/selectableItemBackgroundBorderless"
-                    tools:ignore="TouchTargetSizeCheck">
-
-                    <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:contentDescription="@string/home_quick_action_reportes"
-                        android:src="@drawable/ic_menu_reportes"
-                        app:tint="@color/ice_blue" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:text="@string/home_quick_action_reportes"
-                        android:textColor="@color/on_light"
-                        android:textSize="12sp"
-                        android:textStyle="bold" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:id="@+id/action_settings"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:layout_weight="1"
-                    android:background="@drawable/bg_home_quick_action"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:gravity="center"
-                    android:orientation="vertical"
-                    android:paddingVertical="16dp"
-                    android:paddingHorizontal="12dp"
-                    android:foreground="?attr/selectableItemBackgroundBorderless"
-                    tools:ignore="TouchTargetSizeCheck">
-
-                    <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:contentDescription="@string/home_quick_action_settings"
-                        android:src="@drawable/ic_settings"
-                        app:tint="@color/ice_blue" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:text="@string/home_quick_action_settings"
-                        android:textColor="@color/on_light"
-                        android:textSize="12sp"
-                        android:textStyle="bold" />
-                </LinearLayout>
-            </LinearLayout>
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 </androidx.constraintlayout.widget.ConstraintLayout>

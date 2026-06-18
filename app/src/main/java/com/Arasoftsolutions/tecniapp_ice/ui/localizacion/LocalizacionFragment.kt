@@ -26,8 +26,8 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.FrameLayout
-import android.widget.ImageView
 import android.widget.ArrayAdapter
+import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -96,7 +96,6 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
     private val CLAVE_STREET_VIEW_BUNDLE = "ClaveStreetViewBundle"
     private var streetViewPanoramaView: StreetViewPanoramaView? = null
     private var streetViewContainer: FrameLayout? = null
-    private var streetViewDynamicMarker: ImageView? = null
     private var streetViewPanorama: StreetViewPanorama? = null
     private var streetViewHasPanorama = false
     private var streetViewLoading = false
@@ -112,7 +111,13 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
     private var locationUpdatesActive = false
     private var infoWindowAdapterConfigured = false
     private var mostrarCalles = true
-    private var posteMarkerIconDescriptor: BitmapDescriptor? = null
+    private var calleMarkerDescriptor: BitmapDescriptor? = null
+    private val selectedPinCache = mutableMapOf<Int, BitmapDescriptor>()
+    private var streetViewPegmanMarker: Marker? = null
+    private var svAddressText: TextView? = null
+    private var svCodeChip: TextView? = null
+    private var svHeadingArrow: ImageView? = null
+    private var lastStreetViewCameraUpdate = 0L
     private val mapLayers = intArrayOf(GoogleMap.MAP_TYPE_NORMAL, GoogleMap.MAP_TYPE_SATELLITE, GoogleMap.MAP_TYPE_HYBRID)
     private var currentMapLayerIndex = 0
     private var pendingStreetUnavailableCheck: Runnable? = null
@@ -165,10 +170,9 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
     private var followLocationEnabled = true
     private var hasCenteredOnUser = false
     private var lastLocationReceivedAt = 0L
-    private var lastLocationErrorAt = 0L
     private var singleLocationToken: CancellationTokenSource? = null
-    private val LOCATION_ERROR_TOAST_INTERVAL_MS = 10_000L
-    private val LOCATION_STALE_THRESHOLD_MS = 5_000L
+    private val LOCATION_STALE_THRESHOLD_MS = 15_000L
+    private var gpsActivarPromptShown = false
 
     // --- Requests de ubicación ---
     private val locationRequest = com.google.android.gms.location.LocationRequest.Builder(
@@ -183,26 +187,18 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
 
     private val locationCallback = object : LocationCallback() {
         override fun onLocationResult(locationResult: LocationResult) {
-            val location: Location? = locationResult.lastLocation
-            if (location == null) {
-                mostrarToastUbicacionSiNecesario(getString(R.string.localizacion_toast_sin_ubicacion))
-                return
-            }
+            val location = locationResult.lastLocation ?: return
             manejarUbicacionUsuario(location)
-            // Si quisieras seguir al usuario, podrías mover la cámara aquí;
-            // se deja sin mover para no interferir con el poste seleccionado.
-            // val yo = LatLng(location.latitude, location.longitude)
         }
 
         override fun onLocationAvailability(locationAvailability: LocationAvailability) {
             if (!locationAvailability.isLocationAvailable) {
                 val now = SystemClock.elapsedRealtime()
-                val isStale = now - lastLocationReceivedAt >= LOCATION_STALE_THRESHOLD_MS
-                if (isStale) {
-                    mostrarToastUbicacionSiNecesario(getString(R.string.localizacion_toast_sin_disponibilidad))
+                if (now - lastLocationReceivedAt >= LOCATION_STALE_THRESHOLD_MS) {
+                    mostrarIndicadorGpsNoDisponible()
                 }
             } else {
-                lastLocationErrorAt = 0L
+                ocultarIndicadorGps()
             }
         }
     }
@@ -320,6 +316,7 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
             binding.actionCenter.isEnabled = true
             binding.actionNavigate.isEnabled = true
             binding.actionShare.isEnabled = true
+            actualizarStreetViewInfoOverlay()
         }
 
         // Estado (progress + errores)
@@ -375,6 +372,30 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
         binding.streetViewActionExpand.setOnClickListener { expandirStreetView() }
         binding.streetViewActionMinimize.setOnClickListener { minimizarStreetView() }
         binding.streetViewActionClose.setOnClickListener { cerrarStreetView() }
+
+        // FABs de control del mapa
+        binding.fabRelocate.setOnClickListener {
+            followLocationEnabled = true
+            hasCenteredOnUser = false
+            gpsActivarPromptShown = false  // permitir prompt si GPS sigue apagado
+            solicitarUbicacionActual(force = true)
+        }
+        binding.fabZoomIn.setOnClickListener {
+            mapaGoogle?.animateCamera(CameraUpdateFactory.zoomIn())
+        }
+        binding.fabZoomOut.setOnClickListener {
+            mapaGoogle?.animateCamera(CameraUpdateFactory.zoomOut())
+        }
+
+        // Botón de reintentar GPS desde el indicador discreto
+        binding.gpsRetryButton.setOnClickListener {
+            if (!isLocationEnabled()) {
+                startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+            } else {
+                ocultarIndicadorGps()
+                solicitarUbicacionActual(force = true)
+            }
+        }
         binding.actionStreetView.isEnabled = false
         binding.actionCopy.isEnabled = false
         binding.actionCenter.isEnabled = false
@@ -429,9 +450,9 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
             return
         }
 
-        // Solo si todo está válido bajamos opacidad
+        // Reducir opacidad del mapa para dejar ver Street View, pero suficiente para ver el marcador
         binding.mapView.animate()
-            .alpha(0.3f)
+            .alpha(0.45f)
             .setDuration(250)
             .start()
 
@@ -439,6 +460,7 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
         streetViewRequestedTarget = target
         mapaGoogle?.mapType = GoogleMap.MAP_TYPE_NORMAL
 
+        addOrUpdateStreetViewPegman(target)
         ensureStreetViewInflatedAndInitialized()
 
         streetViewMode = StreetViewMode.EXPANDED
@@ -472,65 +494,24 @@ class LocalizacionFragment : Fragment(), OnMapReadyCallback, SensorEventListener
     }
 
     private fun cerrarStreetView() {
+        streetViewMode = StreetViewMode.HIDDEN
+        streetViewBehavior?.state = BottomSheetBehavior.STATE_HIDDEN
 
-    streetViewMode = StreetViewMode.HIDDEN
-    streetViewBehavior?.state = BottomSheetBehavior.STATE_HIDDEN
+        streetViewPegmanMarker?.remove()
+        streetViewPegmanMarker = null
 
-    releaseStreetViewResources()
+        releaseStreetViewResources()
 
-    viewModel.actualizarStreetViewEstado(LocalizacionViewModel.StreetViewState.CLOSED)
-    actualizarStreetViewUi()
+        viewModel.actualizarStreetViewEstado(LocalizacionViewModel.StreetViewState.CLOSED)
+        actualizarStreetViewUi()
 
-    // Restaurar opacidad del mapa
-    binding.mapView.animate()
-        .alpha(1f)
-        .setDuration(250)
-        .start()
-}
-
-
-private fun attachDynamicStreetMarker(
-    panorama: StreetViewPanorama,
-    target: LatLng
-) {
-
-    panorama.setOnStreetViewPanoramaCameraChangeListener { camera ->
-
-        val location = panorama.location ?: return@setOnStreetViewPanoramaCameraChangeListener
-        val links = location.links ?: return@setOnStreetViewPanoramaCameraChangeListener
-
-        val bearingToTarget = links.firstOrNull()?.bearing ?: return@setOnStreetViewPanoramaCameraChangeListener
-
-        val delta = abs(((camera.bearing - bearingToTarget + 540f) % 360f) - 180f)
-
-
-        val visible = delta < 30f
-
-        val markerView = streetViewDynamicMarker ?: return@setOnStreetViewPanoramaCameraChangeListener
-
-        if (visible && !markerView.isVisible) {
-            markerView.alpha = 0f
-            markerView.isVisible = true
-            markerView.animate()
-                .alpha(1f)
-                .setDuration(200)
-                .start()
-        } else if (!visible && markerView.isVisible) {
-            markerView.animate()
-                .alpha(0f)
-                .setDuration(200)
-                .withEndAction {
-                    markerView.isVisible = false
-                }
-                .start()
-        }
-
-        // efecto leve de escala cuando está centrado
-        val scale = if (delta < 10f) 1.15f else 1f
-        markerView.scaleX = scale
-        markerView.scaleY = scale
+        binding.mapView.animate()
+            .alpha(1f)
+            .setDuration(250)
+            .start()
     }
-}
+
+
 
 
     private fun ensureStreetViewInflatedAndInitialized() {
@@ -541,7 +522,9 @@ private fun attachDynamicStreetMarker(
             val inflated = binding.streetViewStub.inflate()
             streetViewContainer = inflated as? FrameLayout
             streetViewPanoramaView = streetViewContainer?.findViewById(R.id.streetViewPanorama)
-            streetViewDynamicMarker = streetViewContainer?.findViewById(R.id.streetViewDynamicMarker)
+            svAddressText = streetViewContainer?.findViewById(R.id.svAddressText)
+            svCodeChip = streetViewContainer?.findViewById(R.id.svCodeChip)
+            svHeadingArrow = streetViewContainer?.findViewById(R.id.svHeadingArrow)
         }
 
         val panoramaView = streetViewPanoramaView ?: return
@@ -555,6 +538,13 @@ private fun attachDynamicStreetMarker(
                     setPanningGesturesEnabled(true)
                     setZoomGesturesEnabled(true)
                     setStreetNamesEnabled(true)
+                    setOnStreetViewPanoramaCameraChangeListener { camera ->
+                        val now = SystemClock.elapsedRealtime()
+                        if (now - lastStreetViewCameraUpdate > 200L) {
+                            lastStreetViewCameraUpdate = now
+                            svHeadingArrow?.rotation = camera.bearing
+                        }
+                    }
                     setOnStreetViewPanoramaChangeListener { location: StreetViewPanoramaLocation? ->
                         if (location == null) {
                             streetViewHasPanorama = false
@@ -594,19 +584,12 @@ private fun attachDynamicStreetMarker(
                streetViewLoading = true
                panorama.setPosition(target)
 
-val camera = StreetViewPanoramaCamera.Builder()
-    .zoom(1f)
-    .tilt(0f)
-    .bearing(0f)
-    .build()
-
-panorama.animateTo(camera, 800)
-
-attachDynamicStreetMarker(panorama, target)
-
-
-
-
+               val camera = StreetViewPanoramaCamera.Builder()
+                   .zoom(0f)
+                   .tilt(0f)
+                   .bearing(0f)
+                   .build()
+               panorama.animateTo(camera, 800)
             }
         }
 
@@ -619,12 +602,16 @@ attachDynamicStreetMarker(panorama, target)
             panoramaView.onResume()
             streetViewResumed = true
         }
+        actualizarStreetViewInfoOverlay()
     }
 
     private fun releaseStreetViewResources() {
         val panorama = streetViewPanorama
         panorama?.setOnStreetViewPanoramaChangeListener(null)
         panorama?.setOnStreetViewPanoramaCameraChangeListener(null)
+        svAddressText = null
+        svCodeChip = null
+        svHeadingArrow = null
 
         streetViewPanorama = null
         streetViewHasPanorama = false
@@ -715,18 +702,20 @@ attachDynamicStreetMarker(panorama, target)
 
         // Controles de UI
         mapaGoogle?.uiSettings?.apply {
-            isZoomControlsEnabled = true
-            isMyLocationButtonEnabled = true
+            isZoomControlsEnabled = false        // reemplazado por fabZoomIn/fabZoomOut
+            isMyLocationButtonEnabled = false    // reemplazado por fabRelocate
             isMapToolbarEnabled = false
             isZoomGesturesEnabled = true
             isTiltGesturesEnabled = true
-
             isCompassEnabled = true
             isRotateGesturesEnabled = true
             isScrollGesturesEnabledDuringRotateOrZoom = true
             isScrollGesturesEnabled = true
             isIndoorLevelPickerEnabled = false
         }
+        // Empujar la brújula nativa hacia abajo para que no quede tapada por overlayTop
+        val topPadPx = (140 * resources.displayMetrics.density).toInt()
+        mapaGoogle?.setPadding(0, topPadPx, 0, 0)
         mapaGoogle?.apply {
             currentMapLayerIndex = mapLayers.indexOf(mapType).takeIf { it >= 0 } ?: 0
             // Mapa más liviano: desactivamos capas pesadas para reducir uso de memoria/GPU.
@@ -834,6 +823,7 @@ attachDynamicStreetMarker(panorama, target)
 
         mapaGoogle?.isMyLocationEnabled = true
         if (!locationUpdatesActive) {
+            lastLocationReceivedAt = SystemClock.elapsedRealtime()
             fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper())
             locationUpdatesActive = true
         }
@@ -887,24 +877,27 @@ attachDynamicStreetMarker(panorama, target)
             append("-00")
         }
 
-      if (marcador == null) {
-    marcador = map.addMarker(
-        MarkerOptions()
-            .position(ubicacion)
-            .icon(getPosteMarkerIconDescriptor())
-            .title(posteTitulo)
-            .snippet(snippetInfo)
-    )
-    marcador?.showInfoWindow()   // ← ESTA LÍNEA FALTABA
-} else {
-    marcador?.apply {
-        position = ubicacion
-        title = posteTitulo
-        snippet = snippetInfo
-        hideInfoWindow()
-        showInfoWindow()
-    }
-}
+        val numeroPosteInt = numeroPoste?.toIntOrNull() ?: 0
+        if (marcador == null) {
+            marcador = map.addMarker(
+                MarkerOptions()
+                    .position(ubicacion)
+                    .icon(createSelectedPinMarker(numeroPosteInt))
+                    .title(posteTitulo)
+                    .snippet(snippetInfo)
+                    .zIndex(5f)
+            )
+            marcador?.showInfoWindow()
+        } else {
+            marcador?.apply {
+                position = ubicacion
+                title = posteTitulo
+                snippet = snippetInfo
+                setIcon(createSelectedPinMarker(numeroPosteInt))
+                hideInfoWindow()
+                showInfoWindow()
+            }
+        }
 
 
         val cameraPosition = CameraPosition.Builder()
@@ -939,13 +932,13 @@ attachDynamicStreetMarker(panorama, target)
     private fun configurarInfoWindowPersonalizadoSiHaceFalta() {
         if (infoWindowAdapterConfigured) return
         mapaGoogle?.setInfoWindowAdapter(object : GoogleMap.InfoWindowAdapter {
-            override fun getInfoWindow(marker: Marker): View? = null
-            override fun getInfoContents(marker: Marker): View {
+            override fun getInfoWindow(marker: Marker): View {
                 val v = layoutInflater.inflate(R.layout.custom_info_window, null)
                 v.findViewById<TextView>(R.id.titulo).text = marker.title
                 v.findViewById<TextView>(R.id.snippet).text = marker.snippet
                 return v
             }
+            override fun getInfoContents(marker: Marker): View? = null
         })
         infoWindowAdapterConfigured = true
     }
@@ -973,20 +966,21 @@ attachDynamicStreetMarker(panorama, target)
         val map = mapaGoogle ?: return
         map.clear()
         marcador = null
+        streetViewPegmanMarker = null  // map.clear() elimina todos los marcadores
 
         if (mostrarCalles) {
             markers.take(250).forEach { marker ->
-            map.addMarker(
-                MarkerOptions()
-                    .position(LatLng(marker.latitud, marker.longitud))
-                    .icon(getPosteMarkerIconDescriptor())
-                    .title(getString(R.string.localizacion_marker_poste_unico, marker.delPoste))
-                    .snippet(marker.snippet)
-            )?.tag = StreetMarkerTag(
-                codigoPueblo = marker.codigoPueblo,
-                codigoCalle = marker.codigoCalle,
-                direccion = marker.direccion
-            )
+                map.addMarker(
+                    MarkerOptions()
+                        .position(LatLng(marker.latitud, marker.longitud))
+                        .icon(getCalleMarkerDescriptor())
+                        .title(getString(R.string.localizacion_marker_poste_unico, marker.delPoste))
+                        .snippet(marker.snippet)
+                )?.tag = StreetMarkerTag(
+                    codigoPueblo = marker.codigoPueblo,
+                    codigoCalle = marker.codigoCalle,
+                    direccion = marker.direccion
+                )
             }
         }
 
@@ -999,6 +993,12 @@ attachDynamicStreetMarker(panorama, target)
             numeroCalle = loc.calleValor.toString(),
             numeroPoste = loc.delPoste.toString()
         )
+
+        // Re-agregar pegman si Street View estaba activo antes del clear
+        if (streetViewMode != StreetViewMode.HIDDEN) {
+            val target = getStreetViewTargetOrNull()
+            if (target != null) addOrUpdateStreetViewPegman(target)
+        }
     }
 
     private fun seleccionarCalleDesdeMapa(marker: StreetMarkerTag) {
@@ -1092,32 +1092,123 @@ attachDynamicStreetMarker(panorama, target)
         return current.latitude == other.latitude && current.longitude == other.longitude
     }
 
-    private fun getPosteMarkerIconDescriptor(): BitmapDescriptor {
-    posteMarkerIconDescriptor?.let { return it }
-
-    return try {
-        val drawable = requireContext().getDrawable(R.drawable.poste)
-            ?: return BitmapDescriptorFactory.defaultMarker()
-
+    /** Punto azul pequeño para marcadores de calles en el mapa de overview. */
+    private fun getCalleMarkerDescriptor(): BitmapDescriptor {
+        calleMarkerDescriptor?.let { return it }
         val density = resources.displayMetrics.density
-        val sizeDp = 50f // 👈 Cambiá esto si querés más pequeño o más grande
-        val sizePx = (sizeDp * density).toInt()
-
+        val sizePx = (13f * density).toInt()
         val bitmap = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888)
         val canvas = android.graphics.Canvas(bitmap)
-
-        drawable.setBounds(0, 0, sizePx, sizePx)
-        drawable.draw(canvas)
-
-        val descriptor = BitmapDescriptorFactory.fromBitmap(bitmap)
-        posteMarkerIconDescriptor = descriptor
-        descriptor
-
-    } catch (e: Exception) {
-        Log.e("Localizacion", "Error creando icono poste", e)
-        BitmapDescriptorFactory.defaultMarker()
+        val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
+        val cx = sizePx / 2f
+        val r = cx - density
+        paint.color = android.graphics.Color.parseColor("#005DAA")
+        canvas.drawCircle(cx, cx, r, paint)
+        paint.color = android.graphics.Color.WHITE
+        paint.style = android.graphics.Paint.Style.STROKE
+        paint.strokeWidth = density * 1.5f
+        canvas.drawCircle(cx, cx, r - paint.strokeWidth / 2f, paint)
+        calleMarkerDescriptor = BitmapDescriptorFactory.fromBitmap(bitmap)
+        return calleMarkerDescriptor!!
     }
-}
+
+    /** Pin ICE azul con el número de poste — para la localización seleccionada. */
+    private fun createSelectedPinMarker(number: Int): BitmapDescriptor {
+        selectedPinCache[number]?.let { return it }
+        val density = resources.displayMetrics.density
+        val wPx = (26f * density).toInt()
+        val hPx = (40f * density).toInt()
+        val bitmap = Bitmap.createBitmap(wPx, hPx, Bitmap.Config.ARGB_8888)
+        val canvas = android.graphics.Canvas(bitmap)
+        val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
+        val cx = wPx / 2f
+        val cr = wPx / 2f - density
+        val cy = cr + density
+        val path = android.graphics.Path()
+        path.addCircle(cx, cy, cr, android.graphics.Path.Direction.CW)
+        path.moveTo(cx - cr * 0.42f, cy + cr * 0.62f)
+        path.lineTo(cx + cr * 0.42f, cy + cr * 0.62f)
+        path.lineTo(cx, hPx.toFloat() - density)
+        path.close()
+        paint.color = android.graphics.Color.parseColor("#005DAA")
+        canvas.drawPath(path, paint)
+        paint.color = android.graphics.Color.WHITE
+        paint.style = android.graphics.Paint.Style.STROKE
+        paint.strokeWidth = density * 1.8f
+        canvas.drawCircle(cx, cy, cr - density, paint)
+        paint.style = android.graphics.Paint.Style.FILL
+        if (number > 0) {
+            val textSizePx = 8.5f * density
+            paint.color = android.graphics.Color.WHITE
+            paint.textSize = textSizePx
+            paint.textAlign = android.graphics.Paint.Align.CENTER
+            paint.typeface = android.graphics.Typeface.DEFAULT_BOLD
+            canvas.drawText(number.toString(), cx, cy + textSizePx * 0.36f, paint)
+        }
+        val descriptor = BitmapDescriptorFactory.fromBitmap(bitmap)
+        selectedPinCache[number] = descriptor
+        return descriptor
+    }
+
+    /** Círculo azul estilo GPS que indica la posición de la cámara Street View en el mapa. */
+    private fun createStreetViewPositionMarker(): BitmapDescriptor {
+        val density = resources.displayMetrics.density
+        val sizePx = (38f * density).toInt()
+        val bitmap = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888)
+        val canvas = android.graphics.Canvas(bitmap)
+        val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
+        val cx = sizePx / 2f
+        val outerR = sizePx / 2f - density
+        val innerR = outerR * 0.6f
+        paint.color = android.graphics.Color.parseColor("#554285F4")
+        canvas.drawCircle(cx, cx, outerR, paint)
+        paint.color = android.graphics.Color.parseColor("#4285F4")
+        canvas.drawCircle(cx, cx, innerR, paint)
+        paint.color = android.graphics.Color.WHITE
+        paint.style = android.graphics.Paint.Style.STROKE
+        paint.strokeWidth = density * 2f
+        canvas.drawCircle(cx, cx, innerR, paint)
+        paint.style = android.graphics.Paint.Style.FILL
+        paint.color = android.graphics.Color.WHITE
+        canvas.drawCircle(cx, cx, density * 2.5f, paint)
+        return BitmapDescriptorFactory.fromBitmap(bitmap)
+    }
+
+    private fun addOrUpdateStreetViewPegman(position: LatLng) {
+        val map = mapaGoogle ?: return
+        if (streetViewPegmanMarker == null) {
+            streetViewPegmanMarker = map.addMarker(
+                MarkerOptions()
+                    .position(position)
+                    .icon(createStreetViewPositionMarker())
+                    .anchor(0.5f, 0.5f)
+                    .zIndex(10f)
+                    .title("")
+            )
+        } else {
+            streetViewPegmanMarker?.position = position
+        }
+    }
+
+    private fun actualizarStreetViewInfoOverlay() {
+        val loc = viewModel.localizacion.value ?: return
+        val puebloRaw = binding.spinnerPueblos.selectedItem?.toString().orEmpty()
+        val calleRaw = binding.spinnerCalles.selectedItem?.toString().orEmpty()
+        val nombrePueblo = puebloRaw.substringAfter(" - ", "").ifBlank { puebloRaw }
+        val nombreCalle = calleRaw.substringAfter(" - ", "").ifBlank { "" }
+        val addressText = if (nombreCalle.isNotBlank()) "$nombreCalle · $nombrePueblo" else nombrePueblo
+        val codigoPueblo = parseCodigo(puebloRaw)?.toString()?.padStart(4, '0') ?: "0000"
+        val codigoCalle = parseCodigo(calleRaw)?.toString()?.padStart(3, '0') ?: "000"
+        val posteNum = loc.delPoste.toString().padStart(3, '0')
+        val codeText = "$codigoPueblo-$codigoCalle-$posteNum"
+        svAddressText?.text = addressText
+        svCodeChip?.text = codeText
+        _binding?.streetViewAddressText?.text = addressText
+        if (codeText.isNotBlank() && codeText != "0000-000-000") {
+            _binding?.streetViewCodeBadge?.text = codeText
+            _binding?.streetViewCodeBadge?.visibility = View.VISIBLE
+        }
+    }
 
     private fun buildShareMessage(): String? {
     val loc = viewModel.localizacion.value ?: return null
@@ -1347,7 +1438,13 @@ attachDynamicStreetMarker(panorama, target)
         singleLocationToken?.cancel()
         singleLocationToken = null
         streetViewPanorama = null
-        posteMarkerIconDescriptor = null
+        streetViewPegmanMarker?.remove()
+        streetViewPegmanMarker = null
+        calleMarkerDescriptor = null
+        selectedPinCache.clear()
+        svAddressText = null
+        svCodeChip = null
+        svHeadingArrow = null
         _binding = null
         mapaGoogle = null
         marcador = null
@@ -1379,9 +1476,6 @@ attachDynamicStreetMarker(panorama, target)
         viewModel.actualizarStreetViewEstado(LocalizacionViewModel.StreetViewState.LOADING)
         actualizarStreetViewUi()
         panorama.setPosition(target)
-        attachDynamicStreetMarker(panorama, target)
-
-
     }
 
     private fun actualizarStreetViewUi() {
@@ -1402,7 +1496,8 @@ attachDynamicStreetMarker(panorama, target)
     }
 
     private fun pedirActivarUbicacionSiOcupa() {
-        if (!isLocationEnabled()) {
+        if (!isLocationEnabled() && !gpsActivarPromptShown) {
+            gpsActivarPromptShown = true
             Snackbar.make(
                 binding.root,
                 "Ubicación desactivada. Activá GPS para centrar.",
@@ -1459,8 +1554,8 @@ attachDynamicStreetMarker(panorama, target)
     }
 
     private fun manejarUbicacionUsuario(location: Location) {
-        lastLocationErrorAt = 0L
         lastLocationReceivedAt = SystemClock.elapsedRealtime()
+        ocultarIndicadorGps()
         if (followLocationEnabled && !userIsInteracting) {
             moverCamaraAUbicacion(location, animate = hasCenteredOnUser)
             hasCenteredOnUser = true
@@ -1472,23 +1567,35 @@ attachDynamicStreetMarker(panorama, target)
         val latLng = LatLng(location.latitude, location.longitude)
         val currentPosition = map.cameraPosition
         val zoom = max(currentPosition.zoom, 17f)
-        val position = CameraPosition.Builder(currentPosition)
+
+        // Usar el bearing del GPS cuando el dispositivo está en movimiento (> 0.5 m/s ≈ 1.8 km/h)
+        val bearing = if (location.hasBearing() && location.speed > 0.5f) {
+            normalizeBearing(location.bearing)
+        } else {
+            currentPosition.bearing
+        }
+
+        val position = CameraPosition.Builder()
             .target(latLng)
             .zoom(zoom)
+            .bearing(bearing)
+            .tilt(currentPosition.tilt)
             .build()
+
         if (animate) {
-            map.animateCamera(CameraUpdateFactory.newCameraPosition(position))
+            // Duración = intervalo de actualización de ubicación → movimiento continuo y fluido
+            map.animateCamera(CameraUpdateFactory.newCameraPosition(position), 750, null)
         } else {
             map.moveCamera(CameraUpdateFactory.newCameraPosition(position))
         }
-        lastCompassBearing = normalizeBearing(position.bearing)
+        lastCompassBearing = normalizeBearing(bearing)
     }
 
-    private fun mostrarToastUbicacionSiNecesario(mensaje: String) {
-        val now = SystemClock.elapsedRealtime()
-        if (now - lastLocationErrorAt >= LOCATION_ERROR_TOAST_INTERVAL_MS) {
-            lastLocationErrorAt = now
-            Toast.makeText(requireContext(), mensaje, Toast.LENGTH_SHORT).show()
-        }
+    private fun mostrarIndicadorGpsNoDisponible() {
+        _binding?.gpsStatusRow?.visibility = View.VISIBLE
+    }
+
+    private fun ocultarIndicadorGps() {
+        _binding?.gpsStatusRow?.isVisible = false
     }
 }

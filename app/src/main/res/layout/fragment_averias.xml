@@ -7,13 +7,14 @@
     android:layout_height="match_parent"
     tools:context=".ui.averias.AveriasFragment">
 
-    <!-- AppBar completamente colapsable -->
+    <!-- AppBar con filtros rápidos colapsables -->
     <com.google.android.material.appbar.AppBarLayout
         android:id="@+id/appBarLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/bg_light"
-        app:elevation="0dp">
+        android:background="?attr/colorSurface"
+        app:elevation="0dp"
+        app:liftOnScroll="true">
 
         <com.google.android.material.appbar.CollapsingToolbarLayout
             android:id="@+id/collapsingToolbar"
@@ -22,160 +23,200 @@
             app:layout_scrollFlags="scroll|exitUntilCollapsed"
             app:titleEnabled="false">
 
-            <!-- Contenedor completo que se ocultará -->
             <LinearLayout
                 android:id="@+id/filtersContainer"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="8dp"
+                android:paddingHorizontal="12dp"
+                android:paddingTop="8dp"
+                android:paddingBottom="4dp"
                 app:layout_collapseMode="parallax">
 
-                <!-- Barra de búsqueda (PILL / ovalada y compacta) -->
-                <com.google.android.material.textfield.TextInputLayout
-                    android:id="@+id/tilBuscar"
-                    style="@style/Tecni.Search.Pill"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="@string/averias_buscar"
-                    app:endIconMode="clear_text"
-                    app:startIconDrawable="@drawable/ic_search_inline"
-                    app:startIconTint="?attr/colorOnSurfaceVariant">
-
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/etBuscar"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:imeOptions="actionSearch"
-                        android:singleLine="true"
-                        android:textSize="14sp"
-                        android:paddingVertical="10dp"/>
-                </com.google.android.material.textfield.TextInputLayout>
-
-                <!-- Fila compacta fecha -->
+                <!-- Fila 1: Búsqueda + Botón filtros avanzados -->
                 <LinearLayout
-                    android:id="@+id/dateRow"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical">
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
 
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnDateFilter"
-                        style="@style/Tecni.Button.Outlined.Compact"
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tilBuscar"
+                        style="@style/Tecni.Search.Pill"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:maxWidth="280dp"
-                        android:minHeight="40dp"
-                        android:paddingVertical="8dp"
-                        android:paddingHorizontal="12dp"
-                        android:ellipsize="end"
-                        android:maxLines="1"
-                        android:text="@string/averias_filtro_fecha_todas"
-                        android:textSize="12sp"
-                        app:icon="@drawable/ic_calendar"
-                        app:iconGravity="textStart"
-                        app:iconPadding="8dp"
-                        app:iconSize="18dp" />
+                        android:hint="@string/averias_buscar"
+                        app:endIconMode="clear_text"
+                        app:startIconDrawable="@drawable/ic_search_inline"
+                        app:startIconTint="?attr/colorOnSurfaceVariant">
 
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etBuscar"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:imeOptions="actionSearch"
+                            android:paddingVertical="10dp"
+                            android:singleLine="true"
+                            android:textSize="14sp" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <!-- Botón de filtros avanzados con badge -->
                     <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnClearDate"
-                        style="@style/Tecni.Button.Text.Compact"
+                        android:id="@+id/btnFiltrosAvanzados"
+                        style="@style/Tecni.Button.Outlined.Compact"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="10dp"
-                        android:minHeight="40dp"
-                        android:text="@string/averias_filtro_fecha_limpiar"
-                        android:textSize="12sp"
-                        android:visibility="gone" />
+                        android:layout_marginStart="8dp"
+                        android:minHeight="44dp"
+                        android:minWidth="0dp"
+                        android:paddingHorizontal="12dp"
+                        android:text="@string/averias_filtrar"
+                        android:textSize="13sp"
+                        app:icon="@drawable/ic_filter_list"
+                        app:iconGravity="textStart"
+                        app:iconPadding="4dp"
+                        app:iconSize="18dp" />
+
                 </LinearLayout>
 
-                <!-- Chips (compactos) -->
+                <!-- Fila 2: Toggles de estado coloridos -->
                 <HorizontalScrollView
                     android:id="@+id/chipsScroll"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
+                    android:layout_marginTop="6dp"
                     android:scrollbars="none">
 
-                    <com.google.android.material.chip.ChipGroup
-                        android:id="@+id/chipGroupEstado"
+                    <LinearLayout
+                        android:id="@+id/toggleEstadoGroup"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:paddingBottom="4dp"
-                        app:singleLine="true"
-                        app:singleSelection="true">
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingBottom="4dp">
 
-                        <com.google.android.material.chip.Chip
-                            android:id="@+id/chipTodos"
-                            style="@style/Tecni.Chip.Resuelta"
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnToggleTodos"
+                            style="@style/Widget.Material3.Button.OutlinedButton"
                             android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
+                            android:layout_height="34dp"
+                            android:insetTop="0dp"
+                            android:insetBottom="0dp"
+                            android:minHeight="0dp"
+                            android:paddingHorizontal="14dp"
                             android:text="@string/averia_estado_todos"
-                            app:checkedIconVisible="true" />
+                            android:textSize="11sp"
+                            android:textStyle="bold" />
 
-                        <com.google.android.material.chip.Chip
-                            android:id="@+id/chipPendiente"
-                            style="@style/Tecni.Chip.Pendiente"
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnTogglePendiente"
+                            style="@style/Widget.Material3.Button.OutlinedButton"
                             android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
+                            android:layout_height="34dp"
+                            android:layout_marginStart="6dp"
+                            android:insetTop="0dp"
+                            android:insetBottom="0dp"
+                            android:minHeight="0dp"
+                            android:paddingHorizontal="14dp"
                             android:text="@string/estado_pendiente"
-                            app:checkedIconVisible="true" />
+                            android:textSize="11sp"
+                            android:textStyle="bold" />
 
-                        <com.google.android.material.chip.Chip
-                            android:id="@+id/chipAsignada"
-                            style="@style/Tecni.Chip.Asignada"
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnToggleAsignada"
+                            style="@style/Widget.Material3.Button.OutlinedButton"
                             android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
+                            android:layout_height="34dp"
+                            android:layout_marginStart="6dp"
+                            android:insetTop="0dp"
+                            android:insetBottom="0dp"
+                            android:minHeight="0dp"
+                            android:paddingHorizontal="14dp"
                             android:text="@string/estado_asignada"
-                            app:checkedIconVisible="true" />
+                            android:textSize="11sp"
+                            android:textStyle="bold" />
 
-                        <com.google.android.material.chip.Chip
-                            android:id="@+id/chipEnAtencion"
-                            style="@style/Tecni.Chip.EnAtencion"
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnToggleEnAtencion"
+                            style="@style/Widget.Material3.Button.OutlinedButton"
                             android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
+                            android:layout_height="34dp"
+                            android:layout_marginStart="6dp"
+                            android:insetTop="0dp"
+                            android:insetBottom="0dp"
+                            android:minHeight="0dp"
+                            android:paddingHorizontal="14dp"
                             android:text="@string/estado_en_atencion"
-                            app:checkedIconVisible="true" />
+                            android:textSize="11sp"
+                            android:textStyle="bold" />
 
-                        <com.google.android.material.chip.Chip
-                            android:id="@+id/chipResuelta"
-                            style="@style/Tecni.Chip.Resuelta"
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnToggleResuelta"
+                            style="@style/Widget.Material3.Button.OutlinedButton"
                             android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
+                            android:layout_height="34dp"
+                            android:layout_marginStart="6dp"
+                            android:insetTop="0dp"
+                            android:insetBottom="0dp"
+                            android:minHeight="0dp"
+                            android:paddingHorizontal="14dp"
                             android:text="@string/estado_resuelta"
-                            app:checkedIconVisible="true" />
+                            android:textSize="11sp"
+                            android:textStyle="bold" />
 
-                        <com.google.android.material.chip.Chip
-                            android:id="@+id/chipAnulada"
-                            style="@style/Tecni.Chip.Anulada"
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnToggleAnulada"
+                            style="@style/Widget.Material3.Button.OutlinedButton"
                             android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
+                            android:layout_height="34dp"
+                            android:layout_marginStart="6dp"
+                            android:insetTop="0dp"
+                            android:insetBottom="0dp"
+                            android:minHeight="0dp"
+                            android:paddingHorizontal="14dp"
                             android:text="@string/estado_anulada"
-                            app:checkedIconVisible="true" />
-                    </com.google.android.material.chip.ChipGroup>
+                            android:textSize="11sp"
+                            android:textStyle="bold" />
+
+                    </LinearLayout>
                 </HorizontalScrollView>
 
-                <!-- Spinners modernos (ovalados, compactos, NO crecen por texto) -->
-                <androidx.constraintlayout.widget.ConstraintLayout
+                <!-- Fila 3: Resumen compacto de filtros activos (fecha, agencia, región) -->
+                <!-- Se muestra solo cuando hay filtros activos; el texto lo actualiza el Fragment -->
+                <TextView
+                    android:id="@+id/tvFiltroResumen"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:paddingHorizontal="2dp"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    android:textSize="11sp"
+                    android:visibility="gone"
+                    tools:text="📅 01/06 09:00 → 30/06 18:00 · Agencia: Guácimo"
+                    tools:visibility="visible" />
+
+                <!-- Dropdowns ocultos (para compatibilidad con Fragment: región y agencia) -->
+                <!-- Se gestionan desde el bottom sheet de filtros, pero se mantienen en el árbol
+                     para que el Fragment pueda acceder a sus valores sin romper la lógica. -->
+                <LinearLayout
                     android:id="@+id/spinnersRow"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp">
+                    android:layout_marginTop="0dp"
+                    android:orientation="horizontal"
+                    android:visibility="gone">
 
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/tilRegion"
                         style="@style/Tecni.Dropdown.Pill"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
+                        android:layout_weight="1"
                         android:hint="@string/averias_filtrar_region"
-                        app:endIconMode="dropdown_menu"
-                        app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintEnd_toStartOf="@id/tilAgencia"
-                        app:layout_constraintTop_toTopOf="parent"
-                        app:layout_constraintHorizontal_weight="1">
+                        app:endIconMode="dropdown_menu">
 
                         <com.google.android.material.textfield.MaterialAutoCompleteTextView
                             android:id="@+id/actvRegion"
@@ -183,11 +224,7 @@
                             android:layout_height="wrap_content"
                             android:inputType="none"
                             android:singleLine="true"
-                            android:ellipsize="end"
-                            android:maxLines="1"
-                            android:textSize="13sp"
-                            android:paddingStart="14dp"
-                            android:paddingEnd="14dp"/>
+                            android:textSize="13sp" />
                     </com.google.android.material.textfield.TextInputLayout>
 
                     <com.google.android.material.textfield.TextInputLayout
@@ -195,13 +232,10 @@
                         style="@style/Tecni.Dropdown.Pill"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="12dp"
+                        android:layout_marginStart="8dp"
+                        android:layout_weight="1"
                         android:hint="@string/averias_filtrar_agencia"
-                        app:endIconMode="dropdown_menu"
-                        app:layout_constraintStart_toEndOf="@id/tilRegion"
-                        app:layout_constraintEnd_toEndOf="parent"
-                        app:layout_constraintTop_toTopOf="@id/tilRegion"
-                        app:layout_constraintHorizontal_weight="1">
+                        app:endIconMode="dropdown_menu">
 
                         <com.google.android.material.textfield.MaterialAutoCompleteTextView
                             android:id="@+id/actvAgencia"
@@ -209,21 +243,17 @@
                             android:layout_height="wrap_content"
                             android:inputType="none"
                             android:singleLine="true"
-                            android:ellipsize="end"
-                            android:maxLines="1"
-                            android:textSize="13sp"
-                            android:paddingStart="14dp"
-                            android:paddingEnd="14dp"/>
+                            android:textSize="13sp" />
                     </com.google.android.material.textfield.TextInputLayout>
 
-                </androidx.constraintlayout.widget.ConstraintLayout>
+                </LinearLayout>
 
             </LinearLayout>
 
         </com.google.android.material.appbar.CollapsingToolbarLayout>
     </com.google.android.material.appbar.AppBarLayout>
 
-    <!-- Contenido principal -->
+    <!-- Contenido principal: lista de averías -->
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
         android:id="@+id/swipeRefresh"
         android:layout_width="match_parent"
@@ -239,7 +269,9 @@
                 android:id="@+id/recyclerViewAverias"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:scrollbars="vertical"
+                android:clipToPadding="false"
+                android:paddingBottom="80dp"
+                android:scrollbars="none"
                 tools:listitem="@layout/item_averia" />
 
             <TextView
@@ -247,15 +279,17 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:gravity="center"
-                android:padding="24dp"
+                android:padding="32dp"
                 android:text="@string/averias_vacio"
-                android:textColor="?attr/colorOnBackground"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                android:textSize="15sp"
                 android:visibility="gone"
                 tools:visibility="visible" />
+
         </LinearLayout>
     </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
-    <!-- Floating Action Button para mostrar filtros -->
+    <!-- FAB: volver a mostrar filtros cuando están colapsados -->
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fabFilters"
         android:layout_width="wrap_content"
@@ -263,7 +297,10 @@
         android:layout_gravity="bottom|end"
         android:layout_margin="16dp"
         android:src="@drawable/ic_filter_list"
-        android:tint="@color/background"
-        app:backgroundTint="@color/ice_blue" />
+        android:tint="@color/white"
+        android:visibility="gone"
+        app:backgroundTint="?attr/colorPrimary"
+        app:fabSize="mini"
+        tools:visibility="visible" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

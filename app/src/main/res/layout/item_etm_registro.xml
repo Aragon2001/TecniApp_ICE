@@ -181,6 +181,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
+            android:visibility="gone"
             app:cardCornerRadius="14dp"
             app:cardElevation="0dp"
             app:strokeWidth="1dp"
@@ -189,7 +190,8 @@
             app:layout_constraintTop_toBottomOf="@id/rowValores"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent">
+            app:layout_constraintBottom_toBottomOf="parent"
+            tools:visibility="visible">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -310,21 +312,29 @@
                     tools:text="Se realizó verificación del punto y traslado. Operación normal. Registro requerido para ETM. Sin novedades." />
 
                 <!-- Evidencia -->
-                <TextView
-                    style="@style/TextAppearance.Material3.LabelMedium"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:alpha="0.85"
-                    android:text="Evidencia / Adjuntos" />
-
-                <TextView
-                    android:id="@+id/tvEvidencia"
-                    style="@style/TextAppearance.Material3.BodyMedium"
+                <LinearLayout
+                    android:id="@+id/layoutEvidencia"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:textStyle="bold"
-                    tools:text="2 fotos • 1 firma" />
+                    android:orientation="vertical"
+                    android:visibility="gone">
+
+                    <TextView
+                        style="@style/TextAppearance.Material3.LabelMedium"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:alpha="0.85"
+                        android:text="Evidencia / Adjuntos" />
+
+                    <TextView
+                        android:id="@+id/tvEvidencia"
+                        style="@style/TextAppearance.Material3.BodyMedium"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textStyle="bold"
+                        tools:text="2 fotos • 1 firma" />
+                </LinearLayout>
 
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
