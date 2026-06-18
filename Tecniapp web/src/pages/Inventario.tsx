@@ -10,7 +10,7 @@ export default function Inventario() {
 
   // Get unique vehiculo IDs from inventory
   const vehiculoIds = useMemo(() => {
-    const set = new Set(inventario.map(i => i.vehiculoId).filter(Boolean))
+    const set = new Set(inventario.map(i => i.vehiculoId).filter((id): id is string => Boolean(id)))
     return Array.from(set).sort()
   }, [inventario])
 

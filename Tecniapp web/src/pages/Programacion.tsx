@@ -1,11 +1,11 @@
-import React, { useState, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { Calendar, Search, Filter, MapPin } from 'lucide-react'
 import { useProgramacion } from '../hooks/useProgramacion'
-import { formatDate, formatDateTime } from '../utils/dateUtils'
+import { formatDate } from '../utils/dateUtils'
 import { Spinner } from '../components/ui/Spinner'
 
 export default function Programacion() {
-  const { programaciones, loading, error } = useProgramacion({})
+  const { programaciones, loading, error } = useProgramacion()
   const [search, setSearch] = useState('')
   const [estadoFilter, setEstadoFilter] = useState('')
   const [subregionFilter, setSubregionFilter] = useState('')

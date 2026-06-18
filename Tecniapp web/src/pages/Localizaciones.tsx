@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { MapPin, Search, ExternalLink } from 'lucide-react'
 import { useLocalizaciones } from '../hooks/useLocalizaciones'
 
@@ -119,7 +119,7 @@ export default function Localizaciones() {
                             className="inline-flex items-center gap-1 text-[10px] bg-green-50 text-green-700 px-2 py-0.5 rounded-full font-semibold hover:bg-green-100 transition-colors"
                           >
                             <ExternalLink size={10} />
-                            {loc.latitud.toFixed(4)}, {loc.longitud.toFixed(4)}
+                            {loc.latitud!.toFixed(4)}, {loc.longitud!.toFixed(4)}
                           </a>
                         ) : (
                           <span className="text-xs text-slate-300">—</span>
