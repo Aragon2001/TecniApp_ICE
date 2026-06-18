@@ -37,7 +37,7 @@ export function useLocalizaciones(): UseLocalizacionesResult {
 
     const locRef = ref(db, '/localizaciones');
 
-    const unsubscribe = onValue(
+    onValue(
       locRef,
       (snapshot) => {
         try {

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { Lightbulb, Search, CheckCircle2 } from 'lucide-react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -28,7 +28,7 @@ export default function Luminarias() {
       const q = search.toLowerCase()
       list = list.filter(l =>
         l.cliente.toLowerCase().includes(q) ||
-        l.localizacion.toLowerCase().includes(q) ||
+        l.localizacion?.toLowerCase().includes(q) ||
         l.ejecutorNombre.toLowerCase().includes(q)
       )
     }

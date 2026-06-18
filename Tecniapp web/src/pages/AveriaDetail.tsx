@@ -1,8 +1,8 @@
-import React, { useState, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import {
   ArrowLeft, MapPin, User, Truck, Package, Clock, CheckCircle2,
-  AlertTriangle, FileText, Camera, ExternalLink, Copy
+  AlertTriangle, FileText, Camera, ExternalLink
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'

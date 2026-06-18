@@ -89,6 +89,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
       setFirebaseUser(fbUser)
+      // Resolve loading immediately — auth state is known, profile fetch is background
+      setLoading(false)
 
       if (fbUser?.email) {
         const profile = await fetchUsuario(fbUser.email)
@@ -96,8 +98,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } else {
         setUser(null)
       }
-
-      setLoading(false)
     })
 
     return unsubscribe
@@ -106,14 +106,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = useCallback(async (email: string, password: string) => {
     setLoading(true)
     try {
-      const credential = await signInWithEmailAndPassword(auth, email, password)
-      // onAuthStateChanged will fire and populate `user` automatically,
-      // but we also fetch here so the caller gets the resolved profile
-      // immediately if needed.
-      const profile = await fetchUsuario(credential.user.email ?? email)
-      setUser(profile)
-    } finally {
+      await signInWithEmailAndPassword(auth, email, password)
+      // onAuthStateChanged fires and calls setLoading(false) + fetches profile
+    } catch (err) {
       setLoading(false)
+      throw err
     }
   }, [])
 

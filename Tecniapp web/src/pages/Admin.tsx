@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react'
-import { Settings, Database, RefreshCw, CheckCircle2, AlertTriangle, Wifi, WifiOff, Info, Activity } from 'lucide-react'
-import { ref as rtdbRef, get, onValue, off } from 'firebase/database'
+import { useState, useEffect } from 'react'
+import { Database, RefreshCw, CheckCircle2, AlertTriangle, Wifi, WifiOff, Info, Activity } from 'lucide-react'
+import { ref as rtdbRef, get } from 'firebase/database'
 import { collection, getCountFromServer } from 'firebase/firestore'
 import {
   rtdbAverias, rtdbUsers, rtdbGeneral, rtdbMain,

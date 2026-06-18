@@ -38,7 +38,7 @@ export function useLuminarias(): UseLuminariasResult {
 
     const lumRef = ref(rtdbInventario, '/luminarias');
 
-    const unsubscribe = onValue(
+    onValue(
       lumRef,
       (snapshot) => {
         try {

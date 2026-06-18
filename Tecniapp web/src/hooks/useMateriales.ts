@@ -33,7 +33,7 @@ export function useMateriales(): UseMaterialesResult {
 
     const matsRef = ref(rtdbMateriales, '/materiales');
 
-    const unsubscribe = onValue(
+    onValue(
       matsRef,
       (snapshot) => {
         try {

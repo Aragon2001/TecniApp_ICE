@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AlertTriangle, Search, Grid, List, X, Eye } from 'lucide-react'
 import { format, formatDistanceToNow } from 'date-fns'
@@ -56,7 +56,7 @@ export default function Averias() {
       list = list.filter(a =>
         a.caseId.toLowerCase().includes(q) ||
         a.cliente.toLowerCase().includes(q) ||
-        a.localizacion.toLowerCase().includes(q) ||
+        a.localizacion?.toLowerCase().includes(q) ||
         a.causa.toLowerCase().includes(q) ||
         a.tecnicoAsignadoNombre.toLowerCase().includes(q)
       )

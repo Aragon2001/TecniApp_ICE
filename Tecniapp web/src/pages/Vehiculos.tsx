@@ -1,8 +1,7 @@
-import React, { useState, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Truck, AlertTriangle, CheckCircle2, Clock, Filter, Search } from 'lucide-react'
 import { useVehiculos, VehiculoEstado } from '../hooks/useVehiculos'
-import { formatDate } from '../utils/dateUtils'
 import { vehiculoEstadoLabel, formatKm } from '../utils/formatUtils'
 import { Spinner } from '../components/ui/Spinner'
 

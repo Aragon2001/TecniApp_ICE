@@ -43,7 +43,7 @@ export function useProgramacion(): UseProgramacionResult {
     // Path: /programaciones/{subregion}/{vehiculoId}/{programacionId}
     const progRef = ref(rtdbProgramacion, '/programaciones');
 
-    const unsubscribe = onValue(
+    onValue(
       progRef,
       (snapshot) => {
         try {
