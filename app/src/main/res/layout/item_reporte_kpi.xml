@@ -2,51 +2,95 @@
 <com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="12dp"
+    android:layout_marginBottom="10dp"
     app:cardBackgroundColor="@color/glass_light"
     app:cardCornerRadius="16dp"
-    app:cardElevation="4dp"
-    app:strokeColor="@color/outline_variant_light"
+    app:cardElevation="3dp"
     app:strokeWidth="0dp">
 
-    <LinearLayout
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="14dp">
+        android:layout_height="wrap_content">
 
-        <TextView
-            android:id="@+id/tvKpiTitulo"
-            style="@style/TextAppearance.Material3.LabelLarge"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="KPI" />
-
-        <TextView
-            android:id="@+id/tvKpiValor"
-            style="@style/TextAppearance.Material3.TitleLarge"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:textStyle="bold"
-            android:text="0" />
-
-        <TextView
-            android:id="@+id/tvKpiDetalle"
-            style="@style/TextAppearance.Material3.BodySmall"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:textColor="@color/dark_gray"
-            android:text="Detalle" />
-
+        <!-- Accent top bar -->
         <View
             android:id="@+id/viewKpiTrend"
-            android:layout_width="match_parent"
-            android:layout_height="6dp"
-            android:layout_marginTop="10dp"
-            android:background="@drawable/bg_report_kpi_trend" />
-    </LinearLayout>
+            android:layout_width="0dp"
+            android:layout_height="3dp"
+            android:background="@drawable/bg_report_kpi_trend"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="3dp"
+            android:orientation="horizontal"
+            android:paddingStart="14dp"
+            android:paddingTop="12dp"
+            android:paddingEnd="14dp"
+            android:paddingBottom="14dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/viewKpiTrend">
+
+            <!-- Icon circle -->
+            <FrameLayout
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:background="@drawable/bg_report_icon_circle">
+
+                <ImageView
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:layout_gravity="center"
+                    android:contentDescription="@null"
+                    android:src="@drawable/ic_summary_codes"
+                    app:tint="@color/ice_blue_dark" />
+            </FrameLayout>
+
+            <!-- Title + detail column -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:layout_weight="1"
+                android:gravity="center_vertical"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/tvKpiTitulo"
+                    style="@style/TextAppearance.Material3.LabelLarge"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textStyle="bold"
+                    tools:text="Averías cerradas" />
+
+                <TextView
+                    android:id="@+id/tvKpiDetalle"
+                    style="@style/TextAppearance.Material3.BodySmall"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="3dp"
+                    android:textColor="@color/dark_gray"
+                    tools:text="en el período seleccionado" />
+            </LinearLayout>
+
+            <!-- Big value -->
+            <TextView
+                android:id="@+id/tvKpiValor"
+                style="@style/TextAppearance.Material3.HeadlineMedium"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:layout_marginStart="12dp"
+                android:textColor="@color/ice_blue"
+                android:textStyle="bold"
+                tools:text="12" />
+        </LinearLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
 </com.google.android.material.card.MaterialCardView>

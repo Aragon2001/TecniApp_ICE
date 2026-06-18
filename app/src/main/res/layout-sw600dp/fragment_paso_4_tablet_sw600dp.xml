@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    res/layout-sw600dp/fragment_paso_4.xml
+    Layout de 2 columnas para tablets (ancho >= 600dp).
+    Columna izq: Región + Subregión
+    Columna der: Agencia + Vehículo
+
+    Los IDs son idénticos al fragment_paso_4.xml de phones;
+    el código Kotlin no necesita cambios.
+-->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingStart="@dimen/padding_screen"
+        android:paddingEnd="@dimen/padding_screen"
+        android:paddingTop="16dp"
+        android:paddingBottom="32dp"
+        tools:context=".registro.Paso4Fragment">
+
+        <!-- Flecha de regreso -->
+        <LinearLayout
+            android:id="@+id/countryLayout"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:orientation="horizontal"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <ImageView
+                android:id="@+id/backArrow"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:contentDescription="Volver"
+                android:src="@drawable/ic_arrow_back" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tvTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Información Adicional"
+            android:textSize="@dimen/text_size_title"
+            android:textStyle="bold"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/countryLayout" />
+
+        <ProgressBar
+            android:id="@+id/progressBar"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="0dp"
+            android:layout_height="8dp"
+            android:layout_marginTop="12dp"
+            android:max="100"
+            android:progress="0"
+            android:progressDrawable="@drawable/progress_bar"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tvTitle" />
+
+        <TextView
+            android:id="@+id/tvStep"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="Paso 4 de 4"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/progressBar" />
+
+        <TextView
+            android:id="@+id/tvInstructions"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="Selecciona la región, la subregión, la agencia y el vehículo."
+            android:textSize="14sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tvStep" />
+
+        <!-- Guideline al 50% para dividir en 2 columnas -->
+        <androidx.constraintlayout.widget.Guideline
+            android:id="@+id/guideCenter"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            app:layout_constraintGuide_percent="0.5" />
+
+        <!-- ===== COLUMNA IZQUIERDA: Región + Subregión ===== -->
+        <LinearLayout
+            android:id="@+id/colLeft"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="32dp"
+            android:layout_marginEnd="8dp"
+            android:orientation="vertical"
+            app:layout_constraintEnd_toStartOf="@id/guideCenter"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tvInstructions">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="4dp"
+                android:text="Región"
+                android:textColor="@color/ice_blue_dark"
+                android:textSize="@dimen/text_size_label"
+                android:textStyle="bold" />
+
+            <Spinner
+                android:id="@+id/spinnerRegion"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:background="@drawable/rounded_bg_f0f2f4"
+                android:drawableEnd="@drawable/ic_arrow_down" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="4dp"
+                android:text="Subregión"
+                android:textColor="@color/ice_blue_dark"
+                android:textSize="@dimen/text_size_label"
+                android:textStyle="bold" />
+
+            <Spinner
+                android:id="@+id/spinnerSubregion"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:background="@drawable/rounded_bg_f0f2f4"
+                android:drawableEnd="@drawable/ic_arrow_down" />
+
+        </LinearLayout>
+
+        <!-- ===== COLUMNA DERECHA: Agencia + Vehículo ===== -->
+        <LinearLayout
+            android:id="@+id/colRight"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="32dp"
+            android:layout_marginStart="8dp"
+            android:orientation="vertical"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@id/guideCenter"
+            app:layout_constraintTop_toBottomOf="@id/tvInstructions">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="4dp"
+                android:text="Agencia"
+                android:textColor="@color/ice_blue_dark"
+                android:textSize="@dimen/text_size_label"
+                android:textStyle="bold" />
+
+            <Spinner
+                android:id="@+id/spinnerAgencia"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:background="@drawable/rounded_bg_f0f2f4"
+                android:drawableEnd="@drawable/ic_arrow_down" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:layout_marginBottom="4dp"
+                android:text="Vehículo"
+                android:textColor="@color/ice_blue_dark"
+                android:textSize="@dimen/text_size_label"
+                android:textStyle="bold" />
+
+            <Spinner
+                android:id="@+id/spinnerVehiculo"
+                android:layout_width="match_parent"
+                android:layout_height="50dp"
+                android:background="@drawable/rounded_bg_f0f2f4"
+                android:drawableEnd="@drawable/ic_arrow_down" />
+
+        </LinearLayout>
+
+        <!-- Botón finalizar — ancho completo debajo de ambas columnas -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnFinishRegistration"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="32dp"
+            android:backgroundTint="@color/ice_blue_dark"
+            android:text="FINALIZAR REGISTRO"
+            android:textColor="@color/white"
+            app:cornerRadius="32dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/colLeft" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</ScrollView>

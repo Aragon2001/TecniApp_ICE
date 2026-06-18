@@ -1,6 +1,5 @@
 package com.Arasoftsolutions.tecniapp_ice.registro
 
-
 import android.content.Context
 import android.os.Bundle
 import android.text.TextUtils
@@ -10,10 +9,10 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.addCallback
-import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.button.MaterialButton
@@ -29,8 +28,9 @@ import kotlinx.coroutines.tasks.await
 import java.util.Locale
 import com.google.firebase.functions.FirebaseFunctions
 
-
-class Paso1Fragment : Fragment() {
+// FIX: ahora hereda de BaseRegistroFragment para acceder a animateProgress()
+// e isFragmentAlive() sin duplicar código.
+class Paso1Fragment : BaseRegistroFragment() {
 
     private lateinit var viewModel: RegistroViewModel
     private val functions by lazy { FirebaseFunctions.getInstance() }
@@ -38,8 +38,8 @@ class Paso1Fragment : Fragment() {
         requireContext().getSharedPreferences("registro_prefs", Context.MODE_PRIVATE)
     }
 
-
     // UI
+    private var _progressBar: ProgressBar? = null
     private var _etPhoneNumber: TextInputEditText? = null
     private var _etEmail: TextInputEditText? = null
     private var _etPassword: TextInputEditText? = null
@@ -51,6 +51,7 @@ class Paso1Fragment : Fragment() {
     private var _checkBoxShowPassword: MaterialCheckBox? = null
     private var _btnContinue: MaterialButton? = null
 
+    private val progressBar get() = requireNotNull(_progressBar)
     private val etPhoneNumber get() = requireNotNull(_etPhoneNumber)
     private val etEmail get() = requireNotNull(_etEmail)
     private val etPassword get() = requireNotNull(_etPassword)
@@ -62,13 +63,12 @@ class Paso1Fragment : Fragment() {
     private val checkBoxShowPassword get() = requireNotNull(_checkBoxShowPassword)
     private val btnContinue get() = requireNotNull(_btnContinue)
 
-    // ---- Helpers de clave (coinciden con reglas RTDB) ----
     private fun emailKey(email: String) = email.trim().lowercase(Locale.ROOT)
-        .replace(".", ",").replace("#","_").replace("$","_").replace("[","_").replace("]","_")
+        .replace(".", ",").replace("#", "_").replace("$", "_")
+        .replace("[", "_").replace("]", "_")
 
     private fun phoneKey(phone: String) = phone.filter(Char::isDigit)
 
-    // RTDB raíz del proyecto de usuarios
     private val usersDb: DatabaseReference by lazy {
         FirebaseDatabase.getInstance("https://tecniapp-ice-user.firebaseio.com/").reference
     }
@@ -81,21 +81,15 @@ class Paso1Fragment : Fragment() {
 
         viewModel = ViewModelProvider(requireActivity())[RegistroViewModel::class.java]
 
-        // Inicializar UI
         initViews(view)
-
-        // Navegación
         setNavigationListeners(view)
 
-        // Mostrar/ocultar contraseñas
         checkBoxShowPassword.setOnCheckedChangeListener { _, isChecked ->
             togglePasswordVisibility(isChecked)
         }
 
-        // Continuar → validar y avanzar
         btnContinue.setOnClickListener { validateInputsAndGo() }
 
-        // Back físico → volver al login
         requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner) {
             (activity as? RegistroActivity)?.goToLogin()
         }
@@ -103,7 +97,14 @@ class Paso1Fragment : Fragment() {
         return view
     }
 
+    // FIX: animación de barra de progreso al entrar al fragmento
+    override fun onResume() {
+        super.onResume()
+        _progressBar?.let { animateProgress(it, 25) }
+    }
+
     private fun initViews(view: View) {
+        _progressBar = view.findViewById(R.id.progressBar)
         _etPhoneNumber = view.findViewById(R.id.etPhoneNumber)
         _etEmail = view.findViewById(R.id.etEmail)
         _etPassword = view.findViewById(R.id.etPassword)
@@ -120,6 +121,7 @@ class Paso1Fragment : Fragment() {
         super.onDestroyView()
         _checkBoxShowPassword?.setOnCheckedChangeListener(null)
         _btnContinue?.setOnClickListener(null)
+        _progressBar = null
         _etPhoneNumber = null
         _etEmail = null
         _etPassword = null
@@ -149,7 +151,6 @@ class Paso1Fragment : Fragment() {
         etConfirmPassword.setSelection(etConfirmPassword.text?.length ?: 0)
     }
 
-    // ========= Validaciones UI =========
     private fun clearErrorMessages() {
         tvPhoneError.visibility = View.GONE
         tvEmailError.visibility = View.GONE
@@ -157,17 +158,13 @@ class Paso1Fragment : Fragment() {
         tvConfirmPasswordError.visibility = View.GONE
     }
 
-    private fun isPhoneNumberValid(phone: String): Boolean =
-        phoneKey(phone).length >= 8 // solo dígitos, mínimo 8
-
+    private fun isPhoneNumberValid(phone: String): Boolean = phoneKey(phone).length >= 8
     private fun isEmailValid(email: String): Boolean =
         !TextUtils.isEmpty(email) &&
-            android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches() &&
-            email.lowercase(Locale.ROOT).endsWith("@ice.go.cr")
-
+                android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches() &&
+                email.lowercase(Locale.ROOT).endsWith("@ice.go.cr")
     private fun isPasswordValid(password: String): Boolean = password.length >= 8
 
-    // ========= Flujo: Validar y avanzar =========
     private fun validateInputsAndGo() {
         clearErrorMessages()
 
@@ -201,16 +198,14 @@ class Paso1Fragment : Fragment() {
 
         if (!ok) return
 
-        // Evitar doble clic mientras consultamos unicidad
         setLoading(true)
 
-        // Verificar disponibilidad usando /emails y /phones (no /usuarios)
         viewLifecycleOwner.lifecycleScope.launch {
             try {
                 val normalizedEmail = email.trim()
                 if (normalizedEmail.isBlank()) {
+                    if (!isFragmentAlive()) return@launch
                     Toast.makeText(requireContext(), "El correo electrónico no está disponible.", Toast.LENGTH_SHORT).show()
-                    setLoading(false)
                     return@launch
                 }
 
@@ -219,53 +214,58 @@ class Paso1Fragment : Fragment() {
 
                 val emailTaken = usersDb.child("emails").child(eKey).get().await().exists()
                 if (emailTaken) {
+                    if (!isFragmentAlive()) return@launch
                     tvEmailError.text = "El correo ya está registrado."
                     tvEmailError.visibility = View.VISIBLE
-                    setLoading(false)
                     return@launch
                 }
 
                 val phoneTaken = usersDb.child("phones").child(pKey).get().await().exists()
                 if (phoneTaken) {
+                    if (!isFragmentAlive()) return@launch
                     tvPhoneError.text = "El número de teléfono ya está registrado."
                     tvPhoneError.visibility = View.VISIBLE
-                    setLoading(false)
                     return@launch
                 }
 
-                // Guardar en VM
                 viewModel.setTelefono(phoneRaw)
                 viewModel.setEmail(normalizedEmail)
                 viewModel.setPassword(password)
                 prefs.edit().putString("registro_email", normalizedEmail).apply()
 
-                // Llamar Cloud Function: sendVerificationCode(email)
-                Log.d("Paso1Fragment", "Voy a pedir código para: '$normalizedEmail'")
+                Log.d("Paso1Fragment", "Solicitando código para: '$normalizedEmail'")
+
                 functions
                     .getHttpsCallable("sendVerificationCode")
                     .call(normalizedEmail)
                     .addOnSuccessListener {
+                        // FIX: guarda de ciclo de vida antes de tocar la UI
+                        if (!isFragmentAlive()) return@addOnSuccessListener
                         Toast.makeText(requireContext(), "Te enviamos un código a $normalizedEmail", Toast.LENGTH_SHORT).show()
-                        (activity as? RegistroActivity)?.goToNextStep(1) // Paso 2
+                        (activity as? RegistroActivity)?.goToNextStep(1)
                     }
                     .addOnFailureListener { e ->
-                        Log.e("Paso1Fragment", "Error enviando correo de verificación", e)
+                        Log.e("Paso1Fragment", "Error enviando código", e)
+                        // FIX: guarda de ciclo de vida antes de tocar la UI
+                        if (!isFragmentAlive()) return@addOnFailureListener
+                        setLoading(false)
                         Toast.makeText(requireContext(), "No se pudo enviar el código. Intenta de nuevo.", Toast.LENGTH_LONG).show()
                     }
 
             } catch (t: Throwable) {
                 Log.e("Paso1Fragment", "Validación falló: ${t.message}", t)
+                if (!isFragmentAlive()) return@launch
                 Toast.makeText(requireContext(), "No se pudo validar. Intenta de nuevo.", Toast.LENGTH_LONG).show()
             } finally {
-                setLoading(false)
+                // Solo apagar loading si el fragmento sigue activo y no hubo
+                // éxito (en éxito ya navegamos al paso 2).
+                if (isFragmentAlive()) setLoading(false)
             }
         }
     }
 
     private fun setLoading(loading: Boolean) {
+        if (!isFragmentAlive()) return
         btnContinue.isEnabled = !loading
-        // Si tienes progress en el layout, muéstralo/ocúltalo aquí.
     }
-
-
 }

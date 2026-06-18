@@ -19,6 +19,40 @@
         android:textAppearance="?attr/textAppearanceTitleMedium"
         android:textStyle="bold" />
 
+    <!-- Medidor anterior (read-only) -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/cardMedidorAnterior"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="1dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="12dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/averia_medidor_anterior_label"
+                android:textAppearance="?attr/textAppearanceLabelMedium"
+                android:textStyle="bold"
+                android:layout_marginBottom="4dp"/>
+
+            <TextView
+                android:id="@+id/tvMedidorAnteriorValor"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textAppearance="?attr/textAppearanceBodyLarge"
+                android:textIsSelectable="true" />
+
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Switch lectura anterior no visible -->
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/cardMedidorMotivos"
         android:layout_width="match_parent"
@@ -32,12 +66,6 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:padding="12dp">
-
-            <com.google.android.material.materialswitch.MaterialSwitch
-                android:id="@+id/switchNoCambios"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="@string/averia_medidor_dialog_no_cambios" />
 
             <com.google.android.material.materialswitch.MaterialSwitch
                 android:id="@+id/switchLecturaAnteriorNoVisible"

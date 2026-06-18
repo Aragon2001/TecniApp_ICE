@@ -1,5 +1,6 @@
 package com.Arasoftsolutions.tecniapp_ice.ui.medidor
 
+import android.animation.ObjectAnimator
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Intent
@@ -7,8 +8,10 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.animation.AccelerateDecelerateInterpolator
 import android.view.inputmethod.EditorInfo
 import android.widget.ArrayAdapter
+import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.core.widget.doAfterTextChanged
@@ -44,6 +47,9 @@ class MedidorFragment : Fragment() {
     private var consultaNubeDialog: AlertDialog? = null
     private var wasManualInfoShown = false
 
+    /** Controla si la tarjeta de resultado ya estaba visible (para no re-animar) */
+    private var resultadoYaVisible = false
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -57,8 +63,13 @@ class MedidorFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         viewModel.initialize()
         configurarUi()
+        iniciarAnimacionHero()
         observarEstado()
     }
+
+    // ─────────────────────────────────────────────────────────────
+    //  UI Principal
+    // ─────────────────────────────────────────────────────────────
 
     private fun configurarUi() {
         val context = requireContext()
@@ -74,8 +85,10 @@ class MedidorFragment : Fragment() {
                 false
             }
         }
-        binding.btnCopiar.setOnClickListener { copiarInformacion() }
-        binding.btnCompartir.setOnClickListener { compartirInformacion() }
+
+        binding.btnCopiarInline.setOnClickListener { copiarInformacion() }
+        binding.btnCompartirInline.setOnClickListener { compartirInformacion() }
+
         binding.btnMostrarRegistro.setOnClickListener {
             viewModel.habilitarRegistroManual()
             registroBinding?.let { registro ->
@@ -91,15 +104,71 @@ class MedidorFragment : Fragment() {
         }
     }
 
+    // ─────────────────────────────────────────────────────────────
+    //  Animación del ícono hero (pulso suave e infinito)
+    // ─────────────────────────────────────────────────────────────
+
+    private fun iniciarAnimacionHero() {
+        val iconContainer = binding.heroIconContainer
+        val scaleX = ObjectAnimator.ofFloat(iconContainer, "scaleX", 1f, 1.06f, 1f).apply {
+            duration = 2400
+            repeatCount = ObjectAnimator.INFINITE
+            interpolator = AccelerateDecelerateInterpolator()
+        }
+        val scaleY = ObjectAnimator.ofFloat(iconContainer, "scaleY", 1f, 1.06f, 1f).apply {
+            duration = 2400
+            repeatCount = ObjectAnimator.INFINITE
+            interpolator = AccelerateDecelerateInterpolator()
+        }
+        scaleX.start()
+        scaleY.start()
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    //  Animación de entrada para la tarjeta de resultado
+    // ─────────────────────────────────────────────────────────────
+
+    private fun mostrarResultadoConAnimacion() {
+        if (resultadoYaVisible) return
+        resultadoYaVisible = true
+        binding.cardResultado.apply {
+            alpha = 0f
+            translationY = 48f
+            isVisible = true
+            animate()
+                .alpha(1f)
+                .translationY(0f)
+                .setDuration(350)
+                .setInterpolator(AccelerateDecelerateInterpolator())
+                .start()
+        }
+    }
+
+    private fun ocultarResultado() {
+        resultadoYaVisible = false
+        binding.cardResultado.isVisible = false
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    //  Observar estado del ViewModel
+    // ─────────────────────────────────────────────────────────────
+
     private fun observarEstado() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.uiState.collect { estado ->
                     binding.btnConsultar.isEnabled = !estado.isLoading && !estado.isRegistering
-                    binding.cardResultado.isVisible = estado.medidor != null
-                    binding.layoutAcciones.isVisible = estado.medidor != null
-                    binding.cardNoEncontrado.isVisible = estado.notFoundNumero != null && !estado.showManualForm
+                    binding.progressBusqueda.isVisible = estado.isLoading
                     binding.btnMostrarRegistro.isEnabled = !estado.isRegistering
+
+                    val hayMedidor = estado.medidor != null
+                    if (hayMedidor) {
+                        mostrarResultadoConAnimacion()
+                    } else {
+                        ocultarResultado()
+                    }
+
+                    binding.cardNoEncontrado.isVisible = estado.notFoundNumero != null && !estado.showManualForm
 
                     actualizarSubregionAdapter(estado.subregionOptions)
                     actualizarPuebloAdapter(estado.puebloOptions)
@@ -131,11 +200,6 @@ class MedidorFragment : Fragment() {
                         dismissRegistroBottomSheet()
                     }
 
-                            // if (estado.showManualForm && !wasManualVisible) {
-                           // binding.scrollMedidor.post {
-                           //     binding.scrollMedidor.smoothScrollTo(0, binding.cardRegistroManual.top)
-                          //  }
-                    //}
                     wasManualVisible = estado.showManualForm
 
                     if (estado.showCloudLookupDialog) {
@@ -187,9 +251,7 @@ class MedidorFragment : Fragment() {
                             medidor.metros.orEmpty().ifBlank { placeholder }
                         )
                         val subregionDisplay = estado.subregionNombre
-                            ?: medidor.subregion.orEmpty().ifBlank {
-                                placeholder
-                            }
+                            ?: medidor.subregion.orEmpty().ifBlank { placeholder }
                         binding.valueSubregionHeader.text = subregionDisplay
                         binding.chipLocalizacion.text = getString(
                             R.string.medidor_chip_localizacion_format,
@@ -210,16 +272,9 @@ class MedidorFragment : Fragment() {
         }
     }
 
-    private fun limpiarCampos() {
-        binding.chipNumero.text = ""
-        binding.chipCliente.text = ""
-        binding.chipCalle.text = ""
-        binding.chipPoste.text = ""
-        binding.chipMetros.text = ""
-        binding.chipPueblo.text = ""
-        binding.chipLocalizacion.text = ""
-        binding.valueSubregionHeader.text = ""
-    }
+    // ─────────────────────────────────────────────────────────────
+    //  Búsqueda
+    // ─────────────────────────────────────────────────────────────
 
     private fun consultarMedidor() {
         val numero = binding.inputMedidor.text?.toString().orEmpty().trim()
@@ -228,44 +283,65 @@ class MedidorFragment : Fragment() {
             return
         }
         binding.layoutMedidor.error = null
+        // Reiniciar animación de entrada para el nuevo resultado
+        resultadoYaVisible = false
         viewModel.buscar(numero)
     }
 
-    private fun copiarInformacion() {
-        val info = buildString {
-            appendLine(binding.chipNumero.text)
-            appendLine(binding.chipCliente.text)
-            appendLine(binding.chipCalle.text)
-            appendLine(binding.chipPoste.text)
-            appendLine(binding.chipMetros.text)
-            appendLine(binding.chipPueblo.text)
-            appendLine("${getString(R.string.medidor_subregion_label)}: ${binding.valueSubregionHeader.text}")
-            append(binding.chipLocalizacion.text)
+    // ─────────────────────────────────────────────────────────────
+    //  Copiar / Compartir
+    // ─────────────────────────────────────────────────────────────
+
+    private fun construirTextoMedidor(): String? {
+        val medidor = viewModel.obtenerMedidorActual() ?: return null
+        val estado = viewModel.uiState.value
+        val subregion = estado.subregionNombre
+            ?: medidor.subregion.orEmpty().ifBlank { "-" }
+        val pueblo = binding.chipPueblo.text.toString().trim().ifBlank {
+            medidor.pueblo.orEmpty().ifBlank { "-" }
         }
 
+        return buildString {
+            appendLine("DATOS DEL MEDIDOR")
+            appendLine()
+            appendLine("Medidor      : ${medidor.medidorNumber.ifBlank { "-" }}")
+            appendLine("Cliente      : ${medidor.cliente.orEmpty().ifBlank { "-" }}")
+            appendLine("Localización : ${medidor.localizacion?.toString() ?: "-"}")
+            appendLine("Calle        : ${medidor.calle.orEmpty().ifBlank { "-" }}")
+            appendLine("Poste        : ${medidor.poste.orEmpty().ifBlank { "-" }}")
+            appendLine("Metros       : ${medidor.metros.orEmpty().ifBlank { "-" }}")
+            appendLine("Pueblo       : $pueblo")
+            appendLine("Subregión    : $subregion")
+            appendLine()
+            append("Generado desde TecniApp ICE")
+        }
+    }
+
+    private fun copiarInformacion() {
+        val texto = construirTextoMedidor() ?: return
         val clipboard = ContextCompat.getSystemService(requireContext(), ClipboardManager::class.java)
-        clipboard?.setPrimaryClip(ClipData.newPlainText("Medidor", info))
+        clipboard?.setPrimaryClip(ClipData.newPlainText("Medidor", texto))
+        Toast.makeText(requireContext(), R.string.medidor_copiado_exito, Toast.LENGTH_SHORT).show()
+
+        // Feedback visual en el botón
+        binding.btnCopiarInline.animate().scaleX(0.93f).scaleY(0.93f).setDuration(80)
+            .withEndAction {
+                binding.btnCopiarInline.animate().scaleX(1f).scaleY(1f).setDuration(120).start()
+            }.start()
     }
 
     private fun compartirInformacion() {
-        if (viewModel.obtenerMedidorActual() == null) return
-        val info = buildString {
-            appendLine(binding.chipNumero.text)
-            appendLine(binding.chipCliente.text)
-            appendLine(binding.chipCalle.text)
-            appendLine(binding.chipPoste.text)
-            appendLine(binding.chipMetros.text)
-            appendLine(binding.chipPueblo.text)
-            appendLine("${getString(R.string.medidor_subregion_label)}: ${binding.valueSubregionHeader.text}")
-            append(binding.chipLocalizacion.text)
-        }
-
+        val texto = construirTextoMedidor() ?: return
         val shareIntent = Intent(Intent.ACTION_SEND).apply {
             type = "text/plain"
-            putExtra(Intent.EXTRA_TEXT, info)
+            putExtra(Intent.EXTRA_TEXT, texto)
         }
         startActivity(Intent.createChooser(shareIntent, getString(R.string.medidor_compartir)))
     }
+
+    // ─────────────────────────────────────────────────────────────
+    //  Adaptadores de subregión / pueblo
+    // ─────────────────────────────────────────────────────────────
 
     private fun actualizarSubregionAdapter(opciones: List<SubregionOption>) {
         if (!::subregionAdapter.isInitialized) return
@@ -297,161 +373,9 @@ class MedidorFragment : Fragment() {
         puebloAdapter.notifyDataSetChanged()
     }
 
-    private fun actualizarLocalizacionSugerida() {
-        val estadoActual = viewModel.uiState.value
-        val puebloCodigo = estadoActual.selectedPuebloId?.toString()
-        val registro = registroBinding ?: return
-        val calle = registro.inputRegistroCalle.text?.toString().orEmpty()
-        val poste = registro.inputRegistroPoste.text?.toString().orEmpty()
-        val metros = registro.inputRegistroMetros.text?.toString().orEmpty()
-        val localizacion = generarLocalizacion(puebloCodigo, calle, poste, metros)
-        val nuevoTexto = localizacion?.toString().orEmpty()
-        if (registro.inputRegistroLocalizacion.text?.toString() != nuevoTexto) {
-            registro.inputRegistroLocalizacion.setText(nuevoTexto)
-        }
-        if (localizacion != null) {
-            registro.tilRegistroLocalizacion.error = null
-        }
-    }
-
-    private fun generarLocalizacion(
-        puebloCodigo: String?,
-        calle: String,
-        poste: String,
-        metros: String,
-    ): Long? {
-        val codigo = puebloCodigo?.takeIf { it.isNotBlank() } ?: return null
-        if (calle.isBlank() || poste.isBlank() || metros.isBlank()) return null
-        val puebloSegmento = codigo.filter(Char::isDigit)
-        if (puebloSegmento.isEmpty()) return null
-        val calleSegmento = calle.filter(Char::isDigit).padStart(3, '0')
-        val posteSegmento = poste.filter(Char::isDigit).padStart(3, '0')
-        val metrosSegmento = metros.filter(Char::isDigit).padStart(2, '0')
-        val localizacion = puebloSegmento + calleSegmento + posteSegmento + metrosSegmento
-        return localizacion.toLongOrNull()
-    }
-
-    private fun registrarMedidorManual() {
-        if (viewModel.uiState.value.isPueblosLoading) return
-        val registro = registroBinding ?: return
-
-        val numero = registro.inputRegistroNumero.text?.toString().orEmpty().trim()
-        val cliente = registro.inputRegistroCliente.text?.toString().orEmpty().trim()
-        val calle = registro.inputRegistroCalle.text?.toString().orEmpty().trim()
-        val poste = registro.inputRegistroPoste.text?.toString().orEmpty().trim()
-        val metros = registro.inputRegistroMetros.text?.toString().orEmpty().trim()
-        actualizarLocalizacionSugerida()
-        val localizacionTexto = registro.inputRegistroLocalizacion.text?.toString()?.trim().orEmpty()
-        val subregionDisplay = registro.inputRegistroSubregion.text?.toString()?.trim().orEmpty()
-        val puebloDisplay = registro.inputRegistroPueblo.text?.toString()?.trim().orEmpty()
-
-        var hasError = false
-        if (numero.isEmpty()) {
-            registro.tilRegistroNumero.error = getString(R.string.medidor_registro_requerido_numero)
-            hasError = true
-        } else {
-            registro.tilRegistroNumero.error = null
-        }
-
-        val subregionOption = subregionDisplayToOption[subregionDisplay]
-        if (subregionOption == null) {
-            registro.tilRegistroSubregion.error = getString(R.string.medidor_registro_subregion_requerida)
-            hasError = true
-        } else {
-            registro.tilRegistroSubregion.error = null
-        }
-
-        val puebloOption = puebloDisplayToOption[puebloDisplay]
-        if (puebloOption == null) {
-            registro.tilRegistroPueblo.error = getString(R.string.medidor_registro_pueblo_requerido)
-            hasError = true
-        } else {
-            registro.tilRegistroPueblo.error = null
-        }
-
-        if (cliente.isEmpty()) {
-            registro.tilRegistroCliente.error = getString(R.string.medidor_registro_cliente_requerido)
-            hasError = true
-        } else {
-            registro.tilRegistroCliente.error = null
-        }
-
-        if (calle.isEmpty()) {
-            registro.tilRegistroCalle.error = getString(R.string.medidor_registro_calle_requerida)
-            hasError = true
-        } else {
-            registro.tilRegistroCalle.error = null
-        }
-
-        if (poste.isEmpty()) {
-            registro.tilRegistroPoste.error = getString(R.string.medidor_registro_poste_requerido)
-            hasError = true
-        } else {
-            registro.tilRegistroPoste.error = null
-        }
-
-        if (metros.isEmpty()) {
-            registro.tilRegistroMetros.error = getString(R.string.medidor_registro_metros_requeridos)
-            hasError = true
-        } else {
-            registro.tilRegistroMetros.error = null
-        }
-
-        val localizacion = localizacionTexto.toLongOrNull()
-        if (localizacion == null) {
-            registro.tilRegistroLocalizacion.error = getString(R.string.medidor_registro_localizacion_obligatoria)
-            hasError = true
-        } else {
-            registro.tilRegistroLocalizacion.error = null
-        }
-
-        if (hasError) return
-
-        subregionOption?.let { viewModel.seleccionarSubregionParaRegistro(it) }
-        puebloOption?.let { viewModel.seleccionarPuebloParaRegistro(it) }
-
-        MaterialAlertDialogBuilder(requireContext())
-            .setTitle(R.string.medidor_registro_confirm_title)
-            .setMessage(R.string.medidor_registro_confirm_message)
-            .setPositiveButton(R.string.medidor_registro_confirm_positive) { _, _ ->
-                if (localizacion != null) {
-                    viewModel.registrarMedidorManual(
-                        numero = numero,
-                        cliente = cliente,
-                        localizacion = localizacion,
-                        calle = calle,
-                        poste = poste,
-                        metros = metros
-                    )
-                }
-            }
-            .setNegativeButton(android.R.string.cancel, null)
-            .show()
-    }
-
-    private fun limpiarFormularioManual() {
-        val registro = registroBinding ?: return
-        registro.tilRegistroNumero.error = null
-        registro.tilRegistroLocalizacion.error = null
-        registro.tilRegistroCliente.error = null
-        registro.tilRegistroCalle.error = null
-        registro.tilRegistroPoste.error = null
-        registro.tilRegistroMetros.error = null
-        registro.tilRegistroPueblo.error = null
-        registro.tilRegistroSubregion.error = null
-        registro.inputRegistroNumero.setText("")
-        registro.inputRegistroCliente.setText("")
-        registro.inputRegistroLocalizacion.setText("")
-        registro.inputRegistroCalle.setText("")
-        registro.inputRegistroPoste.setText("")
-        registro.inputRegistroMetros.setText("")
-        registro.inputRegistroPueblo.setText("", false)
-        viewModel.limpiarSeleccionPueblo()
-        val subregionSeleccionada = viewModel.uiState.value.selectedSubregionDisplay.orEmpty()
-        if (subregionSeleccionada.isNotEmpty()) {
-            registro.inputRegistroSubregion.setText(subregionSeleccionada, false)
-        }
-    }
+    // ─────────────────────────────────────────────────────────────
+    //  Bottom Sheet de registro manual
+    // ─────────────────────────────────────────────────────────────
 
     private fun showRegistroBottomSheet() {
         if (registroDialog != null) {
@@ -489,12 +413,8 @@ class MedidorFragment : Fragment() {
         }
         registro.btnGuardarManual.setOnClickListener { registrarMedidorManual() }
 
-        registro.inputRegistroNumero.doAfterTextChanged {
-            registro.tilRegistroNumero.error = null
-        }
-        registro.inputRegistroCliente.doAfterTextChanged {
-            registro.tilRegistroCliente.error = null
-        }
+        registro.inputRegistroNumero.doAfterTextChanged { registro.tilRegistroNumero.error = null }
+        registro.inputRegistroCliente.doAfterTextChanged { registro.tilRegistroCliente.error = null }
         registro.inputRegistroCalle.doAfterTextChanged {
             registro.tilRegistroCalle.error = null
             actualizarLocalizacionSugerida()
@@ -507,9 +427,8 @@ class MedidorFragment : Fragment() {
             registro.tilRegistroMetros.error = null
             actualizarLocalizacionSugerida()
         }
-        registro.inputRegistroLocalizacion.doAfterTextChanged {
-            registro.tilRegistroLocalizacion.error = null
-        }
+        registro.inputRegistroLocalizacion.doAfterTextChanged { registro.tilRegistroLocalizacion.error = null }
+
         registro.inputRegistroSubregion.apply {
             keyListener = null
             isFocusable = true
@@ -517,9 +436,7 @@ class MedidorFragment : Fragment() {
             setAdapter(subregionAdapter)
             setOnClickListener { showDropDown() }
             setOnFocusChangeListener { _, hasFocus -> if (hasFocus) showDropDown() }
-            doAfterTextChanged {
-                registro.tilRegistroSubregion.error = null
-            }
+            doAfterTextChanged { registro.tilRegistroSubregion.error = null }
             setOnItemClickListener { _, _, position, _ ->
                 val display = subregionAdapter.getItem(position) ?: return@setOnItemClickListener
                 subregionDisplayToOption[display]?.let { option ->
@@ -535,9 +452,7 @@ class MedidorFragment : Fragment() {
             setAdapter(puebloAdapter)
             setOnClickListener { showDropDown() }
             setOnFocusChangeListener { _, hasFocus -> if (hasFocus) showDropDown() }
-            doAfterTextChanged {
-                registro.tilRegistroPueblo.error = null
-            }
+            doAfterTextChanged { registro.tilRegistroPueblo.error = null }
             setOnItemClickListener { _, _, position, _ ->
                 val display = puebloAdapter.getItem(position) ?: return@setOnItemClickListener
                 puebloDisplayToOption[display]?.let { option ->
@@ -589,17 +504,155 @@ class MedidorFragment : Fragment() {
         updateRegistroUi(registro, estado)
     }
 
-    override fun onDestroyView() {
-        super.onDestroyView()
-        dismissRegistroBottomSheet()
-        ocultarDialogoConsultaNube()
-        _binding = null
+    // ─────────────────────────────────────────────────────────────
+    //  Cálculo de localización sugerida
+    // ─────────────────────────────────────────────────────────────
+
+    private fun actualizarLocalizacionSugerida() {
+        val estadoActual = viewModel.uiState.value
+        val puebloCodigo = estadoActual.selectedPuebloId?.toString()
+        val registro = registroBinding ?: return
+        val calle = registro.inputRegistroCalle.text?.toString().orEmpty()
+        val poste = registro.inputRegistroPoste.text?.toString().orEmpty()
+        val metros = registro.inputRegistroMetros.text?.toString().orEmpty()
+        val localizacion = generarLocalizacion(puebloCodigo, calle, poste, metros)
+        val nuevoTexto = localizacion?.toString().orEmpty()
+        if (registro.inputRegistroLocalizacion.text?.toString() != nuevoTexto) {
+            registro.inputRegistroLocalizacion.setText(nuevoTexto)
+        }
+        if (localizacion != null) registro.tilRegistroLocalizacion.error = null
     }
 
-    private fun mostrarDialogoConsultaNube(numero: String) {
-        if (consultaNubeDialog?.isShowing == true) {
-            return
+    private fun generarLocalizacion(
+        puebloCodigo: String?,
+        calle: String,
+        poste: String,
+        metros: String,
+    ): Long? {
+        val codigo = puebloCodigo?.takeIf { it.isNotBlank() } ?: return null
+        if (calle.isBlank() || poste.isBlank() || metros.isBlank()) return null
+        val puebloSegmento = codigo.filter(Char::isDigit).takeIf { it.isNotEmpty() } ?: return null
+        val calleSegmento = calle.filter(Char::isDigit).padStart(3, '0')
+        val posteSegmento = poste.filter(Char::isDigit).padStart(3, '0')
+        val metrosSegmento = metros.filter(Char::isDigit).padStart(2, '0')
+        return (puebloSegmento + calleSegmento + posteSegmento + metrosSegmento).toLongOrNull()
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    //  Registrar medidor manual
+    // ─────────────────────────────────────────────────────────────
+
+    private fun registrarMedidorManual() {
+        if (viewModel.uiState.value.isPueblosLoading) return
+        val registro = registroBinding ?: return
+
+        val numero = registro.inputRegistroNumero.text?.toString().orEmpty().trim()
+        val cliente = registro.inputRegistroCliente.text?.toString().orEmpty().trim()
+        val calle = registro.inputRegistroCalle.text?.toString().orEmpty().trim()
+        val poste = registro.inputRegistroPoste.text?.toString().orEmpty().trim()
+        val metros = registro.inputRegistroMetros.text?.toString().orEmpty().trim()
+        actualizarLocalizacionSugerida()
+        val localizacionTexto = registro.inputRegistroLocalizacion.text?.toString()?.trim().orEmpty()
+        val subregionDisplay = registro.inputRegistroSubregion.text?.toString()?.trim().orEmpty()
+        val puebloDisplay = registro.inputRegistroPueblo.text?.toString()?.trim().orEmpty()
+
+        var hasError = false
+        if (numero.isEmpty()) { registro.tilRegistroNumero.error = getString(R.string.medidor_registro_requerido_numero); hasError = true }
+        else registro.tilRegistroNumero.error = null
+
+        val subregionOption = subregionDisplayToOption[subregionDisplay]
+        if (subregionOption == null) { registro.tilRegistroSubregion.error = getString(R.string.medidor_registro_subregion_requerida); hasError = true }
+        else registro.tilRegistroSubregion.error = null
+
+        val puebloOption = puebloDisplayToOption[puebloDisplay]
+        if (puebloOption == null) { registro.tilRegistroPueblo.error = getString(R.string.medidor_registro_pueblo_requerido); hasError = true }
+        else registro.tilRegistroPueblo.error = null
+
+        if (cliente.isEmpty()) { registro.tilRegistroCliente.error = getString(R.string.medidor_registro_cliente_requerido); hasError = true }
+        else registro.tilRegistroCliente.error = null
+
+        if (calle.isEmpty()) { registro.tilRegistroCalle.error = getString(R.string.medidor_registro_calle_requerida); hasError = true }
+        else registro.tilRegistroCalle.error = null
+
+        if (poste.isEmpty()) { registro.tilRegistroPoste.error = getString(R.string.medidor_registro_poste_requerido); hasError = true }
+        else registro.tilRegistroPoste.error = null
+
+        if (metros.isEmpty()) { registro.tilRegistroMetros.error = getString(R.string.medidor_registro_metros_requeridos); hasError = true }
+        else registro.tilRegistroMetros.error = null
+
+        val localizacion = localizacionTexto.toLongOrNull()
+        if (localizacion == null) { registro.tilRegistroLocalizacion.error = getString(R.string.medidor_registro_localizacion_obligatoria); hasError = true }
+        else registro.tilRegistroLocalizacion.error = null
+
+        if (hasError) return
+
+        subregionOption?.let { viewModel.seleccionarSubregionParaRegistro(it) }
+        puebloOption?.let { viewModel.seleccionarPuebloParaRegistro(it) }
+
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.medidor_registro_confirm_title)
+            .setMessage(R.string.medidor_registro_confirm_message)
+            .setPositiveButton(R.string.medidor_registro_confirm_positive) { _, _ ->
+                if (localizacion != null) {
+                    viewModel.registrarMedidorManual(
+                        numero = numero,
+                        cliente = cliente,
+                        localizacion = localizacion,
+                        calle = calle,
+                        poste = poste,
+                        metros = metros
+                    )
+                }
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    //  Utilidades de limpieza
+    // ─────────────────────────────────────────────────────────────
+
+    private fun limpiarCampos() {
+        binding.chipNumero.text = ""
+        binding.chipCliente.text = ""
+        binding.chipCalle.text = ""
+        binding.chipPoste.text = ""
+        binding.chipMetros.text = ""
+        binding.chipPueblo.text = ""
+        binding.chipLocalizacion.text = ""
+        binding.valueSubregionHeader.text = ""
+    }
+
+    private fun limpiarFormularioManual() {
+        val registro = registroBinding ?: return
+        registro.tilRegistroNumero.error = null
+        registro.tilRegistroLocalizacion.error = null
+        registro.tilRegistroCliente.error = null
+        registro.tilRegistroCalle.error = null
+        registro.tilRegistroPoste.error = null
+        registro.tilRegistroMetros.error = null
+        registro.tilRegistroPueblo.error = null
+        registro.tilRegistroSubregion.error = null
+        registro.inputRegistroNumero.setText("")
+        registro.inputRegistroCliente.setText("")
+        registro.inputRegistroLocalizacion.setText("")
+        registro.inputRegistroCalle.setText("")
+        registro.inputRegistroPoste.setText("")
+        registro.inputRegistroMetros.setText("")
+        registro.inputRegistroPueblo.setText("", false)
+        viewModel.limpiarSeleccionPueblo()
+        val subregionSeleccionada = viewModel.uiState.value.selectedSubregionDisplay.orEmpty()
+        if (subregionSeleccionada.isNotEmpty()) {
+            registro.inputRegistroSubregion.setText(subregionSeleccionada, false)
         }
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    //  Diálogo de consulta a la nube
+    // ─────────────────────────────────────────────────────────────
+
+    private fun mostrarDialogoConsultaNube(numero: String) {
+        if (consultaNubeDialog?.isShowing == true) return
         val bindingDialog = DialogMedidorConsultaNubeBinding.inflate(layoutInflater)
         bindingDialog.textConsultaMensaje.text = getString(R.string.medidor_dialog_consulta_nube_message, numero)
         consultaNubeDialog = MaterialAlertDialogBuilder(requireContext())
@@ -621,5 +674,16 @@ class MedidorFragment : Fragment() {
             .setMessage(R.string.medidor_registro_aviso_message)
             .setPositiveButton(android.R.string.ok, null)
             .show()
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    //  Ciclo de vida
+    // ─────────────────────────────────────────────────────────────
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        dismissRegistroBottomSheet()
+        ocultarDialogoConsultaNube()
+        _binding = null
     }
 }

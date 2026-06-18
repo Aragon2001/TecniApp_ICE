@@ -2,8 +2,8 @@ package com.Arasoftsolutions.tecniapp_ice.ui.onboarding
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.View
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.content.res.AppCompatResources
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import androidx.viewpager2.widget.ViewPager2
@@ -15,6 +15,7 @@ import com.Arasoftsolutions.tecniapp_ice.preferences.DataStoreManager
 import com.google.android.material.tabs.TabLayoutMediator
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
+import kotlin.math.abs
 
 class OnboardingActivity : AppCompatActivity() {
 
@@ -28,27 +29,32 @@ class OnboardingActivity : AppCompatActivity() {
             OnboardingPage(
                 illustrationRes = R.drawable.ic_menu_home,
                 titleRes = R.string.onboarding_title_welcome,
-                descriptionRes = R.string.onboarding_desc_welcome
+                descriptionRes = R.string.onboarding_desc_welcome,
+                accentColorRes = R.color.ice_blue
             ),
             OnboardingPage(
                 illustrationRes = R.drawable.ic_menu_localizacion,
                 titleRes = R.string.onboarding_title_location,
-                descriptionRes = R.string.onboarding_desc_location
+                descriptionRes = R.string.onboarding_desc_location,
+                accentColorRes = R.color.success_green
             ),
             OnboardingPage(
                 illustrationRes = R.drawable.ic_menu_medidor,
                 titleRes = R.string.onboarding_title_field_ops,
-                descriptionRes = R.string.onboarding_desc_field_ops
+                descriptionRes = R.string.onboarding_desc_field_ops,
+                accentColorRes = R.color.chip_asignada
             ),
             OnboardingPage(
                 illustrationRes = R.drawable.ic_menu_averias,
                 titleRes = R.string.onboarding_title_incidents,
-                descriptionRes = R.string.onboarding_desc_incidents
+                descriptionRes = R.string.onboarding_desc_incidents,
+                accentColorRes = R.color.danger_red
             ),
             OnboardingPage(
                 illustrationRes = R.drawable.ic_menu_programacion,
                 titleRes = R.string.onboarding_title_planning,
-                descriptionRes = R.string.onboarding_desc_planning
+                descriptionRes = R.string.onboarding_desc_planning,
+                accentColorRes = R.color.primary_dark
             )
         )
     }
@@ -65,10 +71,8 @@ class OnboardingActivity : AppCompatActivity() {
         binding = ActivityOnboardingBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        setupToolbar()
         setupViewPager()
         setupButtons()
-
         updateButtonState(binding.viewPager.currentItem)
     }
 
@@ -77,18 +81,10 @@ class OnboardingActivity : AppCompatActivity() {
         super.onDestroy()
     }
 
-    private fun setupToolbar() {
-        if (returnToCaller) {
-            binding.toolbar.navigationIcon = AppCompatResources.getDrawable(this, R.drawable.ic_arrow_back)
-            binding.toolbar.setNavigationOnClickListener { finish() }
-        } else {
-            binding.toolbar.navigationIcon = null
-        }
-    }
-
     private fun setupViewPager() {
         val adapter = OnboardingAdapter(pages)
         binding.viewPager.adapter = adapter
+        binding.viewPager.setPageTransformer(ScalePageTransformer())
         binding.viewPager.registerOnPageChangeCallback(pageChangeCallback)
 
         TabLayoutMediator(binding.tabLayout, binding.viewPager) { tab, _ ->
@@ -145,6 +141,18 @@ class OnboardingActivity : AppCompatActivity() {
         }
         startActivity(nextIntent)
         finish()
+    }
+
+    // ── Transformer: escala suave al deslizar páginas ─────────────────────────
+
+    private class ScalePageTransformer : ViewPager2.PageTransformer {
+        override fun transformPage(page: View, position: Float) {
+            val absPos = abs(position).coerceAtMost(1f)
+            val scale = 1f - absPos * 0.08f
+            page.scaleX = scale
+            page.scaleY = scale
+            page.alpha = 1f - absPos * 0.4f
+        }
     }
 
     companion object {

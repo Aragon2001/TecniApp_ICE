@@ -9,10 +9,10 @@ import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.ImageView
+import android.widget.ProgressBar
 import android.widget.Spinner
 import java.text.Normalizer
 import android.widget.Toast
-import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import com.Arasoftsolutions.tecniapp_ice.LoginActivity
@@ -25,25 +25,25 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import java.util.Locale
 
-class Paso4Fragment : Fragment() {
+// FIX: hereda de BaseRegistroFragment
+class Paso4Fragment : BaseRegistroFragment() {
 
-    // ViewModel compartido del flujo de registro
     private lateinit var viewModel: RegistroViewModel
 
-    // UI
+    private var _progressBar: ProgressBar? = null
     private var _spinnerRegion: Spinner? = null
     private var _spinnerSubregion: Spinner? = null
     private var _spinnerAgencia: Spinner? = null
     private var _spinnerVehiculo: Spinner? = null
     private var _btnFinishRegistration: MaterialButton? = null
 
+    private val progressBar get() = requireNotNull(_progressBar)
     private val spinnerRegion get() = requireNotNull(_spinnerRegion)
     private val spinnerSubregion get() = requireNotNull(_spinnerSubregion)
     private val spinnerAgencia get() = requireNotNull(_spinnerAgencia)
     private val spinnerVehiculo get() = requireNotNull(_spinnerVehiculo)
     private val btnFinishRegistration get() = requireNotNull(_btnFinishRegistration)
 
-    // Firebase (datos generales)
     private lateinit var regionsDatabase: DatabaseReference
     private lateinit var subregionsDatabase: DatabaseReference
     private lateinit var agenciesDatabase: DatabaseReference
@@ -51,12 +51,7 @@ class Paso4Fragment : Fragment() {
 
     private data class RegionItem(val id: String, val nombre: String)
     private data class SubregionItem(val id: String, val nombre: String, val regionId: String)
-    private data class AgencyItem(
-        val id: String?,
-        val nombre: String,
-        val regionId: String?,
-        val subregionId: String?
-    )
+    private data class AgencyItem(val id: String?, val nombre: String, val regionId: String?, val subregionId: String?)
 
     private var regionItems: List<RegionItem> = emptyList()
     private var subregionItems: List<SubregionItem> = emptyList()
@@ -68,42 +63,31 @@ class Paso4Fragment : Fragment() {
     private var selectedSubregionItem: SubregionItem? = null
     private var selectedAgencyItem: AgencyItem? = null
 
-    // ---------- Helpers para claves seguras ----------
-
-  private fun normTag(x: String): String {
-    val upper = x.trim().uppercase(Locale.ROOT)
-    val noAccents = Normalizer.normalize(upper, Normalizer.Form.NFD)
-        .replace(Regex("\\p{Mn}+"), "") // quita tildes/diacríticos
-
-    return noAccents
-        .replace(Regex("[^A-Z0-9]+"), "_")
-        .replace(Regex("^_+|_+$"), "")
-}
+    private fun normTag(x: String): String {
+        val upper = x.trim().uppercase(Locale.ROOT)
+        val noAccents = Normalizer.normalize(upper, Normalizer.Form.NFD)
+            .replace(Regex("\\p{Mn}+"), "")
+        return noAccents
+            .replace(Regex("[^A-Z0-9]+"), "_")
+            .replace(Regex("^_+|_+$"), "")
+    }
 
     private fun emailKey(email: String): String =
         email.trim().lowercase(Locale.ROOT)
-            .replace(".", ",")
-            .replace("#", "_")
-            .replace("$", "_")
-            .replace("[", "_")
-            .replace("]", "_")
+            .replace(".", ",").replace("#", "_").replace("$", "_")
+            .replace("[", "_").replace("]", "_")
 
-    private fun phoneKey(phone: String): String =
-        phone.filter(Char::isDigit)
-
-    private fun cedulaKey(id: String): String =
-        id.filter(Char::isDigit) // solo dígitos, p.ej. "102030405"
+    private fun phoneKey(phone: String): String = phone.filter(Char::isDigit)
+    private fun cedulaKey(id: String): String = id.filter(Char::isDigit)
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         val view = inflater.inflate(R.layout.fragment_paso_4, container, false)
 
-        // Back arrow
         setNavigationListeners(view)
 
-        // VM compartido
         viewModel = ViewModelProvider(requireActivity())[RegistroViewModel::class.java]
 
-        // Bind UI
+        _progressBar = view.findViewById(R.id.progressBar)
         _spinnerRegion = view.findViewById(R.id.spinnerRegion)
         _spinnerSubregion = view.findViewById(R.id.spinnerSubregion)
         _spinnerAgencia = view.findViewById(R.id.spinnerAgencia)
@@ -113,16 +97,13 @@ class Paso4Fragment : Fragment() {
 
         setupInitialSpinners()
 
-        // Refs Firebase (datos generales)
         regionsDatabase    = FirebaseDatabase.getInstance("https://tecniapp-ice-datosgenerales.firebaseio.com").getReference("regiones")
         subregionsDatabase = FirebaseDatabase.getInstance("https://tecniapp-ice-datosgenerales.firebaseio.com").getReference("subregiones")
         agenciesDatabase   = FirebaseDatabase.getInstance("https://tecniapp-ice-datosgenerales.firebaseio.com").getReference("agencias")
         vehiclesDatabase   = FirebaseDatabase.getInstance("https://tecniapp-ice-datosgenerales.firebaseio.com").getReference("vehiculos")
 
-        // Carga inicial
         loadRegions()
 
-        // Listeners de cascada
         spinnerRegion.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>, v: View?, position: Int, id: Long) {
                 selectedRegionItem = if (position > 0) regionItems.getOrNull(position - 1) else null
@@ -163,15 +144,21 @@ class Paso4Fragment : Fragment() {
 
         spinnerVehiculo.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>, v: View?, position: Int, id: Long) {
+                if (!isFragmentAlive()) return
                 btnFinishRegistration.isEnabled = position > 0 && vehicles.getOrNull(position).isNullOrBlank().not()
             }
             override fun onNothingSelected(parent: AdapterView<*>) {}
         }
 
-        // Finalizar registro
         btnFinishRegistration.setOnClickListener { finalizeRegistration() }
 
         return view
+    }
+
+    // FIX: animar barra al 100% al entrar al paso 4
+    override fun onResume() {
+        super.onResume()
+        _progressBar?.let { animateProgress(it, 100) }
     }
 
     override fun onDestroyView() {
@@ -185,6 +172,7 @@ class Paso4Fragment : Fragment() {
         _spinnerAgencia?.adapter = null
         _spinnerVehiculo?.adapter = null
         _btnFinishRegistration?.setOnClickListener(null)
+        _progressBar = null
         _spinnerRegion = null
         _spinnerSubregion = null
         _spinnerAgencia = null
@@ -250,31 +238,26 @@ class Paso4Fragment : Fragment() {
             setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         }
         spinnerVehiculo.setSelection(0)
-        btnFinishRegistration.isEnabled = false
+        _btnFinishRegistration?.isEnabled = false
     }
 
     private fun loadRegions() {
         regionsDatabase.addListenerForSingleValueEvent(object : ValueEventListener {
             override fun onDataChange(ds: DataSnapshot) {
-                if (!isAdded) return
+                if (!isFragmentAlive()) return
                 regionItems = ds.children.mapNotNull { snap ->
-                    val id = snap.child("id").getValue(String::class.java)?.trim()
-                        ?: snap.key?.trim()
+                    val id = snap.child("id").getValue(String::class.java)?.trim() ?: snap.key?.trim()
                     val nombre = snap.child("nombre").getValue(String::class.java)?.trim()
-                    if (id.isNullOrBlank() || nombre.isNullOrBlank()) {
-                        null
-                    } else {
-                        RegionItem(id, nombre)
-                    }
+                    if (id.isNullOrBlank() || nombre.isNullOrBlank()) null
+                    else RegionItem(id, nombre)
                 }.sortedBy { it.nombre }
                 updateRegionSpinner()
                 loadSubregions()
             }
 
             override fun onCancelled(error: DatabaseError) {
-                if (!isAdded) return
+                if (!isFragmentAlive()) return
                 showToast("Error al cargar regiones: ${error.message}")
-                Log.e("Paso4Fragment", "loadRegions cancelled: ${error.toException()}")
             }
         })
     }
@@ -282,50 +265,37 @@ class Paso4Fragment : Fragment() {
     private fun loadSubregions() {
         subregionsDatabase.addListenerForSingleValueEvent(object : ValueEventListener {
             override fun onDataChange(ds: DataSnapshot) {
-                if (!isAdded) return
+                if (!isFragmentAlive()) return
                 subregionItems = ds.children.mapNotNull { snap ->
-                    val id = snap.child("id").getValue(String::class.java)?.trim()
-                        ?: snap.key?.trim()
+                    val id = snap.child("id").getValue(String::class.java)?.trim() ?: snap.key?.trim()
                     val nombre = snap.child("nombre").getValue(String::class.java)?.trim()
-                    val regionId = snap.child("region_id").getValue(String::class.java)
+                    val regionId = (snap.child("region_id").getValue(String::class.java)
                         ?: snap.child("regionId").getValue(String::class.java)
-                        ?: snap.child("region").getValue(String::class.java)
-                        ?: ""
-                    val trimmedId = id
-                    val trimmedNombre = nombre
-                    val trimmedRegion = regionId.trim()
-                    if (trimmedId.isNullOrEmpty() || trimmedNombre.isNullOrEmpty()) {
-                        null
-                    } else {
-                        SubregionItem(trimmedId, trimmedNombre, trimmedRegion)
-                    }
+                        ?: snap.child("region").getValue(String::class.java) ?: "").trim()
+                    if (id.isNullOrEmpty() || nombre.isNullOrEmpty()) null
+                    else SubregionItem(id, nombre, regionId)
                 }
                 updateSubregionSpinner()
             }
 
             override fun onCancelled(error: DatabaseError) {
-                if (!isAdded) return
+                if (!isFragmentAlive()) return
                 showToast("Error al cargar subregiones: ${error.message}")
-                Log.e("Paso4Fragment", "loadSubregions cancelled: ${error.toException()}")
             }
         })
     }
 
     private fun loadAgencies(subregion: SubregionItem?) {
-        if (subregion == null) {
-            updateAgencySpinner(emptyList())
-            return
-        }
+        if (subregion == null) { updateAgencySpinner(emptyList()); return }
 
         agenciesDatabase.addListenerForSingleValueEvent(object : ValueEventListener {
             override fun onDataChange(ds: DataSnapshot) {
-                if (!isAdded) return
+                if (!isFragmentAlive()) return
                 val agencies = ds.children.mapNotNull { snap ->
                     val nombre = snap.child("nombre").getValue(String::class.java)?.trim()
                     if (nombre.isNullOrEmpty()) return@mapNotNull null
 
-                    val id = snap.child("id").getValue(String::class.java)?.trim()
-                        ?: snap.key?.trim()
+                    val id = snap.child("id").getValue(String::class.java)?.trim() ?: snap.key?.trim()
                     val regionId = snap.child("region_id").getValue(String::class.java)
                         ?: snap.child("regionId").getValue(String::class.java)
                         ?: snap.child("region").getValue(String::class.java)
@@ -337,75 +307,54 @@ class Paso4Fragment : Fragment() {
                     val matchesRegion = selectedRegionItem?.let { region ->
                         val normalized = regionId?.trim().orEmpty()
                         normalized.isEmpty() ||
-                            normalized.equals(region.id, ignoreCase = true) ||
-                            normalized.equals(region.nombre, ignoreCase = true)
+                                normalized.equals(region.id, ignoreCase = true) ||
+                                normalized.equals(region.nombre, ignoreCase = true)
                     } ?: true
 
-                    if (!matchesSubregion || !matchesRegion) {
-                        null
-                    } else {
-                        AgencyItem(id?.takeIf { it.isNotBlank() }, nombre, regionId?.trim(), subregionValue?.trim())
-                    }
-                }
-
-                if (agencies.isEmpty()) {
-                    updateAgencySpinner(emptyList())
-                    return
+                    if (!matchesSubregion || !matchesRegion) null
+                    else AgencyItem(id?.takeIf { it.isNotBlank() }, nombre, regionId?.trim(), subregionValue?.trim())
                 }
 
                 updateAgencySpinner(agencies)
             }
 
             override fun onCancelled(error: DatabaseError) {
-                if (!isAdded) return
+                if (!isFragmentAlive()) return
                 showToast("Error al cargar agencias: ${error.message}")
-                Log.e("Paso4Fragment", "loadAgencies cancelled: ${error.toException()}")
             }
         })
     }
 
     private fun loadVehicles(agency: AgencyItem?) {
-        if (agency == null) {
-            resetVehiclesSpinner()
-            return
-        }
+        if (agency == null) { resetVehiclesSpinner(); return }
 
         vehiclesDatabase.addListenerForSingleValueEvent(object : ValueEventListener {
             override fun onDataChange(ds: DataSnapshot) {
-                if (!isAdded) return
+                if (!isFragmentAlive()) return
                 vehicles = mutableListOf("Seleccione un Vehículo")
                 for (snap in ds.children) {
                     val source = snap.child("meta").takeIf { it.exists() } ?: snap
                     val agencyValues = listOfNotNull(
-    source.child("agencia").getValue(String::class.java),
-    source.child("agencia_id").getValue(String::class.java),
-    source.child("agenciaId").getValue(String::class.java),
-
-    // ✅ extras comunes en datasets reales
-    source.child("agenciaNombre").getValue(String::class.java),
-    source.child("agencia_nombre").getValue(String::class.java),
-    source.child("agenciaTag").getValue(String::class.java),
-    source.child("agencia_tag").getValue(String::class.java),
-    snap.child("agencia").getValue(String::class.java),
-    snap.child("agencia_id").getValue(String::class.java),
-    snap.child("agenciaId").getValue(String::class.java),
-    snap.child("agenciaNombre").getValue(String::class.java),
-    snap.child("agencia_nombre").getValue(String::class.java),
-    snap.child("agenciaTag").getValue(String::class.java),
-    snap.child("agencia_tag").getValue(String::class.java)
-).map { it.trim() }.filter { it.isNotEmpty() }
-
+                        source.child("agencia").getValue(String::class.java),
+                        source.child("agencia_id").getValue(String::class.java),
+                        source.child("agenciaId").getValue(String::class.java),
+                        source.child("agenciaNombre").getValue(String::class.java),
+                        source.child("agencia_nombre").getValue(String::class.java),
+                        source.child("agenciaTag").getValue(String::class.java),
+                        snap.child("agencia").getValue(String::class.java),
+                        snap.child("agencia_id").getValue(String::class.java),
+                        snap.child("agenciaId").getValue(String::class.java),
+                        snap.child("agenciaNombre").getValue(String::class.java),
+                        snap.child("agencia_nombre").getValue(String::class.java),
+                        snap.child("agenciaTag").getValue(String::class.java)
+                    ).map { it.trim() }.filter { it.isNotEmpty() }
 
                     if (agencyValues.isEmpty()) continue
-
                     if (!vehicleMatchesAgency(agencyValues, agency)) continue
 
                     val subregionValue = source.child("subregion").getValue(String::class.java)
                         ?: source.child("subregion_id").getValue(String::class.java)
-                        ?: source.child("subregionId").getValue(String::class.java)
                         ?: snap.child("subregion").getValue(String::class.java)
-                        ?: snap.child("subregion_id").getValue(String::class.java)
-                        ?: snap.child("subregionId").getValue(String::class.java)
                     val matchesSubregion = selectedSubregionItem?.let { sub ->
                         val normalized = subregionValue?.trim().orEmpty()
                         normalized.isEmpty() ||
@@ -416,11 +365,8 @@ class Paso4Fragment : Fragment() {
                     if (!matchesSubregion) continue
 
                     val placa = (source.child("placa").value ?: snap.child("placa").value)
-                        ?.toString()
-                        ?.trim()
-                    if (!placa.isNullOrBlank()) {
-                        vehicles.add(placa)
-                    }
+                        ?.toString()?.trim()
+                    if (!placa.isNullOrBlank()) vehicles.add(placa)
                 }
 
                 val ctx = context ?: return
@@ -432,90 +378,66 @@ class Paso4Fragment : Fragment() {
             }
 
             override fun onCancelled(error: DatabaseError) {
-                if (!isAdded) return
+                if (!isFragmentAlive()) return
                 showToast("Error al cargar vehículos: ${error.message}")
-                Log.e("Paso4Fragment", "loadVehicles cancelled: ${error.toException()}")
             }
         })
     }
 
-private fun agencyMatchesSubregion(value: String?, subregion: SubregionItem): Boolean {
-    val normalized = value?.trim().orEmpty()
-    if (normalized.isEmpty()) return true   // ✅ sin subregión => permitir (filtrará por región)
-    return normalized.equals(subregion.id, ignoreCase = true) ||
-           normalized.equals(subregion.nombre, ignoreCase = true)
-}
-
-
- private fun vehicleMatchesAgency(values: List<String>, agency: AgencyItem): Boolean {
-    if (values.isEmpty()) return false
-
-    val agencyId = agency.id?.trim().orEmpty()
-    val agencyName = agency.nombre.trim()
-    val agencyTag = normTag(agencyName)
-
-    return values.any { v ->
-        val raw = v.trim()
-        if (raw.isEmpty()) return@any false
-
-        raw.equals(agencyName, ignoreCase = true) ||
-        (agencyId.isNotEmpty() && raw.equals(agencyId, ignoreCase = true)) ||
-        normTag(raw) == agencyTag
+    private fun agencyMatchesSubregion(value: String?, subregion: SubregionItem): Boolean {
+        val normalized = value?.trim().orEmpty()
+        if (normalized.isEmpty()) return true
+        return normalized.equals(subregion.id, ignoreCase = true) ||
+                normalized.equals(subregion.nombre, ignoreCase = true)
     }
-}
 
+    private fun vehicleMatchesAgency(values: List<String>, agency: AgencyItem): Boolean {
+        if (values.isEmpty()) return false
+        val agencyId = agency.id?.trim().orEmpty()
+        val agencyName = agency.nombre.trim()
+        val agencyTag = normTag(agencyName)
+        return values.any { v ->
+            val raw = v.trim()
+            if (raw.isEmpty()) return@any false
+            raw.equals(agencyName, ignoreCase = true) ||
+                    (agencyId.isNotEmpty() && raw.equals(agencyId, ignoreCase = true)) ||
+                    normTag(raw) == agencyTag
+        }
+    }
 
-    // ---------- 4) Finalizar registro ----------
     private fun finalizeRegistration() {
-        val regionItem = selectedRegionItem ?: run {
-            showToast("Por favor, selecciona una región.")
-            return
-        }
-        val subregionItem = selectedSubregionItem ?: run {
-            showToast("Por favor, selecciona una subregión.")
-            return
-        }
-        val agencyItem = selectedAgencyItem ?: run {
-            showToast("Por favor, selecciona una agencia.")
-            return
-        }
-        val selectedVehicle = (spinnerVehiculo.selectedItem as? String)?.takeIf { it.isNotBlank() && it != "Seleccione un Vehículo" }
-            ?: run {
-                showToast("Por favor, selecciona un vehículo.")
-                return
-            }
+        val regionItem = selectedRegionItem ?: run { showToast("Por favor, selecciona una región."); return }
+        val subregionItem = selectedSubregionItem ?: run { showToast("Por favor, selecciona una subregión."); return }
+        val agencyItem = selectedAgencyItem ?: run { showToast("Por favor, selecciona una agencia."); return }
+        val selectedVehicle = (spinnerVehiculo.selectedItem as? String)
+            ?.takeIf { it.isNotBlank() && it != "Seleccione un Vehículo" }
+            ?: run { showToast("Por favor, selecciona un vehículo."); return }
 
-        // Persistir en el VM (por si lo necesitas después)
         viewModel.setDatosAdicionales(
-            regionItem.id,
-            regionItem.nombre,
-            subregionItem.id,
-            subregionItem.nombre,
-            agencyItem.id,
-            agencyItem.nombre,
+            regionItem.id, regionItem.nombre,
+            subregionItem.id, subregionItem.nombre,
+            agencyItem.id, agencyItem.nombre,
             selectedVehicle
         )
 
-        val email     = viewModel.getEmail()?.trim().orEmpty()
-        val password  = viewModel.getPassword().orEmpty()
-        val nombre    = viewModel.getNombre().orEmpty()
+        val email = viewModel.getEmail()?.trim().orEmpty()
+        val password = viewModel.getPassword().orEmpty()
+        val nombre = viewModel.getNombre().orEmpty()
         val primerApellido = viewModel.getPrimerApellido().orEmpty()
         val segundoApellido = viewModel.getSegundoApellido().orEmpty()
         val apellidos = viewModel.getApellidosCompletos().orEmpty()
-        val telefono  = viewModel.getTelefono().orEmpty()
-        val cedula    = viewModel.getCedula().orEmpty()
+        val telefono = viewModel.getTelefono().orEmpty()
+        val cedula = viewModel.getCedula().orEmpty()
 
         if (email.isBlank() || password.length < 6 || nombre.isBlank() ||
-            primerApellido.isBlank() || segundoApellido.isBlank() || apellidos.isBlank() ||
+            primerApellido.isBlank() || segundoApellido.isBlank() ||
             telefono.isBlank() || cedula.isBlank()) {
             showToast("Verifica correo/clave (6+), nombre, apellidos, teléfono y cédula.")
             return
         }
 
-        // Deshabilita para evitar doble click
         btnFinishRegistration.isEnabled = false
 
-        // Crear Auth + multi-escritura atómica (usuarios + emails + phones + idcards)
         viewLifecycleOwner.lifecycleScope.launch {
             val auth = FirebaseAuth.getInstance()
             val dbUsers = FirebaseDatabase
@@ -523,58 +445,52 @@ private fun agencyMatchesSubregion(value: String?, subregion: SubregionItem): Bo
                 .reference
 
             try {
-                // A) Crear credenciales en Auth
                 val user = auth.createUserWithEmailAndPassword(email, password).await().user
                     ?: throw IllegalStateException("No se pudo crear el usuario de autenticación.")
                 val uid = user.uid
 
-                // B) Armar perfil (NO guardar password en RTDB). Usa timestamp de servidor.
                 val userData = hashMapOf<String, Any?>(
-                    "uid"           to uid,
-                    "cedula"        to cedula,
-                    "email"         to email,
-                    "email_lower"   to email.lowercase(Locale.ROOT),
-                    "nombre"        to nombre,
-                    "apellidos"     to apellidos,
+                    "uid" to uid,
+                    "cedula" to cedula,
+                    "email" to email,
+                    "email_lower" to email.lowercase(Locale.ROOT),
+                    "nombre" to nombre,
+                    "apellidos" to apellidos,
                     "primer_apellido" to primerApellido,
                     "segundo_apellido" to segundoApellido,
-                    "telefono"      to telefono,
-                    "region"        to regionItem.id,
+                    "telefono" to telefono,
+                    "region" to regionItem.id,
                     "region_nombre" to regionItem.nombre,
-                    "subregion"     to subregionItem.id,
+                    "subregion" to subregionItem.id,
                     "subregion_nombre" to subregionItem.nombre,
-                    "agencia"       to agencyItem.nombre,
-                    "agencia_id"    to agencyItem.id,
+                    "agencia" to agencyItem.nombre,
+                    "agencia_id" to agencyItem.id,
                     "placaVehiculo" to selectedVehicle,
-                    "createdAt"     to ServerValue.TIMESTAMP,
-                    "rol"           to ""
+                    "createdAt" to ServerValue.TIMESTAMP,
+                    "rol" to ""
                 )
 
-                // C) Multi-location update atómico
-                val eKey   = emailKey(email)
-                val pKey   = phoneKey(telefono)
+                val eKey = emailKey(email)
+                val pKey = phoneKey(telefono)
                 val cedKey = cedulaKey(cedula)
 
                 val updates = hashMapOf<String, Any?>(
-                    "/usuarios/$uid"    to userData,
-                    "/emails/$eKey"     to mapOf("uid" to uid),
-                    "/idcards/$cedKey"  to mapOf("uid" to uid) // reclamo de cédula
+                    "/usuarios/$uid" to userData,
+                    "/emails/$eKey" to mapOf("uid" to uid),
+                    "/idcards/$cedKey" to mapOf("uid" to uid)
                 )
                 if (pKey.isNotBlank()) {
                     updates["/phones/$pKey"] = mapOf("uid" to uid)
                 }
 
-                // Si alguno ya existe según reglas, falla todo (consistente)
                 dbUsers.updateChildren(updates).await()
 
-                // D) Limpia el código de verificación (si existe) y cierra sesión
                 runCatching {
                     dbUsers.child("verificationCodes").child(eKey).removeValue().await()
                 }
                 auth.signOut()
 
-                // E) OK → navegar a Login
-                if (!isAdded) return@launch
+                if (!isFragmentAlive()) return@launch
                 showToast("Registro completado con éxito.")
                 val intent = Intent(requireContext(), LoginActivity::class.java).apply {
                     flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
@@ -584,25 +500,20 @@ private fun agencyMatchesSubregion(value: String?, subregion: SubregionItem): Bo
 
             } catch (t: Throwable) {
                 Log.e("Paso4Fragment", "finalizeRegistration error: ${t.message}", t)
-
-                // Mensaje específico si el correo ya existe en Auth
-                if (t is FirebaseAuthUserCollisionException) {
-                    if (isAdded) showToast("Ese correo ya tiene una cuenta. Inicia sesión o recupera tu contraseña.")
-                } else {
-                    if (isAdded) showToast("No se pudo completar el registro: ${t.message}")
-                }
-
-                // Rollback de Auth para no dejar usuario huérfano si llegó a crearse
                 runCatching { FirebaseAuth.getInstance().currentUser?.delete()?.await() }
-
-                if (isAdded) btnFinishRegistration.isEnabled = true
+                if (!isFragmentAlive()) return@launch
+                if (t is FirebaseAuthUserCollisionException) {
+                    showToast("Ese correo ya tiene una cuenta. Inicia sesión o recupera tu contraseña.")
+                } else {
+                    showToast("No se pudo completar el registro: ${t.message}")
+                }
+                btnFinishRegistration.isEnabled = true
             }
         }
     }
 
-
     private fun showToast(message: String) {
-        if (!isAdded) return
+        if (!isFragmentAlive()) return
         Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
     }
 }

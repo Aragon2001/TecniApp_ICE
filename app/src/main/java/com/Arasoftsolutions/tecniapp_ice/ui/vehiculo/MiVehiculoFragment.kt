@@ -25,6 +25,7 @@ class MiVehiculoFragment : Fragment() {
 
     private val viewModel: MiVehiculoViewModel by viewModels()
     private var latestState: MiVehiculoUiState = MiVehiculoUiState()
+    private var fabExpanded = false
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -37,24 +38,49 @@ class MiVehiculoFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
         binding.btnRegistrarMantenimiento.setOnClickListener {
+            collapseFab()
             RegistroVehiculoDialogFragment().show(childFragmentManager, RegistroVehiculoDialogFragment.TAG)
         }
         binding.btnRegistroEtm.setOnClickListener {
+            collapseFab()
             showRegistroVehiculoPendienteDialog(
                 onRegistroGuardado = { viewModel.syncAhora() },
                 onNoVehiculo = { }
             )
         }
+        binding.btnConfigurarVehiculo.setOnClickListener {
+            collapseFab()
+            mostrarConfigIntervaloMantenimiento()
+        }
         binding.tvKpiAlertas.setOnClickListener { mostrarHistorialAlertas() }
         binding.cardKpiAlertas.setOnClickListener { mostrarHistorialAlertas() }
         binding.tvTituloMantenimientos.setOnClickListener { mostrarHistorialMantenimientos() }
         binding.cardKpiMantenimientos.setOnClickListener { mostrarHistorialMantenimientos() }
-        binding.btnConfigurarVehiculo.setOnClickListener {
-            mostrarConfigIntervaloMantenimiento()
+        binding.tvAccionRegistrar.setOnClickListener {
+            collapseFab()
+            RegistroVehiculoDialogFragment().show(childFragmentManager, RegistroVehiculoDialogFragment.TAG)
         }
+
+        binding.btnFabMain.setOnClickListener { toggleFab() }
+
         observarEstado()
-        animateCta()
+        animateFab()
+    }
+
+    private fun toggleFab() {
+        fabExpanded = !fabExpanded
+        binding.layoutFabMiniGroup.isVisible = fabExpanded
+        binding.btnFabMain.setImageResource(
+            if (fabExpanded) R.drawable.ic_close_sheet else R.drawable.ic_add
+        )
+    }
+
+    private fun collapseFab() {
+        fabExpanded = false
+        binding.layoutFabMiniGroup.isVisible = false
+        binding.btnFabMain.setImageResource(R.drawable.ic_add)
     }
 
     private fun observarEstado() {
@@ -65,23 +91,29 @@ class MiVehiculoFragment : Fragment() {
                         latestState = state
                         val vehiculo = state.vehiculo
                         val visible = vehiculo != null
+
                         binding.layoutSinVehiculo.isVisible = !visible
-                        binding.btnRegistrarMantenimiento.isVisible = visible
-                        binding.btnRegistroEtm.isVisible = visible
-                        binding.btnConfigurarVehiculo.isVisible = visible
+                        binding.layoutFabGroup.isVisible = visible
                         binding.cardVehiculoHeader.isVisible = visible
                         binding.cardMotivacion.isVisible = visible
                         binding.tvTituloMantenimientos.isVisible = visible
+                        binding.tvAccionRegistrar.isVisible = visible
                         binding.containerMantenimientos.isVisible = visible
                         binding.tvTituloHistorialMantenimientos.isVisible = visible
                         binding.containerHistorialMantenimientos.isVisible = visible
                         binding.tvTituloUsoMensual.isVisible = visible
                         binding.containerUsoMensual.isVisible = visible
                         binding.tvChartPlaceholder.isVisible = visible
+
                         if (!visible) return@collect
 
-                        if (vehiculo != null) {
-                            binding.tvVehiculoPlaca.text = vehiculo.placaRaw.ifBlank { vehiculo.vehiculoId }
+                        binding.tvVehiculoPlaca.text = vehiculo!!.placaRaw.ifBlank { vehiculo.vehiculoId }
+                        binding.tvVehiculoAgencia.text = buildString {
+                            vehiculo.agencia?.let { append(it) }
+                            vehiculo.subregion?.let {
+                                if (isNotEmpty()) append(" · ")
+                                append(it)
+                            }
                         }
                         binding.tvVehiculoTipo.text = when (state.tipoVehiculo) {
                             TipoVehiculo.CAMION_GRUA -> getString(R.string.mi_vehiculo_tipo_grua)
@@ -95,23 +127,43 @@ class MiVehiculoFragment : Fragment() {
                                 TipoVehiculo.LIVIANO -> R.drawable.liviano
                             }
                         )
-                        if (vehiculo != null) {
-                            binding.tvVehiculoAgencia.text = vehiculo.agencia
-                        }
 
-                        binding.tvEstadoMensaje.text = state.estadoMensaje
-                        binding.chipEtmEstadoHeader.text = state.etmEstadoTexto
-                        val colorEtm = if (state.etmEstadoCerrado) R.color.success_500 else R.color.error_500
+                        binding.tvEstadoMensaje.text = when (state.estado) {
+                            EstadoVehiculo.OPTIMO -> getString(R.string.mi_vehiculo_estado_optimo)
+                            EstadoVehiculo.ATENCION -> getString(R.string.mi_vehiculo_estado_atencion)
+                            EstadoVehiculo.VENCIDO -> getString(R.string.mi_vehiculo_estado_vencido)
+                        }
+                        binding.tvEstadoMensaje.setTextColor(
+                            ContextCompat.getColor(
+                                requireContext(), when (state.estado) {
+                                    EstadoVehiculo.OPTIMO -> R.color.success_green
+                                    EstadoVehiculo.ATENCION -> R.color.status_assigned
+                                    EstadoVehiculo.VENCIDO -> R.color.danger_red
+                                }
+                            )
+                        )
+
+                        val fechaEtm = state.etmEstadoTexto
+                        val fechaDisplay = runCatching {
+                            java.time.LocalDate.parse(fechaEtm, java.time.format.DateTimeFormatter.ISO_DATE)
+                                .format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy"))
+                        }.getOrDefault(fechaEtm)
+                        binding.chipEtmEstadoHeader.text = fechaDisplay
+                        val colorEtm = if (state.etmEstadoCerrado) R.color.success_500 else R.color.status_assigned
                         binding.chipEtmEstadoHeader.setChipBackgroundColorResource(colorEtm)
                         binding.tvMotivacion.text = state.motivacion
                         binding.tvValorActualLabel.text = getString(
                             R.string.mi_vehiculo_valor_actual_label,
                             state.unidad
                         )
-                        binding.tvValorActual.text = state.valorActual?.let {
+                        val valorFormateado = state.valorActual?.let {
                             String.format(Locale.getDefault(), "%.0f %s", it, state.unidad)
                         } ?: getString(R.string.mi_vehiculo_valor_actual_placeholder)
-                        binding.tvKpiKmHoy.text = String.format(Locale.getDefault(), "%.0f %s", state.kmHoy, state.unidad)
+                        binding.tvValorActual.text = valorFormateado
+
+                        val kmHoyFormateado = String.format(Locale.getDefault(), "%.0f %s", state.kmHoy, state.unidad)
+                        binding.tvKpiKmHoy.text = kmHoyFormateado
+                        binding.tvHeroKmHoy.text = kmHoyFormateado
                         binding.tvKpiMantenimientos.text = state.mantenimientosMes.toString()
                         binding.tvKpiAlertas.text = state.alertasCount.toString()
 
@@ -163,24 +215,19 @@ class MiVehiculoFragment : Fragment() {
             val icon = card.findViewById<android.widget.ImageView>(R.id.ivEstado)
             title.text = item.titulo
             detail.text = item.detalle
-            val color = when (item.estado) {
-                EstadoVehiculo.OPTIMO -> R.color.tertiary_container_light
-                EstadoVehiculo.ATENCION -> R.color.secondary_container_light
-                EstadoVehiculo.VENCIDO -> R.color.error_500
+            val strokeColor = when (item.estado) {
+                EstadoVehiculo.OPTIMO -> R.color.success_green
+                EstadoVehiculo.ATENCION -> R.color.status_assigned
+                EstadoVehiculo.VENCIDO -> R.color.danger_red
             }
             val iconRes = when (item.estado) {
                 EstadoVehiculo.OPTIMO -> R.drawable.ic_check
                 EstadoVehiculo.ATENCION -> R.drawable.ic_warning
                 EstadoVehiculo.VENCIDO -> R.drawable.ic_close_sheet
             }
-            val iconColor = when (item.estado) {
-                EstadoVehiculo.OPTIMO -> R.color.on_tertiary_container_light
-                EstadoVehiculo.ATENCION -> R.color.on_secondary_container_light
-                EstadoVehiculo.VENCIDO -> R.color.white
-            }
-            card.setCardBackgroundColor(ContextCompat.getColor(requireContext(), color))
+            card.strokeColor = ContextCompat.getColor(requireContext(), strokeColor)
             icon.setImageResource(iconRes)
-            icon.setColorFilter(ContextCompat.getColor(requireContext(), iconColor))
+            icon.setColorFilter(ContextCompat.getColor(requireContext(), strokeColor))
             card.alpha = 0f
             card.translationY = 16f
             card.animate()
@@ -195,9 +242,7 @@ class MiVehiculoFragment : Fragment() {
 
     private fun renderHistorialMantenimientos(items: List<HistorialMantenimientoUi>) {
         binding.containerHistorialMantenimientos.removeAllViews()
-        if (items.isEmpty()) {
-            return
-        }
+        if (items.isEmpty()) return
         items.forEach { item ->
             val view = layoutInflater.inflate(R.layout.item_mantenimiento_card, binding.containerHistorialMantenimientos, false)
             val card = view as MaterialCardView
@@ -217,7 +262,6 @@ class MiVehiculoFragment : Fragment() {
             }
             icon.setImageResource(iconRes)
             estadoIcon.isVisible = false
-            card.setCardBackgroundColor(ContextCompat.getColor(requireContext(), R.color.surface_light))
             binding.containerHistorialMantenimientos.addView(card)
         }
     }
@@ -243,8 +287,6 @@ class MiVehiculoFragment : Fragment() {
             binding.containerUsoMensual.addView(view)
         }
     }
-
-
 
     private fun mostrarHistorialAlertas() {
         val state = latestState
@@ -304,12 +346,12 @@ class MiVehiculoFragment : Fragment() {
             .show()
     }
 
-    private fun animateCta() {
-        binding.btnRegistrarMantenimiento.apply {
-            scaleX = 0.98f
-            scaleY = 0.98f
-            alpha = 0.9f
-            animate().scaleX(1f).scaleY(1f).alpha(1f).setDuration(220).start()
+    private fun animateFab() {
+        binding.btnFabMain.apply {
+            scaleX = 0f
+            scaleY = 0f
+            alpha = 0f
+            animate().scaleX(1f).scaleY(1f).alpha(1f).setStartDelay(300).setDuration(280).start()
         }
     }
 

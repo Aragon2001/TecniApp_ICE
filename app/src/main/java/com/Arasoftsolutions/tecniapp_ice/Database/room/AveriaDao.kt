@@ -188,11 +188,23 @@ fun observe(
     @Query("UPDATE averias SET isSynced = 1 WHERE caseId = :caseId")
     suspend fun marcarSincronizado(caseId: String)
 
+    @Query("""
+        UPDATE averias SET
+          cambioMedidorJson = :json,
+          lastUpdated = :lastUpdated,
+          isSynced = 0
+        WHERE caseId = :caseId
+    """)
+    suspend fun actualizarCambioMedidorJson(caseId: String, json: String?, lastUpdated: Long)
+
     @Query("DELETE FROM averias WHERE caseId = :caseId")
     suspend fun eliminarPorCaseId(caseId: String)
 
     @Query("DELETE FROM averias WHERE caseId IN (:caseIds)")
     suspend fun eliminarPorCaseIds(caseIds: List<String>)
+
+    @Query("SELECT COUNT(*) FROM averias WHERE lower(estado) NOT IN ('resuelta', 'anulada')")
+    fun observeActivasCount(): Flow<Int>
 
     @Query(
         """

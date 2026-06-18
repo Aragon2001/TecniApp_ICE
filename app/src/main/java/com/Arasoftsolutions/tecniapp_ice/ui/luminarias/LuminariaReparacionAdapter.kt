@@ -1,7 +1,9 @@
 package com.Arasoftsolutions.tecniapp_ice.ui.luminarias
 
+import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
@@ -9,13 +11,23 @@ import androidx.recyclerview.widget.RecyclerView
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaReparacionEntity
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.VehiculosEntity
+import com.Arasoftsolutions.tecniapp_ice.R
 import com.Arasoftsolutions.tecniapp_ice.databinding.ItemLuminariaReparacionBinding
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+enum class LuminariaActionMode {
+    /** Técnico: botón llave/herramienta para atender luminaria pendiente */
+    ATTEND,
+    /** Supervisor/Admin en pendiente, o Técnico en reparada: botón lápiz */
+    EDIT,
+    /** Solo lectura: sin botón de acción */
+    VIEW
+}
+
 class LuminariaReparacionAdapter(
-    private var showEdit: Boolean,
+    private var actionMode: LuminariaActionMode,
     private var showDelete: Boolean,
     private val onEdit: (LuminariaReparacionEntity) -> Unit,
     private val onDelete: (LuminariaReparacionEntity) -> Unit,
@@ -32,12 +44,12 @@ class LuminariaReparacionAdapter(
     }
 
     override fun onBindViewHolder(holder: ReparacionViewHolder, position: Int) {
-        holder.bind(getItem(position), showEdit, showDelete, pueblosById, vehiculosById)
+        holder.bind(getItem(position), actionMode, showDelete, pueblosById, vehiculosById)
     }
 
-    fun updatePermissions(showEdit: Boolean, showDelete: Boolean) {
-        if (this.showEdit == showEdit && this.showDelete == showDelete) return
-        this.showEdit = showEdit
+    fun updatePermissions(actionMode: LuminariaActionMode, showDelete: Boolean) {
+        if (this.actionMode == actionMode && this.showDelete == showDelete) return
+        this.actionMode = actionMode
         this.showDelete = showDelete
         notifyDataSetChanged()
     }
@@ -87,7 +99,7 @@ class LuminariaReparacionAdapter(
 
         fun bind(
             item: LuminariaReparacionEntity,
-            showEdit: Boolean,
+            actionMode: LuminariaActionMode,
             showDelete: Boolean,
             pueblosById: Map<Int, String>,
             vehiculosById: Map<Int, VehiculosEntity>
@@ -112,6 +124,15 @@ class LuminariaReparacionAdapter(
                 else -> "-"
             }
             val vehiculoPlaca = vehiculosById[item.vehiculoId]?.placa?.toString().orEmpty().ifBlank { "-" }
+
+            val ctx = binding.root.context
+            val (badgeBg, badgeText) = if (estado == LuminariaEstado.PENDIENTE) {
+                Pair(ContextCompat.getColor(ctx, R.color.chip_pendiente), Color.WHITE)
+            } else {
+                Pair(ContextCompat.getColor(ctx, R.color.chip_resuelta), Color.WHITE)
+            }
+            binding.cardEstadoLuminaria.setCardBackgroundColor(badgeBg)
+            binding.tvReparacionEstado.setTextColor(badgeText)
 
             binding.tvReparacionTitulo.text = "Localización $localizacionFormateada"
             binding.tvReparacionEstado.text = estadoTexto
@@ -142,7 +163,33 @@ class LuminariaReparacionAdapter(
                 }
             }
 
-            binding.btnEditarReparacion.isVisible = showEdit
+            // Botón de acción principal según modo
+            when (actionMode) {
+                LuminariaActionMode.ATTEND -> {
+                    binding.btnEditarReparacion.isVisible = true
+                    binding.btnEditarReparacion.setImageResource(R.drawable.ic_build)
+                    binding.btnEditarReparacion.contentDescription = "Atender luminaria"
+                    binding.btnEditarReparacion.imageTintList =
+                        android.content.res.ColorStateList.valueOf(
+                            ContextCompat.getColor(ctx, R.color.averia_notification_accent)
+                        )
+                }
+                LuminariaActionMode.EDIT -> {
+                    binding.btnEditarReparacion.isVisible = true
+                    binding.btnEditarReparacion.setImageResource(R.drawable.ic_edit)
+                    binding.btnEditarReparacion.contentDescription = "Editar"
+                    val tv = android.util.TypedValue()
+                    ctx.theme.resolveAttribute(
+                        com.google.android.material.R.attr.colorPrimary, tv, true
+                    )
+                    binding.btnEditarReparacion.imageTintList =
+                        android.content.res.ColorStateList.valueOf(tv.data)
+                }
+                LuminariaActionMode.VIEW -> {
+                    binding.btnEditarReparacion.isVisible = false
+                }
+            }
+
             binding.btnEliminarReparacion.isVisible = showDelete
             binding.btnEditarReparacion.setOnClickListener { onEdit(item) }
             binding.btnEliminarReparacion.setOnClickListener { onDelete(item) }

@@ -88,7 +88,7 @@
     <string name="mi_vehiculo_mantenimiento_placeholder_detalle">Registra el primer servicio para activar sugerencias inteligentes.</string>
     <string name="mi_vehiculo_uso_mensual_placeholder">Sin lecturas recientes</string>
     <string name="mi_vehiculo_uso_mensual_total_format">%1$.0f %2$s</string>
-    <string name="mi_vehiculo_dialog_titulo">Registro de vehículo</string>
+    <string name="mi_vehiculo_dialog_titulo">Registro de mantenimiento</string>
     <string name="mi_vehiculo_dialog_subtitulo">Cuidar tu unidad es cuidar tu seguridad</string>
     <string name="mi_vehiculo_dialog_valor_hint">Lectura actual</string>
     <string name="mi_vehiculo_dialog_valor_hint_format">Lectura actual (%1$s)</string>
@@ -112,6 +112,13 @@
     <string name="mi_vehiculo_kpi_mantenimientos">Mantenimientos mes</string>
     <string name="mi_vehiculo_kpi_alertas">Alertas</string>
     <string name="mi_vehiculo_chart_placeholder">Gráfica (MPAndroidChart / Compose)</string>
+    <string name="mi_vehiculo_historial_vacio">Aún no hay mantenimientos registrados</string>
+    <string name="mi_vehiculo_historial_ver_todo">Ver todo</string>
+    <string name="mi_vehiculo_dialog_fecha_mantenimiento">Fecha del mantenimiento</string>
+    <string name="mi_vehiculo_label_mantenimiento">Mantenimiento</string>
+    <string name="mi_vehiculo_label_etm">ETM</string>
+    <string name="mi_vehiculo_config_intervalo_titulo_label">Configurar intervalo</string>
+    <string name="mi_vehiculo_config_tipo_default">Tipo: —</string>
     <string name="mi_vehiculo_mantenimiento_aceite">Aceite</string>
     <string name="mi_vehiculo_mantenimiento_aceite_estado">Próximo en 450 km</string>
     <string name="mi_vehiculo_mantenimiento_frenos">Frenos</string>
@@ -134,6 +141,7 @@
     <string name="registro_pendiente_modo_inicial_info">Modo rápido: solo registra el km/orímetro inicial para desbloquear la app. Podrás completar el cierre después.</string>
     <string name="registro_pendiente_modo_cierre_info">Modo cierre: ingresa el km final y los datos de jornada para cerrar el registro.</string>
     <string name="registro_pendiente_cierre_campos_requeridos">Para cerrar el registro completa: km final, horas laboradas, actividad y lugar.</string>
+    <string name="registro_pendiente_cierre_label">Campos de cierre</string>
     <string name="menu_reportes">Reportes</string>
     <string name="menu_planillas">Planillas</string>
     <string name="menu_programacion">Programación</string>
@@ -194,6 +202,25 @@
     <string name="home_quick_action_medidor">Medidor</string>
     <string name="home_quick_action_reportes">Reportes</string>
     <string name="home_quick_action_settings">Ajustes</string>
+    <string name="home_quick_action_luminarias">Luminarias</string>
+    <string name="home_quick_action_vehiculo">Mi Vehículo</string>
+    <string name="home_quick_action_inventario">Inventario</string>
+    <string name="home_quick_action_planillas">Planillas</string>
+    <string name="home_quick_actions_title">Accesos rápidos</string>
+    <string name="home_card_luminarias_title">Luminarias pend.</string>
+    <string name="home_chart_title">Averías por agencia</string>
+    <string name="home_sync_blocked_offline">Sin conexión. La sincronización no está disponible.</string>
+    <string name="home_login_blocked_offline">Necesitas conexión a internet para iniciar sesión.</string>
+
+    <!-- Estados de salud de red -->
+    <string name="network_health_offline">Sin conexión</string>
+    <string name="network_health_offline_detail">No hay red disponible. Cambios guardados localmente.</string>
+    <string name="network_health_no_internet">Sin acceso a internet</string>
+    <string name="network_health_no_internet_detail">Red disponible pero sin internet real (portal o sin ruta).</string>
+    <string name="network_health_slow">Conexión lenta</string>
+    <string name="network_health_slow_detail">Latencia alta. La sincronización puede tardar más de lo normal.</string>
+    <string name="network_health_unstable">Conexión inestable</string>
+    <string name="network_health_unstable_detail">La red fluctúa. Evita operaciones críticas hasta estabilizarse.</string>
 
     <!-- Onboarding -->
     <string name="onboarding_toolbar_title">Recorrido de bienvenida</string>
@@ -218,6 +245,15 @@
     <string name="averias_filtrar">Filtrar</string>
     <string name="averias_filtrar_region">Región</string>
     <string name="averias_filtrar_agencia">Agencia</string>
+    <string name="averias_filtros_avanzados">Filtros</string>
+    <string name="averias_filtros_avanzados_titulo">Filtros avanzados</string>
+    <string name="averias_limpiar_filtros">Limpiar todo</string>
+    <string name="averias_aplicar_filtros">Aplicar filtros</string>
+    <string name="averias_filtros_activos">Filtros activos</string>
+    <string name="averias_filtros_n_activos">Filtros (%1$d)</string>
+    <string name="averias_fecha_y_hora">Fecha y hora</string>
+    <string name="averias_hora_inicio_btn">Hora inicio</string>
+    <string name="averias_hora_fin_btn">Hora final</string>
     <string name="averias_filtrar_fecha">Fechas</string>
     <string name="averias_filtro_region_todas">Todas las regiones</string>
     <string name="averias_filtro_agencia_todas">Todas las agencias</string>
@@ -322,14 +358,40 @@ Cliente: %4$s</string>
     <string name="permission_unknown_sources_required">Permite instalar apps de orígenes desconocidos para completar actualizaciones.</string>
     <string name="permission_notification_required">Activa las notificaciones para recibir alertas operativas y de averías.</string>
     <string name="permission_location_required">Activa el acceso a ubicación para habilitar georreferencia y seguimiento.</string>
+
+    <!-- PermissionsActivity — pantalla guiada de permisos -->
+    <string name="permissions_title">Permisos necesarios</string>
+    <string name="permissions_subtitle">Para funcionar correctamente, TecniApp ICE\nnecesita acceso a los siguientes recursos.</string>
+    <string name="permissions_action_grant_all">Solicitar permisos</string>
+    <string name="permissions_action_continue">Continuar a la app</string>
+    <string name="permissions_action_exit">Salir de la aplicación</string>
+    <string name="permissions_exit_title">¿Salir de TecniApp?</string>
+    <string name="permissions_exit_message">Sin los permisos requeridos la aplicación no puede funcionar correctamente.</string>
+    <string name="permissions_exit_confirm">Salir</string>
+    <string name="permissions_exit_cancel">Cancelar</string>
+
+    <!-- Títulos y razones por permiso -->
+    <string name="perm_title_notifications">Notificaciones</string>
+    <string name="perm_reason_notifications">Recibe alertas de averías, actualizaciones y asignaciones en tiempo real.</string>
+    <string name="perm_title_location">Ubicación precisa</string>
+    <string name="perm_reason_location">Georreferencia de postes, navegación en campo y seguimiento de cuadrillas.</string>
+    <string name="perm_title_background_location">Ubicación en segundo plano</string>
+    <string name="perm_reason_background_location">Monitoreo continuo de campo aunque la app no esté en primer plano.</string>
+    <string name="perm_title_storage">Acceso a almacenamiento</string>
+    <string name="perm_reason_storage">Gestión de reportes, imágenes y recursos técnicos descargados.</string>
+    <string name="perm_title_install_packages">Instalar actualizaciones</string>
+    <string name="perm_reason_install_packages">Permite recibir e instalar actualizaciones de la app directamente desde ICE.</string>
     <string name="averia_notificacion_switch_label">Recibir notificaciones</string>
     <string name="averia_notificacion_switch_helper">Desactiva esta opción cuando no necesites alertas (por ejemplo, cuando otra cuadrilla está de turno).</string>
-    <string name="averia_notificacion_filtro_titulo">Filtrar notificaciones por agencia</string>
-    <string name="averia_notificacion_filtro_hint">Agencia (Guácimo, Guápiles, etc.)</string>
-    <string name="averia_notificacion_filtro_vacio">Sin filtros: recibirás avisos de todas las agencias.</string>
+    <string name="averia_notificacion_filtro_titulo">Agencias de tu región</string>
+    <string name="averia_notificacion_filtro_hint">Buscar agencia</string>
+    <string name="averia_notificacion_filtro_vacio">No hay agencias disponibles para esta región.</string>
     <string name="averia_notificacion_filtro_desactivado">Activa las notificaciones para elegir las agencias.</string>
     <string name="averia_notificacion_menu">Notificaciones</string>
-    <string name="averia_notificacion_sheet_title">Preferencias de notificaciones</string>
+    <string name="averia_notificacion_sheet_title">Alertas de averías</string>
+    <string name="averia_notificacion_region_label">Región: %1$s</string>
+    <string name="averia_notificacion_todas_regiones">Todas las regiones</string>
+    <string name="averia_notificacion_selecciona_agencias">Activa las agencias de las que quieres recibir alertas.</string>
     <string name="averia_notification_pref_enabled_title">Notificaciones activadas</string>
     <string name="averia_notification_pref_enabled_body">Recibirás alertas de nuevas averías según tus preferencias.</string>
     <string name="averia_notification_pref_disabled_title">Notificaciones desactivadas</string>
@@ -345,6 +407,7 @@ Cliente: %4$s</string>
     <string name="averia_error_km_llegada_menor">El kilometraje de llegada no puede ser menor al inicial.</string>
     <string name="averia_error_km_inicio_menor_ultimo">El kilometraje inicial no puede ser menor al último registrado (último: %1$s).</string>
     <string name="averia_error_localizacion_requerida">La localización es requerida.</string>
+    <string name="averia_error_localizacion_digitos">La localización debe tener entre 9 y 12 dígitos.</string>
     <string name="averia_error_hora_inicio_requerida">Ingresa la hora de inicio.</string>
     <string name="averia_error_hora_fin_requerida">Ingresa la hora de fin.</string>
     <string name="averia_error_km_inicio_requerido">Ingresa el kilometraje inicial.</string>
@@ -457,6 +520,8 @@ Cliente: %4$s</string>
     <string name="averia_medidor_dialog_lectura_hint">Lectura inicial</string>
     <string name="averia_medidor_dialog_lectura_anterior_hint">Lectura anterior</string>
     <string name="averia_medidor_dialog_no_cambios">No requiere cambios</string>
+    <string name="averia_pdf_section_timeline_dates">Línea de tiempo</string>
+    <string name="averia_pdf_section_timeline_km">Kilometraje del vehículo</string>
     <string name="averia_medidor_dialog_lectura_anterior_no_visible">Lectura anterior no visible</string>
     <string name="averia_medidor_dialog_lecturas_anteriores_no_visibles">Lecturas anteriores no visibles</string>
     <string name="averia_medidor_error_lectura_anterior">Ingresa la lectura anterior o selecciona un motivo.</string>
@@ -483,6 +548,15 @@ Cliente: %4$s</string>
 ¿Deseas abrir el panel de administración para actualizar el inventario?</string>
     <string name="averia_medidor_admin_ir">Abrir panel</string>
     <string name="averia_medidor_admin_luego">Más tarde</string>
+    <string name="averia_medidor_limpiar">Limpiar medidor</string>
+    <string name="averia_medidor_anterior_label">Medidor reportado en la avería</string>
+    <string name="averia_medidor_nuevo_existe">El medidor ingresado ya existe en la base de datos. Verifique el número antes de continuar.</string>
+    <string name="averia_medidor_igual_anterior">El medidor instalado no puede ser igual al medidor anterior.</string>
+    <string name="averia_vehiculo_titulo_seccion">Vehículo responsable</string>
+    <string name="averia_cuadrilla_titulo">DETALLES DE LA CUADRILLA</string>
+    <string name="averia_revertir_resuelta">Revertir a pendiente</string>
+    <string name="averia_exito_revertida_resuelta">Avería revertida a pendiente.</string>
+    <string name="averia_error_revertir_no_autorizado">No tienes permisos para revertir esta avería.</string>
     <string name="averia_reporte_titulo">Reporte de avería</string>
     <string name="averia_estado_pdf">Estado: %1$s</string>
     <string name="averia_reporte_region">Región: %1$s</string>
@@ -587,6 +661,8 @@ Cliente: %4$s</string>
     <string name="settings_admin_privileges_enable">Activar privilegios de administrador</string>
     <string name="settings_admin_privileges_summary">Usa esta opción de pruebas para permitir o bloquear el acceso a módulos administrativos.</string>
     <string name="settings_check_updates">Buscar actualizaciones</string>
+    <string name="settings_about_summary">Información sobre TecniApp ICE</string>
+    <string name="settings_privacy_summary">Política de privacidad y términos de uso</string>
     <string name="update_dialog_title">Nueva versión disponible</string>
     <string name="update_dialog_message">Hay una nueva versión (%1$s) disponible.</string>
     <string name="update_dialog_notes_title">Notas de la versión:</string>
@@ -769,6 +845,8 @@ Cliente: %4$s</string>
     <string name="medidor_chip_poste_format"> %1$s</string>
     <string name="medidor_chip_metros_format"> %1$s</string>
     <string name="medidor_chip_pueblo_format"> %1$s</string>
+    <string name="medidor_opciones_fab">Opciones del medidor</string>
+    <string name="medidor_copiado_exito">Información copiada al portapapeles</string>
 
     <!-- Localización -->
     <string name="localizacion_estado_sin_subregion">No se pudo determinar la subregión del usuario.</string>
@@ -840,6 +918,11 @@ Cliente: %4$s</string>
     <string name="localizacion_toggle_seguir_ubicacion">Seguir mi ubicación actual</string>
     <string name="localizacion_toast_sin_ubicacion">No se pudo obtener la ubicación actual.</string>
     <string name="localizacion_toast_sin_disponibilidad">La ubicación no está disponible en este momento.</string>
+    <string name="localizacion_gps_no_disponible">Sin señal GPS</string>
+    <string name="localizacion_gps_reintentar">Activar</string>
+    <string name="localizacion_fab_reubicar">Mi ubicación</string>
+    <string name="localizacion_fab_zoom_in">Acercar</string>
+    <string name="localizacion_fab_zoom_out">Alejar</string>
     <string name="localizacion_fieldmaps_no_disponible">Field Maps no está instalado. Abriendo Google Maps.</string>
     <string name="localizacion_navegacion_chooser">Selecciona una aplicación para navegar</string>
     <string name="localizacion_estado_sync_error">No se pudo sincronizar la información. Intenta nuevamente.</string>
@@ -1004,6 +1087,15 @@ Cliente: %4$s</string>
     <string name="reportes_historial_eliminar">Eliminar</string>
     <string name="reportes_historial_confirmar_eliminar">¿Eliminar este reporte del historial?</string>
     <string name="reportes_historial_cancelar">Cancelar</string>
+    <string name="reportes_export_sheet_titulo">Exportar reporte</string>
+    <string name="reportes_export_sheet_subtitulo">Elige cómo compartir el reporte generado</string>
+    <string name="reportes_action_export_excel_desc">Hoja de cálculo · formato .xlsx</string>
+    <string name="reportes_action_export_pdf_desc">Documento imprimible · formato .pdf</string>
+    <string name="reportes_action_send_email_desc">Envío directo sin guardar en disco</string>
+    <string name="reportes_email_preparando">Preparando reporte para correo…</string>
+    <string name="reportes_email_asunto">Reporte TecniApp: %1$s · %2$s</string>
+    <string name="reportes_email_chooser_title">Enviar reporte por correo</string>
+    <string name="reportes_ver_historial">Ver historial de exportaciones</string>
     <string name="reportes_pdf_title">Reporte TecniApp ICE</string>
     <string name="reportes_pdf_rango">Rango: %1$s</string>
     <string name="reportes_pdf_resumen_averias">Total averías: %1$d</string>
@@ -1162,6 +1254,54 @@ Cliente: %4$s</string>
     <string name="reportes_resumen_label_eventos">Eventos</string>
     <string name="reportes_resumen_label_etm_cerrados">ETM cerrados</string>
     <string name="reportes_resumen_label_etm_pendientes">ETM pendientes</string>
+    <string name="reportes_resumen_label_ordenes">Órdenes ejec.</string>
+
+    <!-- Deep-links desde reportes -->
+    <string name="reportes_deeplink_averia_titulo">¿Abrir esta avería?</string>
+    <string name="reportes_deeplink_averia_msg">Caso %1$s · Se abrirá el módulo de averías en este registro.</string>
+    <string name="reportes_deeplink_luminaria_titulo">¿Abrir este reporte?</string>
+    <string name="reportes_deeplink_luminaria_msg">Se abrirá el módulo de luminarias en este reporte.</string>
+    <string name="reportes_deeplink_abrir">Abrir</string>
+
+    <!-- Descargo de material -->
+    <string name="descargo_titulo">Descargo de material</string>
+    <string name="descargo_subtitulo_vehiculo">Vehículo %1$s</string>
+    <string name="descargo_cargando">Generando descargo…</string>
+    <string name="descargo_vacio">No se encontraron materiales usados en el período seleccionado.</string>
+    <string name="descargo_unidades">uds</string>
+
+    <!-- Orígenes -->
+    <string name="descargo_origen_luminaria">Luminaria</string>
+    <string name="descargo_origen_averia">Avería</string>
+    <string name="descargo_origen_programacion">Programación</string>
+
+    <!-- Filtros -->
+    <string name="descargo_filtro_todos">Todos</string>
+
+    <!-- IDs por origen -->
+    <string name="descargo_id_luminaria">Luminaria #%1$s</string>
+    <string name="descargo_id_averia">Caso %1$s</string>
+    <string name="descargo_id_programacion">Orden %1$s</string>
+
+    <!-- Exportar -->
+    <string name="descargo_exportar_excel">Exportar Excel</string>
+    <string name="descargo_exportar_pdf">Exportar PDF</string>
+    <string name="descargo_excel_hoja_resumen">Resumen</string>
+    <string name="descargo_excel_hoja_detalle">Detalle materiales</string>
+
+    <!-- Columnas Excel/PDF -->
+    <string name="descargo_col_origen">Origen</string>
+    <string name="descargo_col_id">ID / Referencia</string>
+    <string name="descargo_col_localizacion">Localización</string>
+    <string name="descargo_col_pueblo">Pueblo</string>
+    <string name="descargo_col_cliente">Cliente</string>
+    <string name="descargo_col_agencia">Agencia</string>
+    <string name="descargo_col_fecha_atencion">Fecha atención</string>
+    <string name="descargo_col_fecha_resolucion">Fecha resolución</string>
+    <string name="descargo_col_material">Material</string>
+    <string name="descargo_col_cantidad">Cantidad</string>
+    <string name="descargo_col_tecnico">Técnico</string>
+    <string name="descargo_col_observaciones">Observaciones</string>
 
     <string name="reportes_kpi_averias_atendidas">Averías atendidas</string>
     <string name="reportes_kpi_averias_pendientes">Pendientes</string>
@@ -1447,5 +1587,46 @@ Cliente: %4$s</string>
     <string name="averia_evidencia_eliminar">Eliminar evidencia</string>
     <string name="averia_pdf_section_evidencias">Evidencias fotográficas</string>
     <string name="averia_pdf_no_evidencias">Sin evidencias fotográficas</string>
+
+    <!-- Gráficas Mi Resumen -->
+    <string name="reportes_chart_averias_titulo">Averías</string>
+    <string name="reportes_chart_luminarias_titulo">Luminarias</string>
+    <string name="reportes_chart_horas_titulo">Horas trabajadas (semana actual)</string>
+    <string name="reportes_chart_ordenes_titulo">Órdenes de trabajo</string>
+    <string name="reportes_chart_atendidas">Atendidas</string>
+    <string name="reportes_chart_pendientes">Pendientes</string>
+    <string name="reportes_chart_reparadas">Reparadas</string>
+    <string name="reportes_chart_asignadas">Asignadas</string>
+    <string name="reportes_chart_ejecutadas">Ejecutadas</string>
+    <string name="reportes_chart_averias_atendidas">%1$d Atendidas</string>
+    <string name="reportes_chart_averias_pendientes">%1$d Pendientes</string>
+    <string name="reportes_chart_luminarias_reparadas">%1$d Reparadas</string>
+    <string name="reportes_chart_luminarias_pendientes">%1$d Pendientes</string>
+    <string name="reportes_chart_ordenes_asignadas">%1$d Asignadas</string>
+    <string name="reportes_chart_ordenes_ejecutadas">%1$d Ejecutadas</string>
+    <string name="reportes_chart_semana_label">Semana: %1$s</string>
+    <string name="reportes_chart_sin_datos">Sin datos</string>
+    <string name="reportes_btn_exportar_pdf_resumen">Exportar resumen en PDF</string>
+
+    <!-- Historial de reportes (Room) -->
+    <string name="reportes_historial_enviado">Enviado al correo</string>
+    <string name="reportes_historial_pendiente_envio">Pendiente de envío</string>
+    <string name="reportes_historial_error_envio">Error al enviar</string>
+    <string name="reportes_historial_generado_hoy">Generado hoy</string>
+    <string name="reportes_email_enviado_correo">Reporte enviado correctamente a su correo registrado.</string>
+    <string name="reportes_email_sin_correo">No se encontró un correo registrado para este usuario. Actualice su perfil antes de enviar reportes.</string>
+
+    <!-- Inventario vehículo -->
+    <string name="reportes_inventario_vehiculo_titulo">Inventario vehículo %1$s</string>
+    <string name="reportes_inventario_generar_descargo">Generar descargo de material</string>
+
+    <!-- Días de la semana (gráfica horas) -->
+    <string name="dia_lun">Lun</string>
+    <string name="dia_mar">Mar</string>
+    <string name="dia_mie">Mié</string>
+    <string name="dia_jue">Jue</string>
+    <string name="dia_vie">Vie</string>
+    <string name="dia_sab">Sáb</string>
+    <string name="dia_dom">Dom</string>
 
 </resources>

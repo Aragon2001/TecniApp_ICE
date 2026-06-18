@@ -9,8 +9,12 @@ import com.google.android.material.button.MaterialButton
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.materialswitch.MaterialSwitch
 import com.google.android.material.textfield.TextInputLayout
+import android.util.Log
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ServerValue
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -24,6 +28,7 @@ fun Fragment.showRegistroVehiculoPendienteDialog(
         .setCancelable(false)
         .create()
 
+    val tvFechaHeader = dialogView.findViewById<android.widget.TextView>(R.id.tvRegistroFechaHeader)
     val tilFecha = dialogView.findViewById<TextInputLayout>(R.id.tilRegistroFecha)
     val tilValor = dialogView.findViewById<TextInputLayout>(R.id.tilRegistroValor)
     val tilKmFinal = dialogView.findViewById<TextInputLayout>(R.id.tilRegistroKmFinal)
@@ -42,6 +47,8 @@ fun Fragment.showRegistroVehiculoPendienteDialog(
     val hoy = LocalDate.now()
     val fechaHoy = hoy.format(DateTimeFormatter.ISO_DATE)
     etFecha?.setText(fechaHoy)
+    val diaSemana = hoy.format(DateTimeFormatter.ofPattern("EEEE", java.util.Locale("es", "CR")))
+    tvFechaHeader?.text = "Hoy · ${diaSemana.replaceFirstChar { it.uppercase() }}"
     var registroPendienteCierre: RegistroDiarioVehiculo? = null
 
     fun syncModoCierreUI(cerrar: Boolean) {
@@ -64,6 +71,50 @@ fun Fragment.showRegistroVehiculoPendienteDialog(
         val estadoEtm = uid?.let { repo.obtenerEstadoEtmVehiculo(it) }
         val vehiculo = estadoEtm?.vehiculo
         registroPendienteCierre = estadoEtm?.registroPendienteCierre
+
+        // FIX 2: Firebase como fuente primaria del estado ETM
+        val usuario = uid?.let { repo.obtenerUsuario(it) }
+        val placaStr = usuario?.placaVehiculo?.trim().orEmpty()
+        var fechaEtmFirebase: String? = null
+        var kmInicioFirebase: Double? = null
+        var cerradoFirebase = true
+
+        if (placaStr.isNotBlank()) {
+            try {
+                val etmSnap = FirebaseDatabase
+                    .getInstance("https://tecniapp-ice-datosgenerales.firebaseio.com")
+                    .reference.child("vehiculo_etm").child(placaStr).get().await()
+
+                fechaEtmFirebase = etmSnap.children
+                    .mapNotNull { it.key }
+                    .filter { it.isNotBlank() }
+                    .sortedDescending()
+                    .firstOrNull()
+
+                if (fechaEtmFirebase != null) {
+                    val apertura = etmSnap.child(fechaEtmFirebase).child("apertura")
+                    cerradoFirebase = apertura.child("cerrado").getValue(Boolean::class.java) ?: true
+                    kmInicioFirebase = apertura.child("kmInicio").getValue(Double::class.java)
+                        ?: apertura.child("km").getValue(Double::class.java)
+                }
+            } catch (e: Exception) {
+                Log.w("ETM", "No se pudo leer estado ETM de Firebase, usando Room: ${e.message}")
+            }
+        }
+
+        val hayPendienteFirebase = fechaEtmFirebase != null &&
+            fechaEtmFirebase < fechaHoy && !cerradoFirebase
+
+        if (hayPendienteFirebase && registroPendienteCierre == null) {
+            registroPendienteCierre = RegistroDiarioVehiculo(
+                fecha        = fechaEtmFirebase!!,
+                valorInicial = kmInicioFirebase,
+                cerrado      = false
+            )
+        }
+
+        if (!isAdded) return@launch
+
         val tipo = inferirTipoVehiculo(vehiculo?.tipo)
         val esMaquinaria = tipo == TipoVehiculo.MAQUINARIA_PESADA
         tilValor.hint = if (esMaquinaria) {
@@ -71,12 +122,10 @@ fun Fragment.showRegistroVehiculoPendienteDialog(
         } else {
             getString(R.string.vehiculo_registro_km)
         }
+        // Use kmActual (canonical field) for pre-filling the initial-km field in open mode.
         val ultimaLectura = vehiculo?.let {
-            if (tipo.usaKilometraje) {
-                it.registroFinal ?: it.registroInicial ?: it.kilometrajeActual
-            } else {
-                it.registroFinal ?: it.registroInicial ?: it.orimetroActual
-            }
+            if (tipo.usaKilometraje) it.kmActual.takeIf { km -> km > 0 }
+            else it.orimetroActual?.takeIf { or -> or > 0 }
         }
         if (tilValor.editText?.text.isNullOrBlank() && ultimaLectura != null) {
             val lecturaTexto = String.format(java.util.Locale.getDefault(), "%.0f", ultimaLectura)
@@ -87,11 +136,23 @@ fun Fragment.showRegistroVehiculoPendienteDialog(
             switchCerrar.isChecked = true
             switchCerrar.isEnabled = false
             tilFecha.editText?.setText(pendiente.fecha)
+            // Initial km is read-only when closing — it was recorded when the ETM was opened.
+            tilValor.isEnabled = false
             val lecturaInicial = pendiente.valorInicial
             if (lecturaInicial != null) {
                 tilValor.editText?.setText(
                     String.format(java.util.Locale.getDefault(), "%.0f", lecturaInicial)
                 )
+            }
+            // Pre-fill final km with the current vehicle reading as a convenience default.
+            val kmActualVehiculo = vehiculo?.let {
+                if (tipo.usaKilometraje) it.kmActual.takeIf { km -> km > 0 }
+                else it.orimetroActual?.takeIf { or -> or > 0 }
+            }
+            kmActualVehiculo?.let { kmRef ->
+                val kmRefTexto = String.format(java.util.Locale.getDefault(), "%.0f", kmRef)
+                tilKmFinal.editText?.setText(kmRefTexto)
+                tilKmFinal.editText?.setSelection(kmRefTexto.length)
             }
             tvModoInfo.text = "Tienes un cierre ETM pendiente. Debes registrarlo para continuar."
         }
@@ -160,11 +221,8 @@ fun Fragment.showRegistroVehiculoPendienteDialog(
             val vehiculo = placaLong?.let { repo.obtenerVehiculoPorPlaca(it) }
             if (vehiculo != null) {
                 val tipo = inferirTipoVehiculo(vehiculo.tipo)
-                val lecturaActual = if (tipo.usaKilometraje) {
-                    vehiculo.registroFinal ?: vehiculo.registroInicial ?: vehiculo.kilometrajeActual ?: 0.0
-                } else {
-                    vehiculo.registroFinal ?: vehiculo.registroInicial ?: vehiculo.orimetroActual ?: 0.0
-                }
+                val lecturaActual = if (tipo.usaKilometraje) vehiculo.kmActual
+                                    else (vehiculo.orimetroActual ?: vehiculo.kmActual)
                 if (!cierreForzado && valor < lecturaActual) {
                     tilValor.error = getString(R.string.averia_error_km_inicio_menor_ultimo, String.format(java.util.Locale.getDefault(), "%.0f", lecturaActual))
                     return@launch
@@ -199,7 +257,9 @@ fun Fragment.showRegistroVehiculoPendienteDialog(
                     .filterNot { it.fecha == fechaRegistro }
                 val nuevosCorregidos = listOf(registro) + registrosFiltrados
 
-                val shouldOpenNewDay = cerrarRegistro && registroSinCerrarPrevio != null && kmFinal != null
+                // Only auto-open a new day when closing a PREVIOUS day's ETM, not today's.
+                val shouldOpenNewDay = cerrarRegistro && registroSinCerrarPrevio != null &&
+                    registroSinCerrarPrevio.fecha < fechaHoy && kmFinal != null
                 val registrosConNuevoDia = if (shouldOpenNewDay) {
                     val nuevoDia = RegistroDiarioVehiculo(
                         fecha = fechaHoy,
@@ -230,16 +290,82 @@ fun Fragment.showRegistroVehiculoPendienteDialog(
                     orimetroActual = orimetroActual,
                     registrosJson = registroJson
                 )
+                // FIX 3: insertarRegistroDiario con campos ETM completos
                 repo.insertarRegistroDiario(
                     RegistroDiarioEntity(
-                        vehiculoId = vehiculo.id,
-                        fecha = fechaRegistro,
-                        valor = valorActualizado,
-                        unidad = tipo.unidadTexto,
-                        registradoEn = System.currentTimeMillis(),
-                        registradoPor = usuario?.nombre
+                        vehiculoId     = vehiculo.id,
+                        fecha          = fechaRegistro,
+                        valor          = valorInicialRegistro,
+                        unidad         = tipo.unidadTexto,
+                        registradoEn   = System.currentTimeMillis(),
+                        registradoPor  = usuario?.nombre,
+                        cerrado        = cerrarRegistro && kmFinal != null,
+                        kmFinal        = if (cerrarRegistro) kmFinal else null,
+                        actividad      = actividad,
+                        cuenta         = cuenta,
+                        numeroCaso     = numeroCaso,
+                        lugar          = lugar,
+                        horasLaboradas = horasLaboradas,
+                        combustible    = combustible,
+                        observaciones  = observaciones
                     )
                 )
+
+                // FIX 1: Escribir cierre/apertura en Firebase
+                val etmDb = FirebaseDatabase
+                    .getInstance("https://tecniapp-ice-datosgenerales.firebaseio.com")
+                    .reference
+
+                if (cerrarRegistro) {
+                    val closingUpdates = hashMapOf<String, Any?>(
+                        "vehiculo_etm/$placa/$fechaRegistro/apertura/cerrado"        to true,
+                        "vehiculo_etm/$placa/$fechaRegistro/apertura/kmFinal"        to kmFinal,
+                        "vehiculo_etm/$placa/$fechaRegistro/apertura/combustible"    to combustible,
+                        "vehiculo_etm/$placa/$fechaRegistro/apertura/horasLaboradas" to horasLaboradas,
+                        "vehiculo_etm/$placa/$fechaRegistro/apertura/actividad"      to actividad,
+                        "vehiculo_etm/$placa/$fechaRegistro/apertura/cuenta"         to cuenta,
+                        "vehiculo_etm/$placa/$fechaRegistro/apertura/numeroCaso"     to numeroCaso,
+                        "vehiculo_etm/$placa/$fechaRegistro/apertura/lugar"          to lugar,
+                        "vehiculo_etm/$placa/$fechaRegistro/apertura/observaciones"  to observaciones,
+                        "vehiculo_etm/$placa/$fechaRegistro/apertura/cierreEn"       to ServerValue.TIMESTAMP,
+                        "vehiculos/$placa/kmActual"                                  to (kmFinal ?: valor),
+                        "vehiculos/$placa/updatedAt"                                 to ServerValue.TIMESTAMP
+                    )
+                    try {
+                        etmDb.updateChildren(closingUpdates).await()
+                    } catch (e: Exception) {
+                        Log.e("ETM", "Error escribiendo cierre en Firebase: ${e.message}", e)
+                    }
+                } else {
+                    try {
+                        etmDb.child("vehiculo_etm/$placa/$fechaHoy/apertura")
+                            .updateChildren(mapOf(
+                                "cerrado"  to false,
+                                "creadoEn" to ServerValue.TIMESTAMP,
+                                "kmInicio" to valor,
+                                "km"       to valor,
+                                "tecnico"  to (usuario?.nombre ?: "")
+                            )).await()
+                    } catch (e: Exception) {
+                        Log.e("ETM", "Error escribiendo apertura en Firebase: ${e.message}", e)
+                    }
+                }
+
+                // FIX 4: Si se cierra un día previo, escribir también apertura del día nuevo en Firebase
+                if (shouldOpenNewDay) {
+                    try {
+                        etmDb.child("vehiculo_etm/$placa/$fechaHoy/apertura")
+                            .updateChildren(mapOf(
+                                "cerrado"  to false,
+                                "creadoEn" to ServerValue.TIMESTAMP,
+                                "kmInicio" to kmFinal,
+                                "km"       to kmFinal,
+                                "tecnico"  to (usuario?.nombre ?: "")
+                            )).await()
+                    } catch (e: Exception) {
+                        Log.e("ETM", "Error creando apertura nuevo día en Firebase: ${e.message}", e)
+                    }
+                }
             }
             dialog.dismiss()
             onRegistroGuardado()
