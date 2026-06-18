@@ -1,11 +1,10 @@
-import React, { useState, useEffect, useMemo } from 'react'
-import { ClipboardList, ChevronDown, ChevronRight, Calendar, Clock, Search, Download } from 'lucide-react'
-import { collection, query, orderBy, getDocs, where, Timestamp } from 'firebase/firestore'
+import { useState, useEffect, useMemo } from 'react'
+import { ClipboardList, ChevronDown, ChevronRight, Calendar, Clock, Search } from 'lucide-react'
+import { collection, query, orderBy, getDocs } from 'firebase/firestore'
 import { db } from '../firebase/config'
-import { formatDate, minutesToHHMM } from '../utils/dateUtils'
+import { minutesToHHMM } from '../utils/dateUtils'
 import { Spinner } from '../components/ui/Spinner'
-import { format, subDays, startOfMonth, endOfMonth } from 'date-fns'
-import { es } from 'date-fns/locale'
+import { format, startOfMonth, endOfMonth } from 'date-fns'
 
 interface WorkLog {
   id: string

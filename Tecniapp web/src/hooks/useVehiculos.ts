@@ -48,7 +48,7 @@ export function useVehiculos(): UseVehiculosResult {
 
     const vehiculosRef = ref(rtdbGeneral, '/vehiculos');
 
-    const unsubscribe = onValue(
+    onValue(
       vehiculosRef,
       (snapshot) => {
         try {
@@ -87,4 +87,18 @@ export function useVehiculos(): UseVehiculosResult {
   }, []);
 
   return { vehiculos, loading, error };
+}
+
+interface UseVehiculoResult {
+  vehiculo: Vehiculo | null;
+  loading: boolean;
+  error: string | null;
+}
+
+export function useVehiculo(vehiculoId: string | null): UseVehiculoResult {
+  const { vehiculos, loading, error } = useVehiculos();
+  const vehiculo = vehiculoId
+    ? (vehiculos.find((v) => v.id === vehiculoId || v.placa === vehiculoId) ?? null)
+    : null;
+  return { vehiculo, loading, error };
 }

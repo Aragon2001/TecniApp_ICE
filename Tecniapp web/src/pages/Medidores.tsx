@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { Search, Gauge } from 'lucide-react'
 import { useMedidores } from '../hooks/useMedidores'
 
@@ -13,8 +13,8 @@ export default function Medidores() {
       m.medidorNumber.toLowerCase().includes(q) ||
       m.calle.toLowerCase().includes(q) ||
       m.pueblo.toLowerCase().includes(q) ||
-      m.cliente.toLowerCase().includes(q) ||
-      m.localizacion.toLowerCase().includes(q) ||
+      m.cliente?.toLowerCase().includes(q) ||
+      m.localizacion?.toLowerCase().includes(q) ||
       m.subregion.toLowerCase().includes(q)
     )
   }, [medidores, search])

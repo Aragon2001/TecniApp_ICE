@@ -1,4 +1,3 @@
-import React from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { ArrowLeft, Truck, AlertTriangle, CheckCircle2, Clock, ChevronRight, Gauge, Calendar } from 'lucide-react'
 import { useVehiculo } from '../hooks/useVehiculos'
@@ -24,7 +23,7 @@ export default function VehiculoDetail() {
     )
   }
 
-  const estado = vehiculo.estado ?? 'OPTIMO'
+  const estado = (vehiculo.estado ?? 'OPTIMO') as 'OPTIMO' | 'ATENCION' | 'VENCIDO'
   const kmRestante = (vehiculo.mantenimientoProximo ?? 0) - (vehiculo.kmActual ?? 0)
   const pct = vehiculo.mantenimientoProximo
     ? Math.min(100, Math.max(0, ((vehiculo.kmActual ?? 0) / vehiculo.mantenimientoProximo) * 100))

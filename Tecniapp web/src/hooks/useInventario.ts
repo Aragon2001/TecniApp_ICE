@@ -41,7 +41,7 @@ export function useInventario(): UseInventarioResult {
 
     const inventarioRef = ref(rtdbInventario, '/inventario');
 
-    const unsubscribe = onValue(
+    onValue(
       inventarioRef,
       (snapshot) => {
         try {

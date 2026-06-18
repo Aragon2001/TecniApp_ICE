@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { Users, Search, Shield, Edit2, X, Save } from 'lucide-react'
 import { ref, set } from 'firebase/database'
 import { rtdbUsers } from '../firebase/config'
@@ -6,7 +6,8 @@ import { useUsuarios } from '../hooks/useUsuarios'
 import { emailToKey, rolLabel } from '../utils/formatUtils'
 import { Spinner } from '../components/ui/Spinner'
 import { useAuth } from '../context/AuthContext'
-import type { Usuario, UserRole } from '../types'
+import type { UserRole } from '../types'
+import type { Usuario } from '../hooks/useUsuarios'
 import toast from 'react-hot-toast'
 
 const ROL_BADGE: Record<UserRole, string> = {
@@ -59,7 +60,7 @@ export default function Usuarios() {
     if (!editUser || !isAdmin) return
     setSaving(true)
     try {
-      const key = emailToKey(editUser.email)
+      const key = emailToKey(editUser.email!)
       await set(ref(rtdbUsers, `users/${key}/rol`), form.rol)
       await set(ref(rtdbUsers, `users/${key}/agencia`), form.agencia)
       await set(ref(rtdbUsers, `users/${key}/vehiculoId`), form.vehiculoId)

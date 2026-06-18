@@ -40,7 +40,7 @@ export function useUsuarios(): UseUsuariosResult {
 
     const usersRef = ref(rtdbUsers, '/users');
 
-    const unsubscribe = onValue(
+    onValue(
       usersRef,
       (snapshot) => {
         try {

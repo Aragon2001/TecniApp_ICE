@@ -7,7 +7,6 @@ import { useInventario } from '../hooks/useInventario'
 import { useUsuarios } from '../hooks/useUsuarios'
 import { exportAveriasExcel, exportVehiculosExcel, exportUsuariosExcel, exportToPdf } from '../utils/exportUtils'
 import { format, subDays, startOfMonth, endOfMonth } from 'date-fns'
-import { es } from 'date-fns/locale'
 import toast from 'react-hot-toast'
 import { Spinner } from '../components/ui/Spinner'
 
@@ -94,11 +93,11 @@ export default function Reportes() {
     setGenerating(reportId + '-xlsx')
     try {
       if (reportId === 'averias') {
-        exportAveriasExcel(filteredAverias, `averias_${dateFrom}_${dateTo}`)
+        exportAveriasExcel(filteredAverias)
       } else if (reportId === 'vehiculos') {
-        exportVehiculosExcel(vehiculos, 'vehiculos')
+        exportVehiculosExcel(vehiculos)
       } else if (reportId === 'usuarios') {
-        exportUsuariosExcel(usuarios, 'usuarios')
+        exportUsuariosExcel(usuarios)
       } else if (reportId === 'luminarias') {
         const rows = luminarias.map((l: any) => ({
           ID: l.id ?? '',
