@@ -43,8 +43,16 @@ class ProgramacionFragment : Fragment() {
         binding.rvProgramaciones.layoutManager = LinearLayoutManager(requireContext())
         binding.rvProgramaciones.adapter = adapter
 
-        val estados = listOf("TODOS", ProgramacionRepository.ESTADO_PENDIENTE, ProgramacionRepository.ESTADO_EN_PROCESO, ProgramacionRepository.ESTADO_EJECUTADA)
-        binding.spinnerEstado.adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_dropdown_item, estados)
+        val estados = listOf(
+            "TODOS",
+            ProgramacionRepository.ESTADO_PENDIENTE,
+            ProgramacionRepository.ESTADO_EN_ATENCION,
+            ProgramacionRepository.ESTADO_ATENDIDA,
+            ProgramacionRepository.ESTADO_REABIERTA,
+            ProgramacionRepository.ESTADO_CANCELADA
+        )
+        val estadoLabels = listOf("Todos", "Pendiente", "En atención", "Atendida", "Reabierta", "Cancelada")
+        binding.spinnerEstado.adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_dropdown_item, estadoLabels)
         binding.spinnerEstado.setSelection(0)
         binding.spinnerEstado.setOnItemSelectedListener(SimpleItemSelectedListener { pos ->
             viewModel.setEstadoFilter(estados.getOrNull(pos)?.takeUnless { it == "TODOS" })

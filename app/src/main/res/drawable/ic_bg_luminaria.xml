@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Luminaria / Farola de alumbrado público decorativa
+  viewport: 200×240
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="200dp"
+    android:height="240dp"
+    android:viewportWidth="200"
+    android:viewportHeight="240">
+
+    <!-- ── Poste principal ────────────────────────────────── -->
+    <path
+        android:pathData="M 95,30 L 95,220"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="10"
+        android:strokeLineCap="round" />
+
+    <!-- ── Brazo curvo superior ──────────────────────────── -->
+    <!-- Bezier desde (95,60) hasta (158,62) curvando hacia arriba -->
+    <path
+        android:pathData="M 95,65 C 95,38 150,38 155,62"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="7"
+        android:strokeLineCap="round"
+        android:fillColor="@android:color/transparent" />
+
+    <!-- ── Cuello de la luminaria ────────────────────────── -->
+    <path
+        android:pathData="M 155,62 L 155,80"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="6"
+        android:strokeLineCap="round" />
+
+    <!-- ── Cuerpo de la luminaria (forma ovalada/trapezoidal) ── -->
+    <!-- Rectángulo redondeado centrado en (155, 95) -->
+    <path
+        android:pathData="M 132,80 L 178,80 Q 182,80 182,84 L 182,106 Q 182,110 178,110 L 132,110 Q 128,110 128,106 L 128,84 Q 128,80 132,80 Z"
+        android:fillColor="#FFFFFF"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="0.5" />
+
+    <!-- ── Franja de reflexión en la luminaria ───────────── -->
+    <path
+        android:pathData="M 128,97 L 182,97"
+        android:strokeColor="#80FFFFFF"
+        android:strokeWidth="6"
+        android:fillColor="@android:color/transparent" />
+
+    <!-- ── Cono de luz (triángulo difuminado hacia abajo) ── -->
+    <!-- Lado izquierdo del cono -->
+    <path
+        android:pathData="M 135,110 L 115,160"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:alpha="0.6" />
+    <!-- Lado derecho del cono -->
+    <path
+        android:pathData="M 175,110 L 195,160"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:alpha="0.6" />
+    <!-- Arco inferior del cono (haz de luz) -->
+    <path
+        android:pathData="M 115,160 Q 155,175 195,160"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round"
+        android:fillColor="@android:color/transparent"
+        android:alpha="0.4" />
+
+    <!-- ── Rayos de luz divergentes ──────────────────────── -->
+    <path android:pathData="M 155,110 L 155,148"
+        android:strokeColor="#FFFFFF" android:strokeWidth="2.5" android:strokeLineCap="round" android:alpha="0.7" />
+    <path android:pathData="M 145,112 L 136,146"
+        android:strokeColor="#FFFFFF" android:strokeWidth="2" android:strokeLineCap="round" android:alpha="0.55" />
+    <path android:pathData="M 165,112 L 174,146"
+        android:strokeColor="#FFFFFF" android:strokeWidth="2" android:strokeLineCap="round" android:alpha="0.55" />
+    <path android:pathData="M 137,114 L 124,148"
+        android:strokeColor="#FFFFFF" android:strokeWidth="1.5" android:strokeLineCap="round" android:alpha="0.4" />
+    <path android:pathData="M 173,114 L 186,148"
+        android:strokeColor="#FFFFFF" android:strokeWidth="1.5" android:strokeLineCap="round" android:alpha="0.4" />
+
+    <!-- ── Base del poste ────────────────────────────────── -->
+    <path
+        android:pathData="M 78,215 Q 95,210 112,215"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="8"
+        android:strokeLineCap="round"
+        android:fillColor="@android:color/transparent"
+        android:alpha="0.7" />
+
+</vector>

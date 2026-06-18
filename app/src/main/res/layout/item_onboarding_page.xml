@@ -1,48 +1,55 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:paddingStart="16dp"
-    android:paddingEnd="16dp">
+    android:orientation="vertical"
+    android:gravity="center"
+    android:paddingStart="36dp"
+    android:paddingEnd="36dp"
+    android:paddingBottom="24dp">
 
-    <ImageView
-        android:id="@+id/imageIllustration"
-        android:layout_width="120dp"
-        android:layout_height="120dp"
-        android:layout_marginTop="24dp"
-        android:contentDescription="@string/onboarding_illustration_content_description"
-        android:importantForAccessibility="no"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        tools:src="@drawable/ic_menu_home" />
+    <!-- Contenedor circular del ícono con color de acento -->
+    <FrameLayout
+        android:id="@+id/illustrationBg"
+        android:layout_width="192dp"
+        android:layout_height="192dp">
 
+        <ImageView
+            android:id="@+id/imageIllustration"
+            android:layout_width="88dp"
+            android:layout_height="88dp"
+            android:layout_gravity="center"
+            android:contentDescription="@string/onboarding_illustration_content_description"
+            android:importantForAccessibility="no"
+            tools:src="@drawable/ic_menu_home" />
+
+    </FrameLayout>
+
+    <!-- Título de la página -->
     <com.google.android.material.textview.MaterialTextView
         android:id="@+id/textTitle"
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="32dp"
-        android:textAppearance="@style/TextAppearance.Material3.TitleLarge"
+        android:layout_marginTop="40dp"
+        android:gravity="center"
+        android:textAppearance="@style/TextAppearance.Material3.HeadlineSmall"
         android:textStyle="bold"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/imageIllustration"
+        android:textColor="?android:textColorPrimary"
         tools:text="Bienvenido a TecniApp ICE" />
 
+    <!-- Descripción -->
     <com.google.android.material.textview.MaterialTextView
         android:id="@+id/textDescription"
-        android:layout_width="0dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
-        android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
         android:gravity="center"
         android:lineSpacingExtra="6dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/textTitle"
+        android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
+        android:textColor="?android:textColorSecondary"
         tools:text="Centraliza tus operaciones de campo con autenticación segura y accesos rápidos a los módulos clave." />
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+</LinearLayout>

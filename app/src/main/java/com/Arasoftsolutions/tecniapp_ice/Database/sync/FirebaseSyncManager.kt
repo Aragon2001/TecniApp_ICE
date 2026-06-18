@@ -39,7 +39,7 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
     }
 
     private val dbDatosGenerales: DatabaseReference by lazy {
-       database( "https://tecniapp-ice-datosgenerales.firebaseio.com")
+        database( "https://tecniapp-ice-datosgenerales.firebaseio.com")
     }
 
     private val dbLocal: DatabaseReference by lazy {
@@ -434,7 +434,7 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
                 .equalTo(filtro)
                 .get()
                 .await()
-         }.getOrNull()?.children?.toList().orEmpty().mapNotNull { child ->
+        }.getOrNull()?.children?.toList().orEmpty().mapNotNull { child ->
             child.toPuebloEntity()
         }.distinctBy { it.id }
         Log.i(
@@ -461,7 +461,7 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
                 .ifBlank { SubregionNormalizer.canonicalIdOrSelf(pueblo.subregion).orEmpty() }
             val canonicalPuebloNormalizada = normalizarClave(canonicalPueblo)
             (filtroNormalizado != null && subregionNormalizada == filtroNormalizado) ||
-                (canonicalFiltroNormalizado != null && canonicalPuebloNormalizada == canonicalFiltroNormalizado)
+                    (canonicalFiltroNormalizado != null && canonicalPuebloNormalizada == canonicalFiltroNormalizado)
         }.distinctBy { it.id }
         Log.i(
             TAG,
@@ -486,81 +486,88 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
         )
     }
 
-    suspend fun obtenerLocalizacionesPorPueblos(puebloIds: List<Int>): List<LocalizacionesEntity> {
+    suspend fun obtenerLocalizacionesPorPueblos(
+        puebloIds: List<Int>,
+        subregionId: String? = null
+    ): List<LocalizacionesEntity> {
         if (puebloIds.isEmpty()) return emptyList()
+
         val nodeName = if (dbLocal.child("Localizaciones").get().await().exists()) {
             "Localizaciones"
         } else {
             "localizaciones"
         }
-        val pueblosSet = puebloIds.toSet()
-        val result = mutableListOf<LocalizacionesEntity>()
-        var huboNodoPorPueblo = false
-        puebloIds.forEach { puebloId ->
-            val snapshot = dbLocal.child(nodeName).child(puebloId.toString()).get().await()
-            if (!snapshot.exists()) {
-                Log.i(
-                    TAG,
-                    "[SYNC_FETCH][local/$nodeName] pueblo=$puebloId exists=false count=0"
-                )
-                return@forEach
+
+        val canonicalSubregion = SubregionNormalizer.canonicalIdOrSelf(subregionId)
+            ?: subregionId?.trim()
+
+        // --- Estrategia 1: query indexada por cada pueblo ---
+        // Evita descargar toda la tabla. Prueba los nombres de campo tal como
+        // aparecen realmente en Firebase ("Pueblo", "pueblo", "PUEBLO").
+        val camposPueblo = listOf("Pueblo", "pueblo", "PUEBLO")
+        val resultadosIndexados = mutableListOf<LocalizacionesEntity>()
+        var queryIndexadaExitosa = false
+
+        for (campo in camposPueblo) {
+            var alMenosUnaExitosa = false
+            for (puebloId in puebloIds) {
+                try {
+                    val snap = dbLocal.child(nodeName)
+                        .orderByChild(campo)
+                        .equalTo(puebloId.toDouble())
+                        .get()
+                        .await()
+                    if (snap.exists() && snap.childrenCount > 0) {
+                        alMenosUnaExitosa = true
+                        val entidades = snap.children
+                            .flatMap { parseLocalizacionNode(it, inheritedPueblo = puebloId) }
+                            .filter { it.calle != 0 }
+                            .map { it.copy(direccion = it.direccion.trim(), subregion = canonicalSubregion) }
+                        resultadosIndexados.addAll(entidades)
+                        Log.i(TAG, "[SYNC_FETCH][local/$nodeName] indexed campo=$campo pueblo=$puebloId count=${entidades.size}")
+                    }
+                } catch (e: Exception) {
+                    val isIndexError = e.message?.contains("Index not defined", ignoreCase = true) == true
+                    Log.w(TAG, "[SYNC_FETCH][local/$nodeName] indexed_failed campo=$campo pueblo=$puebloId indexError=$isIndexError detail=${e.message}")
+                    break
+                }
             }
-            huboNodoPorPueblo = true
-            val porPueblo = parseLocalizacionNode(snapshot, inheritedPueblo = puebloId)
-                .filter { it.pueblo != 0 && it.calle != 0 }
-            Log.i(
-                TAG,
-                "[SYNC_FETCH][local/$nodeName] pueblo=$puebloId exists=true count=${porPueblo.size}"
-            )
-            result += porPueblo
+            if (alMenosUnaExitosa) {
+                queryIndexadaExitosa = true
+                break
+            }
         }
 
-        if (result.isNotEmpty()) {
-            val final = result.distinctBy { it.id }
-            Log.i(
-                TAG,
-                "[SYNC_FETCH][local/$nodeName] fallback=false source=por_pueblo totalFinal=${final.size}"
-            )
+        if (queryIndexadaExitosa) {
+            val final = resultadosIndexados.filter { it.pueblo != 0 }.distinctBy { it.id }
+            Log.i(TAG, "[SYNC_FETCH][local/$nodeName] source=indexed finalCount=${final.size} subregion=${canonicalSubregion ?: "null"}")
             return final
         }
 
-        Log.w(
-            TAG,
-            "[SYNC_FETCH][local/$nodeName] fallback=true reason=${if (huboNodoPorPueblo) "por_pueblo_vacio" else "nodos_por_pueblo_inexistentes"}"
-        )
-        if (pueblosSet.isEmpty()) {
-            Log.w(
-                TAG,
-                "[SYNC_FETCH][local/$nodeName] fallback_skipped reason=pueblos_empty"
-            )
+        // --- Estrategia 2 (fallback): descarga completa y filtra en memoria ---
+        Log.w(TAG, "[SYNC_FETCH][local/$nodeName] fallback=full_scan pueblosFiltro=${puebloIds.size}")
+        val pueblosSet = puebloIds.toSet()
+
+        val snapFull = dbLocal.child(nodeName).get().await()
+        if (!snapFull.exists()) {
+            Log.w(TAG, "[SYNC_FETCH][local/$nodeName] exists=false count=0")
             return emptyList()
         }
-        val snap = dbLocal.child(nodeName).get().await()
-        if (!snap.exists()) return emptyList()
-        val fallbackDatasetSize = snap.childrenCount.toInt()
-        Log.i(
-            TAG,
-            "[SYNC_FETCH][local/$nodeName] fallback_dataset_size=$fallbackDatasetSize"
-        )
-        if (fallbackDatasetSize > localizacionesFallbackWarnThreshold) {
-            Log.w(
-                TAG,
-                "[SYNC_FETCH][local/$nodeName] fallback_dataset_size_warning size=$fallbackDatasetSize threshold=$localizacionesFallbackWarnThreshold"
-            )
+
+        val datasetSize = snapFull.childrenCount.toInt()
+        Log.i(TAG, "[SYNC_FETCH][local/$nodeName] full_scan datasetSize=$datasetSize")
+        if (datasetSize > localizacionesFallbackWarnThreshold) {
+            Log.w(TAG, "[SYNC_FETCH][local/$nodeName] dataset_size_warning size=$datasetSize threshold=$localizacionesFallbackWarnThreshold")
         }
 
-        val final = snap.children
-            .flatMap { child ->
-                val inherited = child.key?.trim()?.toIntOrNull()
-                parseLocalizacionNode(child, inheritedPueblo = inherited)
-            }
+        val final = snapFull.children
+            .flatMap { child -> parseLocalizacionNode(child, inheritedPueblo = null) }
             .filter { it.pueblo != 0 && it.calle != 0 }
             .filter { it.pueblo in pueblosSet }
+            .map { entity -> entity.copy(direccion = entity.direccion.trim(), subregion = canonicalSubregion) }
             .distinctBy { it.id }
-        Log.i(
-            TAG,
-            "[SYNC_FETCH][local/$nodeName] fallback=true source=dataset_completo totalFinal=${final.size}"
-        )
+
+        Log.i(TAG, "[SYNC_FETCH][local/$nodeName] source=full_scan finalCount=${final.size} subregion=${canonicalSubregion ?: "null"}")
         return final
     }
 
@@ -578,10 +585,10 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
             ?: puebloRaw.toIntLooseOrNull()
         val direccion = node.stringValueAny("direccion", "Dirección", "Direccion", "DIRECCION", "DIRECCIÓN")
         val hasLeafData = calle != null ||
-            pueblo != null ||
-            !calleRaw.isNullOrBlank() ||
-            !puebloRaw.isNullOrBlank() ||
-            !direccion.isNullOrBlank()
+                pueblo != null ||
+                !calleRaw.isNullOrBlank() ||
+                !puebloRaw.isNullOrBlank() ||
+                !direccion.isNullOrBlank()
 
         if (!hasLeafData && node.childrenCount > 0) {
             return node.children.flatMap { child ->
@@ -821,7 +828,7 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
         val idKey = vehiculo.id.takeIf { it != 0 }?.toString()
         val placaKey = vehiculo.placa.takeIf { it != 0L }?.toString()
         val primaryKey = placaKey ?: idKey
-            ?: throw IllegalArgumentException("Vehículo inválido, requiere id o placa")
+        ?: throw IllegalArgumentException("Vehículo inválido, requiere id o placa")
 
         val payload = mapOf(
             "placa" to (vehiculo.placaRaw.ifBlank { placaKey ?: primaryKey }),
@@ -1572,7 +1579,7 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
         val reparadasNode = agenciaNode.child("reparadas")
         return if (pendientesNode.exists() || reparadasNode.exists()) {
             pendientesNode.children.mapNotNull { parseLuminariaSnapshot(it, LuminariaEstado.PENDIENTE) } +
-                reparadasNode.children.mapNotNull { parseLuminariaSnapshot(it, LuminariaEstado.REPARADA) }
+                    reparadasNode.children.mapNotNull { parseLuminariaSnapshot(it, LuminariaEstado.REPARADA) }
         } else {
             agenciaNode.children.mapNotNull { parseLuminariaSnapshot(it, null) }
         }

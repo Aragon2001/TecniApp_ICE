@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="200dp"
+    android:height="180dp"
+    android:viewportWidth="200"
+    android:viewportHeight="180">
+
+    <!-- Arco exterior del velocímetro -->
+    <path
+        android:pathData="M22,95 A90,90 0 0,1 178,95"
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="7"
+        android:strokeLineCap="round" />
+
+    <!-- Arco interior decorativo -->
+    <path
+        android:pathData="M38,104 A72,72 0 0,1 162,104"
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round"
+        android:alpha="0.4" />
+
+    <!-- Progreso decorativo -->
+    <path
+        android:pathData="M22,95 A90,90 0 0,1 137,58"
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="7"
+        android:strokeLineCap="round"
+        android:alpha="0.55" />
+
+    <!-- Marcas mayores -->
+    <path
+        android:pathData="M22,95 L34,102"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="4"
+        android:strokeLineCap="round" />
+
+    <path
+        android:pathData="M55,62 L64,77"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="4"
+        android:strokeLineCap="round" />
+
+    <path
+        android:pathData="M100,50 L100,68"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="4"
+        android:strokeLineCap="round" />
+
+    <path
+        android:pathData="M145,62 L136,77"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="4"
+        android:strokeLineCap="round" />
+
+    <path
+        android:pathData="M178,95 L166,102"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="4"
+        android:strokeLineCap="round" />
+
+    <!-- Marcas menores -->
+    <path
+        android:pathData="M37,76 L45,85"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:alpha="0.85" />
+
+    <path
+        android:pathData="M77,53 L80,66"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:alpha="0.85" />
+
+    <path
+        android:pathData="M123,53 L120,66"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:alpha="0.85" />
+
+    <path
+        android:pathData="M164,76 L155,85"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:alpha="0.85" />
+
+    <!-- Aguja -->
+    <path
+        android:pathData="M100,140 L137,58"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="4.5"
+        android:strokeLineCap="round" />
+
+    <!-- Contrapeso de aguja -->
+    <path
+        android:pathData="M100,140 L94,154"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round"
+        android:alpha="0.6" />
+
+    <!-- Centro -->
+    <path
+        android:pathData="M100,140 m-10,0 a10,10 0 1,0 20,0 a10,10 0 1,0 -20,0"
+        android:fillColor="#FFFFFF" />
+
+    <path
+        android:pathData="M100,140 m-4,0 a4,4 0 1,0 8,0 a4,4 0 1,0 -8,0"
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="#80FFFFFF"
+        android:strokeWidth="1.5" />
+
+</vector>

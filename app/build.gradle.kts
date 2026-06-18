@@ -46,7 +46,7 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions { jvmTarget = "17" }
+
     kotlin { jvmToolchain(17) }
 
     // Evita conflictos de licencias/metadata típicos al empaquetar
@@ -182,6 +182,11 @@ dependencies {
        Lectura de PDF
        ========================================================= */
     implementation("com.tom-roush:pdfbox-android:2.0.27.0")
+
+    /* =========================================================
+       Gráficas operativas (Mi Resumen)
+       ========================================================= */
+    implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
 
     /* =========================================================
        Testing

@@ -9,7 +9,9 @@ import androidx.recyclerview.widget.RecyclerView
 import com.Arasoftsolutions.tecniapp_ice.R
 import com.Arasoftsolutions.tecniapp_ice.databinding.ItemReporteMisAveriasBinding
 
-class MisAveriasAdapter : ListAdapter<MisAveriaReportItem, MisAveriasAdapter.ViewHolder>(Diff) {
+class MisAveriasAdapter(
+    private val onItemClick: ((MisAveriaReportItem) -> Unit)? = null
+) : ListAdapter<MisAveriaReportItem, MisAveriasAdapter.ViewHolder>(Diff) {
 
     private val expandedIds = mutableSetOf<String>()
 
@@ -29,19 +31,19 @@ class MisAveriasAdapter : ListAdapter<MisAveriaReportItem, MisAveriasAdapter.Vie
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = getItem(position)
-        holder.bind(item, expandedIds.contains(item.caseId)) {
-            val isExpanded = expandedIds.contains(item.caseId)
-            if (isExpanded) {
-                expandedIds.remove(item.caseId)
-            } else {
-                expandedIds.add(item.caseId)
-            }
-            notifyItemChanged(position)
-        }
+        holder.bind(item, expandedIds.contains(item.caseId),
+            onToggle = {
+                val isExpanded = expandedIds.contains(item.caseId)
+                if (isExpanded) expandedIds.remove(item.caseId) else expandedIds.add(item.caseId)
+                notifyItemChanged(position)
+            },
+            onItemClick = onItemClick?.let { cb -> { cb(item) } }
+        )
     }
 
     class ViewHolder(private val binding: ItemReporteMisAveriasBinding) : RecyclerView.ViewHolder(binding.root) {
-        fun bind(item: MisAveriaReportItem, expanded: Boolean, onToggle: () -> Unit) {
+        fun bind(item: MisAveriaReportItem, expanded: Boolean, onToggle: () -> Unit, onItemClick: (() -> Unit)? = null) {
+            binding.root.setOnClickListener { onItemClick?.invoke() }
             val context = binding.root.context
             binding.tvAveriaCaso.text = context.getString(R.string.reportes_item_caso, item.caseId)
             binding.tvAveriaNise.text = item.nise.ifBlank { "-" }

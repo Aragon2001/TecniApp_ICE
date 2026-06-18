@@ -3,6 +3,8 @@ package com.Arasoftsolutions.tecniapp_ice.ui.averias
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.Serializable
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 /**
  * Representa un material utilizado en la atención de una avería.
@@ -48,6 +50,52 @@ enum class TipoAfectacion : Serializable {
     }
 }
 
+data class CambioMedidorData(
+    val numeroCaso: String,
+    val medidorAnterior: String?,
+    val medidorInstalado: String,
+    val lecturaAnteriorVisible: Boolean,
+    val lecturaAnterior: String?,
+    val lecturaNueva: String?,
+    val materialUsado: String?,
+    val tecnicoUid: String?,
+    val tecnicoNombre: String?,
+    val fechaCambio: String
+) : Serializable
+
+object CambioMedidorSerializer {
+    fun toJson(data: CambioMedidorData): String = JSONObject().apply {
+        put("numeroCaso", data.numeroCaso)
+        put("medidorAnterior", data.medidorAnterior)
+        put("medidorInstalado", data.medidorInstalado)
+        put("lecturaAnteriorVisible", data.lecturaAnteriorVisible)
+        put("lecturaAnterior", data.lecturaAnterior)
+        put("lecturaNueva", data.lecturaNueva)
+        put("materialUsado", data.materialUsado)
+        put("tecnicoUid", data.tecnicoUid)
+        put("tecnicoNombre", data.tecnicoNombre)
+        put("fechaCambio", data.fechaCambio)
+    }.toString()
+
+    fun toFirebaseMap(data: CambioMedidorData): Map<String, Any?> = hashMapOf(
+        "numeroCaso" to data.numeroCaso,
+        "medidorAnterior" to data.medidorAnterior,
+        "medidorInstalado" to data.medidorInstalado,
+        "lecturaAnteriorVisible" to data.lecturaAnteriorVisible,
+        "lecturaAnterior" to data.lecturaAnterior,
+        "lecturaNueva" to data.lecturaNueva,
+        "materialUsado" to data.materialUsado,
+        "tecnicoUid" to data.tecnicoUid,
+        "tecnicoNombre" to data.tecnicoNombre,
+        "fechaCambio" to data.fechaCambio,
+        "notificacionSupervisorEnviada" to false,
+        "notificacionSupervisorPendiente" to true
+    )
+
+    fun now(): String =
+        LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+}
+
 /**
  * Datos de acción al atender/cerrar una avería.
  */
@@ -80,6 +128,8 @@ data class AveriaActionData(
  * Utilidad para serializar/deserializar materiales.
  */
 object MaterialesSerializer {
+
+    fun decodeLectura(raw: String?): Pair<String?, String?> = parseLecturas(raw)
 
     private fun parseLecturas(raw: String?): Pair<String?, String?> {
         if (raw.isNullOrBlank()) return null to null
