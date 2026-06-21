@@ -104,11 +104,11 @@ object AveriaNotificationDispatcher {
             buildMapPendingIntent(context, averia)
         } else null
 
-        // Mapa estático expandido
+        // Mapa estático expandido — label debe ser alfanumérico (límite de Static Maps API)
         val mapUrl = if (hasCoords) {
             AveriaStaticMapProvider.buildUrl(
                 context, averia.lat, averia.lng,
-                label = "⚡${averia.caseId}"
+                label = averia.caseId
             )
         } else null
 
@@ -129,7 +129,13 @@ object AveriaNotificationDispatcher {
             .setAutoCancel(true)
             .setContentIntent(openAveriaIntent)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .setWhen(averia.fechaInicioMillis.takeIf { it > 0 } ?: System.currentTimeMillis())
+            .setWhen(
+                // Notificaciones de cambio de estado deben aparecer con la hora de envío actual,
+                // no con la fecha de inicio de la avería (que puede ser horas/días antes)
+                if (type == NotifType.NEW) averia.fechaInicioMillis.takeIf { it > 0 }
+                    ?: System.currentTimeMillis()
+                else System.currentTimeMillis()
+            )
             .setShowWhen(true)
 
         builder.addAction(
