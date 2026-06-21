@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { ref, onValue, off } from 'firebase/database';
 import { rtdbMateriales } from '../firebase/config';
 
@@ -33,7 +33,7 @@ export function useMateriales(): UseMaterialesResult {
 
     const matsRef = ref(rtdbMateriales, '/materiales');
 
-    const unsubscribe = onValue(
+    onValue(
       matsRef,
       (snapshot) => {
         try {

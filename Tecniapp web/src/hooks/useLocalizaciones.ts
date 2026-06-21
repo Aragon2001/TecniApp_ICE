@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+﻿import { useState, useEffect, useCallback } from 'react';
 import { ref, onValue, off } from 'firebase/database';
 import { rtdbMain } from '../firebase/config';
 
@@ -37,7 +37,7 @@ export function useLocalizaciones(): UseLocalizacionesResult {
 
     const locRef = ref(db, '/localizaciones');
 
-    const unsubscribe = onValue(
+    onValue(
       locRef,
       (snapshot) => {
         try {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { ref, onValue, off } from 'firebase/database';
 import { rtdbGeneral } from '../firebase/config';
 
@@ -48,7 +48,7 @@ export function useVehiculos(): UseVehiculosResult {
 
     const vehiculosRef = ref(rtdbGeneral, '/vehiculos');
 
-    const unsubscribe = onValue(
+    onValue(
       vehiculosRef,
       (snapshot) => {
         try {
@@ -87,4 +87,60 @@ export function useVehiculos(): UseVehiculosResult {
   }, []);
 
   return { vehiculos, loading, error };
+}
+
+interface UseVehiculoResult {
+  vehiculo: Vehiculo | null;
+  loading: boolean;
+  error: string | null;
+}
+
+export function useVehiculo(vehiculoId: string | null): UseVehiculoResult {
+  const [vehiculo, setVehiculo] = useState<Vehiculo | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!vehiculoId) {
+      setError('ID de vehículo no proporcionado');
+      setLoading(false);
+      return;
+    }
+    if (!rtdbGeneral) {
+      setError('Firebase RTDB (general) no configurado');
+      setLoading(false);
+      return;
+    }
+
+    const vehiculoRef = ref(rtdbGeneral, `/vehiculos/${vehiculoId}`);
+
+    onValue(
+      vehiculoRef,
+      (snapshot) => {
+        const data = snapshot.val();
+        if (!data) {
+          setVehiculo(null);
+          setError('Vehículo no encontrado');
+        } else {
+          setVehiculo({
+            id: vehiculoId,
+            ...data,
+            estado: computeEstado(data.kmActual, data.mantenimientoProximo),
+          });
+          setError(null);
+        }
+        setLoading(false);
+      },
+      (err) => {
+        setError(err.message);
+        setLoading(false);
+      }
+    );
+
+    return () => {
+      off(vehiculoRef);
+    };
+  }, [vehiculoId]);
+
+  return { vehiculo, loading, error };
 }

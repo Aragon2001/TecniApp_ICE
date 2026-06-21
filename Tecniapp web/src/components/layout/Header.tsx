@@ -21,6 +21,7 @@ const routeTitles: Record<string, string> = {
   '/reportes': 'Reportes',
   '/usuarios': 'Usuarios',
   '/admin': 'Administración',
+  '/perfil': 'Mi Perfil',
 };
 
 const Header: React.FC<HeaderProps> = ({ onMenuToggle }) => {
@@ -148,35 +149,50 @@ const Header: React.FC<HeaderProps> = ({ onMenuToggle }) => {
               onClick={() => setDropdownOpen(!dropdownOpen)}
               className="flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-gray-100 transition-colors"
             >
-              <div className="w-8 h-8 bg-[#003087] rounded-full flex items-center justify-center">
+              <div className="w-8 h-8 bg-[#003087] rounded-full flex items-center justify-center flex-shrink-0">
                 <User size={14} className="text-white" />
               </div>
               <div className="hidden sm:block text-left">
-                <p className="text-xs font-semibold text-slate-700 leading-tight max-w-[120px] truncate">
-                  {user ? (`${user.nombre} ${user.apellidos}`.trim() || user.email.split('@')[0]) : 'Usuario'}
+                <p className="text-xs font-semibold text-slate-700 leading-tight max-w-[140px] truncate">
+                  {user ? (`${user.nombre} ${user.apellidos}`.trim() || user.email.split('@')[0]) : '—'}
                 </p>
-                <p className="text-[10px] text-slate-400 leading-tight">
-                  {roleLabel[user?.rol ?? 'tecnico'] || 'Técnico'}
+                <p className="text-[10px] text-slate-400 leading-tight max-w-[140px] truncate">
+                  {user?.email ?? ''}
                 </p>
               </div>
               <ChevronDown size={14} className={`text-slate-400 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
             </button>
 
             {dropdownOpen && (
-              <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-slate-100 overflow-hidden">
-                <div className="px-4 py-3 border-b border-slate-100 bg-slate-50">
-                  <p className="text-sm font-semibold text-slate-700 truncate">
-                    {user ? (`${user.nombre} ${user.apellidos}`.trim() || 'Usuario') : 'Usuario'}
-                  </p>
-                  <p className="text-xs text-slate-400 truncate">{user?.email}</p>
-                  <div className="mt-1.5 flex items-center gap-1.5">
-                    <Shield size={10} className="text-[#003087]" />
-                    <span className="text-[10px] font-medium text-[#003087] bg-blue-50 px-1.5 py-0.5 rounded">
-                      {roleLabel[user?.rol ?? 'tecnico'] || 'Técnico'}
-                    </span>
+              <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-lg border border-slate-100 overflow-hidden">
+                <div className="px-4 py-4 border-b border-slate-100 bg-[#003087]">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                      <User size={18} className="text-white" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold text-white leading-tight truncate">
+                        {user ? (`${user.nombre} ${user.apellidos}`.trim() || 'Sin nombre') : '—'}
+                      </p>
+                      <p className="text-[11px] text-white/70 leading-tight truncate mt-0.5">
+                        {user?.email ?? ''}
+                      </p>
+                      <span className="inline-flex items-center gap-1 mt-1.5 text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/20 text-white">
+                        <Shield size={9} />
+                        {roleLabel[user?.rol ?? 'tecnico'] || 'Técnico'}
+                      </span>
+                    </div>
                   </div>
                 </div>
                 <div className="py-1">
+                  <a
+                    href="/perfil"
+                    onClick={() => setDropdownOpen(false)}
+                    className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 transition-colors"
+                  >
+                    <User size={14} />
+                    Mi Perfil
+                  </a>
                   <button
                     onClick={() => { logout(); setDropdownOpen(false); }}
                     className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react'
+﻿import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AlertTriangle, Search, Grid, List, X, Eye } from 'lucide-react'
 import { format, formatDistanceToNow } from 'date-fns'
@@ -54,11 +54,12 @@ export default function Averias() {
     if (search) {
       const q = search.toLowerCase()
       list = list.filter(a =>
-        a.caseId.toLowerCase().includes(q) ||
-        a.cliente.toLowerCase().includes(q) ||
-        a.localizacion.toLowerCase().includes(q) ||
-        a.causa.toLowerCase().includes(q) ||
-        a.tecnicoAsignadoNombre.toLowerCase().includes(q)
+        (a.caseId || a.id)?.toLowerCase().includes(q) ||
+        a.cliente?.toLowerCase().includes(q) ||
+        a.localizacion?.toLowerCase().includes(q) ||
+        a.causa?.toLowerCase().includes(q) ||
+        a.tecnicoAsignadoNombre?.toLowerCase().includes(q) ||
+        a.nombreAgencia?.toLowerCase().includes(q)
       )
     }
     if (estadoFilter) list = list.filter(a => a.estado === estadoFilter)
@@ -217,12 +218,12 @@ export default function Averias() {
               <tbody className="divide-y divide-slate-50">
                 {filtered.map(averia => (
                   <tr
-                    key={averia.caseId}
-                    onClick={() => navigate(`/averias/${averia.caseId}`)}
+                    key={averia.caseId || averia.id}
+                    onClick={() => navigate(`/averias/${averia.caseId || averia.id}`)}
                     className="hover:bg-slate-50 cursor-pointer transition-colors"
                   >
                     <td className="px-4 py-3 font-mono text-xs font-bold text-[#003087] whitespace-nowrap">
-                      {averia.caseId}
+                      {averia.caseId || averia.id}
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">
                       <AveriaEstadoBadge estado={averia.estado} />
@@ -251,7 +252,7 @@ export default function Averias() {
                     </td>
                     <td className="px-4 py-3">
                       <button
-                        onClick={e => { e.stopPropagation(); navigate(`/averias/${averia.caseId}`) }}
+                        onClick={e => { e.stopPropagation(); navigate(`/averias/${averia.caseId || averia.id}`) }}
                         className="p-1.5 text-[#0066CC] hover:bg-blue-50 rounded-lg transition-colors"
                       >
                         <Eye size={14} />
@@ -267,12 +268,12 @@ export default function Averias() {
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
           {filtered.map(averia => (
             <div
-              key={averia.caseId}
-              onClick={() => navigate(`/averias/${averia.caseId}`)}
+              key={averia.caseId || averia.id}
+              onClick={() => navigate(`/averias/${averia.caseId || averia.id}`)}
               className={`bg-white rounded-xl border border-slate-100 border-l-4 ${ESTADO_BORDER[averia.estado]} p-4 cursor-pointer hover:shadow-md transition-shadow`}
             >
               <div className="flex items-start justify-between gap-2 mb-2">
-                <span className="font-mono text-sm font-bold text-[#003087]">{averia.caseId}</span>
+                <span className="font-mono text-sm font-bold text-[#003087]">{averia.caseId || averia.id}</span>
                 <AveriaEstadoBadge estado={averia.estado} />
               </div>
               <p className="text-sm font-medium text-slate-700 mb-1">{averia.nombreAgencia || averia.agencia || 'Sin agencia'}</p>

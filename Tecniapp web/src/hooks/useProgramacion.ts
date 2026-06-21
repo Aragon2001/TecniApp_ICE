@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { ref, onValue, off } from 'firebase/database';
 import { rtdbProgramacion } from '../firebase/config';
 
@@ -43,7 +43,7 @@ export function useProgramacion(): UseProgramacionResult {
     // Path: /programaciones/{subregion}/{vehiculoId}/{programacionId}
     const progRef = ref(rtdbProgramacion, '/programaciones');
 
-    const unsubscribe = onValue(
+    onValue(
       progRef,
       (snapshot) => {
         try {

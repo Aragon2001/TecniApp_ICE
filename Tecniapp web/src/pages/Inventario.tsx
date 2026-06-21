@@ -23,14 +23,14 @@ export default function Inventario() {
 
   const vehiculoItems = useMemo(() =>
     inventario.filter(i => i.vehiculoId === selectedVehiculo)
-      .sort((a, b) => a.codigoMaterial.localeCompare(b.codigoMaterial)),
+      .sort((a, b) => (a.codigoMaterial || '').localeCompare(b.codigoMaterial || '', 'es')),
     [inventario, selectedVehiculo]
   )
 
   const totalItems = vehiculoItems.length
-  const totalCantidad = vehiculoItems.reduce((sum, i) => sum + i.cantidadDisponible, 0)
-  const lowStock = vehiculoItems.filter(i => i.cantidadDisponible > 0 && i.cantidadDisponible < 5).length
-  const zeroStock = vehiculoItems.filter(i => i.cantidadDisponible === 0).length
+  const totalCantidad = vehiculoItems.reduce((sum, i) => sum + (i.cantidadDisponible ?? 0), 0)
+  const lowStock = vehiculoItems.filter(i => (i.cantidadDisponible ?? 0) > 0 && (i.cantidadDisponible ?? 0) < 5).length
+  const zeroStock = vehiculoItems.filter(i => (i.cantidadDisponible ?? 0) === 0).length
 
   // Get placa for a vehiculoId
   const getPlaca = (vid: string) => {
@@ -118,17 +118,18 @@ export default function Inventario() {
               </thead>
               <tbody className="divide-y divide-slate-50">
                 {vehiculoItems.map((item) => {
-                  const isLow = item.cantidadDisponible > 0 && item.cantidadDisponible < 5
-                  const isZero = item.cantidadDisponible === 0
+                  const qty = item.cantidadDisponible ?? 0
+                  const isLow = qty > 0 && qty < 5
+                  const isZero = qty === 0
                   return (
                     <tr
                       key={item.id}
                       className={`transition-colors ${isZero ? 'bg-red-50/50 hover:bg-red-50' : isLow ? 'bg-amber-50/50 hover:bg-amber-50' : 'hover:bg-slate-50'}`}
                     >
-                      <td className="px-4 py-2.5 font-mono text-xs text-slate-600">{item.codigoMaterial}</td>
-                      <td className="px-4 py-2.5 text-slate-700 text-xs">{item.descripcionMaterial}</td>
+                      <td className="px-4 py-2.5 font-mono text-xs text-slate-600">{item.codigoMaterial ?? item.id}</td>
+                      <td className="px-4 py-2.5 text-slate-700 text-xs">{item.descripcionMaterial ?? '—'}</td>
                       <td className={`px-4 py-2.5 text-right font-bold ${isZero ? 'text-red-600' : isLow ? 'text-amber-600' : 'text-slate-800'}`}>
-                        {item.cantidadDisponible}
+                        {qty}
                       </td>
                       <td className="px-4 py-2.5">
                         {isZero ? (

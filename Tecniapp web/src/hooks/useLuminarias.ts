@@ -1,93 +1,173 @@
-import { useState, useEffect } from 'react';
-import { ref, onValue, off, update } from 'firebase/database';
-import { rtdbInventario } from '../firebase/config';
+import { useState, useEffect, useMemo } from 'react';
+import { ref, onValue, off, set, remove, push } from 'firebase/database';
+import { rtdbLuminarias } from '../firebase/config';
+import { useAuth } from '../context/AuthContext';
 
 export interface Luminaria {
   id: string;
-  numero?: string;
-  tipo?: string;
-  potencia?: number;
-  estado?: string;
+  _agenciaKey: string;
+  _estadoSegment: 'pendientes' | 'reparadas';
+  vehiculoId?: string;
   localizacion?: string;
-  latitud?: number;
-  longitud?: number;
-  agencia?: string;
-  fechaInstalacion?: number;
-  ultimoMantenimiento?: number;
+  cliente?: string;
+  contacto?: string;
   observaciones?: string;
+  materialesJson?: string;
+  estado: 'PENDIENTE' | 'REPARADA';
+  ejecutorNombre?: string;
+  ejecutorCedula?: string;
+  fechaRegistro?: number;
+  fechaCarga?: number;
+  fechaReparacion?: number;
   [key: string]: any;
 }
 
-interface UseLuminariasResult {
-  luminarias: Luminaria[];
-  loading: boolean;
-  error: string | null;
+export interface LuminariaPermisos {
+  puedeMarcarReparada: boolean;  // técnico
+  puedeRegistrar: boolean;       // supervisor / admin
+  puedeFiltrarVehiculo: boolean; // supervisor / admin
+  esGestor: boolean;
 }
 
-export function useLuminarias(): UseLuminariasResult {
-  const [luminarias, setLuminarias] = useState<Luminaria[]>([]);
+interface UseLuminariasResult {
+  pendientes: Luminaria[];
+  reparadas: Luminaria[];
+  todosVehiculoIds: string[];
+  loading: boolean;
+  error: string | null;
+  agenciaKey: string;
+  permisos: LuminariaPermisos;
+}
+
+export function useLuminarias(vehiculoFiltro?: string): UseLuminariasResult {
+  const { user } = useAuth();
+  const [raw, setRaw] = useState<Luminaria[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Match Android: uses usuario.agencia as the Firebase path key
+  const agenciaKey = (user?.agencia?.trim() || user?.agenciaId?.trim()) ?? '';
+  const esGestor = user?.rol === 'supervisor' || user?.rol === 'admin';
+  // Técnico is locked to their own vehicle plate (used as vehiculoId match)
+  const placaTecnico = !esGestor ? user?.placaVehiculo?.trim() : undefined;
+
   useEffect(() => {
-    if (!rtdbInventario) {
-      setError('Firebase RTDB (inventario) no configurado');
+    if (!rtdbLuminarias) {
+      setError('Firebase RTDB (luminarias) no configurado');
+      setLoading(false);
+      return;
+    }
+    if (!agenciaKey) {
+      setError('Usuario sin agencia asignada');
       setLoading(false);
       return;
     }
 
-    const lumRef = ref(rtdbInventario, '/luminarias');
+    setLoading(true);
+    const lumRef = ref(rtdbLuminarias, `/luminarias/${agenciaKey}`);
 
-    const unsubscribe = onValue(
+    onValue(
       lumRef,
       (snapshot) => {
-        try {
-          const data = snapshot.val();
-          if (!data) {
-            setLuminarias([]);
-            setLoading(false);
-            return;
-          }
+        const data = snapshot.val();
+        if (!data) { setRaw([]); setLoading(false); return; }
 
-          const list: Luminaria[] = Object.entries(data).map(
-            ([key, value]: [string, any]) => ({
-              id: key,
-              ...value,
-            })
-          );
+        const list: Luminaria[] = [];
+        (['pendientes', 'reparadas'] as const).forEach((seg) => {
+          const segData = data[seg];
+          if (!segData || typeof segData !== 'object') return;
+          Object.entries(segData).forEach(([id, itemData]: [string, any]) => {
+            if (typeof itemData !== 'object' || itemData === null) return;
+            list.push({
+              id,
+              _agenciaKey: agenciaKey,
+              _estadoSegment: seg,
+              estado: seg === 'pendientes' ? 'PENDIENTE' : 'REPARADA',
+              ...itemData,
+            });
+          });
+        });
 
-          list.sort((a, b) => (a.numero || '').localeCompare(b.numero || '', 'es'));
-          setLuminarias(list);
-          setLoading(false);
-        } catch (err) {
-          setError('Error al procesar luminarias');
-          setLoading(false);
-        }
-      },
-      (err) => {
-        setError(err.message);
+        list.sort((a, b) => (b.fechaRegistro || 0) - (a.fechaRegistro || 0));
+        setRaw(list);
         setLoading(false);
-      }
+      },
+      (err) => { setError(err.message); setLoading(false); }
     );
 
-    return () => {
-      off(lumRef);
-    };
-  }, []);
+    return () => off(lumRef);
+  }, [agenciaKey]);
 
-  return { luminarias, loading, error };
+  const todosVehiculoIds = useMemo(() => {
+    const ids = new Set(raw.map(l => l.vehiculoId).filter(Boolean) as string[]);
+    return Array.from(ids).sort();
+  }, [raw]);
+
+  // Filter: técnico → only their vehicle; supervisor/admin → all or selected filter
+  const filtered = useMemo(() => {
+    let list = raw;
+    if (!esGestor && placaTecnico) {
+      list = list.filter(l => l.vehiculoId === placaTecnico);
+    } else if (esGestor && vehiculoFiltro) {
+      list = list.filter(l => l.vehiculoId === vehiculoFiltro);
+    }
+    return list;
+  }, [raw, esGestor, placaTecnico, vehiculoFiltro]);
+
+  const pendientes = useMemo(() => filtered.filter(l => l.estado === 'PENDIENTE'), [filtered]);
+  const reparadas = useMemo(() => filtered.filter(l => l.estado === 'REPARADA'), [filtered]);
+
+  const permisos: LuminariaPermisos = {
+    puedeMarcarReparada: !esGestor,
+    puedeRegistrar: esGestor,
+    puedeFiltrarVehiculo: esGestor,
+    esGestor,
+  };
+
+  return { pendientes, reparadas, todosVehiculoIds, loading, error, agenciaKey, permisos };
 }
 
-export async function updateLuminariaEstado(
-  luminariaId: string,
-  estado: string,
-  observaciones?: string
+export async function marcarLuminariaReparada(
+  lum: Luminaria,
+  ejecutorNombre: string,
+  ejecutorCedula?: string
 ): Promise<void> {
-  if (!rtdbInventario) throw new Error('Firebase RTDB (inventario) no configurado');
-  const lumRef = ref(rtdbInventario, `/luminarias/${luminariaId}`);
-  await update(lumRef, {
-    estado,
-    observaciones: observaciones || null,
-    updatedAt: Date.now(),
+  if (!rtdbLuminarias) throw new Error('Firebase RTDB no configurado');
+  if (lum._estadoSegment !== 'pendientes') return;
+
+  const { id, _agenciaKey, _estadoSegment, estado, ...fields } = lum;
+  const payload = {
+    ...fields,
+    estado: 'REPARADA',
+    ejecutorNombre: ejecutorNombre.trim() || fields.ejecutorNombre || '',
+    ejecutorCedula: ejecutorCedula || fields.ejecutorCedula || '',
+    fechaReparacion: Date.now(),
+  };
+
+  await set(ref(rtdbLuminarias, `luminarias/${_agenciaKey}/reparadas/${id}`), payload);
+  await remove(ref(rtdbLuminarias, `luminarias/${_agenciaKey}/pendientes/${id}`));
+}
+
+export async function registrarLuminariaPendiente(
+  agenciaKey: string,
+  data: {
+    localizacion: string;
+    vehiculoId: string;
+    cliente?: string;
+    contacto?: string;
+    observaciones?: string;
+    ejecutorNombre?: string;
+    ejecutorCedula?: string;
+  }
+): Promise<void> {
+  if (!rtdbLuminarias) throw new Error('Firebase RTDB no configurado');
+
+  const newRef = push(ref(rtdbLuminarias, `luminarias/${agenciaKey}/pendientes`));
+  await set(newRef, {
+    ...data,
+    localizacion: data.localizacion.trim(),
+    estado: 'PENDIENTE',
+    fechaRegistro: Date.now(),
+    fechaCarga: Date.now(),
   });
 }

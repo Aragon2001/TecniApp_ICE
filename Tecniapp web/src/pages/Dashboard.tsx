@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react'
+﻿import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AlertTriangle, Clock, Truck, Lightbulb, Activity } from 'lucide-react'
 import {
@@ -37,8 +37,8 @@ function SkeletonCard() {
 export default function Dashboard() {
   const navigate = useNavigate()
   const { averias, loading: loadingA } = useAverias({})
-  const { vehiculos, loading: loadingV } = useVehiculos()
-  const { luminarias, loading: loadingL } = useLuminarias()
+  const { loading: loadingV } = useVehiculos()
+  const { loading: loadingL } = useLuminarias()
   const { stats, loading: loadingStats } = useStats()
 
   // Averías por estado for bar chart

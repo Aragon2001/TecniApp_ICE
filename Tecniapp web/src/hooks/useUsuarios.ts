@@ -1,17 +1,26 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { ref, onValue, off } from 'firebase/database';
 import { rtdbUsers } from '../firebase/config';
 
 export interface Usuario {
-  id: string;
+  id: string;           // Firebase key (email with dots replaced by commas)
   email?: string;
-  displayName?: string;
-  role?: string;
+  nombre?: string;
+  apellidos?: string;
+  cedula?: string;
+  telefono?: string;
+  rol?: string;         // 'admin' | 'supervisor' | 'tecnico'
   agencia?: string;
+  agenciaId?: string;
+  region?: string;
+  regionNombre?: string;
+  subregion?: string;
+  subregionNombre?: string;
+  placaVehiculo?: string;
+  vehiculoId?: string;
+  uid?: string;
+  fotoUrl?: string;
   activo?: boolean;
-  photoURL?: string;
-  lastLogin?: number;
-  createdAt?: number;
   [key: string]: any;
 }
 
@@ -21,7 +30,7 @@ interface UseUsuariosResult {
   error: string | null;
 }
 
-// Firebase key encoding: dots → commas
+// Firebase key encoding: commas → dots (reverses the Android emailToKey encoding)
 function keyToEmail(key: string): string {
   return key.replace(/,/g, '.');
 }
@@ -40,7 +49,7 @@ export function useUsuarios(): UseUsuariosResult {
 
     const usersRef = ref(rtdbUsers, '/users');
 
-    const unsubscribe = onValue(
+    onValue(
       usersRef,
       (snapshot) => {
         try {
@@ -60,10 +69,7 @@ export function useUsuarios(): UseUsuariosResult {
           );
 
           list.sort((a, b) =>
-            (a.displayName || a.email || '').localeCompare(
-              b.displayName || b.email || '',
-              'es'
-            )
+            (a.nombre || a.email || '').localeCompare(b.nombre || b.email || '', 'es')
           );
           setUsuarios(list);
           setLoading(false);
