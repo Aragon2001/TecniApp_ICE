@@ -1,5 +1,4 @@
-import React from 'react'
-import { useParams, Link } from 'react-router-dom'
+﻿import { useParams, Link } from 'react-router-dom'
 import { ArrowLeft, Truck, AlertTriangle, CheckCircle2, Clock, ChevronRight, Gauge, Calendar } from 'lucide-react'
 import { useVehiculo } from '../hooks/useVehiculos'
 import { formatDate, formatDateTime } from '../utils/dateUtils'

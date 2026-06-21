@@ -1,6 +1,6 @@
 export { useAverias, useAveria, updateAveriaEstado, assignAveria } from './useAverias'
 export { useVehiculos } from './useVehiculos'
-export { useLuminarias, updateLuminariaEstado } from './useLuminarias'
+export { useLuminarias, marcarLuminariaReparada } from './useLuminarias'
 export { useInventario } from './useInventario'
 export { useMedidores } from './useMedidores'
 export { useProgramacion } from './useProgramacion'

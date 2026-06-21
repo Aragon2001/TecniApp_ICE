@@ -1,4 +1,4 @@
-import { format, formatDistanceToNow, fromUnixTime, isValid } from 'date-fns'
+import { format, formatDistanceToNow, isValid } from 'date-fns'
 import { es } from 'date-fns/locale'
 
 /** Format a millisecond timestamp as dd/MM/yyyy HH:mm */

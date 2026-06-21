@@ -1,96 +1,92 @@
-import { useState, useEffect, useCallback } from 'react';
-import { ref, onValue, off } from 'firebase/database';
+import { useState, useCallback } from 'react';
+import { ref, get } from 'firebase/database';
 import { rtdbMain } from '../firebase/config';
+import { useAuth } from '../context/AuthContext';
 
 export interface Medidor {
   id: string;
-  numero?: string;
-  tipo?: string;
-  localizacion?: string;
-  estado?: string;
-  lectura?: number;
-  ultimaLectura?: number;
-  fechaInstalacion?: number;
-  agencia?: string;
+  medidorNumber: string;
+  calle?: string;
   cliente?: string;
-  tarifa?: string;
-  latitud?: number;
-  longitud?: number;
+  localizacion?: string | number;
+  metros?: string;
+  poste?: string;
+  pueblo?: string;
+  subregion?: string;
   [key: string]: any;
 }
 
+export type MedidorEstado =
+  | { tipo: 'idle' }
+  | { tipo: 'cargando' }
+  | { tipo: 'encontrado'; medidor: Medidor }
+  | { tipo: 'no_encontrado'; numero: string }
+  | { tipo: 'error'; mensaje: string };
+
 interface UseMedidoresResult {
-  medidores: Medidor[];
-  loading: boolean;
-  error: string | null;
-  searchMedidor: (query: string) => Medidor[];
+  estado: MedidorEstado;
+  buscarMedidor: (numero: string) => Promise<void>;
+  limpiar: () => void;
 }
 
 export function useMedidores(): UseMedidoresResult {
-  const [medidores, setMedidores] = useState<Medidor[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
+  const [estado, setEstado] = useState<MedidorEstado>({ tipo: 'idle' });
 
-  useEffect(() => {
+  const buscarMedidor = useCallback(async (numero: string) => {
+    const trimmed = numero.trim().toUpperCase();
+    if (!trimmed) return;
     if (!rtdbMain) {
-      setError('Firebase RTDB (main) no configurado');
-      setLoading(false);
+      setEstado({ tipo: 'error', mensaje: 'Firebase no configurado' });
       return;
     }
 
-    const medidoresRef = ref(rtdbMain, '/medidores');
+    setEstado({ tipo: 'cargando' });
 
-    const unsubscribe = onValue(
-      medidoresRef,
-      (snapshot) => {
-        try {
-          const data = snapshot.val();
-          if (!data) {
-            setMedidores([]);
-            setLoading(false);
+    try {
+      const userSubregion = user?.subregion?.trim();
+
+      // 1. Search in user's subregion first (targeted, cheap)
+      if (userSubregion) {
+        const snap = await get(ref(rtdbMain, `/Medidores/${userSubregion}/${trimmed}`));
+        if (snap.exists()) {
+          const data = snap.val();
+          if (typeof data === 'object' && data !== null) {
+            setEstado({
+              tipo: 'encontrado',
+              medidor: { id: trimmed, medidorNumber: trimmed, subregion: userSubregion, ...data },
+            });
             return;
           }
-
-          const list: Medidor[] = Object.entries(data).map(
-            ([key, value]: [string, any]) => ({
-              id: key,
-              ...value,
-            })
-          );
-
-          list.sort((a, b) => (a.numero || '').localeCompare(b.numero || '', 'es'));
-          setMedidores(list);
-          setLoading(false);
-        } catch (err) {
-          setError('Error al procesar medidores');
-          setLoading(false);
         }
-      },
-      (err) => {
-        setError(err.message);
-        setLoading(false);
       }
-    );
 
-    return () => {
-      off(medidoresRef);
-    };
+      // 2. Fallback: search all subregions (for admins / cross-subregion)
+      const allSnap = await get(ref(rtdbMain, '/Medidores'));
+      if (allSnap.exists()) {
+        const allData = allSnap.val() as Record<string, any>;
+        for (const [sub, subData] of Object.entries(allData)) {
+          if (typeof subData !== 'object' || subData === null) continue;
+          const medData = subData[trimmed];
+          if (medData && typeof medData === 'object') {
+            setEstado({
+              tipo: 'encontrado',
+              medidor: { id: trimmed, medidorNumber: trimmed, subregion: sub, ...medData },
+            });
+            return;
+          }
+        }
+      }
+
+      setEstado({ tipo: 'no_encontrado', numero: trimmed });
+    } catch (err: any) {
+      setEstado({ tipo: 'error', mensaje: err.message || 'Error al consultar el medidor' });
+    }
+  }, [user]);
+
+  const limpiar = useCallback(() => {
+    setEstado({ tipo: 'idle' });
   }, []);
 
-  const searchMedidor = useCallback(
-    (query: string): Medidor[] => {
-      if (!query.trim()) return medidores;
-      const q = query.toLowerCase();
-      return medidores.filter(
-        (m) =>
-          m.numero?.toLowerCase().includes(q) ||
-          m.localizacion?.toLowerCase().includes(q) ||
-          m.cliente?.toLowerCase().includes(q) ||
-          m.id?.toLowerCase().includes(q)
-      );
-    },
-    [medidores]
-  );
-
-  return { medidores, loading, error, searchMedidor };
+  return { estado, buscarMedidor, limpiar };
 }

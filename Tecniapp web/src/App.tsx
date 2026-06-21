@@ -21,6 +21,7 @@ import Planillas from './pages/Planillas'
 import Reportes from './pages/Reportes'
 import Usuarios from './pages/Usuarios'
 import Admin from './pages/Admin'
+import Perfil from './pages/Perfil'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { firebaseUser, loading } = useAuth()
@@ -49,6 +50,7 @@ function AppRoutes() {
       <Route path="/reportes" element={<ProtectedRoute><Reportes /></ProtectedRoute>} />
       <Route path="/usuarios" element={<ProtectedRoute><Usuarios /></ProtectedRoute>} />
       <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
+      <Route path="/perfil" element={<ProtectedRoute><Perfil /></ProtectedRoute>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )

@@ -28,7 +28,7 @@ const DEFAULT_STATS: DashboardStats = {
 export function useStats(): UseStatsResult {
   const { averias, loading: loadingAverias } = useAverias({})
   const { vehiculos, loading: loadingVehiculos } = useVehiculos()
-  const { luminarias, loading: loadingLuminarias } = useLuminarias()
+  const { pendientes: lumPendientes, reparadas: lumReparadas, loading: loadingLuminarias } = useLuminarias()
 
   const loading = loadingAverias || loadingVehiculos || loadingLuminarias
 
@@ -44,11 +44,11 @@ export function useStats(): UseStatsResult {
       vehiculosOptimos: vehiculos.filter((v) => v.estado === 'OPTIMO').length,
       vehiculosAtencion: vehiculos.filter((v) => v.estado === 'ATENCION').length,
       vehiculosVencidos: vehiculos.filter((v) => v.estado === 'VENCIDO').length,
-      totalLuminarias: luminarias.length,
-      luminariasResueltas: luminarias.filter((l) => (l as any).estado === 'REPARADA').length,
-      luminariasPendientes: luminarias.filter((l) => (l as any).estado === 'PENDIENTE').length,
+      totalLuminarias: lumPendientes.length + lumReparadas.length,
+      luminariasResueltas: lumReparadas.length,
+      luminariasPendientes: lumPendientes.length,
     }
-  }, [averias, vehiculos, luminarias])
+  }, [averias, vehiculos, lumPendientes, lumReparadas])
 
   return { stats: loading ? DEFAULT_STATS : stats, loading }
 }

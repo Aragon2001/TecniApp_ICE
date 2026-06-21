@@ -61,4 +61,5 @@ const AveriaEstadoBadge: React.FC<AveriaEstadoBadgeProps> = ({ estado, size = 'm
   );
 };
 
+export { AveriaEstadoBadge };
 export default AveriaEstadoBadge;
