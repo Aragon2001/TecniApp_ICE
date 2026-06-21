@@ -182,7 +182,42 @@
                     </LinearLayout>
                 </HorizontalScrollView>
 
-                <!-- Fila 3: Resumen compacto de filtros activos (fecha, agencia, región) -->
+                <!-- Fila 3: Chips de agencia rápida (subregión del usuario) -->
+                <LinearLayout
+                    android:id="@+id/rowAgenciasRapidas"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:visibility="gone">
+
+                    <TextView
+                        android:id="@+id/tvAgenciasLabel"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:paddingEnd="4dp"
+                        android:text="@string/averias_agencias_label"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:textSize="11sp" />
+
+                    <HorizontalScrollView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:scrollbars="none">
+
+                        <com.google.android.material.chip.ChipGroup
+                            android:id="@+id/chipGroupAgenciasRapidas"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            app:singleSelection="true"
+                            app:selectionRequired="false" />
+
+                    </HorizontalScrollView>
+                </LinearLayout>
+
+                <!-- Fila 4: Resumen compacto de filtros activos (fecha, agencia, región) -->
                 <!-- Se muestra solo cuando hay filtros activos; el texto lo actualiza el Fragment -->
                 <TextView
                     android:id="@+id/tvFiltroResumen"
@@ -289,18 +324,40 @@
         </LinearLayout>
     </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
-    <!-- FAB: volver a mostrar filtros cuando están colapsados -->
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fabFilters"
+    <!-- FABs: columna en esquina inferior derecha -->
+    <LinearLayout
+        android:id="@+id/fabColumn"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
         android:layout_margin="16dp"
-        android:src="@drawable/ic_filter_list"
-        android:tint="@color/white"
-        android:visibility="gone"
-        app:backgroundTint="?attr/colorPrimary"
-        app:fabSize="mini"
-        tools:visibility="visible" />
+        android:gravity="center_horizontal"
+        android:orientation="vertical">
+
+        <!-- FAB: volver a mostrar filtros cuando están colapsados -->
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fabFilters"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_filter_list"
+            android:tint="@color/white"
+            android:visibility="gone"
+            app:backgroundTint="?attr/colorPrimary"
+            app:fabSize="mini"
+            tools:visibility="visible" />
+
+        <!-- FAB: abrir mapa completo de averías -->
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fabMapa"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:contentDescription="@string/averias_mapa_fab_desc"
+            android:src="@drawable/map_24px"
+            android:tint="@color/white"
+            app:backgroundTint="?attr/colorSecondary"
+            app:fabSize="mini" />
+
+    </LinearLayout>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

@@ -37,7 +37,22 @@
         android:id="@+id/nav_averias"
         android:name="com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasFragment"
         android:label="@string/menu_averias"
-        tools:layout="@layout/fragment_averias" />
+        tools:layout="@layout/fragment_averias">
+        <action
+            android:id="@+id/action_nav_averias_to_averiasMapFragment"
+            app:destination="@id/averiasMapFragment"
+            app:enterAnim="@anim/nav_enter_anim"
+            app:exitAnim="@anim/nav_exit_anim"
+            app:popEnterAnim="@anim/nav_enter_anim"
+            app:popExitAnim="@anim/nav_exit_anim" />
+    </fragment>
+
+    <!-- Mapa completo de averías -->
+    <fragment
+        android:id="@+id/averiasMapFragment"
+        android:name="com.Arasoftsolutions.tecniapp_ice.ui.averias.AveriasMapFragment"
+        android:label="@string/averias_mapa_titulo"
+        tools:layout="@layout/fragment_averias_map" />
 
     <!-- Fragmento de luminarias -->
     <fragment
