@@ -30,6 +30,7 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.LatLngBounds
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
+import androidx.fragment.app.viewModels
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.util.Locale
@@ -42,6 +43,11 @@ class AveriasMapFragment : Fragment(), OnMapReadyCallback {
     private lateinit var googleMap: GoogleMap
     private val markerToAveria = mutableMapOf<String, AveriaEntity>()
     private var selectedMarker: Marker? = null
+
+    // Pre-inicializar el VM en este fragmento para que AveriaDetalleBottomSheet (que busca
+    // el VM en requireParentFragment()) encuentre una instancia ya cargando datos de usuario.
+    @Suppress("unused")
+    private val vm: AveriasViewModel by viewModels()
 
     private val repo by lazy {
         AveriasRepository(AppDatabase.getInstance(requireContext()))
@@ -143,10 +149,18 @@ class AveriasMapFragment : Fragment(), OnMapReadyCallback {
         }
 
         if (validCount > 0) {
-            runCatching {
-                val bounds = boundsBuilder.build()
-                val padding = resources.getDimensionPixelSize(R.dimen.averia_map_padding)
-                googleMap.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, padding))
+            val currentBinding = _b ?: return
+            val bounds = boundsBuilder.build()
+            val padding = resources.getDimensionPixelSize(R.dimen.averia_map_padding)
+            // Post para asegurar que el mapa ya tiene dimensiones antes del cálculo de bounds
+            currentBinding.root.post {
+                if (_b != null) {
+                    runCatching {
+                        googleMap.animateCamera(
+                            CameraUpdateFactory.newLatLngBounds(bounds, padding)
+                        )
+                    }
+                }
             }
         }
     }
@@ -212,11 +226,12 @@ class AveriasMapFragment : Fragment(), OnMapReadyCallback {
     }
 
     private fun hideMarkerCard() {
-        b.cardMarkerInfo.animate()
+        val card = b.cardMarkerInfo
+        card.animate()
             .alpha(0f)
             .translationY(100f)
             .setDuration(150)
-            .withEndAction { b.cardMarkerInfo.isVisible = false }
+            .withEndAction { card.isVisible = false }
             .start()
     }
 
@@ -289,6 +304,9 @@ class AveriasMapFragment : Fragment(), OnMapReadyCallback {
     }
 
     override fun onDestroyView() {
+        // Cancelar animaciones pendientes antes de nulificar el binding para evitar crash
+        // en el callback withEndAction si el usuario navega mientras la card se oculta
+        _b?.cardMarkerInfo?.animate()?.cancel()
         _b = null
         super.onDestroyView()
     }
