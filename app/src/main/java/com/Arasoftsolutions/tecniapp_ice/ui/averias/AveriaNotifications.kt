@@ -21,29 +21,60 @@ import java.util.Locale
 
 object AveriaNotifications {
 
-    const val CHANNEL_ID = "averias_channel_v3"
+    /** Canal con sonido de alerta — para averías nuevas y asignadas */
+    const val CHANNEL_ID_NUEVA = "averias_channel_v3"
 
-    fun ensureChannel(context: Context) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val manager = context.getSystemService(NotificationManager::class.java) ?: return
-            if (manager.getNotificationChannel(CHANNEL_ID) != null) return
+    /** Canal silencioso — para averías resueltas */
+    const val CHANNEL_ID_RESUELTA = "averias_resuelta_v1"
 
-            val sound = Uri.parse("android.resource://${context.packageName}/${R.raw.beep}")
-            val attributes = AudioAttributes.Builder()
-                .setUsage(AudioAttributes.USAGE_NOTIFICATION_EVENT)
-                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                .build()
-            val channel = NotificationChannel(
-                CHANNEL_ID,
-                context.getString(R.string.averia_channel_name),
-                NotificationManager.IMPORTANCE_HIGH
-            ).apply {
-                description = context.getString(R.string.averia_channel_description)
-                enableVibration(true)
-                setSound(sound, attributes)
-            }
-            manager.createNotificationChannel(channel)
+    /** Alias de compatibilidad hacia atrás */
+    const val CHANNEL_ID = CHANNEL_ID_NUEVA
+
+    fun ensureChannels(context: Context) {
+        ensureChannelNueva(context)
+        ensureChannelResuelta(context)
+    }
+
+    /** Compatibilidad con código existente */
+    fun ensureChannel(context: Context) = ensureChannels(context)
+
+    private fun ensureChannelNueva(context: Context) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
+        val manager = context.getSystemService(NotificationManager::class.java) ?: return
+        if (manager.getNotificationChannel(CHANNEL_ID_NUEVA) != null) return
+
+        val sound = Uri.parse("android.resource://${context.packageName}/${R.raw.beep}")
+        val attributes = AudioAttributes.Builder()
+            .setUsage(AudioAttributes.USAGE_NOTIFICATION_EVENT)
+            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+            .build()
+        val channel = NotificationChannel(
+            CHANNEL_ID_NUEVA,
+            context.getString(R.string.averia_channel_nueva_name),
+            NotificationManager.IMPORTANCE_HIGH
+        ).apply {
+            description = context.getString(R.string.averia_channel_nueva_description)
+            enableVibration(true)
+            setSound(sound, attributes)
         }
+        manager.createNotificationChannel(channel)
+    }
+
+    private fun ensureChannelResuelta(context: Context) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
+        val manager = context.getSystemService(NotificationManager::class.java) ?: return
+        if (manager.getNotificationChannel(CHANNEL_ID_RESUELTA) != null) return
+
+        val channel = NotificationChannel(
+            CHANNEL_ID_RESUELTA,
+            context.getString(R.string.averia_channel_resuelta_name),
+            NotificationManager.IMPORTANCE_DEFAULT
+        ).apply {
+            description = context.getString(R.string.averia_channel_resuelta_description)
+            enableVibration(false)
+            setSound(null, null)
+        }
+        manager.createNotificationChannel(channel)
     }
 
     fun averiasPendingIntent(
@@ -69,7 +100,7 @@ object AveriaNotifications {
         val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
                 putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
-                putExtra(Settings.EXTRA_CHANNEL_ID, CHANNEL_ID)
+                putExtra(Settings.EXTRA_CHANNEL_ID, CHANNEL_ID_NUEVA)
             }
         } else {
             Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
@@ -97,7 +128,7 @@ object AveriaNotifications {
     }
 
     fun notifyPreferenceToggle(context: Context, enabled: Boolean) {
-        ensureChannel(context)
+        ensureChannels(context)
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as? NotificationManager
             ?: return
         val title = if (enabled) {
@@ -111,7 +142,7 @@ object AveriaNotifications {
             context.getString(R.string.averia_notification_pref_disabled_body)
         }
         val smallIcon = if (enabled) R.drawable.ic_notification_bolt else R.drawable.ic_notification_off
-        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+        val notification = NotificationCompat.Builder(context, CHANNEL_ID_NUEVA)
             .setSmallIcon(smallIcon)
             .setContentTitle(title)
             .setContentText(body)

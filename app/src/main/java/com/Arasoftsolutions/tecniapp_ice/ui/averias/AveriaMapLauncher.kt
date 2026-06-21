@@ -120,14 +120,22 @@ object AveriaMapLauncher {
         lng: Double,
         label: String?
     ): List<MapAppOption> {
-        val centerParam = String.format(Locale.US, "%f,%f", lat, lng)
+        val centerParam = String.format(Locale.US, "%.6f,%.6f", lat, lng)
 
-        // URIs iguales a las de tu fragmento Localización, pero sin navegador web
+        // Field Maps: abre directamente en la coordenada con zoom de calle (scale=2257)
         val fieldMapsUri = Uri.parse(
-            "arcgis-fieldmaps://?referenceContext=center&itemID=&center=$centerParam"
+            "arcgis-fieldmaps://?referenceContext=center&center=$centerParam&scale=2257"
         )
-        val googleMapsNavUri = Uri.parse("google.navigation:q=$centerParam")   // navegación
-        val googleMapsMapUri = Uri.parse("geo:$centerParam?q=$centerParam")    // mapa normal
+        val googleMapsNavUri = Uri.parse("google.navigation:q=$centerParam")
+        // Google Maps: muestra pin con número de avería como etiqueta
+        val labelEncoded = label?.takeIf { it.isNotBlank() }?.let {
+            try { java.net.URLEncoder.encode("⚡ Avería #$it", "UTF-8") } catch (e: Exception) { it }
+        }
+        val googleMapsMapUri = if (labelEncoded != null) {
+            Uri.parse("geo:$lat,$lng?q=$lat,$lng($labelEncoded)")
+        } else {
+            Uri.parse("geo:$centerParam?q=$centerParam")
+        }
         val wazeUri = Uri.parse("waze://?ll=$centerParam&navigate=yes")
 
         // Intents dirigidos a cada app

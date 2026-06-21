@@ -117,6 +117,9 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
     val notificationRegionAgencies: StateFlow<List<AgenciaUI>> = _notificationRegionAgencies.asStateFlow()
     private val _userRegionLabel = MutableStateFlow("")
     val userRegionLabel: StateFlow<String> = _userRegionLabel.asStateFlow()
+    /** Agencias de la subregión del usuario (para chips de filtro rápido) */
+    private val _agenciasSubregion = MutableStateFlow<List<AgenciaUI>>(emptyList())
+    val agenciasSubregion: StateFlow<List<AgenciaUI>> = _agenciasSubregion.asStateFlow()
 
     private val _regiones = MutableStateFlow(listOf(RegionUI(null, allRegionsLabel)))
     val regiones: StateFlow<List<RegionUI>> = _regiones.asStateFlow()
@@ -290,6 +293,7 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
                 if (user != null) {
                     pendingUser = user
                     refreshPendingSelection()
+                    refreshSubregionAgencias()
                     val regionItems = _regiones.value
                     if (regionItems.isNotEmpty()) {
                         applyPendingSelectionsIfPossible(regionItems)
@@ -432,7 +436,11 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
         _regionSeleccionada.emit(selected)
         savePreferredRegion(selected)
 
-        val nuevasAgencias = buildAgencias(selected.id)
+        // Filtrar por subregión del usuario si no es admin
+        val user = _usuario.value
+        val isAdmin = user?.rol?.trim()?.lowercase(Locale.getDefault()) == "administrador"
+        val subregionId = if (!isAdmin) user?.subregion?.takeIf { it.isNotBlank() } else null
+        val nuevasAgencias = buildAgencias(selected.id, subregionId)
         _agencias.emit(nuevasAgencias)
 
         val agenciaActual = _agenciaSeleccionada.value
@@ -985,20 +993,21 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
     fun syncNow() {
         viewModelScope.launch {
             isLoading.emit(true)
-            runCatching {
+            val result = runCatching {
                 withContext(Dispatchers.IO) {
                     repo.syncPendientesConFirebase()
                     repo.pullFromFirebaseOnce()
                 }
                 roomRepo.refreshUsuarioActual()
-            }.onFailure { error ->
+            }
+            isLoading.emit(false)
+            result.onFailure { error ->
                 Log.e(TAG, "Error al refrescar averías manualmente", error)
                 _messages.tryEmit(
                     error.localizedMessage
                         ?: getApplication<Application>().getString(R.string.averia_error_sync)
                 )
             }
-            isLoading.emit(false)
         }
     }
 
@@ -1160,15 +1169,19 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    private fun buildAgencias(regionId: String?): List<AgenciaUI> {
+    private fun buildAgencias(regionId: String?, subregionId: String? = null): List<AgenciaUI> {
         val filtered = cachedAgencias
             .filter { agency ->
-                if (regionId.isNullOrBlank()) return@filter true
-                val agencyRegion = agency.regionId
-                    ?: cachedSubregiones.firstOrNull { sub ->
-                        sub.id.equals(agency.subregion, ignoreCase = true)
-                    }?.regionId
-                agencyRegion.equals(regionId, ignoreCase = true)
+                val matchesRegion = if (regionId.isNullOrBlank()) true else {
+                    val agencyRegion = agency.regionId
+                        ?: cachedSubregiones.firstOrNull { sub ->
+                            sub.id.equals(agency.subregion, ignoreCase = true)
+                        }?.regionId
+                    agencyRegion.equals(regionId, ignoreCase = true)
+                }
+                val matchesSubregion = if (subregionId.isNullOrBlank()) true else
+                    agency.subregion.equals(subregionId, ignoreCase = true)
+                matchesRegion && matchesSubregion
             }
             .sortedBy { it.nombre }
             .distinctBy { agency ->
@@ -1181,6 +1194,22 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
             }
 
         return listOf(AgenciaUI(null, allAgenciesLabel)) + filtered
+    }
+
+    /** Construye la lista de agencias únicamente de la subregión del usuario para los chips rápidos. */
+    private fun buildSubregionAgencias(): List<AgenciaUI> {
+        val user = _usuario.value ?: return emptyList()
+        val subregionId = user.subregion?.takeIf { it.isNotBlank() }
+        val regionId = user.region?.takeIf { it.isNotBlank() }
+            ?: subregionId?.let { subId ->
+                cachedSubregiones.firstOrNull { it.id.equals(subId, ignoreCase = true) }?.regionId
+            }
+        return buildAgencias(regionId, subregionId).drop(1) // sin "Todas las agencias"
+    }
+
+    /** Expone agencias actualizadas de la subregión al Fragment. */
+    private fun refreshSubregionAgencias() {
+        _agenciasSubregion.value = buildSubregionAgencias()
     }
 
     private fun observeCatalogos() {
@@ -1210,6 +1239,7 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
                 _regiones.emit(regionItems)
 
                 updateNotificationRegionAgencies()
+                refreshSubregionAgencias()
 
                 val applied = applyPendingSelectionsIfPossible(regionItems)
                 if (!applied) {
@@ -1217,7 +1247,10 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
                         ?: regionItems.first()
                     _regionSeleccionada.emit(selectedRegion)
 
-                    val agenciasItems = buildAgencias(selectedRegion.id)
+                    // Si hay usuario, mostrar solo agencias de su subregión por defecto
+                    val user = _usuario.value
+                    val userSubregionId = user?.subregion?.takeIf { it.isNotBlank() }
+                    val agenciasItems = buildAgencias(selectedRegion.id, userSubregionId)
                     _agencias.emit(agenciasItems)
 
                     val selectedAgency = agenciasItems.firstOrNull { it.id == _agenciaSeleccionada.value.id }

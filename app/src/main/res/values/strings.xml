@@ -346,8 +346,22 @@ Cliente: %4$s</string>
     <string name="averia_map_error_field_maps">Field Maps no está instalado o el vínculo es inválido.</string>
     <string name="averia_map_error_google_maps">Google Maps no está disponible.</string>
     <string name="averia_map_error_browser">No se pudo abrir en el navegador.</string>
-    <string name="averia_channel_name">Averías</string>
-    <string name="averia_channel_description">Alertas sobre nuevas averías y cambios de estado.</string>
+    <string name="averia_channel_name">Averías — Nuevas alertas</string>
+    <string name="averia_channel_description">Alerta sonora para averías recién reportadas.</string>
+    <string name="averia_channel_nueva_name">Averías — Nuevas alertas</string>
+    <string name="averia_channel_nueva_description">Alerta sonora para averías recién reportadas.</string>
+    <string name="averia_channel_resuelta_name">Averías — Resueltas</string>
+    <string name="averia_channel_resuelta_description">Notificación silenciosa cuando una avería queda resuelta.</string>
+    <!-- Mapa de averías -->
+    <string name="averias_mapa_titulo">Mapa de averías</string>
+    <string name="averias_mapa_fab_desc">Ver mapa de averías</string>
+    <string name="averias_mapa_abrir_averia">Ver avería</string>
+    <string name="averias_mapa_sin_coordenadas">Avería sin coordenadas</string>
+    <string name="averias_mapa_cargando">Cargando averías…</string>
+    <string name="averias_mapa_vacio">No hay averías con coordenadas para mostrar.</string>
+    <!-- Filtro rápido de agencias -->
+    <string name="averias_agencia_rapida_todas">Todas</string>
+    <string name="averias_agencias_label">Agencias:</string>
     <string name="averia_notification_permission_granted">Notificaciones activadas.</string>
     <string name="averia_notification_permission_denied">Las notificaciones están desactivadas. Actívalas en Ajustes para recibir alertas de averías.</string>
     <string name="permission_required_title">Permisos requeridos</string>

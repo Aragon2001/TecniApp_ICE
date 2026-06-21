@@ -58,6 +58,7 @@ import java.util.Locale
 import androidx.core.util.Pair
 import com.Arasoftsolutions.tecniapp_ice.ui.averias.Estado.*
 import kotlin.math.abs
+import androidx.core.view.isVisible
 
 class AveriasFragment : Fragment() {
 
@@ -125,6 +126,10 @@ class AveriasFragment : Fragment() {
             b.appBarLayout.setExpanded(true, true)
         }
 
+        b.fabMapa.setOnClickListener {
+            findNavController().navigate(R.id.action_nav_averias_to_averiasMapFragment)
+        }
+
         b.appBarLayout.addOnOffsetChangedListener { appBarLayout, verticalOffset ->
             val isExpanded = abs(verticalOffset) < appBarLayout.totalScrollRange
             b.fabFilters.visibility = if (isExpanded) View.GONE else View.VISIBLE
@@ -177,6 +182,24 @@ class AveriasFragment : Fragment() {
             }
         }
 
+        // Chips de agencia rápida (subregión del usuario)
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                vm.agenciasSubregion.collectLatest { agencias ->
+                    buildAgenciaChips(agencias)
+                }
+            }
+        }
+
+        // Sincronizar chip seleccionado con el estado del ViewModel
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                vm.agenciaSeleccionada.collectLatest { agencia ->
+                    syncAgenciaChipSelection(agencia.id)
+                }
+            }
+        }
+
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 vm.notificationsEnabled.collectLatest { enabled ->
@@ -193,9 +216,7 @@ class AveriasFragment : Fragment() {
         }
 
         // Pull to refresh → Sync
-        var refreshTriggeredByUser = false
         b.swipeRefresh.setOnRefreshListener {
-            refreshTriggeredByUser = true
             vm.syncNow()
         }
 
@@ -304,10 +325,7 @@ class AveriasFragment : Fragment() {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
                     vm.uiState.collectLatest { state ->
-                        if (refreshTriggeredByUser && !state.loading) {
-                            refreshTriggeredByUser = false
-                        }
-                        b.swipeRefresh.isRefreshing = refreshTriggeredByUser && state.loading
+                        b.swipeRefresh.isRefreshing = state.loading
                         adapter.submitList(state.items)
                         b.tvVacio.visibility = if (state.items.isEmpty() && !state.loading) View.VISIBLE else View.GONE
 
@@ -796,6 +814,85 @@ class AveriasFragment : Fragment() {
                 isChecked = selectedAgencies.contains(nombre.lowercase())
             }
             group.addView(chip)
+        }
+    }
+
+    // ─── Chips de agencia rápida ───────────────────────────────────────────────
+
+    private fun buildAgenciaChips(agencias: List<AgenciaUI>) {
+        val group = b.chipGroupAgenciasRapidas
+        group.removeAllViews()
+
+        val hasAgencias = agencias.isNotEmpty()
+        b.rowAgenciasRapidas.isVisible = hasAgencias
+        if (!hasAgencias) return
+
+        // Chip "Todas"
+        val chipTodas = Chip(requireContext()).apply {
+            text = getString(R.string.averias_agencia_rapida_todas)
+            isCheckable = true
+            isChecked = vm.agenciaSeleccionada.value.id == null
+            chipBackgroundColor = ColorStateList(
+                arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf()),
+                intArrayOf(
+                    ContextCompat.getColor(requireContext(), R.color.primary),
+                    ContextCompat.getColor(requireContext(), android.R.color.transparent)
+                )
+            )
+            setTextColor(ColorStateList(
+                arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf()),
+                intArrayOf(
+                    ContextCompat.getColor(requireContext(), android.R.color.white),
+                    ContextCompat.getColor(requireContext(), R.color.primary)
+                )
+            ))
+        }
+        chipTodas.setOnCheckedChangeListener { _, checked ->
+            if (checked) {
+                vm.setAgenciaIndex(0) // índice 0 = "Todas las agencias"
+            }
+        }
+        group.addView(chipTodas)
+
+        agencias.forEach { agencia ->
+            val chip = Chip(requireContext()).apply {
+                text = agencia.nombreVisible
+                tag = agencia.id
+                isCheckable = true
+                chipBackgroundColor = ColorStateList(
+                    arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf()),
+                    intArrayOf(
+                        ContextCompat.getColor(requireContext(), R.color.primary),
+                        ContextCompat.getColor(requireContext(), android.R.color.transparent)
+                    )
+                )
+                setTextColor(ColorStateList(
+                    arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf()),
+                    intArrayOf(
+                        ContextCompat.getColor(requireContext(), android.R.color.white),
+                        ContextCompat.getColor(requireContext(), R.color.primary)
+                    )
+                ))
+            }
+            chip.setOnCheckedChangeListener { _, checked ->
+                if (checked) {
+                    val idx = vm.agencias.value.indexOfFirst { it.id == agencia.id }
+                    if (idx >= 0) vm.setAgenciaIndex(idx)
+                }
+            }
+            group.addView(chip)
+        }
+    }
+
+    private fun syncAgenciaChipSelection(agenciaId: String?) {
+        val group = b.chipGroupAgenciasRapidas
+        for (i in 0 until group.childCount) {
+            val chip = group.getChildAt(i) as? Chip ?: continue
+            chip.isChecked = if (agenciaId == null) {
+                i == 0 // primer chip = "Todas"
+            } else {
+                chip.tag == agenciaId
+            }
         }
     }
 
