@@ -1,4 +1,4 @@
-﻿import { useState, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { MapPin, Search, ExternalLink } from 'lucide-react'
 import { useLocalizaciones } from '../hooks/useLocalizaciones'
 

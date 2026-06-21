@@ -65,9 +65,33 @@ export interface PdfConfig {
 
 /**
  * Generate and download a PDF table report.
+ * Accepts either a PdfConfig object or (rows[], filename, title) calling convention.
  */
-export function exportToPdf(config: PdfConfig, filename: string): void {
-  const { title, subtitle, headers, rows, orientation = 'landscape' } = config
+export function exportToPdf(
+  configOrRows: PdfConfig | Record<string, unknown>[],
+  filename: string,
+  title?: string,
+  _summary?: unknown[]
+): void {
+  let pdfTitle: string
+  let subtitle: string | undefined
+  let headers: string[]
+  let rows: (string | number | null | undefined)[][]
+  let orientation: 'portrait' | 'landscape'
+
+  if (Array.isArray(configOrRows)) {
+    pdfTitle = title ?? filename
+    subtitle = undefined
+    headers = configOrRows.length > 0 ? Object.keys(configOrRows[0]) : []
+    rows = configOrRows.map((r) => headers.map((h) => (r[h] as string | number | null | undefined) ?? ''))
+    orientation = 'landscape'
+  } else {
+    pdfTitle = configOrRows.title
+    subtitle = configOrRows.subtitle
+    headers = configOrRows.headers
+    rows = configOrRows.rows
+    orientation = configOrRows.orientation ?? 'landscape'
+  }
 
   const doc = new jsPDF({ orientation, unit: 'mm', format: 'a4' })
   const pageWidth = doc.internal.pageSize.getWidth()
@@ -88,7 +112,7 @@ export function exportToPdf(config: PdfConfig, filename: string): void {
   doc.setTextColor(0, 48, 135)
   doc.setFontSize(13)
   doc.setFont('helvetica', 'bold')
-  doc.text(title, 10, 26)
+  doc.text(pdfTitle, 10, 26)
 
   if (subtitle) {
     doc.setFontSize(9)

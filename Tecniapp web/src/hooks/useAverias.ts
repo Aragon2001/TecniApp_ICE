@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { ref, onValue, update, off } from 'firebase/database';
 import { rtdbAverias } from '../firebase/config';
 

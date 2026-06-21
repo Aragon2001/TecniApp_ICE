@@ -1,4 +1,4 @@
-﻿import { useState, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { Calendar, Search, Filter, MapPin } from 'lucide-react'
 import { useProgramacion } from '../hooks/useProgramacion'
 import { formatDate } from '../utils/dateUtils'

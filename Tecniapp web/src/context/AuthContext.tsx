@@ -205,10 +205,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const login = useCallback(async (email: string, password: string) => {
-    const credential = await signInWithEmailAndPassword(auth, email, password)
-    setFirebaseUser(credential.user)
-    await loadProfile(credential.user)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    setLoading(true)
+    try {
+      await signInWithEmailAndPassword(auth, email, password)
+      // onAuthStateChanged fires and calls setLoading(false) + fetches profile
+    } catch (err) {
+      setLoading(false)
+      throw err
+    }
   }, [])
 
   const logout = useCallback(async () => {

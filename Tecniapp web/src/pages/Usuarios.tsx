@@ -1,4 +1,4 @@
-﻿import { useState, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { Users, Search, Shield, Edit2, X, Save } from 'lucide-react'
 import { ref, set } from 'firebase/database'
 import { rtdbUsers } from '../firebase/config'
