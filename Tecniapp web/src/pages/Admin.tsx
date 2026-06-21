@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { Database, RefreshCw, CheckCircle2, AlertTriangle, Wifi, WifiOff, Info, Activity } from 'lucide-react'
 import { ref as rtdbRef, get } from 'firebase/database'
 import { collection, getCountFromServer } from 'firebase/firestore'
