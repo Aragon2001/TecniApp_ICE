@@ -672,7 +672,10 @@ class   RoomRepository(context: Context) {
         materiales: List<com.Arasoftsolutions.tecniapp_ice.ui.luminarias.LuminariaMaterialUso>,
         estado: com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado,
         ejecutorNombre: String,
-        ejecutorCedula: String?
+        ejecutorCedula: String?,
+        cliente: String? = null,
+        contacto: String? = null,
+        observaciones: String? = null
     ) = withContext(Dispatchers.IO) {
         val ahora = System.currentTimeMillis()
         val fechaReparacion = if (estado == com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado.REPARADA) {
@@ -683,6 +686,9 @@ class   RoomRepository(context: Context) {
         val reparacion = LuminariaReparacionEntity(
             vehiculoId = vehiculoId,
             localizacion = localizacion,
+            cliente = cliente?.trim()?.ifBlank { null },
+            contacto = contacto?.trim()?.ifBlank { null },
+            observaciones = observaciones?.trim()?.ifBlank { null },
             materialesJson = com.Arasoftsolutions.tecniapp_ice.ui.luminarias.LuminariaMaterialSerializer
                 .toJson(materiales),
             estado = estado.name,
@@ -819,7 +825,10 @@ class   RoomRepository(context: Context) {
         nuevosMateriales: List<com.Arasoftsolutions.tecniapp_ice.ui.luminarias.LuminariaMaterialUso>,
         nuevoEstado: com.Arasoftsolutions.tecniapp_ice.Database.entities.LuminariaEstado,
         nuevoEjecutorNombre: String,
-        nuevoEjecutorCedula: String?
+        nuevoEjecutorCedula: String?,
+        nuevoCliente: String? = null,
+        nuevoContacto: String? = null,
+        nuevasObservaciones: String? = null
     ) = withContext(Dispatchers.IO) {
         val reparacion = luminariaReparacionDao.obtenerPorId(id) ?: return@withContext
         val materialesPrevios = com.Arasoftsolutions.tecniapp_ice.ui.luminarias.LuminariaMaterialSerializer
@@ -833,29 +842,20 @@ class   RoomRepository(context: Context) {
             reparacion.fechaReparacion
         }
         val agencia = db.vehiculoDao().buscarPorId(reparacion.vehiculoId)?.agencia
-        luminariaReparacionDao.actualizar(
-            reparacion.copy(
-                localizacion = nuevaLocalizacion,
-                materialesJson = com.Arasoftsolutions.tecniapp_ice.ui.luminarias.LuminariaMaterialSerializer
-                    .toJson(nuevosMateriales),
-                estado = nuevoEstado.name,
-                ejecutorNombre = nuevoEjecutorNombre,
-                ejecutorCedula = nuevoEjecutorCedula,
-                fechaReparacion = fechaReparacion
-            )
+        val entidadActualizada = reparacion.copy(
+            localizacion = nuevaLocalizacion,
+            cliente = nuevoCliente?.trim()?.ifBlank { null } ?: reparacion.cliente,
+            contacto = nuevoContacto?.trim()?.ifBlank { null } ?: reparacion.contacto,
+            observaciones = nuevasObservaciones?.trim()?.ifBlank { null } ?: reparacion.observaciones,
+            materialesJson = com.Arasoftsolutions.tecniapp_ice.ui.luminarias.LuminariaMaterialSerializer
+                .toJson(nuevosMateriales),
+            estado = nuevoEstado.name,
+            ejecutorNombre = nuevoEjecutorNombre,
+            ejecutorCedula = nuevoEjecutorCedula,
+            fechaReparacion = fechaReparacion
         )
-        firebase.guardarReparacionLuminaria(
-            reparacion.copy(
-                localizacion = nuevaLocalizacion,
-                materialesJson = com.Arasoftsolutions.tecniapp_ice.ui.luminarias.LuminariaMaterialSerializer
-                    .toJson(nuevosMateriales),
-                estado = nuevoEstado.name,
-                ejecutorNombre = nuevoEjecutorNombre,
-                ejecutorCedula = nuevoEjecutorCedula,
-                fechaReparacion = fechaReparacion
-            ),
-            agencia
-        )
+        luminariaReparacionDao.actualizar(entidadActualizada)
+        firebase.guardarReparacionLuminaria(entidadActualizada, agencia)
         todosCodigos.forEach { codigo ->
             val anterior = mapPrevio[codigo]
             val nuevo = mapNuevo[codigo]

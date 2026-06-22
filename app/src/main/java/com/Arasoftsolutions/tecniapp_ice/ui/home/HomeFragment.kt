@@ -369,10 +369,6 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
     }
 
     private data class BannerStyle(val bg: Int, val tint: Int, val label: Int, val detail: Int)
-    private operator fun BannerStyle.component1() = bg
-    private operator fun BannerStyle.component2() = tint
-    private operator fun BannerStyle.component3() = label
-    private operator fun BannerStyle.component4() = detail
 
     // ═══════════════════════════════════════════════════════════════
     //  MINI GRÁFICA DE AGENCIAS
