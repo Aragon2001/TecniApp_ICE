@@ -6,10 +6,8 @@ import {
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { ref, update } from 'firebase/database'
 import { toast } from 'react-hot-toast'
-import { rtdbAverias } from '../firebase/config'
-import { useAveria } from '../hooks/useAverias'
+import { useAveria, updateAveriaEstado, assignAveria } from '../hooks/useAverias'
 import { useVehiculos } from '../hooks/useVehiculos'
 import { useUsuarios } from '../hooks/useUsuarios'
 import { AveriaEstadoBadge } from '../components/ui/AveriaEstadoBadge'
@@ -46,7 +44,6 @@ function TimelineItem({ label, millis, icon: Icon }: { label: string; millis?: n
 export default function AveriaDetail() {
   const { caseId } = useParams<{ caseId: string }>()
   const navigate = useNavigate()
-  // Subscribe directly to the single averia — no need to load all
   const { averia, loading } = useAveria(caseId ?? null)
   const { vehiculos } = useVehiculos()
   const { usuarios } = useUsuarios()
@@ -77,8 +74,7 @@ export default function AveriaDetail() {
     if (newEstado === 'EN_ATENCION') extra.atencionHoraInicioMillis = Date.now()
     if (newEstado === 'RESUELTA') extra.horaFinalMillis = Date.now()
     try {
-      // averia.id is the Firebase key (= caseId)
-      await update(ref(rtdbAverias, `averias/${averia.id}`), { estado: newEstado, ...extra })
+      await updateAveriaEstado(averia.id, { estado: newEstado, ...extra })
       toast.success(`Avería marcada como ${newEstado}`)
     } catch {
       toast.error('Error al actualizar el estado')
@@ -95,16 +91,12 @@ export default function AveriaDetail() {
     setSaving(true)
     const tecnico = usuarios.find(u => u.uid === assignTecnico || u.id === assignTecnico)
     try {
-      await update(ref(rtdbAverias, `averias/${averia.id}`), {
-        estado: 'ASIGNADA' as AveriaEstado,
-        vehiculoAsignado: assignVehiculo,
-        tecnicoAsignadoUid: assignTecnico,
-        tecnicoAsignadoNombre: tecnico
-          ? `${tecnico.nombre ?? ''} ${tecnico.apellidos ?? ''}`.trim()
-          : assignTecnico,
-        fechaAsignacion: Date.now(),
-        lastUpdated: Date.now(),
-      })
+      await assignAveria(
+        averia.id,
+        assignVehiculo,
+        assignTecnico,
+        tecnico ? `${tecnico.nombre ?? ''} ${tecnico.apellidos ?? ''}`.trim() : assignTecnico
+      )
       toast.success('Avería asignada exitosamente')
       setShowAssignModal(false)
     } catch {
@@ -127,10 +119,7 @@ export default function AveriaDetail() {
       <div className="text-center py-20">
         <AlertTriangle size={40} className="text-slate-300 mx-auto mb-3" />
         <p className="text-slate-500 font-medium">Avería no encontrada</p>
-        <button
-          onClick={() => navigate('/averias')}
-          className="mt-4 text-sm text-[#0066CC] hover:underline"
-        >
+        <button onClick={() => navigate('/averias')} className="mt-4 text-sm text-[#0066CC] hover:underline">
           ← Volver a Averías
         </button>
       </div>
@@ -138,7 +127,6 @@ export default function AveriaDetail() {
   }
 
   const isReadOnly = averia.estado === 'RESUELTA' || averia.estado === 'ANULADA'
-  // Android stores GPS as lat/lng
   const mapsUrl = averia.lat && averia.lng
     ? `https://www.google.com/maps?q=${averia.lat},${averia.lng}`
     : null
@@ -170,44 +158,46 @@ export default function AveriaDetail() {
         </div>
 
         {/* State machine actions */}
-        <div className="flex items-center gap-2">
-          {averia.estado === 'PENDIENTE' && (
-            <button
-              onClick={() => setShowAssignModal(true)}
-              className="px-4 py-2 bg-[#003087] text-white text-sm font-semibold rounded-lg hover:bg-[#002266] transition-colors flex items-center gap-2"
-            >
-              <Truck size={14} /> Asignar
-            </button>
-          )}
-          {averia.estado === 'ASIGNADA' && (
-            <button
-              onClick={() => handleUpdateEstado('EN_ATENCION')}
-              disabled={saving}
-              className="px-4 py-2 bg-orange-500 text-white text-sm font-semibold rounded-lg hover:bg-orange-600 transition-colors flex items-center gap-2"
-            >
-              {saving ? <Spinner size="sm" /> : null}
-              Iniciar Atención
-            </button>
-          )}
-          {averia.estado === 'EN_ATENCION' && (
-            <div className="flex gap-2">
+        {!isReadOnly && (
+          <div className="flex items-center gap-2">
+            {averia.estado === 'PENDIENTE' && (
               <button
-                onClick={() => handleUpdateEstado('RESUELTA')}
-                disabled={saving}
-                className="px-4 py-2 bg-green-600 text-white text-sm font-semibold rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
+                onClick={() => setShowAssignModal(true)}
+                className="px-4 py-2 bg-[#003087] text-white text-sm font-semibold rounded-lg hover:bg-[#002266] transition-colors flex items-center gap-2"
               >
-                <CheckCircle2 size={14} /> Marcar Resuelta
+                <Truck size={14} /> Asignar
               </button>
+            )}
+            {averia.estado === 'ASIGNADA' && (
               <button
-                onClick={() => handleUpdateEstado('ANULADA')}
+                onClick={() => handleUpdateEstado('EN_ATENCION')}
                 disabled={saving}
-                className="px-4 py-2 bg-slate-500 text-white text-sm font-semibold rounded-lg hover:bg-slate-600 transition-colors"
+                className="px-4 py-2 bg-orange-500 text-white text-sm font-semibold rounded-lg hover:bg-orange-600 transition-colors flex items-center gap-2"
               >
-                Anular
+                {saving ? <Spinner size="sm" /> : null}
+                Iniciar Atención
               </button>
-            </div>
-          )}
-        </div>
+            )}
+            {averia.estado === 'EN_ATENCION' && (
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleUpdateEstado('RESUELTA')}
+                  disabled={saving}
+                  className="px-4 py-2 bg-green-600 text-white text-sm font-semibold rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
+                >
+                  <CheckCircle2 size={14} /> Marcar Resuelta
+                </button>
+                <button
+                  onClick={() => handleUpdateEstado('ANULADA')}
+                  disabled={saving}
+                  className="px-4 py-2 bg-slate-500 text-white text-sm font-semibold rounded-lg hover:bg-slate-600 transition-colors"
+                >
+                  Anular
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {isReadOnly && (
@@ -223,9 +213,8 @@ export default function AveriaDetail() {
 
       {/* Two-column layout */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-        {/* Left column */}
+        {/* Left */}
         <div className="space-y-4">
-          {/* Información General */}
           <div className="bg-white rounded-xl border border-slate-100 p-5">
             <div className="flex items-center gap-2 mb-4">
               <FileText size={16} className="text-[#003087]" />
@@ -245,7 +234,6 @@ export default function AveriaDetail() {
             )}
           </div>
 
-          {/* Ubicación */}
           <div className="bg-white rounded-xl border border-slate-100 p-5">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
@@ -266,7 +254,6 @@ export default function AveriaDetail() {
             )}
           </div>
 
-          {/* Medidor */}
           {(averia.numeroMedidor || averia.medidorCalle) && (
             <div className="bg-white rounded-xl border border-slate-100 p-5">
               <h3 className="text-base font-semibold text-slate-800 mb-4">Datos del Medidor</h3>
@@ -278,7 +265,6 @@ export default function AveriaDetail() {
             </div>
           )}
 
-          {/* Datos CLOR */}
           {(averia.estadoClor || averia.causaClor) && (
             <div className="bg-blue-50 rounded-xl border border-blue-100 p-5">
               <h3 className="text-base font-semibold text-slate-800 mb-4">Datos CLOR</h3>
@@ -289,9 +275,8 @@ export default function AveriaDetail() {
           )}
         </div>
 
-        {/* Right column */}
+        {/* Right */}
         <div className="space-y-4">
-          {/* Timeline */}
           <div className="bg-white rounded-xl border border-slate-100 p-5">
             <div className="flex items-center gap-2 mb-4">
               <Clock size={16} className="text-[#003087]" />
@@ -309,7 +294,6 @@ export default function AveriaDetail() {
             </div>
           </div>
 
-          {/* Asignación */}
           <div className="bg-white rounded-xl border border-slate-100 p-5">
             <div className="flex items-center gap-2 mb-4">
               <User size={16} className="text-[#003087]" />
@@ -320,7 +304,6 @@ export default function AveriaDetail() {
             <InfoRow label="Atendido Por" value={averia.atendidoPorNombre} />
           </div>
 
-          {/* Kilometraje */}
           {(averia.kilometrajeInicio > 0 || averia.kilometrajeLlegada > 0) && (
             <div className="bg-white rounded-xl border border-slate-100 p-5">
               <div className="flex items-center gap-2 mb-4">
@@ -331,15 +314,11 @@ export default function AveriaDetail() {
               <InfoRow label="Llegada" value={averia.kilometrajeLlegada > 0 ? `${Number(averia.kilometrajeLlegada).toLocaleString()} km` : null} />
               <InfoRow label="Final" value={averia.kilometrajeFinal > 0 ? `${Number(averia.kilometrajeFinal).toLocaleString()} km` : null} />
               {averia.kilometrajeInicio > 0 && averia.kilometrajeFinal > 0 && (
-                <InfoRow
-                  label="Distancia recorrida"
-                  value={`${(averia.kilometrajeFinal - averia.kilometrajeInicio).toLocaleString()} km`}
-                />
+                <InfoRow label="Distancia" value={`${(averia.kilometrajeFinal - averia.kilometrajeInicio).toLocaleString()} km`} />
               )}
             </div>
           )}
 
-          {/* Materiales */}
           {materiales.length > 0 && (
             <div className="bg-white rounded-xl border border-slate-100 p-5">
               <div className="flex items-center gap-2 mb-4">
@@ -352,7 +331,7 @@ export default function AveriaDetail() {
                     <tr className="border-b border-slate-100">
                       <th className="pb-2 text-left text-slate-500 font-semibold">Código</th>
                       <th className="pb-2 text-left text-slate-500 font-semibold">Material</th>
-                      <th className="pb-2 text-right text-slate-500 font-semibold">Cantidad</th>
+                      <th className="pb-2 text-right text-slate-500 font-semibold">Cant.</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50">
@@ -369,7 +348,6 @@ export default function AveriaDetail() {
             </div>
           )}
 
-          {/* Técnicos que atendieron */}
           {tecnicos.length > 0 && (
             <div className="bg-white rounded-xl border border-slate-100 p-5">
               <h3 className="text-base font-semibold text-slate-800 mb-3">Técnicos que Atendieron</h3>
@@ -389,14 +367,11 @@ export default function AveriaDetail() {
             </div>
           )}
 
-          {/* Evidencias */}
           {evidencias.length > 0 && (
             <div className="bg-white rounded-xl border border-slate-100 p-5">
               <div className="flex items-center gap-2 mb-3">
                 <Camera size={16} className="text-[#003087]" />
-                <h3 className="text-base font-semibold text-slate-800">
-                  Evidencias ({evidencias.length})
-                </h3>
+                <h3 className="text-base font-semibold text-slate-800">Evidencias ({evidencias.length})</h3>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {evidencias.map((e: any, i: number) => {
@@ -404,16 +379,8 @@ export default function AveriaDetail() {
                   return url ? (
                     <a key={i} href={url} target="_blank" rel="noopener noreferrer"
                       className="block rounded-lg overflow-hidden border border-slate-100 hover:border-[#0066CC] transition-colors">
-                      <img
-                        src={url}
-                        alt={`Evidencia ${i + 1}`}
-                        className="w-full h-24 object-cover bg-slate-50"
-                        onError={(e) => {
-                          const img = e.target as HTMLImageElement
-                          img.src = ''
-                          img.parentElement!.style.display = 'none'
-                        }}
-                      />
+                      <img src={url} alt={`Evidencia ${i + 1}`} className="w-full h-24 object-cover bg-slate-50"
+                        onError={(e) => { (e.target as HTMLImageElement).parentElement!.style.display = 'none' }} />
                     </a>
                   ) : null
                 })}
@@ -429,7 +396,6 @@ export default function AveriaDetail() {
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowAssignModal(false)} />
           <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
             <h3 className="text-lg font-bold text-slate-800 mb-5">Asignar Avería</h3>
-
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1.5">Vehículo</label>
@@ -446,7 +412,6 @@ export default function AveriaDetail() {
                   ))}
                 </select>
               </div>
-
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1.5">Técnico</label>
                 <select
@@ -465,7 +430,6 @@ export default function AveriaDetail() {
                 </select>
               </div>
             </div>
-
             <div className="flex justify-end gap-3 mt-6">
               <button
                 onClick={() => setShowAssignModal(false)}
