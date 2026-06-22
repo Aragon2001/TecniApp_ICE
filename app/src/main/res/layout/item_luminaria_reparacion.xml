@@ -1,165 +1,203 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-    FIXES APLICADOS:
-    1. Botones Editar/Eliminar: agregada constraintStart para anclarlos correctamente
-       (antes solo tenían constraintEnd, podían superponerse con texto)
-    2. Botones movidos a una fila con Barrier para alinear limpiamente
-    3. Separador visual entre contenido y acciones
--->
-<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginBottom="10dp"
-    app:cardBackgroundColor="@color/glass_light"
-    app:cardCornerRadius="16dp"
-    app:cardElevation="4dp"
+    app:cardBackgroundColor="?attr/colorSurface"
+    app:cardCornerRadius="14dp"
+    app:cardElevation="2dp"
     app:strokeColor="?attr/colorOutlineVariant"
-    app:strokeWidth="2dp">
+    app:strokeWidth="1dp">
 
-    <androidx.constraintlayout.widget.ConstraintLayout
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="12dp">
+        android:orientation="horizontal">
 
-        <!-- Ícono de luminaria -->
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/cardIconLuminaria"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            app:cardBackgroundColor="?attr/colorSurfaceVariant"
-            app:cardCornerRadius="12dp"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent">
+        <!-- Barra de estado lateral izquierda (coloreada por el adapter) -->
+        <View
+            android:id="@+id/viewStatusStrip"
+            android:layout_width="5dp"
+            android:layout_height="match_parent"
+            android:background="?attr/colorPrimary" />
 
-            <ImageView
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:padding="9dp"
-                android:src="@drawable/ic_menu_luminarias"
-                app:tint="?attr/colorOnSurfaceVariant" />
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- Título: número de localización -->
-        <TextView
-            android:id="@+id/tvReparacionTitulo"
-            style="@style/TextAppearance.Material3.TitleMedium"
+        <!-- Contenido principal -->
+        <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
-            android:text="Localización"
-            android:textColor="?attr/colorOnSurface"
-            app:layout_constraintEnd_toStartOf="@+id/cardEstadoLuminaria"
-            app:layout_constraintStart_toEndOf="@id/cardIconLuminaria"
-            app:layout_constraintTop_toTopOf="parent" />
-
-        <!-- Chip de estado (Pendiente / Reparada) -->
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/cardEstadoLuminaria"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            app:cardBackgroundColor="?attr/colorSurfaceVariant"
-            app:cardCornerRadius="12dp"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent">
-
-            <TextView
-                android:id="@+id/tvReparacionEstado"
-                style="@style/TextAppearance.Material3.LabelMedium"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:paddingHorizontal="10dp"
-                android:paddingVertical="4dp"
-                android:text="Estado"
-                android:textColor="?attr/colorOnSurfaceVariant" />
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- Pueblo -->
-        <TextView
-            android:id="@+id/tvReparacionPueblo"
-            style="@style/TextAppearance.Material3.BodySmall"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
-            android:layout_marginTop="2dp"
-            android:drawablePadding="6dp"
-            android:drawableStart="@drawable/ic_report_location"
-            android:text="Pueblo"
-            android:textColor="?attr/colorOnSurfaceVariant"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toEndOf="@id/cardIconLuminaria"
-            app:layout_constraintTop_toBottomOf="@id/tvReparacionTitulo" />
-
-        <!-- Detalle principal (materiales o info del cliente) -->
-        <TextView
-            android:id="@+id/tvReparacionDetalle"
-            style="@style/TextAppearance.Material3.BodyMedium"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:lineSpacingExtra="2dp"
-            android:text="Detalle"
-            android:textColor="?attr/colorOnSurface"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/tvReparacionPueblo" />
-
-        <!-- Info secundaria (ejecutor, vehículo, fecha) -->
-        <TextView
-            android:id="@+id/tvReparacionExtra"
-            style="@style/TextAppearance.Material3.BodySmall"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:lineSpacingExtra="2dp"
-            android:text="Extra"
-            android:textColor="?attr/colorOnSurfaceVariant"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/tvReparacionDetalle" />
-
-        <!--
-            FIX: Botones de acción con ancla izquierda correcta.
-            Antes: btnEditarReparacion solo tenía constraintEnd → podía
-            quedar flotando sobre el texto en pantallas angostas.
-            Ahora: ambos botones anclados a la derecha con constraintEnd
-            en cadena y constraintStart explícito en btnEditarReparacion.
-        -->
-        <ImageButton
-            android:id="@+id/btnEditarReparacion"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
-            android:layout_marginTop="10dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Editar reparación"
-            android:src="@drawable/ic_edit"
-            app:layout_constraintEnd_toStartOf="@+id/btnEliminarReparacion"
-            app:layout_constraintStart_toStartOf="@id/guidelineAcciones"
-            app:layout_constraintTop_toBottomOf="@id/tvReparacionExtra"
-            app:tint="?attr/colorPrimary" />
-
-        <ImageButton
-            android:id="@+id/btnEliminarReparacion"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
-            android:layout_marginTop="10dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Eliminar reparación"
-            android:src="@drawable/ic_delete"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/tvReparacionExtra"
-            app:tint="?attr/colorError" />
-
-        <!--
-            Guideline al 60% del ancho para que los botones siempre
-            queden en la mitad derecha sin pisar el texto.
-        -->
-        <androidx.constraintlayout.widget.Guideline
-            android:id="@+id/guidelineAcciones"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_weight="1"
             android:orientation="vertical"
-            app:layout_constraintGuide_percent="0.60" />
+            android:paddingStart="12dp"
+            android:paddingTop="12dp"
+            android:paddingEnd="12dp"
+            android:paddingBottom="10dp">
 
-    </androidx.constraintlayout.widget.ConstraintLayout>
+            <!-- Fila de encabezado: ícono + localización + badge de estado -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <!-- Ícono del reporte (fondo y tinte coloreados por el adapter) -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardIconLuminaria"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    app:cardBackgroundColor="?attr/colorSurfaceVariant"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="0dp"
+                    app:strokeWidth="0dp">
+                    <ImageView
+                        android:id="@+id/ivIconLuminaria"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:contentDescription="@null"
+                        android:padding="10dp"
+                        android:src="@drawable/ic_menu_luminarias"
+                        app:tint="?attr/colorOnSurfaceVariant" />
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Localización + Pueblo -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="10dp"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/tvReparacionTitulo"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Localización"
+                        android:textAppearance="@style/TextAppearance.Material3.TitleSmall"
+                        android:textColor="?attr/colorOnSurface"
+                        android:textStyle="bold"
+                        tools:text="Loc. 010301110012" />
+
+                    <TextView
+                        android:id="@+id/tvReparacionPueblo"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:drawablePadding="4dp"
+                        android:drawableStart="@drawable/ic_report_location"
+                        android:text="Pueblo"
+                        android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        tools:text="Pueblo: 0103 - San José" />
+                </LinearLayout>
+
+                <!-- Badge de estado (pill, coloreado por el adapter) -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardEstadoLuminaria"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    app:cardBackgroundColor="?attr/colorSurfaceVariant"
+                    app:cardCornerRadius="20dp"
+                    app:cardElevation="0dp"
+                    app:strokeWidth="0dp">
+                    <TextView
+                        android:id="@+id/tvReparacionEstado"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:paddingHorizontal="10dp"
+                        android:paddingVertical="5dp"
+                        android:text="Estado"
+                        android:textAppearance="@style/TextAppearance.Material3.LabelSmall"
+                        android:textColor="@color/white"
+                        android:textStyle="bold"
+                        tools:text="Pendiente" />
+                </com.google.android.material.card.MaterialCardView>
+
+            </LinearLayout>
+
+            <!-- Divisor -->
+            <com.google.android.material.divider.MaterialDivider
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:layout_marginBottom="8dp" />
+
+            <!-- Detalle principal (materiales o info del cliente) -->
+            <TextView
+                android:id="@+id/tvReparacionDetalle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:lineSpacingExtra="2dp"
+                android:text="Detalle"
+                android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
+                android:textColor="?attr/colorOnSurface"
+                tools:text="Camión: ABC123\nEstado: Pendiente" />
+
+            <!-- Info secundaria (ejecutor, vehículo, fecha) -->
+            <TextView
+                android:id="@+id/tvReparacionExtra"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:lineSpacingExtra="2dp"
+                android:text="Extra"
+                android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                tools:text="Reporte: 12/06/2026\nCliente: Juan Pérez" />
+
+            <!-- Fila de acciones (alineada a la derecha) -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:gravity="end"
+                android:orientation="horizontal">
+
+                <!-- Botón de acción principal (editar / atender) -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardBtnEditar"
+                    android:layout_width="38dp"
+                    android:layout_height="38dp"
+                    android:layout_marginEnd="8dp"
+                    app:cardBackgroundColor="?attr/colorPrimaryContainer"
+                    app:cardCornerRadius="19dp"
+                    app:cardElevation="0dp"
+                    app:strokeWidth="0dp">
+                    <ImageButton
+                        android:id="@+id/btnEditarReparacion"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="Editar reparación"
+                        android:padding="9dp"
+                        android:src="@drawable/ic_edit"
+                        app:tint="?attr/colorOnPrimaryContainer" />
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Botón eliminar -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/cardBtnEliminar"
+                    android:layout_width="38dp"
+                    android:layout_height="38dp"
+                    app:cardBackgroundColor="?attr/colorErrorContainer"
+                    app:cardCornerRadius="19dp"
+                    app:cardElevation="0dp"
+                    app:strokeWidth="0dp">
+                    <ImageButton
+                        android:id="@+id/btnEliminarReparacion"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:contentDescription="Eliminar reparación"
+                        android:padding="9dp"
+                        android:src="@drawable/ic_delete"
+                        app:tint="?attr/colorOnErrorContainer" />
+                </com.google.android.material.card.MaterialCardView>
+
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+
 </com.google.android.material.card.MaterialCardView>

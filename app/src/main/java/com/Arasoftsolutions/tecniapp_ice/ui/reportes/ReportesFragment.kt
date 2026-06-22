@@ -413,7 +413,7 @@ class ReportesFragment : Fragment() {
                     val chartData = state.resumenChartData
                     val mostrarGraficas = seleccionado == ReportType.MI_RESUMEN && chartData != null
                     binding.containerResumenCharts.isVisible = mostrarGraficas
-                    if (mostrarGraficas && chartData != null) {
+                    if (mostrarGraficas) {
                         renderizarGraficaAverias(chartData.averiasAtendidas, chartData.averiasPendientes)
                         renderizarGraficaLuminarias(chartData.luminariasReparadas, chartData.luminariasPendientes)
                         renderizarGraficaHoras(chartData.horasPorDia, chartData.semanaLabel)

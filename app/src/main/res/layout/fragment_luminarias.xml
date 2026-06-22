@@ -7,225 +7,467 @@
     android:layout_height="match_parent"
     tools:context=".ui.luminarias.LuminariasFragment">
 
-    <androidx.core.widget.NestedScrollView
+    <!-- ═══════════════════════════════════════════════════════
+         CABECERA FIJA — ícono · título · contadores · búsqueda
+         ═══════════════════════════════════════════════════════ -->
+    <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:clipToPadding="false"
-        android:paddingStart="16dp"
-        android:paddingTop="16dp"
-        android:paddingEnd="16dp"
-        android:paddingBottom="88dp">
+        android:layout_height="wrap_content"
+        android:background="?attr/colorSurface"
+        app:elevation="0dp"
+        app:liftOnScroll="true">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <!-- Búsqueda de localización -->
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/tilBuscarLocalizacion"
-                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="Buscar localización"
-                app:startIconDrawable="@drawable/ic_search">
-
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/etBuscarLocalizacion"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:inputType="text" />
-            </com.google.android.material.textfield.TextInputLayout>
-
-            <!-- Filtro por vehículo (supervisor/admin) -->
+            <!-- Banda superior: ícono + "Luminarias" + contadores -->
             <LinearLayout
-                android:id="@+id/groupVehiculosFilter"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:orientation="vertical"
-                android:visibility="gone"
-                tools:visibility="visible">
+                android:background="?attr/colorPrimaryContainer"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="16dp"
+                android:paddingTop="14dp"
+                android:paddingEnd="14dp"
+                android:paddingBottom="14dp">
 
-                <TextView
-                    style="@style/TextAppearance.Material3.LabelLarge"
+                <!-- Ícono + módulo label compacto -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        app:cardBackgroundColor="#28005DAA"
+                        app:cardCornerRadius="12dp"
+                        app:cardElevation="0dp"
+                        app:strokeWidth="0dp">
+                        <ImageView
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:contentDescription="@null"
+                            android:padding="9dp"
+                            android:src="@drawable/ic_menu_luminarias"
+                            app:tint="?attr/colorOnPrimaryContainer" />
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="10dp"
+                        android:orientation="vertical">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Estado de la gestión"
+                            android:textAppearance="@style/TextAppearance.Material3.LabelLarge"
+                            android:textColor="?attr/colorOnPrimaryContainer"
+                            android:textStyle="bold" />
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:alpha="0.7"
+                            android:text="Lámparas ICE · Actualizado"
+                            android:textAppearance="@style/TextAppearance.Material3.LabelSmall"
+                            android:textColor="?attr/colorOnPrimaryContainer" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- Contadores: pendientes + reparadas -->
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="6dp"
+                        app:cardBackgroundColor="#22FFFFFF"
+                        app:cardCornerRadius="12dp"
+                        app:cardElevation="0dp"
+                        app:strokeWidth="0dp">
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:orientation="vertical"
+                            android:paddingHorizontal="11dp"
+                            android:paddingVertical="7dp">
+                            <TextView
+                                android:id="@+id/tvHeroPendientesCount"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="0"
+                                android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+                                android:textColor="?attr/colorOnPrimaryContainer"
+                                android:textStyle="bold"
+                                tools:text="3" />
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:alpha="0.75"
+                                android:text="Pend."
+                                android:textAppearance="@style/TextAppearance.Material3.LabelSmall"
+                                android:textColor="?attr/colorOnPrimaryContainer" />
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        app:cardBackgroundColor="#22FFFFFF"
+                        app:cardCornerRadius="12dp"
+                        app:cardElevation="0dp"
+                        app:strokeWidth="0dp">
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:orientation="vertical"
+                            android:paddingHorizontal="11dp"
+                            android:paddingVertical="7dp">
+                            <TextView
+                                android:id="@+id/tvHeroReparadasCount"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="0"
+                                android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+                                android:textColor="?attr/colorOnPrimaryContainer"
+                                android:textStyle="bold"
+                                tools:text="12" />
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:alpha="0.75"
+                                android:text="Rep."
+                                android:textAppearance="@style/TextAppearance.Material3.LabelSmall"
+                                android:textColor="?attr/colorOnPrimaryContainer" />
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Banda de controles: búsqueda + filtro camión + toggle estado -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="?attr/colorSurface"
+                android:orientation="vertical"
+                android:paddingStart="12dp"
+                android:paddingTop="10dp"
+                android:paddingEnd="12dp"
+                android:paddingBottom="10dp">
+
+                <!-- Barra de búsqueda -->
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilBuscarLocalizacion"
+                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="@string/luminarias_filtro_camion" />
+                    android:hint="Buscar localización"
+                    app:startIconDrawable="@drawable/ic_search">
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etBuscarLocalizacion"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="text" />
+                </com.google.android.material.textfield.TextInputLayout>
 
-                <HorizontalScrollView
+                <!-- Filtro por vehículo (solo supervisor/admin) -->
+                <LinearLayout
+                    android:id="@+id/groupVehiculosFilter"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    android:scrollbars="none">
+                    android:orientation="vertical"
+                    android:visibility="gone"
+                    tools:visibility="visible">
 
-                    <com.google.android.material.button.MaterialButtonToggleGroup
-                        android:id="@+id/toggleGroupVehiculos"
-                        android:layout_width="wrap_content"
+                    <TextView
+                        style="@style/TextAppearance.Material3.LabelLarge"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        app:selectionRequired="false"
-                        app:singleSelection="true" />
-                </HorizontalScrollView>
+                        android:text="@string/luminarias_filtro_camion"
+                        android:textColor="?attr/colorOnSurfaceVariant" />
+
+                    <HorizontalScrollView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:scrollbars="none">
+                        <com.google.android.material.button.MaterialButtonToggleGroup
+                            android:id="@+id/toggleGroupVehiculos"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            app:selectionRequired="false"
+                            app:singleSelection="true" />
+                    </HorizontalScrollView>
+                </LinearLayout>
+
+                <!-- Toggle de estado: Pendiente | Reparada -->
+                <com.google.android.material.button.MaterialButtonToggleGroup
+                    android:id="@+id/toggleGroupEstado"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    app:selectionRequired="true"
+                    app:singleSelection="true">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnTogglePendientes"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:checked="true"
+                        android:text="Pendiente" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnToggleReparadas"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Reparada" />
+                </com.google.android.material.button.MaterialButtonToggleGroup>
             </LinearLayout>
 
-            <!-- Toggle de estado: Pendiente | Reparada -->
-            <com.google.android.material.button.MaterialButtonToggleGroup
-                android:id="@+id/toggleGroupEstado"
+            <!-- Línea separadora -->
+            <View
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                app:selectionRequired="true"
-                app:singleSelection="true">
+                android:layout_height="1dp"
+                android:alpha="0.4"
+                android:background="?attr/colorOutlineVariant" />
+        </LinearLayout>
+    </com.google.android.material.appbar.AppBarLayout>
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnTogglePendientes"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:checked="true"
-                    android:text="Pendiente" />
+    <!-- ═══════════════════════════════════════════════════════
+         CONTENIDO SCROLLEABLE
+         ═══════════════════════════════════════════════════════ -->
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clipToPadding="false"
+        android:paddingStart="14dp"
+        android:paddingTop="12dp"
+        android:paddingEnd="14dp"
+        android:paddingBottom="96dp"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnToggleReparadas"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Reparada" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
 
-            </com.google.android.material.button.MaterialButtonToggleGroup>
-
-            <!-- Lista de pendientes -->
+            <!-- ─── Sección: Pendientes de reparar ─── -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardPendientes"
-                style="@style/Tecni.Card"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp">
+                android:layout_marginBottom="14dp"
+                app:cardBackgroundColor="?attr/colorSurface"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="3dp"
+                app:strokeColor="?attr/colorOutlineVariant"
+                app:strokeWidth="1dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
+                    android:orientation="vertical">
+
+                    <!-- Franja de color roja (pendiente) -->
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="5dp"
+                        android:background="@color/chip_pendiente" />
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
+                        android:orientation="vertical"
+                        android:padding="14dp">
 
-                        <com.google.android.material.card.MaterialCardView
-                            android:layout_width="40dp"
-                            android:layout_height="40dp"
-                            app:cardBackgroundColor="?attr/colorSurfaceVariant"
-                            app:cardCornerRadius="12dp">
-
-                            <ImageView
-                                android:layout_width="match_parent"
-                                android:layout_height="match_parent"
-                                android:padding="8dp"
-                                android:src="@drawable/ic_report_clock"
-                                app:tint="?attr/colorOnSurfaceVariant" />
-                        </com.google.android.material.card.MaterialCardView>
-
-                        <TextView
-                            style="@style/TextAppearance.Material3.TitleMedium"
+                        <!-- Header de sección -->
+                        <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginStart="12dp"
-                            android:text="Lámparas pendientes de reparar"
-                            android:textStyle="bold" />
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <com.google.android.material.card.MaterialCardView
+                                android:layout_width="40dp"
+                                android:layout_height="40dp"
+                                app:cardBackgroundColor="?attr/colorErrorContainer"
+                                app:cardCornerRadius="12dp"
+                                app:cardElevation="0dp"
+                                app:strokeWidth="0dp">
+                                <ImageView
+                                    android:layout_width="match_parent"
+                                    android:layout_height="match_parent"
+                                    android:contentDescription="@null"
+                                    android:padding="8dp"
+                                    android:src="@drawable/ic_report_clock"
+                                    app:tint="?attr/colorOnErrorContainer" />
+                            </com.google.android.material.card.MaterialCardView>
+
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="12dp"
+                                android:layout_weight="1"
+                                android:orientation="vertical">
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Pendientes de reparar"
+                                    android:textAppearance="@style/TextAppearance.Material3.TitleSmall"
+                                    android:textColor="?attr/colorOnSurface"
+                                    android:textStyle="bold" />
+                                <TextView
+                                    android:id="@+id/tvContadorPendientes"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="0 en espera"
+                                    android:textAppearance="@style/TextAppearance.Material3.LabelSmall"
+                                    android:textColor="@color/chip_pendiente"
+                                    tools:text="3 en espera" />
+                            </LinearLayout>
+                        </LinearLayout>
+
+                        <TextView
+                            android:id="@+id/tvEmptyReparacionesPendientes"
+                            style="@style/TextAppearance.Material3.BodyMedium"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="12dp"
+                            android:gravity="center"
+                            android:paddingVertical="10dp"
+                            android:text="No hay reparaciones pendientes."
+                            android:textColor="?attr/colorOnSurfaceVariant" />
+
+                        <androidx.recyclerview.widget.RecyclerView
+                            android:id="@+id/listReparacionesPendientes"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="10dp"
+                            android:nestedScrollingEnabled="false"
+                            tools:listitem="@layout/item_luminaria_reparacion" />
                     </LinearLayout>
-
-                    <TextView
-                        android:id="@+id/tvEmptyReparacionesPendientes"
-                        style="@style/TextAppearance.Material3.BodyMedium"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:text="No hay reparaciones pendientes."
-                        android:textColor="?attr/colorOnSurfaceVariant" />
-
-                    <androidx.recyclerview.widget.RecyclerView
-                        android:id="@+id/listReparacionesPendientes"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:nestedScrollingEnabled="false"
-                        tools:listitem="@layout/item_luminaria_reparacion" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Lista de reparadas -->
+            <!-- ─── Sección: Lámparas reparadas ─── -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardReparadas"
-                style="@style/Tecni.Card"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
+                android:layout_marginBottom="14dp"
                 app:cardBackgroundColor="?attr/colorSurface"
-                app:strokeColor="?attr/colorOutline">
+                app:cardCornerRadius="16dp"
+                app:cardElevation="3dp"
+                app:strokeColor="?attr/colorOutlineVariant"
+                app:strokeWidth="1dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="16dp">
+                    android:orientation="vertical">
+
+                    <!-- Franja de color verde (reparada) -->
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="5dp"
+                        android:background="@color/chip_resuelta" />
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
+                        android:orientation="vertical"
+                        android:padding="14dp">
 
-                        <com.google.android.material.card.MaterialCardView
-                            android:layout_width="40dp"
-                            android:layout_height="40dp"
-                            app:cardBackgroundColor="?attr/colorSurfaceVariant"
-                            app:cardCornerRadius="12dp">
-
-                            <ImageView
-                                android:layout_width="match_parent"
-                                android:layout_height="match_parent"
-                                android:padding="8dp"
-                                android:src="@drawable/ic_check"
-                                app:tint="?attr/colorOnSurfaceVariant" />
-                        </com.google.android.material.card.MaterialCardView>
-
-                        <TextView
-                            style="@style/TextAppearance.Material3.TitleMedium"
+                        <!-- Header de sección -->
+                        <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginStart="12dp"
-                            android:text="Lámparas reparadas"
-                            android:textStyle="bold" />
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <com.google.android.material.card.MaterialCardView
+                                android:layout_width="40dp"
+                                android:layout_height="40dp"
+                                app:cardBackgroundColor="?attr/colorTertiaryContainer"
+                                app:cardCornerRadius="12dp"
+                                app:cardElevation="0dp"
+                                app:strokeWidth="0dp">
+                                <ImageView
+                                    android:layout_width="match_parent"
+                                    android:layout_height="match_parent"
+                                    android:contentDescription="@null"
+                                    android:padding="8dp"
+                                    android:src="@drawable/ic_check"
+                                    app:tint="?attr/colorOnTertiaryContainer" />
+                            </com.google.android.material.card.MaterialCardView>
+
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="12dp"
+                                android:layout_weight="1"
+                                android:orientation="vertical">
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Lámparas reparadas"
+                                    android:textAppearance="@style/TextAppearance.Material3.TitleSmall"
+                                    android:textColor="?attr/colorOnSurface"
+                                    android:textStyle="bold" />
+                                <TextView
+                                    android:id="@+id/tvContadorReparadas"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="0 completadas"
+                                    android:textAppearance="@style/TextAppearance.Material3.LabelSmall"
+                                    android:textColor="@color/chip_resuelta"
+                                    tools:text="12 completadas" />
+                            </LinearLayout>
+                        </LinearLayout>
+
+                        <TextView
+                            android:id="@+id/tvEmptyReparaciones"
+                            style="@style/TextAppearance.Material3.BodyMedium"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="12dp"
+                            android:gravity="center"
+                            android:paddingVertical="10dp"
+                            android:text="Aún no hay reparaciones registradas."
+                            android:textColor="?attr/colorOnSurfaceVariant" />
+
+                        <androidx.recyclerview.widget.RecyclerView
+                            android:id="@+id/listReparacionesLuminaria"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="10dp"
+                            android:nestedScrollingEnabled="false"
+                            tools:listitem="@layout/item_luminaria_reparacion" />
                     </LinearLayout>
-
-                    <TextView
-                        android:id="@+id/tvEmptyReparaciones"
-                        style="@style/TextAppearance.Material3.BodyMedium"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:text="Aún no hay reparaciones registradas."
-                        android:textColor="?attr/colorOnSurfaceVariant" />
-
-                    <androidx.recyclerview.widget.RecyclerView
-                        android:id="@+id/listReparacionesLuminaria"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:nestedScrollingEnabled="false"
-                        tools:listitem="@layout/item_luminaria_reparacion" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 
-    <!-- Indicador de proceso (importar/exportar) -->
+    <!-- Indicador de proceso -->
     <ProgressBar
         android:id="@+id/progressLuminaria"
         style="@style/Widget.Material3.CircularProgressIndicator"
@@ -234,7 +476,7 @@
         android:layout_gravity="center"
         android:visibility="gone" />
 
-    <!-- Scrim del speed-dial (cierra el menú al tocar fuera) -->
+    <!-- Scrim del speed-dial -->
     <View
         android:id="@+id/fabScrim"
         android:layout_width="match_parent"
@@ -244,7 +486,7 @@
         android:focusable="true"
         android:visibility="gone" />
 
-    <!-- Acciones del speed-dial (se muestran sobre el FAB) -->
+    <!-- Acciones del speed-dial -->
     <LinearLayout
         android:id="@+id/fabSpeedDialContainer"
         android:layout_width="wrap_content"
@@ -255,7 +497,6 @@
         android:orientation="vertical"
         android:visibility="gone">
 
-        <!-- Compartir machote -->
         <LinearLayout
             android:id="@+id/rowFabEmail"
             android:layout_width="wrap_content"
@@ -272,7 +513,6 @@
                 app:cardBackgroundColor="?attr/colorSurface"
                 app:cardCornerRadius="8dp"
                 app:cardElevation="4dp">
-
                 <TextView
                     style="@style/TextAppearance.Material3.LabelLarge"
                     android:layout_width="wrap_content"
@@ -293,7 +533,6 @@
                 app:tint="@color/white" />
         </LinearLayout>
 
-        <!-- Descargar machote XLSX -->
         <LinearLayout
             android:id="@+id/rowFabDescargar"
             android:layout_width="wrap_content"
@@ -310,7 +549,6 @@
                 app:cardBackgroundColor="?attr/colorSurface"
                 app:cardCornerRadius="8dp"
                 app:cardElevation="4dp">
-
                 <TextView
                     style="@style/TextAppearance.Material3.LabelLarge"
                     android:layout_width="wrap_content"
@@ -331,7 +569,6 @@
                 app:tint="@color/white" />
         </LinearLayout>
 
-        <!-- Cargar luminarias desde Excel -->
         <LinearLayout
             android:id="@+id/rowFabImportar"
             android:layout_width="wrap_content"
@@ -348,7 +585,6 @@
                 app:cardBackgroundColor="?attr/colorSurface"
                 app:cardCornerRadius="8dp"
                 app:cardElevation="4dp">
-
                 <TextView
                     style="@style/TextAppearance.Material3.LabelLarge"
                     android:layout_width="wrap_content"
@@ -369,7 +605,6 @@
                 app:tint="@color/white" />
         </LinearLayout>
 
-        <!-- Nueva reparación -->
         <LinearLayout
             android:id="@+id/rowFabRegistrar"
             android:layout_width="wrap_content"
@@ -386,7 +621,6 @@
                 app:cardBackgroundColor="?attr/colorSurface"
                 app:cardCornerRadius="8dp"
                 app:cardElevation="4dp">
-
                 <TextView
                     style="@style/TextAppearance.Material3.LabelLarge"
                     android:layout_width="wrap_content"
@@ -417,8 +651,8 @@
         android:layout_gravity="bottom|end"
         android:layout_margin="16dp"
         android:contentDescription="Acciones de luminarias"
+        android:src="@drawable/ic_add"
         app:backgroundTint="?attr/colorPrimary"
-        app:tint="@color/white"
-        android:src="@drawable/ic_add" />
+        app:tint="@color/white" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
