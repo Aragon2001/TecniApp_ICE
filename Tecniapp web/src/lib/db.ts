@@ -11,6 +11,7 @@ export interface SyncQueueItem {
   entityId: string
   rtdbPath: string
   payload: Record<string, any>
+  operation?: 'update' | 'set' | 'delete'
   createdAt: number
   retryCount: number
   status: 'pending' | 'error'
