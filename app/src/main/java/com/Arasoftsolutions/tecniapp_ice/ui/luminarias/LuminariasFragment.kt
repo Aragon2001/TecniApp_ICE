@@ -198,7 +198,11 @@ class LuminariasFragment : Fragment() {
                         showDelete = false
                     )
                     reparacionesPendientesAdapter.submitList(state.reparacionesPendientes)
-                    binding.tvEmptyReparacionesPendientes.isVisible = state.reparacionesPendientes.isEmpty()
+                    val countPendientes = state.reparacionesPendientes.size
+                    binding.tvEmptyReparacionesPendientes.isVisible = countPendientes == 0
+                    binding.tvHeroPendientesCount.text = countPendientes.toString()
+                    binding.tvContadorPendientes.text =
+                        if (countPendientes == 1) "1 en espera" else "$countPendientes en espera"
 
                     // Reparadas: técnico puede editar las suyas; gestor solo lee
                     reparacionesReparadasAdapter.updatePermissions(
@@ -207,7 +211,11 @@ class LuminariasFragment : Fragment() {
                         showDelete = state.puedeEliminarLuminarias
                     )
                     reparacionesReparadasAdapter.submitList(state.reparacionesReparadas)
-                    binding.tvEmptyReparaciones.isVisible = state.reparacionesReparadas.isEmpty()
+                    val countReparadas = state.reparacionesReparadas.size
+                    binding.tvEmptyReparaciones.isVisible = countReparadas == 0
+                    binding.tvHeroReparadasCount.text = countReparadas.toString()
+                    binding.tvContadorReparadas.text =
+                        if (countReparadas == 1) "1 completada" else "$countReparadas completadas"
                 }
             }
         }

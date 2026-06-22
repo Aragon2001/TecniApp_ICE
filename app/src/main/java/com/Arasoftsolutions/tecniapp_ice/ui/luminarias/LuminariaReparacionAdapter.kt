@@ -126,13 +126,20 @@ class LuminariaReparacionAdapter(
             val vehiculoPlaca = vehiculosById[item.vehiculoId]?.placa?.toString().orEmpty().ifBlank { "-" }
 
             val ctx = binding.root.context
-            val (badgeBg, badgeText) = if (estado == LuminariaEstado.PENDIENTE) {
-                Pair(ContextCompat.getColor(ctx, R.color.chip_pendiente), Color.WHITE)
-            } else {
-                Pair(ContextCompat.getColor(ctx, R.color.chip_resuelta), Color.WHITE)
-            }
-            binding.cardEstadoLuminaria.setCardBackgroundColor(badgeBg)
-            binding.tvReparacionEstado.setTextColor(badgeText)
+            val isPendiente = estado == LuminariaEstado.PENDIENTE
+            val statusColor = ContextCompat.getColor(
+                ctx, if (isPendiente) R.color.chip_pendiente else R.color.chip_resuelta
+            )
+            val iconBgColor = ContextCompat.getColor(
+                ctx, if (isPendiente) R.color.lum_icon_bg_pending else R.color.lum_icon_bg_done
+            )
+
+            binding.viewStatusStrip.setBackgroundColor(statusColor)
+            binding.cardEstadoLuminaria.setCardBackgroundColor(statusColor)
+            binding.tvReparacionEstado.setTextColor(Color.WHITE)
+            binding.cardIconLuminaria.setCardBackgroundColor(iconBgColor)
+            binding.ivIconLuminaria.imageTintList =
+                android.content.res.ColorStateList.valueOf(statusColor)
 
             binding.tvReparacionTitulo.text = "Localización $localizacionFormateada"
             binding.tvReparacionEstado.text = estadoTexto
@@ -166,16 +173,19 @@ class LuminariaReparacionAdapter(
             // Botón de acción principal según modo
             when (actionMode) {
                 LuminariaActionMode.ATTEND -> {
-                    binding.btnEditarReparacion.isVisible = true
+                    binding.cardBtnEditar.isVisible = true
                     binding.btnEditarReparacion.setImageResource(R.drawable.ic_build)
                     binding.btnEditarReparacion.contentDescription = "Atender luminaria"
                     binding.btnEditarReparacion.imageTintList =
                         android.content.res.ColorStateList.valueOf(
                             ContextCompat.getColor(ctx, R.color.averia_notification_accent)
                         )
+                    binding.cardBtnEditar.setCardBackgroundColor(
+                        ContextCompat.getColor(ctx, R.color.chip_bg_luminaria)
+                    )
                 }
                 LuminariaActionMode.EDIT -> {
-                    binding.btnEditarReparacion.isVisible = true
+                    binding.cardBtnEditar.isVisible = true
                     binding.btnEditarReparacion.setImageResource(R.drawable.ic_edit)
                     binding.btnEditarReparacion.contentDescription = "Editar"
                     val tv = android.util.TypedValue()
@@ -184,13 +194,18 @@ class LuminariaReparacionAdapter(
                     )
                     binding.btnEditarReparacion.imageTintList =
                         android.content.res.ColorStateList.valueOf(tv.data)
+                    val tvContainer = android.util.TypedValue()
+                    ctx.theme.resolveAttribute(
+                        com.google.android.material.R.attr.colorPrimaryContainer, tvContainer, true
+                    )
+                    binding.cardBtnEditar.setCardBackgroundColor(tvContainer.data)
                 }
                 LuminariaActionMode.VIEW -> {
-                    binding.btnEditarReparacion.isVisible = false
+                    binding.cardBtnEditar.isVisible = false
                 }
             }
 
-            binding.btnEliminarReparacion.isVisible = showDelete
+            binding.cardBtnEliminar.isVisible = showDelete
             binding.btnEditarReparacion.setOnClickListener { onEdit(item) }
             binding.btnEliminarReparacion.setOnClickListener { onDelete(item) }
             binding.root.setOnClickListener { onSelect?.invoke(item) }

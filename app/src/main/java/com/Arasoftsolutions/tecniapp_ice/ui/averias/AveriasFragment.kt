@@ -182,10 +182,10 @@ class AveriasFragment : Fragment() {
             }
         }
 
-        // Chips de agencia rápida (subregión del usuario)
+        // Chips de agencia rápida (preferidas si existen, si no subregión del usuario)
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                vm.agenciasSubregion.collectLatest { agencias ->
+                vm.agenciasRapidas.collectLatest { agencias ->
                     buildAgenciaChips(agencias)
                 }
             }
@@ -447,9 +447,21 @@ class AveriasFragment : Fragment() {
         sheetBinding.tvUserRegionLabel.text =
             getString(R.string.averia_notificacion_region_label, regionLabel)
 
-        // Construir chips toggle con todas las agencias de la región
+        // Construir chips toggle con las agencias de la región del usuario
         val initialSelected = vm.notificationAgencies.value.map { it.lowercase() }.toSet()
         buildRegionToggleChips(sheetBinding, vm.notificationRegionAgencies.value, initialSelected)
+
+        // Si las agencias no estaban listas al abrir el sheet, reconstruir en cuanto lleguen
+        scope.launch {
+            vm.notificationRegionAgencies.collectLatest { regionAgencias ->
+                val group = sheetBinding.chipGroupRegionAgencias
+                if (regionAgencias.isNotEmpty() && group.childCount == 0) {
+                    val sel = vm.notificationAgencies.value.map { it.lowercase() }.toSet()
+                    buildRegionToggleChips(sheetBinding, regionAgencias, sel)
+                    applyNotificationEnabledState(sheetBinding, vm.notificationsEnabled.value)
+                }
+            }
+        }
 
         // Switch
         val switchListener = CompoundButton.OnCheckedChangeListener { _, isChecked ->
@@ -648,6 +660,9 @@ class AveriasFragment : Fragment() {
         }
 
         // ── Limpiar todo ──
+        // La región NO se limpia para técnicos/supervisores — no tienen control para
+        // reseleccionarla y quedarían atrapados viendo "Todas las regiones".
+        // Solo el administrador puede resetear la región.
         sheetBinding.btnFiltroLimpiarTodo.setOnClickListener {
             filtroDateStart = null; filtroDateEnd = null
             filtroHoraInicio = null; filtroHoraFin = null
@@ -655,9 +670,15 @@ class AveriasFragment : Fragment() {
             syncFechaBtn(); syncHoraBtn()
             vm.clearFechaFiltro()
             vm.clearHoraFiltro()
-            vm.setRegionIndex(0); vm.setAgenciaIndex(0)
-            sheetBinding.actvFiltroAgencia.setText(agencias.firstOrNull().orEmpty(), false)
-            sheetBinding.actvFiltroRegion.setText(regiones.firstOrNull().orEmpty(), false)
+
+            val rolActual = vm.usuarioActual.value?.rol?.trim()?.lowercase(Locale.getDefault()).orEmpty()
+            if (rolActual == "administrador") {
+                vm.setRegionIndex(0)
+                sheetBinding.actvFiltroRegion.setText(regiones.firstOrNull().orEmpty(), false)
+            }
+            // Limpiar agencia a "Todas" dentro de la región actual
+            vm.setAgenciaIndex(0)
+            sheetBinding.actvFiltroAgencia.setText(vm.agencias.value.firstOrNull()?.nombreVisible.orEmpty(), false)
         }
 
         // ── Aplicar ──

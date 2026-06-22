@@ -9,9 +9,9 @@
     <!-- Handle del BottomSheet -->
     <View
         android:id="@+id/viewHandle"
-        android:layout_width="48dp"
+        android:layout_width="40dp"
         android:layout_height="4dp"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="10dp"
         android:background="@drawable/bg_bottom_sheet_handle"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -23,8 +23,8 @@
         style="@style/TextAppearance.Material3.TitleLarge"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="12dp"
-        android:layout_marginTop="16dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="14dp"
         android:text="Registrar reparación"
         android:textStyle="bold"
         app:layout_constraintEnd_toStartOf="@id/chipEstadoReparacion"
@@ -36,7 +36,7 @@
         style="@style/Tecni.Chip.Status"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="12dp"
+        android:layout_marginStart="8dp"
         android:text="Pendiente"
         android:textColor="?attr/colorOnSecondaryContainer"
         app:chipBackgroundColor="?attr/colorSecondaryContainer"
@@ -58,26 +58,24 @@
         style="@style/TextAppearance.Material3.BodySmall"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="12dp"
-        android:layout_marginTop="4dp"
-        android:text="Completa los datos críticos y guarda"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="2dp"
+        android:layout_marginEnd="16dp"
+        android:text="Completa los datos y guarda los cambios"
         android:textColor="?attr/colorOnSurfaceVariant"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/tvTituloBottomSheet" />
 
-
-
-    <!-- Contenido desplazable entre header y barra de acciones fija -->
+    <!-- Contenido desplazable -->
     <androidx.core.widget.NestedScrollView
         android:id="@+id/scrollContent"
-        android:layout_width="407dp"
-        android:layout_height="616dp"
-        android:layout_marginTop="12dp"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginTop="10dp"
         android:clipToPadding="false"
         android:fillViewport="true"
         android:paddingBottom="12dp"
-
         app:layout_constraintBottom_toTopOf="@id/bottomActionBar"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -89,9 +87,9 @@
             android:orientation="vertical"
             android:padding="16dp">
 
-            <!-- =========================
-                 Sección 1: Detalles
-                 ========================= -->
+            <!-- ═══════════════════════════════════════════
+                 Sección 1: Detalles técnicos + cliente
+                 ═══════════════════════════════════════════ -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardDetalle"
                 style="@style/Tecni.SectionCard"
@@ -99,35 +97,53 @@
                 android:layout_height="wrap_content">
 
                 <LinearLayout
-                    android:layout_width="372dp"
-                    android:layout_height="663dp"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
                     android:orientation="vertical"
                     android:padding="16dp">
 
+                    <!-- Cabecera de sección con ícono -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:gravity="center_vertical"
                         android:orientation="horizontal">
 
+                        <com.google.android.material.card.MaterialCardView
+                            android:layout_width="32dp"
+                            android:layout_height="32dp"
+                            app:cardBackgroundColor="?attr/colorPrimaryContainer"
+                            app:cardCornerRadius="10dp"
+                            app:cardElevation="0dp"
+                            app:strokeWidth="0dp">
+
+                            <ImageView
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:padding="7dp"
+                                android:src="@drawable/ic_location"
+                                app:tint="?attr/colorOnPrimaryContainer" />
+                        </com.google.android.material.card.MaterialCardView>
+
                         <TextView
                             style="@style/TextAppearance.Material3.TitleSmall"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
+                            android:layout_marginStart="10dp"
                             android:text="Detalles"
                             android:textStyle="bold" />
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnToggleDetalle"
                             style="@style/Widget.Material3.Button.IconButton"
-                            android:layout_width="48dp"
-                            android:layout_height="48dp"
+                            android:layout_width="40dp"
+                            android:layout_height="40dp"
                             android:contentDescription="Expandir detalles"
                             android:icon="@drawable/ic_arrow_down" />
                     </LinearLayout>
 
-                    <!-- Grupo de detalle del cliente (existente) -->
+                    <!-- Grupo de detalle del cliente (colapsable) -->
                     <LinearLayout
                         android:id="@+id/groupDetalle"
                         android:layout_width="match_parent"
@@ -137,79 +153,107 @@
                         android:visibility="gone"
                         tools:visibility="visible">
 
-                        <TextView
-                            style="@style/TextAppearance.Material3.LabelLarge"
+                        <com.google.android.material.card.MaterialCardView
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="Detalle del cliente"
-                            android:textStyle="bold" />
+                            app:cardBackgroundColor="?attr/colorSurfaceVariant"
+                            app:cardCornerRadius="12dp"
+                            app:cardElevation="0dp"
+                            app:strokeWidth="0dp">
 
-                        <TextView
-                            style="@style/TextAppearance.Material3.BodyMedium"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="6dp"
-                            android:text="Cliente:"
-                            android:textStyle="bold" />
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="vertical"
+                                android:padding="12dp">
 
-                        <TextView
-                            android:id="@+id/tvClienteDetalle"
-                            style="@style/TextAppearance.Material3.BodyMedium"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="Sin datos" />
+                                <TextView
+                                    style="@style/TextAppearance.Material3.LabelLarge"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:text="Información del cliente"
+                                    android:textStyle="bold" />
 
-                        <TextView
-                            style="@style/TextAppearance.Material3.BodyMedium"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="6dp"
-                            android:text="Contacto:"
-                            android:textStyle="bold" />
+                                <!-- Cliente -->
+                                <TextView
+                                    style="@style/TextAppearance.Material3.LabelMedium"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="8dp"
+                                    android:text="Cliente"
+                                    android:textColor="?attr/colorOnSurfaceVariant" />
 
-                        <TextView
-                            android:id="@+id/tvContactoDetalle"
-                            style="@style/TextAppearance.Material3.BodyMedium"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="Sin datos" />
+                                <TextView
+                                    android:id="@+id/tvClienteDetalle"
+                                    style="@style/TextAppearance.Material3.BodyMedium"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="2dp"
+                                    android:text="Sin datos"
+                                    android:textColor="?attr/colorOnSurface" />
 
-                        <TextView
-                            style="@style/TextAppearance.Material3.BodyMedium"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="6dp"
-                            android:text="Observaciones:"
-                            android:textStyle="bold" />
+                                <!-- Contacto -->
+                                <TextView
+                                    style="@style/TextAppearance.Material3.LabelMedium"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="8dp"
+                                    android:text="Contacto"
+                                    android:textColor="?attr/colorOnSurfaceVariant" />
 
-                        <TextView
-                            android:id="@+id/tvObservacionesDetalle"
-                            style="@style/TextAppearance.Material3.BodyMedium"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="Sin datos" />
+                                <TextView
+                                    android:id="@+id/tvContactoDetalle"
+                                    style="@style/TextAppearance.Material3.BodyMedium"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="2dp"
+                                    android:text="Sin datos"
+                                    android:textColor="?attr/colorOnSurface" />
 
-                        <TextView
-                            style="@style/TextAppearance.Material3.BodyMedium"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="6dp"
-                            android:text="Localización:"
-                            android:textStyle="bold" />
+                                <!-- Observaciones -->
+                                <TextView
+                                    style="@style/TextAppearance.Material3.LabelMedium"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="8dp"
+                                    android:text="Observaciones"
+                                    android:textColor="?attr/colorOnSurfaceVariant" />
 
-                        <TextView
-                            android:id="@+id/tvLocalizacionDetalle"
-                            style="@style/TextAppearance.Material3.BodyMedium"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="-" />
+                                <TextView
+                                    android:id="@+id/tvObservacionesDetalle"
+                                    style="@style/TextAppearance.Material3.BodyMedium"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="2dp"
+                                    android:text="Sin datos"
+                                    android:textColor="?attr/colorOnSurface" />
+
+                                <!-- Localización -->
+                                <TextView
+                                    style="@style/TextAppearance.Material3.LabelMedium"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="8dp"
+                                    android:text="Localización"
+                                    android:textColor="?attr/colorOnSurfaceVariant" />
+
+                                <TextView
+                                    android:id="@+id/tvLocalizacionDetalle"
+                                    style="@style/TextAppearance.Material3.BodyMedium"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="2dp"
+                                    android:text="-"
+                                    android:textColor="?attr/colorOnSurface" />
+                            </LinearLayout>
+                        </com.google.android.material.card.MaterialCardView>
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnLlamarContacto"
                             style="@style/Widget.Material3.Button.TonalButton"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="12dp"
+                            android:layout_marginTop="10dp"
                             android:icon="@drawable/ic_phone"
                             android:text="Llamar al contacto"
                             app:iconGravity="textStart"
@@ -219,17 +263,17 @@
                     <com.google.android.material.divider.MaterialDivider
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp" />
+                        android:layout_marginTop="14dp" />
 
-                    <!-- Datos técnicos -->
+                    <!-- Localización -->
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/tilLocalizacion"
                         style="@style/Tecni.TextInput.Outlined"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
+                        android:layout_marginTop="14dp"
                         android:hint="Número de localización"
-                        app:helperText="Formato 000000000000"
+                        app:helperText="Formato: 000000000000 (12 dígitos)"
                         app:startIconDrawable="@drawable/ic_location">
 
                         <com.google.android.material.textfield.TextInputEditText
@@ -239,6 +283,7 @@
                             android:inputType="text" />
                     </com.google.android.material.textfield.TextInputLayout>
 
+                    <!-- Camión asignado (solo supervisor) -->
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/tilVehiculoLuminaria"
                         style="@style/Tecni.TextInput.Outlined.Dropdown"
@@ -256,6 +301,7 @@
                             android:inputType="none" />
                     </com.google.android.material.textfield.TextInputLayout>
 
+                    <!-- Estado de la reparación -->
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/tilEstadoLuminaria"
                         style="@style/Tecni.TextInput.Outlined.Dropdown"
@@ -272,6 +318,7 @@
                             android:inputType="none" />
                     </com.google.android.material.textfield.TextInputLayout>
 
+                    <!-- Técnico ejecutor -->
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/tilEjecutorLuminaria"
                         style="@style/Tecni.TextInput.Outlined.Dropdown"
@@ -279,7 +326,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="12dp"
                         android:hint="Técnico ejecutor"
-                        app:helperText="Puedes buscarlo en la lista de técnicos"
+                        app:helperText="Busca por nombre en la lista de técnicos"
                         app:startIconDrawable="@drawable/ic_accounts">
 
                         <com.google.android.material.textfield.MaterialAutoCompleteTextView
@@ -292,9 +339,9 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- =========================
+            <!-- ═══════════════════════════════════════════
                  Sección 2: Materiales usados
-                 ========================= -->
+                 ═══════════════════════════════════════════ -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardMateriales"
                 style="@style/Tecni.SectionCard"
@@ -308,29 +355,46 @@
                     android:orientation="vertical"
                     android:padding="16dp">
 
+                    <!-- Cabecera de sección -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:gravity="center_vertical"
                         android:orientation="horizontal">
 
+                        <com.google.android.material.card.MaterialCardView
+                            android:layout_width="32dp"
+                            android:layout_height="32dp"
+                            app:cardBackgroundColor="?attr/colorSecondaryContainer"
+                            app:cardCornerRadius="10dp"
+                            app:cardElevation="0dp"
+                            app:strokeWidth="0dp">
+
+                            <ImageView
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:padding="7dp"
+                                android:src="@drawable/ic_summary_material"
+                                app:tint="?attr/colorOnSecondaryContainer" />
+                        </com.google.android.material.card.MaterialCardView>
+
                         <TextView
                             style="@style/TextAppearance.Material3.TitleSmall"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
+                            android:layout_marginStart="10dp"
                             android:text="Materiales usados"
                             android:textStyle="bold" />
-
-
                     </LinearLayout>
 
+                    <!-- Selector de material -->
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/tilMaterialLuminaria"
                         style="@style/Tecni.TextInput.Outlined.Dropdown"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
+                        android:layout_marginTop="14dp"
                         android:hint="Buscar material usado"
                         app:helperText="Selecciona un material para agregarlo"
                         app:startIconDrawable="@drawable/ic_summary_material">
@@ -342,7 +406,6 @@
                             android:inputType="text" />
                     </com.google.android.material.textfield.TextInputLayout>
 
-
                     <androidx.recyclerview.widget.RecyclerView
                         android:id="@+id/listMaterialesLuminaria"
                         android:layout_width="match_parent"
@@ -353,9 +416,9 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- =========================
+            <!-- ═══════════════════════════════════════════
                  Sección 3: Evidencia / Observaciones
-                 ========================= -->
+                 ═══════════════════════════════════════════ -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardEvidencia"
                 style="@style/Tecni.SectionCard"
@@ -363,28 +426,53 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp">
 
-
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
                     android:padding="16dp">
 
-                    <TextView
-                        style="@style/TextAppearance.Material3.TitleSmall"
+                    <!-- Cabecera de sección -->
+                    <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Evidencia / Observaciones"
-                        android:textStyle="bold" />
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <com.google.android.material.card.MaterialCardView
+                            android:layout_width="32dp"
+                            android:layout_height="32dp"
+                            app:cardBackgroundColor="?attr/colorTertiaryContainer"
+                            app:cardCornerRadius="10dp"
+                            app:cardElevation="0dp"
+                            app:strokeWidth="0dp">
+
+                            <ImageView
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:padding="7dp"
+                                android:src="@drawable/ic_edit"
+                                app:tint="?attr/colorOnTertiaryContainer" />
+                        </com.google.android.material.card.MaterialCardView>
+
+                        <TextView
+                            style="@style/TextAppearance.Material3.TitleSmall"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:layout_marginStart="10dp"
+                            android:text="Observaciones"
+                            android:textStyle="bold" />
+                    </LinearLayout>
 
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/tilObservacionesLuminaria"
                         style="@style/Tecni.TextInput.Outlined"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
+                        android:layout_marginTop="14dp"
                         android:hint="Notas o evidencia de la reparación"
-                        app:helperText="Opcional">
+                        app:helperText="Opcional — describe lo que se realizó">
 
                         <com.google.android.material.textfield.TextInputEditText
                             android:id="@+id/etObservacionesLuminaria"
@@ -394,15 +482,13 @@
                             android:minLines="3" />
                     </com.google.android.material.textfield.TextInputLayout>
 
-
                 </LinearLayout>
-
-
             </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
 
     </androidx.core.widget.NestedScrollView>
 
+    <!-- Barra de acciones fija en la parte inferior -->
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/bottomActionBar"
         style="@style/Tecni.BottomActionBar"
@@ -421,6 +507,7 @@
             android:orientation="vertical"
             android:padding="12dp">
 
+            <!-- Botones secundarios (Iniciar, Resolver, Exportar) -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -459,6 +546,7 @@
                     tools:visibility="visible" />
             </LinearLayout>
 
+            <!-- Botón principal: Guardar -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnGuardarReparacion"
                 style="@style/Widget.Material3.Button"
@@ -479,6 +567,5 @@
                 tools:visibility="visible" />
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
-
 
 </androidx.constraintlayout.widget.ConstraintLayout>

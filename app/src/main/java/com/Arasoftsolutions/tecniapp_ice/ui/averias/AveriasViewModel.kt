@@ -117,9 +117,12 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
     val notificationRegionAgencies: StateFlow<List<AgenciaUI>> = _notificationRegionAgencies.asStateFlow()
     private val _userRegionLabel = MutableStateFlow("")
     val userRegionLabel: StateFlow<String> = _userRegionLabel.asStateFlow()
-    /** Agencias de la subregión del usuario (para chips de filtro rápido) */
+    /** Agencias de la subregión del usuario (catálogo completo) */
     private val _agenciasSubregion = MutableStateFlow<List<AgenciaUI>>(emptyList())
     val agenciasSubregion: StateFlow<List<AgenciaUI>> = _agenciasSubregion.asStateFlow()
+    /** Chips rápidos: agencias preferidas (notif.) si existen, si no subregión */
+    private val _agenciasRapidas = MutableStateFlow<List<AgenciaUI>>(emptyList())
+    val agenciasRapidas: StateFlow<List<AgenciaUI>> = _agenciasRapidas.asStateFlow()
 
     private val _regiones = MutableStateFlow(listOf(RegionUI(null, allRegionsLabel)))
     val regiones: StateFlow<List<RegionUI>> = _regiones.asStateFlow()
@@ -398,16 +401,19 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
         if (trimmed.isEmpty()) return
         AveriaNotificationPreferences.addAgency(getApplication(), trimmed)
         _notificationAgencies.value = AveriaNotificationPreferences.getSelectedAgencies(getApplication())
+        refreshAgenciasRapidas()
     }
 
     fun removeNotificationAgency(nombre: String) {
         AveriaNotificationPreferences.removeAgency(getApplication(), nombre)
         _notificationAgencies.value = AveriaNotificationPreferences.getSelectedAgencies(getApplication())
+        refreshAgenciasRapidas()
     }
 
     fun setNotificationAgencies(agencies: Set<String>) {
         AveriaNotificationPreferences.setSelectedAgencies(getApplication(), agencies)
         _notificationAgencies.value = AveriaNotificationPreferences.getSelectedAgencies(getApplication())
+        refreshAgenciasRapidas()
     }
 
     private fun updateNotificationRegionAgencies() {
@@ -1196,7 +1202,8 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
         return listOf(AgenciaUI(null, allAgenciesLabel)) + filtered
     }
 
-    /** Construye la lista de agencias únicamente de la subregión del usuario para los chips rápidos. */
+    /** Construye la lista de agencias de la subregión del usuario. Si no hay coincidencia
+     *  exacta por subregión, hace fallback a filtro solo por región (datos sin campo subregion). */
     private fun buildSubregionAgencias(): List<AgenciaUI> {
         val user = _usuario.value ?: return emptyList()
         val subregionId = user.subregion?.takeIf { it.isNotBlank() }
@@ -1204,12 +1211,38 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
             ?: subregionId?.let { subId ->
                 cachedSubregiones.firstOrNull { it.id.equals(subId, ignoreCase = true) }?.regionId
             }
-        return buildAgencias(regionId, subregionId).drop(1) // sin "Todas las agencias"
+        // Intento 1: filtro por región + subregión
+        val withSub = buildAgencias(regionId, subregionId).drop(1)
+        if (withSub.isNotEmpty()) return withSub
+        // Intento 2: fallback solo por región (agencias sin campo subregion en RTDB)
+        if (!regionId.isNullOrBlank()) return buildAgencias(regionId, null).drop(1)
+        return emptyList()
     }
 
-    /** Expone agencias actualizadas de la subregión al Fragment. */
+    /** Actualiza agencias de subregión y chips rápidos. */
     private fun refreshSubregionAgencias() {
         _agenciasSubregion.value = buildSubregionAgencias()
+        refreshAgenciasRapidas()
+    }
+
+    /** Chips rápidos: muestra agencias preferidas (notificaciones) si el usuario las configuró;
+     *  si no, muestra todas las agencias de la subregión/región del usuario. */
+    private fun refreshAgenciasRapidas() {
+        val preferred = AveriaNotificationPreferences.getSelectedAgencies(getApplication())
+        if (preferred.isNotEmpty()) {
+            val preferredUI = preferred.mapNotNull { prefName ->
+                val found = cachedAgencias.firstOrNull { ag ->
+                    ag.nombre.equals(prefName, ignoreCase = true) ||
+                    ag.id.equals(prefName, ignoreCase = true)
+                }
+                val id = found?.id?.takeIf { it.isNotBlank() } ?: prefName
+                val nombre = found?.nombre?.takeIf { it.isNotBlank() } ?: prefName
+                AgenciaUI(id, nombre)
+            }
+            _agenciasRapidas.value = preferredUI
+        } else {
+            _agenciasRapidas.value = _agenciasSubregion.value
+        }
     }
 
     private fun observeCatalogos() {
