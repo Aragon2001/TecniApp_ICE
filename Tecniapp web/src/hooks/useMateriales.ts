@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
-import { ref, onValue, off } from 'firebase/database';
+import { useQuery } from '@tanstack/react-query';
+import { ref, get } from 'firebase/database';
 import { rtdbMateriales } from '../firebase/config';
+import { db, dexieRead, dexieWrite } from '../lib/db';
 
 export interface Material {
   id: string;
@@ -19,56 +20,35 @@ interface UseMaterialesResult {
   error: string | null;
 }
 
+async function fetchMateriales(): Promise<Material[]> {
+  const cached = await dexieRead<Material>(db.materiales, 'materiales');
+  if (cached !== null) {
+    return cached.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || '', 'es'));
+  }
+
+  if (!rtdbMateriales) throw new Error('Firebase RTDB (materiales) no configurado');
+  const snapshot = await get(ref(rtdbMateriales, '/materiales'));
+  const data = snapshot.val() ?? {};
+  const records: Material[] = Object.entries(data).map(([id, val]: [string, any]) => ({
+    id,
+    ...val,
+  }));
+  records.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || '', 'es'));
+
+  await dexieWrite(db.materiales, 'materiales', records);
+  return records;
+}
+
 export function useMateriales(): UseMaterialesResult {
-  const [materiales, setMateriales] = useState<Material[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data: materiales = [], isLoading, error } = useQuery<Material[]>({
+    queryKey: ['materiales'],
+    queryFn: fetchMateriales,
+    staleTime: 60 * 60_000,
+  });
 
-  useEffect(() => {
-    if (!rtdbMateriales) {
-      setError('Firebase RTDB (materiales) no configurado');
-      setLoading(false);
-      return;
-    }
-
-    const matsRef = ref(rtdbMateriales, '/materiales');
-
-    onValue(
-      matsRef,
-      (snapshot) => {
-        try {
-          const data = snapshot.val();
-          if (!data) {
-            setMateriales([]);
-            setLoading(false);
-            return;
-          }
-
-          const list: Material[] = Object.entries(data).map(
-            ([key, value]: [string, any]) => ({
-              id: key,
-              ...value,
-            })
-          );
-
-          list.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || '', 'es'));
-          setMateriales(list);
-          setLoading(false);
-        } catch (err) {
-          setError('Error al procesar materiales');
-          setLoading(false);
-        }
-      },
-      (err) => {
-        setError(err.message);
-        setLoading(false);
-      }
-    );
-
-    return () => {
-      off(matsRef);
-    };
-  }, []);
-
-  return { materiales, loading, error };
+  return {
+    materiales,
+    loading: isLoading,
+    error: error ? (error as Error).message : null,
+  };
 }

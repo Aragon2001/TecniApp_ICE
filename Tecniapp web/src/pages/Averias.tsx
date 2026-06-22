@@ -1,9 +1,10 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { AlertTriangle, Search, Grid, List, X, Eye } from 'lucide-react'
+import { AlertTriangle, Search, Grid, List, X, Eye, Star, Building2 } from 'lucide-react'
 import { format, formatDistanceToNow } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { useAverias } from '../hooks/useAverias'
+import { useAuth } from '../context/AuthContext'
 import { AveriaEstadoBadge } from '../components/ui/AveriaEstadoBadge'
 import type { AveriaEstado } from '../types'
 
@@ -34,6 +35,7 @@ const ESTADO_BG: Record<AveriaEstado, string> = {
 
 export default function Averias() {
   const navigate = useNavigate()
+  const { user, isAdmin, isSupervisor } = useAuth()
   const { averias, loading } = useAverias({})
   const [search, setSearch] = useState('')
   const [estadoFilter, setEstadoFilter] = useState<AveriaEstado | ''>('')
@@ -42,49 +44,96 @@ export default function Averias() {
   const [dateTo, setDateTo] = useState('')
   const [viewMode, setViewMode] = useState<'table' | 'card'>('table')
 
-  // Unique agencias for filter
-  const agencias = useMemo(() => {
-    const set = new Set(averias.map(a => a.nombreAgencia || a.agencia).filter(Boolean))
-    return Array.from(set).sort()
-  }, [averias])
+  // ── Agencias favoritas (persistidas por usuario) ──────────────────────────
+  const prefsKey = user?.uid ? `avprefs_${user.uid}` : null
 
-  // Apply filters
+  const [preferredAgencias, setPreferredAgencias] = useState<string[]>([])
+
+  useEffect(() => {
+    if (!prefsKey) return
+    try {
+      const stored = localStorage.getItem(prefsKey)
+      if (stored) {
+        setPreferredAgencias(JSON.parse(stored))
+      } else if (user?.agencia) {
+        // Primera vez: inicializar con la agencia propia del usuario
+        const init = [user.agencia]
+        setPreferredAgencias(init)
+        localStorage.setItem(prefsKey, JSON.stringify(init))
+      }
+    } catch {
+      setPreferredAgencias([])
+    }
+  }, [prefsKey, user?.agencia])
+
+  const togglePreferred = (ag: string) => {
+    if (!prefsKey) return
+    const next = preferredAgencias.includes(ag)
+      ? preferredAgencias.filter(a => a !== ag)
+      : [...preferredAgencias, ag]
+    setPreferredAgencias(next)
+    localStorage.setItem(prefsKey, JSON.stringify(next))
+  }
+
+  // ── Agencias filtradas a la región del usuario (técnicos/supervisores) ────
+  const agencias = useMemo(() => {
+    const source =
+      isAdmin || isSupervisor
+        ? averias
+        : averias.filter(a => !user?.region || a.region === user.region)
+    const set = new Set(
+      source.map((a: any) => a.nombreAgencia || a.agencia).filter(Boolean)
+    )
+    return Array.from(set as Set<string>).sort()
+  }, [averias, user, isAdmin, isSupervisor])
+
+  // ── Filtrado local ────────────────────────────────────────────────────────
   const filtered = useMemo(() => {
     let list = averias
     if (search) {
       const q = search.toLowerCase()
-      list = list.filter(a =>
-        a.caseId.toLowerCase().includes(q) ||
-        a.cliente.toLowerCase().includes(q) ||
+      list = list.filter((a: any) =>
+        (a.caseId || a.id)?.toLowerCase().includes(q) ||
+        a.cliente?.toLowerCase().includes(q) ||
         a.localizacion?.toLowerCase().includes(q) ||
-        a.causa.toLowerCase().includes(q) ||
-        a.tecnicoAsignadoNombre.toLowerCase().includes(q)
+        a.causa?.toLowerCase().includes(q) ||
+        a.tecnicoAsignadoNombre?.toLowerCase().includes(q) ||
+        a.nombreAgencia?.toLowerCase().includes(q)
       )
     }
-    if (estadoFilter) list = list.filter(a => a.estado === estadoFilter)
-    if (agenciaFilter) list = list.filter(a => (a.nombreAgencia || a.agencia) === agenciaFilter)
+    if (estadoFilter) list = list.filter((a: any) => a.estado === estadoFilter)
+    if (agenciaFilter)
+      list = list.filter(
+        (a: any) => (a.nombreAgencia || a.agencia) === agenciaFilter
+      )
     if (dateFrom) {
       const from = new Date(dateFrom).getTime()
-      list = list.filter(a => a.fechaInicioMillis >= from)
+      list = list.filter((a: any) => (a.fechaInicioMillis ?? 0) >= from)
     }
     if (dateTo) {
       const to = new Date(dateTo).getTime() + 86400000
-      list = list.filter(a => a.fechaInicioMillis <= to)
+      list = list.filter((a: any) => (a.fechaInicioMillis ?? 0) <= to)
     }
     return list
   }, [averias, search, estadoFilter, agenciaFilter, dateFrom, dateTo])
 
-  // Counts per estado
+  // Conteo por estado (sobre la lista filtrada)
   const counts = useMemo(() => {
     const c: Partial<Record<AveriaEstado, number>> = {}
-    filtered.forEach(a => { c[a.estado] = (c[a.estado] || 0) + 1 })
+    filtered.forEach((a: any) => { c[a.estado as AveriaEstado] = (c[a.estado as AveriaEstado] || 0) + 1 })
     return c
   }, [filtered])
 
   const hasFilters = search || estadoFilter || agenciaFilter || dateFrom || dateTo
   const clearFilters = () => {
-    setSearch(''); setEstadoFilter(''); setAgenciaFilter(''); setDateFrom(''); setDateTo('')
+    setSearch('')
+    setEstadoFilter('')
+    setAgenciaFilter('')
+    setDateFrom('')
+    setDateTo('')
   }
+
+  const isCurrentAgenciaPreferred = preferredAgencias.includes(agenciaFilter)
 
   return (
     <div className="space-y-5">
@@ -132,14 +181,32 @@ export default function Averias() {
           >
             {ESTADOS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
           </select>
-          <select
-            value={agenciaFilter}
-            onChange={e => setAgenciaFilter(e.target.value)}
-            className="px-3 py-2.5 border border-slate-200 rounded-lg text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#003087]/20 focus:border-[#003087] bg-white"
-          >
-            <option value="">Todas las agencias</option>
-            {agencias.map(a => <option key={a} value={a}>{a}</option>)}
-          </select>
+
+          {/* Agencias select + botón de favorito */}
+          <div className="flex gap-1.5 items-center">
+            <select
+              value={agenciaFilter}
+              onChange={e => setAgenciaFilter(e.target.value)}
+              className="flex-1 min-w-0 px-3 py-2.5 border border-slate-200 rounded-lg text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#003087]/20 focus:border-[#003087] bg-white"
+            >
+              <option value="">Todas las agencias</option>
+              {agencias.map(a => <option key={a} value={a}>{a}</option>)}
+            </select>
+            {agenciaFilter && (
+              <button
+                onClick={() => togglePreferred(agenciaFilter)}
+                title={isCurrentAgenciaPreferred ? 'Quitar de favoritos' : 'Agregar a favoritos'}
+                className={`flex-shrink-0 p-2.5 rounded-lg border transition-colors ${
+                  isCurrentAgenciaPreferred
+                    ? 'bg-amber-50 border-amber-200 text-amber-500'
+                    : 'bg-white border-slate-200 text-slate-400 hover:text-amber-400 hover:border-amber-200'
+                }`}
+              >
+                <Star size={14} fill={isCurrentAgenciaPreferred ? 'currentColor' : 'none'} />
+              </button>
+            )}
+          </div>
+
           <div className="flex gap-2">
             <input
               type="date"
@@ -168,9 +235,9 @@ export default function Averias() {
         )}
       </div>
 
-      {/* Stats pills */}
+      {/* Estado pills */}
       <div className="flex flex-wrap gap-2">
-        {(['PENDIENTE','ASIGNADA','EN_ATENCION','RESUELTA','ANULADA'] as AveriaEstado[]).map(estado => {
+        {(['PENDIENTE', 'ASIGNADA', 'EN_ATENCION', 'RESUELTA', 'ANULADA'] as AveriaEstado[]).map(estado => {
           const labels: Record<AveriaEstado, string> = {
             PENDIENTE: 'Pendiente', ASIGNADA: 'Asignada', EN_ATENCION: 'En Atención',
             RESUELTA: 'Resuelta', ANULADA: 'Anulada',
@@ -190,10 +257,40 @@ export default function Averias() {
         })}
       </div>
 
+      {/* Agencias favoritas — acceso rápido */}
+      {preferredAgencias.length > 0 && (
+        <div className="flex flex-wrap gap-2 items-center">
+          <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide flex items-center gap-1">
+            <Building2 size={10} /> Agencias
+          </span>
+          {preferredAgencias.map(ag => (
+            <button
+              key={ag}
+              onClick={() => setAgenciaFilter(agenciaFilter === ag ? '' : ag)}
+              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border transition-all ${
+                agenciaFilter === ag
+                  ? 'bg-[#003087] text-white border-[#003087]'
+                  : 'bg-white text-slate-600 border-slate-200 hover:border-[#003087]/40 hover:bg-slate-50'
+              }`}
+            >
+              {ag}
+              <span
+                role="button"
+                onClick={e => { e.stopPropagation(); togglePreferred(ag) }}
+                className="opacity-40 hover:opacity-100 transition-opacity ml-0.5"
+                title="Quitar de favoritos"
+              >
+                <X size={10} />
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Content */}
       {loading ? (
         <div className="bg-white rounded-xl border border-slate-100 p-5 space-y-3 animate-pulse">
-          {[1,2,3,4,5,6].map(i => <div key={i} className="h-12 bg-slate-100 rounded-lg" />)}
+          {[1, 2, 3, 4, 5, 6].map(i => <div key={i} className="h-12 bg-slate-100 rounded-lg" />)}
         </div>
       ) : filtered.length === 0 ? (
         <div className="bg-white rounded-xl border border-slate-100 p-16 text-center">
@@ -207,7 +304,7 @@ export default function Averias() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-100">
-                  {['Caso ID','Estado','Agencia','Clientes','Localización','Técnico','Fecha','Tiempo',''].map(h => (
+                  {['Caso ID', 'Estado', 'Agencia', 'Clientes', 'Localización', 'Técnico', 'Fecha', 'Tiempo', ''].map(h => (
                     <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">
                       {h}
                     </th>
@@ -215,14 +312,14 @@ export default function Averias() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {filtered.map(averia => (
+                {filtered.map((averia: any) => (
                   <tr
-                    key={averia.caseId}
-                    onClick={() => navigate(`/averias/${averia.caseId}`)}
+                    key={averia.caseId || averia.id}
+                    onClick={() => navigate(`/averias/${averia.caseId || averia.id}`)}
                     className="hover:bg-slate-50 cursor-pointer transition-colors"
                   >
                     <td className="px-4 py-3 font-mono text-xs font-bold text-[#003087] whitespace-nowrap">
-                      {averia.caseId}
+                      {averia.caseId || averia.id}
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">
                       <AveriaEstadoBadge estado={averia.estado} />
@@ -251,7 +348,7 @@ export default function Averias() {
                     </td>
                     <td className="px-4 py-3">
                       <button
-                        onClick={e => { e.stopPropagation(); navigate(`/averias/${averia.caseId}`) }}
+                        onClick={e => { e.stopPropagation(); navigate(`/averias/${averia.caseId || averia.id}`) }}
                         className="p-1.5 text-[#0066CC] hover:bg-blue-50 rounded-lg transition-colors"
                       >
                         <Eye size={14} />
@@ -265,14 +362,14 @@ export default function Averias() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-          {filtered.map(averia => (
+          {filtered.map((averia: any) => (
             <div
-              key={averia.caseId}
-              onClick={() => navigate(`/averias/${averia.caseId}`)}
-              className={`bg-white rounded-xl border border-slate-100 border-l-4 ${ESTADO_BORDER[averia.estado]} p-4 cursor-pointer hover:shadow-md transition-shadow`}
+              key={averia.caseId || averia.id}
+              onClick={() => navigate(`/averias/${averia.caseId || averia.id}`)}
+              className={`bg-white rounded-xl border border-slate-100 border-l-4 ${ESTADO_BORDER[averia.estado as AveriaEstado]} p-4 cursor-pointer hover:shadow-md transition-shadow`}
             >
               <div className="flex items-start justify-between gap-2 mb-2">
-                <span className="font-mono text-sm font-bold text-[#003087]">{averia.caseId}</span>
+                <span className="font-mono text-sm font-bold text-[#003087]">{averia.caseId || averia.id}</span>
                 <AveriaEstadoBadge estado={averia.estado} />
               </div>
               <p className="text-sm font-medium text-slate-700 mb-1">{averia.nombreAgencia || averia.agencia || 'Sin agencia'}</p>

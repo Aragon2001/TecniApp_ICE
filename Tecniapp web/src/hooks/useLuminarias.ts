@@ -1,6 +1,10 @@
-import { useState, useEffect } from 'react';
-import { ref, onValue, off, update } from 'firebase/database';
+import { useQuery } from '@tanstack/react-query';
+import { ref, get, update } from 'firebase/database';
+import toast from 'react-hot-toast';
 import { rtdbInventario } from '../firebase/config';
+import { queryClient } from '../lib/queryClient';
+import { db, dexieRead, dexieWrite, dexieInvalidate } from '../lib/db';
+import { addToQueue } from '../lib/syncQueue';
 
 export interface Luminaria {
   id: string;
@@ -24,58 +28,37 @@ interface UseLuminariasResult {
   error: string | null;
 }
 
+async function fetchLuminarias(): Promise<Luminaria[]> {
+  const cached = await dexieRead<Luminaria>(db.luminarias, 'luminarias');
+  if (cached !== null) {
+    return cached.sort((a, b) => (a.numero || '').localeCompare(b.numero || '', 'es'));
+  }
+
+  if (!rtdbInventario) throw new Error('Firebase RTDB (inventario) no configurado');
+  const snapshot = await get(ref(rtdbInventario, '/luminarias'));
+  const data = snapshot.val() ?? {};
+  const records: Luminaria[] = Object.entries(data).map(([id, val]: [string, any]) => ({
+    id,
+    ...val,
+  }));
+  records.sort((a, b) => (a.numero || '').localeCompare(b.numero || '', 'es'));
+
+  await dexieWrite(db.luminarias, 'luminarias', records);
+  return records;
+}
+
 export function useLuminarias(): UseLuminariasResult {
-  const [luminarias, setLuminarias] = useState<Luminaria[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data: luminarias = [], isLoading, error } = useQuery<Luminaria[]>({
+    queryKey: ['luminarias'],
+    queryFn: fetchLuminarias,
+    staleTime: 5 * 60_000,
+  });
 
-  useEffect(() => {
-    if (!rtdbInventario) {
-      setError('Firebase RTDB (inventario) no configurado');
-      setLoading(false);
-      return;
-    }
-
-    const lumRef = ref(rtdbInventario, '/luminarias');
-
-    onValue(
-      lumRef,
-      (snapshot) => {
-        try {
-          const data = snapshot.val();
-          if (!data) {
-            setLuminarias([]);
-            setLoading(false);
-            return;
-          }
-
-          const list: Luminaria[] = Object.entries(data).map(
-            ([key, value]: [string, any]) => ({
-              id: key,
-              ...value,
-            })
-          );
-
-          list.sort((a, b) => (a.numero || '').localeCompare(b.numero || '', 'es'));
-          setLuminarias(list);
-          setLoading(false);
-        } catch (err) {
-          setError('Error al procesar luminarias');
-          setLoading(false);
-        }
-      },
-      (err) => {
-        setError(err.message);
-        setLoading(false);
-      }
-    );
-
-    return () => {
-      off(lumRef);
-    };
-  }, []);
-
-  return { luminarias, loading, error };
+  return {
+    luminarias,
+    loading: isLoading,
+    error: error ? (error as Error).message : null,
+  };
 }
 
 export async function updateLuminariaEstado(
@@ -83,11 +66,32 @@ export async function updateLuminariaEstado(
   estado: string,
   observaciones?: string
 ): Promise<void> {
-  if (!rtdbInventario) throw new Error('Firebase RTDB (inventario) no configurado');
-  const lumRef = ref(rtdbInventario, `/luminarias/${luminariaId}`);
-  await update(lumRef, {
+  const payload = {
     estado,
     observaciones: observaciones || null,
     updatedAt: Date.now(),
-  });
+  };
+
+  if (!navigator.onLine) {
+    await db.luminarias.update(luminariaId, payload);
+    await addToQueue({
+      collectionKey: 'luminarias',
+      entityId: luminariaId,
+      rtdbPath: `/luminarias/${luminariaId}`,
+      payload,
+    });
+    queryClient.setQueryData<Luminaria[]>(['luminarias'], (old) =>
+      old?.map((l) => (l.id === luminariaId ? { ...l, ...payload } : l)) ?? []
+    );
+    toast('Guardado sin conexión. Se sincronizará al restaurar internet.', {
+      icon: '📶',
+      duration: 5000,
+    });
+    return;
+  }
+
+  if (!rtdbInventario) throw new Error('Firebase RTDB (inventario) no configurado');
+  await update(ref(rtdbInventario, `/luminarias/${luminariaId}`), payload);
+  await dexieInvalidate('luminarias');
+  queryClient.invalidateQueries({ queryKey: ['luminarias'] });
 }

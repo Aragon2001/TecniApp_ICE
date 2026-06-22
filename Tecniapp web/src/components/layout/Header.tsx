@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Menu, Bell, LogOut, ChevronDown, User, Clock, Shield } from 'lucide-react';
+import { Menu, Bell, LogOut, ChevronDown, User, Clock, Shield, WifiOff, RefreshCw } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useAverias } from '../../hooks/useAverias';
+import { useNetworkStatus } from '../../hooks/useNetworkStatus';
+import { usePendingCount } from '../../lib/syncQueue';
 
 interface HeaderProps {
   onMenuToggle: () => void;
@@ -27,6 +29,8 @@ const Header: React.FC<HeaderProps> = ({ onMenuToggle }) => {
   const location = useLocation();
   const { user, logout } = useAuth();
   const { averias } = useAverias({ estado: 'PENDIENTE' });
+  const isOnline = useNetworkStatus();
+  const pendingSync = usePendingCount();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -92,8 +96,27 @@ const Header: React.FC<HeaderProps> = ({ onMenuToggle }) => {
           </div>
         </div>
 
-        {/* Right: clock, notifications, user */}
+        {/* Right: status chips, clock, notifications, user */}
         <div className="flex items-center gap-2">
+
+          {/* Offline indicator */}
+          {!isOnline && (
+            <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 border border-amber-200 rounded-lg">
+              <WifiOff size={12} className="text-amber-600" />
+              <span className="text-xs font-medium text-amber-700">Sin conexión</span>
+            </div>
+          )}
+
+          {/* Pending sync indicator */}
+          {isOnline && pendingSync > 0 && (
+            <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 border border-blue-200 rounded-lg">
+              <RefreshCw size={12} className="text-blue-600 animate-spin" />
+              <span className="text-xs font-medium text-blue-700">
+                {pendingSync} pendiente{pendingSync !== 1 ? 's' : ''}
+              </span>
+            </div>
+          )}
+
           {/* Clock */}
           <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-slate-50 rounded-lg border border-slate-100">
             <Clock size={14} className="text-slate-400" />

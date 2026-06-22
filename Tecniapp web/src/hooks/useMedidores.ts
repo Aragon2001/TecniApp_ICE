@@ -1,6 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
-import { ref, onValue, off } from 'firebase/database';
+import { useCallback } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { ref, get } from 'firebase/database';
 import { rtdbMain } from '../firebase/config';
+import { db, dexieRead, dexieWrite } from '../lib/db';
 
 export interface Medidor {
   id: string;
@@ -26,56 +28,31 @@ interface UseMedidoresResult {
   searchMedidor: (query: string) => Medidor[];
 }
 
+async function fetchMedidores(): Promise<Medidor[]> {
+  const cached = await dexieRead<Medidor>(db.medidores, 'medidores');
+  if (cached !== null) {
+    return cached.sort((a, b) => (a.numero || '').localeCompare(b.numero || '', 'es'));
+  }
+
+  if (!rtdbMain) throw new Error('Firebase RTDB (main) no configurado');
+  const snapshot = await get(ref(rtdbMain, '/medidores'));
+  const data = snapshot.val() ?? {};
+  const records: Medidor[] = Object.entries(data).map(([id, val]: [string, any]) => ({
+    id,
+    ...val,
+  }));
+  records.sort((a, b) => (a.numero || '').localeCompare(b.numero || '', 'es'));
+
+  await dexieWrite(db.medidores, 'medidores', records);
+  return records;
+}
+
 export function useMedidores(): UseMedidoresResult {
-  const [medidores, setMedidores] = useState<Medidor[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!rtdbMain) {
-      setError('Firebase RTDB (main) no configurado');
-      setLoading(false);
-      return;
-    }
-
-    const medidoresRef = ref(rtdbMain, '/medidores');
-
-    onValue(
-      medidoresRef,
-      (snapshot) => {
-        try {
-          const data = snapshot.val();
-          if (!data) {
-            setMedidores([]);
-            setLoading(false);
-            return;
-          }
-
-          const list: Medidor[] = Object.entries(data).map(
-            ([key, value]: [string, any]) => ({
-              id: key,
-              ...value,
-            })
-          );
-
-          list.sort((a, b) => (a.numero || '').localeCompare(b.numero || '', 'es'));
-          setMedidores(list);
-          setLoading(false);
-        } catch (err) {
-          setError('Error al procesar medidores');
-          setLoading(false);
-        }
-      },
-      (err) => {
-        setError(err.message);
-        setLoading(false);
-      }
-    );
-
-    return () => {
-      off(medidoresRef);
-    };
-  }, []);
+  const { data: medidores = [], isLoading, error } = useQuery<Medidor[]>({
+    queryKey: ['medidores'],
+    queryFn: fetchMedidores,
+    staleTime: 10 * 60_000,
+  });
 
   const searchMedidor = useCallback(
     (query: string): Medidor[] => {
@@ -92,5 +69,10 @@ export function useMedidores(): UseMedidoresResult {
     [medidores]
   );
 
-  return { medidores, loading, error, searchMedidor };
+  return {
+    medidores,
+    loading: isLoading,
+    error: error ? (error as Error).message : null,
+    searchMedidor,
+  };
 }

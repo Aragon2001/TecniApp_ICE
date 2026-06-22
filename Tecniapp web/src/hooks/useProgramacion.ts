@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
-import { ref, onValue, off } from 'firebase/database';
+import { useQuery } from '@tanstack/react-query';
+import { ref, get } from 'firebase/database';
 import { rtdbProgramacion } from '../firebase/config';
+import { db, dexieRead, dexieWrite } from '../lib/db';
 
 export interface Programacion {
   id: string;
@@ -28,79 +29,44 @@ interface UseProgramacionResult {
   error: string | null;
 }
 
+async function fetchProgramaciones(): Promise<Programacion[]> {
+  const cached = await dexieRead<Programacion>(db.programaciones, 'programaciones');
+  if (cached !== null) {
+    return cached.sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
+  }
+
+  if (!rtdbProgramacion) throw new Error('Firebase RTDB (programacion) no configurado');
+  const snapshot = await get(ref(rtdbProgramacion, '/programaciones'));
+  const data = snapshot.val() ?? {};
+
+  // Aplana estructura: subregion → vehiculoId → programacionId
+  const records: Programacion[] = [];
+  Object.entries(data).forEach(([subregion, subregionData]: [string, any]) => {
+    if (typeof subregionData !== 'object' || subregionData === null) return;
+    Object.entries(subregionData).forEach(([vehiculoId, vehiculoData]: [string, any]) => {
+      if (typeof vehiculoData !== 'object' || vehiculoData === null) return;
+      Object.entries(vehiculoData).forEach(([progId, progData]: [string, any]) => {
+        if (typeof progData !== 'object' || progData === null) return;
+        records.push({ id: progId, subregion, vehiculoId, ...progData });
+      });
+    });
+  });
+  records.sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
+
+  await dexieWrite(db.programaciones, 'programaciones', records);
+  return records;
+}
+
 export function useProgramacion(): UseProgramacionResult {
-  const [programaciones, setProgramaciones] = useState<Programacion[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data: programaciones = [], isLoading, error } = useQuery<Programacion[]>({
+    queryKey: ['programaciones'],
+    queryFn: fetchProgramaciones,
+    staleTime: 5 * 60_000,
+  });
 
-  useEffect(() => {
-    if (!rtdbProgramacion) {
-      setError('Firebase RTDB (programacion) no configurado');
-      setLoading(false);
-      return;
-    }
-
-    // Path: /programaciones/{subregion}/{vehiculoId}/{programacionId}
-    const progRef = ref(rtdbProgramacion, '/programaciones');
-
-    onValue(
-      progRef,
-      (snapshot) => {
-        try {
-          const data = snapshot.val();
-          if (!data) {
-            setProgramaciones([]);
-            setLoading(false);
-            return;
-          }
-
-          const list: Programacion[] = [];
-
-          // Flatten nested structure: subregion → vehiculoId → programacionId
-          Object.entries(data).forEach(([subregion, subregionData]: [string, any]) => {
-            if (typeof subregionData !== 'object' || subregionData === null) return;
-            Object.entries(subregionData).forEach(
-              ([vehiculoId, vehiculoData]: [string, any]) => {
-                if (typeof vehiculoData !== 'object' || vehiculoData === null) return;
-                Object.entries(vehiculoData).forEach(
-                  ([progId, progData]: [string, any]) => {
-                    if (typeof progData !== 'object' || progData === null) return;
-                    list.push({
-                      id: progId,
-                      subregion,
-                      vehiculoId,
-                      ...progData,
-                    });
-                  }
-                );
-              }
-            );
-          });
-
-          // Sort by fecha descending
-          list.sort((a, b) => {
-            const da = a.fecha || '';
-            const db = b.fecha || '';
-            return db.localeCompare(da);
-          });
-
-          setProgramaciones(list);
-          setLoading(false);
-        } catch (err) {
-          setError('Error al procesar programaciones');
-          setLoading(false);
-        }
-      },
-      (err) => {
-        setError(err.message);
-        setLoading(false);
-      }
-    );
-
-    return () => {
-      off(progRef);
-    };
-  }, []);
-
-  return { programaciones, loading, error };
+  return {
+    programaciones,
+    loading: isLoading,
+    error: error ? (error as Error).message : null,
+  };
 }
