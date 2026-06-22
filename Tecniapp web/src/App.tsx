@@ -1,9 +1,11 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
+import toast from 'react-hot-toast'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import Layout from './components/layout/Layout'
 import { LoadingScreen } from './components/ui/Spinner'
+import { processQueue } from './lib/syncQueue'
 
 // Import all pages
 import Login from './pages/Login'
@@ -22,6 +24,37 @@ import Reportes from './pages/Reportes'
 import Usuarios from './pages/Usuarios'
 import Admin from './pages/Admin'
 
+// Escucha eventos de red y sincroniza la cola al restaurar conexión
+function SyncOnReconnect() {
+  useEffect(() => {
+    const handleOnline = async () => {
+      toast.loading('Conexión restaurada. Sincronizando...', { id: 'sync-restore' })
+      await processQueue()
+      toast.dismiss('sync-restore')
+    }
+    const handleOffline = () => {
+      toast('Sin conexión. Los cambios se guardarán localmente.', {
+        icon: '📶',
+        duration: 5000,
+        id: 'offline-notice',
+      })
+    }
+
+    window.addEventListener('online', handleOnline)
+    window.addEventListener('offline', handleOffline)
+
+    // Al iniciar sesión, procesar cualquier operación pendiente de sesiones anteriores
+    if (navigator.onLine) processQueue()
+
+    return () => {
+      window.removeEventListener('online', handleOnline)
+      window.removeEventListener('offline', handleOffline)
+    }
+  }, [])
+
+  return null
+}
+
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { firebaseUser, loading } = useAuth()
   if (loading) return <LoadingScreen />
@@ -33,24 +66,28 @@ function AppRoutes() {
   const { firebaseUser, loading } = useAuth()
   if (loading) return <LoadingScreen />
   return (
-    <Routes>
-      <Route path="/login" element={firebaseUser ? <Navigate to="/" replace /> : <Login />} />
-      <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-      <Route path="/averias" element={<ProtectedRoute><Averias /></ProtectedRoute>} />
-      <Route path="/averias/:caseId" element={<ProtectedRoute><AveriaDetail /></ProtectedRoute>} />
-      <Route path="/medidores" element={<ProtectedRoute><Medidores /></ProtectedRoute>} />
-      <Route path="/localizaciones" element={<ProtectedRoute><Localizaciones /></ProtectedRoute>} />
-      <Route path="/luminarias" element={<ProtectedRoute><Luminarias /></ProtectedRoute>} />
-      <Route path="/inventario" element={<ProtectedRoute><Inventario /></ProtectedRoute>} />
-      <Route path="/vehiculos" element={<ProtectedRoute><Vehiculos /></ProtectedRoute>} />
-      <Route path="/vehiculos/:vehiculoId" element={<ProtectedRoute><VehiculoDetail /></ProtectedRoute>} />
-      <Route path="/programacion" element={<ProtectedRoute><Programacion /></ProtectedRoute>} />
-      <Route path="/planillas" element={<ProtectedRoute><Planillas /></ProtectedRoute>} />
-      <Route path="/reportes" element={<ProtectedRoute><Reportes /></ProtectedRoute>} />
-      <Route path="/usuarios" element={<ProtectedRoute><Usuarios /></ProtectedRoute>} />
-      <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <>
+      {/* Solo sincroniza cuando hay sesión activa */}
+      {firebaseUser && <SyncOnReconnect />}
+      <Routes>
+        <Route path="/login" element={firebaseUser ? <Navigate to="/" replace /> : <Login />} />
+        <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/averias" element={<ProtectedRoute><Averias /></ProtectedRoute>} />
+        <Route path="/averias/:caseId" element={<ProtectedRoute><AveriaDetail /></ProtectedRoute>} />
+        <Route path="/medidores" element={<ProtectedRoute><Medidores /></ProtectedRoute>} />
+        <Route path="/localizaciones" element={<ProtectedRoute><Localizaciones /></ProtectedRoute>} />
+        <Route path="/luminarias" element={<ProtectedRoute><Luminarias /></ProtectedRoute>} />
+        <Route path="/inventario" element={<ProtectedRoute><Inventario /></ProtectedRoute>} />
+        <Route path="/vehiculos" element={<ProtectedRoute><Vehiculos /></ProtectedRoute>} />
+        <Route path="/vehiculos/:vehiculoId" element={<ProtectedRoute><VehiculoDetail /></ProtectedRoute>} />
+        <Route path="/programacion" element={<ProtectedRoute><Programacion /></ProtectedRoute>} />
+        <Route path="/planillas" element={<ProtectedRoute><Planillas /></ProtectedRoute>} />
+        <Route path="/reportes" element={<ProtectedRoute><Reportes /></ProtectedRoute>} />
+        <Route path="/usuarios" element={<ProtectedRoute><Usuarios /></ProtectedRoute>} />
+        <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </>
   )
 }
 

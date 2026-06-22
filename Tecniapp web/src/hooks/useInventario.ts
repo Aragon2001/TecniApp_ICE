@@ -1,6 +1,8 @@
-import { useState, useEffect } from 'react';
-import { ref, onValue, off } from 'firebase/database';
+import { useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { ref, get } from 'firebase/database';
 import { rtdbInventario } from '../firebase/config';
+import { db, dexieRead, dexieWrite } from '../lib/db';
 
 export interface InventarioItem {
   id: string;
@@ -26,70 +28,51 @@ interface UseInventarioResult {
   error: string | null;
 }
 
+async function fetchInventario(): Promise<InventarioItem[]> {
+  const cached = await dexieRead<InventarioItem>(db.inventario, 'inventario');
+  if (cached !== null) {
+    return cached.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || '', 'es'));
+  }
+
+  if (!rtdbInventario) throw new Error('Firebase RTDB (inventario) no configurado');
+  const snapshot = await get(ref(rtdbInventario, '/inventario'));
+  const data = snapshot.val() ?? {};
+
+  // Aplana estructura /inventario/{vehiculoId}/{itemId}
+  const records: InventarioItem[] = [];
+  Object.entries(data).forEach(([vehiculoId, vehiculoItems]: [string, any]) => {
+    if (typeof vehiculoItems !== 'object' || vehiculoItems === null) return;
+    Object.entries(vehiculoItems).forEach(([itemId, itemData]: [string, any]) => {
+      records.push({ id: itemId, vehiculoId, ...itemData });
+    });
+  });
+  records.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || '', 'es'));
+
+  await dexieWrite(db.inventario, 'inventario', records);
+  return records;
+}
+
 export function useInventario(): UseInventarioResult {
-  const [inventario, setInventario] = useState<InventarioItem[]>([]);
-  const [inventarioPorVehiculo, setInventarioPorVehiculo] = useState<InventarioPorVehiculo>({});
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data: inventario = [], isLoading, error } = useQuery<InventarioItem[]>({
+    queryKey: ['inventario'],
+    queryFn: fetchInventario,
+    staleTime: 10 * 60_000,
+  });
 
-  useEffect(() => {
-    if (!rtdbInventario) {
-      setError('Firebase RTDB (inventario) no configurado');
-      setLoading(false);
-      return;
-    }
+  const inventarioPorVehiculo = useMemo(() => {
+    const byVehiculo: InventarioPorVehiculo = {};
+    inventario.forEach((item) => {
+      if (!item.vehiculoId) return;
+      if (!byVehiculo[item.vehiculoId]) byVehiculo[item.vehiculoId] = [];
+      byVehiculo[item.vehiculoId].push(item);
+    });
+    return byVehiculo;
+  }, [inventario]);
 
-    const inventarioRef = ref(rtdbInventario, '/inventario');
-
-    onValue(
-      inventarioRef,
-      (snapshot) => {
-        try {
-          const data = snapshot.val();
-          if (!data) {
-            setInventario([]);
-            setInventarioPorVehiculo({});
-            setLoading(false);
-            return;
-          }
-
-          const list: InventarioItem[] = [];
-          const byVehiculo: InventarioPorVehiculo = {};
-
-          // Structure: /inventario/{vehiculoId}/{itemId}
-          Object.entries(data).forEach(([vehiculoId, vehiculoItems]: [string, any]) => {
-            if (typeof vehiculoItems === 'object' && vehiculoItems !== null) {
-              const items: InventarioItem[] = Object.entries(vehiculoItems).map(
-                ([itemId, itemData]: [string, any]) => ({
-                  id: itemId,
-                  vehiculoId,
-                  ...itemData,
-                })
-              );
-              list.push(...items);
-              byVehiculo[vehiculoId] = items;
-            }
-          });
-
-          list.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || '', 'es'));
-          setInventario(list);
-          setInventarioPorVehiculo(byVehiculo);
-          setLoading(false);
-        } catch (err) {
-          setError('Error al procesar inventario');
-          setLoading(false);
-        }
-      },
-      (err) => {
-        setError(err.message);
-        setLoading(false);
-      }
-    );
-
-    return () => {
-      off(inventarioRef);
-    };
-  }, []);
-
-  return { inventario, inventarioPorVehiculo, loading, error };
+  return {
+    inventario,
+    inventarioPorVehiculo,
+    loading: isLoading,
+    error: error ? (error as Error).message : null,
+  };
 }

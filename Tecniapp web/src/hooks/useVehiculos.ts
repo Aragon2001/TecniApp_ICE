@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
-import { ref, onValue, off } from 'firebase/database';
+import { useQuery } from '@tanstack/react-query';
+import { ref, get } from 'firebase/database';
 import { rtdbGeneral } from '../firebase/config';
+import { db, dexieRead, dexieWrite } from '../lib/db';
 
 export type VehiculoEstado = 'OPTIMO' | 'ATENCION' | 'VENCIDO';
 
@@ -34,59 +35,38 @@ interface UseVehiculosResult {
   error: string | null;
 }
 
+async function fetchVehiculos(): Promise<Vehiculo[]> {
+  const cached = await dexieRead<Vehiculo>(db.vehiculos, 'vehiculos');
+  if (cached !== null) {
+    return cached.sort((a, b) => (a.placa || '').localeCompare(b.placa || '', 'es'));
+  }
+
+  if (!rtdbGeneral) throw new Error('Firebase RTDB (general) no configurado');
+  const snapshot = await get(ref(rtdbGeneral, '/vehiculos'));
+  const data = snapshot.val() ?? {};
+  const records: Vehiculo[] = Object.entries(data).map(([id, val]: [string, any]) => ({
+    id,
+    ...val,
+    estado: computeEstado(val.kmActual, val.mantenimientoProximo),
+  }));
+  records.sort((a, b) => (a.placa || '').localeCompare(b.placa || '', 'es'));
+
+  await dexieWrite(db.vehiculos, 'vehiculos', records);
+  return records;
+}
+
 export function useVehiculos(): UseVehiculosResult {
-  const [vehiculos, setVehiculos] = useState<Vehiculo[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data: vehiculos = [], isLoading, error } = useQuery<Vehiculo[]>({
+    queryKey: ['vehiculos'],
+    queryFn: fetchVehiculos,
+    staleTime: 10 * 60_000,
+  });
 
-  useEffect(() => {
-    if (!rtdbGeneral) {
-      setError('Firebase RTDB (general) no configurado');
-      setLoading(false);
-      return;
-    }
-
-    const vehiculosRef = ref(rtdbGeneral, '/vehiculos');
-
-    onValue(
-      vehiculosRef,
-      (snapshot) => {
-        try {
-          const data = snapshot.val();
-          if (!data) {
-            setVehiculos([]);
-            setLoading(false);
-            return;
-          }
-
-          const list: Vehiculo[] = Object.entries(data).map(
-            ([key, value]: [string, any]) => ({
-              id: key,
-              ...value,
-              estado: computeEstado(value.kmActual, value.mantenimientoProximo),
-            })
-          );
-
-          list.sort((a, b) => (a.placa || '').localeCompare(b.placa || '', 'es'));
-          setVehiculos(list);
-          setLoading(false);
-        } catch (err) {
-          setError('Error al procesar vehículos');
-          setLoading(false);
-        }
-      },
-      (err) => {
-        setError(err.message);
-        setLoading(false);
-      }
-    );
-
-    return () => {
-      off(vehiculosRef);
-    };
-  }, []);
-
-  return { vehiculos, loading, error };
+  return {
+    vehiculos,
+    loading: isLoading,
+    error: error ? (error as Error).message : null,
+  };
 }
 
 interface UseVehiculoResult {

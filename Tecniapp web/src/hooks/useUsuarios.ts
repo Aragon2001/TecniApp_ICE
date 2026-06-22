@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
-import { ref, onValue, off } from 'firebase/database';
+import { useQuery } from '@tanstack/react-query';
+import { ref, get } from 'firebase/database';
 import { rtdbUsers } from '../firebase/config';
+import { db, dexieRead, dexieWrite } from '../lib/db';
 
 export interface Usuario {
   id: string;
@@ -26,62 +27,40 @@ function keyToEmail(key: string): string {
   return key.replace(/,/g, '.');
 }
 
-export function useUsuarios(): UseUsuariosResult {
-  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!rtdbUsers) {
-      setError('Firebase RTDB (users) no configurado');
-      setLoading(false);
-      return;
-    }
-
-    const usersRef = ref(rtdbUsers, '/users');
-
-    onValue(
-      usersRef,
-      (snapshot) => {
-        try {
-          const data = snapshot.val();
-          if (!data) {
-            setUsuarios([]);
-            setLoading(false);
-            return;
-          }
-
-          const list: Usuario[] = Object.entries(data).map(
-            ([key, value]: [string, any]) => ({
-              id: key,
-              email: value.email || keyToEmail(key),
-              ...value,
-            })
-          );
-
-          list.sort((a, b) =>
-            (a.displayName || a.email || '').localeCompare(
-              b.displayName || b.email || '',
-              'es'
-            )
-          );
-          setUsuarios(list);
-          setLoading(false);
-        } catch (err) {
-          setError('Error al procesar usuarios');
-          setLoading(false);
-        }
-      },
-      (err) => {
-        setError(err.message);
-        setLoading(false);
-      }
+async function fetchUsuarios(): Promise<Usuario[]> {
+  const cached = await dexieRead<Usuario>(db.usuarios, 'usuarios');
+  if (cached !== null) {
+    return cached.sort((a, b) =>
+      (a.displayName || a.email || '').localeCompare(b.displayName || b.email || '', 'es')
     );
+  }
 
-    return () => {
-      off(usersRef);
-    };
-  }, []);
+  if (!rtdbUsers) throw new Error('Firebase RTDB (users) no configurado');
+  const snapshot = await get(ref(rtdbUsers, '/users'));
+  const data = snapshot.val() ?? {};
+  const records: Usuario[] = Object.entries(data).map(([key, value]: [string, any]) => ({
+    id: key,
+    email: value.email || keyToEmail(key),
+    ...value,
+  }));
+  records.sort((a, b) =>
+    (a.displayName || a.email || '').localeCompare(b.displayName || b.email || '', 'es')
+  );
 
-  return { usuarios, loading, error };
+  await dexieWrite(db.usuarios, 'usuarios', records);
+  return records;
+}
+
+export function useUsuarios(): UseUsuariosResult {
+  const { data: usuarios = [], isLoading, error } = useQuery<Usuario[]>({
+    queryKey: ['usuarios'],
+    queryFn: fetchUsuarios,
+    staleTime: 30 * 60_000,
+  });
+
+  return {
+    usuarios,
+    loading: isLoading,
+    error: error ? (error as Error).message : null,
+  };
 }

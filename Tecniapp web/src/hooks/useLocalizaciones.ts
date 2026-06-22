@@ -1,6 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
-import { ref, onValue, off } from 'firebase/database';
+import { useCallback } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { ref, get } from 'firebase/database';
 import { rtdbMain } from '../firebase/config';
+import { db, dexieRead, dexieWrite } from '../lib/db';
 
 export interface Localizacion {
   id: string;
@@ -22,57 +24,31 @@ interface UseLocalizacionesResult {
   searchLocalizacion: (query: string) => Localizacion[];
 }
 
+async function fetchLocalizaciones(): Promise<Localizacion[]> {
+  const cached = await dexieRead<Localizacion>(db.localizaciones, 'localizaciones');
+  if (cached !== null) {
+    return cached.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || '', 'es'));
+  }
+
+  if (!rtdbMain) throw new Error('Firebase RTDB no configurado');
+  const snapshot = await get(ref(rtdbMain, '/localizaciones'));
+  const data = snapshot.val() ?? {};
+  const records: Localizacion[] = Object.entries(data).map(([id, val]: [string, any]) => ({
+    id,
+    ...val,
+  }));
+  records.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || '', 'es'));
+
+  await dexieWrite(db.localizaciones, 'localizaciones', records);
+  return records;
+}
+
 export function useLocalizaciones(): UseLocalizacionesResult {
-  const [localizaciones, setLocalizaciones] = useState<Localizacion[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const db = rtdbMain;
-    if (!db) {
-      setError('Firebase RTDB no configurado');
-      setLoading(false);
-      return;
-    }
-
-    const locRef = ref(db, '/localizaciones');
-
-    onValue(
-      locRef,
-      (snapshot) => {
-        try {
-          const data = snapshot.val();
-          if (!data) {
-            setLocalizaciones([]);
-            setLoading(false);
-            return;
-          }
-
-          const list: Localizacion[] = Object.entries(data).map(
-            ([key, value]: [string, any]) => ({
-              id: key,
-              ...value,
-            })
-          );
-
-          list.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || '', 'es'));
-          setLocalizaciones(list);
-          setLoading(false);
-        } catch (err) {
-          setError('Error al procesar localizaciones');
-          setLoading(false);
-        }
-      },
-      (err) => {
-        setError(err.message);
-        setLoading(false);
-      }
-    );
-
-    return () => {
-      off(locRef);
-    };
-  }, []);
+  const { data: localizaciones = [], isLoading, error } = useQuery<Localizacion[]>({
+    queryKey: ['localizaciones'],
+    queryFn: fetchLocalizaciones,
+    staleTime: 60 * 60_000,
+  });
 
   const searchLocalizacion = useCallback(
     (query: string): Localizacion[] => {
@@ -90,5 +66,10 @@ export function useLocalizaciones(): UseLocalizacionesResult {
     [localizaciones]
   );
 
-  return { localizaciones, loading, error, searchLocalizacion };
+  return {
+    localizaciones,
+    loading: isLoading,
+    error: error ? (error as Error).message : null,
+    searchLocalizacion,
+  };
 }
