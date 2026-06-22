@@ -46,8 +46,8 @@
     <color name="md_theme_dark_on_surface_variant">#B6BCC6</color>
 
     <!-- Outlines -->
-    <color name="md_theme_dark_outline">#3A404B</color>
-    <color name="md_theme_dark_outline_variant">#2A2F38</color>
+    <color name="md_theme_dark_outline">#4A5260</color>
+    <color name="md_theme_dark_outline_variant">#3A4252</color>
 
     <!-- =========================================================
          Material 3 Semantic Aliases
@@ -91,8 +91,8 @@
     <color name="black">#FF000000</color>
     <color name="transparent">#00000000</color>
 
-    <!-- Institucional ICE (idéntico al LIGHT) -->
-    <color name="ice_blue">#005DAA</color>
+    <!-- Institucional ICE: azul más claro para legibilidad sobre fondos oscuros -->
+    <color name="ice_blue">#5B9FD8</color>
     <color name="ice_blue_dark">#004C8C</color>
     <color name="ice_yellow">#FFDD00</color>
     <color name="ice_yellow_dark">#CCAA00</color>
