@@ -216,4 +216,8 @@
     <color name="chip_bg_averia">#FFEBEE</color>
     <color name="chip_bg_programacion">#E3F2FD</color>
 
+    <!-- Luminarias – fondos de ícono en las tarjetas de lista -->
+    <color name="lum_icon_bg_pending">#FFEBEE</color>
+    <color name="lum_icon_bg_done">#E8F5E9</color>
+
 </resources>

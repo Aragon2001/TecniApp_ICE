@@ -7,29 +7,51 @@
     android:animateLayoutChanges="true"
     android:padding="20dp">
 
-    <!-- Título -->
+    <!-- Ícono + Título -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/cantidadIconCard"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        app:cardBackgroundColor="?attr/colorSecondaryContainer"
+        app:cardCornerRadius="14dp"
+        app:cardElevation="0dp"
+        app:strokeWidth="0dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <ImageView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:contentDescription="@null"
+            android:padding="11dp"
+            android:src="@drawable/ic_summary_material"
+            app:tint="?attr/colorOnSecondaryContainer" />
+    </com.google.android.material.card.MaterialCardView>
+
     <TextView
         android:id="@+id/tvCantidadTitulo"
         style="@style/TextAppearance.Material3.TitleLarge"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:text="Cantidad de luminarias"
+        android:layout_marginStart="12dp"
+        android:text="Cantidad de material"
         android:textStyle="bold"
+        app:layout_constraintBottom_toBottomOf="@id/cantidadIconCard"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintStart_toEndOf="@id/cantidadIconCard"
+        app:layout_constraintTop_toTopOf="@id/cantidadIconCard" />
 
     <TextView
         android:id="@+id/tvCantidadSubtitulo"
         style="@style/TextAppearance.Material3.BodySmall"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:text="Ajusta con botones o escribe el número"
+        android:layout_marginTop="8dp"
+        android:text="Ajusta la cantidad con los botones o escribe el número"
         android:textColor="?attr/colorOnSurfaceVariant"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tvCantidadTitulo" />
+        app:layout_constraintTop_toBottomOf="@id/cantidadIconCard" />
 
     <!-- Selector rápido de cantidad -->
     <LinearLayout

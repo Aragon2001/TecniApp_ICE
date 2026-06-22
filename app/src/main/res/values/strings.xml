@@ -359,6 +359,7 @@ Cliente: %4$s</string>
     <string name="averias_mapa_sin_coordenadas">Avería sin coordenadas</string>
     <string name="averias_mapa_cargando">Cargando averías…</string>
     <string name="averias_mapa_vacio">No hay averías con coordenadas para mostrar.</string>
+    <string name="averias_mapa_mi_ubicacion">Mi ubicación</string>
     <!-- Filtro rápido de agencias -->
     <string name="averias_agencia_rapida_todas">Todas</string>
     <string name="averias_agencias_label">Agencias:</string>

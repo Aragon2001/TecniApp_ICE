@@ -1,97 +1,122 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  TecniApp ICE © 2025 Arasoft Solutions
+  TecniApp ICE © Arasoft Solutions
   Todos los derechos reservados.
-  Desarrollado para el Instituto Costarricense de Electricidad (ICE).
 -->
 <legalDocument>
     <intro>
-        Esta política describe cómo TecniApp ICE gestiona la información operativa registrada por el personal técnico del
-        Instituto Costarricense de Electricidad (ICE) y las salvaguardas aplicadas por Arasoft Solutions.
+        En Arasoft Solutions valoramos tu privacidad. Esta política explica de manera clara qué
+        información recopila TecniApp ICE, cómo la utilizamos y cómo la protegemos, en cumplimiento
+        con las leyes costarricenses de protección de datos personales.
     </intro>
 
-    <section title="1. Responsable del tratamiento">
+    <section title="1. Quién es responsable de tus datos">
         <paragraph>
-            Arasoft Solutions es la empresa desarrolladora y administradora tecnológica de TecniApp ICE. La información se
-            aloja en servidores Firebase (Google Cloud Platform) bajo políticas de confidencialidad y control de acceso
-            coordinadas con el ICE.
+            Arasoft Solutions es la empresa desarrolladora y administradora de TecniApp ICE. Como
+            titular de la aplicación, asumimos la responsabilidad del correcto tratamiento de la
+            información registrada durante su uso institucional en el Instituto Costarricense de
+            Electricidad (ICE).
         </paragraph>
     </section>
 
-    <section title="2. Datos que se recopilan">
+    <section title="2. Información que recopilamos">
         <bulletList>
-            <item>Identificadores personales: nombre, cédula, correo institucional (@ice.go.cr).</item>
-            <item>Información operativa: subregión, agencia, vehículo, asignaciones, registros de averías, materiales,
-                luminarias y localizaciones GPS.</item>
-            <item>Datos técnicos: dirección IP, marca y modelo del dispositivo, horas de sincronización.</item>
+            <item>Datos de identificación: nombre completo, número de cédula y correo institucional (@ice.go.cr).</item>
+            <item>Información de trabajo: agencia, subregión, vehículo asignado y cuadrilla.</item>
+            <item>Registros operativos: averías atendidas, luminarias revisadas, materiales utilizados y coordenadas GPS de cada intervención.</item>
             <item>Fotografías o archivos adjuntos vinculados a reportes de campo.</item>
+            <item>Información básica del dispositivo: modelo y marca, para garantizar la compatibilidad de la aplicación.</item>
         </bulletList>
     </section>
 
-    <section title="3. Finalidad del tratamiento">
+    <section title="3. Para qué usamos tu información">
         <paragraph>
-            Los datos se procesan para autenticar usuarios, registrar y gestionar averías, luminarias e inventarios,
-            sincronizar información técnica con los sistemas institucionales del ICE, generar reportes de desempeño y
-            mantener trazabilidad histórica de las labores en campo.
+            La información que registras en TecniApp ICE se utiliza exclusivamente para:
+        </paragraph>
+        <bulletList>
+            <item>Asignarte y gestionar averías, tareas y actividades de campo.</item>
+            <item>Llevar el control de materiales e inventarios utilizados en cada intervención.</item>
+            <item>Registrar la ubicación de equipos eléctricos y evidencias fotográficas del trabajo.</item>
+            <item>Generar reportes de desempeño técnico para el ICE.</item>
+            <item>Mantener el historial de intervenciones y garantizar la trazabilidad de las labores.</item>
+        </bulletList>
+    </section>
+
+    <section title="4. Base legal del tratamiento">
+        <paragraph>
+            Tratamos tu información con base en el consentimiento que otorgas al aceptar estos
+            términos, en el interés legítimo de garantizar la continuidad del servicio eléctrico del
+            ICE y en las obligaciones institucionales de registro técnico establecidas por la
+            institución.
         </paragraph>
     </section>
 
-    <section title="4. Base legal y consentimiento">
+    <section title="5. Cómo protegemos tu información">
         <paragraph>
-            El tratamiento se fundamenta en el consentimiento informado al aceptar los términos de uso, en el interés
-            legítimo de garantizar la continuidad del servicio eléctrico del ICE y en el cumplimiento de obligaciones
-            institucionales y legales.
+            Tu información se almacena en servidores seguros en la nube con cifrado de extremo a
+            extremo. Las copias que se guardan temporalmente en tu dispositivo están igualmente
+            protegidas y se eliminan automáticamente al cerrar sesión.
+        </paragraph>
+        <paragraph>
+            Toda comunicación entre la aplicación y los servidores institucionales viaja de forma
+            cifrada. Solo el personal autorizado del ICE y el equipo de soporte de Arasoft Solutions
+            tienen acceso, bajo acuerdo de confidencialidad.
         </paragraph>
     </section>
 
-    <section title="5. Seguridad y almacenamiento">
+    <section title="6. Con quién compartimos tu información">
         <paragraph>
-            Los datos se almacenan en Firebase Realtime Database con cifrado TLS/SSL y autenticación OAuth 2.0. El modo
-            offline conserva la información de forma temporal en bases cifradas mediante Room, sin acceso de terceros.
-        </paragraph>
-        <paragraph>
-            La información se mantiene únicamente el tiempo necesario para fines técnicos o administrativos autorizados por
-            el ICE.
+            No vendemos ni compartimos tu información personal con terceros. El acceso está
+            limitado estrictamente al personal técnico autorizado del ICE y al equipo de soporte de
+            Arasoft Solutions, exclusivamente para fines de mantenimiento y atención de incidencias.
         </paragraph>
     </section>
 
-    <section title="6. Comunicación y acceso a los datos">
+    <section title="7. Tus derechos">
         <paragraph>
-            La información no se vende ni transfiere a terceros ajenos al ICE. El acceso está limitado al personal técnico
-            autorizado del ICE y al equipo de soporte de Arasoft Solutions bajo acuerdo de confidencialidad.
+            Como usuario tienes derecho a:
+        </paragraph>
+        <bulletList>
+            <item>Consultar qué información personal tenemos registrada sobre ti.</item>
+            <item>Solicitar la corrección de datos incorrectos o desactualizados.</item>
+            <item>Pedir la eliminación de tu información cuando ya no sea necesaria.</item>
+            <item>Revocar el permiso de uso de tu ubicación o datos personales en cualquier momento.</item>
+        </bulletList>
+        <paragraph>
+            Para ejercer cualquiera de estos derechos, escríbenos a {{supportEmail}}.
         </paragraph>
     </section>
 
-    <section title="7. Derechos del usuario">
+    <section title="8. Cuánto tiempo guardamos tu información">
         <paragraph>
-            Puedes solicitar acceso a los datos almacenados, correcciones, eliminación o revocación de consentimiento para el
-            uso de ubicación o datos personales escribiendo a {{supportEmail}}.
+            La información se conserva únicamente el tiempo necesario para los fines operativos y
+            administrativos autorizados por el ICE. Una vez que dejas de utilizar la aplicación o
+            se revoca tu acceso, tus datos personales son eliminados conforme a los procedimientos
+            internos establecidos.
         </paragraph>
     </section>
 
-    <section title="8. Vigencia y modificaciones">
+    <section title="9. Cambios a esta política">
         <paragraph>
-            La política tiene vigencia indefinida y puede actualizarse sin previo aviso para reflejar cambios tecnológicos,
-            legales o institucionales. Cualquier actualización se comunicará dentro de la aplicación o mediante medios
-            oficiales del ICE.
+            Arasoft Solutions puede actualizar esta política cuando sea necesario para adaptarse a
+            cambios tecnológicos, legales o institucionales. Te notificaremos dentro de la aplicación
+            ante cualquier modificación relevante.
         </paragraph>
     </section>
 
-    <section title="9. Jurisdicción y ley aplicable">
+    <section title="10. Marco legal aplicable">
         <paragraph>
-            Esta política se rige por las leyes de la República de Costa Rica. Cualquier conflicto será resuelto por los
-            tribunales competentes de San José.
+            Esta política se rige por la Ley 8968 de Protección de la Persona frente al Tratamiento
+            de sus Datos Personales de Costa Rica y demás normativa aplicable. Cualquier controversia
+            será resuelta ante los tribunales competentes de San José, Costa Rica.
         </paragraph>
-    </section>
-
-    <section title="10. Versión legal para registro">
-        <paragraph>Software: TecniApp ICE.</paragraph>
-        <paragraph>Titular: Arasoft Solutions — Representante legal: Jostin Aragón Barboza.</paragraph>
-        <paragraph>Entidad usuaria: Instituto Costarricense de Electricidad (ICE) bajo licencia institucional de uso.</paragraph>
-        <paragraph>Propiedad: 100% Arasoft Solutions. Uso exclusivamente institucional y no comercial.</paragraph>
+        <paragraph>
+            Titular del software: Arasoft Solutions — Representante: Jostin Aragón Barboza.
+        </paragraph>
     </section>
 
     <footer>
-        <paragraph>Contacto oficial de privacidad: {{supportEmail}}.</paragraph>
+        <paragraph>Contacto de privacidad: {{supportEmail}}.</paragraph>
+        <paragraph>TecniApp ICE © Arasoft Solutions · Titular y responsable del tratamiento de datos.</paragraph>
     </footer>
 </legalDocument>
