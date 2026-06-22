@@ -9,49 +9,64 @@
 <string name="about_body_html"><![CDATA[
 <h2>TecniApp ICE — Plataforma móvil de gestión técnica</h2>
 
-<p><strong>TecniApp ICE</strong> es una aplicación desarrollada por <strong>Arasoft Solutions</strong> para el <strong>Instituto Costarricense de Electricidad (ICE)</strong>,
-diseñada para transformar digitalmente las labores de campo de los técnicos eléctricos.
-Su misión es optimizar la atención de averías, el control de inventarios, el mantenimiento de luminarias y la trazabilidad de actividades operativas.</p>
+<p><strong>TecniApp ICE</strong> es la plataforma móvil oficial desarrollada por <strong>Arasoft Solutions</strong>
+para el <strong>Instituto Costarricense de Electricidad (ICE)</strong>. Diseñada para el personal técnico en
+campo, simplifica la gestión de averías, el control de materiales y el registro de actividades diarias,
+desde cualquier lugar y en cualquier condición de red.</p>
 
-<h3>Características principales</h3>
-<ul>
-<li><strong>Gestión de averías:</strong> recibe, asigna y actualiza averías en tiempo real con estados visuales y registro de materiales.</li>
-<li><strong>Modo offline inteligente:</strong> permite trabajar sin conexión y sincroniza automáticamente al recuperar señal.</li>
-<li><strong>Geolocalización GPS:</strong> muestra la ubicación exacta de medidores, luminarias y averías, compatible con Google Maps y Field Maps.</li>
-<li><strong>Inventarios:</strong> control total de materiales utilizados y su sincronización con la nube.</li>
-<li><strong>Vehículos y kilometraje:</strong> registro de uso de flota institucional por técnico o cuadrilla.</li>
-<li><strong>Catálogos sincronizados:</strong> subregiones, agencias, localizaciones y medidores actualizados desde Firebase.</li>
-<li><strong>Reportes técnicos:</strong> estadísticas y exportación de informes en PDF o Excel con trazabilidad completa.</li>
-<li><strong>Seguridad avanzada:</strong> autenticación por Firebase, cifrado TLS y acceso controlado por roles.</li>
-</ul>
+<h3>🔧 Gestión de Averías</h3>
+<p>Recibe notificaciones en el instante en que se te asigna una avería. Consulta la dirección, el
+cliente y el tipo de falla desde el primer momento. Registra los materiales utilizados y cierra la
+avería una vez resuelta. Cada avería cuenta con indicadores visuales de estado para que tú y tu
+supervisor tengan siempre el panorama claro.</p>
 
-<h3>Beneficios operativos</h3>
-<ul>
-<li>Reducción significativa en los tiempos de atención de averías.</li>
-<li>Optimización del consumo de materiales y recursos institucionales.</li>
-<li>Mayor trazabilidad en la gestión técnica y administrativa.</li>
-<li>Conectividad segura y sincronización automática entre dispositivos.</li>
-<li>Interfaz intuitiva, moderna y adaptada al entorno operativo del ICE.</li>
-</ul>
+<h3>🗺️ Mapas y Geolocalización</h3>
+<p>Visualiza la ubicación exacta de medidores, luminarias y averías en un mapa interactivo. Abre
+la navegación hacia el punto de trabajo con un solo toque, compatible con Google Maps y Field Maps.</p>
 
-<h3>Modo institucional</h3>
-<p>TecniApp ICE está destinada exclusivamente al uso institucional.
-Toda información registrada pertenece al ICE en cuanto a su contenido operativo,
-pero el código, la infraestructura y la tecnología son propiedad exclusiva de Arasoft Solutions.</p>
+<h3>💡 Control de Luminarias</h3>
+<p>Registra el estado de cada luminaria —dañada, revisada, reemplazada o en mantenimiento— y
+documenta la intervención con fotografías y ubicación. El ICE obtiene un historial completo de
+mantenimiento del alumbrado público.</p>
 
-<h3>Soporte y mantenimiento</h3>
-<p>Arasoft Solutions brinda mantenimiento continuo, actualizaciones de seguridad,
-y soporte técnico especializado mediante los siguientes canales:</p>
+<h3>🧰 Inventario y Materiales</h3>
+<p>Lleva el control de los materiales que utilizas en cada trabajo. La aplicación genera resúmenes
+de consumo por técnico, avería o período para facilitar la gestión de existencias institucionales.</p>
 
-<ul>
-<li><strong>Correo:</strong> <a href="mailto:soporte@arasoftsolutions.com">soporte@arasoftsolutions.com</a></li>
-<li><strong>Teléfono:</strong> +506 6040 7517</li>
-<li><strong>Desarrollador responsable:</strong> Jostin Aragón Barboza</li>
-</ul>
+<h3>🚚 Control de Vehículos</h3>
+<p>Vincula cada avería al vehículo que utilizaste. Registra el kilometraje de inicio y cierre para
+mantener el seguimiento de la flota institucional por agencia y subregión.</p>
 
-<h3>Licencia y derechos</h3>
-<p>© 2025 Arasoft Solutions — Todos los derechos reservados.<br>
-Desarrollado para uso institucional del <strong>Instituto Costarricense de Electricidad (ICE)</strong> bajo licencia exclusiva de Arasoft Solutions.</p>
+<h3>📅 Programación y Agenda</h3>
+<p>Los supervisores asignan tareas y actividades desde la gestión central. Recibes notificaciones
+automáticas, visualizas tu agenda del día y actualizas el estado de cada actividad con observaciones
+al completarla.</p>
+
+<h3>📶 Funciona sin Internet</h3>
+<p>TecniApp ICE está diseñada para trabajar incluso en zonas sin señal. Todo lo que registras se
+guarda de forma segura en el dispositivo y se sincroniza automáticamente con los servidores
+institucionales en cuanto se restablece la conexión. Nunca pierdes información.</p>
+
+<h3>📊 Reportes y Estadísticas</h3>
+<p>Genera informes detallados sobre averías atendidas, materiales consumidos y rendimiento por
+técnico o vehículo. Los reportes se exportan en formato Excel o PDF con encabezados corporativos
+del ICE y Arasoft Solutions.</p>
+
+<h3>🏢 Desarrollado por Arasoft Solutions</h3>
+<p><strong>TecniApp ICE</strong> es una creación original de <strong>Arasoft Solutions</strong>,
+empresa costarricense de desarrollo de software especializado. La aplicación, su código, su diseño
+y toda la infraestructura tecnológica son propiedad exclusiva de Arasoft Solutions.</p>
+<p><strong>Desarrollador principal:</strong> Jostin Aragón Barboza.<br>
+Licencia de uso institucional concedida al Instituto Costarricense de Electricidad (ICE).</p>
+
+<h3>📞 Soporte y Contacto</h3>
+<p>Para consultas, reportes de errores o asistencia técnica:<br>
+<strong>Correo:</strong> <a href="mailto:soporte@arasoftsolutions.com">soporte@arasoftsolutions.com</a><br>
+<strong>Teléfono:</strong> +506 6040 7517</p>
+
+<p>© 2025 <strong>Arasoft Solutions</strong> — Todos los derechos reservados.<br>
+Uso institucional exclusivo del <strong>Instituto Costarricense de Electricidad (ICE)</strong>
+bajo licencia de Arasoft Solutions.</p>
 ]]></string>
 
 </resources>
