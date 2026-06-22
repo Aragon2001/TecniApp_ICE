@@ -18,3 +18,16 @@ local.properties
 Commit
 Push
 Manage
+
+# React / Vite
+Tecniapp web/node_modules/
+Tecniapp web/dist/
+Tecniapp web/.env
+Tecniapp web/.firebase/
+Tecniapp web/.idea/
+
+# Logs
+*.log
+
+# Vite
+Tecniapp web/.vite/
