@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Menu, Bell, LogOut, ChevronDown, User, Clock, Shield } from 'lucide-react';
+import { Menu, Bell, LogOut, ChevronDown, User, Clock, Shield, WifiOff, RefreshCw } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useAverias } from '../../hooks/useAverias';
+import { useNetworkStatus } from '../../hooks/useNetworkStatus';
+import { usePendingCount } from '../../lib/syncQueue';
 
 interface HeaderProps {
   onMenuToggle: () => void;
@@ -28,6 +30,8 @@ const Header: React.FC<HeaderProps> = ({ onMenuToggle }) => {
   const location = useLocation();
   const { user, logout } = useAuth();
   const { averias } = useAverias({ estado: 'PENDIENTE' });
+  const isOnline = useNetworkStatus();
+  const pendingSync = usePendingCount();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -95,6 +99,19 @@ const Header: React.FC<HeaderProps> = ({ onMenuToggle }) => {
 
         {/* Right: clock, notifications, user */}
         <div className="flex items-center gap-2">
+          {/* Offline/sync status chips */}
+          {!isOnline && (
+            <span className="hidden sm:flex items-center gap-1 px-2 py-1 rounded-full bg-amber-100 text-amber-700 text-xs font-semibold">
+              <WifiOff size={12} />
+              Sin conexión
+            </span>
+          )}
+          {isOnline && pendingSync > 0 && (
+            <span className="hidden sm:flex items-center gap-1 px-2 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-semibold">
+              <RefreshCw size={12} className="animate-spin" />
+              {pendingSync} pendiente{pendingSync !== 1 ? 's' : ''}
+            </span>
+          )}
           {/* Clock */}
           <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-slate-50 rounded-lg border border-slate-100">
             <Clock size={14} className="text-slate-400" />
