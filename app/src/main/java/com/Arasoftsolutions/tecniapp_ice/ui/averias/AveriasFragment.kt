@@ -899,6 +899,7 @@ class AveriasFragment : Fragment() {
                 if (checked) {
                     val idx = vm.agencias.value.indexOfFirst { it.id == agencia.id }
                     if (idx >= 0) vm.setAgenciaIndex(idx)
+                    else vm.setAgencia(agencia) // agencia de prefs de notif fuera del dropdown actual
                 } else {
                     // El chip se desmarcó (el usuario tocó el ya seleccionado); volver a "Todas"
                     vm.setAgenciaIndex(0)
