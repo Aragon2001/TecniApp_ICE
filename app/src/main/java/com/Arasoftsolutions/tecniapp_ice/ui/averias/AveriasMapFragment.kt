@@ -152,22 +152,34 @@ class AveriasMapFragment : Fragment(), OnMapReadyCallback {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 repo.observe(emptyList(), "", "", "").collectLatest { averias ->
                     val filtered = averias.filter { av ->
-                        val est = Estado.fromLabel(av.estado)
+                        // Respetar estadoClor RESUELTA aunque el campo estado legacy diga otra cosa
+                        val est = if (av.estadoClor?.equals("RESUELTA", ignoreCase = true) == true)
+                            Estado.RESUELTA
+                        else
+                            Estado.fromLabel(av.estado)
 
-                        // Pendientes: todas sin límite de fecha
-                        // Resueltas: solo últimos 2 días
+                        // Para resueltas, usar el tiempo de cierre real (no el de apertura del incidente)
+                        val tiempoCierre = listOfNotNull(
+                            av.horaFinalMillis,
+                            av.atencionHoraFinalMillis,
+                            av.lastUpdated.takeIf { it > 0 }
+                        ).maxOrNull()
+
                         val pasaFecha = when (est) {
                             Estado.PENDIENTE -> true
-                            Estado.RESUELTA  -> av.fechaInicioMillis >= cutoff
+                            Estado.RESUELTA  -> (tiempoCierre ?: av.fechaInicioMillis) >= cutoff
                             else             -> false
                         }
                         if (!pasaFecha) return@filter false
 
-                        // Filtro de agencia preferida
+                        // Filtro de agencia preferida — rechazar averías sin agencia definida
                         val agenciaNorm = normalizeAveriaText(av.nombreAgencia ?: av.agencia)
                         when {
                             preferredNorm.isNotEmpty() ->
-                                preferredNorm.any { pref -> agenciaNorm.contains(pref) || pref.contains(agenciaNorm) }
+                                agenciaNorm.isNotBlank() &&
+                                    preferredNorm.any { pref ->
+                                        agenciaNorm.contains(pref) || pref.contains(agenciaNorm)
+                                    }
                             fallbackAgency != null ->
                                 agenciaNorm.contains(normalizeAveriaText(fallbackAgency))
                             else -> true

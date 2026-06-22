@@ -470,6 +470,15 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
         clearPendingAgencySelection()
     }
 
+    /** Selecciona una agencia directamente (para chips rápidos cuya agencia puede no estar
+     *  en la lista del dropdown filtrado, ej. agencias de notificación de otra subregión). */
+    fun setAgencia(agencia: AgenciaUI) = viewModelScope.launch {
+        filtersTouchedByUser = true
+        _agenciaSeleccionada.emit(agencia)
+        savePreferredAgency(agencia)
+        clearPendingAgencySelection()
+    }
+
     fun resetMedidorEstado() {
         _medidorEstado.value = MedidorLookupState.Idle
     }
