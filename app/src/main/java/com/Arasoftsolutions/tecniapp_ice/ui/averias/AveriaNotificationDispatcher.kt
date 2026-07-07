@@ -274,8 +274,4 @@ object AveriaNotificationDispatcher {
     }
 
     private data class Quad<A, B, C, D>(val a: A, val b: B, val c: C, val d: D)
-    private operator fun <A, B, C, D> Quad<A, B, C, D>.component1() = a
-    private operator fun <A, B, C, D> Quad<A, B, C, D>.component2() = b
-    private operator fun <A, B, C, D> Quad<A, B, C, D>.component3() = c
-    private operator fun <A, B, C, D> Quad<A, B, C, D>.component4() = d
 }

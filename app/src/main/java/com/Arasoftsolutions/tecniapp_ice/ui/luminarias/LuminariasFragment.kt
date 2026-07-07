@@ -510,6 +510,39 @@ class LuminariasFragment : Fragment() {
         }
         binding.actEstadoLuminaria.setText(estadoInicial, false)
 
+        // ── Campos cliente y contacto (solo gestor registrando/editando pendiente) ──
+        val puedeEditarClienteContacto = !soloVer && esGestor &&
+            (esRegistro || estadoActual == LuminariaEstado.PENDIENTE)
+        binding.tilCliente.isVisible = puedeEditarClienteContacto
+        binding.tilContacto.isVisible = puedeEditarClienteContacto
+        if (puedeEditarClienteContacto) {
+            val clienteInicial = reparacion?.cliente?.trim().orEmpty()
+                .ifBlank { estadoUi.clienteRegistro }
+            val contactoInicial = reparacion?.contacto?.trim().orEmpty()
+                .ifBlank { estadoUi.contactoRegistro }
+            binding.etCliente.setText(clienteInicial)
+            binding.etContacto.setText(contactoInicial)
+            binding.etCliente.doAfterTextChanged {
+                if (esRegistro) viewModel.actualizarCliente(it?.toString().orEmpty())
+            }
+            binding.etContacto.doAfterTextChanged {
+                if (esRegistro) viewModel.actualizarContacto(it?.toString().orEmpty())
+            }
+        }
+
+        // ── Observaciones (visible para todos en modo edición) ─────────────────
+        binding.tilObservacionesLuminaria.isVisible = !soloVer
+        if (!soloVer) {
+            val obsInicial = reparacion?.observaciones?.trim().orEmpty()
+                .ifBlank { estadoUi.observacionesRegistro }
+            binding.etObservacionesLuminaria.setText(obsInicial)
+            binding.etObservacionesLuminaria.doAfterTextChanged {
+                if (esRegistro) viewModel.actualizarObservaciones(it?.toString().orEmpty())
+            }
+        } else {
+            binding.tilObservacionesLuminaria.isVisible = false
+        }
+
         // ── Campo ejecutor ─────────────────────────────────────────────────────
         // Solo el técnico puede ver/editar el ejecutor
         val puedeEditarEjecutor = !soloVer && !esGestor
@@ -647,6 +680,9 @@ class LuminariasFragment : Fragment() {
                 val placaSeleccionada = binding.actVehiculoLuminaria.text?.toString().orEmpty()
                 val vehiculoSeleccionado = vehiculosDisponibles
                     .firstOrNull { it.placa.toString() == placaSeleccionada }?.id
+                val clienteFinal = if (esGestor) binding.etCliente.text?.toString()?.trim() else null
+                val contactoFinal = if (esGestor) binding.etContacto.text?.toString()?.trim() else null
+                val observacionesFinal = binding.etObservacionesLuminaria.text?.toString()?.trim()
                 viewModel.actualizarReparacion(
                     reparacion!!.id,
                     localizacionNormalizada,
@@ -654,7 +690,10 @@ class LuminariasFragment : Fragment() {
                     estadoSeleccionado,
                     ejecutorNombre,
                     ejecutorCedula,
-                    vehiculoSeleccionado
+                    vehiculoSeleccionado,
+                    clienteFinal,
+                    contactoFinal,
+                    observacionesFinal
                 )
                 onDone()
             }

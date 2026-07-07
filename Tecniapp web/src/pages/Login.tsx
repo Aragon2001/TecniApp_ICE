@@ -1,12 +1,10 @@
 import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { Eye, EyeOff, Mail, Lock, Zap, CheckCircle2 } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import { useAuth } from '../context/AuthContext'
 
 export default function Login() {
   const { login } = useAuth()
-  const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -20,7 +18,8 @@ export default function Login() {
     try {
       await login(email, password)
       toast.success('Bienvenido a TecniApp ICE')
-      navigate('/')
+      // No navigate needed — the /login route redirects to / automatically
+      // once firebaseUser is set in AuthContext.
     } catch (err: any) {
       const msg = err?.code === 'auth/invalid-credential' || err?.code === 'auth/wrong-password'
         ? 'Credenciales incorrectas. Verifique su email y contraseña.'

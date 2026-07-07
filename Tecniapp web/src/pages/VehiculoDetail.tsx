@@ -1,13 +1,21 @@
+import { useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, Truck, AlertTriangle, CheckCircle2, Clock, ChevronRight, Gauge, Calendar } from 'lucide-react'
-import { useVehiculo } from '../hooks/useVehiculos'
+import { ArrowLeft, Truck, AlertTriangle, CheckCircle2, Clock, ChevronRight, Gauge, Calendar, Edit2, Save, X } from 'lucide-react'
+import { useVehiculo, updateVehiculo } from '../hooks/useVehiculos'
+import { useAuth } from '../context/AuthContext'
 import { formatDate, formatDateTime } from '../utils/dateUtils'
 import { vehiculoEstadoLabel, formatKm, parseJson } from '../utils/formatUtils'
 import { Spinner } from '../components/ui/Spinner'
+import toast from 'react-hot-toast'
 
 export default function VehiculoDetail() {
   const { vehiculoId } = useParams<{ vehiculoId: string }>()
   const { vehiculo, loading, error } = useVehiculo(vehiculoId ?? null)
+  const { user } = useAuth()
+  const esGestor = user?.rol === 'supervisor' || user?.rol === 'admin'
+  const [editingKm, setEditingKm] = useState(false)
+  const [kmValue, setKmValue] = useState(0)
+  const [saving, setSaving] = useState(false)
 
   if (loading) return <div className="flex justify-center py-20"><Spinner size="lg" /></div>
 
@@ -44,6 +52,20 @@ export default function VehiculoDetail() {
   }[estado] ?? { bg: 'bg-gray-100', text: 'text-gray-700', icon: null, banner: null }
 
   const registros = parseJson<any[]>(vehiculo.registrosDiariosJson) ?? []
+
+  async function handleSaveKm() {
+    if (!vehiculoId || kmValue <= 0) return
+    setSaving(true)
+    try {
+      await updateVehiculo(vehiculoId, { kmActual: kmValue })
+      toast.success('Kilometraje actualizado')
+      setEditingKm(false)
+    } catch {
+      toast.error('Error al actualizar kilometraje')
+    } finally {
+      setSaving(false)
+    }
+  }
 
   return (
     <div className="space-y-5 max-w-4xl">
@@ -108,10 +130,45 @@ export default function VehiculoDetail() {
 
         {/* Kilometraje y mantenimiento */}
         <div className="bg-white rounded-xl shadow-card p-5">
-          <div className="flex items-center gap-2 mb-4 pb-3 border-b border-gray-100">
-            <Gauge size={16} className="text-[#003087]" />
-            <h3 className="font-semibold text-gray-800 text-sm">Kilometraje y Mantenimiento</h3>
+          <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-100">
+            <div className="flex items-center gap-2">
+              <Gauge size={16} className="text-[#003087]" />
+              <h3 className="font-semibold text-gray-800 text-sm">Kilometraje y Mantenimiento</h3>
+            </div>
+            {esGestor && !editingKm && (
+              <button
+                onClick={() => { setKmValue(vehiculo.kmActual ?? 0); setEditingKm(true) }}
+                className="flex items-center gap-1 text-xs text-[#0066CC] hover:bg-blue-50 px-2 py-1 rounded transition-colors"
+              >
+                <Edit2 size={12} /> Actualizar KM
+              </button>
+            )}
           </div>
+          {editingKm && (
+            <div className="mb-3 p-3 bg-blue-50 rounded-xl border border-blue-100 flex items-center gap-2">
+              <input
+                type="number"
+                min={0}
+                value={kmValue}
+                onChange={e => setKmValue(Number(e.target.value))}
+                className="flex-1 border border-blue-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-[#003087]/20"
+                placeholder="Nuevo KM actual"
+              />
+              <button
+                onClick={handleSaveKm}
+                disabled={saving}
+                className="p-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              >
+                {saving ? <Spinner size="sm" /> : <Save size={14} />}
+              </button>
+              <button
+                onClick={() => setEditingKm(false)}
+                className="p-2 bg-slate-200 text-slate-600 rounded-lg hover:bg-slate-300 transition-colors"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          )}
           <div className="space-y-2.5">
             <InfoRow label="KM Actual" value={formatKm(vehiculo.kmActual)} highlight />
             <InfoRow label="Orimetro" value={vehiculo.orimetroActual != null ? `${vehiculo.orimetroActual} hrs` : '—'} />

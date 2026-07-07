@@ -3,7 +3,7 @@ import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, AlertTriangle, Calendar, Gauge, MapPin,
   Lightbulb, Truck, Package, ClipboardList, BarChart2,
-  Users, Settings, Zap, X, ChevronRight
+  Users, Settings, Zap, X, ChevronRight, UserCircle
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -161,9 +161,27 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           })}
         </nav>
 
-        {/* Version */}
-        <div className="px-4 py-3 border-t border-white/10">
-          <p className="text-xs text-slate-600 text-center">v1.0.0 — TecniApp ICE</p>
+        {/* User profile footer */}
+        <div className="border-t border-white/10 p-3">
+          <NavLink
+            to="/perfil"
+            onClick={() => { if (window.innerWidth < 1024) onClose(); }}
+            className={({ isActive }) =>
+              `flex items-center gap-3 px-3 py-2 rounded-xl transition-all ${
+                isActive ? 'bg-white/15 text-white' : 'text-slate-400 hover:bg-white/8 hover:text-white'
+              }`
+            }
+          >
+            <div className="w-8 h-8 bg-white/15 rounded-lg flex items-center justify-center flex-shrink-0">
+              <UserCircle size={18} className="text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-semibold text-white leading-tight truncate">
+                {user ? `${user.nombre} ${user.apellidos}`.trim() || user.email.split('@')[0] : 'Perfil'}
+              </p>
+              <p className="text-[10px] text-slate-500 leading-tight capitalize">{user?.rol ?? ''}</p>
+            </div>
+          </NavLink>
         </div>
       </aside>
     </>
