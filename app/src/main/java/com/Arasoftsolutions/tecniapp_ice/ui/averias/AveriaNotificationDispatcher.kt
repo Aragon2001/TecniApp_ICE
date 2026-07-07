@@ -6,7 +6,6 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.Uri
 import android.os.Build
 import android.util.Log
 import androidx.core.app.ActivityCompat
@@ -41,7 +40,7 @@ object AveriaNotificationDispatcher {
     private fun notify(context: Context, averias: List<AveriaEntity>, type: NotifType) {
         if (averias.isEmpty()) return
 
-        AveriaNotifications.ensureChannels(context)
+        AveriaNotifications.ensureChannel(context)
         val manager = NotificationManagerCompat.from(context)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
@@ -67,12 +66,7 @@ object AveriaNotificationDispatcher {
         val hasCoords = averia.lat != null && averia.lng != null &&
             averia.lat != 0.0 && averia.lng != 0.0
 
-        // Canal diferenciado: nueva/asignada con alarma, resuelta silenciosa
-        val channelId = if (type == NotifType.RESOLVED)
-            AveriaNotifications.CHANNEL_ID_RESUELTA
-        else
-            AveriaNotifications.CHANNEL_ID_NUEVA
-
+        // ── Colores y texto según tipo ──────────────────────────────────────
         val (colorRes, smallIconRes, titulo, subtitulo) = when (type) {
             NotifType.NEW -> Quad(
                 R.color.averia_notification_pending,
@@ -89,7 +83,7 @@ object AveriaNotificationDispatcher {
             NotifType.RESOLVED -> Quad(
                 R.color.averia_notification_resolved,
                 R.drawable.ic_notification,
-                "✅ Avería resuelta",
+                "✅ ¡Avería resuelta! Buen trabajo",
                 buildShortline(averia)
             )
         }
@@ -97,14 +91,19 @@ object AveriaNotificationDispatcher {
         val accentColor = ContextCompat.getColor(context, colorRes)
         val cuerpo = buildBody(averia, type)
 
+        // ── Intents ─────────────────────────────────────────────────────────
         val openAveriaIntent = buildOpenAveriaIntent(context, averia)
-
-        // Para notificaciones: preferir Field Maps; si no está, mostrar chooser
         val mapPendingIntent = if (hasCoords) {
-            buildMapPendingIntent(context, averia)
+            AveriaMapLauncher.pendingIntent(
+                context,
+                averia.lat,
+                averia.lng,
+                averia.caseId,
+                requestCode = averia.caseId.hashCode() + 1
+            )
         } else null
 
-        // Mapa estático expandido — label debe ser alfanumérico (límite de Static Maps API)
+        // ── Mapa estático expandido ─────────────────────────────────────────
         val mapUrl = if (hasCoords) {
             AveriaStaticMapProvider.buildUrl(
                 context, averia.lat, averia.lng,
@@ -112,16 +111,13 @@ object AveriaNotificationDispatcher {
             )
         } else null
 
-        val builder = NotificationCompat.Builder(context, channelId)
+        val builder = NotificationCompat.Builder(context, AveriaNotifications.CHANNEL_ID)
             .setSmallIcon(smallIconRes)
             .setContentTitle(titulo)
             .setContentText(subtitulo)
             .setColor(accentColor)
             .setColorized(true)
-            .setPriority(
-                if (type == NotifType.RESOLVED) NotificationCompat.PRIORITY_DEFAULT
-                else NotificationCompat.PRIORITY_HIGH
-            )
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(
                 if (type == NotifType.RESOLVED) NotificationCompat.CATEGORY_STATUS
                 else NotificationCompat.CATEGORY_ALARM
@@ -129,15 +125,8 @@ object AveriaNotificationDispatcher {
             .setAutoCancel(true)
             .setContentIntent(openAveriaIntent)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .setWhen(
-                // Notificaciones de cambio de estado deben aparecer con la hora de envío actual,
-                // no con la fecha de inicio de la avería (que puede ser horas/días antes)
-                if (type == NotifType.NEW) averia.fechaInicioMillis.takeIf { it > 0 }
-                    ?: System.currentTimeMillis()
-                else System.currentTimeMillis()
-            )
-            .setShowWhen(true)
 
+        // Añadir acción Ver avería
         builder.addAction(
             NotificationCompat.Action.Builder(
                 smallIconRes,
@@ -146,6 +135,7 @@ object AveriaNotificationDispatcher {
             ).build()
         )
 
+        // Añadir acción Ver mapa (si hay coordenadas)
         if (mapPendingIntent != null) {
             builder.addAction(
                 NotificationCompat.Action.Builder(
@@ -156,7 +146,7 @@ object AveriaNotificationDispatcher {
             )
         }
 
-        // BigPictureStyle con mapa expandido
+        // BigPictureStyle: mapa cuando se expande la notificación
         if (mapUrl != null) {
             runCatching {
                 val bitmap = AveriaStaticMapProvider.bitmapOrPlaceholder(context, mapUrl)
@@ -167,8 +157,10 @@ object AveriaNotificationDispatcher {
                 builder.setStyle(style)
                 builder.setLargeIcon(bitmap)
             }.onFailure {
-                Log.w(TAG, "No se pudo cargar mapa estático", it)
-                builder.setStyle(NotificationCompat.BigTextStyle().bigText(cuerpo))
+                Log.w(TAG, "No se pudo cargar mapa estático para notificación", it)
+                builder.setStyle(
+                    NotificationCompat.BigTextStyle().bigText(cuerpo)
+                )
             }
         } else {
             builder.setStyle(NotificationCompat.BigTextStyle().bigText(cuerpo))
@@ -177,54 +169,12 @@ object AveriaNotificationDispatcher {
         return builder.build()
     }
 
-    private fun buildMapPendingIntent(context: Context, averia: AveriaEntity): PendingIntent? {
-        val lat = averia.lat ?: return null
-        val lng = averia.lng ?: return null
-        val coordStr = String.format(Locale.US, "%.6f,%.6f", lat, lng)
-
-        // Intentar Field Maps primero (abre directamente con zoom en la coordenada)
-        val fieldMapsUri = Uri.parse("arcgis-fieldmaps://?referenceContext=center&center=$coordStr&scale=2257")
-        val fieldMapsIntent = Intent(Intent.ACTION_VIEW, fieldMapsUri).apply {
-            setPackage("com.esri.fieldmaps")
-        }
-        if (fieldMapsIntent.resolveActivity(context.packageManager) != null) {
-            return PendingIntent.getActivity(
-                context,
-                averia.caseId.hashCode() + 10,
-                fieldMapsIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
-        }
-
-        // Fallback: Google Maps con número de avería como etiqueta del pin
-        val labelEncoded = try {
-            java.net.URLEncoder.encode("⚡ Avería #${averia.caseId}", "UTF-8")
-        } catch (e: Exception) { averia.caseId }
-        val geoUri = Uri.parse("geo:$lat,$lng?q=$lat,$lng($labelEncoded)")
-        val gmapsIntent = Intent(Intent.ACTION_VIEW, geoUri).apply {
-            setPackage("com.google.android.apps.maps")
-        }
-        if (gmapsIntent.resolveActivity(context.packageManager) != null) {
-            return PendingIntent.getActivity(
-                context,
-                averia.caseId.hashCode() + 11,
-                gmapsIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
-        }
-
-        // Último recurso: chooser con todas las apps disponibles
-        return AveriaMapLauncher.pendingIntent(
-            context, lat, lng, averia.caseId,
-            requestCode = averia.caseId.hashCode() + 1
-        )
-    }
+    // ── Helpers ──────────────────────────────────────────────────────────────
 
     private fun buildShortline(averia: AveriaEntity): String = buildString {
-        append("Caso #${averia.caseId}")
+        append("Caso ${averia.caseId}")
         averia.nombreAgencia?.takeIf { it.isNotBlank() }?.let { append(" · $it") }
-        averia.direccion?.takeIf { it.isNotBlank() }?.let { append(" · $it") }
-            ?: averia.localizacion?.takeIf { it.isNotBlank() }?.let { append(" · $it") }
+        averia.estado.takeIf { it.isNotBlank() }?.let { append(" · $it") }
     }
 
     private fun buildBody(averia: AveriaEntity, type: NotifType): String = buildString {
@@ -233,27 +183,27 @@ object AveriaNotificationDispatcher {
             NotifType.ASSIGNED -> "📋"
             NotifType.RESOLVED -> "✅"
         }
-        appendLine("$icon Avería #${averia.caseId}")
+        appendLine("$icon Caso: ${averia.caseId}")
         averia.nombreAgencia?.takeIf { it.isNotBlank() }
-            ?.let { appendLine("🏢 $it") }
+            ?.let { appendLine("🏢 Agencia: $it") }
+        averia.estado.takeIf { it.isNotBlank() }
+            ?.let { appendLine("📌 Estado: $it") }
         averia.nise?.takeIf { it.isNotBlank() }
             ?.let { appendLine("🔢 NISE: $it") }
+        averia.localizacion?.takeIf { it.isNotBlank() }
+            ?.let { appendLine("📍 Localización: $it") }
         averia.direccion?.takeIf { it.isNotBlank() }
-            ?.let { appendLine("📍 $it") }
-            ?: averia.localizacion?.takeIf { it.isNotBlank() }
-                ?.let { appendLine("📍 $it") }
+            ?.let { appendLine("🗺 Dirección: $it") }
         averia.observaciones?.takeIf { it.isNotBlank() }
             ?.let { appendLine("📝 $it") }
-        averia.causa?.takeIf { it.isNotBlank() && type == NotifType.RESOLVED }
-            ?.let { appendLine("🔧 Causa: $it") }
         averia.fechaInicioMillis.takeIf { it > 0 }?.let {
-            val fmt = SimpleDateFormat("dd/MM HH:mm", Locale.getDefault())
-            appendLine("🕐 ${fmt.format(Date(it))}")
+            val fmt = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+            appendLine("🕐 Ingreso: ${fmt.format(Date(it))}")
         }
         when (type) {
-            NotifType.NEW -> appendLine("👆 Toca para ver el detalle.")
-            NotifType.ASSIGNED -> appendLine("👆 Nueva asignación para tu cuadrilla.")
-            NotifType.RESOLVED -> appendLine("🎉 ¡Buen trabajo!")
+            NotifType.NEW -> appendLine("👆 Toca para ver el detalle y asignar.")
+            NotifType.ASSIGNED -> appendLine("👆 Tu cuadrilla tiene una nueva asignación.")
+            NotifType.RESOLVED -> appendLine("🎉 ¡Excelente gestión del equipo!")
         }
     }.trimEnd()
 
