@@ -1,11 +1,11 @@
-import React, { useState } from 'react'
+﻿import React, { useState } from 'react'
 import { FileText, Download, FileSpreadsheet, AlertTriangle, Truck, Zap, Package, Users, Calendar } from 'lucide-react'
 import { useAverias } from '../hooks/useAverias'
 import { useVehiculos } from '../hooks/useVehiculos'
 import { useLuminarias } from '../hooks/useLuminarias'
 import { useInventario } from '../hooks/useInventario'
 import { useUsuarios } from '../hooks/useUsuarios'
-import { exportAveriasExcel, exportVehiculosExcel, exportUsuariosExcel, exportToPdf } from '../utils/exportUtils'
+import { exportAveriasExcel, exportVehiculosExcel, exportUsuariosExcel, exportToPdf, exportToExcel } from '../utils/exportUtils'
 import { format, subDays, startOfMonth, endOfMonth } from 'date-fns'
 import toast from 'react-hot-toast'
 import { Spinner } from '../components/ui/Spinner'
@@ -73,7 +73,8 @@ const REPORTS: ReportDef[] = [
 export default function Reportes() {
   const { averias, loading: lAverias } = useAverias({})
   const { vehiculos, loading: lVehiculos } = useVehiculos()
-  const { luminarias, loading: lLuminarias } = useLuminarias()
+  const { pendientes: lumPendientes, reparadas: lumReparadas, loading: lLuminarias } = useLuminarias()
+  const luminarias = [...lumPendientes, ...lumReparadas]
   const { inventario, loading: lInventario } = useInventario()
   const { usuarios, loading: lUsuarios } = useUsuarios()
 
@@ -99,29 +100,39 @@ export default function Reportes() {
       } else if (reportId === 'usuarios') {
         exportUsuariosExcel(usuarios)
       } else if (reportId === 'luminarias') {
-        const rows = luminarias.map((l: any) => ({
-          ID: l.id ?? '',
-          Localización: l.localizacion ?? '',
-          Circuito: l.circuito ?? '',
-          Estado: l.estado ?? '',
-          'Fecha Reporte': l.fechaReporte ?? '',
-          Observación: l.observacion ?? '',
-        }))
-        exportToPdf(rows, `luminarias_${dateFrom}_${dateTo}`, 'Reporte de Luminarias')
+        exportToPdf(
+          {
+            title: 'Reporte de Luminarias',
+            subtitle: `Período: ${dateFrom} — ${dateTo}`,
+            headers: ['ID', 'Localización', 'Cliente', 'Ejecutor', 'Estado', 'Fecha Reg.', 'Fecha Rep.'],
+            rows: luminarias.map((l: any) => [
+              l.id ?? '',
+              l.localizacion ?? '',
+              l.cliente ?? '',
+              l.ejecutorNombre ?? '',
+              l.estado ?? '',
+              l.fechaRegistro ? new Date(l.fechaRegistro).toLocaleDateString('es-CR') : '',
+              l.fechaReparacion ? new Date(l.fechaReparacion).toLocaleDateString('es-CR') : '',
+            ]),
+          },
+          `luminarias_${dateFrom}_${dateTo}`
+        )
       } else if (reportId === 'inventario') {
-        const rows = inventario.map((i: any) => ({
-          Código: i.codigo ?? '',
-          Descripción: i.descripcion ?? '',
-          Cantidad: i.cantidad ?? 0,
-          Unidad: i.unidad ?? '',
-          Vehículo: i.vehiculoId ?? '',
-          Agencia: i.agencia ?? '',
-        }))
-        const wb = (await import('xlsx')).default
-        const ws = wb.utils.json_to_sheet(rows)
-        const book = wb.utils.book_new()
-        wb.utils.book_append_sheet(book, ws, 'Inventario')
-        wb.writeFile(book, `inventario_${dateFrom}_${dateTo}.xlsx`)
+        exportToExcel(
+          [
+            {
+              name: 'Inventario',
+              headers: ['Código', 'Descripción', 'Cantidad', 'Vehículo'],
+              rows: inventario.map((i: any) => [
+                i.codigoMaterial ?? '',
+                i.descripcionMaterial ?? '',
+                i.cantidadDisponible ?? 0,
+                i.vehiculoId ?? '',
+              ]),
+            },
+          ],
+          `inventario_${dateFrom}_${dateTo}`
+        )
       }
       toast.success('Reporte generado exitosamente')
     } catch (e) {
@@ -135,37 +146,53 @@ export default function Reportes() {
     setGenerating(reportId + '-pdf')
     try {
       if (reportId === 'averias') {
-        const rows = filteredAverias.map(a => ({
-          'Caso ID': a.caseId,
-          Estado: a.estado,
-          Agencia: a.nombreAgencia || a.agencia || '',
-          Localización: a.localizacion,
-          Técnico: a.tecnicoAsignadoNombre,
-          Clientes: a.clientesAfectados ?? 0,
-        }))
-        exportToPdf(rows, `averias_${dateFrom}_${dateTo}`, 'Reporte de Averías', [
-          { id: 'reportType', title: 'Tipo', data: 'Averías' },
-          { id: 'period', title: 'Período', data: `${dateFrom} — ${dateTo}` },
-          { id: 'total', title: 'Total', data: String(filteredAverias.length) },
-        ])
+        exportToPdf(
+          {
+            title: 'Reporte de Averías',
+            subtitle: `Período: ${dateFrom} — ${dateTo}  |  Total: ${filteredAverias.length}`,
+            headers: ['Caso ID', 'Estado', 'Agencia', 'Localización', 'Técnico', 'Clientes'],
+            rows: filteredAverias.map(a => [
+              a.caseId || a.id,
+              a.estado,
+              a.nombreAgencia || a.agencia || '',
+              a.localizacion ?? '',
+              a.tecnicoAsignadoNombre ?? '',
+              a.clientesAfectados ?? 0,
+            ]),
+          },
+          `averias_${dateFrom}_${dateTo}`
+        )
       } else if (reportId === 'vehiculos') {
-        const rows = vehiculos.map(v => ({
-          Placa: v.placa,
-          Tipo: v.tipo ?? '',
-          Agencia: v.agencia ?? '',
-          'KM Actual': v.kmActual ?? 0,
-          Estado: v.estado ?? '',
-        }))
-        exportToPdf(rows, 'vehiculos', 'Estado de Vehículos')
+        exportToPdf(
+          {
+            title: 'Estado de Vehículos',
+            headers: ['Placa', 'Tipo', 'Agencia', 'KM Actual', 'Próx. Mant.', 'Estado'],
+            rows: vehiculos.map(v => [
+              v.placa ?? '',
+              v.tipo ?? '',
+              v.agencia ?? '',
+              v.kmActual ?? 0,
+              v.mantenimientoProximo ?? 0,
+              v.estado ?? '',
+            ]),
+          },
+          'vehiculos'
+        )
       } else if (reportId === 'usuarios') {
-        const rows = usuarios.map(u => ({
-          Nombre: u.nombre ?? u.email,
-          Email: u.email,
-          Rol: u.rol ?? '',
-          Agencia: u.agencia ?? '',
-          Vehículo: u.vehiculoId ?? '',
-        }))
-        exportToPdf(rows, 'usuarios', 'Directorio de Usuarios')
+        exportToPdf(
+          {
+            title: 'Directorio de Usuarios',
+            headers: ['Nombre', 'Email', 'Rol', 'Agencia', 'Vehículo'],
+            rows: usuarios.map(u => [
+              `${u.nombre ?? ''} ${u.apellidos ?? ''}`.trim() || (u.email ?? ''),
+              u.email ?? '',
+              u.rol ?? '',
+              u.agencia ?? '',
+              u.placaVehiculo ?? u.vehiculoId ?? '',
+            ]),
+          },
+          'usuarios'
+        )
       }
       toast.success('PDF generado exitosamente')
     } catch (e) {

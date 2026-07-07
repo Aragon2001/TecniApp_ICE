@@ -1,13 +1,10 @@
 import { useState, useMemo } from 'react'
 import { Users, Search, Shield, Edit2, X, Save } from 'lucide-react'
-import { ref, set } from 'firebase/database'
-import { rtdbUsers } from '../firebase/config'
-import { useUsuarios } from '../hooks/useUsuarios'
-import { emailToKey, rolLabel } from '../utils/formatUtils'
+import { useUsuarios, updateUsuario, type Usuario } from '../hooks/useUsuarios'
+import { rolLabel } from '../utils/formatUtils'
 import { Spinner } from '../components/ui/Spinner'
 import { useAuth } from '../context/AuthContext'
 import type { UserRole } from '../types'
-import type { Usuario } from '../hooks/useUsuarios'
 import toast from 'react-hot-toast'
 
 const ROL_BADGE: Record<UserRole, string> = {
@@ -21,6 +18,9 @@ interface EditForm {
   agencia: string
   vehiculoId: string
   nombre: string
+  apellidos: string
+  cedula: string
+  telefono: string
 }
 
 export default function Usuarios() {
@@ -29,7 +29,7 @@ export default function Usuarios() {
   const [search, setSearch] = useState('')
   const [rolFilter, setRolFilter] = useState<UserRole | ''>('')
   const [editUser, setEditUser] = useState<Usuario | null>(null)
-  const [form, setForm] = useState<EditForm>({ rol: 'tecnico', agencia: '', vehiculoId: '', nombre: '' })
+  const [form, setForm] = useState<EditForm>({ rol: 'tecnico', agencia: '', vehiculoId: '', nombre: '', apellidos: '', cedula: '', telefono: '' })
   const [saving, setSaving] = useState(false)
 
   const filtered = useMemo(() => {
@@ -40,7 +40,9 @@ export default function Usuarios() {
       list = list.filter(u =>
         u.email?.toLowerCase().includes(q) ||
         u.nombre?.toLowerCase().includes(q) ||
-        u.agencia?.toLowerCase().includes(q)
+        u.apellidos?.toLowerCase().includes(q) ||
+        u.agencia?.toLowerCase().includes(q) ||
+        u.cedula?.toLowerCase().includes(q)
       )
     }
     return list
@@ -53,6 +55,9 @@ export default function Usuarios() {
       agencia: u.agencia ?? '',
       vehiculoId: u.vehiculoId ?? '',
       nombre: u.nombre ?? '',
+      apellidos: u.apellidos ?? '',
+      cedula: u.cedula ?? '',
+      telefono: u.telefono ?? '',
     })
   }
 
@@ -60,14 +65,18 @@ export default function Usuarios() {
     if (!editUser || !isAdmin) return
     setSaving(true)
     try {
-      const key = emailToKey(editUser.email!)
-      await set(ref(rtdbUsers, `users/${key}/rol`), form.rol)
-      await set(ref(rtdbUsers, `users/${key}/agencia`), form.agencia)
-      await set(ref(rtdbUsers, `users/${key}/vehiculoId`), form.vehiculoId)
-      await set(ref(rtdbUsers, `users/${key}/nombre`), form.nombre)
+      await updateUsuario(editUser.id, {
+        rol: form.rol,
+        agencia: form.agencia,
+        vehiculoId: form.vehiculoId,
+        nombre: form.nombre,
+        apellidos: form.apellidos,
+        cedula: form.cedula,
+        telefono: form.telefono,
+      })
       toast.success('Usuario actualizado correctamente')
       setEditUser(null)
-    } catch (e) {
+    } catch {
       toast.error('Error al guardar cambios')
     } finally {
       setSaving(false)
@@ -94,7 +103,6 @@ export default function Usuarios() {
         <p className="text-sm text-gray-500 mt-0.5">Gestión de técnicos, supervisores y administradores</p>
       </div>
 
-      {/* Rol summary pills */}
       {!loading && (
         <div className="flex flex-wrap gap-2">
           {(['admin', 'supervisor', 'tecnico'] as UserRole[]).map(rol => (
@@ -113,13 +121,12 @@ export default function Usuarios() {
         </div>
       )}
 
-      {/* Filters */}
       <div className="bg-white rounded-xl shadow-card p-4 flex flex-wrap gap-3">
         <div className="flex-1 min-w-[200px] relative">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             type="text"
-            placeholder="Buscar por nombre, correo o agencia..."
+            placeholder="Buscar por nombre, correo, cédula o agencia..."
             value={search}
             onChange={e => setSearch(e.target.value)}
             className="w-full pl-9 pr-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#003087]"
@@ -157,7 +164,7 @@ export default function Usuarios() {
             <table className="min-w-full">
               <thead className="bg-gray-50">
                 <tr>
-                  {['Nombre', 'Correo electrónico', 'Rol', 'Agencia', 'Vehículo', ...(isAdmin ? ['Acciones'] : [])].map(h => (
+                  {['Nombre', 'Correo electrónico', 'Rol', 'Agencia', 'Vehículo', 'Cédula', ...(isAdmin ? ['Acciones'] : [])].map(h => (
                     <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">
                       {h}
                     </th>
@@ -166,13 +173,16 @@ export default function Usuarios() {
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {filtered.map(u => (
-                  <tr key={u.email} className="hover:bg-gray-50 transition-colors">
+                  <tr key={u.email ?? u.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-3 text-sm font-medium text-gray-900">
                       <div className="flex items-center gap-2.5">
                         <div className="w-8 h-8 rounded-full bg-[#003087] text-white flex items-center justify-center text-xs font-bold flex-shrink-0">
                           {(u.nombre ?? u.email ?? '?').charAt(0).toUpperCase()}
                         </div>
-                        <span className="truncate max-w-[150px]">{u.nombre ?? '—'}</span>
+                        <div>
+                          <span className="block truncate max-w-[150px]">{u.nombre ?? '—'}</span>
+                          {u.apellidos && <span className="block text-xs text-gray-400 truncate max-w-[150px]">{u.apellidos}</span>}
+                        </div>
                       </div>
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-600 font-mono text-xs">{u.email}</td>
@@ -183,6 +193,7 @@ export default function Usuarios() {
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-600">{u.agencia ?? '—'}</td>
                     <td className="px-4 py-3 text-sm font-mono text-gray-500">{u.vehiculoId ?? '—'}</td>
+                    <td className="px-4 py-3 text-sm text-gray-500 font-mono text-xs">{u.cedula ?? '—'}</td>
                     {isAdmin && (
                       <td className="px-4 py-3">
                         <button
@@ -205,8 +216,8 @@ export default function Usuarios() {
       {/* Edit modal */}
       {editUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 sticky top-0 bg-white">
               <h2 className="font-semibold text-gray-900">Editar Usuario</h2>
               <button onClick={() => setEditUser(null)} className="p-1.5 hover:bg-gray-100 rounded-lg">
                 <X size={16} className="text-gray-500" />
@@ -217,15 +228,24 @@ export default function Usuarios() {
                 <p className="text-xs text-gray-500 mb-1">Correo</p>
                 <p className="text-sm font-mono text-gray-800 bg-gray-50 px-3 py-2 rounded-lg">{editUser.email}</p>
               </div>
-              <div>
-                <label className="text-xs font-medium text-gray-600 block mb-1">Nombre</label>
-                <input
-                  type="text"
-                  value={form.nombre}
-                  onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#003087]"
-                />
-              </div>
+              {[
+                { key: 'nombre', label: 'Nombre' },
+                { key: 'apellidos', label: 'Apellidos' },
+                { key: 'cedula', label: 'Cédula' },
+                { key: 'telefono', label: 'Teléfono' },
+                { key: 'agencia', label: 'Agencia' },
+                { key: 'vehiculoId', label: 'Vehículo asignado' },
+              ].map(({ key, label }) => (
+                <div key={key}>
+                  <label className="text-xs font-medium text-gray-600 block mb-1">{label}</label>
+                  <input
+                    type="text"
+                    value={(form as any)[key]}
+                    onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#003087]"
+                  />
+                </div>
+              ))}
               <div>
                 <label className="text-xs font-medium text-gray-600 block mb-1">Rol</label>
                 <select
@@ -237,25 +257,6 @@ export default function Usuarios() {
                     <option key={r} value={r}>{rolLabel(r)}</option>
                   ))}
                 </select>
-              </div>
-              <div>
-                <label className="text-xs font-medium text-gray-600 block mb-1">Agencia</label>
-                <input
-                  type="text"
-                  value={form.agencia}
-                  onChange={e => setForm(f => ({ ...f, agencia: e.target.value }))}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#003087]"
-                />
-              </div>
-              <div>
-                <label className="text-xs font-medium text-gray-600 block mb-1">Vehículo asignado</label>
-                <input
-                  type="text"
-                  value={form.vehiculoId}
-                  onChange={e => setForm(f => ({ ...f, vehiculoId: e.target.value }))}
-                  placeholder="Ej. A1234B"
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#003087]"
-                />
               </div>
             </div>
             <div className="flex gap-3 px-6 py-4 border-t border-gray-100">

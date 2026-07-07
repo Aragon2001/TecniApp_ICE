@@ -1,90 +1,103 @@
-import { useState, useEffect } from 'react'
-import { ref, update } from 'firebase/database'
-import { liveQuery } from 'dexie'
+import { useLiveQuery } from 'dexie-react-hooks'
+import { ref, update, set, remove } from 'firebase/database'
 import toast from 'react-hot-toast'
-import { rtdbAverias, rtdbInventario } from '../firebase/config'
-import { db, type SyncQueueItem, dexieInvalidate } from './db'
+import { db, dexieInvalidate, type SyncQueueItem } from './db'
 import { queryClient } from './queryClient'
+import {
+  rtdbAverias,
+  rtdbInventario,
+  rtdbGeneral,
+  rtdbUsers,
+  rtdbMain,
+  rtdbMateriales,
+  rtdbProgramacion,
+} from '../firebase/config'
 
 const MAX_RETRIES = 3
 
-function getRtdb(collectionKey: string) {
-  const map: Record<string, any> = {
-    averias: rtdbAverias,
-    luminarias: rtdbInventario,
-  }
-  const rtdb = map[collectionKey]
-  if (!rtdb) throw new Error(`Sin RTDB configurado para: ${collectionKey}`)
-  return rtdb
+const RTDB_MAP: Record<string, any> = {
+  averias: rtdbAverias,
+  luminarias: rtdbInventario,
+  inventario: rtdbInventario,
+  vehiculos: rtdbGeneral,
+  usuarios: rtdbUsers,
+  localizaciones: rtdbMain,
+  materiales: rtdbMateriales,
+  programaciones: rtdbProgramacion,
+  medidores: rtdbMain,
 }
 
-export async function addToQueue(
-  item: Omit<SyncQueueItem, 'id' | 'createdAt' | 'retryCount' | 'status'>
-): Promise<void> {
+export type SyncOperation = 'update' | 'set' | 'delete'
+
+export interface QueueItem extends Omit<SyncQueueItem, 'id' | 'createdAt' | 'retryCount' | 'status'> {
+  operation?: SyncOperation
+}
+
+export async function addToQueue(item: QueueItem): Promise<void> {
   await db.syncQueue.add({
     ...item,
     createdAt: Date.now(),
     retryCount: 0,
     status: 'pending',
-  })
+  } as SyncQueueItem)
 }
 
 export async function processQueue(): Promise<void> {
-  const toProcess = await db.syncQueue
-    .filter(
-      (item) =>
-        item.status === 'pending' ||
-        (item.status === 'error' && item.retryCount < MAX_RETRIES)
-    )
-    .sortBy('createdAt')
+  const items = await db.syncQueue
+    .where('status')
+    .anyOf(['pending', 'error'])
+    .filter((i) => i.retryCount < MAX_RETRIES)
+    .toArray()
 
-  if (toProcess.length === 0) return
+  if (items.length === 0) return
 
-  let successCount = 0
-  const succeededCollections = new Set<string>()
-  const failedCollections = new Set<string>()
-
-  for (const item of toProcess) {
-    try {
-      const rtdb = getRtdb(item.collectionKey)
-      await update(ref(rtdb, item.rtdbPath), item.payload)
-      await db.syncQueue.delete(item.id!)
-      succeededCollections.add(item.collectionKey)
-      successCount++
-    } catch (err) {
+  for (const item of items) {
+    const rtdb = RTDB_MAP[item.collectionKey]
+    if (!rtdb) {
       await db.syncQueue.update(item.id!, {
         status: 'error',
+        errorMessage: `Sin RTDB para: ${item.collectionKey}`,
         retryCount: item.retryCount + 1,
-        errorMessage: (err as Error).message,
       })
-      failedCollections.add(item.collectionKey)
+      continue
+    }
+
+    const dbRef = ref(rtdb, item.rtdbPath)
+    const operation: SyncOperation = (item as any).operation ?? 'update'
+
+    try {
+      if (operation === 'delete') {
+        await remove(dbRef)
+      } else if (operation === 'set') {
+        await set(dbRef, item.payload)
+      } else {
+        await update(dbRef, item.payload)
+      }
+
+      await db.syncQueue.delete(item.id!)
+      await dexieInvalidate(item.collectionKey)
+      queryClient.invalidateQueries({ queryKey: [item.collectionKey] })
+    } catch (err: any) {
+      await db.syncQueue.update(item.id!, {
+        status: 'error',
+        errorMessage: err?.message ?? 'Error desconocido',
+        retryCount: item.retryCount + 1,
+      })
     }
   }
 
-  for (const col of succeededCollections) {
-    await dexieInvalidate(col)
-    queryClient.invalidateQueries({ queryKey: [col] })
-  }
-
-  if (successCount > 0 && failedCollections.size === 0) {
-    toast.success(`${successCount} cambio(s) sincronizados`)
-  } else if (failedCollections.size > 0) {
-    toast.error(`${failedCollections.size} operación(es) no se pudieron sincronizar`)
-  }
+  const remaining = await db.syncQueue.where('status').equals('error').count()
+  const synced = items.length - remaining
+  if (synced > 0) toast.success(`${synced} cambio${synced !== 1 ? 's' : ''} sincronizado${synced !== 1 ? 's' : ''}`)
+  if (remaining > 0) toast.error(`${remaining} cambio${remaining !== 1 ? 's' : ''} pendiente${remaining !== 1 ? 's' : ''} por reintentar`)
 }
 
 export function usePendingCount(): number {
-  const [count, setCount] = useState(0)
-
-  useEffect(() => {
-    const subscription = liveQuery(() =>
-      db.syncQueue.where('status').anyOf(['pending', 'error']).count()
-    ).subscribe({
-      next: setCount,
-      error: () => setCount(0),
-    })
-    return () => subscription.unsubscribe()
-  }, [])
-
-  return count
+  return (
+    useLiveQuery(
+      () => db.syncQueue.where('status').anyOf(['pending', 'error']).count(),
+      [],
+      0
+    ) ?? 0
+  )
 }

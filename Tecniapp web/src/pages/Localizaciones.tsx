@@ -1,32 +1,17 @@
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
 import { MapPin, Search, ExternalLink } from 'lucide-react'
 import { useLocalizaciones } from '../hooks/useLocalizaciones'
 
 export default function Localizaciones() {
-  const { localizaciones, loading } = useLocalizaciones()
+  const { localizaciones, loading, searchLocalizacion, localizacionesBySubregion } = useLocalizaciones()
   const [search, setSearch] = useState('')
   const [subregionFilter, setSubregionFilter] = useState('')
 
-  const subregiones = useMemo(() => {
-    const set = new Set(localizaciones.map(l => l.subregion).filter(Boolean))
-    return Array.from(set).sort()
-  }, [localizaciones])
+  const subregiones = Object.keys(localizacionesBySubregion).sort()
 
-  const filtered = useMemo(() => {
-    let list = localizaciones
-    if (search) {
-      const q = search.toLowerCase()
-      list = list.filter(l =>
-        l.calle.toLowerCase().includes(q) ||
-        l.pueblo.toLowerCase().includes(q) ||
-        l.direccion.toLowerCase().includes(q)
-      )
-    }
-    if (subregionFilter) {
-      list = list.filter(l => l.subregion === subregionFilter)
-    }
-    return list
-  }, [localizaciones, search, subregionFilter])
+  const filtered = search || subregionFilter
+    ? searchLocalizacion(search).filter(l => !subregionFilter || l.subregion === subregionFilter)
+    : localizaciones
 
   return (
     <div className="space-y-5">
@@ -42,7 +27,6 @@ export default function Localizaciones() {
         </span>
       </div>
 
-      {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -50,7 +34,7 @@ export default function Localizaciones() {
             type="text"
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Buscar por calle, pueblo, dirección..."
+            placeholder="Buscar por nombre, código, agencia, circuito..."
             className="w-full pl-9 pr-4 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#003087]/20 focus:border-[#003087]"
           />
         </div>
@@ -64,11 +48,10 @@ export default function Localizaciones() {
         </select>
       </div>
 
-      {search || subregionFilter ? (
-        <p className="text-xs text-slate-500">{filtered.length} resultado(s)</p>
-      ) : null}
+      {(search || subregionFilter) && (
+        <p className="text-xs text-slate-500">{filtered.length.toLocaleString()} resultado(s)</p>
+      )}
 
-      {/* Table */}
       {loading ? (
         <div className="bg-white rounded-xl border border-slate-100 p-5 space-y-3 animate-pulse">
           {[1,2,3,4,5].map(i => <div key={i} className="h-10 bg-slate-100 rounded-lg" />)}
@@ -84,7 +67,7 @@ export default function Localizaciones() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-100">
-                  {['Calle', 'Pueblo', 'Dirección', 'Al Poste', 'Del Poste', 'Subregión', 'GPS'].map(h => (
+                  {['ID / Código', 'Nombre', 'Agencia', 'Subregión', 'Tipo', 'Circuito', 'GPS'].map(h => (
                     <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">
                       {h}
                     </th>
@@ -92,17 +75,15 @@ export default function Localizaciones() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {filtered.map((loc, idx) => {
+                {filtered.slice(0, 500).map((loc, idx) => {
                   const mapsUrl = loc.latitud && loc.longitud
                     ? `https://www.google.com/maps?q=${loc.latitud},${loc.longitud}`
                     : null
                   return (
                     <tr key={loc.id || idx} className="hover:bg-slate-50 transition-colors">
-                      <td className="px-4 py-2.5 text-slate-700 font-medium text-xs">{loc.calle || '-'}</td>
-                      <td className="px-4 py-2.5 text-slate-600 text-xs">{loc.pueblo || '-'}</td>
-                      <td className="px-4 py-2.5 text-slate-600 text-xs max-w-[200px] truncate">{loc.direccion || '-'}</td>
-                      <td className="px-4 py-2.5 text-slate-600 text-xs">{loc.alPoste || '-'}</td>
-                      <td className="px-4 py-2.5 text-slate-600 text-xs">{loc.delPoste || '-'}</td>
+                      <td className="px-4 py-2.5 font-mono text-xs text-[#003087] font-semibold">{loc.codigo || loc.id || '-'}</td>
+                      <td className="px-4 py-2.5 text-slate-700 font-medium text-xs max-w-[180px] truncate">{loc.nombre || '-'}</td>
+                      <td className="px-4 py-2.5 text-slate-600 text-xs">{loc.agencia || '-'}</td>
                       <td className="px-4 py-2.5 text-xs">
                         {loc.subregion && (
                           <span className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded-full text-[10px] font-semibold">
@@ -110,6 +91,8 @@ export default function Localizaciones() {
                           </span>
                         )}
                       </td>
+                      <td className="px-4 py-2.5 text-slate-500 text-xs">{loc.tipo || '-'}</td>
+                      <td className="px-4 py-2.5 text-slate-500 text-xs">{loc.circuito || '-'}</td>
                       <td className="px-4 py-2.5">
                         {mapsUrl ? (
                           <a
@@ -130,6 +113,11 @@ export default function Localizaciones() {
                 })}
               </tbody>
             </table>
+            {filtered.length > 500 && (
+              <div className="px-4 py-3 text-center text-xs text-slate-400 border-t border-slate-50">
+                Mostrando 500 de {filtered.length.toLocaleString()} — refine la búsqueda para ver más
+              </div>
+            )}
           </div>
         </div>
       )}

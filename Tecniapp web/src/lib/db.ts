@@ -11,6 +11,7 @@ export interface SyncQueueItem {
   entityId: string
   rtdbPath: string
   payload: Record<string, any>
+  operation?: 'update' | 'set' | 'delete'
   createdAt: number
   retryCount: number
   status: 'pending' | 'error'
@@ -52,7 +53,7 @@ class TecniAppDB extends Dexie {
 
 export const db = new TecniAppDB()
 
-// TTLs alineados con los staleTime de React Query en cada hook
+// TTLs aligned with React Query staleTime
 export const DEXIE_TTL: Record<string, number> = {
   averias: 60_000,
   luminarias: 5 * 60_000,
@@ -65,25 +66,17 @@ export const DEXIE_TTL: Record<string, number> = {
   programaciones: 5 * 60_000,
 }
 
-/**
- * Lee registros de Dexie si la colección está dentro del TTL.
- * Retorna null si el caché expiró o no existe (→ hay que ir a Firebase).
- * Retorna [] si la colección existe pero estaba vacía (estado válido cacheado).
- */
+// Returns null on cache miss, array (possibly empty) on valid cache
 export async function dexieRead<T>(
   table: Table<T, string>,
   collection: string
 ): Promise<T[] | null> {
+  const ttl = DEXIE_TTL[collection] ?? 5 * 60_000
   const meta = await db.meta.get(collection)
-  if (!meta) return null
-  if (Date.now() - meta.cachedAt > (DEXIE_TTL[collection] ?? 5 * 60_000)) return null
+  if (!meta || Date.now() - meta.cachedAt > ttl) return null
   return table.toArray()
 }
 
-/**
- * Escribe registros en Dexie y actualiza el timestamp del meta.
- * Reemplaza toda la colección (clear + bulkPut) dentro de una transacción.
- */
 export async function dexieWrite<T>(
   table: Table<T, string>,
   collection: string,
@@ -91,17 +84,11 @@ export async function dexieWrite<T>(
 ): Promise<void> {
   await db.transaction('rw', table, db.meta, async () => {
     await table.clear()
-    if (records.length > 0) {
-      await table.bulkPut(records)
-    }
+    if (records.length > 0) await table.bulkPut(records)
     await db.meta.put({ id: collection, cachedAt: Date.now() })
   })
 }
 
-/**
- * Invalida el caché Dexie de una colección sin borrar los registros.
- * Se usa después de mutaciones para forzar un refetch desde Firebase.
- */
 export async function dexieInvalidate(collection: string): Promise<void> {
   await db.meta.delete(collection)
 }

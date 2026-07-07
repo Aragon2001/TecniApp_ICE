@@ -92,7 +92,7 @@ export default function Averias() {
     let list = averias
     if (search) {
       const q = search.toLowerCase()
-      list = list.filter((a: any) =>
+      list = list.filter(a =>
         (a.caseId || a.id)?.toLowerCase().includes(q) ||
         a.cliente?.toLowerCase().includes(q) ||
         a.localizacion?.toLowerCase().includes(q) ||

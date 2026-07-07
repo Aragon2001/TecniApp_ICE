@@ -1,10 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <!-- Fondo azul ICE con esquinas redondeadas -->
   <rect width="512" height="512" rx="90" fill="#003087"/>
-  <!-- Rayo / bolt -->
   <path d="M295 55 L148 272 L234 272 L198 457 L372 228 L280 228 L322 55 Z"
         fill="#FFD700" stroke="white" stroke-width="6" stroke-linejoin="round"/>
-  <!-- Texto ICE -->
   <text x="256" y="490" font-size="56" text-anchor="middle" fill="white"
         font-family="sans-serif" font-weight="bold" letter-spacing="8">ICE</text>
 </svg>

@@ -18,7 +18,7 @@ import java.util.Date
 import java.util.Locale
 
 enum class LuminariaActionMode {
-    /** Técnico: botón llave/herramienta para atender luminaria pendiente */
+    /** Técnico: botón check para atender luminaria pendiente */
     ATTEND,
     /** Supervisor/Admin en pendiente, o Técnico en reparada: botón lápiz */
     EDIT,
@@ -67,15 +67,11 @@ class LuminariaReparacionAdapter(
         private val onDelete: (LuminariaReparacionEntity) -> Unit,
         private val onSelect: ((LuminariaReparacionEntity) -> Unit)?
     ) : RecyclerView.ViewHolder(binding.root) {
+
         private val localizacionRegex = Regex("^\\d{12}$")
 
-        private fun formatCantidad(cantidad: Double): String {
-            return if (cantidad % 1.0 == 0.0) {
-                cantidad.toInt().toString()
-            } else {
-                cantidad.toString()
-            }
-        }
+        private fun formatCantidad(cantidad: Double): String =
+            if (cantidad % 1.0 == 0.0) cantidad.toInt().toString() else cantidad.toString()
 
         private fun formatLocalizacion(valor: String): String {
             val trimmed = valor.trim()
@@ -92,10 +88,8 @@ class LuminariaReparacionAdapter(
             return digits.take(4)
         }
 
-        private fun formatFecha(timestamp: Long): String {
-            val formato = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-            return formato.format(Date(timestamp))
-        }
+        private fun formatFecha(timestamp: Long): String =
+            SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date(timestamp))
 
         fun bind(
             item: LuminariaReparacionEntity,
@@ -104,16 +98,11 @@ class LuminariaReparacionAdapter(
             pueblosById: Map<Int, String>,
             vehiculosById: Map<Int, VehiculosEntity>
         ) {
-            val materiales = LuminariaMaterialSerializer.fromJson(item.materialesJson)
-            val resumenMateriales = if (materiales.isEmpty()) {
-                "Sin materiales"
-            } else {
-                materiales.joinToString("\n") { material ->
-                    "• ${material.descripcion} (x${formatCantidad(material.cantidad)})"
-                }
-            }
+            val ctx = binding.root.context
             val estado = LuminariaEstado.fromRaw(item.estado)
-            val estadoTexto = if (estado == LuminariaEstado.PENDIENTE) "Pendiente" else "Reparada"
+            val isPendiente = estado == LuminariaEstado.PENDIENTE
+            val estadoTexto = if (isPendiente) "Pendiente" else "Reparada"
+
             val localizacionFormateada = formatLocalizacion(item.localizacion)
             val puebloCodigo = obtenerPuebloCodigo(localizacionFormateada)
             val puebloId = puebloCodigo?.toIntOrNull()
@@ -124,76 +113,81 @@ class LuminariaReparacionAdapter(
                 else -> "-"
             }
             val vehiculoPlaca = vehiculosById[item.vehiculoId]?.placa?.toString().orEmpty().ifBlank { "-" }
+            val materiales = LuminariaMaterialSerializer.fromJson(item.materialesJson)
+            val resumenMateriales = if (materiales.isEmpty()) "Sin materiales"
+            else materiales.joinToString("\n") { "• ${it.descripcion} (x${formatCantidad(it.cantidad)})" }
 
-            val ctx = binding.root.context
-            val isPendiente = estado == LuminariaEstado.PENDIENTE
+            // ─── Colores por estado ──────────────────────────────────────────
             val statusColor = ContextCompat.getColor(
                 ctx, if (isPendiente) R.color.chip_pendiente else R.color.chip_resuelta
             )
-            val iconBgColor = ContextCompat.getColor(
-                ctx, if (isPendiente) R.color.lum_icon_bg_pending else R.color.lum_icon_bg_done
-            )
+            val iconBgAttr = if (isPendiente)
+                com.google.android.material.R.attr.colorErrorContainer
+            else
+                com.google.android.material.R.attr.colorTertiaryContainer
+            val tvIconBg = android.util.TypedValue()
+            ctx.theme.resolveAttribute(iconBgAttr, tvIconBg, true)
+            val iconBgColor = tvIconBg.data
+            val iconTint = android.content.res.ColorStateList.valueOf(statusColor)
 
             binding.viewStatusStrip.setBackgroundColor(statusColor)
             binding.cardEstadoLuminaria.setCardBackgroundColor(statusColor)
             binding.tvReparacionEstado.setTextColor(Color.WHITE)
             binding.cardIconLuminaria.setCardBackgroundColor(iconBgColor)
-            binding.ivIconLuminaria.imageTintList =
-                android.content.res.ColorStateList.valueOf(statusColor)
+            binding.ivIconLuminaria.imageTintList = iconTint
 
+            // ─── Textos ──────────────────────────────────────────────────────
             binding.tvReparacionTitulo.text = "Localización $localizacionFormateada"
             binding.tvReparacionEstado.text = estadoTexto
             binding.tvReparacionPueblo.text = "Pueblo: $puebloLabel"
 
-            if (estado == LuminariaEstado.PENDIENTE) {
+            if (isPendiente) {
                 val cliente = item.cliente?.trim().orEmpty().ifBlank { "Sin datos" }
                 val contacto = item.contacto?.trim().orEmpty().ifBlank { "Sin datos" }
-                val observaciones = item.observaciones?.trim().orEmpty().ifBlank { "Sin datos" }
                 binding.tvReparacionDetalle.text = buildString {
-                    append("Camión asignado: $vehiculoPlaca")
-                    append("\nEstado: $estadoTexto")
-                    append("\nEjecutor: -")
+                    append("Camión: $vehiculoPlaca")
+                    append("\nCliente: $cliente")
                 }
                 binding.tvReparacionExtra.text = buildString {
                     append("Reporte: ${formatFecha(item.fechaRegistro)}")
-                    append("\nCliente: $cliente")
-                    append("\nTeléfono: $contacto")
-                    append("\nObservaciones: $observaciones")
+                    append("\nContacto: $contacto")
                 }
             } else {
                 val ejecutor = item.ejecutorNombre.trim().ifBlank { "Sin datos" }
                 binding.tvReparacionDetalle.text = "Materiales:\n$resumenMateriales"
                 binding.tvReparacionExtra.text = buildString {
-                    append("Estado: $estadoTexto")
-                    append("\nVehículo: $vehiculoPlaca")
+                    append("Vehículo: $vehiculoPlaca")
                     append("\nEjecutor: $ejecutor")
+                    append("\nFecha: ${formatFecha(item.fechaReparacion ?: item.fechaRegistro)}")
                 }
             }
 
-            // Botón de acción principal según modo
+            // ─── Botón de acción principal ───────────────────────────────────
             when (actionMode) {
                 LuminariaActionMode.ATTEND -> {
                     binding.cardBtnEditar.isVisible = true
-                    binding.btnEditarReparacion.setImageResource(R.drawable.ic_build)
+                    binding.btnEditarReparacion.setImageResource(R.drawable.ic_check)
                     binding.btnEditarReparacion.contentDescription = "Atender luminaria"
                     binding.btnEditarReparacion.imageTintList =
                         android.content.res.ColorStateList.valueOf(
-                            ContextCompat.getColor(ctx, R.color.averia_notification_accent)
+                            ContextCompat.getColor(ctx, R.color.chip_resuelta)
                         )
-                    binding.cardBtnEditar.setCardBackgroundColor(
-                        ContextCompat.getColor(ctx, R.color.chip_bg_luminaria)
+                    val tvDoneBg = android.util.TypedValue()
+                    ctx.theme.resolveAttribute(
+                        com.google.android.material.R.attr.colorTertiaryContainer, tvDoneBg, true
                     )
+                    binding.cardBtnEditar.setCardBackgroundColor(tvDoneBg.data)
                 }
                 LuminariaActionMode.EDIT -> {
                     binding.cardBtnEditar.isVisible = true
                     binding.btnEditarReparacion.setImageResource(R.drawable.ic_edit)
                     binding.btnEditarReparacion.contentDescription = "Editar"
-                    val tv = android.util.TypedValue()
+                    val tvOnContainer = android.util.TypedValue()
                     ctx.theme.resolveAttribute(
-                        com.google.android.material.R.attr.colorPrimary, tv, true
+                        com.google.android.material.R.attr.colorOnPrimaryContainer, tvOnContainer, true
                     )
                     binding.btnEditarReparacion.imageTintList =
-                        android.content.res.ColorStateList.valueOf(tv.data)
+                        android.content.res.ColorStateList.valueOf(tvOnContainer.data)
                     val tvContainer = android.util.TypedValue()
                     ctx.theme.resolveAttribute(
                         com.google.android.material.R.attr.colorPrimaryContainer, tvContainer, true

@@ -1,6 +1,7 @@
 {
   "hosting": {
-    "site": "tecniapp-ice-go-cr",
+
+    "site": "tecniapp-ice",
     "public": "dist",
     "ignore": [
       "firebase.json",
