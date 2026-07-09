@@ -91,10 +91,8 @@ Además, dentro del propio `database.rules.json`, el control de rol (`root.child
 `firebase.json` declara un target `localizaciones` separado del `default`, apuntando a `tecniapp-ice` (vs. `tecniapp-ice-default-rtdb` del default). Sin embargo, en el código Android (`RoomRepository`/`FirebaseSyncManager`) las localizaciones/medidores/pueblos se leen todos de la base default. No quedó evidencia en este repo de qué usa realmente el target `localizaciones` — puede ser un remanente de una migración anterior.
 **Acción recomendada:** confirmar en la consola de Firebase si `tecniapp-ice` (el target `localizaciones`) tiene tráfico real; si no, eliminar el target de `firebase.json` para no dejar ambigüedad.
 
-### 🟡 A7 — Historia de Git mezclada entre los dos proyectos + índice de Git inconsistente — **PARCIAL ✅ / reevaluado**
-**Avance verificado:** se eliminó el `.git/index.lock` obsoleto que bloqueaba escrituras; se ejecutó `git rm -r --cached "Tecniapp web"` (113 archivos del proyecto web sacados del índice de este repo — quedan 0); se amplió `.gitignore` con `Tecniapp web/` completo. Esto limpia el `git status` de las ~700 líneas de "deleted". **Pendiente:** el commit de estos cambios no se ha hecho todavía — están en staging, a la espera de que el usuario confirme (y decida si va a `master` o a una rama).
-
-⚠️ **Nota de esta re-auditoría:** al re-verificar hoy, `git status`/`git ls-files` en este entorno vuelven a fallar con `fatal: index file corrupt` (`index uses \7… extension, which we do not understand`) — un problema de índice **distinto** al `index.lock` ya resuelto. No se pudo confirmar de forma independiente en esta sesión si el `git rm --cached` sigue vigente o si el índice se corrompió después. Recomendado como próximo paso: ejecutar `git status`/`git diff --cached` directamente en la máquina del usuario (fuera de este entorno) para confirmar el estado real antes de hacer el commit pendiente.
+### ✅ A7 — Historia de Git mezclada entre los dos proyectos — **RESUELTO (2026-07-09)**
+**Commit `edafc6b0`** (115 archivos, −30.972 líneas): los 113 archivos de `Tecniapp web/` sacados del índice de este repo con `git rm -r --cached`, `.gitignore` ampliado con `Tecniapp web/` completo. El `git status` ya no muestra las ~700 líneas de "deleted". Commit en `master`.
 
 **Reevaluación de "secretos expuestos":** se revisó el contenido real del `.env` en el historial (commit `951c83fa`) y solo contiene variables `VITE_*` (API key de Firebase Web, URLs de RTDB, clave de Google Maps) — son **públicas por diseño** (Vite las embebe en el bundle del navegador; cualquier visitante de la web ya las recibe) y **no incluyen** ninguna service-account ni clave privada. Por tanto, reescribir el historial compartido de GitHub (`git push --force`, irreversible) para purgar valores que ya son públicos se considera **desproporcionado** frente al riesgo real. Recomendación actualizada: no reescribir historial; en su lugar restringir la clave de Google Maps por dominio/referrer en Google Cloud Console, y confiar en que el rebuild de Firebase que hará el usuario (ver A4) ya renueva el entorno.
 
@@ -169,14 +167,16 @@ No es alarmante en volumen, pero cada una es un `NullPointerException` potencial
 `Database/sync/SyncStatus.kt` define constantes de texto (`"PENDING"`, `"SYNCED"`, etc. — inferido del uso de `syncState = "PENDING"` en `RoomRepository`/`VehiculoLogEntity`/`ProgramacionEntity`), mientras que `pm/model/SyncStatus.kt` es un `enum class` real. Usar strings libres para un campo de estado permite typos silenciosos (`"Pendiente"` vs `"PENDING"`) que compilan sin error y fallan solo en runtime/queries.
 **Recomendación:** migrar el módulo principal al mismo patrón de enum + `TypeConverter` que ya existe y funciona en el módulo PM.
 
-### 🟡 C4 — Fallback "descarga completa y filtra en memoria" en localizaciones y búsqueda de medidores — **EN PROGRESO (actualizado 2026-07-08 tarde)**
+### ✅ C4 — Fallback "descarga completa y filtra en memoria" en localizaciones y búsqueda de medidores — **RESUELTO (2026-07-09)**
 `FirebaseSyncManager.obtenerLocalizacionesPorPueblos` documenta explícitamente una "Estrategia 2 (fallback): descarga completa y filtra en memoria" cuando la estrategia indexada falla. Para una base con muchas localizaciones esto puede ser una descarga muy pesada (tiempo, datos móviles, memoria) disparada silenciosamente como fallback. Debe registrarse/alertarse cuándo se cae a este camino (ya hay `Log.w`, pero conviene además instrumentar con analytics para saber con qué frecuencia ocurre en producción).
 
-**Avance verificado:**
-- Se agregó `localizacionesFallbackWarnThreshold = 10_000` (línea ~83 de `FirebaseSyncManager.kt`) y un `SyncLog.w(...)` que se dispara cuando el `full_scan` de la Estrategia 2 trae más de 10.000 registros (`dataset_size_warning`). Esto da visibilidad real del problema (antes solo había un `Log.w` de que se había caído al fallback, sin tamaño), pero **todavía no elimina ni acota la descarga**: si el dataset supera el umbral, igual se descarga completo y solo se registra una advertencia después del hecho.
-- Se confirmó que **el camino de mayor riesgo ya está mitigado**: la búsqueda interactiva de medidores en tiempo real (`MedidorViewModel.buscar()`, la que se dispara en cada tecleo del usuario) usa `FirebaseSyncManager.buscarMedidorEnFirebaseLigero(...)`, una variante que **solo intenta lectura directa por clave y nunca descarga el nodo completo como fallback**. Este es el escenario que más riesgo tenía (una descarga completa por cada carácter tecleado) y ya no ocurre.
-- **Pendiente:** la función hermana `buscarMedidorEnFirebase(...)` (con fallback de `referencia.get()` — descarga completa del nodo de medidores de toda la subregión) sigue existiendo y todavía se usa en dos flujos de un solo disparo: confirmación de registro manual de medidor (`MedidorViewModel.kt` línea ~507) y búsqueda del medidor asociado a una avería (`AveriasViewModel.kt` línea ~512). Son de menor frecuencia que la búsqueda interactiva, pero cada uno puede seguir disparando una descarga completa de la subregión si el número no coincide con la clave indexada exacta. **Recomendación siguiente:** reemplazar esas dos llamadas por la variante `Ligera` + un mensaje explícito de "no encontrado" (sin fallback de escaneo completo), o acotar el fallback con `limitToFirst`/paginación en vez de traer el nodo entero.
-- La sincronización batch de medidores (`obtenerMedidoresPorLotes`) y el conteo (`contarMedidoresSubregion`, vía endpoint REST `?shallow=true`) ya estaban bien diseñados desde antes de esta ronda de cambios — no descargan el dataset completo de una sola vez, y no requieren acción adicional.
+**Estado final (2026-07-09):**
+- `FirebaseSyncManager.obtenerLocalizacionesPorPueblos`: Estrategia 2 (fallback de full-scan) sigue existiendo con `SyncLog.w` cuando supera 10.000 registros — visible, pero no eliminada (la sincronización batch de `obtenerMedidoresPorLotes` y el conteo `?shallow=true` ya estaban bien diseñados).
+- **`MedidorViewModel.confirmarRegistro`** (antes línea ~507): `buscarMedidorEnFirebase` → `buscarMedidorEnFirebaseLigero` ✅ (2026-07-09). Elimina el full-scan en el flujo de registro manual.
+- **`AveriasViewModel.buscarMedidor`** (antes línea ~512): `buscarMedidorEnFirebase` → `buscarMedidorEnFirebaseLigero` ✅ (2026-07-09). Elimina el full-scan en la búsqueda de medidor de una avería.
+- **`AveriasRepository.scopedAveriasQuery`**: eliminada ✅ (2026-07-09). Era código muerto (0 callers) que descargaba la BD de averías completa sin límite.
+- Commit: `953563b5`. BUILD SUCCESSFUL verificado.
+- `buscarMedidorEnFirebase` (con fallback) sigue existiendo en `FirebaseSyncManager` como función pública pero ya no tiene callers en el proyecto — candidato a eliminar o marcar `@Deprecated` en una limpieza futura.
 
 ### ✅ C5 — Contadores de progreso hardcodeados — **MITIGADO (verificado 2026-07-08 tarde)**
 `SUBREGION_SYNC_STEPS = 5` y `BASE_EXTRA_STEPS = 2` en `Synchronizer`/`RoomRepository` están hardcodeados y deben mantenerse manualmente en sincronía con la cantidad real de pasos del método `syncSubregion`. Se verificó que ambos valores **sí coinciden** con los pasos reales actuales (5 `done += 100` en `syncSubregion`: agencias, pueblos, localizaciones, vehículos, medidores). No se convirtió a conteo dinámico (sería un cambio de diseño más amplio para un impacto ⚪ bajo), pero se documentó explícitamente el acoplamiento con comentarios en el código (`RoomRepository` y el `+3` de `SettingsFragment`, antes mágico, ahora nombrado `cacheResyncExtraSteps`) para que la próxima persona que agregue un paso sepa qué constante actualizar.
@@ -220,13 +220,13 @@ No es alarmante en volumen, pero cada una es un `NullPointerException` potencial
 
 ---
 
-## 5. Plan de acción priorizado (roadmap sugerido) — actualizado 2026-07-08 tarde/noche
+## 5. Plan de acción priorizado (roadmap sugerido) — actualizado 2026-07-09
 
 **P0 — Lo más urgente ahora mismo:**
-1. **Probar el fix de sincronización incremental de Averías (A9)** en un dispositivo/emulador real antes de considerar cerrado el problema de las descargas masivas — es la acción de mayor impacto pendiente en todo el proyecto.
-2. Cuando el usuario reconstruya las 12 bases de Firebase: diseñar reglas de seguridad por instancia desde el primer día (mínimo `auth != null`, idealmente por rol) para no repetir que 7 de 12 queden abiertas al público (A4).
-3. Confirmar el estado real de la limpieza de Git (`git rm --cached`, `.gitignore`) directamente en la máquina del usuario, ya que este entorno no pudo verificarlo por un índice de Git corrupto, y completar el commit pendiente (A7).
-4. Terminar de acotar los fallbacks de descarga completa restantes: `buscarMedidorEnFirebase` (dos call-sites) y la Estrategia 2 de `obtenerLocalizacionesPorPueblos` (C4).
+1. **[ÚNICO PENDIENTE P0] Probar el fix de sincronización incremental de Averías (A9)** en un dispositivo/emulador real: instalar APK debug, hacer login, verificar en Logcat (`[SCOPED_DELTA]`) que la segunda sync en adelante descarga solo el delta. Sin esta prueba, el fix no se puede considerar cerrado. Ver `log.md §Sesión 2026-07-09` para pasos exactos.
+2. ✅ A7 completado (commit `edafc6b0`, 2026-07-09).
+3. ✅ C4 completado (commit `953563b5`, 2026-07-09).
+4. **Cuando el usuario reconstruya las 12 bases de Firebase:** diseñar reglas de seguridad por instancia desde el primer día — ver A4.
 
 **P1 — Retomar cuando se resuelva el rediseño de Firebase:**
 5. Completar el módulo Programación/Planillas siguiendo el plan de 5 pasos de `log.md` §Fase 3 (A2/A3), una vez decidida la tecnología única de datastore con la web.

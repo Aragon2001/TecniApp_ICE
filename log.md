@@ -243,5 +243,51 @@ SUCCESSFUL**. **No** se despliega a producción hasta que el usuario lo pruebe (
   no regresiona borrados. Reducción esperada del bandwidth **>95-99%**.
 - Complementos recomendados (fases siguientes, no en este fix): subir el intervalo del worker
   apoyándose en el FCM ya existente (`syncAveriasYNotificar`); persistencia/debounce de los listeners
-  realtime; eliminar `scopedAveriasQuery()` muerto.
+  realtime.
+
+---
+
+## Sesión 2026-07-09 — Continuación de auditoría
+
+### [A7] Commit de limpieza de Git — ✅ COMPLETADO
+- **Commit `edafc6b0`** (115 archivos, −30.972 líneas): eliminados del índice todos los archivos
+  de `Tecniapp web/` que habían quedado tracked en este repo Android (el `git rm -r --cached`
+  previo estaba staged desde la sesión anterior, confirmado con `git diff --cached`). `.gitignore`
+  añadido al mismo commit para cerrar el ciclo.
+- El índice de Git ya no muestra las 700+ líneas de "deleted" de archivos web.
+- No se reescribió historial (decisión del usuario): el `.env` en historia solo contiene
+  variables `VITE_*` públicas por diseño. Ver `AUDITORIA.md §A7`.
+
+### [C4] Eliminar fallback de escaneo completo de medidores — ✅ COMPLETADO
+- **`MedidorViewModel.kt` (confirmarRegistro, antes línea ~507):** `buscarMedidorEnFirebase` →
+  `buscarMedidorEnFirebaseLigero`. Antes de registrar un medidor manual, ya no se hace un full-scan
+  de toda la subregión si el lookup directo por clave falla. Si no existe en Firebase, se procede
+  con el registro nuevo (comportamiento correcto — el número de medidor es la clave en Firebase).
+- **`AveriasViewModel.kt` (buscarMedidor, antes línea ~512):** `buscarMedidorEnFirebase` →
+  `buscarMedidorEnFirebaseLigero`. La búsqueda de un medidor asociado a una avería ya no dispara
+  un full-scan de la subregión si el número no coincide con una clave exacta; devuelve
+  `NotFound` directamente.
+- **`AveriasRepository.kt` (scopedAveriasQuery):** **eliminada** la función muerta (0 callers,
+  descargaba la BD de averías completa sin acotación de región ni límite). El import de `Query`
+  se conserva porque `buildFallbackQuery` sigue usándolo.
+- `./gradlew compileDebugKotlin` → **BUILD SUCCESSFUL** (18 s) tras los 3 cambios.
+- **Commit `953563b5`** incluye estos cambios junto con todos los fixes previos de Fase 1.
+- Riesgo: bajo. El único efecto observable es que si un número de medidor existe en Firebase
+  con una clave diferente a su número (datos legacy mal indexados), ya no se encontrará por
+  la ruta de escaneo completo; se mostrará "no encontrado". En práctica, los medidores se
+  indexan por su número exacto desde `registrarMedidorManual`.
+
+### [A9] Estado de validación — ⚠️ Pendiente de prueba en dispositivo
+- **Se confirmó en el código real** (lectura directa de `AveriasRepository.kt`) que:
+  - `fetchDeltaChildren` existe en línea 1318, con `[SCOPED_DELTA]` tag en línea 1337.
+  - `DELTA_OVERLAP_MS` existe al final de la clase.
+  - La lógica de watermark (`maxOfOrNull { it.lastUpdated }`) está implementada en `pullFromFirebaseOnce`.
+- **No se pudo probar en un dispositivo/emulador real** desde este entorno. El usuario debe:
+  1. Instalar el APK debug en un dispositivo o emulador.
+  2. Hacer login y esperar el primer sync (Room vacío → debe bajar toda la región).
+  3. En Logcat filtrar por `SCOPED_DELTA`: el segundo sync en adelante debe mostrar
+     `delta.size` mucho menor que `snap.childrenCount` (casi todos los campos a 0 en el delta).
+  4. Monitorear el consumo en Firebase Console tras desplegar — la base respondía HTTP 402
+     en el diagnóstico original, por lo que medir en vivo también requiere que la cuota esté activa.
+- Hasta que se confirme en dispositivo, el estado se mantiene como "aplicado pero no validado".
 
