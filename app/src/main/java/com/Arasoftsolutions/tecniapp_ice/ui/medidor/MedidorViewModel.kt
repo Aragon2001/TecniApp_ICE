@@ -504,7 +504,7 @@ class MedidorViewModel(app: Application) : AndroidViewModel(app) {
 
                 val existenteRemoto = withContext(Dispatchers.IO) {
                     runCatching {
-                        firebase.buscarMedidorEnFirebase(
+                        firebase.buscarMedidorEnFirebaseLigero(
                             subregionSeleccionada,
                             subregionNombreSeleccionada,
                             numeroLimpio

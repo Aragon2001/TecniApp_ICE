@@ -555,7 +555,10 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         viewLifecycleOwner.lifecycleScope.launch {
             try {
                 val uid = requireActiveUser()
-                val totalSteps = RoomRepository.SUBREGION_SYNC_STEPS + 3
+                // Pasos extra propios de este flujo "limpiar caché y resincronizar":
+                // 1) limpiar base local · 2) catálogos generales · 3) perfil de usuario.
+                val cacheResyncExtraSteps = 3
+                val totalSteps = RoomRepository.SUBREGION_SYNC_STEPS + cacheResyncExtraSteps
                 val total = totalSteps * 100
                 var done = 0
                 var downloadedBytes = 0L

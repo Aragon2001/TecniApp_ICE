@@ -1,6 +1,5 @@
 package com.Arasoftsolutions.tecniapp_ice.Database.sync
 
-import android.util.Log
 import com.Arasoftsolutions.tecniapp_ice.Database.room.RoomRepository
 import com.google.firebase.auth.FirebaseAuth
 
@@ -23,8 +22,8 @@ class Synchronizer(
         val uid = FirebaseAuth.getInstance().currentUser?.uid
         val scope = uid?.let { repository.buildUserScope(it) }
 
-        Log.i(TAG, "[INV_DIAG][SYNC_START] uid=${uid ?: "null"} scopeVehiculoKey=${scope?.vehiculoKey ?: "null"}")
-        Log.i(TAG, "[LUM_SYNC][START] uid=${uid ?: "null"} agenciaTag=${scope?.agenciaTag ?: "null"} subregion=$subregionId")
+        SyncLog.i(TAG, "[INV_DIAG][SYNC_START] uid=${uid ?: "null"} scopeVehiculoKey=${scope?.vehiculoKey ?: "null"}")
+        SyncLog.i(TAG, "[LUM_SYNC][START] uid=${uid ?: "null"} agenciaTag=${scope?.agenciaTag ?: "null"} subregion=$subregionId")
 
         // ─────────────────────────────────────────────────────────────────────
         // FIX: Diagnóstico mejorado de agenciaTag para detectar el problema
@@ -32,7 +31,7 @@ class Synchronizer(
         // ─────────────────────────────────────────────────────────────────────
         val agenciaTagRaw = scope?.agenciaTag?.trim()
         if (agenciaTagRaw.isNullOrBlank()) {
-            Log.e(
+            SyncLog.e(
                 TAG,
                 "[LUM_SYNC][AGENCIA_MISSING] uid=${uid ?: "null"} — " +
                         "El usuario no tiene el campo 'agencia' asignado en Firebase " +
@@ -41,7 +40,7 @@ class Synchronizer(
                         "Acción requerida: asignar agencia al usuario en Firebase Console."
             )
         } else {
-            Log.i(TAG, "[LUM_SYNC][AGENCIA_OK] uid=${uid ?: "null"} agenciaTag=$agenciaTagRaw")
+            SyncLog.i(TAG, "[LUM_SYNC][AGENCIA_OK] uid=${uid ?: "null"} agenciaTag=$agenciaTagRaw")
         }
         // ─────────────────────────────────────────────────────────────────────
 
@@ -58,7 +57,7 @@ class Synchronizer(
         var downloadedBytes = 0L
 
         val syncStartedAt = System.currentTimeMillis()
-        Log.i(TAG, "[SYNC_FLOW] start subregion=$subregionId totalSteps=$total scopedSteps=$scopedSteps")
+        SyncLog.i(TAG, "[SYNC_FLOW] start subregion=$subregionId totalSteps=$total scopedSteps=$scopedSteps")
 
         try {
             AppSyncCoordinator.runExclusive {
@@ -101,11 +100,11 @@ class Synchronizer(
                     ?.trim()
                     ?.takeIf { it.isNotEmpty() }
                     ?.let { vehiculoKey ->
-                        Log.i(TAG, "[INV_DIAG][SYNC_SCOPED] uid=${uid ?: "null"} vehiculoKeyRaw=$vehiculoKey")
+                        SyncLog.i(TAG, "[INV_DIAG][SYNC_SCOPED] uid=${uid ?: "null"} vehiculoKeyRaw=$vehiculoKey")
                         val vehiculoId = vehiculoKey.toIntOrNull()
                         if (vehiculoId != null) {
                             try {
-                                Log.i(TAG, "[INV_DIAG][SYNC_SCOPED] vehiculoKeyParsedInt=$vehiculoId")
+                                SyncLog.i(TAG, "[INV_DIAG][SYNC_SCOPED] vehiculoKeyParsedInt=$vehiculoId")
                                 downloadedBytes += repository.syncInventarioVehiculo(vehiculoId, vehiculoKey)
                                 done += 100
                                 onSyncProgress(done, total, "Sincronizando inventario del vehículo…", downloadedBytes)
@@ -113,7 +112,7 @@ class Synchronizer(
                                 throw Exception("Error en syncInventarioVehiculo(): ${e.message}", e)
                             }
                         } else {
-                            Log.w(TAG, "[INV_DIAG][SYNC_SCOPED_SKIP] reason=vehiculoKey_not_numeric uid=${uid ?: "null"} vehiculoKeyRaw=$vehiculoKey")
+                            SyncLog.w(TAG, "[INV_DIAG][SYNC_SCOPED_SKIP] reason=vehiculoKey_not_numeric uid=${uid ?: "null"} vehiculoKeyRaw=$vehiculoKey")
                         }
                     }
 
@@ -121,19 +120,19 @@ class Synchronizer(
                 //
                 // FIX: Agregar try-catch individual para que un fallo en luminarias
                 // no cancele toda la sync (los otros datos ya están guardados).
-                // Antes: el ?: Log.w hacía que el bloque se saltara sin reportar bien.
+                // Antes: el ?: SyncLog.w hacía que el bloque se saltara sin reportar bien.
                 // Ahora: diagnóstico claro y fallo no-fatal.
                 //
                 if (!agenciaTagRaw.isNullOrBlank()) {
                     try {
-                        Log.i(TAG, "[LUM_SYNC][AGENCIA_SCOPE_START] agencia=$agenciaTagRaw")
+                        SyncLog.i(TAG, "[LUM_SYNC][AGENCIA_SCOPE_START] agencia=$agenciaTagRaw")
                         downloadedBytes += repository.syncLuminariasAgencia(agenciaTagRaw)
                         done += 100
                         onSyncProgress(done, total, "Sincronizando luminarias de agencia…", downloadedBytes)
-                        Log.i(TAG, "[LUM_SYNC][DONE] agencia=$agenciaTagRaw bytes=$downloadedBytes")
+                        SyncLog.i(TAG, "[LUM_SYNC][DONE] agencia=$agenciaTagRaw bytes=$downloadedBytes")
                     } catch (e: Exception) {
                         // No-fatal: logueamos pero no detenemos el sync completo
-                        Log.e(
+                        SyncLog.e(
                             TAG,
                             "[LUM_SYNC][ERROR] agencia=$agenciaTagRaw detail=${e.message}",
                             e
@@ -148,14 +147,14 @@ class Synchronizer(
                 }
 
                 // FINAL
-                Log.i(
+                SyncLog.i(
                     TAG,
                     "[SYNC_FLOW] completed bytes=$downloadedBytes tookMs=${System.currentTimeMillis() - syncStartedAt}"
                 )
                 onSyncSuccess()
             }
         } catch (t: Throwable) {
-            Log.e(
+            SyncLog.e(
                 TAG,
                 "[SYNC_FLOW] failed bytes=$downloadedBytes tookMs=${System.currentTimeMillis() - syncStartedAt} detail=${t.message}",
                 t

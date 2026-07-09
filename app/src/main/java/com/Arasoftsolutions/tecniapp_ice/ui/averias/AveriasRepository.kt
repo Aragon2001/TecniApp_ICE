@@ -711,16 +711,6 @@ class AveriasRepository(private val db: AppDatabase) {
         return merged.values.map { it.entity }
     }
 
-    private suspend fun scopedAveriasQuery(limitToLast: Int? = null): Query {
-        // Se consulta el catálogo completo para que los filtros de la UI puedan mostrar
-        // averías de cualquier región/agencia sin quedar restringidos al usuario autenticado.
-        val base = firebaseRef.orderByKey()
-        return if (limitToLast != null) base.limitToLast(limitToLast) else base
-    }
-
-
-
-
     suspend fun persistDireccion(caseId: String, direccion: String) {
         val cleaned = direccion.trim()
         if (cleaned.isEmpty()) return
@@ -1306,6 +1296,39 @@ class AveriasRepository(private val db: AppDatabase) {
         val hadLocalData: Boolean
     )
 
+    /**
+     * Descarga INCREMENTAL de averías (fix de consumo de bandwidth — ver log.md §D1).
+     * En vez de re-bajar toda la región en cada sync (cada 15 min + tras cada escritura),
+     * pide solo los registros con lastUpdated >= (watermark - ventana), usando el índice
+     * 'lastUpdated' que ya existe en las reglas. RTDB no deja filtrar por 'region' y
+     * 'lastUpdated' a la vez, pero el delta entre syncs es minúsculo: se traen los cambios
+     * recientes de todas las regiones y se filtran por región en el cliente.
+     * Reduce cada pull de ~toda la región (MB) a ~KB.
+     */
+    private suspend fun fetchDeltaChildren(
+        regionVariants: List<String>,
+        watermark: Long
+    ): List<DataSnapshot> {
+        val variantSet = regionVariants.toHashSet()
+        // Ventana de solape: re-trae los últimos minutos para tolerar relojes desincronizados
+        // y updates fuera de orden sin perder cambios (costo despreciable, idempotente).
+        val desde = (watermark - DELTA_OVERLAP_MS).coerceAtLeast(0L)
+        val snap = firebaseRef
+            .orderByChild("lastUpdated")
+            .startAt(desde.toDouble())
+            .get()
+            .await()
+        val delta = snap.children.filter { child ->
+            val childRegion = child.child("region").getValue(String::class.java)
+            childRegion != null && variantSet.contains(childRegion)
+        }
+        Log.i(
+            TAG,
+            "[SCOPED_DELTA] desde=$desde watermark=$watermark recibidos=${snap.childrenCount} regionMatch=${delta.size}"
+        )
+        return delta
+    }
+
     suspend fun pullFromFirebaseOnce(): PullResult = withContext(Dispatchers.IO) {
         val current = dao.all().associateBy { it.caseId }
         val hadLocalData = current.isNotEmpty()
@@ -1336,6 +1359,15 @@ class AveriasRepository(private val db: AppDatabase) {
                     TAG,
                     "[SCOPED_EXECUTION] stage=primary role=${plan.role} field=${primary.field} variants=$regionVariants"
                 )
+
+                // 🚀 Sync incremental (log.md §D1): si ya hay averías locales, solo se descargan
+                // los cambios desde la última sync (índice 'lastUpdated') en vez de re-bajar toda
+                // la región cada 15 min. La rama 'else' (seed) mantiene intacta la carga completa
+                // acotada por región para la primera vez (Room vacío).
+                val deltaWatermark = current.values.maxOfOrNull { it.lastUpdated } ?: 0L
+                if (deltaWatermark > 0L) {
+                    fetchDeltaChildren(regionVariants, deltaWatermark)
+                } else {
 
                 val allPrimaryChildren = mutableListOf<DataSnapshot>()
                 val seenKeys = mutableSetOf<String>()
@@ -1405,6 +1437,7 @@ class AveriasRepository(private val db: AppDatabase) {
                     )
                     primaryChildren
                 }
+                } // cierre de la rama 'else' (seed) del sync incremental
             }
 
             val updated = mutableListOf<AveriaEntity>()
@@ -1528,6 +1561,7 @@ class AveriasRepository(private val db: AppDatabase) {
     private companion object {
         private const val TAG = "AveriasRepo"
         private const val FALLBACK_GLOBAL_LIMIT = 300
+        private const val DELTA_OVERLAP_MS = 5 * 60_000L  // 5 min de solape para robustez (log.md §D1)
         private const val SYNC_SCOPE_CACHE_MS = 60_000L
         private val DIACRITICS_REGEX = "\\p{InCombiningDiacriticalMarks}+".toRegex()
         private val NON_ALNUM_SPACE_REGEX = "[^a-z0-9 ]".toRegex()

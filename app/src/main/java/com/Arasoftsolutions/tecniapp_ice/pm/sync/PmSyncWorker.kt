@@ -1,7 +1,6 @@
 package com.Arasoftsolutions.tecniapp_ice.pm.sync
 
 import android.content.Context
-import androidx.room.Room
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.Arasoftsolutions.tecniapp_ice.pm.repository.OperacionRepository
@@ -16,11 +15,9 @@ class PmSyncWorker(
         val regionKey = inputData.getString(KEY_REGION) ?: return Result.failure()
         val subregionKey = inputData.getString(KEY_SUBREGION) ?: return Result.failure()
 
-        val database = Room.databaseBuilder(
-            applicationContext,
-            PmDatabase::class.java,
-            DB_NAME
-        ).build()
+        // Singleton compartido con la UI (ver AUDITORIA.md §B4): no se abre ni se cierra
+        // una instancia propia para no tener dos handles de Room sobre el mismo archivo.
+        val database = PmDatabase.getInstance(applicationContext)
 
         val operacionRepository = OperacionRepository(applicationContext, database)
         val syncManager = PmSyncManager(database, operacionRepository)
@@ -30,14 +27,11 @@ class PmSyncWorker(
             Result.success()
         } catch (ex: Exception) {
             Result.retry()
-        } finally {
-            database.close()
         }
     }
 
     companion object {
         const val KEY_REGION = "regionKey"
         const val KEY_SUBREGION = "subregionKey"
-        const val DB_NAME = "pm_operacion.db"
     }
 }

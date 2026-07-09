@@ -488,7 +488,9 @@ class UserFragment : Fragment() {
             agencia = agencyName,
             agenciaId = agencyId,
             placaVehiculo = vehiclePlate,
-            password = if (newPassword.isNotEmpty()) newPassword else user.password
+            // La contraseña NO se persiste en texto plano (ver AUDITORIA.md §A5). El cambio
+            // de credencial real se hace vía FirebaseAuth.updatePassword() más abajo.
+            password = null
         )
 
         setSaving(true)
@@ -523,7 +525,10 @@ class UserFragment : Fragment() {
 
     private suspend fun persistUserRemote(user: UserEntity) = withContext(Dispatchers.IO) {
         require(user.uid.isNotBlank()) { "UID vacío" }
-        usersRef.child(user.uid).setValue(user).await()
+        // Nunca escribir la contraseña en texto plano al RTDB (ver AUDITORIA.md §A5).
+        @Suppress("DEPRECATION")
+        val sanitized = user.copy(password = null)
+        usersRef.child(user.uid).setValue(sanitized).await()
     }
 
     private fun uploadProfilePhoto(uri: Uri) {

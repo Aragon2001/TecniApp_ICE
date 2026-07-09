@@ -40,6 +40,10 @@ data class UserEntity(
     var agencia: String? = null,
     var placaVehiculo: String? = null,
     var telefono: String? = null,
+    // DEPRECADO (AUDITORIA.md §A5): no debe usarse ni persistirse. La autenticación se gestiona
+    // exclusivamente con Firebase Auth. Se mantiene solo para compatibilidad de esquema Room;
+    // eliminar en una migración v32 dedicada. Siempre debe valer null.
+    @Deprecated("No persistir contraseñas en texto plano; usar Firebase Auth")
     var password: String? = null,
     var fotoUrl: String? = null,
     var rol: String? = null

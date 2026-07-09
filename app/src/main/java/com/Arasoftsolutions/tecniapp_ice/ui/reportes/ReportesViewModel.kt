@@ -44,7 +44,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.runBlocking
 
 private val functions by lazy { FirebaseFunctions.getInstance() }
 
@@ -659,7 +658,7 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
         return resultado
     }
 
-    private fun construirDatosBase(
+    private suspend fun construirDatosBase(
         averias: List<AveriaEntity>,
         catalogo: List<MaterialEntity>,
         inventario: List<InventarioConVehiculo>,
@@ -671,7 +670,7 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
         val finExclusiveMillis = fin.plusDays(1).atStartOfDay(zona).toInstant().toEpochMilli()
         val currentUid = auth.currentUser?.uid?.takeIf { it.isNotBlank() }
         val currentNombre = auth.currentUser?.displayName?.trim()?.lowercase(locale)
-        val placaVehiculo = runBlockingUserContext()?.placaVehiculo?.trim()?.takeIf { it.isNotBlank() }
+        val placaVehiculo = obtenerUserContextOrNull()?.placaVehiculo?.trim()?.takeIf { it.isNotBlank() }
 
         val catalogoPorCodigo = catalogo.associateBy { it.codigo }
         val catalogoPorDescripcion = catalogo.associateBy { it.descripcion.trim().lowercase(locale) }
@@ -806,7 +805,7 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
         val finExclusiveMillis = fin.plusDays(1).atStartOfDay(zona).toInstant().toEpochMilli()
         val currentUid = auth.currentUser?.uid?.takeIf { it.isNotBlank() }
         val currentNombre = auth.currentUser?.displayName?.trim()?.lowercase(locale)
-        val placaVehiculo = runBlockingUserContext()?.placaVehiculo?.trim()?.takeIf { it.isNotBlank() }
+        val placaVehiculo = obtenerUserContextOrNull()?.placaVehiculo?.trim()?.takeIf { it.isNotBlank() }
         val materialesPorCaso = base.averias.associateBy { it.entity.caseId }
 
         val averias = withContext(Dispatchers.IO) {
@@ -1307,9 +1306,9 @@ class ReportesViewModel(app: Application) : AndroidViewModel(app) {
         return UserContext(user, vehiculoId, placa, nombres)
     }
 
-    private fun runBlockingUserContext(): UserContext? {
+    private suspend fun obtenerUserContextOrNull(): UserContext? {
         return try {
-            runBlocking { obtenerUserContext() }
+            obtenerUserContext()
         } catch (_: Throwable) {
             null
         }

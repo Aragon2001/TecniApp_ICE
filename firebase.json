@@ -1,14 +1,5 @@
 {
-  "database": [
-    {
-      "target": "default",
-      "rules": "database.rules.json"
-    },
-    {
-      "target": "localizaciones",
-      "rules": "database.rules.json"
-    }
-  ],
+  "//": "Reglas de RTDB pendientes: el usuario eliminará y re-subirá las bases de datos. Tras ello se re-analizarán y se versionarán reglas por instancia (ver log.md §A4). No hay bloque 'database' activo mientras tanto.",
   "functions": [
     {
       "source": "functions",

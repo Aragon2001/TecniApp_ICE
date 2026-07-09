@@ -509,7 +509,7 @@ class AveriasViewModel(app: Application) : AndroidViewModel(app) {
                 }
                 val medidor = withContext(Dispatchers.IO) {
                     roomRepo.buscarMedidorPorNumero(trimmed)
-                        ?: firebaseSync.buscarMedidorEnFirebase(storageKey, subregionNombre, trimmed)?.also {
+                        ?: firebaseSync.buscarMedidorEnFirebaseLigero(storageKey, subregionNombre, trimmed)?.also {
                             roomRepo.insertarMedidor(it)
                         }
                 }

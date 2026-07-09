@@ -1,9 +1,9 @@
 package com.Arasoftsolutions.tecniapp_ice.Database.room
 
 import android.content.Context
-import android.util.Log
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.*
 import com.Arasoftsolutions.tecniapp_ice.Database.sync.FirebaseSyncManager
+import com.Arasoftsolutions.tecniapp_ice.Database.sync.SyncLog
 import com.Arasoftsolutions.tecniapp_ice.Database.sync.SubregionNormalizer
 import com.Arasoftsolutions.tecniapp_ice.ui.vehiculo.VehiculoPlacaUtils
 import com.google.firebase.auth.FirebaseAuth
@@ -20,7 +20,6 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import androidx.room.withTransaction
-import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
 import java.util.UUID
 import com.Arasoftsolutions.tecniapp_ice.ui.vehiculo.FirebaseVehicleDataSource
@@ -54,6 +53,13 @@ class   RoomRepository(context: Context) {
 
     companion object {
         private const val TAG = "RoomRepositorySync"
+
+        /**
+         * Número de pasos con progreso (`done += 100`) dentro de [syncSubregion]:
+         * agencias, pueblos, localizaciones, vehículos y medidores = 5.
+         * IMPORTANTE (AUDITORIA.md §C5): si se agrega/quita un paso en `syncSubregion`,
+         * actualizar esta constante o la barra de progreso quedará descalibrada.
+         */
         const val SUBREGION_SYNC_STEPS = 5
 
         @Volatile
@@ -385,7 +391,7 @@ class   RoomRepository(context: Context) {
 
     suspend fun buildUserScope(uid: String): UserScope = withContext(Dispatchers.IO) {
         val user = db.usuarioDao().getByUid(uid) ?: runCatching { upsertUserFromFirebase(uid) }.getOrNull()
-        Log.i(
+        SyncLog.i(
             TAG,
             "[INV_DIAG][USER_SCOPE] uid=$uid placaVehiculo=${user?.placaVehiculo ?: "null"} agenciaId=${user?.agenciaId ?: "null"} agencia=${user?.agencia ?: "null"} subregion=${user?.subregion ?: "null"}"
         )
@@ -484,7 +490,7 @@ class   RoomRepository(context: Context) {
         val mantLogs = firebaseVehicleDs.pullMantenimientosLogs(vehiculoId)
         mantLogs.forEach { log -> vehiculoLogDao.upsert(log) }
 
-        Log.i(
+        SyncLog.i(
             "RoomRepositorySync",
             "[SYNC_VEHICULO_FIREBASE] vehiculoId=$vehiculoId " +
             "kmMerged=${merged.kmActual} mantLogsPulled=${mantLogs.size}"
@@ -955,15 +961,15 @@ class   RoomRepository(context: Context) {
             agenciaTag = null,
             vehiculoKey = vehiculoKey.trim().takeIf { it.isNotEmpty() }
         )
-        Log.i(TAG, "[INV_DIAG][SYNC_INVENTARIO] start uid=${uid ?: "null"} vehiculoIdInput=$vehiculoId")
+        SyncLog.i(TAG, "[INV_DIAG][SYNC_INVENTARIO] start uid=${uid ?: "null"} vehiculoIdInput=$vehiculoId")
 
         val vehiculoLocal = resolveVehiculoLocal(scope)
         if (vehiculoLocal == null) {
-            Log.w(TAG, "[INV_DIAG][SYNC_INVENTARIO_SKIP] reason=vehiculo_local_not_resolved uid=${uid ?: "null"}")
+            SyncLog.w(TAG, "[INV_DIAG][SYNC_INVENTARIO_SKIP] reason=vehiculo_local_not_resolved uid=${uid ?: "null"}")
             return@withContext 0L
         }
         val vehiculoIdLocal = vehiculoLocal.id
-        Log.i(
+        SyncLog.i(
             TAG,
             "[INV_DIAG][SYNC_INVENTARIO] vehiculo_local_resolved vehiculoIdLocal=$vehiculoIdLocal vehiculoKeyLength=${vehiculoLocal.vehiculoId.length}"
         )
@@ -971,17 +977,17 @@ class   RoomRepository(context: Context) {
         val candidates = buildInventarioKeyCandidates(scope, vehiculoLocal)
         val (selectedKey, inventario) = fetchInventarioForCandidates(vehiculoIdLocal, candidates)
         if (inventario.isEmpty()) {
-            Log.i(
+            SyncLog.i(
                 TAG,
                 "[INV_DIAG][SYNC_INVENTARIO_SKIP] reason=no_remote_items vehiculoIdLocal=$vehiculoIdLocal selectedKey=${selectedKey ?: "none"} items=0"
             )
-            Log.i(
+            SyncLog.i(
                 TAG,
                 "[SYNC_INVENTARIO] Sin datos remotos para vehiculoIdLocal=$vehiculoIdLocal; se omite fallback global para evitar descargas masivas"
             )
             return@withContext 0L
         }
-        Log.i(TAG, "[INV_DIAG][SYNC_INVENTARIO] fetch_success vehiculoIdLocal=$vehiculoIdLocal selectedKey=${selectedKey ?: "none"} remoteItems=${inventario.size}")
+        SyncLog.i(TAG, "[INV_DIAG][SYNC_INVENTARIO] fetch_success vehiculoIdLocal=$vehiculoIdLocal selectedKey=${selectedKey ?: "none"} remoteItems=${inventario.size}")
         val bytes = estimateBytes(inventario)
 
         val inventarioMapped = inventario.map { it.copy(vehiculoId = vehiculoIdLocal) }
@@ -1003,28 +1009,28 @@ class   RoomRepository(context: Context) {
         candidates: List<String>
     ): Pair<String?, List<InventarioItemEntity>> {
         if (candidates.isEmpty()) {
-            Log.w(TAG, "[INV_DIAG][FETCH_CANDIDATES] vehiculoIdLocal=$vehiculoIdLocal reason=no_candidates")
+            SyncLog.w(TAG, "[INV_DIAG][FETCH_CANDIDATES] vehiculoIdLocal=$vehiculoIdLocal reason=no_candidates")
             return null to emptyList()
         }
         candidates.forEachIndexed { index, candidate ->
-            Log.i(
+            SyncLog.i(
                 TAG,
                 "[INV_DIAG][FETCH_CANDIDATES] vehiculoIdLocal=$vehiculoIdLocal attempt=${index + 1}/${candidates.size} keyLength=${candidate.length}"
             )
             val items = firebase.obtenerInventarioDeVehiculo(candidate)
             if (items.isNotEmpty()) {
-                Log.i(
+                SyncLog.i(
                     TAG,
                     "[INV_DIAG][FETCH_CANDIDATES] vehiculoIdLocal=$vehiculoIdLocal selectedAttempt=${index + 1} keyLength=${candidate.length} items=${items.size}"
                 )
                 return candidate to items
             }
-            Log.i(
+            SyncLog.i(
                 TAG,
                 "[INV_DIAG][FETCH_CANDIDATES] vehiculoIdLocal=$vehiculoIdLocal emptyAttempt=${index + 1} keyLength=${candidate.length}"
             )
         }
-        Log.w(TAG, "[INV_DIAG][FETCH_CANDIDATES] vehiculoIdLocal=$vehiculoIdLocal result=no_items")
+        SyncLog.w(TAG, "[INV_DIAG][FETCH_CANDIDATES] vehiculoIdLocal=$vehiculoIdLocal result=no_items")
         return null to emptyList()
     }
 
@@ -1032,19 +1038,19 @@ class   RoomRepository(context: Context) {
     suspend fun syncLuminariasAgencia(agencia: String): Long = withContext(Dispatchers.IO) {
         val agenciaValue = agencia.trim()
         if (agenciaValue.isEmpty()) {
-            Log.w(TAG, "[LUM_ROOM][SKIP_REASON] reason=agencia_blank")
+            SyncLog.w(TAG, "[LUM_ROOM][SKIP_REASON] reason=agencia_blank")
             return@withContext 0L
         }
-        Log.i(TAG, "[LUM_ROOM][FETCH_START] agencia=$agenciaValue")
+        SyncLog.i(TAG, "[LUM_ROOM][FETCH_START] agencia=$agenciaValue")
         val reparaciones = firebase.obtenerLuminariasPorAgencia(agenciaValue)
-        Log.i(TAG, "[LUM_ROOM][FETCH_RESULT] agencia=$agenciaValue reparaciones=${reparaciones.size}")
+        SyncLog.i(TAG, "[LUM_ROOM][FETCH_RESULT] agencia=$agenciaValue reparaciones=${reparaciones.size}")
         val duplicateCount = reparaciones
             .groupBy { it.id }
             .values
             .sumOf { bucket -> (bucket.size - 1).coerceAtLeast(0) }
-        Log.i(TAG, "[LUM_ROOM][DUPLICATE_COUNT] agencia=$agenciaValue duplicates=$duplicateCount")
+        SyncLog.i(TAG, "[LUM_ROOM][DUPLICATE_COUNT] agencia=$agenciaValue duplicates=$duplicateCount")
         if (reparaciones.isEmpty()) {
-            Log.i(TAG, "[LUM_ROOM][SKIP_REASON] reason=no_remote_data agencia=$agenciaValue")
+            SyncLog.i(TAG, "[LUM_ROOM][SKIP_REASON] reason=no_remote_data agencia=$agenciaValue")
             return@withContext 0L
         }
         val bytes = estimateBytes(reparaciones)
@@ -1053,47 +1059,47 @@ class   RoomRepository(context: Context) {
             luminariaReparacionDao.eliminarPorAgencia(agenciaValue)
             luminariaReparacionDao.insertarTodas(reparaciones)
         }
-        Log.i(TAG, "[LUM_ROOM][SYNC_ATOMIC] agencia=$agenciaValue synced=${reparaciones.size}")
+        SyncLog.i(TAG, "[LUM_ROOM][SYNC_ATOMIC] agencia=$agenciaValue synced=${reparaciones.size}")
         val totalLocal = luminariaReparacionDao.contar()
-        Log.i(TAG, "[LUM_ROOM][POST_SYNC_TOTAL] agencia=$agenciaValue totalLocal=$totalLocal")
+        SyncLog.i(TAG, "[LUM_ROOM][POST_SYNC_TOTAL] agencia=$agenciaValue totalLocal=$totalLocal")
         bytes
     }
 
     private suspend fun resolveVehiculoLocal(scope: UserScope): VehiculoEntity? {
         val rawKey = scope.vehiculoKey?.trim().orEmpty()
         if (rawKey.isBlank()) {
-            Log.w(TAG, "[INV_DIAG][RESOLVE_VEHICULO_LOCAL] fail method=none reason=vehiculoKey_blank")
+            SyncLog.w(TAG, "[INV_DIAG][RESOLVE_VEHICULO_LOCAL] fail method=none reason=vehiculoKey_blank")
             return null
         }
 
         rawKey.toIntOrNull()?.let { numericId ->
             db.vehiculoDao().buscarPorId(numericId)?.let { vehiculo ->
-                Log.i(TAG, "[INV_DIAG][RESOLVE_VEHICULO_LOCAL] success method=vehiculoId_int vehiculoId=${vehiculo.id}")
+                SyncLog.i(TAG, "[INV_DIAG][RESOLVE_VEHICULO_LOCAL] success method=vehiculoId_int vehiculoId=${vehiculo.id}")
                 return vehiculo
             }
-            Log.i(TAG, "[INV_DIAG][RESOLVE_VEHICULO_LOCAL] miss method=vehiculoId_int value=$numericId")
+            SyncLog.i(TAG, "[INV_DIAG][RESOLVE_VEHICULO_LOCAL] miss method=vehiculoId_int value=$numericId")
         }
 
         db.vehiculoDao().buscarPorVehiculoId(rawKey)?.let { vehiculo ->
-            Log.i(TAG, "[INV_DIAG][RESOLVE_VEHICULO_LOCAL] success method=placaRaw vehiculoId=${vehiculo.id}")
+            SyncLog.i(TAG, "[INV_DIAG][RESOLVE_VEHICULO_LOCAL] success method=placaRaw vehiculoId=${vehiculo.id}")
             return vehiculo
         }
-        Log.i(TAG, "[INV_DIAG][RESOLVE_VEHICULO_LOCAL] miss method=placaRaw")
+        SyncLog.i(TAG, "[INV_DIAG][RESOLVE_VEHICULO_LOCAL] miss method=placaRaw")
 
         rawKey.toLongOrNull()?.let { placaLong ->
             db.vehiculoDao().buscarPorPlaca(placaLong)?.let { vehiculo ->
-                Log.i(TAG, "[INV_DIAG][RESOLVE_VEHICULO_LOCAL] success method=placa_long vehiculoId=${vehiculo.id}")
+                SyncLog.i(TAG, "[INV_DIAG][RESOLVE_VEHICULO_LOCAL] success method=placa_long vehiculoId=${vehiculo.id}")
                 return vehiculo
             }
-            Log.i(TAG, "[INV_DIAG][RESOLVE_VEHICULO_LOCAL] miss method=placa_long value=$placaLong")
+            SyncLog.i(TAG, "[INV_DIAG][RESOLVE_VEHICULO_LOCAL] miss method=placa_long value=$placaLong")
         }
 
         db.vehiculoDao().buscarPorVehiculoId(rawKey)?.let { vehiculo ->
-            Log.i(TAG, "[INV_DIAG][RESOLVE_VEHICULO_LOCAL] success method=placaVehiculo_usuario vehiculoId=${vehiculo.id}")
+            SyncLog.i(TAG, "[INV_DIAG][RESOLVE_VEHICULO_LOCAL] success method=placaVehiculo_usuario vehiculoId=${vehiculo.id}")
             return vehiculo
         }
 
-        Log.w(TAG, "[INV_DIAG][RESOLVE_VEHICULO_LOCAL] fail method=all keyLength=${rawKey.length}")
+        SyncLog.w(TAG, "[INV_DIAG][RESOLVE_VEHICULO_LOCAL] fail method=all keyLength=${rawKey.length}")
         return null
     }
 
@@ -1115,7 +1121,7 @@ class   RoomRepository(context: Context) {
             }
         }
         val candidates = deduped.toList()
-        Log.i(
+        SyncLog.i(
             TAG,
             "[INV_DIAG][KEY_CANDIDATES] count=${candidates.size} order=vehiculoId>placaRaw>placaLong>scopeKey lengths=${candidates.map { it.length }}"
         )
@@ -1139,13 +1145,13 @@ class   RoomRepository(context: Context) {
         var done = 0
         var downloadedBytes = 0L
         val syncStartedAt = System.currentTimeMillis()
-        Log.i(TAG, "[SYNC_SUBREGION] start subregion=$subregionId totalSteps=$total")
+        SyncLog.i(TAG, "[SYNC_SUBREGION] start subregion=$subregionId totalSteps=$total")
 
         // Si quieres transacción atómica, descomenta y usa withTransaction:
         // db.withTransaction {
         val canonicalSubregion = SubregionNormalizer.canonicalIdOrSelf(subregionId)
             ?: throw IllegalArgumentException("Subregión inválida: $subregionId")
-        Log.i(TAG, "[SYNC_SUBREGION] canonicalSubregion=$canonicalSubregion")
+        SyncLog.i(TAG, "[SYNC_SUBREGION] canonicalSubregion=$canonicalSubregion")
 
         val agencias = firebase.obtenerAgenciasPorSubregion(canonicalSubregion)
         downloadedBytes += estimateBytes(agencias)
@@ -1163,14 +1169,14 @@ class   RoomRepository(context: Context) {
         }
         done += 100
         progress(done, total, "Descargando agencias…", downloadedBytes)
-        Log.i(TAG, "[SYNC_SUBREGION] step=$done/$total source=datos_generales/agencias count=${agencias.size} bytes=$downloadedBytes")
+        SyncLog.i(TAG, "[SYNC_SUBREGION] step=$done/$total source=datos_generales/agencias count=${agencias.size} bytes=$downloadedBytes")
 
         val pueblosRemotos = firebase.obtenerPueblosPorSubregion(canonicalSubregion)
         downloadedBytes += estimateBytes(pueblosRemotos)
         val pueblosASincronizar = if (pueblosRemotos.isNotEmpty()) {
             pueblosRemotos
         } else {
-            Log.w(
+            SyncLog.w(
                 "RoomRepository",
                 "No se encontraron pueblos para subregión=$canonicalSubregion; se omite el sincronizado de pueblos/localizaciones."
             )
@@ -1190,19 +1196,19 @@ class   RoomRepository(context: Context) {
         }
         done += 100
         progress(done, total, "Descargando pueblos…", downloadedBytes)
-        Log.i(TAG, "[SYNC_SUBREGION] step=$done/$total source=local/pueblos count=${pueblosASincronizar.size} bytes=$downloadedBytes")
+        SyncLog.i(TAG, "[SYNC_SUBREGION] step=$done/$total source=local/pueblos count=${pueblosASincronizar.size} bytes=$downloadedBytes")
 
         // Combina IDs descargados ahora + IDs ya guardados en Room para esta subregión.
         // Esto evita que un fallo puntual en la descarga de pueblos deje sin localizaciones.
         val idsPueblosDescargados = pueblosASincronizar.map { it.id }
         val idsPueblosLocales = db.puebloDao().obtenerIdsPorSubregion(canonicalSubregion)
         val idsPueblos = (idsPueblosDescargados + idsPueblosLocales).distinct()
-        Log.i(TAG, "[SYNC_SUBREGION] idsPueblos total=${idsPueblos.size} (descargados=${idsPueblosDescargados.size} locales=${idsPueblosLocales.size})")
+        SyncLog.i(TAG, "[SYNC_SUBREGION] idsPueblos total=${idsPueblos.size} (descargados=${idsPueblosDescargados.size} locales=${idsPueblosLocales.size})")
 
         val localizacionesFiltradas = if (idsPueblos.isNotEmpty()) {
             firebase.obtenerLocalizacionesPorPueblos(idsPueblos, canonicalSubregion)
         } else {
-            Log.w(TAG, "[SYNC_SUBREGION] sin idsPueblos — se omite descarga de localizaciones")
+            SyncLog.w(TAG, "[SYNC_SUBREGION] sin idsPueblos — se omite descarga de localizaciones")
             emptyList()
         }
         downloadedBytes += estimateBytes(localizacionesFiltradas)
@@ -1218,7 +1224,7 @@ class   RoomRepository(context: Context) {
         }
         done += 100
         progress(done, total, "Descargando localizaciones…", downloadedBytes)
-        Log.i(TAG, "[SYNC_SUBREGION] step=$done/$total source=local/localizaciones puebloCount=${idsPueblos.size} localizaciones=${localizacionesFiltradas.size} bytes=$downloadedBytes")
+        SyncLog.i(TAG, "[SYNC_SUBREGION] step=$done/$total source=local/localizaciones puebloCount=${idsPueblos.size} localizaciones=${localizacionesFiltradas.size} bytes=$downloadedBytes")
 
         val vehiculosRemotos = firebase.obtenerVehiculosPorSubregion(canonicalSubregion)
         val vehiculos = deduplicarVehiculos(vehiculosRemotos)
@@ -1227,7 +1233,7 @@ class   RoomRepository(context: Context) {
         db.vehiculoDao().insertAll(vehiculosCombinados)
         done += 100
         progress(done, total, "Descargando vehículos…", downloadedBytes)
-        Log.i(TAG, "[SYNC_SUBREGION] step=$done/$total source=datos_generales/vehiculos count=${vehiculosCombinados.size} bytes=$downloadedBytes")
+        SyncLog.i(TAG, "[SYNC_SUBREGION] step=$done/$total source=datos_generales/vehiculos count=${vehiculosCombinados.size} bytes=$downloadedBytes")
 
         var medidoresTotal = 0
         var medidoresLotes = 0
@@ -1251,7 +1257,7 @@ class   RoomRepository(context: Context) {
             }
             val elapsed = formatElapsed(medidoresSyncStartedAt)
             val medidoresProgress = progressUnitsForMedidores(medidoresTotal, totalMedidoresObjetivo)
-            Log.i(
+            SyncLog.i(
                 TAG,
                 "[SYNC_SUBREGION] medidores_lote=$medidoresLotes loteSize=${medidoresBatch.size} total=$medidoresTotal objetivo=$totalMedidoresObjetivo medidoresProgress=$medidoresProgress elapsed=$elapsed bytes=$downloadedBytes"
             )
@@ -1264,8 +1270,8 @@ class   RoomRepository(context: Context) {
         }
         done += 100
         progress(done, total, "Descargando medidores…", downloadedBytes)
-        Log.i(TAG, "[SYNC_SUBREGION] step=$done/$total source=medidores/medidores count=$medidoresTotal bytes=$downloadedBytes")
-        Log.i(TAG, "[SYNC_SUBREGION] completed subregion=$canonicalSubregion totalBytes=$downloadedBytes tookMs=${System.currentTimeMillis()-syncStartedAt}")
+        SyncLog.i(TAG, "[SYNC_SUBREGION] step=$done/$total source=medidores/medidores count=$medidoresTotal bytes=$downloadedBytes")
+        SyncLog.i(TAG, "[SYNC_SUBREGION] completed subregion=$canonicalSubregion totalBytes=$downloadedBytes tookMs=${System.currentTimeMillis()-syncStartedAt}")
         // }
     }
 
@@ -1451,10 +1457,10 @@ class   RoomRepository(context: Context) {
     suspend fun startRealtimeSyncForScope(scope: UserScope) {
         stopRealtimeSync()
 
-        val vehiculoLocal = runBlocking { resolveVehiculoLocal(scope) }
+        val vehiculoLocal = resolveVehiculoLocal(scope)
         val vehiculoKey = scope.vehiculoKey?.trim().orEmpty()
         if (vehiculoKey.isNotBlank() && vehiculoLocal != null) {
-            Log.i(TAG, "[INV_DIAG][REALTIME_SETUP] vehiculoKey=$vehiculoKey vehiculoIdLocal=${vehiculoLocal.id}")
+            SyncLog.i(TAG, "[INV_DIAG][REALTIME_SETUP] vehiculoKey=$vehiculoKey vehiculoIdLocal=${vehiculoLocal.id}")
             inventarioRealtimeListener = firebase.startInventarioRealtimeForVehiculo(
                 vehiculoKey = vehiculoKey,
                 vehiculoIdLocal = vehiculoLocal.id,
@@ -1466,7 +1472,7 @@ class   RoomRepository(context: Context) {
                     inventarioDao.eliminarPorVehiculoYCodigo(vehiculoId, codigo)
                 },
                 onError = { err ->
-                    Log.e("RoomRepository", "Inventario realtime cancelado", err.toException())
+                    SyncLog.e("RoomRepository", "Inventario realtime cancelado", err.toException())
                 }
             )
         } else {
@@ -1474,7 +1480,7 @@ class   RoomRepository(context: Context) {
                 vehiculoKey.isBlank() -> "vehiculoKey_blank"
                 else -> "vehiculo_local_not_resolved"
             }
-            Log.w(TAG, "[INV_DIAG][REALTIME_SKIP] reason=$reason")
+            SyncLog.w(TAG, "[INV_DIAG][REALTIME_SKIP] reason=$reason")
         }
 
         val agenciaTag = scope.agenciaTag?.trim().orEmpty()
@@ -1489,7 +1495,7 @@ class   RoomRepository(context: Context) {
                     luminariaReparacionDao.eliminar(id)
                 },
                 onError = { err ->
-                    Log.e("RoomRepository", "Luminarias realtime cancelado", err.toException())
+                    SyncLog.e("RoomRepository", "Luminarias realtime cancelado", err.toException())
                 }
             )
         }

@@ -1,7 +1,6 @@
 package com.Arasoftsolutions.tecniapp_ice.Database.sync
 
 import android.content.Context
-import android.util.Log
 import com.Arasoftsolutions.tecniapp_ice.Database.entities.*
 import com.Arasoftsolutions.tecniapp_ice.ui.vehiculo.VehiculoPlacaUtils
 import com.google.firebase.database.DatabaseError
@@ -15,7 +14,6 @@ import kotlinx.coroutines.tasks.await
 import com.google.firebase.database.DataSnapshot
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.json.JSONObject
@@ -87,7 +85,7 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
     private fun database(url: String): DatabaseReference {
         return runCatching { FirebaseDatabase.getInstance(url).reference }
             .getOrElse { throwable ->
-                Log.e(TAG, "Error inicializando FirebaseDatabase", throwable)
+                SyncLog.e(TAG, "Error inicializando FirebaseDatabase", throwable)
                 throw IllegalStateException("No se pudo inicializar la base de datos en $url", throwable)
             }
 
@@ -227,7 +225,7 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
         val nodeName = resolveDatosGeneralesNode("agencias", "Agencias")
         val startedAt = System.currentTimeMillis()
         return try {
-            Log.i(TAG, "[SYNC_FETCH][datos_generales/$nodeName] query=orderByChild(subregion).equalTo($filtro) start")
+            SyncLog.i(TAG, "[SYNC_FETCH][datos_generales/$nodeName] query=orderByChild(subregion).equalTo($filtro) start")
             val snap = dbDatosGenerales.child(nodeName)
                 .orderByChild("subregion")
                 .equalTo(filtro)
@@ -255,11 +253,11 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
                     )
                 }
             }
-            Log.i(TAG, "[SYNC_FETCH][datos_generales/$nodeName] query_indexed=true fallback=false count=${result.size} bytes=${estimatePayloadBytes(result)} tookMs=${System.currentTimeMillis()-startedAt}")
+            SyncLog.i(TAG, "[SYNC_FETCH][datos_generales/$nodeName] query_indexed=true fallback=false count=${result.size} bytes=${estimatePayloadBytes(result)} tookMs=${System.currentTimeMillis()-startedAt}")
             result
         } catch (e: Exception) {
             val isIndexError = e.message?.contains("Index not defined", ignoreCase = true) == true
-            Log.w(
+            SyncLog.w(
                 TAG,
                 "[SYNC_FETCH][datos_generales/$nodeName] indexed_query_failed fallback_skipped=true indexError=$isIndexError detail=${e.message}"
             )
@@ -307,7 +305,7 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
         val nodeName = resolveDatosGeneralesNode("vehiculos", "Vehiculos")
         val startedAt = System.currentTimeMillis()
         return try {
-            Log.i(TAG, "[SYNC_FETCH][datos_generales/$nodeName] query=orderByChild(subregion).equalTo($filtro) start")
+            SyncLog.i(TAG, "[SYNC_FETCH][datos_generales/$nodeName] query=orderByChild(subregion).equalTo($filtro) start")
             val snap = dbDatosGenerales.child(nodeName)
                 .orderByChild("subregion")
                 .equalTo(filtro)
@@ -343,11 +341,11 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
                     )
                 }
             }
-            Log.i(TAG, "[SYNC_FETCH][datos_generales/$nodeName] query_indexed=true fallback=false count=${result.size} bytes=${estimatePayloadBytes(result)} tookMs=${System.currentTimeMillis()-startedAt}")
+            SyncLog.i(TAG, "[SYNC_FETCH][datos_generales/$nodeName] query_indexed=true fallback=false count=${result.size} bytes=${estimatePayloadBytes(result)} tookMs=${System.currentTimeMillis()-startedAt}")
             result
         } catch (e: Exception) {
             val isIndexError = e.message?.contains("Index not defined", ignoreCase = true) == true
-            Log.w(
+            SyncLog.w(
                 TAG,
                 "[SYNC_FETCH][datos_generales/$nodeName] indexed_query_failed fallback_skipped=true indexError=$isIndexError detail=${e.message}"
             )
@@ -437,20 +435,20 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
         }.getOrNull()?.children?.toList().orEmpty().mapNotNull { child ->
             child.toPuebloEntity()
         }.distinctBy { it.id }
-        Log.i(
+        SyncLog.i(
             TAG,
             "[SYNC_FETCH][local/$node] query=orderByChild(subregion).equalTo($filtro) primaryCount=${resultadoIndexado.size}"
         )
 
         if (resultadoIndexado.isNotEmpty()) {
-            Log.i(
+            SyncLog.i(
                 TAG,
                 "[SYNC_FETCH][local/$node] fallback=false finalCount=${resultadoIndexado.size}"
             )
             return resultadoIndexado
         }
 
-        Log.w(
+        SyncLog.w(
             TAG,
             "[SYNC_FETCH][local/$node] fallback=true reason=primary_empty query=orderByChild(subregion).equalTo($filtro)"
         )
@@ -463,7 +461,7 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
             (filtroNormalizado != null && subregionNormalizada == filtroNormalizado) ||
                     (canonicalFiltroNormalizado != null && canonicalPuebloNormalizada == canonicalFiltroNormalizado)
         }.distinctBy { it.id }
-        Log.i(
+        SyncLog.i(
             TAG,
             "[SYNC_FETCH][local/$node] fallback=true datasetCount=${datasetCompleto.size} finalCount=${resultadoFallback.size}"
         )
@@ -524,11 +522,11 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
                             .filter { it.calle != 0 }
                             .map { it.copy(direccion = it.direccion.trim(), subregion = canonicalSubregion) }
                         resultadosIndexados.addAll(entidades)
-                        Log.i(TAG, "[SYNC_FETCH][local/$nodeName] indexed campo=$campo pueblo=$puebloId count=${entidades.size}")
+                        SyncLog.i(TAG, "[SYNC_FETCH][local/$nodeName] indexed campo=$campo pueblo=$puebloId count=${entidades.size}")
                     }
                 } catch (e: Exception) {
                     val isIndexError = e.message?.contains("Index not defined", ignoreCase = true) == true
-                    Log.w(TAG, "[SYNC_FETCH][local/$nodeName] indexed_failed campo=$campo pueblo=$puebloId indexError=$isIndexError detail=${e.message}")
+                    SyncLog.w(TAG, "[SYNC_FETCH][local/$nodeName] indexed_failed campo=$campo pueblo=$puebloId indexError=$isIndexError detail=${e.message}")
                     break
                 }
             }
@@ -540,24 +538,24 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
 
         if (queryIndexadaExitosa) {
             val final = resultadosIndexados.filter { it.pueblo != 0 }.distinctBy { it.id }
-            Log.i(TAG, "[SYNC_FETCH][local/$nodeName] source=indexed finalCount=${final.size} subregion=${canonicalSubregion ?: "null"}")
+            SyncLog.i(TAG, "[SYNC_FETCH][local/$nodeName] source=indexed finalCount=${final.size} subregion=${canonicalSubregion ?: "null"}")
             return final
         }
 
         // --- Estrategia 2 (fallback): descarga completa y filtra en memoria ---
-        Log.w(TAG, "[SYNC_FETCH][local/$nodeName] fallback=full_scan pueblosFiltro=${puebloIds.size}")
+        SyncLog.w(TAG, "[SYNC_FETCH][local/$nodeName] fallback=full_scan pueblosFiltro=${puebloIds.size}")
         val pueblosSet = puebloIds.toSet()
 
         val snapFull = dbLocal.child(nodeName).get().await()
         if (!snapFull.exists()) {
-            Log.w(TAG, "[SYNC_FETCH][local/$nodeName] exists=false count=0")
+            SyncLog.w(TAG, "[SYNC_FETCH][local/$nodeName] exists=false count=0")
             return emptyList()
         }
 
         val datasetSize = snapFull.childrenCount.toInt()
-        Log.i(TAG, "[SYNC_FETCH][local/$nodeName] full_scan datasetSize=$datasetSize")
+        SyncLog.i(TAG, "[SYNC_FETCH][local/$nodeName] full_scan datasetSize=$datasetSize")
         if (datasetSize > localizacionesFallbackWarnThreshold) {
-            Log.w(TAG, "[SYNC_FETCH][local/$nodeName] dataset_size_warning size=$datasetSize threshold=$localizacionesFallbackWarnThreshold")
+            SyncLog.w(TAG, "[SYNC_FETCH][local/$nodeName] dataset_size_warning size=$datasetSize threshold=$localizacionesFallbackWarnThreshold")
         }
 
         val final = snapFull.children
@@ -567,7 +565,7 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
             .map { entity -> entity.copy(direccion = entity.direccion.trim(), subregion = canonicalSubregion) }
             .distinctBy { it.id }
 
-        Log.i(TAG, "[SYNC_FETCH][local/$nodeName] source=full_scan finalCount=${final.size} subregion=${canonicalSubregion ?: "null"}")
+        SyncLog.i(TAG, "[SYNC_FETCH][local/$nodeName] source=full_scan finalCount=${final.size} subregion=${canonicalSubregion ?: "null"}")
         return final
     }
 
@@ -706,7 +704,7 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
                 JSONObject(body).length()
             }
         }.getOrElse {
-            Log.w(TAG, "No se pudo contar medidores por shallow endpoint: ${it.message}")
+            SyncLog.w(TAG, "No se pudo contar medidores por shallow endpoint: ${it.message}")
             0
         }
     }
@@ -928,19 +926,19 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
     suspend fun obtenerInventarioDeVehiculo(vehiculoKey: String): List<InventarioItemEntity> {
         val key = vehiculoKey.trim()
         if (key.isEmpty()) {
-            Log.w(TAG, "[INV_DIAG][FIREBASE_INVENTARIO_SKIP] reason=vehiculoKey_blank")
+            SyncLog.w(TAG, "[INV_DIAG][FIREBASE_INVENTARIO_SKIP] reason=vehiculoKey_blank")
             return emptyList()
         }
         val base = inventarioRoot()
         val root = base.child(key)
-        Log.i(TAG, "[INV_DIAG][FIREBASE_INVENTARIO_FETCH] basePath=${base.path} candidatePath=${root.path} key=$key")
+        SyncLog.i(TAG, "[INV_DIAG][FIREBASE_INVENTARIO_FETCH] basePath=${base.path} candidatePath=${root.path} key=$key")
         val snap = root.get().await()
         if (!snap.exists()) {
-            Log.i(TAG, "[INV_DIAG][FIREBASE_INVENTARIO_FETCH] path_not_found candidatePath=${root.path} key=$key")
+            SyncLog.i(TAG, "[INV_DIAG][FIREBASE_INVENTARIO_FETCH] path_not_found candidatePath=${root.path} key=$key")
             return emptyList()
         }
         val parsed = parseInventarioVehiculoNode(snap)
-        Log.i(TAG, "[INV_DIAG][FIREBASE_INVENTARIO_FETCH] path_found candidatePath=${root.path} key=$key items=${parsed.size}")
+        SyncLog.i(TAG, "[INV_DIAG][FIREBASE_INVENTARIO_FETCH] path_found candidatePath=${root.path} key=$key items=${parsed.size}")
         return parsed
     }
 
@@ -1006,26 +1004,26 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
     suspend fun obtenerLuminariasPorAgencia(agencia: String): List<LuminariaReparacionEntity> {
         val agenciaRaw = agencia.trim()
         if (agenciaRaw.isBlank()) {
-            Log.w(TAG, "[LUM_FIREBASE][PATH_NOT_FOUND] reason=agencia_blank")
+            SyncLog.w(TAG, "[LUM_FIREBASE][PATH_NOT_FOUND] reason=agencia_blank")
             return emptyList()
         }
         val base = luminariasBase()
-        Log.i(TAG, "[LUM_FIREBASE][ROOT] path=${base.path}")
+        SyncLog.i(TAG, "[LUM_FIREBASE][ROOT] path=${base.path}")
         val candidates = buildAgencyKeyCandidates(agenciaRaw)
         candidates.forEach { agencyKey ->
             val node = base.child(agencyKey)
-            Log.i(TAG, "[LUM_FIREBASE][AGENCY_PATH] trying=${node.path}")
+            SyncLog.i(TAG, "[LUM_FIREBASE][AGENCY_PATH] trying=${node.path}")
             val snap = node.get().await()
             if (!snap.exists()) {
-                Log.w(TAG, "[LUM_FIREBASE][PATH_NOT_FOUND] path=${node.path}")
+                SyncLog.w(TAG, "[LUM_FIREBASE][PATH_NOT_FOUND] path=${node.path}")
                 return@forEach
             }
             val pendientesCount = snap.child("pendientes").childrenCount.toInt()
             val reparadasCount = snap.child("reparadas").childrenCount.toInt()
             val parsed = parseLuminariasSnapshot(snap)
-            Log.i(TAG, "[LUM_FIREBASE][PENDIENTES_COUNT] agencyKey=$agencyKey count=$pendientesCount")
-            Log.i(TAG, "[LUM_FIREBASE][REPARADAS_COUNT] agencyKey=$agencyKey count=$reparadasCount")
-            Log.i(TAG, "[LUM_FIREBASE][TOTAL_COUNT] agencyKey=$agencyKey count=${parsed.size}")
+            SyncLog.i(TAG, "[LUM_FIREBASE][PENDIENTES_COUNT] agencyKey=$agencyKey count=$pendientesCount")
+            SyncLog.i(TAG, "[LUM_FIREBASE][REPARADAS_COUNT] agencyKey=$agencyKey count=$reparadasCount")
+            SyncLog.i(TAG, "[LUM_FIREBASE][TOTAL_COUNT] agencyKey=$agencyKey count=${parsed.size}")
             return parsed
         }
         return emptyList()
@@ -1042,7 +1040,7 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
         val noDiacriticsNoSpaces = noDiacriticsRaw.replace("\\s+".toRegex(), "")
         val legacyNormalized = normalizarClave(raw).orEmpty()
 
-        Log.i(
+        SyncLog.i(
             TAG,
             "[LUM_FIREBASE][AGENCY_NORMALIZE] rawLength=${raw.length} normalized=$normalizedStrong"
         )
@@ -1168,7 +1166,7 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
         }
 
         val target = inventarioRoot().child(vehiculoKey.trim())
-        Log.i(TAG, "[INV_DIAG][REALTIME_INVENTARIO] listening key=${vehiculoKey.trim()} vehiculoIdLocal=$vehiculoIdLocal path=${target.path}")
+        SyncLog.i(TAG, "[INV_DIAG][REALTIME_INVENTARIO] listening key=${vehiculoKey.trim()} vehiculoIdLocal=$vehiculoIdLocal path=${target.path}")
 
         val childListener = object : ChildEventListener {
             override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
@@ -1218,7 +1216,7 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
         }
     }
 
-    fun startLuminariasRealtimeForAgencia(
+    suspend fun startLuminariasRealtimeForAgencia(
         agenciaKey: String,
         scope: CoroutineScope,
         onUpsert: suspend (LuminariaReparacionEntity) -> Unit,
@@ -1231,9 +1229,7 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
             override fun onCancelled(error: DatabaseError) = Unit
         }
 
-        val target = runBlocking {
-            luminariasRoot(agenciaKey.trim())
-        }
+        val target = luminariasRoot(agenciaKey.trim())
 
         val childListener = object : ChildEventListener {
             override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
@@ -1454,14 +1450,14 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
         val idFromKey = snapshot.key?.toLongOrNull()
         val id = idFromPayload ?: idFromKey
         if (id == null) {
-            Log.w(
+            SyncLog.w(
                 TAG,
                 "[LUM_PARSE][INVALID_ID] key=${snapshot.key ?: "null"} hasIdField=${idFromPayload != null}"
             )
             return null
         }
         if (id == 0L) {
-            Log.w(TAG, "[LUM_PARSE][ZERO_ID] key=${snapshot.key ?: "null"}")
+            SyncLog.w(TAG, "[LUM_PARSE][ZERO_ID] key=${snapshot.key ?: "null"}")
         }
         val vehiculoId = snapshot.intValueAny("vehiculoId", "vehiculo_id") ?: 0
         val localizacion = snapshot.stringChildAny("localizacion", "Localizacion", "Localización").orEmpty()
@@ -1563,11 +1559,11 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
             .keys
         if (duplicateIds.isNotEmpty()) {
             duplicateIds.forEach { duplicateId ->
-                Log.w(TAG, "[LUM_PARSE][DUPLICATE_ID] id=$duplicateId occurrences=${parsed.count { it.id == duplicateId }}")
+                SyncLog.w(TAG, "[LUM_PARSE][DUPLICATE_ID] id=$duplicateId occurrences=${parsed.count { it.id == duplicateId }}")
             }
         }
         val zeroIdCount = parsed.count { it.id == 0L }
-        Log.i(
+        SyncLog.i(
             TAG,
             "[LUM_PARSE][SUMMARY] parsed=${parsed.size} duplicateIds=${duplicateIds.size} zeroIds=$zeroIdCount"
         )
@@ -1898,7 +1894,8 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
             agencia = stringValueAnyTrim("agencia"),
             placaVehiculo = stringValueAnyTrim("placaVehiculo", "placa_vehiculo", "placa"),
             telefono = stringValueAnyTrim("telefono", "tel", "phone"),
-            password = stringValueAnyTrim("password"),
+            // No re-hidratamos la contraseña en texto plano desde Firebase (ver AUDITORIA.md §A5).
+            password = null,
             fotoUrl = stringValueAnyTrim("fotoUrl", "foto_url", "foto"),
             rol = stringValueAnyTrim("rol")
         )
