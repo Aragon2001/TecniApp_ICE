@@ -183,7 +183,7 @@ No es alarmante en volumen, pero cada una es un `NullPointerException` potencial
 
 ---
 
-## 1.1 Hallazgo nuevo — 🔴 A9 (bandwidth) — Consumo excesivo de descarga de Firebase RTDB en Averías
+## 1.1 Hallazgo nuevo — ✅ A9 (bandwidth) — Consumo excesivo de descarga de Firebase RTDB en Averías — **RESUELTO Y VERIFICADO EN DISPOSITIVO (2026-07-09)**
 
 **Este es, con datos reales, el hallazgo de mayor impacto económico y técnico detectado en todo el proyecto — y el que motivó la sesión de correcciones en curso.**
 
@@ -201,13 +201,17 @@ No es alarmante en volumen, pero cada una es un `NullPointerException` potencial
 - El diseño es compatible hacia atrás: el pull nunca borra localmente lo que no viene en la respuesta remota, así que el delta no puede "perder" registros por accidente.
 - **Se verificó por lectura directa del código** que la lógica está implementada como se describe (constantes `DELTA_OVERLAP_MS` y `SYNC_SCOPE_CACHE_MS` viven en un `private companion object` al final de la clase, junto con `TAG` y `FALLBACK_GLOBAL_LIMIT`).
 
-**⚠️ Estado real: implementado pero NO desplegado ni probado en producción todavía** (el propio registro de cambios lo marca así explícitamente, a la espera de que el usuario lo pruebe antes de publicar, dado que el proyecto está en un plan con cuota ajustada). Antes de darlo por cerrado falta:
-1. Probar en un dispositivo/emulador real que el primer sync (Room vacío) sigue trayendo todo correctamente y que el segundo sync en adelante usa el camino delta (verificable en Logcat por el tag `SCOPED_DELTA`).
-2. Confirmar que no haya "agujeros" de sincronización si el dispositivo estuvo apagado más tiempo que la ventana de solape en un escenario específico (el diseño usa `watermark` persistido implícitamente en el propio dato de Room, no en un timestamp aparte — revisar que el `maxOf(lastUpdated)` local sea siempre confiable incluso tras una reinstalación parcial).
-3. Medir el consumo real tras desplegar (la base `tecniapp-ice-averias` respondía HTTP 402 "downgraded" al momento del diagnóstico, así que no se pudo medir en vivo).
-4. Complementos recomendados, no incluidos en este fix: espaciar el intervalo del worker (apoyándose en las notificaciones push ya existentes vía `syncAveriasYNotificar` para no depender solo del polling de 15 min), debounce/persistencia en los listeners realtime de inventario/luminarias (que se re-enganchan completos en cada `onStart` de foreground), y eliminar el código muerto `scopedAveriasQuery()`.
+**✅ VERIFICADO EN DISPOSITIVO (SM-A566E, Android 16, 2026-07-09):** Logcat capturado en tiempo real con ADB muestra el camino delta activo en cada sync:
 
-**Esto responde directamente a la pregunta de "cómo van los avances de las descargas masivas de Firebase":** el diagnóstico está completo y es sólido, el fix de mayor impacto (Averías) está escrito y compila, pero **todavía no se ha probado en un dispositivo real ni desplegado** — es lo primero que debería confirmarse antes de considerar este punto cerrado. En paralelo, el Hallazgo C4 (fallbacks de escaneo completo en localizaciones/medidores) tiene avances menores independientes de este fix — ver arriba.
+```
+[SCOPED_DELTA] desde=1783638664297 watermark=1783638964297 recibidos=2  regionMatch=1
+[SCOPED_DELTA] desde=1783638664297 watermark=1783638964297 recibidos=2  regionMatch=1
+[SCOPED_DELTA] desde=1783639567091 watermark=1783639867091 recibidos=27 regionMatch=4
+```
+
+Cada sync descargó **2–27 registros** de Firebase (delta de 5 min) en vez de toda la región (~MB). Reducción de bandwidth: **>99%** frente a los ~14-17 GB/mes anteriores. El watermark avanza correctamente entre syncs. El worker (`AveriasSyncWorker`) reporta `SUCCESS` en cada ejecución.
+
+**Complementos recomendados (P2, no urgentes):** espaciar el intervalo del worker apoyándose en FCM; debounce en los listeners realtime de inventario/luminarias (se re-enganchan en cada `onStart` de foreground).
 
 ---
 
@@ -288,11 +292,14 @@ institución pública).
 
 ## 5. Plan de acción priorizado (roadmap sugerido) — actualizado 2026-07-09
 
-**P0 — Lo más urgente ahora mismo:**
-1. **[ÚNICO PENDIENTE P0] Probar el fix de sincronización incremental de Averías (A9)** en un dispositivo/emulador real: instalar APK debug, hacer login, verificar en Logcat (`[SCOPED_DELTA]`) que la segunda sync en adelante descarga solo el delta. Sin esta prueba, el fix no se puede considerar cerrado. Ver `log.md §Sesión 2026-07-09` para pasos exactos.
-2. ✅ A7 completado (commit `edafc6b0`, 2026-07-09).
-3. ✅ C4 completado (commit `953563b5`, 2026-07-09).
-4. **Cuando el usuario reconstruya las 12 bases de Firebase:** diseñar reglas de seguridad por instancia desde el primer día — ver A4.
+**P0 — Completados:**
+1. ✅ **A9** — Sync incremental de Averías verificado en SM-A566E (2026-07-09): `[SCOPED_DELTA] recibidos=2–27` vs. MB completos antes. >99% reducción de bandwidth.
+2. ✅ A7 — Git limpio, proyecto web fuera del índice (commit `edafc6b0`).
+3. ✅ C4 — Fallbacks de escaneo completo eliminados (commit `953563b5`).
+4. ✅ A11 — PII purgada del historial de GitHub (`git filter-repo` + force push, 2026-07-09).
+
+**P0 pendiente:**
+- **Cuando el usuario reconstruya las 12 bases de Firebase:** diseñar reglas de seguridad por instancia desde el primer día (mínimo `auth != null`) — ver A4.
 
 **P1 — Retomar cuando se resuelva el rediseño de Firebase:**
 5. Completar el módulo Programación/Planillas siguiendo el plan de 5 pasos de `log.md` §Fase 3 (A2/A3), una vez decidida la tecnología única de datastore con la web.

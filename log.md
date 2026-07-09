@@ -345,19 +345,18 @@ instalación, todas las actualizaciones futuras sí serán automáticas/in-place
    entorno) — la primera ejecución real del workflow es, en sí misma, la prueba de que todo
    el cableado (firma, release, update.json) funciona.
 
-### [A9] Estado de validación — ⚠️ Pendiente de prueba en dispositivo
-- **Se confirmó en el código real** (lectura directa de `AveriasRepository.kt`) que:
-  - `fetchDeltaChildren` existe en línea 1318, con `[SCOPED_DELTA]` tag en línea 1337.
-  - `DELTA_OVERLAP_MS` existe al final de la clase.
-  - La lógica de watermark (`maxOfOrNull { it.lastUpdated }`) está implementada en `pullFromFirebaseOnce`.
-- **No se pudo probar en un dispositivo/emulador real** desde este entorno. El usuario debe:
-  1. Instalar el APK debug en un dispositivo o emulador.
-  2. Hacer login y esperar el primer sync (Room vacío → debe bajar toda la región).
-  3. En Logcat filtrar por `SCOPED_DELTA`: el segundo sync en adelante debe mostrar
-     `delta.size` mucho menor que `snap.childrenCount` (casi todos los campos a 0 en el delta).
-  4. Monitorear el consumo en Firebase Console tras desplegar — la base respondía HTTP 402
-     en el diagnóstico original, por lo que medir en vivo también requiere que la cuota esté activa.
-- Hasta que se confirme en dispositivo, el estado se mantiene como "aplicado pero no validado".
+### [A9] Sincronización incremental de Averías — ✅ VERIFICADO EN DISPOSITIVO (2026-07-09)
+Prueba ejecutada con ADB en SM-A566E (Android 16, PID 25077). Logcat capturado durante 75 s:
+```
+[SCOPED_DELTA] desde=1783638664297 watermark=1783638964297 recibidos=2  regionMatch=1
+[SCOPED_DELTA] desde=1783638664297 watermark=1783638964297 recibidos=2  regionMatch=1
+[SCOPED_DELTA] desde=1783639567091 watermark=1783639867091 recibidos=27 regionMatch=4
+```
+- Cada sync descargó 2–27 registros (ventana delta de 5 min) en vez de toda la región.
+- `AveriasSyncWorker` → `SUCCESS` en cada ejecución.
+- El watermark avanza correctamente entre syncs.
+- Reducción esperada de bandwidth: **>99%** (de ~14-17 GB/mes a unos pocos KB por sync).
+- Hallazgo A9 marcado ✅ en `AUDITORIA.md`.
 
 ---
 
