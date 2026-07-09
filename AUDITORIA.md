@@ -211,6 +211,45 @@ No es alarmante en volumen, pero cada una es un `NullPointerException` potencial
 
 ---
 
+## 1.2 Hallazgo nuevo — 🔴 A10 — El mecanismo de auto-actualización (GitHub) no tenía nada real detrás, y no había firma de release
+
+**Contexto:** el código de `update/*.kt` (checker, worker, download manager, dialog) ya existía
+y estaba bien escrito, pero apuntaba a `https://raw.githubusercontent.com/.../updates/update.json`,
+un archivo que **no existía** en el repo (verificado con la API de GitHub: `contents/updates` →
+vacío, `releases` → `[]`). Es decir, **ningún dispositivo en campo podía recibir nunca una
+actualización**, incluyendo el fix de A9 — esto es una causa directa de que "las descargas
+masivas" sigan ocurriendo: los teléfonos viejos no tienen forma de enterarse de que existe una
+versión más eficiente.
+
+**Segundo hallazgo, más grave:** `build.gradle.kts` no tenía `signingConfigs` ni
+`buildTypes.release` — nunca se firmó un release real. Se confirmó con el usuario que los
+teléfonos de campo corren **builds debug** (firma genérica de Android Studio). Un "update" solo
+se puede instalar in-place si tiene la **misma firma** que la app instalada.
+
+**Fix aplicado (2026-07-09):**
+- Generado un keystore de release dedicado (RSA 4096), entregado al usuario **fuera del repo**
+  (nunca se commitea — instrucción explícita adjunta).
+- `build.gradle.kts`: `signingConfigs.release` (credenciales por variable de entorno/CI o
+  `local.properties`, nunca hardcodeadas) + `buildTypes.release` + `versionCode`/`versionName`
+  parametrizables desde CI (derivados automáticamente del tag git, elimina el riesgo de
+  "olvidar bump-ear la versión").
+- Nuevo `.github/workflows/release.yml`: al pushear un tag `vX.Y.Z` compila, firma, publica un
+  GitHub Release con el APK, y genera/commitea `updates/update.json` con la URL real y el
+  SHA-256 — cierra el círculo completo que el código cliente ya esperaba.
+
+**⚠️ Consecuencia operativa importante (no técnica, pero crítica):** como los teléfonos actuales
+están en debug y el nuevo keystore es distinto, **el primer release de este pipeline no podrá
+instalarse encima de la app actual** — Android lo rechazará por firma distinta. El primer
+despliegue requiere desinstalar/reinstalar manualmente una vez por dispositivo; a partir de ahí,
+todas las actualizaciones futuras sí serán in-place y automáticas.
+
+**Pendiente (configuración manual del usuario en GitHub, no se puede hacer desde este entorno):**
+habilitar permisos de escritura del workflow, cargar los 4 Secrets del keystore, y disparar el
+primer tag para validar el pipeline de punta a punta. Ver `log.md` §"Pipeline de
+auto-actualización" para el detalle exacto paso a paso.
+
+---
+
 ## 4. Deficiencias de diseño (UX / estructura de proyecto)
 
 - **⚪ D1 — Archivos "gigantes" concentran demasiada UI+lógica en un solo Fragment/BottomSheet:** `AveriaDetalleBottomSheet.kt` (2181 líneas), `ReportesViewModel.kt` (1871), `LocalizacionFragment.kt` (1601), `AdminManagementFragment.kt` (1483) son difíciles de navegar, revisar en PRs y testear. Recomendado extraer sub-componentes (p. ej. el formulario de "cambio de medidor" dentro de `AveriaDetalleBottomSheet` como su propio `BottomSheetDialogFragment` reutilizable).

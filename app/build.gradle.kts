@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     // Plugins declarados en Version Catalog (libs.versions.toml)
     alias(libs.plugins.android.application)
@@ -8,6 +10,29 @@ plugins {
     id("com.google.gms.google-services")
 }
 
+// Credenciales de firma de release: NUNCA hardcodeadas en este archivo.
+// Se leen de variables de entorno (usadas por el workflow de GitHub Actions,
+// ver .github/workflows/release.yml) o, para builds locales, de local.properties
+// (que ya está en .gitignore) con las claves RELEASE_KEYSTORE_PATH,
+// RELEASE_KEYSTORE_PASSWORD, RELEASE_KEY_ALIAS, RELEASE_KEY_PASSWORD.
+val localProps = Properties().apply {
+    val f = rootProject.file("local.properties")
+    if (f.exists()) f.inputStream().use { load(it) }
+}
+fun cred(envName: String, localKey: String): String? =
+    System.getenv(envName) ?: localProps.getProperty(localKey)
+
+val releaseKeystorePath = cred("KEYSTORE_PATH", "RELEASE_KEYSTORE_PATH")
+val releaseKeystorePassword = cred("KEYSTORE_PASSWORD", "RELEASE_KEYSTORE_PASSWORD")
+val releaseKeyAlias = cred("KEY_ALIAS", "RELEASE_KEY_ALIAS")
+val releaseKeyPassword = cred("KEY_PASSWORD", "RELEASE_KEY_PASSWORD")
+
+// versionCode/versionName parametrizables desde CI (ver release.yml, que los deriva
+// del tag git vX.Y.Z). Si no se pasan (build local en Android Studio), cae a 1/"1.0-dev"
+// para no romper el flujo de desarrollo habitual.
+val appVersionCode = (project.findProperty("appVersionCode") as String?)?.toIntOrNull() ?: 1
+val appVersionName = (project.findProperty("appVersionName") as String?) ?: "1.0-dev"
+
 android {
     namespace = "com.Arasoftsolutions.tecniapp_ice"
     compileSdk = 34
@@ -17,6 +42,17 @@ android {
         viewBinding = true
         dataBinding = true
         buildConfig = true
+    }
+
+    signingConfigs {
+        create("release") {
+            if (releaseKeystorePath != null) {
+                storeFile = file(releaseKeystorePath)
+                storePassword = releaseKeystorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+            }
+        }
     }
 
     defaultConfig {
@@ -35,10 +71,23 @@ android {
         minSdk = 26
         targetSdk = 34
 
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = appVersionCode
+        versionName = appVersionName
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    buildTypes {
+        release {
+            isMinifyEnabled = false
+            // Solo firma con la config real si hay credenciales disponibles (CI o
+            // local.properties); si no, cae al comportamiento por defecto de Gradle
+            // (assembleRelease produce un APK sin firmar, para no romper builds locales
+            // de quien no tenga el keystore).
+            if (releaseKeystorePath != null) {
+                signingConfig = signingConfigs.getByName("release")
+            }
+        }
     }
 
     // Java/Kotlin 17 (alineado con Room / coroutines modernos)

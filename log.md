@@ -277,6 +277,74 @@ SUCCESSFUL**. **No** se despliega a producción hasta que el usuario lo pruebe (
   la ruta de escaneo completo; se mostrará "no encontrado". En práctica, los medidores se
   indexan por su número exacto desde `registrarMedidorManual`.
 
+## Sesión 2026-07-09 (continuación) — Pipeline de auto-actualización vía GitHub
+
+### Contexto: por qué esto importa para el gasto de Firebase (A9)
+El código de auto-actualización (`update/GithubUpdateChecker.kt`, `UpdateWorker.kt`,
+`UpdateDownloadManager.kt`, `UpdateDialog.kt`) ya existía y está bien escrito, pero **no
+tenía nada real detrás**: se verificó con la API de GitHub que el repo `Aragon2001/TecniApp_ICE`
+no tenía ni la carpeta `updates/update.json` ni ningún GitHub Release publicado. El checker
+apuntaba a una URL que devolvía 404 — es decir, **ningún teléfono en campo puede recibir la
+actualización con el fix de A9 (sync incremental de averías)** aunque el código ya esté listo,
+porque no hay forma de distribuirlo. Esto es parte directa de "las descargas masivas": los
+teléfonos viejos seguirán generando el consumo de 13.8 GB/mes hasta que reciban esta actualización.
+
+### Hallazgo crítico adicional descubierto: no había firma de release
+`build.gradle.kts` no tenía ningún `signingConfigs`/`buildTypes.release` — nunca se generó
+un APK de release firmado; **los teléfonos de campo corren builds debug**, firmados con la
+debug key genérica de Android Studio (confirmado directamente por el usuario). Esto es
+relevante porque Android exige que un "update" tenga la **misma firma** que la app instalada
+para poder instalarse encima sin desinstalar.
+
+**⚠️ Consecuencia que el usuario debe conocer:** se generó un keystore de release dedicado
+(nuevo, único, para todos los releases futuros). Como los dispositivos actuales están en
+debug, **el primer release firmado con este keystore NO podrá instalarse "encima" del debug
+actual** — Android rechazará la instalación por firma distinta. Es decir: **el primer
+despliegue de este nuevo pipeline requiere desinstalar manualmente la app debug e instalar el
+nuevo release firmado una vez, por dispositivo** (se pierde la caché local de Room, pero
+resincroniza solo desde Firebase — costo de red único y aceptable). A partir de esa primera
+instalación, todas las actualizaciones futuras sí serán automáticas/in-place vía este pipeline.
+
+### Trabajo realizado
+1. **Keystore de release** (`tecniapp-ice-release.jks`, RSA 4096, alias `tecniapp-release`,
+   validez 30 años) generado y entregado al usuario **fuera del repositorio** (archivo +
+   `CREDENCIALES_KEYSTORE.txt` con las 4 credenciales necesarias). **No se commiteó ni se
+   commiteará jamás** — instrucción explícita en el propio archivo de credenciales.
+2. **`app/build.gradle.kts`:**
+   - `signingConfigs.release` lee credenciales de variables de entorno (`KEYSTORE_PATH`,
+     `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD` — usadas por CI) con fallback a
+     `local.properties` (`RELEASE_KEYSTORE_*`) para quien quiera firmar localmente. Nunca
+     hardcodeadas.
+   - `buildTypes.release` aplica esa firma solo si hay credenciales disponibles (si no,
+     Gradle cae a su comportamiento por defecto — APK sin firmar — para no romper builds
+     locales de quien no tenga el keystore).
+   - `versionCode`/`versionName` ahora son parametrizables (`-PappVersionCode`/`-PappVersionName`),
+     con fallback a `1`/`"1.0-dev"` para desarrollo local sin parámetros. Elimina el riesgo de
+     "olvidarse de subir el versionCode" — lo calcula el CI automáticamente desde el tag git.
+3. **`.gitignore`:** añadido `*.jks`/`*.keystore` como defensa adicional.
+4. **`.github/workflows/release.yml`** (nuevo): pipeline disparado por `git push` de un tag
+   `vX.Y.Z`. Decodifica el keystore desde el Secret `KEYSTORE_BASE64`, calcula `versionCode`
+   desde el tag (`MAJOR*10000 + MINOR*100 + PATCH`), compila y firma con `./gradlew
+   assembleRelease`, calcula SHA-256 del APK, publica un GitHub Release con el APK como asset
+   (usa `softprops/action-gh-release`), genera `updates/update.json` con la URL real del asset
+   publicado y el SHA-256, y lo commitea de vuelta a la rama por defecto (`git push` con el
+   `GITHUB_TOKEN` del propio workflow).
+
+### ⚠️ Pendiente de configuración manual del usuario (una sola vez, en GitHub, no se puede hacer desde aquí)
+1. **Settings → Actions → General → "Workflow permissions"** = *Read and write permissions*
+   (el workflow necesita poder hacer `git push` de `updates/update.json`).
+2. **Settings → Secrets and variables → Actions** → crear los 4 secrets:
+   `KEYSTORE_BASE64` (el .jks en base64), `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`
+   (valores exactos en `CREDENCIALES_KEYSTORE.txt`, entregado fuera del repo).
+3. **Primer release:** hacer `git tag v1.1.0 && git push origin v1.1.0` (o el número que se
+   quiera empezar) para disparar el pipeline por primera vez y confirmar que todo el flujo
+   funciona de punta a punta antes de anunciar la actualización a los técnicos de campo.
+4. **Comunicar a los técnicos** que la primera actualización requiere desinstalar/reinstalar
+   manualmente (ver hallazgo de arriba) — las siguientes ya serán automáticas.
+5. **No se probó el pipeline end-to-end** (no hay acceso a Actions/Secrets reales desde este
+   entorno) — la primera ejecución real del workflow es, en sí misma, la prueba de que todo
+   el cableado (firma, release, update.json) funciona.
+
 ### [A9] Estado de validación — ⚠️ Pendiente de prueba en dispositivo
 - **Se confirmó en el código real** (lectura directa de `AveriasRepository.kt`) que:
   - `fetchDeltaChildren` existe en línea 1318, con `[SCOPED_DELTA]` tag en línea 1337.

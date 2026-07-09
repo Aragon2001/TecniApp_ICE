@@ -31,5 +31,10 @@ Tecniapp web/.idea/
 # Logs
 *.log
 
+# Keystores de firma — NUNCA deben versionarse (ver .github/workflows/release.yml,
+# que los toma de Secrets/CI, no del repo).
+*.jks
+*.keystore
+
 # Vite
 Tecniapp web/.vite/
