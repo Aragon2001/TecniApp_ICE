@@ -234,7 +234,7 @@ class LuminariasViewModel(app: Application) : AndroidViewModel(app) {
                 puedeImportarExcel = permisos.puedeCargarMachote,
                 puedeDescargarMachote = permisos.puedeDescargarMachote,
                 puedeEnviarMachote = permisos.puedeEnviarMachote,
-                puedeRegistrarReparacion = true,
+                puedeRegistrarReparacion = vehiculoPreferidoId != null,
                 puedeReasignarVehiculo = permisos.puedeAsignarCamion,
                 puedeFiltrarVehiculo = puedeFiltrarVehiculo,
                 // Solo el técnico puede "eliminar" reparadas (= devolver a pendiente)

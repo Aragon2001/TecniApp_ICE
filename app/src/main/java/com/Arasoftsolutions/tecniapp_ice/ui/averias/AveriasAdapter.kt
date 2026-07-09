@@ -382,6 +382,12 @@ class AveriasAdapter(
                 btnAsignar.alpha = 1f; btnAtender.alpha = 1f; btnResolver.alpha = 1f
             }
 
+            // Usuario sin vehículo no puede atender en campo
+            if (currentUserVehiculo.isNullOrBlank() && btnAtender.isVisible) {
+                btnAtender.isEnabled = false
+                btnAtender.alpha = 0.45f
+            }
+
             @Suppress("UNUSED_VARIABLE")
             val _readOnly = readOnly
         }

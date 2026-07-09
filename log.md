@@ -491,6 +491,36 @@ No implementado aún; documentado para la próxima sesión.
 
 ---
 
+## Feature: inhabilitar acciones de campo sin vehículo asignado — 2026-07-09
+
+Requerimiento del usuario: si el técnico no tiene vehículo asignado en su perfil, debe poder
+entrar a los módulos de Averías, Luminarias y Programación, pero los botones que representan
+trabajo de campo (atender/registrar/iniciar) deben quedar deshabilitados.
+
+### Cambios aplicados (BUILD SUCCESSFUL + installDebug en SM-A566E)
+
+**`ui/averias/AveriasAdapter.kt` — bloqueo final:**
+Después del bloque de bloqueo existente (regionMismatch/bloqueadaPorClor/asignadaAOtro),
+se agrega: si `currentUserVehiculo.isNullOrBlank()` y `btnAtender.isVisible`, se deshabilita
+`btnAtender` y se pone `alpha = 0.45f`. `btnAsignar` y `btnResolver` NO se tocan — el técnico
+sin vehículo puede seguir viendo detalles y los supervisores pueden gestionar. `currentUserVehiculo`
+ya se actualiza desde el ViewModel (`adapter.currentUserVehiculo = user?.placaVehiculo`).
+
+**`ui/luminarias/LuminariasViewModel.kt` — línea 237:**
+`puedeRegistrarReparacion = true` → `puedeRegistrarReparacion = vehiculoPreferidoId != null`.
+Si el usuario no tiene vehículo en Room, `vehiculoPreferidoId` es `null` → el FAB de registrar
+luminaria queda oculto (`rowFabRegistrar.isVisible = state.puedeRegistrarReparacion`). El FAB
+ya lo controlaba este flag; solo faltaba que el flag reflejara la realidad del vehículo.
+
+**`ui/programacion/ProgramacionDetalleBottomSheet.kt`:**
+Se lee `tieneVehiculo = !currentUser?.placaVehiculo.isNullOrBlank()` (en el coroutine donde ya
+se lee `currentUser`) y se pasa a `configurarBotones(..., tieneVehiculo, ...)`. En ese método,
+`btnIniciar.isEnabled` ahora requiere además `tieneVehiculo`. Esto deshabilita el botón "Iniciar"
+para técnicos sin vehículo, pero `btnFinalizar` y `btnReabrir` no se tocan (son sobre
+programaciones ya iniciadas donde el técnico ya estaba asignado).
+
+---
+
 ## Intentos de build del pipeline A10 — 2 fallas encontradas y corregidas antes del primer release exitoso
 
 ### Intento 1: `mergeReleaseResources` FAILED — `navegation.png`/`bg1.png` no eran PNG reales

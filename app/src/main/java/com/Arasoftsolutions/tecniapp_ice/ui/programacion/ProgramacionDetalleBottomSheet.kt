@@ -38,9 +38,10 @@ class ProgramacionDetalleBottomSheet : BottomSheetDialogFragment() {
             val rawRol = currentUser?.rol.orEmpty()
             val isSupervisor = rawRol.contains("super", ignoreCase = true) || rawRol.contains("admin", ignoreCase = true)
             val isTecnicoPrincipal = currentUid == item.tecnicoPrincipalUid || currentUid == item.tecnicoId
+            val tieneVehiculo = !currentUser?.placaVehiculo.isNullOrBlank()
 
             renderHeader(item)
-            configurarBotones(item, isSupervisor, isTecnicoPrincipal, repo)
+            configurarBotones(item, isSupervisor, isTecnicoPrincipal, tieneVehiculo, repo)
         }
     }
 
@@ -75,6 +76,7 @@ class ProgramacionDetalleBottomSheet : BottomSheetDialogFragment() {
         item: ProgramacionEntity,
         isSupervisor: Boolean,
         isTecnicoPrincipal: Boolean,
+        tieneVehiculo: Boolean,
         repo: ProgramacionRepository
     ) {
         val esAtendible = item.estado in listOf(
@@ -86,7 +88,7 @@ class ProgramacionDetalleBottomSheet : BottomSheetDialogFragment() {
         // ─── Botones técnico ─────────────────────────────────────────────────
         binding.layoutBotonesTecnico.isVisible = !isSupervisor
 
-        binding.btnIniciar.isEnabled = !isSupervisor && esAtendible &&
+        binding.btnIniciar.isEnabled = !isSupervisor && tieneVehiculo && esAtendible &&
             item.estado in listOf(ProgramacionRepository.ESTADO_PENDIENTE, ProgramacionRepository.ESTADO_REABIERTA)
 
         binding.btnFinalizar.isEnabled = !isSupervisor && isTecnicoPrincipal &&
