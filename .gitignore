@@ -19,7 +19,9 @@ Commit
 Push
 Manage
 
-# React / Vite
+# Proyecto web hermano: NO se versiona en este repo Android (AUDITORIA.md §A7).
+# Debe tener su propio repositorio Git. Se ignora la carpeta completa.
+Tecniapp web/
 Tecniapp web/node_modules/
 Tecniapp web/dist/
 Tecniapp web/.env
