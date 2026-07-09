@@ -359,3 +359,93 @@ instalación, todas las actualizaciones futuras sí serán automáticas/in-place
      en el diagnóstico original, por lo que medir en vivo también requiere que la cuota esté activa.
 - Hasta que se confirme en dispositivo, el estado se mantiene como "aplicado pero no validado".
 
+---
+
+## 🔴 Incidente de seguridad 2026-07-09 — Exports de Firebase con datos reales (PII) commiteados en repo público
+
+### Qué pasó
+Al preparar el commit del pipeline de auto-actualización (`feat(update)... b5db1d1f`), un
+`git add .` recogió sin querer 4 archivos que ya estaban modificados sin commitear en la carpeta
+`firebase json/` (subidos por el usuario en una sesión previa, no relacionados con el trabajo de
+hoy). Se detectó al revisar el diff del commit (~690.000 líneas insertadas/eliminadas, muy fuera
+de lo esperado para cambios de config/documentación).
+
+**Contenido real verificado (leído directamente):**
+- `tecniapp-ice-user-export.json`: usuario real con **nombre completo, cédula, teléfono, email,
+  placa de vehículo**, y un nodo `verificationCodes` con **códigos de verificación reales**
+  asociados a correos de ICE.
+- `tecniapp-ice-default-rtdb-export.json` (20 MB): miles de registros de `Medidores` con
+  **nombres reales de clientes** (personas y empresas), dirección, poste, subregión.
+- `tecniapp-ice-export.json` (947 KB): `Localizaciones` con coordenadas GPS reales.
+- `tecniapp-ice-datosgenerales-export.json`: agencias/subregiones/vehículos (bajo riesgo, sin PII).
+
+**Historial:** el primer commit que introdujo estos archivos fue `cf684504 "CAMBIOS DEL BOTON"`
+(sesión anterior, ajena a esta), no algo generado por el trabajo de hoy — pero el commit de hoy
+los volvió a tocar y los dejó en la punta visible del historial de un repositorio **público**
+(`Aragon2001/TecniApp_ICE`, confirmado `"private": false` vía API de GitHub).
+
+### Remediación aplicada (2026-07-09)
+1. **Sacados del índice de git** (`git rm --cached` × 4 + commit `d95d8745` + push a `master`).
+   Ya no están en el `HEAD` actual del repo.
+2. **`.gitignore` actualizado:** se agregó `firebase json/` y el patrón `*-export.json` para que
+   no se vuelva a repetir si el usuario vuelve a exportar datos ahí.
+
+### ⚠️ Pendiente — esto NO está completamente resuelto todavía
+1. **Los archivos siguen visibles en el historial de git** (commits `cf684504` y `b5db1d1f`).
+   Sacarlos del índice actual (paso 1 arriba) **no los borra del historial** — cualquiera que
+   navegue commits viejos en GitHub, o clone el repo, puede seguir viéndolos. Falta purgar el
+   historial con `git filter-repo` (o BFG Repo-Cleaner) + `git push --force`. Es una operación
+   más invasiva que la reescritura que se descartó en el Hallazgo A7 (aquella era por config
+   pública de bajo riesgo; esta es PII real, se justifica el costo de reescribir historial).
+2. **Decisión pendiente del usuario:** si pone el repositorio en privado (mitigación inmediata,
+   recomendada mientras se decide/ejecuta el punto 1) o si prioriza directamente la purga de
+   historial. El usuario indicó que "nadie tiene acceso ahorita" — aclarado que un repo público
+   en GitHub es indexable/clonable por cualquiera en internet sin invitación, no solo por
+   colaboradores agregados explícitamente; la decisión final de visibilidad queda en sus manos.
+3. **Evaluar si algún dato expuesto requiere acción adicional:** el `verificationCodes` expuesto
+   son códigos de un momento dado (probablemente ya vencidos/de un solo uso), pero conviene
+   confirmar que el mecanismo de verificación no reutilice/prediga códigos de forma insegura.
+   La cédula/teléfono/nombre real expuestos son de un usuario identificable — al ser ICE una
+   institución pública, vale la pena que el usuario evalúe si aplica algún protocolo interno de
+   incidente de datos.
+4. **Revisar si hay otros archivos de export similares sueltos en el repo** (se encontraron estos
+   4 porque estaban en una carpeta con nombre obvio "firebase json/"; no se hizo un barrido
+   exhaustivo de todo el árbol de archivos buscando otros posibles exports/dumps de datos).
+
+**Este hallazgo se documentará también en `AUDITORIA.md` (nuevo §A11) en la próxima actualización
+de ese archivo.**
+
+---
+
+## Intentos de build del pipeline A10 — 2 fallas encontradas y corregidas antes del primer release exitoso
+
+### Intento 1: `mergeReleaseResources` FAILED — `navegation.png`/`bg1.png` no eran PNG reales
+`assembleRelease` corre por primera vez en un runner de GitHub Actions limpio (sin caché local),
+lo que expuso algo que el build debug local nunca detectó: `app/src/main/res/drawable/navegation.png`
+era en realidad un **JPEG** y `bg1.png` un **WebP**, ambos con extensión `.png` falsa. AAPT2 valida
+el contenido real del archivo, no la extensión, y rechaza la compilación. Se corrigieron
+reconvirtiéndolos a PNG real con ImageMagick (`convert archivo PNG32:archivo`), verificado con
+`file` que ambos quedaron como PNG genuino. Se escaneó el resto de `res/**/*.png` y no se
+encontraron más casos. Commit de fix + re-tag de `v1.1.0` sobre el commit corregido.
+
+### Intento 2: `lintVitalRelease` FAILED — 31 errores `MissingDefaultResource`
+`assembleRelease` también corre "lint vital" (checks fatales), algo que `assembleDebug` no corre
+— segunda cosa que nunca se detectó localmente. Los 31 errores son del patrón estándar de
+Material Theme Builder: `values-night/colors.xml` define tokens `md_theme_dark_*` que lint
+espera ver también declarados en `values/colors.xml` (base), más un layout `layout-sw600dp/
+fragment_paso_4_tablet_sw600dp.xml` sin declaración base. Es casi con certeza un falso positivo
+(esos tokens solo se referencian desde `values-night/themes.xml`, nunca en un contexto sin el
+qualifier), pero lint no puede verificarlo estáticamente.
+
+**Fix aplicado:** se agregó un bloque `lint { disable += "MissingDefaultResource" }` en
+`build.gradle.kts` — desactiva puntualmente esa regla (no todo lint-vital) para no bloquear
+releases por deuda preexistente ajena al pipeline de A10.
+
+**⚠️ Pendiente (deuda técnica, no urgente):** para eliminar el riesgo real (por mínimo que sea)
+de un `Resources.NotFoundException` si algún token `md_theme_dark_*`/el layout de tablet llegara
+a consultarse fuera de su contexto esperado, lo correcto es agregar los valores por defecto
+correspondientes en `values/colors.xml` (versión "light" de cada token) y un
+`layout/fragment_paso_4_tablet.xml` base. No se hizo en esta sesión porque requiere decisiones de
+diseño (qué colores claros corresponden a cada token oscuro) que no se deben inventar sin
+confirmación. Candidato para una sesión de limpieza de UI/temas.
+
