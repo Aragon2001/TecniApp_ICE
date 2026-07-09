@@ -36,5 +36,11 @@ Tecniapp web/.idea/
 *.jks
 *.keystore
 
+# Exports de datos reales de Firebase (PII de clientes/usuarios: cédulas, teléfonos,
+# nombres, códigos de verificación). NUNCA deben versionarse. Se encontraron 4 archivos
+# aquí commiteados con datos reales — remediado el 2026-07-09, ver log.md.
+firebase json/
+*-export.json
+
 # Vite
 Tecniapp web/.vite/

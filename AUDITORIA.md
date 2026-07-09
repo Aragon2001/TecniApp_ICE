@@ -250,6 +250,33 @@ auto-actualización" para el detalle exacto paso a paso.
 
 ---
 
+## 1.3 Hallazgo nuevo — 🔴 A11 (CRÍTICO, PII) — Exports reales de Firebase commiteados en un repositorio público
+
+**El hallazgo de mayor riesgo de privacidad detectado en todo el proyecto.** Se encontró (al
+revisar un commit generado durante el trabajo de A10) una carpeta `firebase json/` con 4 archivos
+de exportación real de datos de producción, commiteados en un momento anterior (`cf684504
+"CAMBIOS DEL BOTON"`) y vueltos a tocar en un commit posterior, en un repositorio **público**
+(`Aragon2001/TecniApp_ICE`, confirmado `"private": false`).
+
+Contenido verificado leyendo los archivos directamente:
+- `tecniapp-ice-user-export.json`: usuario real con **nombre completo, cédula, teléfono, email,
+  placa de vehículo**, y un nodo `verificationCodes` con **códigos de verificación reales**.
+- `tecniapp-ice-default-rtdb-export.json` (20 MB): miles de registros de `Medidores` con
+  **nombres reales de clientes** (personas y empresas) y ubicación.
+- `tecniapp-ice-export.json` (947 KB): `Localizaciones` con coordenadas GPS reales.
+- `tecniapp-ice-datosgenerales-export.json`: catálogos (bajo riesgo).
+
+**Remediado parcialmente (2026-07-09):** los 4 archivos se sacaron del índice de git
+(`git rm --cached` + commit `d95d8745`) y se agregó `firebase json/`/`*-export.json` a
+`.gitignore`. **Pendiente (crítico):** los archivos siguen visibles en el **historial** de git
+(commits `cf684504` y `b5db1d1f`) — hace falta purgarlo con `git filter-repo`/BFG +
+`push --force`, y decidir si el repo pasa a privado como mitigación inmediata mientras tanto. Ver
+`log.md` §"Incidente de seguridad 2026-07-09" para el detalle completo y la lista de pendientes
+(incluye evaluar si amerita algún protocolo de incidente de datos, dado que ICE es una
+institución pública).
+
+---
+
 ## 4. Deficiencias de diseño (UX / estructura de proyecto)
 
 - **⚪ D1 — Archivos "gigantes" concentran demasiada UI+lógica en un solo Fragment/BottomSheet:** `AveriaDetalleBottomSheet.kt` (2181 líneas), `ReportesViewModel.kt` (1871), `LocalizacionFragment.kt` (1601), `AdminManagementFragment.kt` (1483) son difíciles de navegar, revisar en PRs y testear. Recomendado extraer sub-componentes (p. ej. el formulario de "cambio de medidor" dentro de `AveriaDetalleBottomSheet` como su propio `BottomSheetDialogFragment` reutilizable).
