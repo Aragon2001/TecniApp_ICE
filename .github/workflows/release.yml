@@ -103,6 +103,7 @@ jobs:
 
       - name: Generar updates/update.json
         run: |
+          mkdir -p updates
           REPO="${{ github.repository }}"
           TAG="${{ github.ref_name }}"
           FILENAME="${{ steps.apk.outputs.filename }}"
