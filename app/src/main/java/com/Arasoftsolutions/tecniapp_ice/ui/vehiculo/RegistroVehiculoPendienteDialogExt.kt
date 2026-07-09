@@ -15,6 +15,7 @@ import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ServerValue
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withTimeout
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -81,9 +82,11 @@ fun Fragment.showRegistroVehiculoPendienteDialog(
 
         if (placaStr.isNotBlank()) {
             try {
-                val etmSnap = FirebaseDatabase
-                    .getInstance("https://tecniapp-ice-datosgenerales.firebaseio.com")
-                    .reference.child("vehiculo_etm").child(placaStr).get().await()
+                val etmSnap = withTimeout(6_000L) {
+                    FirebaseDatabase
+                        .getInstance("https://tecniapp-ice-datosgenerales.firebaseio.com")
+                        .reference.child("vehiculo_etm").child(placaStr).get().await()
+                }
 
                 fechaEtmFirebase = etmSnap.children
                     .mapNotNull { it.key }
@@ -213,162 +216,189 @@ fun Fragment.showRegistroVehiculoPendienteDialog(
         }
 
         viewLifecycleOwner.lifecycleScope.launch {
-            val repo = RoomRepository.getInstance(requireContext())
-            val uid = FirebaseAuth.getInstance().currentUser?.uid
-            val usuario = uid?.let { repo.obtenerUsuario(it) }
-            val placa = usuario?.placaVehiculo?.trim().orEmpty()
-            val placaLong = VehiculoPlacaUtils.parsePlacaLong(placa)
-            val vehiculo = placaLong?.let { repo.obtenerVehiculoPorPlaca(it) }
-            if (vehiculo != null) {
-                val tipo = inferirTipoVehiculo(vehiculo.tipo)
-                val lecturaActual = if (tipo.usaKilometraje) vehiculo.kmActual
-                                    else (vehiculo.orimetroActual ?: vehiculo.kmActual)
-                if (!cierreForzado && valor < lecturaActual) {
-                    tilValor.error = getString(R.string.averia_error_km_inicio_menor_ultimo, String.format(java.util.Locale.getDefault(), "%.0f", lecturaActual))
-                    return@launch
-                }
-                tilValor.error = null
+            try {
+                val repo = RoomRepository.getInstance(requireContext())
+                val uid = FirebaseAuth.getInstance().currentUser?.uid
+                val usuario = uid?.let { repo.obtenerUsuario(it) }
+                val placa = usuario?.placaVehiculo?.trim().orEmpty()
+                val placaLong = VehiculoPlacaUtils.parsePlacaLong(placa)
+                val vehiculo = placaLong?.let { repo.obtenerVehiculoPorPlaca(it) }
+                if (vehiculo != null) {
+                    val tipo = inferirTipoVehiculo(vehiculo.tipo)
+                    val lecturaActual = if (tipo.usaKilometraje) vehiculo.kmActual
+                                        else (vehiculo.orimetroActual ?: vehiculo.kmActual)
+                    if (!cierreForzado && valor < lecturaActual) {
+                        tilValor.error = getString(R.string.averia_error_km_inicio_menor_ultimo, String.format(java.util.Locale.getDefault(), "%.0f", lecturaActual))
+                        return@launch  // dialog permanece abierto para que el usuario corrija
+                    }
+                    tilValor.error = null
 
-                val registrosActuales = parseRegistrosDiarios(vehiculo.registrosDiariosJson)
-                val registroSinCerrarPrevio = registroPendienteCierre ?: registrosActuales.firstOrNull {
-                    !it.cerrado && it.fecha < fechaHoy
-                }
-                val fechaRegistro = if (cerrarRegistro && registroSinCerrarPrevio != null) {
-                    registroSinCerrarPrevio.fecha
-                } else {
-                    fecha
-                }
+                    val registrosActuales = parseRegistrosDiarios(vehiculo.registrosDiariosJson)
+                    val registroSinCerrarPrevio = registroPendienteCierre ?: registrosActuales.firstOrNull {
+                        !it.cerrado && it.fecha < fechaHoy
+                    }
+                    val fechaRegistro = if (cerrarRegistro && registroSinCerrarPrevio != null) {
+                        registroSinCerrarPrevio.fecha
+                    } else {
+                        fecha
+                    }
 
-                val registro = RegistroDiarioVehiculo(
-                    fecha = fechaRegistro,
-                    valorInicial = valorInicialRegistro,
-                    valorFinal = if (cerrarRegistro) kmFinal else null,
-                    cerrado = cerrarRegistro && kmFinal != null,
-                    registradoPor = usuario?.nombre,
-                    combustible = combustible,
-                    observaciones = observaciones,
-                    actividad = actividad,
-                    cuenta = cuenta,
-                    numeroCaso = numeroCaso,
-                    lugar = lugar,
-                    horasLaboradas = horasLaboradas
-                )
-                val registrosFiltrados = registrosActuales
-                    .filterNot { it.fecha == fechaRegistro }
-                val nuevosCorregidos = listOf(registro) + registrosFiltrados
-
-                // Only auto-open a new day when closing a PREVIOUS day's ETM, not today's.
-                val shouldOpenNewDay = cerrarRegistro && registroSinCerrarPrevio != null &&
-                    registroSinCerrarPrevio.fecha < fechaHoy && kmFinal != null
-                val registrosConNuevoDia = if (shouldOpenNewDay) {
-                    val nuevoDia = RegistroDiarioVehiculo(
-                        fecha = fechaHoy,
-                        valorInicial = kmFinal,
-                        valorFinal = null,
-                        cerrado = false,
+                    val registro = RegistroDiarioVehiculo(
+                        fecha = fechaRegistro,
+                        valorInicial = valorInicialRegistro,
+                        valorFinal = if (cerrarRegistro) kmFinal else null,
+                        cerrado = cerrarRegistro && kmFinal != null,
                         registradoPor = usuario?.nombre,
+                        combustible = combustible,
+                        observaciones = observaciones,
+                        actividad = actividad,
+                        cuenta = cuenta,
+                        numeroCaso = numeroCaso,
+                        lugar = lugar,
+                        horasLaboradas = horasLaboradas
                     )
-                    listOf(nuevoDia) + nuevosCorregidos
-                } else {
-                    nuevosCorregidos
-                }
-                val registroJson = serializeRegistrosDiarios(registrosConNuevoDia)
-                val valorActualizado = if (cerrarRegistro) (kmFinal ?: valor) else valor
-                if (!cierreForzado && valorActualizado < lecturaActual) {
-                    tilValor.error = getString(R.string.averia_error_km_inicio_menor_ultimo, String.format(java.util.Locale.getDefault(), "%.0f", lecturaActual))
-                    return@launch
-                }
-                val kilometrajeActual = if (tipo.usaKilometraje) valorActualizado else vehiculo.kilometrajeActual
-                val orimetroActual = if (tipo.usaOrimetro) valorActualizado else vehiculo.orimetroActual
-                repo.actualizarRegistroDiarioVehiculo(
-                    vehiculoId = vehiculo.id,
-                    fecha = fechaRegistro,
-                    inicial = valorInicialRegistro,
-                    final = if (cerrarRegistro) kmFinal else null,
-                    cerrado = cerrarRegistro && kmFinal != null,
-                    kilometrajeActual = kilometrajeActual,
-                    orimetroActual = orimetroActual,
-                    registrosJson = registroJson
-                )
-                // FIX 3: insertarRegistroDiario con campos ETM completos
-                repo.insertarRegistroDiario(
-                    RegistroDiarioEntity(
-                        vehiculoId     = vehiculo.id,
-                        fecha          = fechaRegistro,
-                        valor          = valorInicialRegistro,
-                        unidad         = tipo.unidadTexto,
-                        registradoEn   = System.currentTimeMillis(),
-                        registradoPor  = usuario?.nombre,
-                        cerrado        = cerrarRegistro && kmFinal != null,
-                        kmFinal        = if (cerrarRegistro) kmFinal else null,
-                        actividad      = actividad,
-                        cuenta         = cuenta,
-                        numeroCaso     = numeroCaso,
-                        lugar          = lugar,
-                        horasLaboradas = horasLaboradas,
-                        combustible    = combustible,
-                        observaciones  = observaciones
+                    val registrosFiltrados = registrosActuales
+                        .filterNot { it.fecha == fechaRegistro }
+                    val nuevosCorregidos = listOf(registro) + registrosFiltrados
+
+                    // Only auto-open a new day when closing a PREVIOUS day's ETM, not today's.
+                    val shouldOpenNewDay = cerrarRegistro && registroSinCerrarPrevio != null &&
+                        registroSinCerrarPrevio.fecha < fechaHoy && kmFinal != null
+                    val registrosConNuevoDia = if (shouldOpenNewDay) {
+                        val nuevoDia = RegistroDiarioVehiculo(
+                            fecha = fechaHoy,
+                            valorInicial = kmFinal,
+                            valorFinal = null,
+                            cerrado = false,
+                            registradoPor = usuario?.nombre,
+                        )
+                        listOf(nuevoDia) + nuevosCorregidos
+                    } else {
+                        nuevosCorregidos
+                    }
+                    val registroJson = serializeRegistrosDiarios(registrosConNuevoDia)
+                    val valorActualizado = if (cerrarRegistro) (kmFinal ?: valor) else valor
+                    if (!cierreForzado && valorActualizado < lecturaActual) {
+                        tilValor.error = getString(R.string.averia_error_km_inicio_menor_ultimo, String.format(java.util.Locale.getDefault(), "%.0f", lecturaActual))
+                        return@launch  // dialog permanece abierto para que el usuario corrija
+                    }
+                    val kilometrajeActual = if (tipo.usaKilometraje) valorActualizado else vehiculo.kilometrajeActual
+                    val orimetroActual = if (tipo.usaOrimetro) valorActualizado else vehiculo.orimetroActual
+                    repo.actualizarRegistroDiarioVehiculo(
+                        vehiculoId = vehiculo.id,
+                        fecha = fechaRegistro,
+                        inicial = valorInicialRegistro,
+                        final = if (cerrarRegistro) kmFinal else null,
+                        cerrado = cerrarRegistro && kmFinal != null,
+                        kilometrajeActual = kilometrajeActual,
+                        orimetroActual = orimetroActual,
+                        registrosJson = registroJson
                     )
-                )
-
-                // FIX 1: Escribir cierre/apertura en Firebase
-                val etmDb = FirebaseDatabase
-                    .getInstance("https://tecniapp-ice-datosgenerales.firebaseio.com")
-                    .reference
-
-                if (cerrarRegistro) {
-                    val closingUpdates = hashMapOf<String, Any?>(
-                        "vehiculo_etm/$placa/$fechaRegistro/apertura/cerrado"        to true,
-                        "vehiculo_etm/$placa/$fechaRegistro/apertura/kmFinal"        to kmFinal,
-                        "vehiculo_etm/$placa/$fechaRegistro/apertura/combustible"    to combustible,
-                        "vehiculo_etm/$placa/$fechaRegistro/apertura/horasLaboradas" to horasLaboradas,
-                        "vehiculo_etm/$placa/$fechaRegistro/apertura/actividad"      to actividad,
-                        "vehiculo_etm/$placa/$fechaRegistro/apertura/cuenta"         to cuenta,
-                        "vehiculo_etm/$placa/$fechaRegistro/apertura/numeroCaso"     to numeroCaso,
-                        "vehiculo_etm/$placa/$fechaRegistro/apertura/lugar"          to lugar,
-                        "vehiculo_etm/$placa/$fechaRegistro/apertura/observaciones"  to observaciones,
-                        "vehiculo_etm/$placa/$fechaRegistro/apertura/cierreEn"       to ServerValue.TIMESTAMP,
-                        "vehiculos/$placa/kmActual"                                  to (kmFinal ?: valor),
-                        "vehiculos/$placa/updatedAt"                                 to ServerValue.TIMESTAMP
+                    // FIX 3: insertarRegistroDiario con campos ETM completos
+                    repo.insertarRegistroDiario(
+                        RegistroDiarioEntity(
+                            vehiculoId     = vehiculo.id,
+                            fecha          = fechaRegistro,
+                            valor          = valorInicialRegistro,
+                            unidad         = tipo.unidadTexto,
+                            registradoEn   = System.currentTimeMillis(),
+                            registradoPor  = usuario?.nombre,
+                            cerrado        = cerrarRegistro && kmFinal != null,
+                            kmFinal        = if (cerrarRegistro) kmFinal else null,
+                            actividad      = actividad,
+                            cuenta         = cuenta,
+                            numeroCaso     = numeroCaso,
+                            lugar          = lugar,
+                            horasLaboradas = horasLaboradas,
+                            combustible    = combustible,
+                            observaciones  = observaciones
+                        )
                     )
-                    try {
-                        etmDb.updateChildren(closingUpdates).await()
-                    } catch (e: Exception) {
-                        Log.e("ETM", "Error escribiendo cierre en Firebase: ${e.message}", e)
-                    }
-                } else {
-                    try {
-                        etmDb.child("vehiculo_etm/$placa/$fechaHoy/apertura")
-                            .updateChildren(mapOf(
-                                "cerrado"  to false,
-                                "creadoEn" to ServerValue.TIMESTAMP,
-                                "kmInicio" to valor,
-                                "km"       to valor,
-                                "tecnico"  to (usuario?.nombre ?: "")
-                            )).await()
-                    } catch (e: Exception) {
-                        Log.e("ETM", "Error escribiendo apertura en Firebase: ${e.message}", e)
-                    }
-                }
 
-                // FIX 4: Si se cierra un día previo, escribir también apertura del día nuevo en Firebase
-                if (shouldOpenNewDay) {
-                    try {
-                        etmDb.child("vehiculo_etm/$placa/$fechaHoy/apertura")
-                            .updateChildren(mapOf(
-                                "cerrado"  to false,
-                                "creadoEn" to ServerValue.TIMESTAMP,
-                                "kmInicio" to kmFinal,
-                                "km"       to kmFinal,
-                                "tecnico"  to (usuario?.nombre ?: "")
-                            )).await()
-                    } catch (e: Exception) {
-                        Log.e("ETM", "Error creando apertura nuevo día en Firebase: ${e.message}", e)
+                    // FIX 1: Escribir cierre/apertura en Firebase (datosgenerales tiene persistencia
+                    // offline → await() resuelve inmediatamente aunque no haya red, y sube al volver).
+                    val etmDb = FirebaseDatabase
+                        .getInstance("https://tecniapp-ice-datosgenerales.firebaseio.com")
+                        .reference
+
+                    if (cerrarRegistro) {
+                        val closingUpdates = hashMapOf<String, Any?>(
+                            "vehiculo_etm/$placa/$fechaRegistro/apertura/cerrado"        to true,
+                            "vehiculo_etm/$placa/$fechaRegistro/apertura/kmFinal"        to kmFinal,
+                            "vehiculo_etm/$placa/$fechaRegistro/apertura/combustible"    to combustible,
+                            "vehiculo_etm/$placa/$fechaRegistro/apertura/horasLaboradas" to horasLaboradas,
+                            "vehiculo_etm/$placa/$fechaRegistro/apertura/actividad"      to actividad,
+                            "vehiculo_etm/$placa/$fechaRegistro/apertura/cuenta"         to cuenta,
+                            "vehiculo_etm/$placa/$fechaRegistro/apertura/numeroCaso"     to numeroCaso,
+                            "vehiculo_etm/$placa/$fechaRegistro/apertura/lugar"          to lugar,
+                            "vehiculo_etm/$placa/$fechaRegistro/apertura/observaciones"  to observaciones,
+                            "vehiculo_etm/$placa/$fechaRegistro/apertura/cierreEn"       to ServerValue.TIMESTAMP,
+                            "vehiculos/$placa/kmActual"                                  to (kmFinal ?: valor),
+                            "vehiculos/$placa/updatedAt"                                 to ServerValue.TIMESTAMP
+                        )
+                        try {
+                            etmDb.updateChildren(closingUpdates).await()
+                        } catch (e: Exception) {
+                            Log.e("ETM", "Error escribiendo cierre en Firebase: ${e.message}", e)
+                        }
+                    } else {
+                        try {
+                            etmDb.child("vehiculo_etm/$placa/$fechaHoy/apertura")
+                                .updateChildren(mapOf(
+                                    "cerrado"  to false,
+                                    "creadoEn" to ServerValue.TIMESTAMP,
+                                    "kmInicio" to valor,
+                                    "km"       to valor,
+                                    "tecnico"  to (usuario?.nombre ?: "")
+                                )).await()
+                        } catch (e: Exception) {
+                            Log.e("ETM", "Error escribiendo apertura en Firebase: ${e.message}", e)
+                        }
                     }
+
+                    // FIX 4: Si se cierra un día previo, escribir también apertura del día nuevo en Firebase
+                    if (shouldOpenNewDay) {
+                        try {
+                            etmDb.child("vehiculo_etm/$placa/$fechaHoy/apertura")
+                                .updateChildren(mapOf(
+                                    "cerrado"  to false,
+                                    "creadoEn" to ServerValue.TIMESTAMP,
+                                    "kmInicio" to kmFinal,
+                                    "km"       to kmFinal,
+                                    "tecnico"  to (usuario?.nombre ?: "")
+                                )).await()
+                        } catch (e: Exception) {
+                            Log.e("ETM", "Error creando apertura nuevo día en Firebase: ${e.message}", e)
+                        }
+                    }
+                } else if (!placa.isBlank()) {
+                    // Vehículo no encontrado en Room aunque el usuario tiene placa asignada.
+                    // Informa sin bloquear — se puede deber a que aún no se sincronizó.
+                    if (isAdded) android.widget.Toast.makeText(
+                        requireContext(),
+                        "Vehículo \"$placa\" no encontrado localmente. El ETM se guardará al sincronizar.",
+                        android.widget.Toast.LENGTH_LONG
+                    ).show()
+                }
+                // Ruta exitosa (con o sin vehículo): cerrar dialog y navegar.
+                dialog.dismiss()
+                onRegistroGuardado()
+            } catch (e: Exception) {
+                // Excepción inesperada (JSON inválido, Room error, etc.) — no dejar el dialog
+                // congelado: mostrar mensaje, cerrar y dejar pasar (los datos se guardan cuando
+                // sea posible, ya que datosgenerales tiene persistencia offline).
+                if (e is kotlinx.coroutines.CancellationException) throw e
+                Log.e("ETM", "Error inesperado al guardar registro ETM", e)
+                if (isAdded) {
+                    android.widget.Toast.makeText(
+                        requireContext(),
+                        "Error al guardar el registro: ${e.localizedMessage ?: "error inesperado"}.",
+                        android.widget.Toast.LENGTH_LONG
+                    ).show()
+                    dialog.dismiss()
+                    onRegistroGuardado()
                 }
             }
-            dialog.dismiss()
-            onRegistroGuardado()
         }
     }
     dialogView.findViewById<MaterialButton>(R.id.btnRegistroDialogSinVehiculo).setOnClickListener {

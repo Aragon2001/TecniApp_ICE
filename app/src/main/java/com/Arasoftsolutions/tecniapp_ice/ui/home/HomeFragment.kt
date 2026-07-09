@@ -619,7 +619,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         if (vm.registroEtmPendiente.value) {
             showRegistroVehiculoPendienteDialog(
                 onRegistroGuardado = { onContinue() },
-                onNoVehiculo = {}
+                onNoVehiculo = { onContinue() }
             )
             return
         }

@@ -438,6 +438,59 @@ vencidos (son de un solo uso), pero conviene confirmarlo.
 
 ---
 
+## Bug: dialog ETM congelado sin mensaje al abrir Averías/Luminarias sin red — 2026-07-09
+
+### Síntoma reportado
+Al exigir el registro de kilometraje ETM antes de abrir módulos (Averías, Luminarias, etc.),
+tocar "Registrar" en ocasiones no hacía nada ni mostraba mensaje — especialmente cuando no había
+red o Firebase estaba degradado (402 por cuota). El usuario esperaba que se guardara localmente
+y se sincronizara después.
+
+### Causa raíz (triple)
+1. **Freeze al abrir el dialog:** la lectura inicial de `vehiculo_etm` de Firebase
+   (`datosgenerales`) usaba `.get().await()` sin timeout. Si Firebase no respondía (sin red,
+   402), el dialog aparecía en blanco hasta que el SDK decidiera fallar (potencialmente minutos).
+2. **Excepción silenciosa:** si cualquier línea dentro del coroutine del botón "Registrar"
+   lanzaba una excepción no capturada (ej. `parseRegistrosDiarios` con JSON inválido, Room error),
+   el coroutine cancelaba sin llamar `dialog.dismiss()` → dialog congelado para siempre sin
+   ningún mensaje visible.
+3. **Botón "Sin vehículo" no navegaba:** `onNoVehiculo = {}` cerraba el dialog pero no
+   llamaba `onContinue()` → el usuario quedaba atascado en Home sin poder entrar al módulo.
+
+### Correcciones aplicadas — `RegistroVehiculoPendienteDialogExt.kt` + `HomeFragment.kt`
+1. **Timeout de 6 s en la lectura inicial de Firebase:** `withTimeout(6_000L) { ...get().await() }`
+   — si Firebase no responde en 6 s, el catch ya existente lo toma y el dialog se inicializa con
+   datos de Room. Requirió añadir `import kotlinx.coroutines.withTimeout`.
+2. **try/catch en el coroutine del botón "Registrar":** toda la lógica del coroutine (Room
+   saves, Firebase writes) envuelta en `try { } catch (Exception) { }`. En el camino exitoso,
+   `dialog.dismiss()` y `onRegistroGuardado()` se llaman al final del `try`. En caso de
+   excepción inesperada, el catch muestra un Toast informativo, cierra el dialog y llama
+   `onRegistroGuardado()` (deja pasar al módulo — `datosgenerales` tiene persistencia offline,
+   los datos se subirán al volver a tener red). Los `return@launch` de validación de km (camino
+   de error controlado) siguen saltando el dismiss → dialog permanece abierto para que el usuario
+   corrija.
+3. **Mensaje cuando vehículo no está en Room:** si `vehiculo == null` pero el usuario tiene
+   placa asignada, Toast explicativo + el flujo continúa normalmente.
+4. **`onNoVehiculo = { onContinue() }`** en `HomeFragment.ejecutarOperacionSiRegistroCompleto`:
+   el botón "Sin vehículo" del dialog ahora deja entrar al módulo en lugar de no hacer nada.
+   Esto cubre el requerimiento del usuario: "sin vehículo debe dejar entrar a los módulos".
+
+**BUILD SUCCESSFUL** + `installDebug` en SM-A566E.
+
+**Nota (Firebase / "no guardaba nada"):** `datosgenerales` tiene `setPersistenceEnabled(true)` en
+`TecniApp.kt` (confirmado). Esto significa que cuando hay red, los datos se guardan; cuando no hay
+red, los `.updateChildren().await()` resuelven inmediatamente (cola offline de Firebase SDK) y se
+suben al volver. Si no estaban llegando a Firebase, la causa más probable era que el coroutine
+fallaba antes de las escrituras (causa 2 arriba) o que la base está entre las 12 legacy que el
+usuario va a reconstruir.
+
+**Pendiente (requerimiento adicional del usuario):** "inhabilitar las opciones de atender avería /
+reparar luminaria / ejecutar programación si no hay vehículo asignado" dentro de cada módulo —
+es un cambio separado de UI en `AveriasFragment`, `LuminariasFragment` y `ProgramacionFragment`.
+No implementado aún; documentado para la próxima sesión.
+
+---
+
 ## Intentos de build del pipeline A10 — 2 fallas encontradas y corregidas antes del primer release exitoso
 
 ### Intento 1: `mergeReleaseResources` FAILED — `navegation.png`/`bg1.png` no eran PNG reales
