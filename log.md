@@ -390,30 +390,51 @@ los volvió a tocar y los dejó en la punta visible del historial de un reposito
 2. **`.gitignore` actualizado:** se agregó `firebase json/` y el patrón `*-export.json` para que
    no se vuelva a repetir si el usuario vuelve a exportar datos ahí.
 
-### ⚠️ Pendiente — esto NO está completamente resuelto todavía
-1. **Los archivos siguen visibles en el historial de git** (commits `cf684504` y `b5db1d1f`).
-   Sacarlos del índice actual (paso 1 arriba) **no los borra del historial** — cualquiera que
-   navegue commits viejos en GitHub, o clone el repo, puede seguir viéndolos. Falta purgar el
-   historial con `git filter-repo` (o BFG Repo-Cleaner) + `git push --force`. Es una operación
-   más invasiva que la reescritura que se descartó en el Hallazgo A7 (aquella era por config
-   pública de bajo riesgo; esta es PII real, se justifica el costo de reescribir historial).
-2. **Decisión pendiente del usuario:** si pone el repositorio en privado (mitigación inmediata,
-   recomendada mientras se decide/ejecuta el punto 1) o si prioriza directamente la purga de
-   historial. El usuario indicó que "nadie tiene acceso ahorita" — aclarado que un repo público
-   en GitHub es indexable/clonable por cualquiera en internet sin invitación, no solo por
-   colaboradores agregados explícitamente; la decisión final de visibilidad queda en sus manos.
-3. **Evaluar si algún dato expuesto requiere acción adicional:** el `verificationCodes` expuesto
-   son códigos de un momento dado (probablemente ya vencidos/de un solo uso), pero conviene
-   confirmar que el mecanismo de verificación no reutilice/prediga códigos de forma insegura.
-   La cédula/teléfono/nombre real expuestos son de un usuario identificable — al ser ICE una
-   institución pública, vale la pena que el usuario evalúe si aplica algún protocolo interno de
-   incidente de datos.
-4. **Revisar si hay otros archivos de export similares sueltos en el repo** (se encontraron estos
-   4 porque estaban en una carpeta con nombre obvio "firebase json/"; no se hizo un barrido
-   exhaustivo de todo el árbol de archivos buscando otros posibles exports/dumps de datos).
+### ✅ Purga de historial completada — 2026-07-09
 
-**Este hallazgo se documentará también en `AUDITORIA.md` (nuevo §A11) en la próxima actualización
-de ese archivo.**
+Ejecutada en sesión posterior al incidente. Pasos realizados (en orden):
+
+1. **Backup previo:** bundle completo del repo guardado en `Desktop/TecniApp_ICE_backup_pre_purge.bundle`
+   (84 MB, incluye el historial con PII — conservar unos días como red de seguridad, luego eliminar).
+2. **Clon temporal:** `git clone --no-local` a `Desktop/TecniApp_ICE_purge_tmp` — nunca se operó
+   sobre la carpeta de trabajo activa.
+3. **Purga con `git filter-repo` v2.47.0** (instalado vía `py -m pip install git-filter-repo`):
+   reescribió los **1.100 commits** del historial completo, eliminando los 4 archivos con PII de
+   cada commit donde aparecían. Nuevos hashes asignados a todos los commits afectados.
+4. **`git push --force` a GitHub** (`dd438805 → 626e3ecc`, rama `master`): los commits viejos con
+   PII dejaron de ser accesibles desde la rama principal.
+5. **Tag `v1.1.0` actualizado:** el tag viejo (`3a8eca69`, pre-purga) se borró de GitHub y se
+   publicó el equivalente reescrito (`e71f4141`). Sin este paso, los datos PII hubieran seguido
+   siendo accesibles vía el tag.
+6. **Repo de trabajo principal sincronizado:** `git fetch --tags --force origin` + `git reset --hard
+   origin/master`. Local y remoto alineados sobre el historial limpio.
+7. **Stash eliminado:** el stash `guardar cambios locales antes de borrar ramas` (cambios menores en
+   4 archivos Kotlin) se borró porque su cadena de padres referenciaba commits del historial viejo;
+   eliminarlo completó la limpieza de objetos locales.
+8. **GC local:** `git reflog expire --expire=now --all && git gc --prune=now` — los objetos huérfanos
+   del historial viejo eliminados del object store local.
+9. **Clon temporal eliminado** del Escritorio.
+
+**Verificación final:** `git log --all --full-history -- "firebase json/tecniapp-ice-user-export.json"
+...` → **sin output** (0 commits accesibles contienen los archivos).
+
+**Estado de refs tras la purga:**
+
+| Ref | Hash | Estado |
+|---|---|---|
+| `master` (local + origin/master) | `626e3ecc` | ✅ Historial purgado |
+| `v1.1.0` | `e71f4141` | ✅ Hash reescrito |
+| `refs/stash` | — | ✅ Eliminado |
+
+**⚠️ Pendiente menor:** contactar a GitHub Support para limpieza del caché del lado del servidor
+(mensaje de soporte preparado — categoría "Sensitive Data Removal"). GitHub puede tener el contenido
+cacheado temporalmente aunque ya no sea accesible vía ninguna ref. La solicitud fue redactada y
+entregada al usuario para envío manual.
+
+**Pendiente de evaluación (no técnico):** la cédula/teléfono/nombre real expuestos corresponden a
+un usuario identificable, en el contexto de ICE como institución pública. Evaluar si aplica algún
+protocolo interno de incidente de datos. Los `verificationCodes` expuestos probablemente ya estaban
+vencidos (son de un solo uso), pero conviene confirmarlo.
 
 ---
 
