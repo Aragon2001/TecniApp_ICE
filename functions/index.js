@@ -2,7 +2,7 @@
 
 const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
-const { onValueCreated } = require("firebase-functions/v2/database");
+const { onValueCreated, onValueWritten } = require("firebase-functions/v2/database");
 const { defineSecret } = require("firebase-functions/params");
 
 require("firebase-admin/database");
@@ -31,6 +31,38 @@ const usersApp = admin.initializeApp(
 
 const dbAverias = admin.database(averiasApp);
 const dbUsers = admin.database(usersApp);
+
+// ─── META DE CATÁLOGOS (compuerta de descarga incremental, AUDITORIA.md §A12) ──
+// Los catálogos de técnicos/materiales/medidores no tienen campo de fecha por registro, así que
+// la app no puede hacer delta-sync como en Averías. En su lugar, estas funciones mantienen un
+// único timestamp pequeño `_meta/lastUpdated` (o `/Medidores_meta/{sub}/lastUpdated`) que avanza
+// en cada alta/baja/edición del catálogo. La app lee ese timestamp (unos bytes) y solo re-descarga
+// el catálogo completo si avanzó. Ver RoomRepository.debeDescargarCatalogo / FirebaseSyncManager.
+const DB_PERSONAL_URL = "https://tecniapp-ice-personal.firebaseio.com";
+const DB_MATERIALES_URL = "https://tecniapp-ice-materiales.firebaseio.com";
+const DB_MEDIDORES_URL = "https://tecniapp-ice-default-rtdb.firebaseio.com";
+
+const personalApp = admin.initializeApp({ databaseURL: DB_PERSONAL_URL }, "personal");
+const materialesApp = admin.initializeApp({ databaseURL: DB_MATERIALES_URL }, "materiales");
+const medidoresApp = admin.initializeApp({ databaseURL: DB_MEDIDORES_URL }, "medidores");
+
+const dbPersonal = admin.database(personalApp);
+const dbMateriales = admin.database(materialesApp);
+const dbMedidores = admin.database(medidoresApp);
+
+// Réplica EXACTA de FirebaseSyncManager.normalizarClave (Kotlin): NFD → quita diacríticos
+// (\p{Mn}) → minúsculas → quita todo lo que no sea [a-z0-9]. Debe coincidir carácter por carácter
+// con el cliente para que la clave de `/Medidores_meta/{sub}` que escribe la CF sea la misma que
+// la app intenta leer.
+function normalizarClave(valor) {
+  if (!valor) return null;
+  const limpio = String(valor)
+    .normalize("NFD")
+    .replace(/\p{Mn}+/gu, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "");
+  return limpio || null;
+}
 
 // ─── TRANSPORTER ────────────────────────────────────────────────────────────
 // FIX: aumentado maxConnections a 3 para envíos concurrentes, añadidos
@@ -538,7 +570,11 @@ const ICE_URL = "https://agenciaelectricidad.cn.ice.go.cr/api/AveriasAranda/";
 
 exports.syncAveriasYNotificar = onSchedule(
   {
-    schedule: "every 5 minutes",
+    // AUDITORIA.md §A13: la ingesta de averías es un POLL a una API REST externa del ICE
+    // (Aranda, ICE_URL) que no tiene webhook — no se puede volver event-driven. El margen de
+    // detección es el intervalo de este poll. Se bajó de 5 a 2 min para reducirlo a la mitad
+    // menos; sigue costando ~$0 en Blaze (invocaciones baratas, sin tráfico saliente caro).
+    schedule: "every 2 minutes",
     timeZone: "America/Costa_Rica",
   },
   async () => {
@@ -1046,5 +1082,60 @@ exports.notifyProgramacionAssigned = onValueCreated(
     } catch (e) {
       console.error("notifyProgramacionAssigned error", e);
     }
+  }
+);
+
+// ─── MANTENEDORES DE _meta/lastUpdated (AUDITORIA.md §A12 / Fases 2-3) ──────────
+// Estas funciones son baratas (una escritura pequeña por cambio de catálogo) y caben de sobra en
+// la capa gratuita de Blaze. Sin ellas, la compuerta de la app cae al comportamiento antiguo
+// (descarga completa en cada sync) — es decir, son requisito para que el AHORRO se active, pero su
+// ausencia no rompe la app.
+
+const META_REGION = "us-central1";
+
+// TÉCNICOS — datos como hijos de la raíz por cédula; `_meta` también vive en la raíz, así que hay
+// que ignorar los eventos del propio `_meta` para no entrar en bucle infinito.
+exports.bumpMetaTecnicos = onValueWritten(
+  { region: META_REGION, ref: "/{cedula}", instance: "tecniapp-ice-personal" },
+  async (event) => {
+    if (event.params.cedula === "_meta") return null;
+    try {
+      await dbPersonal.ref("/_meta/lastUpdated").set(admin.database.ServerValue.TIMESTAMP);
+    } catch (e) {
+      console.error("bumpMetaTecnicos error", e);
+    }
+    return null;
+  }
+);
+
+// MATERIALES — datos como hijos de la raíz por código; misma guardia contra bucle con `_meta`.
+exports.bumpMetaMateriales = onValueWritten(
+  { region: META_REGION, ref: "/{codigo}", instance: "tecniapp-ice-materiales" },
+  async (event) => {
+    if (event.params.codigo === "_meta") return null;
+    try {
+      await dbMateriales.ref("/_meta/lastUpdated").set(admin.database.ServerValue.TIMESTAMP);
+    } catch (e) {
+      console.error("bumpMetaMateriales error", e);
+    }
+    return null;
+  }
+);
+
+// MEDIDORES — estructura `/Medidores/{sub}/{medidorId}`. El `_meta` vive en un árbol HERMANO
+// `/Medidores_meta/{claveNormalizada}` (no bajo `/Medidores`), por lo que NO puede re-disparar
+// este trigger: no hace falta guardia de bucle. La clave se normaliza igual que en el cliente para
+// que la app la encuentre. Se re-normaliza la subregión en cada evento (barato).
+exports.bumpMetaMedidores = onValueWritten(
+  { region: META_REGION, ref: "/Medidores/{sub}/{medidorId}", instance: "tecniapp-ice-default-rtdb" },
+  async (event) => {
+    const sub = normalizarClave(event.params.sub);
+    if (!sub) return null;
+    try {
+      await dbMedidores.ref(`/Medidores_meta/${sub}/lastUpdated`).set(admin.database.ServerValue.TIMESTAMP);
+    } catch (e) {
+      console.error("bumpMetaMedidores error", e);
+    }
+    return null;
   }
 );

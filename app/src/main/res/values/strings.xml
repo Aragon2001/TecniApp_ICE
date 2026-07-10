@@ -642,6 +642,13 @@ Cliente: %4$s</string>
     <string name="settings_clear_cache_step_clear">Borrando caché local…</string>
     <string name="settings_clear_cache_step_catalogs">Descargando catálogos generales…</string>
     <string name="settings_clear_cache_step_profile">Actualizando perfil del técnico…</string>
+    <string name="settings_update_medidores">Actualizar catálogo de medidores</string>
+    <string name="settings_update_medidores_hint">El catálogo de medidores solo se descarga la primera vez o cuando cambia. Usa este botón para forzar una actualización manual si hiciste altas o bajas recientes.</string>
+    <string name="settings_update_medidores_in_progress">Actualizando medidores…</string>
+    <string name="settings_update_medidores_title">Actualizando catálogo de medidores</string>
+    <string name="settings_update_medidores_message">Descargando el catálogo de medidores de tu subregión…</string>
+    <string name="settings_update_medidores_success">Catálogo de medidores actualizado.</string>
+    <string name="settings_update_medidores_failure">No fue posible actualizar el catálogo de medidores. Inténtalo más tarde.</string>
     <string name="settings_last_sync_never">Última sincronización manual: nunca</string>
     <string name="settings_last_sync_format">Última sincronización manual: %1$s</string>
     <string name="settings_sync_triggered">Sincronización solicitada</string>

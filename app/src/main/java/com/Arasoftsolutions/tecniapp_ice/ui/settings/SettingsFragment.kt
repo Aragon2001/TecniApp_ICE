@@ -68,6 +68,7 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
     private val updateDownloadManager by lazy { UpdateDownloadManager(requireContext()) }
     private var manualSyncInProgress = false
     private var cacheClearInProgress = false
+    private var medidoresUpdateInProgress = false
     private var updatingDarkTheme = false
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -150,6 +151,7 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
 
         binding.btnSincronizarAhora.setOnClickListener { launchManualSync() }
         binding.btnClearCache.setOnClickListener { confirmClearCache() }
+        binding.btnActualizarMedidores.setOnClickListener { launchActualizarMedidores() }
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -631,6 +633,50 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         }
     }
 
+    /**
+     * Botón manual "Actualizar catálogo de medidores" (AUDITORIA.md §A12 / Fase 3). Fuerza la
+     * re-descarga completa del catálogo de medidores de la subregión del técnico, saltándose la
+     * compuerta `_meta`. Es una acción de respaldo: normalmente el sync automático ya re-baja los
+     * medidores cuando cambian, así que solo hace falta si Room quedó incompleto o para soporte.
+     */
+    private fun launchActualizarMedidores() {
+        if (manualSyncInProgress || cacheClearInProgress || medidoresUpdateInProgress) return
+        setMedidoresUpdateInProgress(true)
+        val dialog = showSyncDialog(
+            getString(R.string.settings_update_medidores_title),
+            getString(R.string.settings_update_medidores_message)
+        )
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val uid = requireActiveUser()
+                val subregion = withContext(Dispatchers.IO) {
+                    roomRepository.obtenerUsuario(uid)?.subregion?.trim()
+                        ?.takeIf { it.isNotEmpty() }
+                        ?: roomRepository.upsertUserFromFirebase(uid).subregion?.trim()
+                            ?.takeIf { it.isNotEmpty() }
+                } ?: throw IllegalStateException("Subregión no disponible")
+
+                withContext(Dispatchers.IO) {
+                    roomRepository.actualizarCatalogoMedidores(subregion) { done, total, msg, bytes ->
+                        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Main) {
+                            if (isAdded) dialog.update(done, total, msg ?: "", bytes)
+                        }
+                    }
+                }
+                context?.let {
+                    Toast.makeText(it, R.string.settings_update_medidores_success, Toast.LENGTH_SHORT).show()
+                }
+            } catch (_: Exception) {
+                context?.let {
+                    Toast.makeText(it, R.string.settings_update_medidores_failure, Toast.LENGTH_LONG).show()
+                }
+            } finally {
+                dismissSyncDialog()
+                setMedidoresUpdateInProgress(false)
+            }
+        }
+    }
+
     private suspend fun requireActiveUser(): String {
         val currentUser = auth.currentUser ?: throw IllegalStateException("Sesión no disponible")
         val reloadResult = runCatching { currentUser.reload().await() }
@@ -680,6 +726,7 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         syncDialog = null
         setManualSyncInProgress(false)
         setCacheClearInProgress(false)
+        setMedidoresUpdateInProgress(false)
     }
 
     private fun setManualSyncInProgress(inProgress: Boolean) {
@@ -694,9 +741,16 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         refreshSyncButtons()
     }
 
+    private fun setMedidoresUpdateInProgress(inProgress: Boolean) {
+        if (_binding == null) return
+        medidoresUpdateInProgress = inProgress
+        refreshSyncButtons()
+    }
+
     private fun refreshSyncButtons() {
         if (_binding == null) return
-        val manualSyncEnabled = !manualSyncInProgress && !cacheClearInProgress
+        val busy = manualSyncInProgress || cacheClearInProgress || medidoresUpdateInProgress
+        val manualSyncEnabled = !manualSyncInProgress && !cacheClearInProgress && !medidoresUpdateInProgress
         binding.btnSincronizarAhora.isEnabled = manualSyncEnabled
         binding.btnSincronizarAhora.alpha = if (manualSyncEnabled) 1f else 0.6f
         binding.btnSincronizarAhora.text = if (manualSyncInProgress) {
@@ -704,13 +758,21 @@ class SettingsFragment : Fragment(R.layout.fragment_settings) {
         } else {
             getString(R.string.settings_sync_now)
         }
-        val clearEnabled = !cacheClearInProgress
+        val clearEnabled = !cacheClearInProgress && !medidoresUpdateInProgress
         binding.btnClearCache.isEnabled = clearEnabled
         binding.btnClearCache.alpha = if (clearEnabled) 1f else 0.6f
         binding.btnClearCache.text = if (cacheClearInProgress) {
             getString(R.string.settings_clear_cache_in_progress)
         } else {
             getString(R.string.settings_clear_cache)
+        }
+        val medidoresEnabled = !busy
+        binding.btnActualizarMedidores.isEnabled = medidoresEnabled
+        binding.btnActualizarMedidores.alpha = if (medidoresEnabled) 1f else 0.6f
+        binding.btnActualizarMedidores.text = if (medidoresUpdateInProgress) {
+            getString(R.string.settings_update_medidores_in_progress)
+        } else {
+            getString(R.string.settings_update_medidores)
         }
     }
 

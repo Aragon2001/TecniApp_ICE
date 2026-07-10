@@ -1751,6 +1751,88 @@ class FirebaseSyncManager(@Suppress("UNUSED_PARAMETER") context: Context) {
         return NON_ALNUM_REGEX.replace(sinTildes.lowercase(Locale.getDefault()), "")
     }
 
+    // --- META DE SINCRONIZACIÓN (compuerta de descarga incremental, AUDITORIA.md §A12) ---
+    // Los nodos de técnicos/materiales/medidores NO tienen campo de fecha por registro, así que
+    // no admiten el delta-sync de Averías (§A9). En su lugar, una Cloud Function mantiene un
+    // único timestamp pequeño `_meta/lastUpdated` que avanza en cada alta/baja/edición del
+    // catálogo. La app lee ese timestamp (unos bytes) antes de decidir si re-descarga todo el
+    // catálogo. Devuelve null si el nodo `_meta` aún no existe (p. ej. antes de desplegar la
+    // Cloud Function): en ese caso el llamador debe caer al comportamiento de descarga completa.
+    suspend fun obtenerMetaTecnicos(): Long? = leerMetaLastUpdated(dbTecnicos, "personal")
+
+    suspend fun obtenerMetaMateriales(): Long? = leerMetaLastUpdated(dbMaterialesIce, "materiales")
+
+    /**
+     * Medidores: `_meta` por subregión en un árbol hermano `/Medidores_meta/{claveNormalizada}`.
+     * La Cloud Function escribe la clave como `normalizarClave(nodoSubregionDeMedidores)`; aquí se
+     * prueban las mismas claves normalizadas candidatas que usa [obtenerReferenciaSubregion]
+     * (id canónico y nombre de catálogo) hasta encontrar una que exista. Cada intento es una
+     * lectura mínima de bytes: NO se descarga el árbol `/Medidores` (a diferencia de resolver el
+     * nodo real, que sí lo bajaría completo). Devuelve null si aún no existe `_meta`.
+     */
+    suspend fun obtenerMetaMedidores(subregionId: String, subregionNombre: String? = null): Long? {
+        val storageKey = subregionId.trim().takeIf { it.isNotEmpty() } ?: return null
+        val lookupNombre = subregionNombre?.takeIf { it.isNotBlank() }
+            ?: nombreSubregionDesdeCatalogo(subregionId)
+        val candidatos = buildList {
+            add(storageKey)
+            lookupNombre?.let { add(it) }
+        }.mapNotNull { normalizarClave(it) }.distinct()
+        for (cand in candidatos) {
+            val ts = try {
+                anyToLong(
+                    dbMedidores.child("Medidores_meta").child(cand)
+                        .child("lastUpdated").get().await().value
+                )
+            } catch (e: Exception) {
+                SyncLog.w(TAG, "[SYNC_META][medidores/$cand] no se pudo leer _meta: ${e.message}")
+                null
+            }
+            if (ts != null) return ts
+        }
+        return null
+    }
+
+    private suspend fun leerMetaLastUpdated(ref: DatabaseReference, etiqueta: String): Long? {
+        return try {
+            val snap = ref.child("_meta").child("lastUpdated").get().await()
+            anyToLong(snap.value)
+        } catch (e: Exception) {
+            SyncLog.w(TAG, "[SYNC_META][$etiqueta] no se pudo leer _meta/lastUpdated: ${e.message}")
+            null
+        }
+    }
+
+    /**
+     * Vehículos SÍ tienen `updatedAt` por registro, así que su compuerta no necesita Cloud
+     * Function: se lee el mayor `updatedAt` de todo el nodo con `limitToLast(1)` (un solo
+     * registro). Requiere `.indexOn: "updatedAt"` en las reglas para ser barato; sin índice el
+     * query sigue funcionando pero baja el nodo completo (sin ahorro, sin romper).
+     */
+    suspend fun obtenerVehiculosMaxUpdatedAt(): Long? {
+        return try {
+            val nodeName = resolveDatosGeneralesNode("vehiculos", "Vehiculos")
+            val snap = dbDatosGenerales.child(nodeName)
+                .orderByChild("updatedAt")
+                .limitToLast(1)
+                .get()
+                .await()
+            snap.children.firstOrNull()?.let { anyToLong(it.child("updatedAt").value) }
+        } catch (e: Exception) {
+            SyncLog.w(TAG, "[SYNC_META][vehiculos] no se pudo leer max updatedAt: ${e.message}")
+            null
+        }
+    }
+
+    private fun anyToLong(value: Any?): Long? = when (value) {
+        is Long -> value
+        is Int -> value.toLong()
+        is Double -> value.toLong()
+        is Float -> value.toLong()
+        is String -> value.trim().toDoubleOrNull()?.toLong()
+        else -> null
+    }
+
     // --- TÉCNICOS ---
     suspend fun obtenerTecnicos(): List<TecnicoEntity> {
         val root = dbTecnicos.get().await()

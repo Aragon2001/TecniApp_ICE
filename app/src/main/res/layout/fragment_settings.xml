@@ -611,6 +611,25 @@
                         app:icon="@drawable/ic_refresh"
                         app:iconGravity="textStart"
                         app:iconPadding="8dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnActualizarMedidores"
+                        style="@style/Tecni.Button.Outlined"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="@string/settings_update_medidores"
+                        app:icon="@drawable/ic_refresh"
+                        app:iconGravity="textStart"
+                        app:iconPadding="8dp" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:text="@string/settings_update_medidores_hint"
+                        android:textColor="?attr/colorOnSurfaceVariant"
+                        style="@style/TextAppearance.Material3.BodySmall" />
                 </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>

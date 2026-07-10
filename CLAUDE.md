@@ -4,7 +4,7 @@
 
 > Documento "segundo cerebro" para este repositorio. Objetivo: que cualquier persona (o Claude) pueda entender el 100% del proyecto — qué hace cada capa, cada módulo y cada archivo relevante — sin tener que leer el código fuente completo. Para hallazgos de calidad, bugs y mejoras ver `AUDITORIA.md`. Para navegación rápida ver `INDEX.md`.
 
-Última sincronización de este documento con el código: 2026-07-08. Room `AppDatabase` en `SCHEMA_VERSION = 31` (este documento corrige la versión v27 que aparecía en la versión anterior de este archivo — ver `AUDITORIA.md` §Hallazgo A1).
+Última sincronización de este documento con el código: 2026-07-09. Room `AppDatabase` en `SCHEMA_VERSION = 31` (este documento corrige la versión v27 que aparecía en la versión anterior de este archivo — ver `AUDITORIA.md` §Hallazgo A1). Trabajo activo actual: eficiencia de sync y consumo de Firebase (ver `AUDITORIA.md` §A9/A12/A13) — decisión tomada de quedarse en el plan **Blaze** manteniendo el consumo dentro de las cuotas gratuitas, no migrar a Spark (bloqueado estructuralmente por las 12 instancias RTDB y las 5 Cloud Functions).
 
 ---
 
@@ -206,13 +206,23 @@ Node.js, Firebase Functions **v2** (`onSchedule`, `onCall`, `onValueCreated`, `d
 
 | Función | Trigger | Propósito |
 |---|---|---|
-| `syncAveriasYNotificar` | `onSchedule` | Job periódico: revisa averías nuevas/cambiadas en `tecniapp-ice-averias` y dispara notificaciones FCM |
+| `syncAveriasYNotificar` | `onSchedule` (cada **2 min**) | Poll a la **API REST externa del ICE** (Aranda, `ICE_URL`): ingesta las averías al nodo `tecniapp-ice-averias` y dispara notificaciones FCM. **Ver `AUDITORIA.md` §A13**: NO es convertible a event-driven (el origen es externo sin webhook; esta función es la que *escribe* las averías, nadie más). El margen de detección es el intervalo del poll; se bajó de 5 a 2 min (código listo, deploy diferido al rebuild). La propagación al teléfono vía FCM sí es casi instantánea una vez disparada. |
 | `sendVerificationCode` | `onCall` | Envío de código de verificación (probablemente para registro/recuperación) vía `nodemailer` |
 | `sendReport` | `onCall` | Envío de reportes generados por correo (adjuntos) |
 | `notifyCambioMedidorSupervisor` | `onCall` | Notifica a supervisor cuando se registra un cambio de medidor |
 | `notifyProgramacionAssigned` | `onValueCreated` | Notifica al técnico cuando se le asigna una programación |
 
 Detalles de implementación: `admin.initializeApp()` + 2 apps secundarias (`averiasApp`, `usersApp`) apuntando a sus URLs de RTDB específicas; transporter de `nodemailer` (Gmail) cacheado con reintento (`sendMailWithRetry`, hasta 2 reintentos, descarta conexión muerta); secretos de correo vía `defineSecret` (v2 params, correcto). `functions/mail/mailer.js` es un **archivo huérfano** (implementación anterior con `functions.config()`, API v1 deprecada) que ya no se usa — la lógica real vive duplicada dentro de `index.js`.
+
+**Cloud Functions nuevas, planeadas por `AUDITORIA.md` §A12 (código de la app ya listo, función server-side aún NO escrita/desplegada — diferida al rebuild de las 12 RTDB):**
+
+| Función planeada | Trigger | Propósito |
+|---|---|---|
+| `bumpMetaTecnicos` | `onValueWritten` sobre `tecniapp-ice-personal/{cedula}` | Actualiza `/_meta/lastUpdated` para que la app sepa si el catálogo de técnicos cambió sin descargarlo completo |
+| `bumpMetaMateriales` | `onValueWritten` sobre `tecniapp-ice-materiales/{codigo}` | Igual que arriba, para el catálogo de materiales |
+| `bumpMetaMedidores` | `onValueWritten` sobre `default-rtdb/Medidores/{sub}/{medidorId}` | Actualiza `/Medidores_meta/{sub}/lastUpdated` por subregión |
+
+La app (`RoomRepository`/`DataStoreManager`) ya tiene la "compuerta" que lee estos nodos `_meta` antes de decidir si re-descarga cada catálogo completo — es retrocompatible (si `_meta` no existe todavía, cae a la descarga completa de siempre). Ver `log.md` §"Ejecución del plan A12" para el detalle exacto.
 
 ---
 

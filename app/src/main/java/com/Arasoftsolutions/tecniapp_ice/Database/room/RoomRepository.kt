@@ -5,6 +5,7 @@ import com.Arasoftsolutions.tecniapp_ice.Database.entities.*
 import com.Arasoftsolutions.tecniapp_ice.Database.sync.FirebaseSyncManager
 import com.Arasoftsolutions.tecniapp_ice.Database.sync.SyncLog
 import com.Arasoftsolutions.tecniapp_ice.Database.sync.SubregionNormalizer
+import com.Arasoftsolutions.tecniapp_ice.preferences.DataStoreManager
 import com.Arasoftsolutions.tecniapp_ice.ui.vehiculo.VehiculoPlacaUtils
 import com.google.firebase.auth.FirebaseAuth
 import com.Arasoftsolutions.tecniapp_ice.ui.vehiculo.RegistroDiarioEntity
@@ -41,6 +42,7 @@ class   RoomRepository(context: Context) {
 
     private val db = AppDatabase.getInstance(context.applicationContext)
     private val firebase = FirebaseSyncManager(context.applicationContext)
+    private val dataStore = DataStoreManager.getInstance(context.applicationContext)
     private val vehiculoDao = db.vehiculoDao()
     private val firebaseVehicleDs = FirebaseVehicleDataSource()
     private val vehiculoLogDao = db.vehiculoLogDao()
@@ -887,12 +889,38 @@ class   RoomRepository(context: Context) {
     }
 
     // ----- Sincronización -----
+
+    /**
+     * Compuerta de descarga incremental por catálogo (AUDITORIA.md §A12). Decide si hace falta
+     * re-descargar el catálogo completo comparando un timestamp remoto pequeño (`_meta/lastUpdated`
+     * mantenido por Cloud Function, o el max `updatedAt` en vehículos) contra el último aplicado
+     * localmente en DataStore.
+     * - `remoteTs == null`  → el nodo `_meta` aún no existe (CF sin desplegar): descarga siempre
+     *   (comportamiento actual, retrocompatible — no se rompe nada antes del despliegue).
+     * - Room sin datos locales → primera instalación: descarga siempre (seed).
+     * - `remoteTs <= aplicado local` → el catálogo no cambió: se omite la descarga completa.
+     */
+    private suspend fun debeDescargarCatalogo(
+        metaName: String,
+        remoteTs: Long?,
+        hayDatosLocales: Boolean
+    ): Boolean {
+        if (remoteTs == null) return true
+        if (!hayDatosLocales) return true
+        return remoteTs > dataStore.getSyncMeta(metaName)
+    }
+
     suspend fun syncTecnicos(): Long = withContext(Dispatchers.IO) {
+        val locales = db.tecnicoDao().observarTecnicosSnapshot().associateBy { it.cedula }
+        val remoteTs = firebase.obtenerMetaTecnicos()
+        if (!debeDescargarCatalogo("tecnicos", remoteTs, locales.isNotEmpty())) {
+            SyncLog.i(TAG, "[SYNC_META] tecnicos sin cambios (remoteTs=$remoteTs) — se omite descarga completa")
+            return@withContext 0L
+        }
         val tecnicos = firebase.obtenerTecnicos()
         val bytes = estimateBytes(tecnicos)
         if (tecnicos.isEmpty()) return@withContext bytes
 
-        val locales = db.tecnicoDao().observarTecnicosSnapshot().associateBy { it.cedula }
         val cambios = tecnicos.filter { remoto ->
             val local = locales[remoto.cedula]
             local == null || local != remoto
@@ -900,16 +928,22 @@ class   RoomRepository(context: Context) {
         if (cambios.isNotEmpty()) {
             db.tecnicoDao().insertAll(cambios)
         }
+        remoteTs?.let { dataStore.setSyncMeta("tecnicos", it) }
         bytes
     }
 
 
     suspend fun syncMateriales(): Long = withContext(Dispatchers.IO) {
+        val locales = db.materialDao().observarMaterialesSnapshot().associateBy { it.codigo }
+        val remoteTs = firebase.obtenerMetaMateriales()
+        if (!debeDescargarCatalogo("materiales", remoteTs, locales.isNotEmpty())) {
+            SyncLog.i(TAG, "[SYNC_META] materiales sin cambios (remoteTs=$remoteTs) — se omite descarga completa")
+            return@withContext 0L
+        }
         val materiales = firebase.obtenerMaterialesCatalogo()
         val bytes = estimateBytes(materiales)
         if (materiales.isEmpty()) return@withContext bytes
 
-        val locales = db.materialDao().observarMaterialesSnapshot().associateBy { it.codigo }
         val cambios = materiales.filter { remoto ->
             val local = locales[remoto.codigo]
             local == null || local != remoto
@@ -917,6 +951,7 @@ class   RoomRepository(context: Context) {
         if (cambios.isNotEmpty()) {
             db.materialDao().insertAll(cambios)
         }
+        remoteTs?.let { dataStore.setSyncMeta("materiales", it) }
         bytes
     }
 
@@ -1226,15 +1261,71 @@ class   RoomRepository(context: Context) {
         progress(done, total, "Descargando localizaciones…", downloadedBytes)
         SyncLog.i(TAG, "[SYNC_SUBREGION] step=$done/$total source=local/localizaciones puebloCount=${idsPueblos.size} localizaciones=${localizacionesFiltradas.size} bytes=$downloadedBytes")
 
-        val vehiculosRemotos = firebase.obtenerVehiculosPorSubregion(canonicalSubregion)
-        val vehiculos = deduplicarVehiculos(vehiculosRemotos)
-        downloadedBytes += estimateBytes(vehiculos)
-        val vehiculosCombinados = combinarVehiculosConLocales(vehiculos)
-        db.vehiculoDao().insertAll(vehiculosCombinados)
+        // Compuerta incremental de vehículos (AUDITORIA.md §A12): solo re-descarga la subregión
+        // si el mayor `updatedAt` remoto avanzó desde el último sync. Clave por subregión para no
+        // invalidar unas subregiones por cambios en otras.
+        val vehiculoMetaKey = "vehiculos_sub_$canonicalSubregion"
+        val vehiculosRemoteTs = firebase.obtenerVehiculosMaxUpdatedAt()
+        val hayVehiculosLocales = db.vehiculoDao().getAll().isNotEmpty()
+        if (debeDescargarCatalogo(vehiculoMetaKey, vehiculosRemoteTs, hayVehiculosLocales)) {
+            val vehiculosRemotos = firebase.obtenerVehiculosPorSubregion(canonicalSubregion)
+            val vehiculos = deduplicarVehiculos(vehiculosRemotos)
+            downloadedBytes += estimateBytes(vehiculos)
+            val vehiculosCombinados = combinarVehiculosConLocales(vehiculos)
+            db.vehiculoDao().insertAll(vehiculosCombinados)
+            vehiculosRemoteTs?.let { dataStore.setSyncMeta(vehiculoMetaKey, it) }
+            SyncLog.i(TAG, "[SYNC_SUBREGION] step=vehiculos source=datos_generales/vehiculos count=${vehiculosCombinados.size} bytes=$downloadedBytes")
+        } else {
+            SyncLog.i(TAG, "[SYNC_META] vehiculos subregion=$canonicalSubregion sin cambios (remoteTs=$vehiculosRemoteTs) — se omite descarga")
+        }
         done += 100
         progress(done, total, "Descargando vehículos…", downloadedBytes)
-        SyncLog.i(TAG, "[SYNC_SUBREGION] step=$done/$total source=datos_generales/vehiculos count=${vehiculosCombinados.size} bytes=$downloadedBytes")
 
+        // Compuerta incremental de MEDIDORES (AUDITORIA.md §A12) — el mayor consumo del proyecto
+        // fuera de Averías. Antes se borraba y re-descargaba TODA la subregión en cada sync. Ahora
+        // solo se re-descarga si el `_meta` de la subregión avanzó (lo mantiene una Cloud Function
+        // en cada alta/baja/edición de medidor), o si Room no tiene medidores para la subregión
+        // (seed). El botón "Actualizar catálogo de medidores" fuerza la descarga por separado
+        // (ver [actualizarCatalogoMedidores]). Retrocompatible: si `_meta` aún no existe (CF sin
+        // desplegar), remoteTs es null → se descarga completo como hasta ahora.
+        val medidoresMetaKey = "medidores_$canonicalSubregion"
+        val medidoresRemoteTs = firebase.obtenerMetaMedidores(canonicalSubregion)
+        val hayMedidoresLocales = db.medidorDao().contarPorSubregion(canonicalSubregion) > 0
+        if (debeDescargarCatalogo(medidoresMetaKey, medidoresRemoteTs, hayMedidoresLocales)) {
+            val (bytes, medidoresTotal) = descargarMedidoresSubregion(
+                canonicalSubregion,
+                downloadedBytes
+            ) { mTotal, objetivo, elapsed, b ->
+                progress(
+                    done + progressUnitsForMedidores(mTotal, objetivo),
+                    total,
+                    "Descargando medidores… ($mTotal/$objetivo) · $elapsed",
+                    b
+                )
+            }
+            downloadedBytes = bytes
+            medidoresRemoteTs?.let { dataStore.setSyncMeta(medidoresMetaKey, it) }
+            SyncLog.i(TAG, "[SYNC_SUBREGION] source=medidores/medidores count=$medidoresTotal bytes=$downloadedBytes")
+        } else {
+            SyncLog.i(TAG, "[SYNC_META] medidores subregion=$canonicalSubregion sin cambios (remoteTs=$medidoresRemoteTs, locales=$hayMedidoresLocales) — se omite descarga")
+        }
+        done += 100
+        progress(done, total, "Descargando medidores…", downloadedBytes)
+        SyncLog.i(TAG, "[SYNC_SUBREGION] completed subregion=$canonicalSubregion totalBytes=$downloadedBytes tookMs=${System.currentTimeMillis()-syncStartedAt}")
+        // }
+    }
+
+    /**
+     * Descarga forzada (borra local + re-baja por lotes) del catálogo de medidores de una
+     * subregión. Compartida por [syncSubregion] (dentro de su compuerta `_meta`) y por el botón
+     * manual [actualizarCatalogoMedidores]. Devuelve (bytesAcumulados, cantidadDeMedidores).
+     * [onBatchProgress] recibe (medidoresTotal, objetivo, elapsedText, bytesAcumulados) por lote.
+     */
+    private suspend fun descargarMedidoresSubregion(
+        canonicalSubregion: String,
+        bytesPrevios: Long,
+        onBatchProgress: (medidoresTotal: Int, objetivo: Int, elapsed: String, bytes: Long) -> Unit
+    ): Pair<Long, Int> {
         var medidoresTotal = 0
         var medidoresLotes = 0
         var totalMedidoresObjetivo = firebase.contarMedidoresSubregion(canonicalSubregion)
@@ -1242,6 +1333,7 @@ class   RoomRepository(context: Context) {
         if (totalMedidoresObjetivo <= 0) {
             totalMedidoresObjetivo = db.medidorDao().contarPorSubregion(canonicalSubregion)
         }
+        var bytes = bytesPrevios
         db.medidorDao().eliminarPorSubregion(canonicalSubregion)
         firebase.obtenerMedidoresPorLotes(
             subregionId = canonicalSubregion,
@@ -1249,30 +1341,53 @@ class   RoomRepository(context: Context) {
         ) { medidoresBatch ->
             if (medidoresBatch.isEmpty()) return@obtenerMedidoresPorLotes
             db.medidorDao().insertAll(medidoresBatch)
-            downloadedBytes += estimateMedidoresBatchBytes(medidoresBatch.size)
+            bytes += estimateMedidoresBatchBytes(medidoresBatch.size)
             medidoresTotal += medidoresBatch.size
             medidoresLotes += 1
             if (medidoresTotal > totalMedidoresObjetivo) {
                 totalMedidoresObjetivo = medidoresTotal
             }
             val elapsed = formatElapsed(medidoresSyncStartedAt)
-            val medidoresProgress = progressUnitsForMedidores(medidoresTotal, totalMedidoresObjetivo)
             SyncLog.i(
                 TAG,
-                "[SYNC_SUBREGION] medidores_lote=$medidoresLotes loteSize=${medidoresBatch.size} total=$medidoresTotal objetivo=$totalMedidoresObjetivo medidoresProgress=$medidoresProgress elapsed=$elapsed bytes=$downloadedBytes"
+                "[MEDIDORES] lote=$medidoresLotes loteSize=${medidoresBatch.size} total=$medidoresTotal objetivo=$totalMedidoresObjetivo elapsed=$elapsed bytes=$bytes"
             )
+            onBatchProgress(medidoresTotal, totalMedidoresObjetivo, elapsed, bytes)
+        }
+        return bytes to medidoresTotal
+    }
+
+    /**
+     * Botón "Actualizar catálogo de medidores" (AUDITORIA.md §A12 / Fase 3): fuerza la re-descarga
+     * completa del catálogo de medidores de la subregión, IGNORANDO la compuerta `_meta`. Debe
+     * dispararse solo desde una acción explícita del usuario, nunca desde el sync general.
+     * Devuelve los bytes descargados. Tras forzar, alinea el `_meta` local con el remoto para no
+     * volver a descargar de inmediato en el siguiente sync automático.
+     */
+    suspend fun actualizarCatalogoMedidores(
+        subregionId: String,
+        progress: (done: Int, total: Int, msg: String?, downloadedBytes: Long) -> Unit = { _, _, _, _ -> }
+    ): Long = withContext(Dispatchers.IO) {
+        val canonicalSubregion = SubregionNormalizer.canonicalIdOrSelf(subregionId)
+            ?: throw IllegalArgumentException("Subregión inválida: $subregionId")
+        SyncLog.i(TAG, "[MEDIDORES_MANUAL] start subregion=$canonicalSubregion")
+        val (bytes, medidoresTotal) = descargarMedidoresSubregion(
+            canonicalSubregion,
+            0L
+        ) { mTotal, objetivo, elapsed, b ->
             progress(
-                done + medidoresProgress,
-                total,
-                "Descargando medidores… ($medidoresTotal/$totalMedidoresObjetivo) · $elapsed",
-                downloadedBytes
+                progressUnitsForMedidores(mTotal, objetivo),
+                100,
+                "Actualizando medidores… ($mTotal/$objetivo) · $elapsed",
+                b
             )
         }
-        done += 100
-        progress(done, total, "Descargando medidores…", downloadedBytes)
-        SyncLog.i(TAG, "[SYNC_SUBREGION] step=$done/$total source=medidores/medidores count=$medidoresTotal bytes=$downloadedBytes")
-        SyncLog.i(TAG, "[SYNC_SUBREGION] completed subregion=$canonicalSubregion totalBytes=$downloadedBytes tookMs=${System.currentTimeMillis()-syncStartedAt}")
-        // }
+        firebase.obtenerMetaMedidores(canonicalSubregion)?.let {
+            dataStore.setSyncMeta("medidores_$canonicalSubregion", it)
+        }
+        progress(100, 100, "Medidores actualizados ($medidoresTotal)", bytes)
+        SyncLog.i(TAG, "[MEDIDORES_MANUAL] done subregion=$canonicalSubregion count=$medidoresTotal bytes=$bytes")
+        bytes
     }
 
     suspend fun upsertUserFromFirebase(uid: String): UserEntity = withContext(Dispatchers.IO) {
@@ -1324,17 +1439,26 @@ class   RoomRepository(context: Context) {
             if (nuevasOCambiadas.isNotEmpty()) db.agenciaDao().insertAll(nuevasOCambiadas)
         }
 
-        val vehiculosRemotos = firebase.obtenerVehiculos()
-        val vehiculos = deduplicarVehiculos(vehiculosRemotos)
-        downloadedBytes += estimateBytes(vehiculos)
-        if (vehiculos.isNotEmpty()) {
-            val vehiculosCombinados = combinarVehiculosConLocales(vehiculos)
-            val locales = db.vehiculoDao().getAll().associateBy { it.vehiculoId }
-            val nuevosOCambiados = vehiculosCombinados.filter { remoto ->
-                val local = locales[remoto.vehiculoId]
-                local == null || local != remoto
+        // Compuerta incremental de vehículos (AUDITORIA.md §A12): clave "vehiculos_all" (nodo
+        // completo), independiente de la clave por subregión de syncSubregion.
+        val vehiculosRemoteTs = firebase.obtenerVehiculosMaxUpdatedAt()
+        val hayVehiculosLocales = db.vehiculoDao().getAll().isNotEmpty()
+        if (debeDescargarCatalogo("vehiculos_all", vehiculosRemoteTs, hayVehiculosLocales)) {
+            val vehiculosRemotos = firebase.obtenerVehiculos()
+            val vehiculos = deduplicarVehiculos(vehiculosRemotos)
+            downloadedBytes += estimateBytes(vehiculos)
+            if (vehiculos.isNotEmpty()) {
+                val vehiculosCombinados = combinarVehiculosConLocales(vehiculos)
+                val locales = db.vehiculoDao().getAll().associateBy { it.vehiculoId }
+                val nuevosOCambiados = vehiculosCombinados.filter { remoto ->
+                    val local = locales[remoto.vehiculoId]
+                    local == null || local != remoto
+                }
+                if (nuevosOCambiados.isNotEmpty()) db.vehiculoDao().insertAll(nuevosOCambiados)
             }
-            if (nuevosOCambiados.isNotEmpty()) db.vehiculoDao().insertAll(nuevosOCambiados)
+            vehiculosRemoteTs?.let { dataStore.setSyncMeta("vehiculos_all", it) }
+        } else {
+            SyncLog.i(TAG, "[SYNC_META] vehiculos (all) sin cambios (remoteTs=$vehiculosRemoteTs) — se omite descarga")
         }
 
         runCatching { syncTecnicos() }

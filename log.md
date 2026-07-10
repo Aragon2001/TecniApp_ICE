@@ -552,3 +552,198 @@ correspondientes en `values/colors.xml` (versión "light" de cada token) y un
 diseño (qué colores claros corresponden a cada token oscuro) que no se deben inventar sin
 confirmación. Candidato para una sesión de limpieza de UI/temas.
 
+---
+
+## Sesión 2026-07-09 (continuación) — Auditoría de rendimiento/consumo (A12) y viabilidad de Spark
+
+El usuario pidió una auditoría dedicada de consumo de recursos/eficiencia, y por separado
+preguntó qué consume recursos de pago porque quiere volver al plan Spark. Se documentó todo en
+`AUDITORIA.md §A12` (leer ahí el detalle completo, esto es un resumen):
+
+- **Confirmado leyendo el código:** el patrón delta-sync de A9 solo se aplicó a Averías.
+  Técnicos, materiales, agencias, vehículos, y sobre todo **medidores** (`syncSubregion` borra y
+  vuelve a descargar TODA la subregión en cada sync, manual o automático) siguen sin marca de agua
+  — es la causa directa de la queja "sincronizar sigue descargando todas las bases".
+- Los listeners realtime de inventario/luminarias sí usan `ChildEventListener` (eficiente por
+  diseño), pero `TecniApp.kt` los desconecta/reconecta en cada `onStart`/`onStop` de proceso, lo
+  que fuerza un re-fetch completo del nodo escopeado cada vez que el técnico reabre la app.
+- **Verificado contra documentación oficial de Firebase (julio 2026):** el plan Spark solo permite
+  **1 instancia de Realtime Database por proyecto** (este proyecto usa 12) y **no permite
+  desplegar Cloud Functions en absoluto** (bloquea tráfico saliente no-Google; este proyecto tiene
+  5 funciones, 2 de ellas con nodemailer/Gmail). Volver a Spark tal como está la arquitectura
+  **rompería funcionalidad real**, no es solo un tema de ahorro. Cuotas RTDB Spark: 1 GB
+  almacenado, 10 GB descargados/mes, 100 conexiones simultáneas — el propio incidente de Averías
+  (13.8 GB/mes) ya superaba el cupo mensual completo de descarga de Spark por sí solo.
+- Plan de 5 pasos documentado en AUDITORIA.md para que Spark sea viable de verdad: consolidar las
+  12 RTDB en 1, decidir destino de las 5 Cloud Functions, aplicar delta-sync a los sync que faltan
+  (prioridad: medidores), corregir el patrón de reconexión completa de listeners, y solo entonces
+  medir consumo real antes de decidir Spark vs Blaze-con-alertas-de-presupuesto.
+- Fuentes verificadas: `firebase.google.com/docs/database/usage/limits`,
+  `firebase.google.com/pricing`, `firebase.google.com/docs/functions/quotas`.
+
+---
+
+## Sesión 2026-07-09 (continuación) — Ejecución del plan A12: sync incremental por fases
+
+Contexto: el usuario decidió **quedarse en Blaze** (no bajar a Spark), pero manteniendo el consumo
+real por debajo de las cuotas gratuitas de cada servicio → factura $0 salvo crecimiento anormal.
+Se ejecuta el plan de remediación de A12 por fases, usando el fix de Averías (A9) como plantilla.
+
+### Fase 0 — Diagnóstico previo (verificado con `firebase database:get` contra las RTDB reales)
+
+Se comprobó qué nodos tienen un campo de fecha indexable apto para el delta-sync de A9:
+
+| Nodo | Instancia RTDB | ¿Campo de fecha? |
+|---|---|---|
+| **Vehículos** (`/vehiculos`, map por placa) | `datosgenerales` | ✅ `updatedAt` (epoch ms) |
+| Técnicos (`/`, map por cédula → `{nombre}`) | `personal` | ❌ ninguno |
+| Materiales (`/`, map por código → `{Nombre, Unidad}`) | `materiales` | ❌ ninguno |
+| Medidores (`/Medidores/{subregion}/{num}`) | `default-rtdb` | ❌ ninguno |
+| Agencias/Subregiones/Regiones (**arrays** JSON) | `datosgenerales` | ❌ ninguno (volumen trivial → se dejan) |
+
+**Conclusión:** solo Vehículos admite el patrón delta puro de A9. Técnicos/Materiales/Medidores no
+tienen campo de fecha. Estrategia decidida con el usuario:
+- **Vehículos** → compuerta por `updatedAt` (max remoto vía `limitToLast(1)`, sin Cloud Function).
+- **Técnicos/Materiales/Medidores** → nodo pequeño `_meta/lastUpdated` mantenido por una **Cloud
+  Function nueva** `onValueWritten`; la app lee ese único timestamp (bytes) y solo re-descarga el
+  catálogo si avanzó. Medidores además con `_meta` por subregión y botón manual (Fase 3).
+- **Secuencia por el rebuild pendiente de las RTDB:** el código de la app se escribe ya, de forma
+  **retrocompatible** (si `_meta` no existe todavía → cae a descarga completa, sin romper nada); el
+  código de las Cloud Functions se escribe ya, pero su **deploy + seed de `_meta` se difieren al
+  rebuild** y los **ejecuta el usuario** (no yo).
+
+### Fase 1 — Verificación de lo ya hecho ✅
+- A9 (Averías) intacto: `AveriasRepository.fetchDeltaChildren` sin cambios (delta por `lastUpdated`
+  + filtro de región en cliente; seed completo solo con Room vacío).
+- A11 (purga PII): `git log --all --oneline -- "firebase json/tecniapp-ice-default-rtdb-export.json"`
+  → vacío. La purga sigue en pie.
+
+### Fase 2 — Compuerta de descarga incremental para técnicos, materiales y vehículos ✅ (compila)
+
+Mecanismo único **retrocompatible** (`RoomRepository.debeDescargarCatalogo`): lee un timestamp
+remoto pequeño, lo compara contra el último aplicado en DataStore (`sync_meta_<catálogo>`), y solo
+descarga el catálogo completo si (a) no hay `_meta` todavía → fallback a descarga completa, (b) Room
+vacío → seed, o (c) el timestamp remoto avanzó. Archivos tocados:
+- `DataStoreManager.kt`: `getSyncMeta(name)`/`setSyncMeta(name,value)` (clave `sync_meta_*`).
+- `FirebaseSyncManager.kt`: `obtenerMetaTecnicos()`, `obtenerMetaMateriales()`,
+  `obtenerMetaMedidores(subregion)` (lee `/Medidores_meta/{sub}/lastUpdated`),
+  `obtenerVehiculosMaxUpdatedAt()` (`orderByChild("updatedAt").limitToLast(1)`), + helper `anyToLong`.
+- `RoomRepository.kt`: `syncTecnicos()` y `syncMateriales()` ahora gatean antes de
+  `obtenerTecnicos()/obtenerMaterialesCatalogo()`; los dos puntos de descarga de vehículos
+  (`syncSubregion` con clave por subregión `vehiculos_sub_<X>`, y `syncCatalogosGenerales` con clave
+  `vehiculos_all`) gatean por `updatedAt`.
+- Compilación: `./gradlew compileDebugKotlin` → EXIT=0.
+
+Pendiente para que la compuerta AHORRE de verdad (no solo no rompa): desplegar la Cloud Function de
+`_meta` (Fase 2/3 server-side, diferida al rebuild) y agregar `.indexOn: "updatedAt"` a las reglas
+de vehículos. Antes de eso, técnicos/materiales/vehículos siguen descargando completo (sin regresión).
+
+### Fase 3 — Medidores (mayor impacto): compuerta `_meta` + botón manual ✅ (compila)
+
+Antes: `syncSubregion` hacía `db.medidorDao().eliminarPorSubregion(...)` + re-descarga completa de
+la subregión en CADA sync (el mayor consumo del proyecto fuera de Averías). Ahora:
+- **Compuerta `_meta` por subregión** (decisión del usuario: detección de cambios, no vencimiento por
+  tiempo — ver AUDITORIA.md §A12.D). `syncSubregion` solo re-descarga medidores si
+  `firebase.obtenerMetaMedidores(subregión)` avanzó, o si Room no tiene medidores de esa subregión
+  (seed). `obtenerMetaMedidores` prueba claves normalizadas candidatas (id canónico y nombre de
+  catálogo) con lecturas mínimas — NO baja `/Medidores` para resolver el nodo.
+- **Extracción** de la descarga a `RoomRepository.descargarMedidoresSubregion(...)` (helper privado
+  compartido) para no duplicar el loop por lotes.
+- **Botón manual "Actualizar catálogo de medidores"** en Ajustes (no en el Home) →
+  `RoomRepository.actualizarCatalogoMedidores(subregión)` fuerza la descarga saltándose la compuerta.
+  Archivos: `fragment_settings.xml` (botón + hint), `strings.xml` (7 strings `settings_update_medidores*`),
+  `SettingsFragment.kt` (`launchActualizarMedidores`, estado `medidoresUpdateInProgress`, `refreshSyncButtons`).
+- Compilación: `./gradlew compileDebugKotlin` → EXIT=0.
+
+### Server-side (Fases 2-3) — CÓDIGO listo, DEPLOY diferido al rebuild (lo ejecuta el usuario)
+
+`functions/index.js` — 3 Cloud Functions nuevas `onValueWritten` que mantienen `_meta/lastUpdated`
+(`node --check` OK):
+- `bumpMetaTecnicos` (instancia `tecniapp-ice-personal`, ref `/{cedula}`, guarda `/_meta/lastUpdated`;
+  ignora el evento del propio `_meta` para no entrar en bucle).
+- `bumpMetaMateriales` (instancia `tecniapp-ice-materiales`, ref `/{codigo}`, misma guardia).
+- `bumpMetaMedidores` (instancia `tecniapp-ice-default-rtdb`, ref `/Medidores/{sub}/{medidorId}`,
+  escribe `/Medidores_meta/{normalizarClave(sub)}/lastUpdated` — árbol hermano, sin riesgo de bucle).
+- `normalizarClave` en JS replica EXACTO la de Kotlin (NFD → `\p{Mn}+` → minúsculas → `[^a-z0-9]+`).
+- **Supuesto de estructura** (validado contra los datos actuales): cédulas/códigos a nivel raíz y
+  medidores en `/Medidores/{sub}/{id}`. Si el rebuild cambia el anidamiento, ajustar los `ref`.
+
+**Comandos que ejecutará el usuario tras el rebuild de las RTDB:**
+```bash
+# 1) Desplegar las funciones nuevas + la de averías modificada (A13, intervalo 5→2 min):
+firebase deploy --only functions:bumpMetaTecnicos,functions:bumpMetaMateriales,functions:bumpMetaMedidores,functions:syncAveriasYNotificar
+
+# 2) (Opcional) Sembrar un valor inicial de _meta para forzar la primera descarga controlada:
+firebase database:set /_meta/lastUpdated  <epoch_ms> --instance tecniapp-ice-personal
+firebase database:set /_meta/lastUpdated  <epoch_ms> --instance tecniapp-ice-materiales
+# medidores: se sembrará solo al primer cambio; o por subregión si se quiere forzar.
+
+# 3) En las reglas del rebuild, agregar índice para la compuerta de vehículos:
+#    "vehiculos": { ".indexOn": ["subregion", "updatedAt"] }
+```
+Nota: sin (1), la app sigue funcionando (compuerta cae a descarga completa, sin regresión); (1) es lo
+que ACTIVA el ahorro. Sin el `.indexOn` de (3), la lectura de max `updatedAt` de vehículos baja el
+nodo completo (funciona, pero no ahorra) — bajo impacto porque vehículos es de bajo volumen.
+
+### Fase 4 — Debounce de los listeners realtime (inventario/luminarias) ✅ (compila)
+
+`TecniApp.kt` adjuntaba los `ChildEventListener` en `onStart` de `ProcessLifecycleOwner` y los
+soltaba en `onStop`. Como adjuntar un `ChildEventListener` reenvía un `onChildAdded` por CADA hijo
+existente del nodo (re-fetch completo), cada vez que el técnico reabría la app se re-descargaba todo
+el inventario del vehículo y las luminarias de la agencia — muy frecuente en campo.
+
+Fix: se retrasa la desconexión. En `onStop` se agenda un `stopRealtimeSync()` diferido
+(`REALTIME_KEEPALIVE_MS = 7 min`, coroutine cancelable en `applicationScope`); si `onStart` vuelve
+antes de ese margen, cancela el stop pendiente y — gracias al flag `@Volatile realtimeActive` — NO
+vuelve a llamar `startRealtimeSyncForScope` (que internamente hace stop+start = re-fetch). Así las
+reaperturas rápidas no cuestan nada. Si el proceso muere durante la espera, el listener se limpia
+solo (sin fuga). Solo tras 7 min reales en background se sueltan los listeners.
+
+### Fase 5 — Alertas de presupuesto (acción manual del usuario, NO es código)
+
+Ver el mensaje entregado al usuario. Resumen: configurar en Google Cloud Billing del proyecto
+`tecniapp-ice` un presupuesto bajo (ej. $1–5 USD) con alertas por correo al 50/90/100 %. No frena el
+gasto (Blaze no tiene hard-cap nativo; el hard-cap requeriría una Cloud Function que reaccione a la
+alerta y deshabilite la facturación — opción avanzada, no obligatoria), pero avisa de inmediato si
+algo se dispara en vez de enterarse con la factura.
+
+### A13 — Margen de detección de averías (código ✅, deploy diferido)
+
+El usuario preguntó si las averías aparecen instantáneas. Se leyó la función a fondo y se corrigió
+un malentendido de la auditoría: `syncAveriasYNotificar` **no** es convertible a event-driven — es
+un **poll a la API REST externa del ICE** (`ICE_URL`, sistema Aranda) que ingesta las averías a
+Firebase; nadie más las escribe. Volverla `onValueWritten` sobre `/averias` haría bucle con sus
+propias escrituras y, peor, eliminaría la ingesta. El margen de "hasta 5 min" es el intervalo del
+poll a una API sin webhook.
+
+**Aplicado (opción A elegida por el usuario):** `functions/index.js` — `schedule` de
+`every 5 minutes` → `every 2 minutes`. Reduce el margen a ≤2 min + segundos de FCM, sin tocar la
+arquitectura ni arriesgar la ingesta. `node --check` OK. Deploy diferido junto a las `bumpMeta*`.
+Documentado en AUDITORIA.md §A13 (corregido) y CLAUDE.md §6.
+
+### Estado del plan A12 al cierre de esta sesión
+Fases 0–4 ✅ en código (todas compilan, `EXIT=0`). Server-side (deploy de las 3 Cloud Functions +
+seed de `_meta` + `.indexOn` de vehículos) diferido al rebuild de las RTDB, lo ejecuta el usuario.
+Fase 5 entregada como instrucción al usuario. Pendiente de verificación en dispositivo real una vez
+desplegadas las Cloud Functions (igual que se hizo con A9).
+
+---
+
+## Sesión 2026-07-09 (continuación) — Hallazgo A13: latencia de notificación de Averías
+
+El usuario preguntó si las averías nuevas aparecen instantáneamente o cada 5 minutos. Se verificó
+leyendo `functions/index.js:571` y `fcm/TecniAppMessagingService.kt:50`:
+
+- `syncAveriasYNotificar` es `onSchedule({ schedule: "every 5 minutes" })` — polling, no evento.
+  Hay hasta 5 min de margen entre que la avería se crea y el servidor la nota.
+- Pero el push FCM trae el payload completo de la avería, y `onMessageReceived` lo escribe directo
+  en Room (`repo.upsertFromPush`); la UI observa Room vía `Flow` reactivo (`AveriasRepository.observe`),
+  así que se actualiza sola en segundos una vez que el push sale — no espera al worker de 15 min.
+- **Conclusión:** ni instantáneo puro ni "cada 15 min" — es "hasta 5 min de detección + segundos de
+  propagación". Documentado en `AUDITORIA.md §1.5 Hallazgo A13`.
+- **Mejora propuesta, no aplicada:** migrar `syncAveriasYNotificar` de `onSchedule` a
+  `onValueWritten`/`onValueCreated` (mismo patrón que `notifyProgramacionAssigned`), eliminando el
+  margen de 5 min por completo. Se agrupa con el deploy de las Cloud Functions de A12 (Fases 2/3)
+  para tocar `functions/index.js` en producción una sola vez, no dos. Pendiente de implementar el
+  código de la Cloud Function (aún no escrito) y de desplegar junto con el resto en el rebuild.
+

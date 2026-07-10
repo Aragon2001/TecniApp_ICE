@@ -9,6 +9,7 @@ import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.Arasoftsolutions.tecniapp_ice.update.UpdateInfo
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 /**
@@ -114,10 +115,25 @@ class DataStoreManager private constructor(private val appContext: Context) {
         }
     }
 
+    /**
+     * Marca de sincronización por catálogo (AUDITORIA.md §A12): último timestamp remoto
+     * (`_meta/lastUpdated` de la Cloud Function, o el max `updatedAt` en el caso de vehículos)
+     * ya aplicado localmente. Se usa como compuerta para NO re-descargar catálogos que no
+     * cambiaron. `name` identifica el catálogo (p. ej. "tecnicos", "materiales",
+     * "vehiculos_sub_S.GUAPILES", "medidores_S.GUAPILES"). Devuelve 0 si nunca se sincronizó.
+     */
+    suspend fun getSyncMeta(name: String): Long =
+        dataStore.data.map { prefs -> prefs[longPreferencesKey(Keys.SYNC_META_PREFIX + name)] ?: 0L }.first()
+
+    suspend fun setSyncMeta(name: String, value: Long) {
+        dataStore.edit { prefs -> prefs[longPreferencesKey(Keys.SYNC_META_PREFIX + name)] = value }
+    }
+
     private fun booleanFlow(key: Preferences.Key<Boolean>, default: Boolean): Flow<Boolean> =
         dataStore.data.map { prefs -> prefs[key] ?: default }
 
     private object Keys {
+        const val SYNC_META_PREFIX = "sync_meta_"
         val NOTIFICATIONS_ENABLED = booleanPreferencesKey("notifications_enabled")
         val AUTO_SYNC_ENABLED = booleanPreferencesKey("auto_sync_enabled")
         val GPS_ENABLED = booleanPreferencesKey("gps_enabled")

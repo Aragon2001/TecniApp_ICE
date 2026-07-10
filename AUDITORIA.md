@@ -22,6 +22,19 @@ Convención de severidad: 🔴 Crítico (rompe funcionalidad, seguridad o integr
 > te referías con "descargas masivas de Firebase Realtime": el diagnóstico es sólido y el fix ya está
 > escrito, pero **todavía no se ha probado en un dispositivo real ni desplegado**.
 
+> **📋 Actualización 2026-07-09 (sesión de consumo/Spark-Blaze):** A9 verificado en dispositivo real,
+> A10 (auto-actualización firmada) publicado y funcionando, A11 (PII en historial de git) purgado.
+> Nuevo **Hallazgo A12** (§1.4): auditoría completa de consumo/eficiencia — se confirmó que el
+> patrón delta-sync de A9 nunca se extendió a técnicos/materiales/medidores/catálogos, y se
+> descartó volver al plan Spark (bloqueos estructurales: 1 sola RTDB permitida vs. 12 en uso, y
+> Cloud Functions no se pueden desplegar en Spark). **Decisión tomada: quedarse en Blaze,
+> manteniendo el consumo real por debajo de las cuotas gratuitas.** Se ejecutó el plan de 5 fases
+> (código listo y compila; servidor — 3 Cloud Functions nuevas + siembra de `_meta` — diferido al
+> rebuild de las 12 RTDB que el usuario ya tenía planeado). Nuevo **Hallazgo A13** (§1.5): las
+> notificaciones de Averías tienen hasta 5 min de margen de detección en el servidor (aunque la
+> propagación al teléfono es casi instantánea) — mejora propuesta (event-driven) agrupada con el
+> mismo despliegue de Cloud Functions de A12.
+
 ---
 
 ## 0. Resumen ejecutivo
@@ -281,6 +294,198 @@ institución pública).
 
 ---
 
+## 1.4 Hallazgo nuevo — 🔴 A12 — Auditoría de consumo de recursos/eficiencia y viabilidad real del plan Spark
+
+**Motivación:** el usuario pidió una auditoría dedicada a rendimiento/consumo de datos, y
+además quiere volver al plan **Spark** (gratuito) de Firebase. Este hallazgo cubre ambas cosas:
+qué del código consume datos innecesariamente, y qué de la arquitectura actual es
+estructuralmente incompatible con Spark (no es solo "bajar el consumo", hay bloqueos duros).
+
+### A. El fix de A9 (delta-sync) solo se aplicó a Averías — todo lo demás sigue descargando el nodo completo en cada sync
+
+Se leyó directamente `Synchronizer.kt` y `RoomRepository.kt` (los métodos que dispara tanto el
+botón manual "Sincronizar" como cualquier llamado a `syncSubregion`/`syncCatalogosGenerales`).
+**Ninguno de estos usa marca de agua (`lastUpdated`/`startAt`) como sí hace ahora Averías** — todos
+hacen `firebase.obtenerX().get()` (descarga completa del nodo o del alcance) y luego comparan
+contra Room localmente para decidir qué escribir. La comparación local es eficiente (solo
+escribe lo que cambió), **pero la descarga de red ya ocurrió completa antes de poder comparar** —
+el ahorro es de escritura en disco, no de datos móviles/Firebase:
+
+- `syncTecnicos()`, `syncMateriales()` (`RoomRepository.kt:890,907`): `firebase.obtenerTecnicos()`/
+  `obtenerMaterialesCatalogo()` hacen `.get()` de la raíz completa del nodo, sin filtro ni límite.
+  Confirmado en `FirebaseSyncManager.kt:1755,1770`.
+- `syncSubregion()` (`RoomRepository.kt:1140`): descarga agencias y vehículos de la subregión con
+  query indexada (`orderByChild("subregion").equalTo(...)`, razonable), pero **siempre trae TODOS
+  los registros de esa subregión**, no solo los que cambiaron desde el último sync.
+- **Medidores — el más grave de este grupo:** `syncSubregion()` línea 1245 hace
+  `db.medidorDao().eliminarPorSubregion(canonicalSubregion)` (**borra todo lo local de la
+  subregión**) y luego `firebase.obtenerMedidoresPorLotes(...)` **vuelve a descargar TODOS los
+  medidores de la subregión completa, en cada sync** — sea el botón manual, sea cualquier llamada
+  automática. Para una subregión con decenas de miles de medidores (mencionado como volumen típico
+  en `CLAUDE.md`), esto es potencialmente el consumo más grande y repetitivo de todo el proyecto
+  fuera de Averías, y explica directamente la queja del usuario: *"cuando le doy sincronizar...
+  sigue descargando todas las bases de datos"* — es literalmente lo que hace el código hoy, por
+  diseño, no es un bug sutil.
+- `syncCatalogosGenerales()` (`RoomRepository.kt:1292`): mismo patrón para regiones, subregiones,
+  agencias, vehículos (sin acotar por subregión esta vez — nodo completo).
+- `syncInventarioVehiculo()`/`syncLuminariasAgencia()`: acotados a un vehículo/agencia (bajo
+  volumen, impacto menor), pero mismo patrón de "traer todo, cada vez".
+
+**Ninguno de estos tiene un `lastUpdated` ni lo necesita estructuralmente distinto a Averías** —
+el mismo patrón de `fetchDeltaChildren`/`watermark` aplicado en A9 es reutilizable aquí siempre
+que los nodos remotos tengan (o se les agregue) un campo de última modificación indexable.
+
+### B. Los listeners realtime de inventario/luminarias SÍ están bien diseñados, pero se re-sincronizan completos en cada reanudación de la app
+
+`FirebaseSyncManager.startInventarioRealtimeForVehiculo`/`startLuminariasRealtimeForAgencia`
+(líneas 1154, 1219) usan `ChildEventListener` correctamente — es el mecanismo eficiente real de
+Firebase (entrega solo el hijo que cambió, no el nodo completo). **Pero** `TecniApp.kt` (líneas
+81-94) los adjunta en `ProcessLifecycleOwner.onStart` y los remueve en `onStop` — es decir, **cada
+vez que el técnico pone la app en segundo plano y la vuelve a abrir** (algo muy frecuente en campo:
+recibir una llamada, revisar el mapa, cambiar de app), Firebase reenvía un `onChildAdded` por
+**cada elemento existente** del nodo (así funciona `addChildEventListener` al adjuntarse por
+primera vez) — en la práctica, un re-fetch completo del inventario del vehículo y las luminarias
+de la agencia en cada reanudación, no solo cuando algo cambió de verdad. Bajo volumen por
+vehículo/agencia individual, pero se repite muchas veces al día.
+**Recomendación:** no destruir el listener en `onStop`; usar un debounce (p. ej. mantenerlo vivo
+unos minutos tras pasar a background, o usar `KeepSynced` scoped) para que reanudaciones rápidas
+no disparen un re-fetch completo.
+
+### C. Viabilidad real de volver al plan Spark — hay bloqueos DUROS, no solo de consumo
+
+Se verificó contra la documentación oficial de Firebase (2026) qué impone el plan Spark:
+
+- **Una sola instancia de Realtime Database por proyecto.** Este proyecto usa **12 instancias
+  separadas** (`tecniapp-ice-default-rtdb`, `-averias`, `-user`, `-datosgenerales`, `-personal`,
+  `-materiales`, `-inventario`, `-luminarias`, `-ordenes`, `-programacion`, más `tecniapp-ice`/
+  `localizaciones`). **Bajar a Spark no borra las 11 instancias no-default, pero las deshabilita**
+  (quedan inaccesibles hasta volver a Blaze). Esto **rompe la app en producción** para todo lo que
+  no sea la base default, salvo que antes se consolide todo en una sola instancia (repensar rutas
+  raíz por dominio dentro de un único árbol, en vez de bases separadas). Es el bloqueo más grande
+  de los dos.
+- **Cloud Functions requieren el plan Blaze para poder desplegarse, sin excepción** — no es que
+  cuesten dinero en Spark, es que **Spark no permite tener Cloud Functions desplegadas en
+  absoluto** (bloquea todo tráfico de red saliente que no sea a servicios de Google, y el propio
+  runtime de Cloud Functions 2nd gen requiere Cloud Run/Cloud Build, que exigen facturación
+  habilitada). Las **5 funciones actuales** (`syncAveriasYNotificar` — notificaciones push de
+  averías nuevas, `sendVerificationCode`, `sendReport` — ambas usan nodemailer/Gmail, tráfico
+  saliente real —, `notifyCambioMedidorSupervisor`, `notifyProgramacionAssigned`) **dejarían de
+  poder desplegarse** en Spark. Quedarían sin notificaciones push automáticas, sin envío de
+  reportes por correo, y sin verificación por correo del flujo de registro.
+- **Cuotas del plan Spark para Realtime Database (aplicable a la única instancia que quedaría):**
+  1 GB almacenado, 10 GB descargados por mes, 100 conexiones simultáneas — límites duros, no
+  facturables (al llegar al tope, las escrituras/lecturas simplemente se rechazan hasta el
+  siguiente mes o hasta subir de plan). El incidente de 13.8 GB/mes de Averías (Hallazgo A9) por
+  sí solo **ya superaba por ~40% el cupo mensual completo de descarga de todo el plan Spark**,
+  antes siquiera de sumar el resto de módulos.
+
+**Conclusión honesta:** *"quedarse en Spark"* tal como está la arquitectura hoy **no es viable** —
+no es un tema de optimizar un poco más, son dos límites estructurales (multi-RTDB y Cloud
+Functions) que rompen funcionalidad real de la app, no solo el bolsillo. Para que Spark sea
+realmente viable habría que, en este orden:
+1. Consolidar las 12 instancias RTDB en 1 sola (rediseño de estructura — coincide con el plan que
+   el usuario ya tenía de reconstruir las bases, ver Hallazgo A4; es el momento de hacerlo bien).
+2. Decidir qué hacer con las 5 Cloud Functions: eliminarlas (perder push/email automático),
+   moverlas fuera de Firebase (p. ej. un servicio pequeño en otro proveedor con capa gratuita que
+   sí permita salida de red, o Google Cloud Run directo con su propia capa gratuita —
+   técnicamente similar pero facturado aparte de "Firebase"), o aceptar que esas 5 funciones sí
+   requieren Blaze aunque el resto del proyecto se quede en Spark (Blaze es "pago por uso", no
+   "todo o nada" — se puede estar en Blaze y consumir $0 si no se pasa de las cuotas gratuitas de
+   cada servicio individual, que son las mismas que las de Spark salvo por las que sí tienen techo
+   duro como RTDB).
+3. Aplicar el patrón delta-sync (A9) a técnicos/materiales/agencias/vehículos, y sobre todo a
+   medidores (el de mayor volumen) y localizaciones (Hallazgo C4, fallback ya identificado).
+4. Corregir el patrón de re-suscripción completa de los listeners realtime en cada `onStart`
+   (punto B de este hallazgo).
+5. Solo después de 1-4, medir el consumo real durante al menos un ciclo completo de uso de campo
+   antes de decidir si Spark alcanza o si de todas formas conviene Blaze con alertas de
+   presupuesto (Blaze permite fijar un tope de gasto y alertas, lo cual da más margen operativo
+   que los topes duros de Spark sin gastar necesariamente nada si el uso real es bajo).
+
+**Nota importante:** los números exactos de cuotas de Firebase pueden cambiar; se verificaron
+contra la documentación oficial vigente a julio 2026 (`firebase.google.com/docs/database/usage/limits`,
+`firebase.google.com/pricing`, `firebase.google.com/docs/functions/quotas`), pero se recomienda
+confirmarlos una vez más en el momento de ejecutar la migración, ya que Google ajusta estas cifras
+con cierta frecuencia.
+
+### D. Remediación aplicada (2026-07-09) — decisión: quedarse en Blaze con consumo bajo cuota
+
+El usuario decidió **quedarse en Blaze** (no bajar a Spark) manteniendo el consumo real por debajo
+de las cuotas gratuitas de cada servicio → factura $0 salvo crecimiento anormal. Se ejecutó el plan
+por fases (detalle paso a paso en `log.md`):
+
+- **Diagnóstico (Fase 0, `firebase database:get`):** solo **Vehículos** tiene campo de fecha por
+  registro (`updatedAt`). Técnicos, Materiales y **Medidores** no tienen ninguno; Regiones/
+  Subregiones/Agencias son arrays triviales (se dejan).
+- **Mecanismo elegido (compuerta `_meta`):** para los catálogos sin campo de fecha se añadió un nodo
+  pequeño `_meta/lastUpdated` (y `/Medidores_meta/{sub}/lastUpdated` para medidores) mantenido por
+  **3 Cloud Functions nuevas** `onValueWritten` (`bumpMetaTecnicos`, `bumpMetaMateriales`,
+  `bumpMetaMedidores`). La app lee ese único timestamp (bytes) antes de decidir si re-descarga el
+  catálogo completo (`RoomRepository.debeDescargarCatalogo`). Vehículos usa su `updatedAt` existente
+  vía `limitToLast(1)` (sin Cloud Function).
+
+- **Medidores — decisión (Fase 3):** se eligió la **opción de detección de cambios por `_meta`**
+  (re-descarga solo cuando un medidor realmente cambia) en vez del vencimiento por tiempo (semanal).
+  **Por qué:** los medidores cambian con muy poca frecuencia (altas/bajas puntuales), así que un
+  `_meta` que solo avanza ante un cambio real deja el catálogo prácticamente sin re-descargarse
+  ($0 real), mientras que el vencimiento por tiempo lo re-bajaría periódicamente aunque nada haya
+  cambiado. Es además coherente con técnicos/materiales. Se mantuvo **además** el botón manual
+  "Actualizar catálogo de medidores" en Ajustes como respaldo de excepción (Room incompleto,
+  soporte, o antes de desplegar la Cloud Function), decisión confirmada por el usuario.
+
+- **Retrocompatibilidad y secuencia:** todo el código de la app es retrocompatible — si `_meta` aún
+  no existe (Cloud Functions sin desplegar), la compuerta cae a la descarga completa de siempre, sin
+  romper nada. El **deploy de las Cloud Functions + el seed de `_meta` se difieren al rebuild** de
+  las RTDB y los ejecuta el usuario (ver `log.md`). Requisito para que el ahorro se active: agregar
+  `.indexOn: "updatedAt"` a las reglas de `/vehiculos` durante el rebuild.
+
+---
+
+## 1.5 Hallazgo nuevo — 🟡 A13 — `syncAveriasYNotificar` es un poll cada 5 min, no un disparador instantáneo (aunque la propagación al teléfono sí es casi instantánea)
+
+**Pregunta del usuario:** "¿las averías aparecen instantáneamente y no cada 5 min?" Se verificó
+el flujo completo leyendo `functions/index.js` y `fcm/TecniAppMessagingService.kt`:
+
+- `syncAveriasYNotificar` (`functions/index.js:571`) es un `onSchedule({ schedule: "every 5
+  minutes" })` — un job que se despierta cada 5 minutos a revisar si hay averías nuevas/cambiadas
+  en `tecniapp-ice-averias`. **No es un trigger por evento** — hay un margen de hasta 5 minutos
+  entre que la avería se crea en Firebase y el servidor "la nota".
+- **Pero una vez que decide notificar, la propagación al teléfono es casi instantánea:** el push
+  FCM que envía trae los **datos completos de la avería en el payload** (no solo "ve a revisar").
+  `TecniAppMessagingService.onMessageReceived` (línea 50) escribe esos datos directo en Room vía
+  `repo.upsertFromPush(averia)` en cuanto llega el push. La lista de averías en pantalla está
+  conectada a Room con un `Flow` reactivo (`AveriasRepository.observe(...)`), así que se actualiza
+  sola sin que el técnico haga nada — segundos, no 15 minutos.
+- El worker periódico de 15 min (`AveriasSyncWorker`) **no es el mecanismo que trae averías
+  nuevas** en el caso normal — es un respaldo por si un push se perdió (sin señal, Doze del
+  sistema, etc.), reforzado por el delta-sync de A9.
+
+**Conclusión:** ni "instantáneo" puro ni "cada 15 min" como podría parecer — es "hasta 5 min de
+detección en el servidor + segundos de propagación al teléfono".
+
+**Corrección importante (2026-07-09) — la propuesta original de "volver event-driven" NO aplica
+aquí:** al leer la función a fondo se confirmó que `syncAveriasYNotificar` **no reacciona a
+escrituras de Firebase** — es un **poll a una API REST externa del ICE**
+(`ICE_URL = https://agenciaelectricidad.cn.ice.go.cr/api/AveriasAranda/`, sistema Aranda). El
+flujo real es *ICE/Aranda (externo) → este poll → ingesta al nodo `/averias` + FCM*: **esta función
+es la que ESCRIBE las averías en Firebase**, nadie más. Por eso el paralelo con
+`notifyProgramacionAssigned`/`notifyCambioMedidorSupervisor` (que sí reaccionan a escrituras que
+hace **la app**) no aplica: convertir esta función a `onValueWritten` sobre `/averias` se
+dispararía con sus propias escrituras de ingesta (bucle) y, peor, eliminaría el poll que trae las
+averías desde el ICE → dejarían de entrar averías nuevas por completo. El margen es inherente al
+poll de una API externa sin webhook: solo se puede *sondear*, no *escuchar*.
+
+**Aplicado (2026-07-09) — opción A (reducir el intervalo del poll):** se bajó el `schedule` de
+`every 5 minutes` a `every 2 minutes` en `functions/index.js`. Reduce el margen de detección de la
+ingesta a la mitad menos (≤2 min + segundos de propagación FCM) sin cambiar la arquitectura ni
+arriesgar la ingesta. Sigue costando ~$0 en Blaze (invocaciones baratas; el costo real de esta
+función es la llamada `axios.get` saliente, que Blaze cubre de sobra a este volumen). **Deploy
+diferido** al rebuild junto al resto de Cloud Functions, para no tocar `functions/index.js` en
+producción dos veces. El único lever adicional sería bajar aún más el intervalo (ej. 1 min), a
+cambio de más invocaciones/mes.
+
+---
+
 ## 4. Deficiencias de diseño (UX / estructura de proyecto)
 
 - **⚪ D1 — Archivos "gigantes" concentran demasiada UI+lógica en un solo Fragment/BottomSheet:** `AveriaDetalleBottomSheet.kt` (2181 líneas), `ReportesViewModel.kt` (1871), `LocalizacionFragment.kt` (1601), `AdminManagementFragment.kt` (1483) son difíciles de navegar, revisar en PRs y testear. Recomendado extraer sub-componentes (p. ej. el formulario de "cambio de medidor" dentro de `AveriaDetalleBottomSheet` como su propio `BottomSheetDialogFragment` reutilizable).
@@ -290,25 +495,31 @@ institución pública).
 
 ---
 
-## 5. Plan de acción priorizado (roadmap sugerido) — actualizado 2026-07-09
+## 5. Plan de acción priorizado (roadmap sugerido) — actualizado 2026-07-09 (sesión de consumo/Spark-Blaze)
 
-**P0 — Completados:**
-1. ✅ **A9** — Sync incremental de Averías verificado en SM-A566E (2026-07-09): `[SCOPED_DELTA] recibidos=2–27` vs. MB completos antes. >99% reducción de bandwidth.
-2. ✅ A7 — Git limpio, proyecto web fuera del índice (commit `edafc6b0`).
-3. ✅ C4 — Fallbacks de escaneo completo eliminados (commit `953563b5`).
-4. ✅ A11 — PII purgada del historial de GitHub (`git filter-repo` + force push, 2026-07-09).
+**P0 — Completados (código + verificación en dispositivo/producción):**
+1. ✅ **A9** — Sync incremental de Averías verificado en SM-A566E: `[SCOPED_DELTA] recibidos=2–27` vs. MB completos antes. >99% reducción de bandwidth.
+2. ✅ **A7** — Git limpio, proyecto web fuera del índice (commit `edafc6b0`).
+3. ✅ **C4** — Fallbacks de escaneo completo eliminados (commit `953563b5`).
+4. ✅ **A10** — Pipeline de auto-actualización firmado, release `v1.1.0` publicado y `update.json` verificado de punta a punta.
+5. ✅ **A11** — PII purgada del historial de GitHub (`git filter-repo` + force push).
+6. ✅ **A12 (código, Fases 0-4)** — Compuerta `_meta`/watermark para técnicos, materiales, medidores y vehículos; debounce de listeners realtime (7 min de keepalive). Todo compila y es retrocompatible (cae a descarga completa si `_meta` aún no existe). Ver `log.md` para el detalle exacto por fase.
 
-**P0 pendiente:**
-- **Cuando el usuario reconstruya las 12 bases de Firebase:** diseñar reglas de seguridad por instancia desde el primer día (mínimo `auth != null`) — ver A4.
+**P0 pendiente — todo lo que requiere tocar Firebase en producción, secuenciado junto al rebuild de las 12 bases (decisión ya tomada: hacerlo todo en un solo momento, no dos veces):**
+- **A12 (servidor):** desplegar las 3 Cloud Functions nuevas (`bumpMetaTecnicos`, `bumpMetaMateriales`, `bumpMetaMedidores`), sembrar los nodos `_meta` iniciales, y agregar `.indexOn: "updatedAt"` a las reglas de `/vehiculos`. Lo ejecuta el usuario (decisión tomada: Claude no despliega a producción sin supervisión directa).
+- **A13 — margen de detección de averías reducido (código ✅, deploy pendiente):** se descartó la idea de "volverla event-driven" (no aplica: es un poll a la API externa Aranda del ICE, no un reactor a Firebase — ver §1.5). En su lugar se bajó el `schedule` de `every 5 minutes` a `every 2 minutes` en `functions/index.js`. Se agrupa con el mismo despliegue de Cloud Functions de A12 para no tocar `functions/index.js` en producción dos veces.
+- **A4:** diseñar reglas de seguridad por instancia desde el primer día del rebuild (mínimo `auth != null`) — coincide en el tiempo con el paso de consolidación/rediseño de A12.
+- **Fase 5 de A12 (no es código):** configurar en Google Cloud Billing un presupuesto bajo (ej. $1-5 USD) con alertas al 50/90/100% — acción manual del usuario, independiente del rebuild, se puede hacer ya mismo.
+- **Verificación final pendiente (igual que se hizo con A9):** una vez desplegado el servidor, probar en dispositivo real que la compuerta `_meta` efectivamente evita las re-descargas y que las averías nuevas llegan sin el margen de 5 min.
 
 **P1 — Retomar cuando se resuelva el rediseño de Firebase:**
-5. Completar el módulo Programación/Planillas siguiendo el plan de 5 pasos de `log.md` §Fase 3 (A2/A3), una vez decidida la tecnología única de datastore con la web.
-6. Dividir `RoomRepository` y `FirebaseSyncManager` por dominio (B1, B2) — refactor grande, pospuesto deliberadamente.
-7. Centralizar la política de merge de vehículos/catálogos en una sola función testeada (C2).
-8. Migrar `syncState` de string libre a enum + `TypeConverter` (C3) — alcance real: 104 usos en 30 archivos, requiere sesión dedicada con build/test iterativo (ya evaluado y diferido conscientemente).
+7. Completar el módulo Programación/Planillas siguiendo el plan de 5 pasos de `log.md` §Fase 3 (A2/A3), una vez decidida la tecnología única de datastore con la web.
+8. Dividir `RoomRepository` y `FirebaseSyncManager` por dominio (B1, B2) — refactor grande, pospuesto deliberadamente.
+9. Centralizar la política de merge de vehículos/catálogos en una sola función testeada (C2).
+10. Migrar `syncState` de string libre a enum + `TypeConverter` (C3) — alcance real: 104 usos en 30 archivos, requiere sesión dedicada con build/test iterativo (ya evaluado y diferido conscientemente).
 
 **P2 — Calidad y experiencia de desarrollo a mediano plazo:**
-9. Espaciar el intervalo de `AveriasSyncWorker` apoyándose en las notificaciones push existentes, y añadir debounce/persistencia a los listeners realtime de inventario/luminarias (complementos recomendados del fix A9, no incluidos en él).
-10. Empezar una suite de tests unitarios sobre lógica pura (normalizadores, mergers, `RetryPolicy`) (B9).
-11. Romper los Fragments/ViewModels más grandes en componentes menores (D1, D2 de la sección de diseño).
-12. Mantener `README.md`/`CLAUDE.md`/`AUDITORIA.md` enlazados y actualizados a medida que avance el rediseño de Firebase (D3).
+11. Empezar una suite de tests unitarios sobre lógica pura (normalizadores, mergers, `RetryPolicy`) (B9).
+12. Romper los Fragments/ViewModels más grandes en componentes menores (D1, D2 de la sección de diseño).
+13. Mantener `README.md`/`CLAUDE.md`/`AUDITORIA.md` enlazados y actualizados a medida que avance el rediseño de Firebase (D3).
+14. Eliminar/marcar `@Deprecated` la función `buscarMedidorEnFirebase` con fallback en `FirebaseSyncManager` (ya sin callers desde C4, candidato a limpieza menor).
