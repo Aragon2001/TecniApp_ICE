@@ -655,7 +655,18 @@ la subregión en CADA sync (el mayor consumo del proyecto fuera de Averías). Ah
   `SettingsFragment.kt` (`launchActualizarMedidores`, estado `medidoresUpdateInProgress`, `refreshSyncButtons`).
 - Compilación: `./gradlew compileDebugKotlin` → EXIT=0.
 
-### Server-side (Fases 2-3) — CÓDIGO listo, DEPLOY diferido al rebuild (lo ejecuta el usuario)
+### Server-side (Fases 2-3) — ✅ DESPLEGADO Y SEMBRADO EN PRODUCCIÓN (2026-07-09)
+
+> **Actualización:** el usuario pidió desplegar ya (no esperar al rebuild). Las 3 Cloud Functions +
+> `syncAveriasYNotificar` se desplegaron en `tecniapp-ice`/us-central1 (`firebase functions:list`
+> confirma los 4 triggers). Se fijó una cleanup policy de Artifact Registry (borra imágenes >1 día).
+> Los `_meta` se **sembraron** con `firebase database:set`: `personal /_meta/lastUpdated`,
+> `materiales /_meta/lastUpdated` y `default-rtdb /Medidores_meta/subregionguapiles/lastUpdated`
+> (única subregión bajo `/Medidores` hoy), todos = `1783654625301`, verificados por lectura. Con esto
+> el ahorro queda ACTIVO: en el próximo sync cada catálogo se baja una última vez (guarda el meta en
+> DataStore) y a partir de ahí se omite mientras el `_meta` no avance. Sigue pendiente el
+> `.indexOn: "updatedAt"` de `/vehiculos` (reglas diferidas al rebuild) y la verificación en
+> dispositivo real. ⚠️ Si el rebuild renombra instancias, las CF necesitan redeploy.
 
 `functions/index.js` — 3 Cloud Functions nuevas `onValueWritten` que mantienen `_meta/lastUpdated`
 (`node --check` OK):
