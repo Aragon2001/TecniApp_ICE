@@ -664,9 +664,27 @@ la subregión en CADA sync (el mayor consumo del proyecto fuera de Averías). Ah
 > `materiales /_meta/lastUpdated` y `default-rtdb /Medidores_meta/subregionguapiles/lastUpdated`
 > (única subregión bajo `/Medidores` hoy), todos = `1783654625301`, verificados por lectura. Con esto
 > el ahorro queda ACTIVO: en el próximo sync cada catálogo se baja una última vez (guarda el meta en
-> DataStore) y a partir de ahí se omite mientras el `_meta` no avance. Sigue pendiente el
-> `.indexOn: "updatedAt"` de `/vehiculos` (reglas diferidas al rebuild) y la verificación en
+> DataStore) y a partir de ahí se omite mientras el `_meta` no avance. El `.indexOn: "updatedAt"` de
+> `/vehiculos` también quedó **aplicado en producción** (ver abajo). Solo resta la verificación en
 > dispositivo real. ⚠️ Si el rebuild renombra instancias, las CF necesitan redeploy.
+
+**`.indexOn` de vehículos — APLICADO EN PRODUCCIÓN (2026-07-09):** las reglas de
+`tecniapp-ice-datosgenerales` ya estaban seguras (`auth != null`, no abiertas) y `vehiculos` tenía
+`.indexOn: ["subregion"]`. Se agregó `"updatedAt"` con un `PUT /.settings/rules.json` quirúrgico
+(reglas idénticas + el índice, sin tocar read/write ni `firebase.json`), verificado por lectura.
+Necesario para que `obtenerVehiculosMaxUpdatedAt()` (`orderByChild("updatedAt").limitToLast(1)`) sea
+barato (1 registro) en vez de bajar el nodo completo. **Ruleset vivo actual de datosgenerales**
+(registrado aquí porque las reglas NO están versionadas en el repo — reincorporar al rebuild):
+```json
+{
+  "rules": {
+    ".read": "auth != null",
+    ".write": "auth != null",
+    "agencias":  { ".indexOn": ["subregion"] },
+    "vehiculos": { ".indexOn": ["subregion", "updatedAt"] }
+  }
+}
+```
 
 `functions/index.js` — 3 Cloud Functions nuevas `onValueWritten` que mantienen `_meta/lastUpdated`
 (`node --check` OK):
@@ -735,9 +753,9 @@ Documentado en AUDITORIA.md §A13 (corregido) y CLAUDE.md §6.
 ### Estado del plan A12 al cierre de esta sesión
 Fases 0–4 ✅ en código (todas compilan, `EXIT=0`) y **pusheadas a `master`** (commits `8e00b9a6`,
 `fc30ea50`). Server-side **desplegado y sembrado en producción** (a petición del usuario, no diferido):
-4 Cloud Functions activas + `_meta` sembrados y verificados. Fase 5 entregada como instrucción.
-**Pendiente:** `.indexOn: "updatedAt"` en `/vehiculos` (reglas diferidas al rebuild) y la verificación
-en dispositivo real (checklist abajo).
+4 Cloud Functions activas + `_meta` sembrados y verificados + `.indexOn: "updatedAt"` de `/vehiculos`
+aplicado. Fase 5 entregada como instrucción. **Único pendiente:** verificación en dispositivo real
+(checklist abajo).
 
 ### ✅ Checklist de verificación en dispositivo (A12) — hacer con el teléfono a mano
 
