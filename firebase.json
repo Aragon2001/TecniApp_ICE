@@ -1,5 +1,5 @@
 {
-  "//": "Reglas de RTDB pendientes: el usuario eliminará y re-subirá las bases de datos. Tras ello se re-analizarán y se versionarán reglas por instancia (ver log.md §A4). No hay bloque 'database' activo mientras tanto.",
+  "//": "Reglas de RTDB pendientes: el usuario eliminará y re-subirá las bases de datos. Tras ello se re-analizarán y se versionarán reglas por instancia (ver log.md §A4). No hay bloque 'database' activo mientras tanto. ===== A12 (consumo Firebase) — LEER SI SE RECONSTRUYEN / RENOMBRAN / RESETEAN LAS RTDB O SUS REGLAS: el ahorro depende de infraestructura que vive FUERA de este repo y NO se re-crea sola. Re-hacer estos 3 pasos (comandos exactos en log.md §Server-side): (1) CLOUD FUNCTIONS — firebase deploy --only functions:bumpMetaTecnicos,functions:bumpMetaMateriales,functions:bumpMetaMedidores,functions:syncAveriasYNotificar; antes verificar que instance/ref en functions/index.js coincidan con los nombres de instancia reales (personal, materiales, default-rtdb) y el anidamiento /Medidores/{sub}/{id}. (2) SEED _meta — personal '/_meta/lastUpdated', materiales '/_meta/lastUpdated', default-rtdb '/Medidores_meta/{normalizarClave(subregion)}/lastUpdated' por subregión; sin esto la app baja completo (no rompe, no ahorra). (3) INDEXON — en reglas de datosgenerales, nodo 'vehiculos' debe tener .indexOn ['subregion','updatedAt'] (ruleset vivo copiado en log.md). =====",
   "functions": [
     {
       "source": "functions",
@@ -14,3 +14,5 @@
     }
   ]
 }
+
+

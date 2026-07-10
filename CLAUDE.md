@@ -214,15 +214,17 @@ Node.js, Firebase Functions **v2** (`onSchedule`, `onCall`, `onValueCreated`, `d
 
 Detalles de implementación: `admin.initializeApp()` + 2 apps secundarias (`averiasApp`, `usersApp`) apuntando a sus URLs de RTDB específicas; transporter de `nodemailer` (Gmail) cacheado con reintento (`sendMailWithRetry`, hasta 2 reintentos, descarta conexión muerta); secretos de correo vía `defineSecret` (v2 params, correcto). `functions/mail/mailer.js` es un **archivo huérfano** (implementación anterior con `functions.config()`, API v1 deprecada) que ya no se usa — la lógica real vive duplicada dentro de `index.js`.
 
-**Cloud Functions nuevas, planeadas por `AUDITORIA.md` §A12 (código de la app ya listo, función server-side aún NO escrita/desplegada — diferida al rebuild de las 12 RTDB):**
+**Cloud Functions nuevas de `AUDITORIA.md` §A12 (compuerta de consumo) — ✅ DESPLEGADAS en producción (2026-07-09):**
 
-| Función planeada | Trigger | Propósito |
+| Función | Trigger | Propósito |
 |---|---|---|
 | `bumpMetaTecnicos` | `onValueWritten` sobre `tecniapp-ice-personal/{cedula}` | Actualiza `/_meta/lastUpdated` para que la app sepa si el catálogo de técnicos cambió sin descargarlo completo |
 | `bumpMetaMateriales` | `onValueWritten` sobre `tecniapp-ice-materiales/{codigo}` | Igual que arriba, para el catálogo de materiales |
-| `bumpMetaMedidores` | `onValueWritten` sobre `default-rtdb/Medidores/{sub}/{medidorId}` | Actualiza `/Medidores_meta/{sub}/lastUpdated` por subregión |
+| `bumpMetaMedidores` | `onValueWritten` sobre `default-rtdb/Medidores/{sub}/{medidorId}` | Actualiza `/Medidores_meta/{normalizarClave(sub)}/lastUpdated` por subregión |
 
-La app (`RoomRepository`/`DataStoreManager`) ya tiene la "compuerta" que lee estos nodos `_meta` antes de decidir si re-descarga cada catálogo completo — es retrocompatible (si `_meta` no existe todavía, cae a la descarga completa de siempre). Ver `log.md` §"Ejecución del plan A12" para el detalle exacto.
+La app (`RoomRepository`/`DataStoreManager`) tiene la "compuerta" que lee estos `_meta` antes de re-descargar cada catálogo — retrocompatible (si `_meta` no existe, cae a la descarga completa). Los `_meta` ya se sembraron y `/vehiculos` ya tiene `.indexOn: ["subregion","updatedAt"]` en `tecniapp-ice-datosgenerales`.
+
+> ⚠️ **DEPENDENCIA DE INFRAESTRUCTURA (no vive en este repo).** Estas 3 Cloud Functions, los nodos `_meta` sembrados y el `.indexOn` de vehículos **no se re-crean solos**. Si se reconstruyen/renombran/resetean las RTDB o sus reglas, hay que **redeploy de las CF + re-seed de `_meta` + re-aplicar el `.indexOn`**. Checklist exacto en el comentario `"//"` de `firebase.json` y en `log.md` §"Server-side" / §"Estado del plan A12".
 
 ---
 
