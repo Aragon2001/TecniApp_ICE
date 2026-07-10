@@ -733,10 +733,46 @@ arquitectura ni arriesgar la ingesta. `node --check` OK. Deploy diferido junto a
 Documentado en AUDITORIA.md §A13 (corregido) y CLAUDE.md §6.
 
 ### Estado del plan A12 al cierre de esta sesión
-Fases 0–4 ✅ en código (todas compilan, `EXIT=0`). Server-side (deploy de las 3 Cloud Functions +
-seed de `_meta` + `.indexOn` de vehículos) diferido al rebuild de las RTDB, lo ejecuta el usuario.
-Fase 5 entregada como instrucción al usuario. Pendiente de verificación en dispositivo real una vez
-desplegadas las Cloud Functions (igual que se hizo con A9).
+Fases 0–4 ✅ en código (todas compilan, `EXIT=0`) y **pusheadas a `master`** (commits `8e00b9a6`,
+`fc30ea50`). Server-side **desplegado y sembrado en producción** (a petición del usuario, no diferido):
+4 Cloud Functions activas + `_meta` sembrados y verificados. Fase 5 entregada como instrucción.
+**Pendiente:** `.indexOn: "updatedAt"` en `/vehiculos` (reglas diferidas al rebuild) y la verificación
+en dispositivo real (checklist abajo).
+
+### ✅ Checklist de verificación en dispositivo (A12) — hacer con el teléfono a mano
+
+Requiere un dispositivo con la app instalada, sesión iniciada, y `adb` conectado. Filtrar logcat por
+los tags de sync: `adb logcat -s RoomRepositorySync:* AveriasRepository:* FirebaseSyncManager:*`
+(o `adb logcat | grep -E "SYNC_META|SCOPED_DELTA|MEDIDORES"`).
+
+1. **Primer sync tras el deploy (baja y guarda el meta):**
+   - Ajustes → "Sincronizar ahora" (o esperar el sync automático).
+   - Esperado: los catálogos se descargan una última vez con normalidad. No hay línea `[SYNC_META] … sin cambios` todavía (aún no había meta guardado en DataStore).
+
+2. **Segundo sync (aquí se ve el ahorro):**
+   - Volver a "Sincronizar ahora".
+   - Esperado en logcat:
+     - `[SYNC_META] tecnicos sin cambios (remoteTs=1783654625301) — se omite descarga completa`
+     - `[SYNC_META] materiales sin cambios (...) — se omite descarga completa`
+     - `[SYNC_META] medidores subregion=S.GUAPILES sin cambios (remoteTs=1783654625301...) — se omite descarga`
+     - (vehículos: `[SYNC_META] vehiculos ... sin cambios` **solo** si ya se agregó `.indexOn: "updatedAt"`; si no, seguirá bajando — es lo esperado sin el índice).
+   - Confirmar que el tiempo de sync y los bytes reportados bajan drásticamente vs. el primero.
+
+3. **La compuerta reacciona a un cambio real:**
+   - Editar un técnico o material (o cambiar cualquier campo de un medidor de la subregión) desde la app o la consola de Firebase.
+   - La Cloud Function `bumpMeta*` debe subir el `_meta/lastUpdated` (verificable en la consola RTDB, o `firebase database:get /_meta/lastUpdated --instance tecniapp-ice-personal`).
+   - Siguiente sync: ese catálogo (solo ese) vuelve a descargarse **una vez** (log `[SYNC_META]` ausente para él, se ve la descarga), y luego se omite otra vez.
+
+4. **Debounce de listeners realtime (Fase 4):**
+   - Con la app en foreground, mandarla a background y reabrirla **antes de 7 min**.
+   - Esperado: NO debe re-dispararse una re-suscripción completa de inventario/luminarias (no aparece un nuevo `[REALTIME_SETUP]` / avalancha de `onChildAdded`). Tras >7 min en background sí se sueltan y la siguiente reapertura re-adjunta.
+
+5. **Averías más frescas (A13):**
+   - Confirmar (indirecto) que las averías nuevas llegan con ≤2 min de margen en vez de ≤5. El push FCM sigue trayendo el payload completo → la lista se actualiza en segundos una vez disparado.
+
+Si algo del punto 2 no aparece, revisar: (a) que el `_meta` exista en la instancia correcta, (b) que
+la clave normalizada de medidores coincida con la subregión del usuario, (c) que DataStore no se haya
+limpiado entre syncs.
 
 ---
 
